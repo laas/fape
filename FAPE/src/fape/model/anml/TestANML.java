@@ -15,6 +15,7 @@ import gov.nasa.anml.PDDLContext;
 import gov.nasa.anml.PDDLE;
 import gov.nasa.anml.lifted.Domain;
 import gov.nasa.anml.parsing.ANMLCharStream;
+import gov.nasa.anml.parsing.ANMLFileStream;
 import gov.nasa.anml.parsing.ANMLLexer;
 import gov.nasa.anml.parsing.ANMLParser;
 import gov.nasa.anml.parsing.ANMLTree;
@@ -22,6 +23,7 @@ import gov.nasa.anml.parsing.ANMLTreeAdaptor;
 import gov.nasa.anml.utility.OutputChannel;
 import gov.nasa.anml.utility.OutputChannelLogHandler;
 import gov.nasa.anml.utility.SimpleString;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,7 +40,7 @@ import org.antlr.runtime.tree.Tree;
 public class TestANML {
 
     public static SimpleString dName;
-    public static ANMLCharStream input;
+    //public static ANMLCharStream input;
     public static PrintStream output, astOutput;
     public static Level logLevel;
     public static boolean outputPDDLE;
@@ -50,7 +52,9 @@ public class TestANML {
     public static final String PDDL_E_SWITCH = "-pddl-e";
     public static final String UNDEFINED_SWITCH = "-use-undef";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        ANMLCharStream input = new ANMLFileStream("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\dreamWorld.anml");
+        //ANMLCharStream input = new ANMLFileStream("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\petro.anml");
         output = System.out;
         astOutput = System.out;
         logLevel = Level.WARNING;
@@ -99,6 +103,8 @@ public class TestANML {
             // process the tree 
             walker.model(d);
 
+            
+            int xx = 0;
         } catch (RecognitionException e) {
             e.printStackTrace();
         }
