@@ -11,7 +11,7 @@
 
 package fape.model.compact;
 
-import fape.model.compact.tqes.Tqe;
+import fape.model.compact.statements.Statement;
 import fape.util.Pair;
 import java.util.List;
 
@@ -22,10 +22,10 @@ import java.util.List;
 public class Action {
     String name;
     List<Parameter> params; //typed parameters
-    List<Tqe> tques; //what happens
+    List<Statement> tques; //what happens
     float duration; //end - start of the action
     float softRefinement; //how critical is it to make some strongDecomposition for this action
-    Tqe hardRefinement; //if this holds, we need to make strongDecomposition
+    Statement hardRefinement; //if this holds, we need to make strongDecomposition
     Pair<List<Action>, List<TemporalConstraint>> weakDecomposition; //we can always try to apply this decomposition, it contains some actions and constraints on their ordering
     List<Pair<List<Action>, List<TemporalConstraint>>> strongDecompositions; //same as weak though we choose only one from those
 }

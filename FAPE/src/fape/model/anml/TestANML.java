@@ -13,7 +13,7 @@ package fape.model.anml;
 import gov.nasa.anml.PDDL;
 import gov.nasa.anml.PDDLContext;
 import gov.nasa.anml.PDDLE;
-import gov.nasa.anml.lifted.Domain;
+import gov.nasa.anml.parsing.Domain;
 import gov.nasa.anml.parsing.ANMLCharStream;
 import gov.nasa.anml.parsing.ANMLFileStream;
 import gov.nasa.anml.parsing.ANMLLexer;

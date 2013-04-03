@@ -8,13 +8,19 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
+package fape.model.compact;
 
-package fape.model.compact.tqes;
+import fape.model.compact.statements.Statement;
+import fape.model.compact.types.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
  * @author FD
  */
-public class Assign {
-
+public class ANMLBlock {
+    public List<Action> actions = new LinkedList<>();
+    public List<Statement> statements = new LinkedList<>();
+    public List<Type> types = new LinkedList<>();
 }

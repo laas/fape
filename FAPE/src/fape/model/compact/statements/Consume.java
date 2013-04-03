@@ -9,12 +9,12 @@
  * permission of the author.
  */
 
-package fape.model.compact.tqes;
+package fape.model.compact.statements;
 
 /**
  *
  * @author FD
  */
-public class Tqp extends Tqe {
+public class Consume extends Statement {
 
 }

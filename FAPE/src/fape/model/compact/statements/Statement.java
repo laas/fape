@@ -9,12 +9,14 @@
  * permission of the author.
  */
 
-package fape.model.compact.tqes;
+package fape.model.compact.statements;
+
+import fape.model.compact.TimePoint;
 
 /**
- *
+ * temporarily qualified expression
  * @author FD
  */
-public class Consume {
-
+public class Statement {
+    TimePoint start, end;
 }

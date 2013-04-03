@@ -8,17 +8,13 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.model.compact;
 
-import fape.model.compact.tqes.Tqe;
-import java.util.List;
+package fape.model.compact.statements;
 
 /**
  *
  * @author FD
  */
-public class Task {
+public class Assign extends Statement {
 
-    List<Action> actions;
-    List<Tqe> tqes;
 }
