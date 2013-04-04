@@ -11,10 +11,16 @@
 
 package fape.model.compact.types;
 
+import fape.model.compact.Variable;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author FD
  */
 public class Type {
-
+    public String name;
+    public Type parent;
+    List<Variable> vars = new LinkedList<>();
 }

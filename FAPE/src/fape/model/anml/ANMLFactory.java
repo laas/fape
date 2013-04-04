@@ -41,6 +41,9 @@ public class ANMLFactory {
     public static Tree ParseInput(String in) throws IOException, RecognitionException {
         //InputStream is = new ByteArrayInputStream( in.getBytes() );        
         ANMLCharStream input = new ANMLFileStream("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\dreamWorld.anml");
+        //ANMLCharStream input = new ANMLFileStream("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\petro.anml");
+        //ANMLCharStream input = new ANMLFileStream("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DecompositionTest.anml");
+        
 
         // setup character->token, token->tree
         ANMLLexer lex = new ANMLLexer(input);
@@ -95,7 +98,12 @@ public class ANMLFactory {
     }
 
     private static Type parseType(ANMLToken tr) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Type ret = new Type();
+        
+        
+        
+        
+        return null;
     }
 
     private static Action parseAction(ANMLToken tr) {
