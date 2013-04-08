@@ -8,13 +8,11 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.model.compact.types;
 
 /**
  *
  * @author FD
  */
-public class TypeStructured {
-
+public class TypeStructured extends Type {
 }

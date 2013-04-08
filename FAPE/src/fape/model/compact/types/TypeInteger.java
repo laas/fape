@@ -15,6 +15,6 @@ package fape.model.compact.types;
  *
  * @author FD
  */
-public class TypeInteger {
+public class TypeInteger extends Type {
 
 }

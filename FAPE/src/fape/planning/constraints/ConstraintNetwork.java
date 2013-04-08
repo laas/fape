@@ -9,12 +9,12 @@
  * permission of the author.
  */
 
-package fape.model.compact.types;
+package fape.planning.constraints;
 
 /**
  *
  * @author FD
  */
-public class TypeFloat extends Type {
+public class ConstraintNetwork {
 
 }

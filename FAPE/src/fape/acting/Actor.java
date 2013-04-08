@@ -11,8 +11,8 @@
 package fape.acting;
 
 import fape.execution.Executor;
-import fape.model.ANMLPayload;
 import fape.model.AtomicAction;
+import fape.model.compact.ANMLBlock;
 import fape.planning.Planner;
 import fape.util.Pair;
 import fape.util.TimeAmount;
@@ -36,7 +36,7 @@ public class Actor {
     long progressStep = 100;
     Executor mExecutor;
     Planner mPlanner;
-    public List<ANMLPayload> newEventBuffer;
+    public List<ANMLBlock> newEventBuffer;
 
     public enum EActorState {
 

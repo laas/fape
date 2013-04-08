@@ -23,4 +23,5 @@ public class ANMLBlock {
     public List<Action> actions = new LinkedList<>();
     public List<Statement> statements = new LinkedList<>();
     public List<Type> types = new LinkedList<>();
+    public List<Variable> vars = new LinkedList<>();
 }

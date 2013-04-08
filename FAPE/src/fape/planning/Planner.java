@@ -11,8 +11,8 @@
 
 package fape.planning;
 
-import fape.model.ANMLPayload;
 import fape.model.AtomicAction;
+import fape.model.compact.ANMLBlock;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
@@ -35,7 +35,7 @@ public class Planner {
      * initializes the data structures of the planning problem by the ANML payload
      * @param pl 
      */
-    public void Init(ANMLPayload pl){
+    public void Init(ANMLBlock pl){
         throw new UnsupportedOperationException("Not yet implemented");
     }
     /**
@@ -65,7 +65,7 @@ public class Planner {
      * enforces given fact into the plan (possibly breaking it)
      * @param pl 
      */
-    public void ForceFact(ANMLPayload pl){
+    public void ForceFact(ANMLBlock pl){
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

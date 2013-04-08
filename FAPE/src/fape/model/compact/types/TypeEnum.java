@@ -15,6 +15,6 @@ package fape.model.compact.types;
  *
  * @author FD
  */
-public class TypeEnum {
+public class TypeEnum extends Type {
 
 }

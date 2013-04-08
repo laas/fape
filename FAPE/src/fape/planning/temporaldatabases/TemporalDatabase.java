@@ -9,12 +9,12 @@
  * permission of the author.
  */
 
-package fape.model;
+package fape.planning.temporaldatabases;
 
 /**
  *
  * @author FD
  */
-public class ANMLPayload {
+public class TemporalDatabase {
 
 }
