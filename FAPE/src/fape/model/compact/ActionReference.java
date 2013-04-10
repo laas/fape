@@ -9,12 +9,16 @@
  * permission of the author.
  */
 
-package fape.model.compact.statements;
+package fape.model.compact;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
  * @author FD
  */
-public class Tqa extends Statement {
-
+public class ActionReference {
+    String name;
+    List<Parameter> args = new LinkedList<>();
 }

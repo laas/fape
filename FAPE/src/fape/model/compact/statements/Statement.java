@@ -11,6 +11,8 @@
 
 package fape.model.compact.statements;
 
+import fape.model.compact.Reference;
+import fape.model.compact.TemporalInterval;
 import fape.model.compact.TimePoint;
 
 /**
@@ -18,5 +20,6 @@ import fape.model.compact.TimePoint;
  * @author FD
  */
 public class Statement {
-    TimePoint start, end;
+    public TemporalInterval interval;
+    public Reference leftRef;
 }

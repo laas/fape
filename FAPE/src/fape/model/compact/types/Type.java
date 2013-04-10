@@ -11,7 +11,7 @@
 
 package fape.model.compact.types;
 
-import fape.model.compact.Variable;
+import fape.model.compact.Instance;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,6 +21,13 @@ import java.util.List;
  */
 public class Type {
     public String name;
-    public Type parent;
-    List<Variable> vars = new LinkedList<>();
+    public String parent;
+    public List<Instance> instances = new LinkedList<>();
+
+    @Override
+    public String toString() {
+        return name;
+    }
+    
+    
 }

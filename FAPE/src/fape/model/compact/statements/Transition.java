@@ -9,14 +9,12 @@
  * permission of the author.
  */
 
-package fape.planning.temporaldatabases;
-
-import java.util.List;
+package fape.model.compact.statements;
 
 /**
  *
  * @author FD
  */
-public class TemporalDatabase {
-    List<StateVariable> vars;
+public class Transition extends Statement {
+
 }

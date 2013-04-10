@@ -16,5 +16,6 @@ package fape.model.compact;
  * @author FD
  */
 public class Parameter {
-
+    public String name;
+    public String type;
 }

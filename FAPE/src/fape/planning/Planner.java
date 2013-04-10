@@ -13,6 +13,7 @@ package fape.planning;
 
 import fape.model.AtomicAction;
 import fape.model.compact.ANMLBlock;
+import fape.planning.states.State;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
@@ -23,19 +24,22 @@ import java.util.List;
  * @author FD
  */
 public class Planner {
+    public State init;
+    
     public enum EPlanState{
         CONSISTENT, INCONSISTENT, INFESSIBLE, UNINITIALIZED
     }
     /**
      * what is the current state of the plan
      */
-    public EPlanState planState = EPlanState.UNINITIALIZED;
-    
+    public EPlanState planState = EPlanState.UNINITIALIZED;    
     /**
      * initializes the data structures of the planning problem by the ANML payload
      * @param pl 
      */
     public void Init(ANMLBlock pl){
+        init = new State();
+        
         throw new UnsupportedOperationException("Not yet implemented");
     }
     /**

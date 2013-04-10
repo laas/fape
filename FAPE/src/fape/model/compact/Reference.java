@@ -9,12 +9,15 @@
  * permission of the author.
  */
 
-package fape.model.compact.statements;
+package fape.model.compact;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
  * @author FD
  */
-public class Tqp extends Statement {
-
+public class Reference {
+    public LinkedList<String> refs = new LinkedList<>();
 }

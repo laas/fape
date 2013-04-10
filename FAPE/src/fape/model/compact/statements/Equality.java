@@ -9,14 +9,14 @@
  * permission of the author.
  */
 
-package fape.planning.temporaldatabases;
+package fape.model.compact.statements;
 
-import java.util.List;
+import fape.model.compact.Reference;
 
 /**
  *
  * @author FD
  */
-public class TemporalDatabase {
-    List<StateVariable> vars;
+public class Equality extends Statement {
+    public Reference rightRef;
 }

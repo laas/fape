@@ -9,14 +9,14 @@
  * permission of the author.
  */
 
-package fape.planning.temporaldatabases;
-
-import java.util.List;
+package fape.model.compact;
 
 /**
  *
  * @author FD
  */
-public class TemporalDatabase {
-    List<StateVariable> vars;
+public class Instance {
+    public String name;
+    public String type;
+
 }

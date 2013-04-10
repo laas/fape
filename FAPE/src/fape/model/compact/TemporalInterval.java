@@ -15,6 +15,6 @@ package fape.model.compact;
  *
  * @author FD
  */
-public class Variable {
-
+public class TemporalInterval {
+    public String s,e;
 }

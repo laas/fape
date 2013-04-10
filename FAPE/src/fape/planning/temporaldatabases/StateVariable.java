@@ -11,12 +11,10 @@
 
 package fape.planning.temporaldatabases;
 
-import java.util.List;
-
 /**
  *
  * @author FD
  */
-public class TemporalDatabase {
-    List<StateVariable> vars;
+public class StateVariable {
+    
 }
