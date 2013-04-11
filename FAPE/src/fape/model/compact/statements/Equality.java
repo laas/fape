@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.model.compact.statements;
 
 import fape.model.compact.Reference;
@@ -18,5 +17,11 @@ import fape.model.compact.Reference;
  * @author FD
  */
 public class Equality extends Statement {
+
     public Reference rightRef;
+
+    @Override
+    public String toString() {
+        return interval + " " + leftRef + " == " + rightRef;
+    }
 }

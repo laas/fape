@@ -19,4 +19,9 @@ public class Instance {
     public String name;
     public String type;
 
+    @Override
+    public String toString() {
+        return name+"["+type+"]";
+    }
+
 }

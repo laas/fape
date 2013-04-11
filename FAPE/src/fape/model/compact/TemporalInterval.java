@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.model.compact;
 
 /**
@@ -16,5 +15,11 @@ package fape.model.compact;
  * @author FD
  */
 public class TemporalInterval {
-    public String s,e;
+
+    public String s, e;
+
+    @Override
+    public String toString() {
+        return "[" + e + ", " + s + "]";
+    }
 }

@@ -8,14 +8,25 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.model.compact;
+
+import fape.model.compact.Reference;
 
 /**
  *
  * @author FD
  */
-public class Parameter {
-    public String name;
-    public String type;
+public class Function {
+
+    public enum EOperator {
+
+        DIVIDE, MULTIPLY, PLUS, MINUS
+    }
+    public EOperator mOperator;
+    public Reference left, right;
+
+    @Override
+    public String toString() {
+        return left + " " + mOperator + " " + right;
+    }
 }

@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.model.compact;
 
 import java.util.LinkedList;
@@ -18,7 +17,21 @@ import java.util.List;
  *
  * @author FD
  */
-public class ActionReference {
-    String name;
-    List<Parameter> args = new LinkedList<>();
+public class ActionRef {
+
+    public String name;
+    public List<Reference> args = new LinkedList<>();
+
+    @Override
+    public String toString() {
+        String st = name + "(";
+        for (Reference r : args) {
+            st += r + ",";
+        }
+        if (args.size() > 0) {
+            st = st.substring(0, st.length() - 1);
+        }
+        st += ")";
+        return st;
+    }
 }

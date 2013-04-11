@@ -10,24 +10,19 @@
  */
 package fape.model.compact.statements;
 
-import fape.model.compact.Reference;
+import fape.model.compact.Function;
 
 /**
  *
  * @author FD
  */
-public class Assign extends Statement {
+public class AssignFunctional extends Statement {
 
-    public String operator;
-    public Reference from, to;
+    public String label;
+    public Function func;
 
     @Override
     public String toString() {
-        if(operator.equals(":=")){
-            return interval + " " + leftRef + " " + operator + " " + from;
-        }else{
-            return interval + " " + leftRef + " " + operator + " " + from + " :-> " + to;
-        }
-        
+        return label + " := " + func;
     }
 }

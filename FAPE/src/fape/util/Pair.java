@@ -26,4 +26,11 @@ public class Pair<T, V> {
         this.value1 = v1;
         this.value2 = v2;
     }
+
+    @Override
+    public String toString() {
+        return "["+value1 + ","+value2+"]";
+    }
+    
+    
 }
