@@ -57,6 +57,13 @@ public class ANMLFactory {
             b.statements.addAll(parseStatements(t.getChild(5).getChild(i)));
         }
 
+        //some postprocessing here
+        
+        //get the seed action if any, to get new decompositions
+        
+        
+        
+        
         return b;
     }
 
@@ -99,6 +106,11 @@ public class ANMLFactory {
         for (int i = 0; i < child.getChild(8).getChildCount(); i++) {
             a.strongDecompositions.add(parseDecomposition(child.getChild(8).getChild(i)));
         }
+
+        //now do the post-processing, we get statemenets that correspond to the duration and the soft and weak decomponsititons
+
+
+
         //what more to parse? TODO
         // - duration
         // - hard refinement
@@ -120,10 +132,10 @@ public class ANMLFactory {
                 rt.interval = parseInterval(child.getChild(0));
                 rt.leftRef = parseReference(child.getChild(1));
                 rt.from = parseReference(child.getChild(2).getChild(0));
-                if(child.getChild(2).getText().equals("==")){
+                if (child.getChild(2).getText().equals("==")) {
                     rt.operator = "==";
                     rt.to = parseReference(child.getChild(4).getChild(0));
-                }else{
+                } else {
                     rt.operator = ":=";
                 }
                 ret.add(rt);
@@ -194,12 +206,22 @@ public class ANMLFactory {
         ret.value2 = new LinkedList<>();
         Tree decs = child.getChild(4).getChild(0).getChild(4);
         for (int i = 0; i < decs.getChildCount(); i++) {
-            ActionRef ar = new ActionRef();
-            ar.name = decs.getChild(i).getChild(0).getChild(0).getText();
-            for (int j = 0; j < decs.getChild(i).getChild(1).getChildCount(); j++) {
-                ar.args.add(parseReference(decs.getChild(i).getChild(1).getChild(j)));
+            switch (decs.getChild(i).getText()) {
+                case "<":
+                    ret.value2.add(parseConstraint(decs.getChild(i)));
+                    break;
+                case "BindParameters":
+                    ActionRef ar = new ActionRef();
+                    ar.name = decs.getChild(i).getChild(0).getChild(0).getText();
+                    for (int j = 0; j < decs.getChild(i).getChild(1).getChildCount(); j++) {
+                        ar.args.add(parseReference(decs.getChild(i).getChild(1).getChild(j)));
+                    }
+                    ret.value1.add(ar);
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
             }
-            ret.value1.add(ar);
+
         }
         return ret;
     }
@@ -227,5 +249,12 @@ public class ANMLFactory {
         f.left = parseReference(child.getChild(0));
         f.right = parseReference(child.getChild(1));
         return f;
+    }
+
+    private static TemporalConstraint parseConstraint(Tree child) {
+        TemporalConstraint tc = new TemporalConstraint();
+        tc.earlier = Integer.parseInt(child.getChild(0).getText());
+        tc.later = Integer.parseInt(child.getChild(1).getText());
+        return tc;
     }
 }

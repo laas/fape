@@ -16,5 +16,5 @@ package fape.model.compact;
  * @author FD
  */
 public class TemporalConstraint {
-    
+    public int earlier, later;
 }
