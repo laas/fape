@@ -9,17 +9,14 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.temporaldatabases.events.resources;
 
-import java.util.LinkedList;
-import java.util.List;
+import fape.planning.temporaldatabases.events.TemporalEvent;
 
 /**
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class UseEvent extends TemporalEvent {
+    double howMuch;
 }

@@ -17,7 +17,7 @@ package fape.planning.stn;
  *
  * @author Filip Dvořák
  */
-public class TinySTN extends STN {
+class TinySTN extends STN {
 
     static int mapping_STN_to_TinySTN[], mapping_TinySTN_to_STN[];
 

@@ -15,6 +15,6 @@ package fape.planning.tasknetworks;
  *
  * @author FD
  */
-public class TaskNetwork {
-
+class TaskNetwork {
+    
 }

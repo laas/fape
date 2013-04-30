@@ -9,17 +9,12 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
-
-import java.util.LinkedList;
-import java.util.List;
+package fape.planning.model;
 
 /**
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class StateVariableValue {
+    public int index;
 }

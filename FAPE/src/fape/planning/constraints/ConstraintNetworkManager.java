@@ -9,8 +9,9 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.constraints;
 
+import fape.planning.constraints.entities.Constraint;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,8 +19,7 @@ import java.util.List;
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
+public class ConstraintNetworkManager {
+    List<List<Constraint>> cons = new LinkedList<>();
     
 }

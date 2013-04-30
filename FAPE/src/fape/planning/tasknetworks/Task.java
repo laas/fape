@@ -9,8 +9,10 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.tasknetworks;
 
+
+import fape.planning.model.Action;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,8 +20,7 @@ import java.util.List;
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+class Task {
+    Action actionInstance;
+    List<Task> subtasks = new LinkedList<>();
 }

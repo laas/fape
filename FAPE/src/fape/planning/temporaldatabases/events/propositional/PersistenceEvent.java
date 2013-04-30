@@ -9,17 +9,15 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.temporaldatabases.events.propositional;
 
-import java.util.LinkedList;
-import java.util.List;
+import fape.planning.model.StateVariableValue;
+import fape.planning.temporaldatabases.events.TemporalEvent;
 
 /**
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class PersistenceEvent extends TemporalEvent {
+    StateVariableValue v;
 }

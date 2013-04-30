@@ -11,15 +11,10 @@
 
 package fape.planning.causalities;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class CausalNetworkManager {
+    CausalNetwork net = new CausalNetwork();
 }

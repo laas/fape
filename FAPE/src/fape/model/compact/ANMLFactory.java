@@ -8,7 +8,7 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.model.anml;
+package fape.model.compact;
 
 import fape.model.compact.ANMLBlock;
 import fape.model.compact.Action;

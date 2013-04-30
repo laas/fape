@@ -9,17 +9,14 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.temporaldatabases;
 
-import java.util.LinkedList;
 import java.util.List;
 
 /**
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class TemporalDatabaseManager {
+    List<TemporalDatabase> vars;
 }

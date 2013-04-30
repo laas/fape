@@ -11,19 +11,30 @@
 
 package fape.planning.bindings;
 
-import fape.planning.model.StateVariable;
-import fape.planning.stn.TemporalVariable;
-import fape.util.Pair;
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  *
  * @author FD
  */
-public class BindingManager {
-    List<Pair<ObjectVariable, List<StateVariable> > > bindings = new LinkedList<>();
-    public ObjectVariable getNewObjectVariable(){
-        return new ObjectVariable();
+public class ObjectVariable {
+
+    
+    
+    private static int idCounter = 0;
+    private int mID = idCounter++;
+
+    @Override
+    public boolean equals(Object obj) {
+        return mID == ((ObjectVariable)(obj)).mID;
+    }
+    
+    public boolean equals(ObjectVariable obj) {
+        return mID == obj.mID;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 23 * hash + this.mID;
+        return hash;
     }
 }

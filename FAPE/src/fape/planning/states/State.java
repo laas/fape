@@ -11,11 +11,11 @@
 package fape.planning.states;
 
 import fape.planning.bindings.BindingManager;
-import fape.planning.causalities.CausalNetwork;
-import fape.planning.constraints.ConstraintNetwork;
-import fape.planning.stn.STN;
-import fape.planning.tasknetworks.TaskNetwork;
-import fape.planning.temporaldatabases.TemporalDatabase;
+import fape.planning.causalities.CausalNetworkManager;
+import fape.planning.constraints.ConstraintNetworkManager;
+import fape.planning.stn.STNManager;
+import fape.planning.tasknetworks.TaskNetworkManager;
+import fape.planning.temporaldatabases.TemporalDatabaseManager;
 
 /**
  *
@@ -23,18 +23,18 @@ import fape.planning.temporaldatabases.TemporalDatabase;
  */
 public class State {
 
-    TemporalDatabase tdb;
-    STN tempoNet;
-    TaskNetwork taskNet;
-    ConstraintNetwork conNet;
+    TemporalDatabaseManager tdb;
+    STNManager tempoNet;
+    TaskNetworkManager taskNet;
+    ConstraintNetworkManager conNet;
     BindingManager bindings;
-    CausalNetwork causalNet;
+    CausalNetworkManager causalNet;
 
     public State(){
-        tempoNet = new STN();
-        taskNet = new TaskNetwork();
-        conNet = new ConstraintNetwork();
+        tempoNet = new STNManager();
+        taskNet = new TaskNetworkManager();
+        conNet = new ConstraintNetworkManager();
         bindings = new BindingManager();
-        causalNet = new CausalNetwork();
+        causalNet = new CausalNetworkManager();
     }
 }

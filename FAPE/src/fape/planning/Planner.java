@@ -34,10 +34,10 @@ public class Planner {
      */
     public EPlanState planState = EPlanState.UNINITIALIZED;    
     /**
-     * initializes the data structures of the planning problem by the ANML payload
+     * initializes the data structures of the planning problem
      * @param pl 
      */
-    public void Init(ANMLBlock pl){
+    public void Init(){
         init = new State();
         
         throw new UnsupportedOperationException("Not yet implemented");
@@ -66,7 +66,7 @@ public class Planner {
         throw new UnsupportedOperationException("Not yet implemented");
     }
     /**
-     * enforces given fact into the plan (possibly breaking it)
+     * enforces given facts into the plan (possibly breaking it)
      * @param pl 
      */
     public void ForceFact(ANMLBlock pl){

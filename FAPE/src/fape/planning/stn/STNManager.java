@@ -9,7 +9,7 @@
  * permission of the author.
  */
 
-package fape.planning.causalities;
+package fape.planning.stn;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,8 +18,10 @@ import java.util.List;
  *
  * @author FD
  */
-class CausalNetwork {
-    //edges
-    List<Edge> edges = new LinkedList<>();
-    
+public class STNManager {
+    STN stn = new STN();
+    List<TemporalVariable> variables = new LinkedList<>();
+    public TemporalVariable getNewTemporalVariable(){
+        return new TemporalVariable();
+    }
 }

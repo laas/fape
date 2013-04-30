@@ -10,7 +10,7 @@
  */
 package fape.test;
 
-import fape.model.anml.ANMLFactory;
+import fape.model.compact.ANMLFactory;
 import fape.model.compact.ANMLBlock;
 import gov.nasa.anml.Main;
 import java.io.IOException;

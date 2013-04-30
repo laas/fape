@@ -18,9 +18,9 @@ import java.util.List;
 /**
  *
  * @author FD
- */
-public class ANMLBlock {
-    public List<Action> actions = new LinkedList<>(); //actio descriptions in the system
+ */ 
+public class ANMLBlock { 
+    public List<Action> actions = new LinkedList<>(); //actio descriptions in the system 
     public List<Statement> statements = new LinkedList<>(); //statements that describe the system
     public List<Type> types = new LinkedList<>(); //types in the ssytem
     public List<Instance> instances = new LinkedList<>(); //variables in the system

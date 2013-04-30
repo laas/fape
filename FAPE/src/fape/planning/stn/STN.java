@@ -32,10 +32,10 @@ package fape.planning.stn;
  *
  * @author Filip Dvořák
  */
-public class STN {
+class STN {
 
     /**
-     *
+     * precalculates the positions of edge values
      */
     public static void precalc_inic() {
         precalc = new int[precalc_size][];
@@ -82,14 +82,13 @@ public class STN {
      *
      * @return makespan
      */
-    public STNEval eval() {
-        int sum = 0;
-        for (int i = 0; i < ends_count; i++) {
-            sum += ga(0, i + 2);
-        }
-        return new STNEval(ga(0, 1), sum);
-    }
-
+    /*public STNEval eval() {
+     int sum = 0;
+     for (int i = 0; i < ends_count; i++) {
+     sum += ga(0, i + 2);
+     }
+     return new STNEval(ga(0, 1), sum);
+     }*/
     /**
      *
      */
@@ -334,7 +333,7 @@ public class STN {
      * @param v1 time point
      * @param v2 time point
      * @param a lower bound on time
-     * @param b upper bound on tim
+     * @param b upper bound on time
      */
     public void propagate(int v1, int v2, int a, int b) {
         int I_top = 0, J_top = 0, I[] = new int[top], J[] = new int[top], aa, bb, i, j, k;

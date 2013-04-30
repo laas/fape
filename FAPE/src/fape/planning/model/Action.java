@@ -9,12 +9,12 @@
  * permission of the author.
  */
 
-package fape.planning.temporaldatabases;
+package fape.planning.model;
 
 /**
  *
  * @author FD
  */
-public class StateVariable {
-    
+public class Action {
+
 }

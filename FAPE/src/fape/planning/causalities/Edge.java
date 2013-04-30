@@ -9,12 +9,12 @@
  * permission of the author.
  */
 
-package fape.planning.constraints;
+package fape.planning.causalities;
 
 /**
  *
  * @author FD
  */
-public class ConstraintNetwork {
+class Edge {
 
 }
