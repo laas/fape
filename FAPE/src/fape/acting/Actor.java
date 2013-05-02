@@ -17,6 +17,7 @@ import fape.planning.Planner;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -25,18 +26,21 @@ import java.util.List;
  */
 public class Actor {
 
-    public void bind(Executor e, Planner p){
+    public void PushEvent(ANMLBlock b) {
+        newEventBuffer.add(b);
+    }
+
+    public void bind(Executor e, Planner p) {
         mExecutor = e;
         mPlanner = p;
     }
-    
     long sleepTime = 100;
     long repairTime = 300;
     long progressTime = 100;
     long progressStep = 100;
     Executor mExecutor;
     Planner mPlanner;
-    public List<ANMLBlock> newEventBuffer;
+    public LinkedList<ANMLBlock> newEventBuffer;
 
     public enum EActorState {
 
@@ -58,7 +62,7 @@ public class Actor {
                     break;
                 case ACTING:
                     while (!newEventBuffer.isEmpty()) {
-                        mPlanner.ForceFact(null);
+                        mPlanner.ForceFact(newEventBuffer.pop());
                     }
                     //performing repair and progress here
                     mPlanner.Repair(new TimeAmount(repairTime));

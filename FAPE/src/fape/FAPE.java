@@ -35,6 +35,9 @@ public class FAPE {
         e.bind(a, l);
         l.bind(e);
         
+        //pushing the initial event
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\dreamWorld.anml"));
+        
         a.run();
     }
 }

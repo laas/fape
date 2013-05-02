@@ -8,9 +8,9 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.planning.stn;
 
+import fape.exceptions.FAPEException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,9 +19,29 @@ import java.util.List;
  * @author FD
  */
 public class STNManager {
+
     STN stn = new STN();
+    TemporalVariable start, end; //global start and end of the world   
     List<TemporalVariable> variables = new LinkedList<>();
-    public TemporalVariable getNewTemporalVariable(){
-        return new TemporalVariable();
+
+    public STNManager() {
+        STN.precalc_inic();
+        start = new TemporalVariable(); //0
+        end = new TemporalVariable(); //1
+        if (start.getID() != 0) {
+            throw new FAPEException("STN: Broken indexing.");
+        }
+        EnforceBefore(start, end);
+    }
+
+    public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
+        stn.eless(a.getID(), b.getID());
+    }
+
+    public TemporalVariable getNewTemporalVariable() {
+        TemporalVariable tv = new TemporalVariable();
+        EnforceBefore(start, tv);
+        EnforceBefore(tv, end);
+        return tv;
     }
 }

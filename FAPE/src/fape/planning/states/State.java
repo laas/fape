@@ -30,6 +30,10 @@ public class State {
     BindingManager bindings;
     CausalNetworkManager causalNet;
 
+    /**
+     * this constructor is only for the initial state!! other states are constructed
+     * from from the existing states
+     */
     public State(){
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();

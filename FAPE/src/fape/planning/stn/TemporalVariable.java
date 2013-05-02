@@ -10,8 +10,6 @@
  */
 package fape.planning.stn;
 
-import fape.planning.bindings.ObjectVariable;
-
 /**
  *
  * @author FD
@@ -35,5 +33,9 @@ public class TemporalVariable {
         int hash = 7;
         hash = 29 * hash + this.mID;
         return hash;
+    }
+
+    public int getID() {
+        return mID;
     }
 }

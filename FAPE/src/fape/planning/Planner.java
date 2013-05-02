@@ -39,8 +39,6 @@ public class Planner {
      */
     public void Init(){
         init = new State();
-        
-        throw new UnsupportedOperationException("Not yet implemented");
     }
     /**
      * starts plan repair, records the best plan, produces the best plan after <b>forHowLong</b> miliseconds or null, if no plan was found
@@ -67,9 +65,11 @@ public class Planner {
     }
     /**
      * enforces given facts into the plan (possibly breaking it)
+     * this is an incremental step, if there was something already defined, 
+     * the name collisions are considered to be intentional
      * @param pl 
      */
     public void ForceFact(ANMLBlock pl){
-        throw new UnsupportedOperationException("Not yet implemented");
+        
     }
 }
