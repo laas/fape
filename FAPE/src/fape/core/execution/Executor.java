@@ -11,19 +11,18 @@
 package fape.core.execution;
 
 import fape.core.acting.Actor;
-import fape.exceptions.FAPEException;
-import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.ANMLFactory;
-import fape.core.planning.Planner;
+import fape.core.execution.model.AtomicAction;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimePoint;
 import gov.nasa.anml.Main;
-import java.io.IOException;
-import java.util.List;
-import java.util.logging.Logger;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.Tree;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  *

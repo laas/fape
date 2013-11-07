@@ -13,7 +13,6 @@ package fape.core.execution.model.statements;
 
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalInterval;
-import fape.core.execution.model.TimePoint;
 
 /**
  * temporarily qualified expression

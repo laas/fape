@@ -10,8 +10,6 @@
  */
 package fape.core.execution.model;
 
-import fape.core.execution.model.Reference;
-
 /**
  *
  * @author FD

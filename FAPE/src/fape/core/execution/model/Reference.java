@@ -12,7 +12,6 @@
 package fape.core.execution.model;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  *

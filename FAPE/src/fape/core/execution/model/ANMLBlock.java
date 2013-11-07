@@ -12,6 +12,7 @@ package fape.core.execution.model;
 
 import fape.core.execution.model.statements.Statement;
 import fape.core.execution.model.types.Type;
+
 import java.util.LinkedList;
 import java.util.List;
 

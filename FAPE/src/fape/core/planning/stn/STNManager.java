@@ -11,6 +11,7 @@
 package fape.core.planning.stn;
 
 import fape.exceptions.FAPEException;
+
 import java.util.LinkedList;
 import java.util.List;
 

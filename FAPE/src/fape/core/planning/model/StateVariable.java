@@ -16,5 +16,8 @@ package fape.core.planning.model;
  * @author FD
  */
 public class StateVariable {
-
+    /**
+     * fully qualifying name, list of nesting separated by dots
+     */
+    public String name;    
 }

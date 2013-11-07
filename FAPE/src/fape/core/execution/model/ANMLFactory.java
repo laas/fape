@@ -10,23 +10,16 @@
  */
 package fape.core.execution.model;
 
-import fape.core.execution.model.ANMLBlock;
-import fape.core.execution.model.Action;
-import fape.core.execution.model.ActionRef;
-import fape.core.execution.model.Function;
-import fape.core.execution.model.Instance;
-import fape.core.execution.model.Reference;
-import fape.core.execution.model.TemporalConstraint;
-import fape.core.execution.model.TemporalInterval;
 import fape.core.execution.model.statements.Assign;
 import fape.core.execution.model.statements.AssignFunctional;
 import fape.core.execution.model.statements.Equality;
 import fape.core.execution.model.statements.Statement;
 import fape.core.execution.model.types.Type;
 import fape.util.Pair;
+import org.antlr.runtime.tree.Tree;
+
 import java.util.LinkedList;
 import java.util.List;
-import org.antlr.runtime.tree.Tree;
 
 /**
  *
@@ -77,7 +70,7 @@ public class ANMLFactory {
         }
         Type tp = new Type();
         tp.name = child.getChild(0).getText();
-        tp.parent = child.getChild(2).getText();
+        tp.parent = child.getChild(2).getChild(0).getChild(0).getText();
         if (child.getChild(3).getChildCount() > 0) {
             Tree fluents = child.getChild(3).getChild(0).getChild(2);
             for (int i = 0; i < fluents.getChildCount(); i++) {

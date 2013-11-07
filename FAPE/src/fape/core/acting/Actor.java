@@ -11,12 +11,13 @@
 package fape.core.acting;
 
 import fape.core.execution.Executor;
-import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.ANMLBlock;
+import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+
 import java.util.LinkedList;
 import java.util.List;
 

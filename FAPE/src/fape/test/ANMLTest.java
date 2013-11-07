@@ -12,7 +12,6 @@ package fape.test;
 
 import fape.core.execution.model.ANMLFactory;
 import fape.core.execution.model.ANMLBlock;
-import gov.nasa.anml.Main;
 import java.io.IOException;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.Tree;
@@ -24,7 +23,7 @@ import org.antlr.runtime.tree.Tree;
 public class ANMLTest {
 
     public static void main(String[] args) throws RecognitionException, IOException {
-        Tree t = Main.getTree("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\dreamWorld.anml");
+        Tree t = gov.nasa.anml.Main.getTree("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream.anml");
         ANMLBlock b = ANMLFactory.Parse(t);
         int xx = 0;
     }

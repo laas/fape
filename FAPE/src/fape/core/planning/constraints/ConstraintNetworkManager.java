@@ -12,6 +12,7 @@
 package fape.core.planning.constraints;
 
 import fape.core.planning.constraints.entities.Constraint;
+
 import java.util.LinkedList;
 import java.util.List;
 

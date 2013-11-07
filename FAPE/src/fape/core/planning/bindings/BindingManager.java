@@ -12,8 +12,8 @@
 package fape.core.planning.bindings;
 
 import fape.core.planning.model.StateVariable;
-import fape.core.planning.stn.TemporalVariable;
 import fape.util.Pair;
+
 import java.util.LinkedList;
 import java.util.List;
 
