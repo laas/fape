@@ -16,6 +16,9 @@ package fape.core.planning.model;
  * @author FD
  */
 public class StateVariable {
+    public enum EStateVariableType{
+        BOOLEAN, FLOAT, INTEGER, ENUM
+    }
     /**
      * fully qualifying name, list of nesting separated by dots
      */

@@ -36,7 +36,8 @@ public class FAPE {
             a = new Actor();
             p = new Planner();
             e = new Executor();
-            l = new Listener(null, null, null, null);
+            // this is hack, we do not need listener for planner scenerio testing
+            //l = new Listener(null, null, null, null);
 
             a.bind(e, p);
             e.bind(a, l);
@@ -46,7 +47,7 @@ public class FAPE {
         }
 
         //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\dreamWorld.anml"));
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream.anml"));
 
         a.run();
     }

@@ -11,11 +11,13 @@
 package fape.core.transitions;
 
 import fape.core.execution.model.Instance;
+import fape.core.execution.model.statements.Statement;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableBoolean;
 import fape.core.planning.model.StateVariableFloat;
 import fape.core.planning.model.StateVariableInteger;
 import fape.core.planning.model.Type;
+import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -82,5 +84,20 @@ public class TransitionIO2Planning {
             ret.add(var);
         }
         return ret;
+    }
+    /**
+     * we take the statement on input and add it into the corresponding state variable
+     * @param s
+     * @param v 
+     * @param st 
+     */
+    public static void InsertStatementIntoVariable(Statement s, StateVariable v, State st){
+        if(v == null){
+            throw new FAPEException("Unknown state variable: "+s.GetVariableName());
+        }
+        //switch here based on the variable type
+        
+        
+        
     }
 }

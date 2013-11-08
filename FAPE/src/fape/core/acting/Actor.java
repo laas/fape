@@ -41,13 +41,13 @@ public class Actor {
     long progressStep = 100;
     Executor mExecutor;
     Planner mPlanner;
-    public LinkedList<ANMLBlock> newEventBuffer;
+    public LinkedList<ANMLBlock> newEventBuffer = new LinkedList<>();
 
     public enum EActorState {
 
         STOPPED, ACTING, ENDING
     }
-    EActorState mState = EActorState.STOPPED;
+    EActorState mState = EActorState.ACTING;
 
     /**
      * runs the acting agent
@@ -60,6 +60,7 @@ public class Actor {
                     end = true;
                 case STOPPED:
                     Thread.sleep(sleepTime);
+                    mState = EActorState.ACTING;
                     break;
                 case ACTING:
                     while (!newEventBuffer.isEmpty()) {
@@ -69,6 +70,7 @@ public class Actor {
                     mPlanner.Repair(new TimeAmount(repairTime));
                     List<Pair<AtomicAction, TimePoint>> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
                     mExecutor.executeAtomicActions(scheduledActions);
+                    mState = EActorState.STOPPED;
                     break;
             }
         }

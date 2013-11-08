@@ -11,27 +11,10 @@
 
 package fape.core.planning.model;
 
-import java.util.HashMap;
-
 /**
  *
  * @author FD
  */
-public class Type {
-    /**
-     * the variables that are nested in this type, the first string is the name,
-     * the second one is the name of its type
-     */
-    public HashMap<String, String> contents;
-    /**
-     * inherit from a parent type
-     * @param parent 
-     */
-    public Type(Type parent){
-        contents = new HashMap<>(parent.contents);
-    }
-    
-    public Type(){
-        contents = new HashMap<>();
-    }
+public class StateVariableEnum extends StateVariable {
+
 }

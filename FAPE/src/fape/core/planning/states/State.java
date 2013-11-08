@@ -23,12 +23,12 @@ import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
  */
 public class State {
 
-    TemporalDatabaseManager tdb;
-    STNManager tempoNet;
-    TaskNetworkManager taskNet;
-    ConstraintNetworkManager conNet;
-    BindingManager bindings;
-    CausalNetworkManager causalNet;
+    public TemporalDatabaseManager tdb;
+    public STNManager tempoNet;
+    public TaskNetworkManager taskNet;
+    public ConstraintNetworkManager conNet;
+    public BindingManager bindings;
+    public CausalNetworkManager causalNet;
 
     /**
      * this constructor is only for the initial state!! other states are constructed

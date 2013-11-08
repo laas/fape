@@ -21,4 +21,11 @@ import fape.core.execution.model.TemporalInterval;
 public class Statement {
     public TemporalInterval interval;
     public Reference leftRef;
+    public String GetVariableName(){
+        String st = "";
+        for(String s:leftRef.refs){
+            st += s + ".";
+        }
+        return st.substring(0, st.length()-1);
+    }
 }

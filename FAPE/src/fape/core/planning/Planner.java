@@ -13,6 +13,7 @@ package fape.core.planning;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.Instance;
+import fape.core.execution.model.statements.Statement;
 import fape.core.execution.model.types.Type;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.states.State;
@@ -53,6 +54,10 @@ public class Planner {
      */
     public void Init() {
         init = new State();
+    }
+    
+    public State GetCurrentState(){
+        return init;
     }
 
     /**
@@ -95,16 +100,29 @@ public class Planner {
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
 
+        // this a generic predecesor of all types
+        types.put("object", new fape.core.planning.model.Type());
+        
         //convert types
         for (Type t : pl.types) {
             types.put(t.name, TransitionIO2Planning.transformType(t, types));
         }
 
         for (Instance i : pl.instances) {
-            List<StateVariable> l = TransitionIO2Planning.decomposeInstance(null, null, null, types);
+            List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types);
             for(StateVariable v:l){
                 vars.put(v.name, v);
             }
         }
+        
+        for(Statement s : pl.statements){
+            TransitionIO2Planning.InsertStatementIntoVariable(s, vars.get(s.GetVariableName()), GetCurrentState());
+            //add the statement here
+            //s.
+        }
+        
+        //for()
+        
+        int xx = 0;
     }
 }
