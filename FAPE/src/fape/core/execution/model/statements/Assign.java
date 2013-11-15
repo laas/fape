@@ -18,8 +18,7 @@ import fape.core.execution.model.Reference;
  */
 public class Assign extends Statement {
 
-    public String operator;
-    public Reference from, to;
+    
 
     @Override
     public String toString() {

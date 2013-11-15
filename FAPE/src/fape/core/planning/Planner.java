@@ -55,8 +55,8 @@ public class Planner {
     public void Init() {
         init = new State();
     }
-    
-    public State GetCurrentState(){
+
+    public State GetCurrentState() {
         return init;
     }
 
@@ -102,27 +102,31 @@ public class Planner {
 
         // this a generic predecesor of all types
         types.put("object", new fape.core.planning.model.Type());
-        
+
         //convert types
         for (Type t : pl.types) {
             types.put(t.name, TransitionIO2Planning.transformType(t, types));
         }
 
+        //convert instances and create state variables from them
         for (Instance i : pl.instances) {
             List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types);
-            for(StateVariable v:l){
+            for (StateVariable v : l) {
                 vars.put(v.name, v);
             }
         }
-        
-        for(Statement s : pl.statements){
-            TransitionIO2Planning.InsertStatementIntoVariable(s, vars.get(s.GetVariableName()), GetCurrentState());
-            //add the statement here
-            //s.
+
+        //process statements
+        for (Statement s : pl.statements) {
+            if (!vars.containsKey(s.GetVariableName())) {
+                throw new FAPEException("Unknown state variable: " + s.GetVariableName());
+            }
+            TransitionIO2Planning.InsertStatementIntoState(s, vars.get(s.GetVariableName()), GetCurrentState());
         }
         
+        //process 
+
         //for()
-        
         int xx = 0;
     }
 }

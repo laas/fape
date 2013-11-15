@@ -15,5 +15,8 @@ package fape.core.planning.model;
  * @author FD
  */
 public class StateVariableBoolean extends StateVariable {
-    
+
+    public StateVariableBoolean() {
+        mType = EStateVariableType.BOOLEAN;
+    }
 }

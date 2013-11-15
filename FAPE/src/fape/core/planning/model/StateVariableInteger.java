@@ -15,5 +15,10 @@ package fape.core.planning.model;
  * @author FD
  */
 public class StateVariableInteger extends StateVariable {
-    float value;
+
+    int value;
+
+    public StateVariableInteger() {
+        mType = EStateVariableType.INTEGER;
+    }
 }

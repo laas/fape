@@ -18,5 +18,5 @@ import fape.core.planning.stn.TemporalVariable;
  * @author FD
  */
 public class TemporalEvent {
-    TemporalVariable start, end;
+    public TemporalVariable start, end;
 }

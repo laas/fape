@@ -11,13 +11,17 @@
 
 package fape.core.planning.bindings;
 
+import fape.core.planning.model.StateVariable;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author FD
  */
 public class ObjectVariable {
-
     
+    public List<StateVariable> domain = new LinkedList<>();
     
     private static int idCounter = 0;
     private int mID = idCounter++;

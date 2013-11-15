@@ -117,6 +117,7 @@ public class ANMLFactory {
     }
 
     private static List<Statement> parseStatements(Tree child) {
+        //System.out.println("Statement text: "+child.getText());
         List<Statement> ret = new LinkedList<>();
         //3 variants
         switch (child.getText()) {
@@ -132,14 +133,22 @@ public class ANMLFactory {
                 if (child.getChild(2).getText().equals("==")) {
                     rt.operator = "==";
                     rt.to = parseReference(child.getChild(4).getChild(0));
-                } else {
+                }else if(child.getChild(2).getText().equals(":produce")){
+                    rt.operator = ":produce";
+                }else if(child.getChild(2).getText().equals(":consume")){
+                    rt.operator = ":consume";
+                } else if(child.getChild(2).getText().equals(":=")){
                     rt.operator = ":=";
+                } else {
+                    throw new UnsupportedOperationException("Unknown operator: "+child.getChild(2).getText());
                 }
                 ret.add(rt);
                 break;
             }
             case "==": {
-                Equality rt = new Equality();
+                Assign rt = new Assign();
+                //Equality rt = new Equality();
+                rt.operator = "==";
                 rt.leftRef = parseReference(child.getChild(0));
                 rt.rightRef = parseReference(child.getChild(1));
                 ret.add(rt);

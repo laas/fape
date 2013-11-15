@@ -18,7 +18,7 @@ import fape.core.execution.model.Reference;
  */
 public class Equality extends Statement {
 
-    public Reference rightRef;
+    
 
     @Override
     public String toString() {

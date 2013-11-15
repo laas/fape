@@ -18,6 +18,5 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  * @author FD
  */
 public class TransitionEvent extends TemporalEvent {
-
-    StateVariableValue from, to;
+    public StateVariableValue from, to;
 }

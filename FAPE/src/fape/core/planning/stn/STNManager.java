@@ -40,6 +40,10 @@ public class STNManager {
     }
 
     public TemporalVariable getNewTemporalVariable() {
+        // allocate new space if we are running out of it
+        if(stn.capacity - 1 == stn.top){
+            stn = new STN(stn);
+        }
         TemporalVariable tv = new TemporalVariable();
         EnforceBefore(start, tv);
         EnforceBefore(tv, end);

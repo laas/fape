@@ -36,19 +36,22 @@ public class FAPE {
             a = new Actor();
             p = new Planner();
             e = new Executor();
-            // this is hack, we do not need listener for planner scenerio testing
+            // this is a hack, we do not need listener for planner scenerio testing
             //l = new Listener(null, null, null, null);
 
             a.bind(e, p);
             e.bind(a, l);
-            l.bind(e);
+            //l.bind(e);
         }catch(Exception ex){
             System.out.println("FAPE setup failed.");
+            throw ex;
         }
 
         //pushing the initial event
         a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream.anml"));
 
+        p.Init();
+        
         a.run();
     }
 }

@@ -11,6 +11,7 @@
 
 package fape.core.planning.temporaldatabases;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -18,5 +19,11 @@ import java.util.List;
  * @author FD
  */
 public class TemporalDatabaseManager {
-    List<TemporalDatabase> vars;
+    List<TemporalDatabase> vars = new LinkedList<>();
+    public TemporalDatabase GetNewDatabase(){
+        TemporalDatabase db = new TemporalDatabase();
+        vars.add(db);
+        return db;
+    }
+    
 }

@@ -18,5 +18,5 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  * @author FD
  */
 public class ConsumeEvent extends TemporalEvent {
-    double howMuch;
+    public double howMuch;
 }

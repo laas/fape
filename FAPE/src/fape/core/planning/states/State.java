@@ -35,6 +35,7 @@ public class State {
      * from from the existing states
      */
     public State(){
+        tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
         conNet = new ConstraintNetworkManager();

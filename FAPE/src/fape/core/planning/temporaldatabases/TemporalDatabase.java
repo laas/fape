@@ -13,6 +13,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import java.util.LinkedList;
 
 import java.util.List;
 
@@ -21,6 +22,6 @@ import java.util.List;
  * @author FD
  */
 public class TemporalDatabase {
-    ObjectVariable var;
-    List<TemporalEvent> events;
+    public ObjectVariable var;
+    public List<TemporalEvent> events = new LinkedList<>();
 }
