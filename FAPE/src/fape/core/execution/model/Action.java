@@ -20,7 +20,7 @@ import java.util.List;
  *
  * @author FD
  */
-class Action {
+public class Action {
 
     public String name;
     public List<Instance> params = new LinkedList<>(); //typed parameters

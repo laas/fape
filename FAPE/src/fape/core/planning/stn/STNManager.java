@@ -29,6 +29,8 @@ public class STNManager {
         STN.precalc_inic();
         start = new TemporalVariable(); //0
         end = new TemporalVariable(); //1
+        stn.add_v();
+        stn.add_v();
         if (start.getID() != 0) {
             throw new FAPEException("STN: Broken indexing.");
         }
@@ -41,10 +43,14 @@ public class STNManager {
 
     public TemporalVariable getNewTemporalVariable() {
         // allocate new space if we are running out of it
-        if(stn.capacity - 1 == stn.top){
+        /*if(stn.capacity - 1 == stn.top){
             stn = new STN(stn);
-        }
+        }*/
         TemporalVariable tv = new TemporalVariable();
+        int test = stn.add_v();
+        if(tv.getID() != test){
+            throw new UnsupportedOperationException("Broken STN indexing.");
+        }
         EnforceBefore(start, tv);
         EnforceBefore(tv, end);
         return tv;

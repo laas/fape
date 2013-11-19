@@ -75,7 +75,7 @@ class STN {
      * size of increment
      */
     public static int inf, sup, inc;
-    static int precalc[][], precalc_size = 1000;
+    static int precalc[][], precalc_size = 10000;
 
     /**
      * returns makespan
@@ -220,7 +220,11 @@ class STN {
         if (var1 < var2) {
             return (-ga(var2, var1));
         } else {
-            return edge_b[STN.precalc[var1][var2]];
+            try {
+                return edge_b[STN.precalc[var1][var2]];
+            } catch (Exception e) {
+                throw new UnsupportedClassVersionError();
+            }
         }
     }
 

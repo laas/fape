@@ -19,5 +19,5 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  * @author FD
  */
 public class PersistenceEvent extends TemporalEvent {
-    public StateVariableValue v;
+    public StateVariableValue value;
 }

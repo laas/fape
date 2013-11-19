@@ -53,9 +53,8 @@ public class ANMLFactory {
         //some postprocessing here
 
         //get the seed action if any, to get new decompositions
-        Action seed = null;
         for (Action a : b.actions) {
-            if (a.name.equals("Seed")) {
+            if (a.name.startsWith("Seed")) {
                 for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
                     b.actionsForTaskNetwork.addAll(p.value1);
                 }

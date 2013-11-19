@@ -17,8 +17,10 @@ package fape.core.planning.stn;
 public class TemporalVariable {
 
     private static int idCounter = 0;
-    private int mID = idCounter++;
+    private final int mID = idCounter++;
 
+    
+    
     @Override
     public boolean equals(Object obj) {
         return mID == ((TemporalVariable) (obj)).mID;

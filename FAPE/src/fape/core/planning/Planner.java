@@ -11,10 +11,13 @@
 package fape.core.planning;
 
 import fape.core.execution.model.ANMLBlock;
+import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.statements.Statement;
 import fape.core.execution.model.types.Type;
+import fape.core.planning.model.AbstractAction;
+import fape.core.planning.model.Action;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.states.State;
 import fape.core.transitions.TransitionIO2Planning;
@@ -37,6 +40,7 @@ public class Planner {
     // a list of types keyed by its name
     public HashMap<String, fape.core.planning.model.Type> types = new HashMap<>();
     public HashMap<String, StateVariable> vars = new HashMap<>();
+    public HashMap<String, AbstractAction> actions = new HashMap<>();
 
     public enum EPlanState {
 
@@ -100,6 +104,8 @@ public class Planner {
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
 
+        State st = GetCurrentState();
+        
         // this a generic predecesor of all types
         types.put("object", new fape.core.planning.model.Type());
 
@@ -121,11 +127,24 @@ public class Planner {
             if (!vars.containsKey(s.GetVariableName())) {
                 throw new FAPEException("Unknown state variable: " + s.GetVariableName());
             }
-            TransitionIO2Planning.InsertStatementIntoState(s, vars.get(s.GetVariableName()), GetCurrentState());
+            TransitionIO2Planning.InsertStatementIntoState(s, vars.get(s.GetVariableName()), st);
         }
         
-        //process 
+        //process actions
+        for (fape.core.execution.model.Action a:pl.actions){
+            if(actions.containsKey(a.name)){
+                throw new FAPEException("Overriding action abstraction: " + a.name);
+            }
+            AbstractAction act = TransitionIO2Planning.TransformAction(a);
+            actions.put(act.name, act);
+        }
 
+        //process seeds
+        for(ActionRef ref: pl.actionsForTaskNetwork){
+            int xx = 0;
+        }
+        
+        
         //for()
         int xx = 0;
     }

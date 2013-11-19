@@ -10,9 +10,14 @@
  */
 package fape.core.transitions;
 
+import fape.core.execution.model.Action;
+import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
+import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
 import fape.core.planning.bindings.ObjectVariable;
+import fape.core.planning.model.AbstractAction;
+import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableBoolean;
 import fape.core.planning.model.StateVariableEnum;
@@ -31,6 +36,7 @@ import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
 import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -105,31 +111,11 @@ public class TransitionIO2Planning {
         return ret;
     }
 
-    /**
-     * we take the statement on input and add it into the corresponding state
-     * variable
-     *
-     * @param s
-     * @param v
-     * @param st
-     */
-    public static void InsertStatementIntoState(Statement s, StateVariable v, State st) {
-        if (v == null) {
-            throw new FAPEException("Unknown state variable: " + s.GetVariableName());
-        }
-        //switch here based on the statement type
-
-        // create a new object variable
-        ObjectVariable var = st.bindings.getNewObjectVariable();
-        var.domain.add(v);
-
-        // create a temporal database for this variable
-        TemporalDatabase db = st.tdb.GetNewDatabase();
-        db.var = var;
-
-        // create a new event for the termporal database that corresponds to the
-        // statement
+    public static TemporalEvent ProduceTemporalEvent(Statement s){
         TemporalEvent ev = null;
+        if(s.operator == null){
+            int xx = 0;
+        }
         switch (s.operator) {
             case ":produce":
                 ProduceEvent eve = new ProduceEvent();
@@ -169,8 +155,8 @@ public class TransitionIO2Planning {
                     } else {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
-                        eve6.v = new StateVariableValue();
-                        eve6.v.value = s.leftRef.toString();
+                        eve6.value = new StateVariableValue();
+                        eve6.value.value = s.rightRef.toString();
                         ev = eve6;
                     }
                 }
@@ -178,16 +164,61 @@ public class TransitionIO2Planning {
             default:
                 throw new UnsupportedOperationException("Unknown operator.");
         }
-        TemporalVariable vs = st.tempoNet.getNewTemporalVariable(), ve = st.tempoNet.getNewTemporalVariable();
-        ev.start = vs;
-        ev.end = ve;
+        return ev;
+    }
+    
+    public static void AddTimePoints(TemporalEvent ev, Statement s, State state){
+        TemporalVariable vs = state.tempoNet.getNewTemporalVariable(), ve = state.tempoNet.getNewTemporalVariable();
         
         //TODO: include some other constraints on those two ...
-        st.tempoNet.EnforceBefore(vs, ve);
+        ev.start = vs;
+        ev.end = ve;                
+        
+        state.tempoNet.EnforceBefore(vs, ve);
+    }
+    
+    /**
+     * we take the statement on input and add it into the corresponding state
+     * variable
+     *
+     * @param s
+     * @param v
+     * @param st
+     */
+    public static void InsertStatementIntoState(Statement s, StateVariable v, State st) {
+        if (v == null) {
+            throw new FAPEException("Unknown state variable: " + s.GetVariableName());
+        }
+        //switch here based on the statement type
+
+        // create a new object variable
+        ObjectVariable var = st.bindings.getNewObjectVariable();
+        var.domain.add(v);
+
+        // create a temporal database for this variable
+        TemporalDatabase db = st.tdb.GetNewDatabase();
+        db.var = var;
+
+        // create a new event for the termporal database that corresponds to the
+        // statement
+        TemporalEvent ev = ProduceTemporalEvent(s);        
+        AddTimePoints(ev, s, st);
         
         //add the event to the database
         db.events.add(ev);
         
 
+    }
+
+    public static AbstractAction TransformAction(Action a) {
+        AbstractAction act = new AbstractAction();
+        act.name = a.name;
+        for(Statement s:a.statements){
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef);
+            act.events.add(ev);
+        }
+        act.params = a.params;
+        act.strongDecompositions = a.strongDecompositions;
+        return act;
     }
 }

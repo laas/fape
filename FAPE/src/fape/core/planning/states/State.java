@@ -10,6 +10,7 @@
  */
 package fape.core.planning.states;
 
+import fape.core.execution.model.ActionRef;
 import fape.core.planning.bindings.BindingManager;
 import fape.core.planning.causalities.CausalNetworkManager;
 import fape.core.planning.constraints.ConstraintNetworkManager;
