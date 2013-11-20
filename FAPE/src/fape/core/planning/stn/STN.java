@@ -105,8 +105,6 @@ class STN {
             }
         }
 
-
-
     }
 
     /**
@@ -220,11 +218,7 @@ class STN {
         if (var1 < var2) {
             return (-ga(var2, var1));
         } else {
-            try {
-                return edge_b[STN.precalc[var1][var2]];
-            } catch (Exception e) {
-                throw new UnsupportedClassVersionError();
-            }
+            return edge_b[STN.precalc[var1][var2]];
         }
     }
 

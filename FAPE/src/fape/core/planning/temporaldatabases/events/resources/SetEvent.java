@@ -9,20 +9,14 @@
  * permission of the author.
  */
 
-package fape.core.planning.model;
+package fape.core.planning.temporaldatabases.events.resources;
+
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
 /**
  *
  * @author FD
  */
-public class StateVariable {
-    public enum EStateVariableType{
-        BOOLEAN, FLOAT, INTEGER, ENUM
-    }
-    public EStateVariableType mType;
-    /**
-     * fully qualifying name, list of nesting separated by dots
-     */
-    public String name;    
-    public String type;
+public class SetEvent extends TemporalEvent{
+    public double howMuch;
 }

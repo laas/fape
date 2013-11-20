@@ -73,6 +73,8 @@ public class TransitionIO2Planning {
      * taking an instance of some type, decompose it into state variables
      *
      * @param qualifyingName
+     * @param name
+     * @param type
      * @param types
      * @return
      */
@@ -87,6 +89,7 @@ public class TransitionIO2Planning {
             if (!"".equals(qualifyingName)) {
                 StateVariableEnum var = new StateVariableEnum();
                 var.name = qualifyingName + name;
+                var.type = type;
                 ret.add(var);
             }
 
@@ -106,6 +109,7 @@ public class TransitionIO2Planning {
                     throw new FAPEException("Error: Unknown type: " + type);
             }
             var.name = qualifyingName + name;
+            var.type = type;
             ret.add(var);
         }
         return ret;
@@ -213,11 +217,23 @@ public class TransitionIO2Planning {
     public static AbstractAction TransformAction(Action a) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
+        act.params = a.params;
         for(Statement s:a.statements){
             AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef);
             act.events.add(ev);
-        }
-        act.params = a.params;
+            // now lets get all unmentioned parameters and add them from events to parameters
+            /*String paramName = s.leftRef.refs.getFirst();
+            boolean found = false;
+            for(Instance i:act.params){
+                if(i.name.equals(paramName)){
+                    found = true;
+                }
+            }
+            if(!found){
+                Instance i = new Instance();
+                i.name = paramName;
+            }*/
+        }        
         act.strongDecompositions = a.strongDecompositions;
         return act;
     }

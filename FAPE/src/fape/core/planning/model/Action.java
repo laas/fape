@@ -14,6 +14,7 @@ package fape.core.planning.model;
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.TemporalConstraint;
 import fape.core.planning.bindings.ObjectVariable;
+import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.util.Pair;
 import java.util.LinkedList;
@@ -24,10 +25,12 @@ import java.util.List;
  * @author FD
  */
 public class Action {
-    String name;
-    List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
-    List<TemporalEvent> events; //all variables from the events map to parameters
-    List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinements;
+    public float duration = -1.0f;
+    public TemporalVariable start, end;
+    public String name;
+    public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
+    public List<TemporalEvent> events; //all variables from the events map to parameters
+    public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinements;
     public boolean IsRefinable(){
         return refinements != null;
     }

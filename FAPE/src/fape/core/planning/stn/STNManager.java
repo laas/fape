@@ -41,14 +41,24 @@ public class STNManager {
         stn.eless(a.getID(), b.getID());
     }
 
+    public final boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) {
+        if (stn.edge_consistent(a.getID(), b.getID(), min, max)) {
+            stn.propagate(a.getID(), b.getID(), min, max);
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
     public TemporalVariable getNewTemporalVariable() {
         // allocate new space if we are running out of it
         /*if(stn.capacity - 1 == stn.top){
-            stn = new STN(stn);
-        }*/
+         stn = new STN(stn);
+         }*/
         TemporalVariable tv = new TemporalVariable();
         int test = stn.add_v();
-        if(tv.getID() != test){
+        if (tv.getID() != test) {
             throw new UnsupportedOperationException("Broken STN indexing.");
         }
         EnforceBefore(start, tv);
