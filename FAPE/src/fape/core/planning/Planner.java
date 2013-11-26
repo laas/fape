@@ -77,7 +77,10 @@ public class Planner {
      * @param forHowLong
      */
     public void Repair(TimeAmount forHowLong) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        // first start by checking all the consistencies and propagating necessary constraints
+        // those are irreversible operations, we do not make any decisions on them
+        State st = GetCurrentState();
+        st.bindings.PropagateNecessary(st);
     }
 
     /**
@@ -164,30 +167,8 @@ public class Planner {
             if (!success) {
                 throw new FAPEException("The initial temporal network is inconsistent.");
             }
-            // get the action parameters
-            /*for (int i = 0; i < abs.params.size(); i++) {
-             Instance in = abs.params.get(i);
-             Reference re = ref.args.get(i);
-             ObjectVariable obj = st.bindings.getNewObjectVariable();
-             if (re.refs.getFirst().endsWith("_")) {
-             // this is an unbinded reference, we need to add all possible state variables     
-             String searchStr = "";
-             if (re.toString().contains(".")) {
-             searchStr = re.toString().split("_")[1];
-             }
-             //in.
-             for (String str : vars.keySet()) {
-             String type = vars.get(str).type;
-             if ((str.endsWith(searchStr)||searchStr.equals("")) && in.type.equals(type)) {
-             obj.domain.add(vars.get(str));
-             }
-             }
-             } else {
-             // this is binded to a constant - one specific state variable
-             obj.domain.add(vars.get(re.toString()));
-             }
-             act.parameters.add(obj);
-             }*/
+            
+            //set up the events
             for (AbstractTemporalEvent ev : abs.events) {
                 
                 TemporalEvent event = ev.event.cc();                               
@@ -235,10 +216,12 @@ public class Planner {
                 TemporalDatabase db = st.tdb.GetNewDatabase();
                 db.var = obj;
                 event.objectVar = obj;
+                //now we add the object variable also into the paramaters of the action
+                act.parameters.add(obj);
                 //we add the event into the database and the action
                 act.events.add(event);
                 db.events.add(event);
-            }
+            }//event transformation end
             
             //now we need to propagate the binding constraints
             List<Pair<Integer,Integer>> binds = abs.GetLocalBindings();
@@ -246,12 +229,13 @@ public class Planner {
                 st.bindings.AddBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
             }
             
+            //now we need to add the refinements 
+            act.refinementOptions = abs.strongDecompositions;
             
-            int xx = 0;
+            //lets add the action into the task network
+            st.taskNet.AddSeed(act);
+            
         }
-
-        //for()
-        int xx = 0;
     }
 }
 

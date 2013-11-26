@@ -30,7 +30,7 @@ public class ObjectVariable {
     }*/
     
     private static int idCounter = 0;
-    private final int mID = idCounter++;
+    public final int mID = idCounter++;
 
     @Override
     public boolean equals(Object obj) {

@@ -12,7 +12,9 @@
 package fape.core.planning.bindings;
 
 import fape.core.planning.model.StateVariable;
+import fape.core.planning.states.State;
 import fape.util.Pair;
+import fape.util.UnionFind;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -23,12 +25,17 @@ import java.util.List;
  */
 public class BindingManager {
     List<Pair<ObjectVariable, List<StateVariable> > > bindings = new LinkedList<>();
-    List<Pair<ObjectVariable, ObjectVariable>> equalityBindings = new LinkedList<>();
+    //List<Pair<ObjectVariable, ObjectVariable>> equalityBindings = new LinkedList<>();
+    UnionFind uf = new UnionFind();
     
     public void AddBinding(ObjectVariable o1, ObjectVariable o2){
-        equalityBindings.add(new Pair(o1,o2));
+        uf.Union(o1.mID, o2.mID);
     }
     public ObjectVariable getNewObjectVariable(){
         return new ObjectVariable();
+    }
+
+    public void PropagateNecessary(State st) {
+        //this is done on the fly by the U-F structure
     }
 }

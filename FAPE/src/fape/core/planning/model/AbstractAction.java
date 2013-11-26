@@ -36,7 +36,7 @@ public class AbstractAction {
     }
 
     /**
-     * we use relative references here
+     * we use relative references here .. if they share the same variable, they are tied together by the same predecesor constraint
      * @return 
      */
     public List<Pair<Integer, Integer>> GetLocalBindings() {

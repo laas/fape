@@ -11,10 +11,15 @@
 
 package fape.core.planning.tasknetworks;
 
+import fape.core.planning.model.Action;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.util.Pair;
+import java.util.List;
+
 /**
  *
  * @author FD
  */
 class TaskNetwork {
-    
+    List<Action> roots;
 }

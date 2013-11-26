@@ -11,10 +11,16 @@
 
 package fape.core.planning.tasknetworks;
 
+import fape.core.planning.model.Action;
+
 /**
  *
  * @author FD
  */
 public class TaskNetworkManager {
     TaskNetwork net = new TaskNetwork();
+
+    public void AddSeed(Action act) {
+        net.roots.add(act);
+    }
 }

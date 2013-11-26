@@ -30,9 +30,9 @@ public class Action {
     public String name;
     public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
     public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
-    public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinements;
+    public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions;
     public boolean IsRefinable(){
-        return refinements != null;
+        return refinementOptions != null;
     }
     List<Action> decomposition;
     
