@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases.events.propositional;
 
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 
 /**
  *
@@ -19,4 +20,12 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class TransitionEvent extends TemporalEvent {
     public StateVariableValue from, to;
+
+    @Override
+    public TemporalEvent cc() {
+        TransitionEvent ret = new TransitionEvent();
+        ret.from = from;
+        ret.to = to;
+        return ret;
+    }
 }

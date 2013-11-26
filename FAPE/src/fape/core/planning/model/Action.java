@@ -29,10 +29,26 @@ public class Action {
     public TemporalVariable start, end;
     public String name;
     public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
-    public List<TemporalEvent> events; //all variables from the events map to parameters
+    public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinements;
     public boolean IsRefinable(){
         return refinements != null;
     }
     List<Action> decomposition;
+    
+    /*
+    public void AddBindingConstraintsBetweenMyEvents(){
+        for(int i = 0; i < events.size(); i++){
+            for(int j = i + 1; j < events.size(); j++){
+                
+                TemporalEvent e1 = events.get(i), e2 = events.get(j);
+                
+            }
+        }
+        for(TemporalEvent e1:events){
+            for(TemporalEvent e2:events){
+                if(e1.objectVar.)
+            }
+        }
+    }*/
 }

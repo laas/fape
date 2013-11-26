@@ -78,18 +78,19 @@ public class TransitionIO2Planning {
      * @param types
      * @return
      */
-    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types) {
+    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types, String rootType) {
         LinkedList<fape.core.planning.model.StateVariable> ret = new LinkedList<>();
         if (types.containsKey(type)) {
             Type tp = types.get(type);
             for (String nm : tp.contents.keySet()) {
-                ret.addAll(decomposeInstance(qualifyingName + name + ".", nm, tp.contents.get(nm), types));
+                ret.addAll(decomposeInstance(qualifyingName + name + ".", nm, tp.contents.get(nm), types, rootType));
             }
             // we yet need to add a type of itself, if this is not the top level
             if (!"".equals(qualifyingName)) {
                 StateVariableEnum var = new StateVariableEnum();
                 var.name = qualifyingName + name;
                 var.type = type;
+                var.typeDerivationName = rootType + qualifyingName.substring(qualifyingName.indexOf(".")) + name;
                 ret.add(var);
             }
 
@@ -110,14 +111,15 @@ public class TransitionIO2Planning {
             }
             var.name = qualifyingName + name;
             var.type = type;
+            var.typeDerivationName = rootType + qualifyingName.substring(qualifyingName.indexOf(".")) + name;
             ret.add(var);
         }
         return ret;
     }
 
-    public static TemporalEvent ProduceTemporalEvent(Statement s){
+    public static TemporalEvent ProduceTemporalEvent(Statement s) {
         TemporalEvent ev = null;
-        if(s.operator == null){
+        if (s.operator == null) {
             int xx = 0;
         }
         switch (s.operator) {
@@ -170,17 +172,17 @@ public class TransitionIO2Planning {
         }
         return ev;
     }
-    
-    public static void AddTimePoints(TemporalEvent ev, Statement s, State state){
+
+    public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
         TemporalVariable vs = state.tempoNet.getNewTemporalVariable(), ve = state.tempoNet.getNewTemporalVariable();
-        
+
         //TODO: include some other constraints on those two ...
         ev.start = vs;
-        ev.end = ve;                
-        
+        ev.end = ve;
+
         state.tempoNet.EnforceBefore(vs, ve);
     }
-    
+
     /**
      * we take the statement on input and add it into the corresponding state
      * variable
@@ -205,12 +207,11 @@ public class TransitionIO2Planning {
 
         // create a new event for the termporal database that corresponds to the
         // statement
-        TemporalEvent ev = ProduceTemporalEvent(s);        
+        TemporalEvent ev = ProduceTemporalEvent(s);
         AddTimePoints(ev, s, st);
-        
+
         //add the event to the database
         db.events.add(ev);
-        
 
     }
 
@@ -218,22 +219,22 @@ public class TransitionIO2Planning {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
-        for(Statement s:a.statements){
+        for (Statement s : a.statements) {
             AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();
-            boolean found = false;
-            for(Instance i:act.params){
-                if(i.name.equals(paramName)){
-                    found = true;
-                }
-            }
-            if(!found){
-                Instance i = new Instance();
-                i.name = paramName;
-            }*/
-        }        
+             boolean found = false;
+             for(Instance i:act.params){
+             if(i.name.equals(paramName)){
+             found = true;
+             }
+             }
+             if(!found){
+             Instance i = new Instance();
+             i.name = paramName;
+             }*/
+        }
         act.strongDecompositions = a.strongDecompositions;
         return act;
     }

@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.temporaldatabases.events.resources;
 
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -18,5 +17,13 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  * @author FD
  */
 public class ProduceEvent extends TemporalEvent {
+
     public double howMuch;
+
+    @Override
+    public TemporalEvent cc() {
+        ProduceEvent ret = new ProduceEvent();
+        ret.howMuch = howMuch;
+        return ret;
+    }
 }

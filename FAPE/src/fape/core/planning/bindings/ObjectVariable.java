@@ -23,8 +23,14 @@ public class ObjectVariable {
     
     public List<StateVariable> domain = new LinkedList<>();
     
+    /*public String typeDerivation;
+    
+    public ObjectVariable(String typeDerivation_){
+        typeDerivation = typeDerivation_;
+    }*/
+    
     private static int idCounter = 0;
-    private int mID = idCounter++;
+    private final int mID = idCounter++;
 
     @Override
     public boolean equals(Object obj) {

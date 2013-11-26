@@ -19,6 +19,7 @@ public class StateVariable {
     public enum EStateVariableType{
         BOOLEAN, FLOAT, INTEGER, ENUM
     }
+    public String typeDerivationName; // e.g. Robot.mLocation ...
     public EStateVariableType mType;
     /**
      * fully qualifying name, list of nesting separated by dots

@@ -13,6 +13,7 @@ package fape.core.planning.model;
 
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalInterval;
+import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
 /**
@@ -30,4 +31,6 @@ public class AbstractTemporalEvent {
         interval = interval_;
         stateVariableReference = leftRef;
     }
+    
+    
 }

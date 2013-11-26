@@ -23,6 +23,11 @@ import java.util.List;
  */
 public class BindingManager {
     List<Pair<ObjectVariable, List<StateVariable> > > bindings = new LinkedList<>();
+    List<Pair<ObjectVariable, ObjectVariable>> equalityBindings = new LinkedList<>();
+    
+    public void AddBinding(ObjectVariable o1, ObjectVariable o2){
+        equalityBindings.add(new Pair(o1,o2));
+    }
     public ObjectVariable getNewObjectVariable(){
         return new ObjectVariable();
     }

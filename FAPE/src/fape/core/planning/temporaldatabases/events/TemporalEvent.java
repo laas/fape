@@ -11,6 +11,7 @@
 
 package fape.core.planning.temporaldatabases.events;
 
+import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.stn.TemporalVariable;
 
 /**
@@ -18,5 +19,14 @@ import fape.core.planning.stn.TemporalVariable;
  * @author FD
  */
 public abstract class TemporalEvent {
+    public ObjectVariable objectVar;
+    public enum ETemporalEventType{
+        CONSUME, PRODUCE, SET, PERSIST, TRANSITION
+    }
+    
     public TemporalVariable start, end;
+    
+    //public ObjectVariable objectVar;
+    
+    public abstract TemporalEvent cc();
 }

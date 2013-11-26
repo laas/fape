@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.temporaldatabases.events.propositional;
 
 import fape.core.planning.model.StateVariableValue;
@@ -19,5 +18,13 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  * @author FD
  */
 public class PersistenceEvent extends TemporalEvent {
+
     public StateVariableValue value;
+
+    @Override
+    public TemporalEvent cc() {
+        PersistenceEvent ret = new PersistenceEvent();
+        ret.value = value;
+        return ret;
+    }
 }

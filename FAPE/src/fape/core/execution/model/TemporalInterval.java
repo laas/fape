@@ -10,6 +10,10 @@
  */
 package fape.core.execution.model;
 
+import fape.core.planning.stn.TemporalVariable;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.exceptions.FAPEException;
+
 /**
  *
  * @author FD
@@ -21,5 +25,30 @@ public class TemporalInterval {
     @Override
     public String toString() {
         return "[" + e + ", " + s + "]";
+    }
+    
+    public void AssignTemporalContext(TemporalEvent ev, TemporalVariable start, TemporalVariable end){
+        switch (s) {
+            case "TStart":
+                ev.start = start;
+                break;
+            case "TEnd":
+                ev.start = end;
+                break;
+            default:
+                throw new FAPEException("Unsupported temporal annotation.");
+        }
+        
+        switch (e) {
+            case "TStart":
+                ev.end = start;
+                break;
+            case "TEnd":
+                ev.end = end;
+                break;
+            default:
+                throw new FAPEException("Unsupported temporal annotation.");
+        }
+            
     }
 }

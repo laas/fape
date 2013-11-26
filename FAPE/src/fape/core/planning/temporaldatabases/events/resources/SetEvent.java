@@ -19,4 +19,12 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class SetEvent extends TemporalEvent{
     public double howMuch;
+
+    @Override
+    public TemporalEvent cc() {
+        SetEvent ret = new SetEvent();
+        ret.howMuch = howMuch;
+        return ret;
+    }
+    
 }
