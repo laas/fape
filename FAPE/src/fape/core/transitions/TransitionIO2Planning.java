@@ -32,6 +32,7 @@ import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
@@ -167,6 +168,34 @@ public class TransitionIO2Planning {
                     }
                 }
                 break;
+            case ">=": {
+                ConditionEvent eve6 = new ConditionEvent();
+                eve6.operator = s.operator;
+                eve6.value = s.value;
+                ev = eve6;
+                break;
+            }
+            case "<=": {
+                ConditionEvent eve6 = new ConditionEvent();
+                eve6.operator = s.operator;
+                eve6.value = s.value;
+                ev = eve6;
+                break;
+            }
+            case ">": {
+                ConditionEvent eve6 = new ConditionEvent();
+                eve6.operator = s.operator;
+                eve6.value = s.value;
+                ev = eve6;
+                break;
+            }
+            case "<": {
+                ConditionEvent eve6 = new ConditionEvent();
+                eve6.operator = s.operator;
+                eve6.value = s.value;
+                ev = eve6;
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unknown operator.");
         }
@@ -211,7 +240,7 @@ public class TransitionIO2Planning {
         AddTimePoints(ev, s, st);
 
         //add the event to the database
-        db.events.add(ev);
+        db.AddEvent(ev);
 
     }
 

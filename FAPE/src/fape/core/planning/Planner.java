@@ -80,7 +80,13 @@ public class Planner {
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         State st = GetCurrentState();
+        //
         st.bindings.PropagateNecessary(st);
+        st.tdb.PropagateNecessary(st);
+        
+        
+        
+        
     }
 
     /**
@@ -220,13 +226,13 @@ public class Planner {
                 act.parameters.add(obj);
                 //we add the event into the database and the action
                 act.events.add(event);
-                db.events.add(event);
+                db.AddEvent(event);
             }//event transformation end
             
             //now we need to propagate the binding constraints
             List<Pair<Integer,Integer>> binds = abs.GetLocalBindings();
             for(Pair<Integer,Integer> p:binds){
-                st.bindings.AddBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
+                st.bindings.AddCommonPredecesorBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
             }
             
             //now we need to add the refinements 
@@ -234,7 +240,6 @@ public class Planner {
             
             //lets add the action into the task network
             st.taskNet.AddSeed(act);
-            
         }
     }
 }

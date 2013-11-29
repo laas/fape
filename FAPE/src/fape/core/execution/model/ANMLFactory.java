@@ -51,7 +51,6 @@ public class ANMLFactory {
         }
 
         //some postprocessing here
-
         //get the seed action if any, to get new decompositions
         for (Action a : b.actions) {
             if (a.name.startsWith("Seed")) {
@@ -104,9 +103,6 @@ public class ANMLFactory {
         }
 
         //now do the post-processing, we get statemenets that correspond to the duration and the soft and weak decomponsititons
-
-
-
         //what more to parse? TODO
         // - duration
         // - hard refinement
@@ -132,14 +128,14 @@ public class ANMLFactory {
                 if (child.getChild(2).getText().equals("==")) {
                     rt.operator = "==";
                     rt.to = parseReference(child.getChild(4).getChild(0));
-                }else if(child.getChild(2).getText().equals(":produce")){
+                } else if (child.getChild(2).getText().equals(":produce")) {
                     rt.operator = ":produce";
-                }else if(child.getChild(2).getText().equals(":consume")){
+                } else if (child.getChild(2).getText().equals(":consume")) {
                     rt.operator = ":consume";
-                } else if(child.getChild(2).getText().equals(":=")){
+                } else if (child.getChild(2).getText().equals(":=")) {
                     rt.operator = ":=";
                 } else {
-                    throw new UnsupportedOperationException("Unknown operator: "+child.getChild(2).getText());
+                    throw new UnsupportedOperationException("Unknown operator: " + child.getChild(2).getText());
                 }
                 ret.add(rt);
                 break;
@@ -171,6 +167,14 @@ public class ANMLFactory {
                 af.label = child.getChild(0).getChild(1).getText();
                 af.func = parseFunction(child.getChild(1));
                 ret.add(af);
+                break;
+            }
+            case "TimedExpr": {
+                Assign rt = new Assign();
+                rt.operator = child.getChild(1).getText();
+                rt.leftRef = parseReference(child.getChild(1).getChild(0));
+                rt.value = Float.parseFloat(child.getChild(1).getChild(1).getText());
+                ret.add(rt);
                 break;
             }
             default:

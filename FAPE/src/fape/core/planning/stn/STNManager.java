@@ -23,7 +23,7 @@ public class STNManager {
 
     STN stn = new STN();
     TemporalVariable start, end; //global start and end of the world   
-    List<TemporalVariable> variables = new LinkedList<>();
+    //List<TemporalVariable> variables = new LinkedList<>();
 
     public STNManager() {
         STN.precalc_inic();

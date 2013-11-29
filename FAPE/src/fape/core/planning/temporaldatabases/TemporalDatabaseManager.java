@@ -8,9 +8,9 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.states.State;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,11 +19,22 @@ import java.util.List;
  * @author FD
  */
 public class TemporalDatabaseManager {
+
     List<TemporalDatabase> vars = new LinkedList<>();
-    public TemporalDatabase GetNewDatabase(){
+
+    public TemporalDatabase GetNewDatabase() {
         TemporalDatabase db = new TemporalDatabase();
         vars.add(db);
         return db;
     }
-    
+
+    /**
+     * merges the temporal databases as needed
+     *
+     * @param st
+     */
+    public void PropagateNecessary(State st) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

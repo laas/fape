@@ -24,12 +24,15 @@ import java.util.List;
  * @author FD
  */
 public class BindingManager {
-    List<Pair<ObjectVariable, List<StateVariable> > > bindings = new LinkedList<>();
-    //List<Pair<ObjectVariable, ObjectVariable>> equalityBindings = new LinkedList<>();
-    UnionFind uf = new UnionFind();
+    //List<Pair<ObjectVariable, List<StateVariable> > > bindings = new LinkedList<>();
+    //List<Pair<ObjectVariable, ObjectVariable>> commonPredecesorBindings = new LinkedList<>();
+    UnionFind equalityBinding = new UnionFind(), commonPredecesorBinding = new UnionFind();
     
+    public void AddCommonPredecesorBinding(ObjectVariable o1, ObjectVariable o2){
+       commonPredecesorBinding.Union(o1.mID, o2.mID);
+    }
     public void AddBinding(ObjectVariable o1, ObjectVariable o2){
-        uf.Union(o1.mID, o2.mID);
+        equalityBinding.Union(o1.mID, o2.mID);
     }
     public ObjectVariable getNewObjectVariable(){
         return new ObjectVariable();

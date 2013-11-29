@@ -27,9 +27,9 @@ public class State {
     public TemporalDatabaseManager tdb;
     public STNManager tempoNet;
     public TaskNetworkManager taskNet;
-    public ConstraintNetworkManager conNet;
+    //public ConstraintNetworkManager conNet;
     public BindingManager bindings;
-    public CausalNetworkManager causalNet;
+    //public CausalNetworkManager causalNet;
 
     /**
      * this constructor is only for the initial state!! other states are constructed
@@ -39,8 +39,8 @@ public class State {
         tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
-        conNet = new ConstraintNetworkManager();
+        //conNet = new ConstraintNetworkManager();
         bindings = new BindingManager();
-        causalNet = new CausalNetworkManager();
+        //causalNet = new CausalNetworkManager();
     }
 }

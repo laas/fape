@@ -24,6 +24,7 @@ public class Statement {
     public TemporalInterval interval;
     public Reference leftRef;
     public Reference rightRef;
+    public float value;
     public float GetResourceValue(){
         return Float.parseFloat(from.refs.getFirst().toString());
     }

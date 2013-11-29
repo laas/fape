@@ -9,18 +9,26 @@
  * permission of the author.
  */
 
-package fape.core.planning.tasknetworks;
+package fape.core.planning.temporaldatabases.events.resources;
 
-import fape.core.planning.model.Action;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
-import fape.util.Pair;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  *
  * @author FD
  */
-class TaskNetwork {
-    List<Action> roots = new LinkedList<>();
+public class ConditionEvent extends TemporalEvent {
+
+    public String operator;
+    public float value;
+    
+    
+    @Override
+    public TemporalEvent cc() {
+        ConditionEvent ret = new ConditionEvent();
+        ret.operator = operator;
+        ret.value = value;
+        return ret;
+    }
+
 }
