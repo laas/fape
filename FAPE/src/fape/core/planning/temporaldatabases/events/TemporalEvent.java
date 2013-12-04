@@ -19,7 +19,7 @@ import fape.core.planning.stn.TemporalVariable;
  * @author FD
  */
 public abstract class TemporalEvent {
-    public ObjectVariable objectVar;
+    //public ObjectVariable objectVar;
     /*public enum ETemporalEventType{
         CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
     }*/

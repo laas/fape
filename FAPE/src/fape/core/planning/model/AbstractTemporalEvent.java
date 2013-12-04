@@ -31,6 +31,13 @@ public class AbstractTemporalEvent {
         interval = interval_;
         stateVariableReference = leftRef;
     }
+
+    public boolean SupportsStateVariable(String var_id) {
+        String mSuffix = stateVariableReference.toString();
+        mSuffix = mSuffix.substring(mSuffix.indexOf("."));
+        String oSuffix = var_id.substring(var_id.indexOf("."));
+        return mSuffix.equals(oSuffix);
+    }
     
     
 }

@@ -9,25 +9,15 @@
  * permission of the author.
  */
 
-package fape.core.execution.model;
+package fape.core.dtgs;
 
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
  * @author FD
  */
-public class Reference {
-    public LinkedList<String> refs = new LinkedList<>();
-
-    @Override
-    public String toString() {
-        String ret = "";
-        for(String s:refs){
-            ret += s + ".";
-        }
-        ret = ret.substring(0, ret.length()-1);
-        return ret;
-    }    
-    
+public class DTGManager {
+    List<DTG> dtgs = new LinkedList<>();
 }

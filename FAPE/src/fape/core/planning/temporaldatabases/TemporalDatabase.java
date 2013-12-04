@@ -12,6 +12,7 @@
 package fape.core.planning.temporaldatabases;
 
 import fape.core.planning.bindings.ObjectVariable;
+import fape.core.planning.model.StateVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
@@ -57,10 +58,10 @@ public class TemporalDatabase {
                 change = false;
             }
         }
-        
     }
     
-    public ObjectVariable var;
+    //public ObjectVariable var;
+    public List<StateVariable> domain = new LinkedList<>();
     List<TemporalEvent> events = new LinkedList<>();
     List<ChainComponent> chain = new LinkedList<>();
 }

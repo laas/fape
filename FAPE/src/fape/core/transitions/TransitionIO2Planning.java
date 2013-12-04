@@ -227,12 +227,13 @@ public class TransitionIO2Planning {
         //switch here based on the statement type
 
         // create a new object variable
-        ObjectVariable var = st.bindings.getNewObjectVariable();
-        var.domain.add(v);
+        //ObjectVariable var = st.bindings.getNewObjectVariable();
+        //var.domain.add(v);
 
         // create a temporal database for this variable
         TemporalDatabase db = st.tdb.GetNewDatabase();
-        db.var = var;
+        db.domain.add(v);
+        //db.var = var;
 
         // create a new event for the termporal database that corresponds to the
         // statement

@@ -31,7 +31,7 @@ public class AbstractAction {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> strongDecompositions;
     List<Pair<Integer, Integer>> localBindings;
 
-    public float GetDuration(State st) {
+    public float GetDuration() {
         return 1.0f;
     }
 

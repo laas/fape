@@ -16,31 +16,38 @@ import fape.core.planning.causalities.CausalNetworkManager;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
  * @author FD
  */
 public class State {
-
+ 
     public TemporalDatabaseManager tdb;
     public STNManager tempoNet;
     public TaskNetworkManager taskNet;
+    public List<TemporalDatabase> consumers;
     //public ConstraintNetworkManager conNet;
-    public BindingManager bindings;
+    //public BindingManager bindings;
     //public CausalNetworkManager causalNet;
+    public final boolean isInitState;
 
     /**
      * this constructor is only for the initial state!! other states are constructed
      * from from the existing states
      */
     public State(){
+        isInitState = true;
         tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
+        consumers = new LinkedList<>();
         //conNet = new ConstraintNetworkManager();
-        bindings = new BindingManager();
+        //bindings = new BindingManager();
         //causalNet = new CausalNetworkManager();
     }
 }

@@ -32,6 +32,7 @@ import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import java.util.List;
 import javax.swing.SwingWorker;
@@ -81,12 +82,16 @@ public class Planner {
         // those are irreversible operations, we do not make any decisions on them
         State st = GetCurrentState();
         //
-        st.bindings.PropagateNecessary(st);
-        st.tdb.PropagateNecessary(st);
-        
-        
-        
-        
+        //st.bindings.PropagateNecessary(st);
+        st.tdb.Propagate(st);
+    }
+
+    public void DFS(State st) {
+        st.tdb.Propagate(st);
+        for (TemporalDatabase db : st.consumers) {
+            List<TemporalDatabase> supporters = st.tdb.GetSupporters(db);
+
+        }
     }
 
     /**
@@ -122,7 +127,9 @@ public class Planner {
         State st = GetCurrentState();
 
         // this a generic predecesor of all types
-        types.put("object", new fape.core.planning.model.Type());
+        if (st.isInitState) {
+            types.put("object", new fape.core.planning.model.Type());
+        }
 
         //convert types
         for (Type t : pl.types) {
@@ -165,82 +172,83 @@ public class Planner {
             // set the same name
             act.name = abs.name;
             //prepare the time points
-            
+
             act.start = st.tempoNet.getNewTemporalVariable();
             act.end = st.tempoNet.getNewTemporalVariable();
-            act.duration = abs.GetDuration(st);
+            act.duration = abs.GetDuration();
             boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.duration, (int) act.duration);
             if (!success) {
                 throw new FAPEException("The initial temporal network is inconsistent.");
             }
-            
+
             //set up the events
             for (AbstractTemporalEvent ev : abs.events) {
-                
-                TemporalEvent event = ev.event.cc();                               
-                
+
+                TemporalEvent event = ev.event.cc();
+
                 // sets the temporal interval into the context of the temporal context of the parent action
                 ev.interval.AssignTemporalContext(event, act.start, act.end);
-                
+
                 String stateVariableReferenceSuffix = ev.stateVariableReference.toString();
                 stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
                 //we need to asociate corresponding object variables with the events
 
                 //now i find the variable that instantiates my state variable reference
-                ObjectVariable obj = st.bindings.getNewObjectVariable();
+                //ObjectVariable obj = st.bindings.getNewObjectVariable();
+                TemporalDatabase db = st.tdb.GetNewDatabase();
                 for (int i = 0; i < abs.params.size(); i++) {
                     Instance instanceOfTheParameter = abs.params.get(i);
                     if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
                         //this is the right parameter
                         Reference re = ref.args.get(i);
-                        
+
                         if (re.refs.getFirst().endsWith("_")) {
                             // this is an unbinded reference, we need to add all possible state variables     
                             /*String searchStr = stateVariableReferenceSuffix;
-                            if (re.toString().contains(".")) {
-                                searchStr = re.toString().split("_")[1] + stateVariableReferenceSuffix;
-                            }*/
+                             if (re.toString().contains(".")) {
+                             searchStr = re.toString().split("_")[1] + stateVariableReferenceSuffix;
+                             }*/
                             String typeDerivation = instanceOfTheParameter.type + stateVariableReferenceSuffix;
                             for (String str : vars.keySet()) {
                                 //String type = vars.get(str).type;
                                 StateVariable var = vars.get(str);
                                 if (var.typeDerivationName.equals(typeDerivation)) {
-                                    obj.domain.add(vars.get(str));
+                                    //obj.domain.add(vars.get(str));
+                                    db.domain.add(vars.get(str));
                                 }
                             }
                         } else {
                             // this is binded to a constant - one specific state variable
-                            StateVariable var = vars.get(re.toString()+stateVariableReferenceSuffix);
-                            if(var == null){
+                            StateVariable var = vars.get(re.toString() + stateVariableReferenceSuffix);
+                            if (var == null) {
                                 throw new FAPEException("Unknown state variable.");
                             }
-                            obj.domain.add(var);
+                            //obj.domain.add(var);
+                            db.domain.add(var);
                         }
                     }
                 }
                 //now we have the object variable for the event, we insert it into the action and create a temporal database for it
-                TemporalDatabase db = st.tdb.GetNewDatabase();
-                db.var = obj;
-                event.objectVar = obj;
+                //TemporalDatabase db = st.tdb.GetNewDatabase();
+                //db.var = obj;
+                //event.objectVar = obj;
                 //now we add the object variable also into the paramaters of the action
-                act.parameters.add(obj);
+                //act.parameters.add(obj);
                 //we add the event into the database and the action
                 act.events.add(event);
                 db.AddEvent(event);
             }//event transformation end
-            
+
             //now we need to propagate the binding constraints
-            List<Pair<Integer,Integer>> binds = abs.GetLocalBindings();
-            for(Pair<Integer,Integer> p:binds){
-                st.bindings.AddCommonPredecesorBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
-            }
-            
+            /*List<Pair<Integer,Integer>> binds = abs.GetLocalBindings();
+             for(Pair<Integer,Integer> p:binds){
+             st.bindings.AddCommonPredecesorBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
+             }*/
             //now we need to add the refinements 
             act.refinementOptions = abs.strongDecompositions;
-            
+
             //lets add the action into the task network
             st.taskNet.AddSeed(act);
         }
     }
 }
-
