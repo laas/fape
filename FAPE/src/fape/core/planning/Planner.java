@@ -63,7 +63,10 @@ public class Planner {
     public Queue queue = new Queue();
 
     private boolean ApplyOption(State next, SupportOption o) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        //now we can happily apply all the silly options
+        
+        
+        !!!
     }
 
     public enum EPlanState {

@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.model;
 
 import fape.core.execution.model.ActionRef;
@@ -22,33 +21,55 @@ import java.util.List;
 
 /**
  * this is an action in the task network, it may be decomposed
+ *
  * @author FD
  */
 public class Action {
+
     public float duration = -1.0f;
     public TemporalVariable start, end;
     public String name;
     //public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
     public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
-    public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions;
-    public boolean IsRefinable(){
-        return refinementOptions != null;
+    public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
+
+    public boolean IsRefinable() {
+        return refinementOptions.size() > 0 && decomposition == null;
     }
-    List<Action> decomposition;
-    
+    List<Action> decomposition; //this is the truly realized decomposition
+
     /*
-    public void AddBindingConstraintsBetweenMyEvents(){
-        for(int i = 0; i < events.size(); i++){
-            for(int j = i + 1; j < events.size(); j++){
+     public void AddBindingConstraintsBetweenMyEvents(){
+     for(int i = 0; i < events.size(); i++){
+     for(int j = i + 1; j < events.size(); j++){
                 
-                TemporalEvent e1 = events.get(i), e2 = events.get(j);
+     TemporalEvent e1 = events.get(i), e2 = events.get(j);
                 
+     }
+     }
+     for(TemporalEvent e1:events){
+     for(TemporalEvent e2:events){
+     if(e1.objectVar.)
+     }
+     }
+     }*/
+    public Action DeepCopy() {
+        Action a = new Action();
+        if(this.decomposition == null){
+            a.decomposition = null;
+        }else{
+            a.decomposition = new LinkedList<>();
+            for(Action b:this.decomposition){
+                a.decomposition.add(b.DeepCopy());
             }
         }
-        for(TemporalEvent e1:events){
-            for(TemporalEvent e2:events){
-                if(e1.objectVar.)
-            }
-        }
-    }*/
+        
+        a.duration = this.duration;
+        a.end = this.end;
+        a.events = this.events;
+        a.name = this.name;
+        a.refinementOptions = this.refinementOptions;
+        a.start = this.start;
+        return a;
+    }
 }

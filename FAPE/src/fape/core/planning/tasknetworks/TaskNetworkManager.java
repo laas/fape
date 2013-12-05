@@ -27,12 +27,12 @@ import java.util.List;
  */
 public class TaskNetworkManager {
 
-    TaskNetwork net = new TaskNetwork();
-
+    //TaskNetwork net = new TaskNetwork();
+    List<Action> roots = new LinkedList<>();
     List<Action> openLeaves = new LinkedList<>();
     
     public void AddSeed(Action act) {
-        net.roots.add(act);
+        roots.add(act);
     }
 
     public boolean DecomposesIntoDesiredAction(AbstractAction a, HashSet<String> abs, HashMap<String, AbstractAction> actions) {
@@ -61,5 +61,17 @@ public class TaskNetworkManager {
             }
         }
         return ret;
+    }
+
+    public TaskNetworkManager DeepCopy() {
+        TaskNetworkManager tm = new TaskNetworkManager();
+        tm.openLeaves = new LinkedList<>();
+        for(Action a:this.openLeaves){
+            tm.openLeaves.add(a.DeepCopy());
+        }
+        for(Action a:this.roots){
+            tm.roots.add(a.DeepCopy());
+        }
+        return tm;
     }
 }

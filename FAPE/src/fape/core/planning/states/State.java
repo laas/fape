@@ -34,7 +34,7 @@ public class State {
     //public ConstraintNetworkManager conNet;
     //public BindingManager bindings;
     //public CausalNetworkManager causalNet;
-    public final boolean isInitState;
+    public boolean isInitState = false;
 
     /**
      * this constructor is only for the initial state!! other states are constructed
@@ -52,7 +52,15 @@ public class State {
     }
 
     public State(State st) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.taskNet = st.taskNet.DeepCopy();
+        this.tdb = st.tdb.DeepCopy();
+        this.tempoNet = st.tempoNet.DeepCopy();
+        this.consumers = new LinkedList<>();
+        for(TemporalDatabase sb:st.consumers){
+            consumers.add(sb.DeepCopy());
+        }
+                
+        
     }
     
     public float GetCurrentCost(){

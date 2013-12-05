@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class TemporalDatabaseManager {
 
-    List<Pair<TemporalDatabase, TemporalDatabase>> unificationConstraints = new LinkedList<>();
+    List<Pair<Integer, Integer>> unificationConstraints = new LinkedList<>();
 
     public List<TemporalDatabase> vars = new LinkedList<>();
 
@@ -42,7 +42,16 @@ public class TemporalDatabaseManager {
     }
     
     public void AddUnificationConstraint(TemporalDatabase a, TemporalDatabase b){
-        unificationConstraints.add(new Pair(a,b));
+        unificationConstraints.add(new Pair(a.mID,b.mID));
+    }
+
+    public TemporalDatabaseManager DeepCopy() {
+        TemporalDatabaseManager mng = new TemporalDatabaseManager();
+        mng.vars = new LinkedList<>();
+        for(TemporalDatabase b:this.vars){
+            mng.vars.add(b.DeepCopy());
+        }
+        return mng;
     }
 
     

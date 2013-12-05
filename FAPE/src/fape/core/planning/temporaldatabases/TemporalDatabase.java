@@ -31,6 +31,17 @@ import java.util.List;
  */
 public class TemporalDatabase {
 
+    private static int idCounter = 0;
+    public int mID;
+    
+    public TemporalDatabase(){
+         mID = idCounter++;
+    }
+    
+    public TemporalDatabase(TemporalDatabase noCount){
+         mID = noCount.mID;
+    }
+    
     public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -53,6 +64,15 @@ public class TemporalDatabase {
         }
     }
 
+    public TemporalDatabase DeepCopy() {
+        TemporalDatabase newDB = new TemporalDatabase(this);
+        newDB.domain = new LinkedList(this.domain);
+        for(ChainComponent c:this.chain){
+            newDB.chain.add(c.DeepCopy());
+        }
+        return newDB;
+    }
+
     public class ChainComponent {
 
         public boolean change = true;
@@ -65,6 +85,10 @@ public class TemporalDatabase {
             }
         }
 
+        private ChainComponent(){
+            
+        }
+        
         public String GetSupportValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to.value;
@@ -85,6 +109,13 @@ public class TemporalDatabase {
 
         public TemporalVariable GetSupportTimePoint() {
             return this.contents.getLast().end;
+        }
+
+        private ChainComponent DeepCopy() {
+            ChainComponent cp = new ChainComponent();
+            cp.change = this.change;
+            cp.contents = new LinkedList<>(this.contents);
+            return cp;
         }
     }
 

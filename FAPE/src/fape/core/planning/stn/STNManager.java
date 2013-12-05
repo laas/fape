@@ -68,4 +68,12 @@ public class STNManager {
         EnforceBefore(tv, end);
         return tv;
     }
+
+    public STNManager DeepCopy() {
+        STNManager nm = new STNManager();
+        nm.end = this.end;
+        nm.start = this.start;
+        nm.stn = new STN(this.stn);
+        return nm;
+    }
 }
