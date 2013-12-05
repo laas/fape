@@ -25,18 +25,21 @@ public class AbstractTemporalEvent {
     public TemporalEvent event;
     public TemporalInterval interval;
     public Reference stateVariableReference;
+    public String varType;
 
-    public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef) {
+    public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef,String varType_) {
         event = ProduceTemporalEvent;
         interval = interval_;
         stateVariableReference = leftRef;
+        varType = varType_;
     }
 
     public boolean SupportsStateVariable(String var_id) {
-        String mSuffix = stateVariableReference.toString();
+        /*String mSuffix = stateVariableReference.toString();
         mSuffix = mSuffix.substring(mSuffix.indexOf("."));
         String oSuffix = var_id.substring(var_id.indexOf("."));
-        return mSuffix.equals(oSuffix);
+        return mSuffix.equals(oSuffix);*/
+        return varType.equals(var_id);
     }
     
     

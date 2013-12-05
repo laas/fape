@@ -50,4 +50,16 @@ public class State {
         //bindings = new BindingManager();
         //causalNet = new CausalNetworkManager();
     }
+
+    public State(State st) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public float GetCurrentCost(){
+        return 0.0f;
+    }
+    
+    public float GetGoalDistance(){
+        return 0.0f;
+    }
 }

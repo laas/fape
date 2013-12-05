@@ -28,6 +28,12 @@ public class Reference {
         }
         ret = ret.substring(0, ret.length()-1);
         return ret;
-    }    
+    }
+    
+    public String GetTypeReference(){
+        String st = toString();
+        st = st.substring(st.indexOf("."));
+        return st;
+    }
     
 }

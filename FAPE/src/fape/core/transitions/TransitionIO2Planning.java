@@ -64,6 +64,7 @@ public class TransitionIO2Planning {
             throw new FAPEException("Error: unknown parent type: " + t.parent);
         }
         fape.core.planning.model.Type ret = new Type(types.get(t.parent));
+        ret.name = t.name;
         for (Instance i : t.instances) {
             ret.contents.put(i.name, i.type);
         }
@@ -229,7 +230,6 @@ public class TransitionIO2Planning {
         // create a new object variable
         //ObjectVariable var = st.bindings.getNewObjectVariable();
         //var.domain.add(v);
-
         // create a temporal database for this variable
         TemporalDatabase db = st.tdb.GetNewDatabase();
         db.domain.add(v);
@@ -242,15 +242,35 @@ public class TransitionIO2Planning {
 
         //add the event to the database
         db.AddEvent(ev);
+        
+        //add the event into the consumers, unless it is a statement event
+        if(ev instanceof PersistenceEvent || (ev instanceof TransitionEvent && ((TransitionEvent) ev).from != null)){
+            st.consumers.add(db);
+        }
 
     }
 
-    public static AbstractAction TransformAction(Action a) {
+    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
         for (Statement s : a.statements) {
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef);
+            String varName = s.GetVariableName();
+            String varType = "-1";
+            varName = varName.substring(varName.indexOf("."));
+            for(StateVariable sv:vars.values()){
+                String smallDeriv = sv.typeDerivationName.substring(sv.typeDerivationName.indexOf("."));
+                if(smallDeriv.equals(varName)){
+                    varType = sv.type;
+                }
+            }
+            /*String nm = s.leftRef.refs.getFirst();
+            for (Instance i : act.params) {
+                if (i.name.equals(nm)) {
+                    varType = i.type;
+                }
+            }*/
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef, varType);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();

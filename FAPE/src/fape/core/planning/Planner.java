@@ -10,28 +10,37 @@
  */
 package fape.core.planning;
 
+import fape.core.dtgs.ADTG;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.statements.Statement;
-import fape.core.execution.model.types.Type;
+//import fape.core.execution.model.types.Type;
 import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.Action;
 import fape.core.planning.model.StateVariable;
+import fape.core.planning.model.Type;
+import fape.core.planning.search.Queue;
+import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.transitions.TransitionIO2Planning;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import java.util.List;
@@ -43,11 +52,19 @@ import javax.swing.SwingWorker;
  */
 public class Planner {
 
-    public State init;
+    public static int searchWidth = 5;
+
+    //public State init;
     // a list of types keyed by its name
     public HashMap<String, fape.core.planning.model.Type> types = new HashMap<>();
     public HashMap<String, StateVariable> vars = new HashMap<>();
     public HashMap<String, AbstractAction> actions = new HashMap<>();
+    public HashMap<String, ADTG> dtgs = new HashMap<>();
+    public Queue queue = new Queue();
+
+    private boolean ApplyOption(State next, SupportOption o) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
     public enum EPlanState {
 
@@ -64,11 +81,11 @@ public class Planner {
      * @param pl
      */
     public void Init() {
-        init = new State();
+        queue.Add(new State());
     }
 
     public State GetCurrentState() {
-        return init;
+        return queue.Peek();
     }
 
     /**
@@ -80,20 +97,100 @@ public class Planner {
     public void Repair(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
-        State st = GetCurrentState();
+        //State st = GetCurrentState();
         //
         //st.bindings.PropagateNecessary(st);
-        st.tdb.Propagate(st);
-    }
+        //st.tdb.Propagate(st);
 
-    public void DFS(State st) {
-        st.tdb.Propagate(st);
-        for (TemporalDatabase db : st.consumers) {
-            List<TemporalDatabase> supporters = st.tdb.GetSupporters(db);
-
+        /**
+         * search
+         */
+        boolean end = false;
+        while (!end) {
+            if (queue.Empty()) {
+                this.planState = EPlanState.INFESSIBLE;
+                end = true;
+            }
+            State st = queue.Pop();
+            if (st.consumers.isEmpty()) {
+                this.planState = EPlanState.CONSISTENT;
+                end = true;
+            }
+            for (TemporalDatabase db : st.consumers) {
+                List<SupportOption> supporters = GetSupporters(db, st);
+                for (SupportOption o : supporters) {
+                    State next = new State(st);
+                    if (ApplyOption(next, o)) {
+                        queue.Add(next);
+                    } else {
+                        //inconsistent state
+                    }
+                }
+            }
         }
     }
 
+    public List<SupportOption> GetSupporters(TemporalDatabase db, State st) {
+        //here we need to find several types of supporters
+        //1) chain parts that provide the value we need
+        //2) actions that provide the value we need and can be added
+        //3) tasks that can decompose into an action we need
+        List<SupportOption> ret = new LinkedList<>();
+
+        //get chain connections
+        for (TemporalDatabase b : st.tdb.vars) {
+            if (db == b || !TemporalDatabase.Unifiable(db, b)) {
+                continue;
+            }
+            if (db.HasSinglePersistence()) {
+                //we are looking for chain integration too
+                for (TemporalDatabase.ChainComponent comp : b.chain) {
+                    if (comp.change && comp.GetSupportValue().equals(db.GetGlobalConsumeValue())
+                            && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
+                        SupportOption o = new SupportOption();
+                        o.precedingComponent = comp;
+                        o.tdb = b;
+                        ret.add(o);
+                    }
+                }
+            } else {
+                if (b.GetGlobalSupportValue().equals(db.GetGlobalConsumeValue())
+                        && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
+                    SupportOption o = new SupportOption();
+                    o.tdb = b;
+                    ret.add(o);
+                }
+            }
+        }
+
+        // adding actions
+        // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions
+        //find actions that help me with achieving my value through some decomposition in the task network
+        //they are those that I can find in the virtual decomposition tree
+        //first get the action names from the abstract dtgs
+        ADTG dtg = dtgs.get(db.domain.get(0).type);
+        HashSet<String> abs = dtg.GetActionSupporters(db.GetGlobalConsumeValue());
+        //now we need to gather the decompositions that provide the intended actions
+        List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
+        ret.addAll(options);
+
+        //now we can look for adding the actions ad-hoc ...
+        for(String s:abs){
+            SupportOption o = new SupportOption();
+            o.supportingAction = actions.get(s);
+            ret.add(o);            
+        }
+        
+        return ret;
+    }
+
+    /*public void DFS(State st) {
+     st.tdb.Propagate(st);
+     for (TemporalDatabase db : st.consumers) {
+     List<TemporalDatabase> supporters = st.tdb.GetSupporters(db);
+
+     }
+     }*/
     /**
      * progresses in the plan up for howFarToProgress, returns either
      * AtomicActions that were instantiated with corresponding start times, or
@@ -128,16 +225,17 @@ public class Planner {
 
         // this a generic predecesor of all types
         if (st.isInitState) {
-            types.put("object", new fape.core.planning.model.Type());
+            types.put("object", new fape.core.planning.model.Type("object"));
         }
 
         //convert types
-        for (Type t : pl.types) {
+        for (fape.core.execution.model.types.Type t : pl.types) {
             types.put(t.name, TransitionIO2Planning.transformType(t, types));
         }
 
         //convert instances and create state variables from them
         for (Instance i : pl.instances) {
+            types.get(i.type).AddInstance(i.name); //this is not all of them!
             List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type);
             for (StateVariable v : l) {
                 vars.put(v.name, v);
@@ -157,7 +255,7 @@ public class Planner {
             if (actions.containsKey(a.name)) {
                 throw new FAPEException("Overriding action abstraction: " + a.name);
             }
-            AbstractAction act = TransitionIO2Planning.TransformAction(a);
+            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars);
             actions.put(act.name, act);
         }
 
@@ -181,6 +279,7 @@ public class Planner {
                 throw new FAPEException("The initial temporal network is inconsistent.");
             }
 
+            ArrayList<TemporalDatabase> dbList = new ArrayList<>();
             //set up the events
             for (AbstractTemporalEvent ev : abs.events) {
 
@@ -196,6 +295,7 @@ public class Planner {
                 //now i find the variable that instantiates my state variable reference
                 //ObjectVariable obj = st.bindings.getNewObjectVariable();
                 TemporalDatabase db = st.tdb.GetNewDatabase();
+                dbList.add(db);
                 for (int i = 0; i < abs.params.size(); i++) {
                     Instance instanceOfTheParameter = abs.params.get(i);
                     if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
@@ -240,15 +340,70 @@ public class Planner {
             }//event transformation end
 
             //now we need to propagate the binding constraints
-            /*List<Pair<Integer,Integer>> binds = abs.GetLocalBindings();
-             for(Pair<Integer,Integer> p:binds){
-             st.bindings.AddCommonPredecesorBinding(act.events.get(p.value1).objectVar, act.events.get(p.value2).objectVar);
-             }*/
+            List<Pair<Integer, Integer>> binds = abs.GetLocalBindings();
+            for (Pair<Integer, Integer> p : binds) {
+                st.tdb.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
+            }
             //now we need to add the refinements 
             act.refinementOptions = abs.strongDecompositions;
 
             //lets add the action into the task network
             st.taskNet.AddSeed(act);
+            //add 
+
+        } //end of seed processing
+
+        //add the values of state variables
+        /*for (StateVariable v : vars.values()) {
+         Type t = types.get(v.type);
+         t.AddInstance(v.name);
+            
+            
+            
+         }*/
+        /*
+         //add the state variabel value indexes into the abstract actions
+         for(AbstractAction a:actions.values()){
+         for(AbstractTemporalEvent e:a.events){
+         if(e.event instanceof TransitionEvent){
+         TransitionEvent ev = (TransitionEvent) e.event;    
+         ev.from.index = types.get(e.varType).instances.get(ev.from.value);
+         ev.to.index = types.get(e.varType).instances.get(ev.to.value);
+         }else if(e.event instanceof PersistenceEvent){
+         PersistenceEvent ev = (PersistenceEvent) e.event;                    
+         ev.value.index = types.get(e.varType).instances.get(ev.value.value);
+         }
+         }
+         }*/
+        for (Type t : types.values()) {
+            if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
+                ADTG dtg = new ADTG(t.name, t.instances.size(), actions.values());
+
+                dtg.op_all_paths();
+                dtgs.put(t.name, dtg);
+            }
         }
+
+        //get values for the state variables
+        /*for (AbstractAction a : actions.values()) {
+         for (AbstractTemporalEvent e : a.events) {
+         if (e.event instanceof TransitionEvent || e.event instanceof PersistenceEvent) {
+         String refe = e.stateVariableReference.GetTypeReference();
+
+         int xx = 0;
+         /*HashSet<String> hs = values.get(refe);
+         if(hs == null){
+         hs = new HashSet<>();
+         }
+         if(e.event instanceof TransitionEvent){
+         hs.add(((TransitionEvent)e.event).from.value);
+         hs.add(((TransitionEvent)e.event).to.value);
+         }else{
+         hs.add(((PersistenceEvent)e.event).value.value);
+         }*/
+        //}
+        //}
+        // }
+        int xx = 0;
     }
 }

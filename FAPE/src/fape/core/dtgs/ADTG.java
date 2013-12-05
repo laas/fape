@@ -11,6 +11,12 @@ package fape.core.dtgs;
 
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.exceptions.FAPEException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 
 /**
@@ -19,7 +25,7 @@ import java.util.ListIterator;
  *
  * @author Filip Dvořák
  */
-public class DTG {
+public class ADTG {
 
     /**
      * array of names of values, parsed from original representation
@@ -33,6 +39,18 @@ public class DTG {
      */
     public int var_size;
 
+    //maps value names to their indexes in the system    
+    /*public HashMap<String, Integer> valueIndexes = new HashMap<>();
+    int valueIndexCounter = 0;
+
+    public void AddValue(String nm) {
+        if (valueIndexes.containsKey(nm)) {
+            throw new FAPEException("Type already defined.");
+        }
+        valueIndexes.put(nm, valueIndexCounter);
+        valueIndexCounter++;
+    }*/
+    
     public String var_id;
     /**
      * the graph itself, graph[i][j] contains actions that change i-th value to
@@ -204,13 +222,13 @@ public class DTG {
      return res_cost[from][to];
      }*/
     /**
-     * DTG generation
+     * Abstract Domain Transition Graphs
      *
      * @param _var_id
      * @param _var_size
      * @param actions
      */
-    public DTG(String _var_id, int _var_size, AbstractAction[] actions) {
+    public ADTG(String _var_id, int _var_size, Collection<AbstractAction> actions) {
         var_id = _var_id;
         var_size = _var_size;
 
@@ -220,17 +238,34 @@ public class DTG {
             graph[i] = new DTGEdge[var_size];
         }
 
-        for (i = 0; i < actions.length; i++) {
-            for (j = 0; j < actions[i].events.size(); j++) {
-                if (actions[i].events.get(j).event instanceof TransitionEvent && actions[i].events.get(j).SupportsStateVariable(var_id)) {
-                    TransitionEvent te = (TransitionEvent) actions[i].events.get(j).event;
-
-                    if (graph[te.from.index][te.to.index] == null) {
-                        graph[te.from.index][te.to.index] = new DTGEdge();
+        for (AbstractAction a : actions) {
+            for (j = 0; j < a.events.size(); j++) {
+                if (a.events.get(j).event instanceof TransitionEvent && a.events.get(j).SupportsStateVariable(var_id)) {
+                    //TransitionEvent te = (TransitionEvent) a.events.get(j).event;
+                    for (int ii = 0; ii < graph.length; ii++) {
+                        for (int jj = ii; jj < graph.length; jj++) {
+                            if (graph[ii][jj] == null) {
+                                graph[ii][jj] = new DTGEdge();
+                            }
+                            graph[ii][jj].push(a);
+                        }
                     }
-                    graph[te.from.index][te.to.index].push(actions[i]);
                 }
             }
         }
+    }
+
+    public HashSet<String> GetActionSupporters(String GetGlobalConsumeValue) {
+        HashSet<String> actionNames = new HashSet<>();
+        for (DTGEdge[] graph1 : graph) {
+            for(DTGEdge e : graph1){
+                if(e.act != null){
+                    for(AbstractAction a:e.act){
+                        actionNames.add(a.name);
+                    }
+                }
+            }
+        }                
+        return actionNames;
     }
 }

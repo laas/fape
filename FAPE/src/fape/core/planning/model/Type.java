@@ -22,7 +22,10 @@ public class Type {
      * the variables that are nested in this type, the first string is the name,
      * the second one is the name of its type
      */
+    public String name;
     public HashMap<String, String> contents;
+    public HashMap<String, Integer> instances = new HashMap<>();
+    int instanceCounter = 0;
     /**
      * inherit from a parent type
      * @param parent 
@@ -31,7 +34,13 @@ public class Type {
         contents = new HashMap<>(parent.contents);
     }
     
-    public Type(){
+    public Type(String nm){
+        name = nm;
         contents = new HashMap<>();
+    }
+
+    public void AddInstance(String name) {
+        instances.put(name, instanceCounter);
+        instanceCounter++;
     }
 }

@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.util.Pair;
 import java.util.LinkedList;
@@ -23,7 +24,7 @@ public class TemporalDatabaseManager {
 
     List<Pair<TemporalDatabase, TemporalDatabase>> unificationConstraints = new LinkedList<>();
 
-    List<TemporalDatabase> vars = new LinkedList<>();
+    public List<TemporalDatabase> vars = new LinkedList<>();
 
     public TemporalDatabase GetNewDatabase() {
         TemporalDatabase db = new TemporalDatabase();
@@ -39,9 +40,11 @@ public class TemporalDatabaseManager {
     public void Propagate(State st) {
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
-    public List<TemporalDatabase> GetSupporters(TemporalDatabase db) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    
+    public void AddUnificationConstraint(TemporalDatabase a, TemporalDatabase b){
+        unificationConstraints.add(new Pair(a,b));
     }
+
+    
 
 }

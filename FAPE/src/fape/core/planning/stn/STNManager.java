@@ -48,7 +48,10 @@ public class STNManager {
         } else {
             return false;
         }
-
+    }
+    
+    public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second){
+        return stn.pless(first.getID(), second.getID());
     }
 
     public TemporalVariable getNewTemporalVariable() {

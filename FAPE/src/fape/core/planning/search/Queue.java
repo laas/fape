@@ -9,15 +9,29 @@
  * permission of the author.
  */
 
-package fape.core.dtgs;
+package fape.core.planning.search;
 
+import fape.core.planning.states.State;
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  *
  * @author FD
  */
-public class DTGManager {
-    List<ADTG> dtgs = new LinkedList<>();
+public class Queue {
+    LinkedList<State> list = new LinkedList<>();
+    public void Add(State st){
+        list.add(st);
+    }
+    public State Pop(){
+        return list.pollFirst();
+    }
+
+    public boolean Empty() {
+        return list.isEmpty();
+    }
+
+    public State Peek() {
+        return list.getFirst();
+    }
 }

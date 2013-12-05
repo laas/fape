@@ -17,5 +17,5 @@ package fape.core.planning.model;
  */
 public class StateVariableValue {
     public String value;
-    public int index;
+    public int index = -1;
 }

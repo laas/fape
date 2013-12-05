@@ -9,15 +9,20 @@
  * permission of the author.
  */
 
-package fape.core.dtgs;
+package fape.core.planning.search;
 
-import java.util.LinkedList;
-import java.util.List;
+import fape.core.planning.model.AbstractAction;
+import fape.core.planning.model.Action;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
 
 /**
  *
  * @author FD
  */
-public class DTGManager {
-    List<ADTG> dtgs = new LinkedList<>();
+public class SupportOption {
+    public TemporalDatabase tdb;
+    public TemporalDatabase.ChainComponent precedingComponent;
+    public AbstractAction supportingAction;
+    public Action actionToDecompose;
+    public int decompositionID = -1;
 }
