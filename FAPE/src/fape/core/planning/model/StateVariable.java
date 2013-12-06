@@ -11,6 +11,8 @@
 
 package fape.core.planning.model;
 
+import java.util.Objects;
+
 /**
  *
  * @author FD
@@ -26,4 +28,18 @@ public class StateVariable {
      */
     public String name;    
     public String type;
+
+    @Override
+    public boolean equals(Object obj) {
+        return ((StateVariable)obj).name.equals(name);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 17 * hash + Objects.hashCode(this.name);
+        return hash;
+    }
+    
+    
 }

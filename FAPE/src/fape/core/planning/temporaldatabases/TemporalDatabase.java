@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.model.StateVariable;
+import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
@@ -33,15 +34,15 @@ public class TemporalDatabase {
 
     private static int idCounter = 0;
     public int mID;
-    
-    public TemporalDatabase(){
-         mID = idCounter++;
+
+    public TemporalDatabase() {
+        mID = idCounter++;
     }
-    
-    public TemporalDatabase(TemporalDatabase noCount){
-         mID = noCount.mID;
+
+    public TemporalDatabase(TemporalDatabase noCount) {
+        mID = noCount.mID;
     }
-    
+
     public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -67,16 +68,42 @@ public class TemporalDatabase {
     public TemporalDatabase DeepCopy() {
         TemporalDatabase newDB = new TemporalDatabase(this);
         newDB.domain = new LinkedList(this.domain);
-        for(ChainComponent c:this.chain){
+        for (ChainComponent c : this.chain) {
             newDB.chain.add(c.DeepCopy());
         }
         return newDB;
     }
 
+    public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
+        if (!first.change) {
+            for (TemporalEvent e : first.contents) {
+                if (!second.change) {
+                    for (TemporalEvent e2 : second.contents) {
+                        st.tempoNet.EnforceBefore(e.end, e2.start);
+                    }
+                } else {
+                    st.tempoNet.EnforceBefore(e.end, second.GetConsumeTimePoint());
+                }
+            }
+        } else {
+            if (!second.change) {
+                for (TemporalEvent e2 : second.contents) {
+                    st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), e2.start);
+                }
+            } else {
+                st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
+            }
+        }
+    }
+
     public class ChainComponent {
 
         public boolean change = true;
-        LinkedList<TemporalEvent> contents = new LinkedList<>();
+        public LinkedList<TemporalEvent> contents = new LinkedList<>();
+
+        public void Add(ChainComponent e) {
+            contents.addAll(e.contents);
+        }
 
         public ChainComponent(TemporalEvent ev) {
             contents.add(ev);
@@ -85,10 +112,10 @@ public class TemporalDatabase {
             }
         }
 
-        private ChainComponent(){
-            
+        private ChainComponent() {
+
         }
-        
+
         public String GetSupportValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to.value;

@@ -62,11 +62,81 @@ public class Planner {
     public HashMap<String, ADTG> dtgs = new HashMap<>();
     public Queue queue = new Queue();
 
-    private boolean ApplyOption(State next, SupportOption o) {
-        //now we can happily apply all the silly options
-        
-        
-        !!!
+    private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
+        //now we can happily apply all the options
+        if (o.tdb != null && o.precedingComponent != null) {
+            // this is database merge of one persistence into another
+            int index = o.tdb.chain.indexOf(o.precedingComponent);
+            if (o.tdb.chain.size() - 1 != index && !o.tdb.chain.get(index + 1).change) {
+                //we add into an existing partially ordered set of perstistance events
+                TemporalDatabase.ChainComponent comp = o.tdb.chain.get(index + 1);
+                comp.Add(consumer.chain.get(0));
+                //propagate time constraints
+                TemporalDatabase.PropagatePrecedence(o.precedingComponent, comp, next);
+                //next.tempoNet.EnforceBefore(o.precedingComponent.GetSupportTimePoint(), consumer.GetConsumeTimePoint());
+                if (o.tdb.chain.size() > index + 2) {
+                    TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
+                    TemporalDatabase.PropagatePrecedence(comp, comp2, next);
+                }
+                //merge databases
+                next.tdb.Merge(o.tdb, consumer);
+            } else {
+                //add a new persistence just after the chosen element
+                o.tdb.chain.add(index + 1, consumer.chain.get(0));
+                TemporalDatabase.PropagatePrecedence(o.precedingComponent, o.tdb.chain.get(index + 1), next);
+                //next.tempoNet.EnforceBefore(o.precedingComponent.GetSupportTimePoint(), consumer.GetConsumeTimePoint());
+                if (o.tdb.chain.size() > index + 2) {
+                    TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
+                    TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
+                    //next.tempoNet.EnforceBefore(consumer.GetSupportTimePoint(), comp2.GetConsumeTimePoint());
+                }
+                next.tdb.Merge(o.tdb, consumer);
+            }
+        } else if (o.tdb != null) {
+            //this is a database concatenation
+            if (!o.tdb.chain.getLast().change && !consumer.chain.getFirst().change) {
+                //merge the changes
+                TemporalDatabase.ChainComponent second = o.tdb.chain.getLast(),
+                        third = consumer.chain.get(1),
+                        first = o.tdb.chain.get(o.tdb.chain.size() - 2);
+                for (TemporalEvent e : consumer.chain.getFirst().contents) {
+                    o.tdb.chain.getLast().contents.add(e);
+                }
+                consumer.chain.removeFirst();
+                for (TemporalDatabase.ChainComponent c : consumer.chain) {
+                    o.tdb.chain.add(c);
+                }
+                TemporalDatabase.PropagatePrecedence(first, second, next);
+                TemporalDatabase.PropagatePrecedence(second, third, next);
+                next.tdb.Merge(o.tdb, consumer);
+            } else {
+                //concatenate
+                TemporalDatabase.ChainComponent second = o.tdb.chain.getLast(),
+                        first = o.tdb.chain.getFirst();
+                for (TemporalDatabase.ChainComponent c : consumer.chain) {
+                    o.tdb.chain.add(c);
+                }
+                TemporalDatabase.PropagatePrecedence(first, second, next);
+                next.tdb.Merge(o.tdb, consumer);
+            }
+        } else if (o.supportingAction != null) {
+            //this is a simple applciation of an action
+            ActionRef ref = new ActionRef();
+            ref.name = o.supportingAction.name;
+            int ct = 0;
+            for(Instance i:o.supportingAction.params){
+                Reference rf = new Reference();
+                rf.refs.add("a"+(ct++)+"_"); //random unbinded parameters
+                ref.args.add(rf);
+            }
+            o.supportingAction
+
+        } else if (o.actionToDecompose != null) {
+            //this is a task decomposition
+        }
+
+        //then propagate
+        return false; //if the propagation failed and we have achieved an inconsistent state
     }
 
     public enum EPlanState {
@@ -123,7 +193,7 @@ public class Planner {
                 List<SupportOption> supporters = GetSupporters(db, st);
                 for (SupportOption o : supporters) {
                     State next = new State(st);
-                    if (ApplyOption(next, o)) {
+                    if (ApplyOption(next, o, db)) {
                         queue.Add(next);
                     } else {
                         //inconsistent state
@@ -178,12 +248,12 @@ public class Planner {
         ret.addAll(options);
 
         //now we can look for adding the actions ad-hoc ...
-        for(String s:abs){
+        for (String s : abs) {
             SupportOption o = new SupportOption();
             o.supportingAction = actions.get(s);
-            ret.add(o);            
+            ret.add(o);
         }
-        
+
         return ret;
     }
 
@@ -264,96 +334,7 @@ public class Planner {
 
         //process seeds
         for (ActionRef ref : pl.actionsForTaskNetwork) {
-            AbstractAction abs = actions.get(ref.name);
-            if (abs == null) {
-                throw new FAPEException("Seeding unknown action: " + ref.name);
-            }
-
-            Action act = new Action();
-            // set the same name
-            act.name = abs.name;
-            //prepare the time points
-
-            act.start = st.tempoNet.getNewTemporalVariable();
-            act.end = st.tempoNet.getNewTemporalVariable();
-            act.duration = abs.GetDuration();
-            boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.duration, (int) act.duration);
-            if (!success) {
-                throw new FAPEException("The initial temporal network is inconsistent.");
-            }
-
-            ArrayList<TemporalDatabase> dbList = new ArrayList<>();
-            //set up the events
-            for (AbstractTemporalEvent ev : abs.events) {
-
-                TemporalEvent event = ev.event.cc();
-
-                // sets the temporal interval into the context of the temporal context of the parent action
-                ev.interval.AssignTemporalContext(event, act.start, act.end);
-
-                String stateVariableReferenceSuffix = ev.stateVariableReference.toString();
-                stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
-                //we need to asociate corresponding object variables with the events
-
-                //now i find the variable that instantiates my state variable reference
-                //ObjectVariable obj = st.bindings.getNewObjectVariable();
-                TemporalDatabase db = st.tdb.GetNewDatabase();
-                dbList.add(db);
-                for (int i = 0; i < abs.params.size(); i++) {
-                    Instance instanceOfTheParameter = abs.params.get(i);
-                    if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
-                        //this is the right parameter
-                        Reference re = ref.args.get(i);
-
-                        if (re.refs.getFirst().endsWith("_")) {
-                            // this is an unbinded reference, we need to add all possible state variables     
-                            /*String searchStr = stateVariableReferenceSuffix;
-                             if (re.toString().contains(".")) {
-                             searchStr = re.toString().split("_")[1] + stateVariableReferenceSuffix;
-                             }*/
-                            String typeDerivation = instanceOfTheParameter.type + stateVariableReferenceSuffix;
-                            for (String str : vars.keySet()) {
-                                //String type = vars.get(str).type;
-                                StateVariable var = vars.get(str);
-                                if (var.typeDerivationName.equals(typeDerivation)) {
-                                    //obj.domain.add(vars.get(str));
-                                    db.domain.add(vars.get(str));
-                                }
-                            }
-                        } else {
-                            // this is binded to a constant - one specific state variable
-                            StateVariable var = vars.get(re.toString() + stateVariableReferenceSuffix);
-                            if (var == null) {
-                                throw new FAPEException("Unknown state variable.");
-                            }
-                            //obj.domain.add(var);
-                            db.domain.add(var);
-                        }
-                    }
-                }
-                //now we have the object variable for the event, we insert it into the action and create a temporal database for it
-                //TemporalDatabase db = st.tdb.GetNewDatabase();
-                //db.var = obj;
-                //event.objectVar = obj;
-                //now we add the object variable also into the paramaters of the action
-                //act.parameters.add(obj);
-                //we add the event into the database and the action
-                act.events.add(event);
-                db.AddEvent(event);
-            }//event transformation end
-
-            //now we need to propagate the binding constraints
-            List<Pair<Integer, Integer>> binds = abs.GetLocalBindings();
-            for (Pair<Integer, Integer> p : binds) {
-                st.tdb.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
-            }
-            //now we need to add the refinements 
-            act.refinementOptions = abs.strongDecompositions;
-
-            //lets add the action into the task network
-            st.taskNet.AddSeed(act);
-            //add 
-
+            AddAction(ref, st);
         } //end of seed processing
 
         //add the values of state variables
@@ -409,4 +390,85 @@ public class Planner {
         // }
         int xx = 0;
     }
+
+    public void AddAction(ActionRef ref, State st) {
+        AbstractAction abs = actions.get(ref.name);
+        if (abs == null) {
+            throw new FAPEException("Seeding unknown action: " + ref.name);
+        }
+
+        Action act = new Action();
+        // set the same name
+        act.name = abs.name;
+        //prepare the time points
+        //add the refinements 
+        act.refinementOptions = abs.strongDecompositions;
+        
+        act.start = st.tempoNet.getNewTemporalVariable();
+        act.end = st.tempoNet.getNewTemporalVariable();
+        act.duration = abs.GetDuration();
+        boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.duration, (int) act.duration);
+        if (!success) {
+            throw new FAPEException("The temporal network is inconsistent.");
+        }
+
+        ArrayList<TemporalDatabase> dbList = new ArrayList<>();
+        //set up the events
+        for (AbstractTemporalEvent ev : abs.events) {
+
+            TemporalEvent event = ev.event.cc();
+
+            // sets the temporal interval into the context of the temporal context of the parent action
+            ev.interval.AssignTemporalContext(event, act.start, act.end);
+
+            String stateVariableReferenceSuffix = ev.stateVariableReference.toString();
+            stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
+
+            TemporalDatabase db = st.tdb.GetNewDatabase();
+            dbList.add(db);
+            for (int i = 0; i < abs.params.size(); i++) {
+                Instance instanceOfTheParameter = abs.params.get(i);
+                if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
+                    //this is the right parameter
+                    Reference re = ref.args.get(i);
+
+                    if (re.refs.getFirst().endsWith("_")) {
+                        // this is an unbinded reference, we need to add all possible state variables     
+                        String typeDerivation = instanceOfTheParameter.type + stateVariableReferenceSuffix;
+                        for (String str : vars.keySet()) {
+
+                            StateVariable var = vars.get(str);
+                            if (var.typeDerivationName.equals(typeDerivation)) {
+
+                                db.domain.add(vars.get(str));
+                            }
+                        }
+                    } else {
+                        // this is binded to a constant - one specific state variable
+                        StateVariable var = vars.get(re.toString() + stateVariableReferenceSuffix);
+                        if (var == null) {
+                            throw new FAPEException("Unknown state variable.");
+                        }
+                        //obj.domain.add(var);
+                        db.domain.add(var);
+                    }
+                }
+            }
+
+            //we add the event into the database and the action
+            act.events.add(event);
+            db.AddEvent(event);
+        }//event transformation end
+
+        //now we need to propagate the binding constraints
+        List<Pair<Integer, Integer>> binds = abs.GetLocalBindings();
+        for (Pair<Integer, Integer> p : binds) {
+            st.tdb.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
+        }
+
+        //lets add the action into the task network
+        st.taskNet.AddSeed(act);
+        //add 
+    }
+
 }

@@ -54,6 +54,22 @@ public class TemporalDatabaseManager {
         return mng;
     }
 
+    public void Merge(TemporalDatabase tdb, TemporalDatabase consumer) {
+        // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
+        // also intersecting the domains
+        tdb.domain.retainAll(consumer.domain);
+        
+        for(Pair<Integer,Integer> p :unificationConstraints){
+            if(p.value1 == consumer.mID){
+                p.value1 = tdb.mID;
+            }
+            if(p.value2 == consumer.mID){
+                p.value2 = tdb.mID;
+            }
+        }
+        vars.remove(consumer);
+    }
+
     
 
 }
