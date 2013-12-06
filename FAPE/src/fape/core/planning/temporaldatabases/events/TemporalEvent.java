@@ -13,6 +13,7 @@ package fape.core.planning.temporaldatabases.events;
 
 import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.stn.TemporalVariable;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
 
 /**
  *
@@ -25,6 +26,8 @@ public abstract class TemporalEvent {
     }*/
     
     public TemporalVariable start, end;
+    //reflection needed for stronger reasoning
+    public TemporalDatabase mDatabase = null;
     
     //public ObjectVariable objectVar;
     

@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.util.Pair;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,9 +37,10 @@ public class TemporalDatabaseManager {
      * propagates the necessary unification constraints
      *
      * @param st
+     * @return 
      */
-    public void Propagate(State st) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean PropagateAndCheckConsistency(State st) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
     public void AddUnificationConstraint(TemporalDatabase a, TemporalDatabase b){
@@ -58,6 +60,12 @@ public class TemporalDatabaseManager {
         // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
         // also intersecting the domains
         tdb.domain.retainAll(consumer.domain);
+        
+        for(TemporalDatabase.ChainComponent comp:tdb.chain){
+            for(TemporalEvent e:comp.contents){
+                e.mDatabase = tdb;
+            }
+        }
         
         for(Pair<Integer,Integer> p :unificationConstraints){
             if(p.value1 == consumer.mID){

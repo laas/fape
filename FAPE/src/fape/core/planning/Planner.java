@@ -16,9 +16,11 @@ import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.AtomicAction;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.Reference;
+import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
 //import fape.core.execution.model.types.Type;
 import fape.core.planning.bindings.ObjectVariable;
+import fape.core.planning.constraints.UnifyingConstraintSchema;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.Action;
@@ -61,6 +63,7 @@ public class Planner {
     public HashMap<String, AbstractAction> actions = new HashMap<>();
     public HashMap<String, ADTG> dtgs = new HashMap<>();
     public Queue queue = new Queue();
+    public HashMap<AbstractAction, HashMap<Integer, List<UnifyingConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         //now we can happily apply all the options
@@ -73,7 +76,6 @@ public class Planner {
                 comp.Add(consumer.chain.get(0));
                 //propagate time constraints
                 TemporalDatabase.PropagatePrecedence(o.precedingComponent, comp, next);
-                //next.tempoNet.EnforceBefore(o.precedingComponent.GetSupportTimePoint(), consumer.GetConsumeTimePoint());
                 if (o.tdb.chain.size() > index + 2) {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(comp, comp2, next);
@@ -84,11 +86,9 @@ public class Planner {
                 //add a new persistence just after the chosen element
                 o.tdb.chain.add(index + 1, consumer.chain.get(0));
                 TemporalDatabase.PropagatePrecedence(o.precedingComponent, o.tdb.chain.get(index + 1), next);
-                //next.tempoNet.EnforceBefore(o.precedingComponent.GetSupportTimePoint(), consumer.GetConsumeTimePoint());
                 if (o.tdb.chain.size() > index + 2) {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
-                    //next.tempoNet.EnforceBefore(consumer.GetSupportTimePoint(), comp2.GetConsumeTimePoint());
                 }
                 next.tdb.Merge(o.tdb, consumer);
             }
@@ -129,14 +129,46 @@ public class Planner {
                 rf.refs.add("a"+(ct++)+"_"); //random unbinded parameters
                 ref.args.add(rf);
             }
-            o.supportingAction
-
+            AddAction(ref, next);
         } else if (o.actionToDecompose != null) {
-            //this is a task decomposition
+            // this is a task decomposition
+            // we need to decompose all the actions of the chosen decomposition
+            // which represents adding all of them into the plan through AddAction and
+            // setting up precedence constraints for them
+            List<ActionRef> actionsForDecomposition = null;
+            List<TemporalConstraint> tempCons = null;            
+            int ct = 0;
+            for(Pair<List<ActionRef>, List<TemporalConstraint>> p:o.actionToDecompose.refinementOptions){
+                if(ct++ == o.decompositionID){
+                    actionsForDecomposition = p.value1;
+                    tempCons = p.value2;
+                }
+            }
+            //put the actions into the plan
+            ArrayList<Action> l = new ArrayList<>();
+            for(ActionRef ref:actionsForDecomposition){
+                l.add(AddAction(ref, next));
+            }
+            
+            //now we need to introduce binding constraints between the events through the parameter binding
+            //add the constraints parent-child temporal constraints
+            for(Action a:l){
+                next.tempoNet.EnforceBefore(o.actionToDecompose.start, a.start);
+                next.tempoNet.EnforceBefore(a.end, o.actionToDecompose.end);
+                List<UnifyingConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(o.actionToDecompose.name)).get(o.decompositionID);
+                for(UnifyingConstraintSchema s:lt){
+                    next.tdb.AddUnificationConstraint(o.actionToDecompose.events.get(s.mEventID).mDatabase, a.events.get(s.actionEventID).mDatabase);
+                }
+            }
+            //add temporal constraints between actions
+            for(TemporalConstraint c:tempCons){
+                next.tempoNet.EnforceBefore(l.get(c.earlier).end, l.get(c.later).start);
+            }
+        }else{
+            throw new FAPEException("Unknown option.");
         }
 
-        //then propagate
-        return false; //if the propagation failed and we have achieved an inconsistent state
+        return next.tdb.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
     public enum EPlanState {
@@ -151,7 +183,6 @@ public class Planner {
     /**
      * initializes the data structures of the planning problem
      *
-     * @param pl
      */
     public void Init() {
         queue.Add(new State());
@@ -388,10 +419,49 @@ public class Planner {
         //}
         //}
         // }
+        //create propagation schemas
+        if (st.isInitState) {
+
+            for(AbstractAction a:actions.values()){
+                HashMap<Integer,List<UnifyingConstraintSchema>> schemas = new HashMap<>();                
+                int decCnt = 0;
+                for(Pair<List<ActionRef>, List<TemporalConstraint>> p :a.strongDecompositions){
+                    List<UnifyingConstraintSchema> cons = new LinkedList<>();
+                    int refCnt = 0;
+                    for(ActionRef rf:p.value1){
+                        //now check for each pair of events if they have the same variable used for them
+                        AbstractAction abs = actions.get(rf.name);
+                        for(Instance i:a.params){
+                            int subActionParameterCounter = 0;
+                            for(Reference r:rf.args){
+                                if(r.refs.get(0).equals(i.name)){
+                                    //this parameter is passed by, now we need to find the pairs of events
+                                    for(int mainEventCount = 0; mainEventCount < a.events.size(); mainEventCount++){
+                                        for(int subEventCount = 0; subEventCount < abs.events.size(); subEventCount++){
+                                            if(abs.events.get(subEventCount).stateVariableReference.refs.getFirst().equals(abs.params.get(subActionParameterCounter).name)                                                    
+                                                    &&
+                                                    a.events.get(mainEventCount).stateVariableReference.refs.getFirst().equals(i.name)){
+                                                cons.add(new UnifyingConstraintSchema(decCnt, mainEventCount, refCnt, subEventCount));
+                                            }
+                                        }
+                                    }
+                                    
+                                }
+                                subActionParameterCounter++;
+                            }
+                        }
+                        refCnt++;
+                    }
+                    schemas.put(decCnt, cons);
+                    decCnt++;
+                }
+                unificationConstraintPropagationSchema.put(a, schemas);
+            }
+        }
         int xx = 0;
     }
 
-    public void AddAction(ActionRef ref, State st) {
+    public Action AddAction(ActionRef ref, State st) {
         AbstractAction abs = actions.get(ref.name);
         if (abs == null) {
             throw new FAPEException("Seeding unknown action: " + ref.name);
@@ -425,6 +495,7 @@ public class Planner {
             stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
 
             TemporalDatabase db = st.tdb.GetNewDatabase();
+            event.mDatabase = db;
             dbList.add(db);
             for (int i = 0; i < abs.params.size(); i++) {
                 Instance instanceOfTheParameter = abs.params.get(i);
@@ -469,6 +540,8 @@ public class Planner {
         //lets add the action into the task network
         st.taskNet.AddSeed(act);
         //add 
+        
+        return act;
     }
 
 }
