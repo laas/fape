@@ -26,4 +26,8 @@ public class StateVariableValue {
      *
      */
     public int index = -1;
+
+    public String toString() {
+        return value;
+    }
 }

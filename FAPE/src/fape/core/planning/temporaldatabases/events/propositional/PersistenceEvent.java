@@ -34,4 +34,8 @@ public class PersistenceEvent extends TemporalEvent {
         ret.value = value;
         return ret;
     }
+
+    public String toString() {
+        return "@["+start+","+end+"):="+value;
+    }
 }

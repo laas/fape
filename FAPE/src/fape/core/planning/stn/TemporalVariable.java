@@ -53,4 +53,8 @@ public class TemporalVariable {
     public int getID() {
         return mID;
     }
+
+    public String toString() {
+        return ""+mID;
+    }
 }

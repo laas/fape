@@ -36,4 +36,8 @@ public class TransitionEvent extends TemporalEvent {
         ret.to = to;
         return ret;
     }
+
+    public String toString() {
+        return "@["+start+","+end+"):"+from+"->"+to;
+    }
 }
