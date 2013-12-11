@@ -16,5 +16,14 @@ package fape.core.execution.model;
  * @author FD
  */
 public class TemporalConstraint {
-    public int earlier, later;
+
+    /**
+     *
+     */
+    public int earlier,
+
+    /**
+     *
+     */
+    later;
 }

@@ -19,7 +19,14 @@ import java.util.List;
  */
 public class ActionRef {
 
+    /**
+     *
+     */
     public String name;
+
+    /**
+     *
+     */
     public List<Reference> args = new LinkedList<>();
 
     @Override

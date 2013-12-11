@@ -16,13 +16,33 @@ import fape.core.planning.model.Action;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 
 /**
- *
+ * non-null values represent the option
  * @author FD
  */
 public class SupportOption {
+
+    /**
+     *
+     */
     public TemporalDatabase tdb;
+
+    /**
+     *
+     */
     public TemporalDatabase.ChainComponent precedingComponent;
+
+    /**
+     *
+     */
     public AbstractAction supportingAction;
+
+    /**
+     *
+     */
     public Action actionToDecompose;
+
+    /**
+     *
+     */
     public int decompositionID = -1;
 }

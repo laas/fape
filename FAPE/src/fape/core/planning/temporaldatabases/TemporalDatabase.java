@@ -10,7 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
-import fape.core.planning.bindings.ObjectVariable;
+
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
@@ -21,6 +21,10 @@ import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
 import java.util.List;
@@ -33,20 +37,43 @@ import java.util.List;
 public class TemporalDatabase {
 
     private static int idCounter = 0;
+
+    /**
+     *
+     */
     public int mID;
 
+    /**
+     *
+     */
     public TemporalDatabase() {
         mID = idCounter++;
     }
 
+    /**
+     *
+     * @param noCount
+     */
     public TemporalDatabase(TemporalDatabase noCount) {
         mID = noCount.mID;
     }
 
+    /**
+     *
+     * @param db
+     * @param b
+     * @return
+     */
     public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        LinkedList<StateVariable> inter = new LinkedList(db.domain);
+        inter.retainAll(b.domain);        
+        return inter.size() > 0;        
     }
 
+    /**
+     *
+     * @param event
+     */
     public void AddEvent(TemporalEvent event) {
         //events.add(event);
 
@@ -65,6 +92,10 @@ public class TemporalDatabase {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public TemporalDatabase DeepCopy() {
         TemporalDatabase newDB = new TemporalDatabase(this);
         newDB.domain = new LinkedList(this.domain);
@@ -74,6 +105,12 @@ public class TemporalDatabase {
         return newDB;
     }
 
+    /**
+     *
+     * @param first
+     * @param second
+     * @param st
+     */
     public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
         if (!first.change) {
             for (TemporalEvent e : first.contents) {
@@ -96,15 +133,33 @@ public class TemporalDatabase {
         }
     }
 
+    /**
+     *
+     */
     public class ChainComponent {
 
+        /**
+         *
+         */
         public boolean change = true;
+
+        /**
+         *
+         */
         public LinkedList<TemporalEvent> contents = new LinkedList<>();
 
+        /**
+         *
+         * @param e
+         */
         public void Add(ChainComponent e) {
             contents.addAll(e.contents);
         }
 
+        /**
+         *
+         * @param ev
+         */
         public ChainComponent(TemporalEvent ev) {
             contents.add(ev);
             if (ev instanceof PersistenceEvent) {
@@ -116,13 +171,22 @@ public class TemporalDatabase {
 
         }
 
+        /**
+         *
+         * @return
+         */
         public String GetSupportValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to.value;
+            }else{
+                return((PersistenceEvent) contents.get(0)).value.value;
             }
-            return null;
         }
 
+        /**
+         *
+         * @return
+         */
         public String GetConsumeValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to.value;
@@ -130,10 +194,18 @@ public class TemporalDatabase {
             return null;
         }
 
+        /**
+         *
+         * @return
+         */
         public TemporalVariable GetConsumeTimePoint() {
             return this.contents.getFirst().start;
         }
 
+        /**
+         *
+         * @return
+         */
         public TemporalVariable GetSupportTimePoint() {
             return this.contents.getLast().end;
         }
@@ -146,28 +218,56 @@ public class TemporalDatabase {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean HasSinglePersistence() {
         return chain.size() == 1 && !chain.get(0).change;
     }
 
+    /**
+     *
+     * @return
+     */
     public String GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
+    /**
+     *
+     * @return
+     */
     public String GetGlobalConsumeValue() {
         return chain.getFirst().GetSupportValue();
     }
 
+    /**
+     *
+     * @return
+     */
     public TemporalVariable GetConsumeTimePoint() {
         return chain.getFirst().GetConsumeTimePoint();
     }
 
+    /**
+     *
+     * @return
+     */
     public TemporalVariable GetSupportTimePoint() {
         return chain.getLast().GetSupportTimePoint();
     }
 
     //public ObjectVariable var;
-    public List<StateVariable> domain = new LinkedList<>();
+
+    /**
+     *
+     */
+        public LinkedList<StateVariable> domain = new LinkedList<>();
     //List<TemporalEvent> events = new LinkedList<>();
-    public LinkedList<ChainComponent> chain = new LinkedList<>();
+
+    /**
+     *
+     */
+        public LinkedList<ChainComponent> chain = new LinkedList<>();
 }

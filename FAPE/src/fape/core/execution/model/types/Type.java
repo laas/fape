@@ -21,8 +21,20 @@ import java.util.List;
  * @author FD
  */
 public class Type {
+
+    /**
+     *
+     */
     public String name;
+
+    /**
+     *
+     */
     public String parent;
+
+    /**
+     *
+     */
     public List<Instance> instances = new LinkedList<>();
 
     @Override

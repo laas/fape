@@ -10,8 +10,6 @@
  */
 package fape.util;
 
-import fape.exceptions.FAPEException;
-import gov.nasa.anml.lifted.Op;
 import java.util.HashMap;
 
 /**
@@ -42,6 +40,11 @@ public class UnionFind {
         count++;
     }
     
+    /**
+     *
+     * @param x
+     * @param y
+     */
     public void Union(int x, int y){
         if(!out.containsKey(x)){
             AddComponent(x);
@@ -142,8 +145,19 @@ public class UnionFind {
      */
     public class UF {
 
+        /**
+         *
+         */
         public int[] id;     // id[i] = parent of i
+
+        /**
+         *
+         */
         public byte[] rank;  // rank[i] = rank of subtree rooted at i (cannot be more than 31)
+
+        /**
+         *
+         */
         public int count;    // number of components
 
         /**

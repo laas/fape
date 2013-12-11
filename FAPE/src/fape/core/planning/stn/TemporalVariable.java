@@ -16,8 +16,12 @@ package fape.core.planning.stn;
  */
 public class TemporalVariable {
 
-    private static int idCounter = 0;
-    private final int mID = idCounter++;
+    //private static int idCounter = 0;
+
+    /**
+     *
+     */
+        public int mID = -1;// = idCounter++;
 
     
     
@@ -26,6 +30,11 @@ public class TemporalVariable {
         return mID == ((TemporalVariable) (obj)).mID;
     }
 
+    /**
+     *
+     * @param obj
+     * @return
+     */
     public boolean equals(TemporalVariable obj) {
         return mID == obj.mID;
     }
@@ -37,6 +46,10 @@ public class TemporalVariable {
         return hash;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getID() {
         return mID;
     }

@@ -75,7 +75,7 @@ class STN {
      * size of increment
      */
     public static int inf, sup, inc;
-    static int precalc[][], precalc_size = 10000;
+    public static int precalc[][], precalc_size = 10000;
 
     /**
      * returns makespan

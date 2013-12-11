@@ -16,7 +16,15 @@ package fape.core.execution.model;
  * @author FD
  */
 public class Instance {
+
+    /**
+     *
+     */
     public String name;
+
+    /**
+     *
+     */
     public String type;
 
     @Override

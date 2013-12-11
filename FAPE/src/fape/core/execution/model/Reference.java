@@ -18,6 +18,10 @@ import java.util.LinkedList;
  * @author FD
  */
 public class Reference {
+
+    /**
+     *
+     */
     public LinkedList<String> refs = new LinkedList<>();
 
     @Override
@@ -30,6 +34,10 @@ public class Reference {
         return ret;
     }
     
+    /**
+     *
+     * @return
+     */
     public String GetTypeReference(){
         String st = toString();
         st = st.substring(st.indexOf("."));

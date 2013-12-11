@@ -19,8 +19,16 @@ import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
  * @author FD
  */
 public class TransitionEvent extends TemporalEvent {
+
+    /**
+     *
+     */    
     public StateVariableValue from, to;
 
+    /**
+     *
+     * @return
+     */
     @Override
     public TemporalEvent cc() {
         TransitionEvent ret = new TransitionEvent();

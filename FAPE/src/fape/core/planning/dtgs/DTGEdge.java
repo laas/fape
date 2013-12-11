@@ -8,7 +8,7 @@
  *
  */
 
-package fape.core.dtgs;
+package fape.core.planning.dtgs;
 import fape.core.planning.model.AbstractAction;
 import java.util.LinkedList;
 /**
@@ -16,10 +16,23 @@ import java.util.LinkedList;
  * @author Filip Dvořák
  */
 public class DTGEdge {
+
+    /**
+     *
+     */
     public LinkedList<AbstractAction> act;
+
+    /**
+     *
+     */
     public DTGEdge(){
         act = new LinkedList<>();
     }
+
+    /**
+     *
+     * @param a
+     */
     public void push(AbstractAction a){
         act.push(a);
     }

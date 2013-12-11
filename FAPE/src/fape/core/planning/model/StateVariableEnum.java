@@ -16,6 +16,9 @@ package fape.core.planning.model;
  */
 public class StateVariableEnum extends StateVariable {
 
+    /**
+     *
+     */
     public StateVariableEnum() {
         mType = EStateVariableType.ENUM;
     }

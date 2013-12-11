@@ -18,6 +18,9 @@ public class StateVariableInteger extends StateVariable {
 
     int value;
 
+    /**
+     *
+     */
     public StateVariableInteger() {
         mType = EStateVariableType.INTEGER;
     }

@@ -19,10 +19,20 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class ConditionEvent extends TemporalEvent {
 
+    /**
+     *
+     */
     public String operator;
+
+    /**
+     *
+     */
     public float value;
-    
-    
+
+    /**
+     *
+     * @return
+     */
     @Override
     public TemporalEvent cc() {
         ConditionEvent ret = new ConditionEvent();

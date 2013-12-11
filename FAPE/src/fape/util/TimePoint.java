@@ -16,6 +16,11 @@ package fape.util;
  * @author FD
  */
 public class TimePoint {
+
+    /**
+     *
+     * @param tp
+     */
     public TimePoint(long tp){
         val = tp;
     }

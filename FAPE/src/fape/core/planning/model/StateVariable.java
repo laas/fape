@@ -18,17 +18,60 @@ import java.util.Objects;
  * @author FD
  */
 public class StateVariable {
+
+    /**
+     *
+     */
     public enum EStateVariableType{
-        BOOLEAN, FLOAT, INTEGER, ENUM
+
+        /**
+         *
+         */
+        BOOLEAN,
+
+        /**
+         *
+         */
+        FLOAT,
+
+        /**
+         *
+         */
+        INTEGER,
+
+        /**
+         *
+         */
+        ENUM
     }
+
+    /**
+     *
+     */
     public String typeDerivationName; // e.g. Robot.mLocation ...
+
+    /**
+     *
+     */
     public EStateVariableType mType;
     /**
      * fully qualifying name, list of nesting separated by dots
      */
     public String name;    
+
+    /**
+     *
+     */
     public String type;
 
+    /**
+     *
+     * @return
+     */
+    public String GetObjectConstant(){
+        return name.substring(0, name.indexOf("."));
+    }
+    
     @Override
     public boolean equals(Object obj) {
         return ((StateVariable)obj).name.equals(name);

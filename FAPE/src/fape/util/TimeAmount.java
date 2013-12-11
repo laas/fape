@@ -16,6 +16,10 @@ package fape.util;
  */
 public class TimeAmount {
 
+    /**
+     *
+     * @param tp
+     */
     public TimeAmount(long tp) {
         val = tp;
     }

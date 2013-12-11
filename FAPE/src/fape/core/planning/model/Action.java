@@ -12,7 +12,7 @@ package fape.core.planning.model;
 
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.TemporalConstraint;
-import fape.core.planning.bindings.ObjectVariable;
+
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.util.Pair;
@@ -26,13 +26,41 @@ import java.util.List;
  */
 public class Action {
 
+    /**
+     *
+     */
     public float duration = -1.0f;
-    public TemporalVariable start, end;
+
+    /**
+     *
+     */
+    public TemporalVariable start,
+
+    /**
+     *
+     */
+    end;
+
+    /**
+     *
+     */
     public String name;
     //public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
-    public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
+
+    /**
+     *
+     */
+        public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
+
+    /**
+     *
+     */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
 
+    /**
+     *
+     * @return
+     */
     public boolean IsRefinable() {
         return refinementOptions.size() > 0 && decomposition == null;
     }
@@ -53,6 +81,12 @@ public class Action {
      }
      }
      }*/
+
+    /**
+     *
+     * @return
+     */
+    
     public Action DeepCopy() {
         Action a = new Action();
         if(this.decomposition == null){

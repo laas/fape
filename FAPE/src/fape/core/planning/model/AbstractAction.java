@@ -25,12 +25,31 @@ import java.util.List;
  */
 public class AbstractAction {
 
+    /**
+     *
+     */
     public String name;
+
+    /**
+     *
+     */
     public List<AbstractTemporalEvent> events = new ArrayList<>();
+
+    /**
+     *
+     */
     public List<Instance> params;
+
+    /**
+     *
+     */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> strongDecompositions;
     List<Pair<Integer, Integer>> localBindings;
 
+    /**
+     *
+     * @return
+     */
     public float GetDuration() {
         return 1.0f;
     }

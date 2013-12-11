@@ -13,15 +13,32 @@ package fape.util;
 /**
  *
  * @author FD
+ * @param <T>
+ * @param <V>
  */
 public class Pair<T, V> {
 
+    /**
+     *
+     */
     public T value1;
+
+    /**
+     *
+     */
     public V value2;
 
+    /**
+     *
+     */
     public Pair() {
     }
 
+    /**
+     *
+     * @param v1
+     * @param v2
+     */
     public Pair(T v1, V v2) {
         this.value1 = v1;
         this.value2 = v2;

@@ -19,15 +19,54 @@ import fape.core.execution.model.TemporalInterval;
  * @author FD
  */
 public class Statement {
+
+    /**
+     *
+     */
     public String operator;
-    public Reference from, to;
+
+    /**
+     *
+     */
+    public Reference from,
+
+    /**
+     *
+     */
+    to;
+
+    /**
+     *
+     */
     public TemporalInterval interval;
+
+    /**
+     *
+     */
     public Reference leftRef;
+
+    /**
+     *
+     */
     public Reference rightRef;
+
+    /**
+     *
+     */
     public float value;
+
+    /**
+     *
+     * @return
+     */
     public float GetResourceValue(){
         return Float.parseFloat(from.refs.getFirst().toString());
     }
+
+    /**
+     *
+     * @return
+     */
     public boolean IsResourceRelated(){
         if(from == null){
             return false;
@@ -39,6 +78,11 @@ public class Statement {
             return false;
         }        
     }
+
+    /**
+     *
+     * @return
+     */
     public String GetVariableName(){
         String st = "";
         for(String s:leftRef.refs){

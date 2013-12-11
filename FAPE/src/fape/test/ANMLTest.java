@@ -22,6 +22,12 @@ import org.antlr.runtime.tree.Tree;
  */
 public class ANMLTest {
 
+    /**
+     *
+     * @param args
+     * @throws RecognitionException
+     * @throws IOException
+     */
     public static void main(String[] args) throws RecognitionException, IOException {
         Tree t = gov.nasa.anml.Main.getTree("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream.anml");
         ANMLBlock b = ANMLFactory.Parse(t);

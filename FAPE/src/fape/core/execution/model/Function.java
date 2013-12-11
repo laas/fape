@@ -16,12 +16,46 @@ package fape.core.execution.model;
  */
 public class Function {
 
+    /**
+     *
+     */
     public enum EOperator {
 
-        DIVIDE, MULTIPLY, PLUS, MINUS
+        /**
+         *
+         */
+        DIVIDE,
+
+        /**
+         *
+         */
+        MULTIPLY,
+
+        /**
+         *
+         */
+        PLUS,
+
+        /**
+         *
+         */
+        MINUS
     }
+
+    /**
+     *
+     */
     public EOperator mOperator;
-    public Reference left, right;
+
+    /**
+     *
+     */
+    public Reference left,
+
+    /**
+     *
+     */
+    right;
 
     @Override
     public String toString() {

@@ -7,7 +7,7 @@
  * (C) Copyright 2008-2009 Filip Dvořák
  *
  */
-package fape.core.dtgs;
+package fape.core.planning.dtgs;
 
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
@@ -41,15 +41,19 @@ public class ADTG {
 
     //maps value names to their indexes in the system    
     /*public HashMap<String, Integer> valueIndexes = new HashMap<>();
-    int valueIndexCounter = 0;
+     int valueIndexCounter = 0;
 
-    public void AddValue(String nm) {
-        if (valueIndexes.containsKey(nm)) {
-            throw new FAPEException("Type already defined.");
-        }
-        valueIndexes.put(nm, valueIndexCounter);
-        valueIndexCounter++;
-    }*/
+     public void AddValue(String nm) {
+     if (valueIndexes.containsKey(nm)) {
+     throw new FAPEException("Type already defined.");
+     }
+     valueIndexes.put(nm, valueIndexCounter);
+     valueIndexCounter++;
+     }*/
+
+    /**
+     *
+     */
     
     public String var_id;
     /**
@@ -255,17 +259,22 @@ public class ADTG {
         }
     }
 
+    /**
+     *
+     * @param GetGlobalConsumeValue
+     * @return
+     */
     public HashSet<String> GetActionSupporters(String GetGlobalConsumeValue) {
         HashSet<String> actionNames = new HashSet<>();
         for (DTGEdge[] graph1 : graph) {
-            for(DTGEdge e : graph1){
-                if(e.act != null){
-                    for(AbstractAction a:e.act){
+            for (DTGEdge e : graph1) {
+                if (e != null && e.act != null) {
+                    for (AbstractAction a : e.act) {
                         actionNames.add(a.name);
                     }
                 }
             }
-        }                
+        }
         return actionNames;
     }
 }

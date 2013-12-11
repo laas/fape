@@ -23,7 +23,15 @@ public class Type {
      * the second one is the name of its type
      */
     public String name;
+
+    /**
+     *
+     */
     public HashMap<String, String> contents;
+
+    /**
+     *
+     */
     public HashMap<String, Integer> instances = new HashMap<>();
     int instanceCounter = 0;
     /**
@@ -34,11 +42,19 @@ public class Type {
         contents = new HashMap<>(parent.contents);
     }
     
+    /**
+     *
+     * @param nm
+     */
     public Type(String nm){
         name = nm;
         contents = new HashMap<>();
     }
 
+    /**
+     *
+     * @param name
+     */
     public void AddInstance(String name) {
         instances.put(name, instanceCounter);
         instanceCounter++;

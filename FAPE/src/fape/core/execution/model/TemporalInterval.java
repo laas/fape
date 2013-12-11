@@ -20,13 +20,27 @@ import fape.exceptions.FAPEException;
  */
 public class TemporalInterval {
 
-    public String s, e;
+    /**
+     *
+     */
+    public String s,
+
+    /**
+     *
+     */
+    e;
 
     @Override
     public String toString() {
         return "[" + e + ", " + s + "]";
     }
     
+    /**
+     *
+     * @param ev
+     * @param start
+     * @param end
+     */
     public void AssignTemporalContext(TemporalEvent ev, TemporalVariable start, TemporalVariable end){
         switch (s) {
             case "TStart":

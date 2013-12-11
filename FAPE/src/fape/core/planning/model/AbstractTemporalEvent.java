@@ -22,11 +22,34 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class AbstractTemporalEvent {
     //this event works as an abstraction for further carbon-copying
-    public TemporalEvent event;
+
+    /**
+     *
+     */
+        public TemporalEvent event;
+
+    /**
+     *
+     */
     public TemporalInterval interval;
+
+    /**
+     *
+     */
     public Reference stateVariableReference;
+
+    /**
+     *
+     */
     public String varType;
 
+    /**
+     *
+     * @param ProduceTemporalEvent
+     * @param interval_
+     * @param leftRef
+     * @param varType_
+     */
     public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef,String varType_) {
         event = ProduceTemporalEvent;
         interval = interval_;
@@ -34,6 +57,11 @@ public class AbstractTemporalEvent {
         varType = varType_;
     }
 
+    /**
+     *
+     * @param var_id
+     * @return
+     */
     public boolean SupportsStateVariable(String var_id) {
         /*String mSuffix = stateVariableReference.toString();
         mSuffix = mSuffix.substring(mSuffix.indexOf("."));

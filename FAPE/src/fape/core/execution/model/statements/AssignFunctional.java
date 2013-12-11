@@ -18,7 +18,14 @@ import fape.core.execution.model.Function;
  */
 public class AssignFunctional extends Statement {
 
+    /**
+     *
+     */
     public String label;
+
+    /**
+     *
+     */
     public Function func;
 
     @Override

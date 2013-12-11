@@ -27,10 +27,19 @@ import java.util.List;
  */
 public class Actor {
 
+    /**
+     *
+     * @param b
+     */
     public void PushEvent(ANMLBlock b) {
         newEventBuffer.add(b);
     }
 
+    /**
+     *
+     * @param e
+     * @param p
+     */
     public void bind(Executor e, Planner p) {
         mExecutor = e;
         mPlanner = p;
@@ -41,16 +50,37 @@ public class Actor {
     long progressStep = 100;
     Executor mExecutor;
     Planner mPlanner;
+
+    /**
+     *
+     */
     public LinkedList<ANMLBlock> newEventBuffer = new LinkedList<>();
 
+    /**
+     *
+     */
     public enum EActorState {
 
-        STOPPED, ACTING, ENDING
+        /**
+         *
+         */
+        STOPPED,
+
+        /**
+         *
+         */
+        ACTING,
+
+        /**
+         *
+         */
+        ENDING
     }
     EActorState mState = EActorState.ACTING;
 
     /**
      * runs the acting agent
+     * @throws java.lang.InterruptedException
      */
     public void run() throws InterruptedException {
         boolean end = false;

@@ -25,22 +25,48 @@ public class STNManager {
     TemporalVariable start, end; //global start and end of the world   
     //List<TemporalVariable> variables = new LinkedList<>();
 
-    public STNManager() {
-        STN.precalc_inic();
+    /**
+     *
+     */
+    public void Init() {
+        if (STN.precalc == null) {
+            STN.precalc_inic();
+        }
         start = new TemporalVariable(); //0
+        start.mID = stn.add_v();
         end = new TemporalVariable(); //1
-        stn.add_v();
-        stn.add_v();
+        end.mID = stn.add_v();
         if (start.getID() != 0) {
             throw new FAPEException("STN: Broken indexing.");
         }
         EnforceBefore(start, end);
+
     }
 
+    /**
+     *
+     */
+    public STNManager() {
+
+    }
+
+    /**
+     *
+     * @param a
+     * @param b
+     */
     public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
         stn.eless(a.getID(), b.getID());
     }
 
+    /**
+     *
+     * @param a
+     * @param b
+     * @param min
+     * @param max
+     * @return
+     */
     public final boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) {
         if (stn.edge_consistent(a.getID(), b.getID(), min, max)) {
             stn.propagate(a.getID(), b.getID(), min, max);
@@ -49,11 +75,21 @@ public class STNManager {
             return false;
         }
     }
-    
-    public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second){
+
+    /**
+     *
+     * @param first
+     * @param second
+     * @return
+     */
+    public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second) {
         return stn.pless(first.getID(), second.getID());
     }
 
+    /**
+     *
+     * @return
+     */
     public TemporalVariable getNewTemporalVariable() {
         // allocate new space if we are running out of it
         /*if(stn.capacity - 1 == stn.top){
@@ -61,14 +97,19 @@ public class STNManager {
          }*/
         TemporalVariable tv = new TemporalVariable();
         int test = stn.add_v();
-        if (tv.getID() != test) {
-            throw new UnsupportedOperationException("Broken STN indexing.");
-        }
+        tv.mID = test;
+        /*if (tv.getID() != test) {
+         throw new UnsupportedOperationException("Broken STN indexing.");
+         }*/
         EnforceBefore(start, tv);
         EnforceBefore(tv, end);
         return tv;
     }
 
+    /**
+     *
+     * @return
+     */
     public STNManager DeepCopy() {
         STNManager nm = new STNManager();
         nm.end = this.end;

@@ -27,6 +27,11 @@ import java.util.List;
  */
 public class ANMLFactory {
 
+    /**
+     *
+     * @param t
+     * @return
+     */
     public static ANMLBlock Parse(Tree t) {
         ANMLBlock b = new ANMLBlock();
 

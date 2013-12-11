@@ -10,10 +10,6 @@
  */
 package fape.core.planning.states;
 
-import fape.core.execution.model.ActionRef;
-import fape.core.planning.bindings.BindingManager;
-import fape.core.planning.causalities.CausalNetworkManager;
-import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -27,14 +23,33 @@ import java.util.List;
  */
 public class State {
  
+    /**
+     *
+     */
     public TemporalDatabaseManager tdb;
+
+    /**
+     *
+     */
     public STNManager tempoNet;
+
+    /**
+     *
+     */
     public TaskNetworkManager taskNet;
+
+    /**
+     *
+     */
     public List<TemporalDatabase> consumers;
     //public ConstraintNetworkManager conNet;
     //public BindingManager bindings;
     //public CausalNetworkManager causalNet;
-    public boolean isInitState = false;
+
+    /**
+     *
+     */
+        public boolean isInitState = false;
 
     /**
      * this constructor is only for the initial state!! other states are constructed
@@ -44,6 +59,7 @@ public class State {
         isInitState = true;
         tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
+        tempoNet.Init();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         //conNet = new ConstraintNetworkManager();
@@ -51,6 +67,10 @@ public class State {
         //causalNet = new CausalNetworkManager();
     }
 
+    /**
+     *
+     * @param st
+     */
     public State(State st) {
         this.taskNet = st.taskNet.DeepCopy();
         this.tdb = st.tdb.DeepCopy();
@@ -63,10 +83,18 @@ public class State {
         
     }
     
+    /**
+     *
+     * @return
+     */
     public float GetCurrentCost(){
         return 0.0f;
     }
     
+    /**
+     *
+     * @return
+     */
     public float GetGoalDistance(){
         return 0.0f;
     }

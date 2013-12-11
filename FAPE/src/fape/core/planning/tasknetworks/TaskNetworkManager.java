@@ -31,10 +31,21 @@ public class TaskNetworkManager {
     List<Action> roots = new LinkedList<>();
     List<Action> openLeaves = new LinkedList<>();
     
+    /**
+     *
+     * @param act
+     */
     public void AddSeed(Action act) {
         roots.add(act);
     }
 
+    /**
+     *
+     * @param a
+     * @param abs
+     * @param actions
+     * @return
+     */
     public boolean DecomposesIntoDesiredAction(AbstractAction a, HashSet<String> abs, HashMap<String, AbstractAction> actions) {
         if (abs.contains(a.name)) {
             return true;
@@ -50,6 +61,12 @@ public class TaskNetworkManager {
         return false;
     }
 
+    /**
+     *
+     * @param abs
+     * @param actions
+     * @return
+     */
     public List<SupportOption> GetDecompositionCandidates(HashSet<String> abs, HashMap<String, AbstractAction> actions) {
         List<SupportOption> ret = new LinkedList<>();
         //lets run dfs to find the action names we like
@@ -63,6 +80,10 @@ public class TaskNetworkManager {
         return ret;
     }
 
+    /**
+     *
+     * @return
+     */
     public TaskNetworkManager DeepCopy() {
         TaskNetworkManager tm = new TaskNetworkManager();
         tm.openLeaves = new LinkedList<>();

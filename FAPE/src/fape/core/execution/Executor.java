@@ -33,11 +33,21 @@ public class Executor {
     Actor mActor;
     Listener mListener;
 
+    /**
+     *
+     * @param a
+     * @param l
+     */
     public void bind(Actor a, Listener l) {
         mActor = a;
         mListener = l;
     }
 
+    /**
+     *
+     * @param path
+     * @return
+     */
     public ANMLBlock ProcessANMLfromFile(String path) {
         ANMLBlock b;
         try {

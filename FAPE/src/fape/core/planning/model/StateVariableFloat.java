@@ -18,6 +18,9 @@ public class StateVariableFloat extends StateVariable {
 
     float value;
 
+    /**
+     *
+     */
     public StateVariableFloat() {
         mType = EStateVariableType.FLOAT;
     }

@@ -18,8 +18,15 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class ProduceEvent extends TemporalEvent {
 
+    /**
+     *
+     */
     public double howMuch;
 
+    /**
+     *
+     * @return
+     */
     @Override
     public TemporalEvent cc() {
         ProduceEvent ret = new ProduceEvent();

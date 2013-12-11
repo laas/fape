@@ -9,7 +9,7 @@
  * permission of the author.
  */
 
-package fape.core.dtgs;
+package fape.core.planning.dtgs;
 
 import java.util.LinkedList;
 import java.util.List;

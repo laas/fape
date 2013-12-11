@@ -19,8 +19,15 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  */
 public class PersistenceEvent extends TemporalEvent {
 
+    /**
+     *
+     */
     public StateVariableValue value;
 
+    /**
+     *
+     * @return
+     */
     @Override
     public TemporalEvent cc() {
         PersistenceEvent ret = new PersistenceEvent();

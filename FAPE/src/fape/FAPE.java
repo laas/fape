@@ -24,6 +24,7 @@ public class FAPE {
 
     /**
      * @param args the command line arguments
+     * @throws java.lang.InterruptedException
      */
     public static void main(String[] args) throws InterruptedException {
         Actor a = null;
@@ -48,7 +49,7 @@ public class FAPE {
         }
 
         //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream.anml"));
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream2.anml"));
 
         p.Init();
         

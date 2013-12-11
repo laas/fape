@@ -19,10 +19,21 @@ import java.net.Socket;
  */
 public class Listener {
     
+    /**
+     *
+     * @param e
+     */
     public void bind(Executor e){
         exec = e;
     }
     
+    /**
+     *
+     * @param oprs_host
+     * @param oprs_manip
+     * @param client_name
+     * @param socket_mp
+     */
     public Listener(String oprs_host, String oprs_manip, String client_name, String socket_mp){
         connect(oprs_host, oprs_manip, client_name, socket_mp);
     }

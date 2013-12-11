@@ -15,7 +15,6 @@ import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
-import fape.core.planning.bindings.ObjectVariable;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.StateVariable;
@@ -78,6 +77,7 @@ public class TransitionIO2Planning {
      * @param name
      * @param type
      * @param types
+     * @param rootType
      * @return
      */
     public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types, String rootType) {
@@ -119,10 +119,15 @@ public class TransitionIO2Planning {
         return ret;
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     public static TemporalEvent ProduceTemporalEvent(Statement s) {
         TemporalEvent ev = null;
         if (s.operator == null) {
-            int xx = 0;
+            throw new FAPEException(null);
         }
         switch (s.operator) {
             case ":produce":
@@ -203,6 +208,12 @@ public class TransitionIO2Planning {
         return ev;
     }
 
+    /**
+     *
+     * @param ev
+     * @param s
+     * @param state
+     */
     public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
         TemporalVariable vs = state.tempoNet.getNewTemporalVariable(), ve = state.tempoNet.getNewTemporalVariable();
 
@@ -247,9 +258,14 @@ public class TransitionIO2Planning {
         if(ev instanceof PersistenceEvent || (ev instanceof TransitionEvent && ((TransitionEvent) ev).from != null)){
             st.consumers.add(db);
         }
-
     }
 
+    /**
+     *
+     * @param a
+     * @param vars
+     * @return
+     */
     public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
