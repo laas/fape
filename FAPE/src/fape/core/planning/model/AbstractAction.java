@@ -73,4 +73,8 @@ public class AbstractAction {
         return localBindings;
 
     }
+
+    public String toString() {
+        return name;
+    }
 }

@@ -45,4 +45,23 @@ public class SupportOption {
      *
      */
     public int decompositionID = -1;
+
+    public String toString() {
+        //return "" + tdb + " " + precedingComponent + " " + supportingAction + " " + actionToDecompose;
+        if (tdb != null && precedingComponent != null) {
+            // this is database merge of one persistence into another
+            return "{merge of two persistences, tdb="+tdb+", preceding="+precedingComponent;
+        } else if (tdb != null) {
+            //this is a database concatenation
+            return "{DB Concatenation w/ "+tdb+"}";
+        } else if (supportingAction != null) {
+            //this is a simple applciation of an action
+            return "{ActionApplication "+supportingAction+"}";
+        } else if (actionToDecompose != null) {
+            // this is a task decomposition
+            return "{ActionDecomposition "+actionToDecompose+"}";
+        } else {
+            return "Unknown option.";
+        }
+    }
 }

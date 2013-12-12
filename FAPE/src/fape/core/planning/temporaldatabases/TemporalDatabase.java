@@ -259,6 +259,23 @@ public class TemporalDatabase {
         return chain.getLast().GetSupportTimePoint();
     }
 
+    public String toString() {
+        String res =  "(tdb:" + mID + " dom=[";
+        for(StateVariable d : this.domain) {
+            res += d.name + " ";
+        }
+        res += "] chains=[";
+
+        for(ChainComponent comp : this.chain) {
+            for(TemporalEvent ev : comp.contents) {
+                res += ev.toString() + ", ";
+            }
+        }
+        res += "])";
+
+        return res;
+    }
+
     //public ObjectVariable var;
 
     /**

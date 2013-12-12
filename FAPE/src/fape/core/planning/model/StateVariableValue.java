@@ -29,13 +29,23 @@ public class StateVariableValue {
     public List<String> values = new LinkedList<>();
     
     /**
+     *
+     *
      * defines the parameter representing the value
      */
+    public String value;
+    public String value;
     public String valueDescription;
 
     /**
      *
      */
+    public int index = -1;
+    public int index = -1;
     //public int index = -1;
     
+
+    public String toString() {
+        return value;
+    }
 }
