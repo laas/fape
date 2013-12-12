@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.model;
 
 import java.util.LinkedList;
@@ -20,32 +19,28 @@ import java.util.List;
  */
 public class StateVariableValue {
 
-    public boolean Unifiable(StateVariableValue val1){
+    public boolean Unifiable(StateVariableValue val1) {
         List<String> vals = new LinkedList<>(val1.values);
         vals.retainAll(this.values);
         return vals.size() > 0;
     }
-    
+
     public List<String> values = new LinkedList<>();
-    
+
     /**
      *
      *
      * defines the parameter representing the value
      */
-    public String value;
-    public String value;
     public String valueDescription;
 
     /**
      *
      */
     public int index = -1;
-    public int index = -1;
     //public int index = -1;
-    
 
     public String toString() {
-        return value;
+        return valueDescription + " " + values.toString();
     }
 }
