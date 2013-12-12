@@ -10,6 +10,8 @@
 package fape.core.planning.dtgs;
 
 import fape.core.planning.model.AbstractAction;
+import fape.core.planning.model.StateVariableValue;
+import fape.core.planning.model.Type;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import java.util.Collection;
@@ -50,11 +52,11 @@ public class ADTG {
      valueIndexes.put(nm, valueIndexCounter);
      valueIndexCounter++;
      }*/
+    public Type mType;
 
     /**
      *
      */
-    
     public String var_id;
     /**
      * the graph itself, graph[i][j] contains actions that change i-th value to
@@ -228,13 +230,13 @@ public class ADTG {
     /**
      * Abstract Domain Transition Graphs
      *
-     * @param _var_id
-     * @param _var_size
+     * @param t
      * @param actions
      */
-    public ADTG(String _var_id, int _var_size, Collection<AbstractAction> actions) {
-        var_id = _var_id;
-        var_size = _var_size;
+    public ADTG(Type t, Collection<AbstractAction> actions) {
+        var_id = t.name;
+        var_size = t.instances.size();
+        mType = t;
 
         int i, j;
         graph = new DTGEdge[var_size][];
@@ -264,10 +266,16 @@ public class ADTG {
      * @param GetGlobalConsumeValue
      * @return
      */
-    public HashSet<String> GetActionSupporters(String GetGlobalConsumeValue) {
+    public HashSet<String> GetActionSupporters(StateVariableValue GetGlobalConsumeValue) {
+        List<Integer> mValues = new LinkedList<>();
+        for (String st : GetGlobalConsumeValue.values) {
+            mValues.add(mType.instances.get(st));
+        }
         HashSet<String> actionNames = new HashSet<>();
+
         for (DTGEdge[] graph1 : graph) {
-            for (DTGEdge e : graph1) {
+            for (Integer i : mValues) {
+                DTGEdge e = graph1[i];
                 if (e != null && e.act != null) {
                     for (AbstractAction a : e.act) {
                         actionNames.add(a.name);

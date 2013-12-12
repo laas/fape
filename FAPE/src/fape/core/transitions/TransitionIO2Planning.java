@@ -149,7 +149,7 @@ public class TransitionIO2Planning {
                     TransitionEvent eve4 = new TransitionEvent();
                     eve4.from = null; // can be any value
                     eve4.to = new StateVariableValue();
-                    eve4.to.value = s.from.toString();
+                    eve4.to.valueDescription = s.from.toString();
                     ev = eve4;
                 }
                 break;
@@ -162,14 +162,14 @@ public class TransitionIO2Planning {
                         TransitionEvent eve5 = new TransitionEvent();
                         eve5.from = new StateVariableValue();
                         eve5.to = new StateVariableValue();
-                        eve5.from.value = s.from.toString();
-                        eve5.to.value = s.to.toString();
+                        eve5.from.valueDescription = s.from.toString();
+                        eve5.to.valueDescription = s.to.toString();
                         ev = eve5;
                     } else {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
                         eve6.value = new StateVariableValue();
-                        eve6.value.value = s.rightRef.toString();
+                        eve6.value.valueDescription = s.rightRef.toString();
                         ev = eve6;
                     }
                 }

@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 
 import fape.core.planning.model.StateVariable;
+import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -175,11 +176,11 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetSupportValue() {
+        public StateVariableValue GetSupportValue() {
             if (change) {
-                return ((TransitionEvent) contents.get(0)).to.value;
+                return ((TransitionEvent) contents.get(0)).to;
             }else{
-                return((PersistenceEvent) contents.get(0)).value.value;
+                return((PersistenceEvent) contents.get(0)).value;
             }
         }
 
@@ -187,9 +188,9 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetConsumeValue() {
+        public StateVariableValue GetConsumeValue() {
             if (change) {
-                return ((TransitionEvent) contents.get(0)).to.value;
+                return ((TransitionEvent) contents.get(0)).to;
             }
             return null;
         }
@@ -230,7 +231,7 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public String GetGlobalSupportValue() {
+    public StateVariableValue GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
@@ -238,7 +239,7 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public String GetGlobalConsumeValue() {
+    public StateVariableValue GetGlobalConsumeValue() {
         return chain.getFirst().GetSupportValue();
     }
 

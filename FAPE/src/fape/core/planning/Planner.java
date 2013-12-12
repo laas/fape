@@ -304,7 +304,7 @@ public class Planner {
             if (db.HasSinglePersistence()) {
                 //we are looking for chain integration too
                 for (TemporalDatabase.ChainComponent comp : b.chain) {
-                    if (comp.change && comp.GetSupportValue().equals(db.GetGlobalConsumeValue())
+                    if (comp.change && comp.GetSupportValue().Unifiable(db.GetGlobalConsumeValue())
                             && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                         SupportOption o = new SupportOption();
                         o.precedingComponent = comp;
@@ -313,7 +313,7 @@ public class Planner {
                     }
                 }
             } else {
-                if (b.GetGlobalSupportValue().equals(db.GetGlobalConsumeValue())
+                if (b.GetGlobalSupportValue().Unifiable(db.GetGlobalConsumeValue())
                         && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                     SupportOption o = new SupportOption();
                     o.tdb = b;
@@ -382,6 +382,8 @@ public class Planner {
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
 
+        
+        //TODO: apply ANML to more states and choose the best after the applciation
         State st = GetCurrentState();
 
         // this a generic predecesor of all types
@@ -450,7 +452,7 @@ public class Planner {
          }*/
         for (Type t : types.values()) {
             if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
-                ADTG dtg = new ADTG(t.name, t.instances.size(), actions.values());
+                ADTG dtg = new ADTG(t.instances, t.name, t.instances.size(), actions.values());
 
                 dtg.op_all_paths();
                 dtgs.put(t.name, dtg);
