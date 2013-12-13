@@ -124,7 +124,7 @@ public class TransitionIO2Planning {
      * @param s
      * @return
      */
-    public static TemporalEvent ProduceTemporalEvent(Statement s) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues) {
         TemporalEvent ev = null;
         if (s.operator == null) {
             throw new FAPEException(null);
@@ -148,7 +148,7 @@ public class TransitionIO2Planning {
                 } else {
                     TransitionEvent eve4 = new TransitionEvent();
                     eve4.from = null; // can be any value
-                    eve4.to = new StateVariableValue();
+                    eve4.to = new StateVariableValue(assignUniqueIDToValues);
                     eve4.to.valueDescription = s.from.toString();
                     ev = eve4;
                 }
@@ -160,15 +160,15 @@ public class TransitionIO2Planning {
                     if (s.to != null) {
                         //this is a transition event
                         TransitionEvent eve5 = new TransitionEvent();
-                        eve5.from = new StateVariableValue();
-                        eve5.to = new StateVariableValue();
+                        eve5.from = new StateVariableValue(assignUniqueIDToValues);
+                        eve5.to = new StateVariableValue(assignUniqueIDToValues);
                         eve5.from.valueDescription = s.from.toString();
                         eve5.to.valueDescription = s.to.toString();
                         ev = eve5;
                     } else {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
-                        eve6.value = new StateVariableValue();
+                        eve6.value = new StateVariableValue(assignUniqueIDToValues);
                         eve6.value.valueDescription = s.rightRef.toString();
                         ev = eve6;
                     }
@@ -248,7 +248,7 @@ public class TransitionIO2Planning {
 
         // create a new event for the termporal database that corresponds to the
         // statement
-        TemporalEvent ev = ProduceTemporalEvent(s);
+        TemporalEvent ev = ProduceTemporalEvent(s, true);
         AddTimePoints(ev, s, st);
 
         //add the event to the database
@@ -286,7 +286,7 @@ public class TransitionIO2Planning {
                     varType = i.type;
                 }
             }*/
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s), s.interval, s.leftRef, varType);
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s, false), s.interval, s.leftRef, varType);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();

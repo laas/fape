@@ -24,6 +24,8 @@ import java.util.ListIterator;
 /**
  * Domain transition graph, contains methods for its creation and for providing
  * ordered paths.
+ * 
+ * this version is abstracted, the edges are labeled with uninstatiated abstract actions
  *
  * @author Filip Dvořák
  */

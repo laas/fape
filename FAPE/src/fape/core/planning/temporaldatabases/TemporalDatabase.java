@@ -10,7 +10,6 @@
  */
 package fape.core.planning.temporaldatabases;
 
-
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.states.State;
@@ -35,28 +34,16 @@ import java.util.List;
  *
  * @author FD
  */
-public class TemporalDatabase {
-
-    private static int idCounter = 0;
+public class TemporalDatabase extends IUnifiable {
 
     /**
      *
+     * @param assignNewUniqueID
      */
-    public int mID;
-
-    /**
-     *
-     */
-    public TemporalDatabase() {
-        mID = idCounter++;
-    }
-
-    /**
-     *
-     * @param noCount
-     */
-    public TemporalDatabase(TemporalDatabase noCount) {
-        mID = noCount.mID;
+    public TemporalDatabase(boolean assignNewUniqueID) {
+        if (assignNewUniqueID) {
+            mID = idCounter++;
+        }
     }
 
     /**
@@ -67,8 +54,8 @@ public class TemporalDatabase {
      */
     public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
         LinkedList<StateVariable> inter = new LinkedList(db.domain);
-        inter.retainAll(b.domain);        
-        return inter.size() > 0;        
+        inter.retainAll(b.domain);
+        return inter.size() > 0;
     }
 
     /**
@@ -98,7 +85,8 @@ public class TemporalDatabase {
      * @return
      */
     public TemporalDatabase DeepCopy() {
-        TemporalDatabase newDB = new TemporalDatabase(this);
+        TemporalDatabase newDB = new TemporalDatabase(false);
+        newDB.mID = mID;
         newDB.domain = new LinkedList(this.domain);
         for (ChainComponent c : this.chain) {
             newDB.chain.add(c.DeepCopy());
@@ -132,6 +120,38 @@ public class TemporalDatabase {
                 st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
             }
         }
+    }
+
+    /**
+     * reduces the domain, if elements were removed, returns true
+     *
+     * @param supported
+     * @return
+     */
+    @Override
+    public boolean ReduceDomain(HashSet<String> supported) {
+        LinkedList<StateVariable> remove = new LinkedList<>();
+        for (StateVariable v : domain) {
+            if (!supported.contains(v.GetObjectConstant())) {
+                remove.add(v);
+            }
+        }
+        domain.removeAll(remove);
+        return !remove.isEmpty();
+    }
+
+    @Override
+    public List<String> GetDomainObjectConstants() {
+        List<String> ret = new LinkedList<>();
+        for (StateVariable sv : domain) {
+            ret.add(sv.GetObjectConstant());
+        }
+        return ret;
+    }
+
+    @Override
+    public int GetUniqueID() {
+        return mID;
     }
 
     /**
@@ -179,8 +199,8 @@ public class TemporalDatabase {
         public StateVariableValue GetSupportValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to;
-            }else{
-                return((PersistenceEvent) contents.get(0)).value;
+            } else {
+                return ((PersistenceEvent) contents.get(0)).value;
             }
         }
 
@@ -260,14 +280,14 @@ public class TemporalDatabase {
     }
 
     public String toString() {
-        String res =  "(tdb:" + mID + " dom=[";
-        for(StateVariable d : this.domain) {
+        String res = "(tdb:" + mID + " dom=[";
+        for (StateVariable d : this.domain) {
             res += d.name + " ";
         }
         res += "] chains=[";
 
-        for(ChainComponent comp : this.chain) {
-            for(TemporalEvent ev : comp.contents) {
+        for (ChainComponent comp : this.chain) {
+            for (TemporalEvent ev : comp.contents) {
                 res += ev.toString() + ", ";
             }
         }
@@ -277,15 +297,15 @@ public class TemporalDatabase {
     }
 
     //public ObjectVariable var;
-
     /**
      *
      */
-        public LinkedList<StateVariable> domain = new LinkedList<>();
+    public LinkedList<StateVariable> domain = new LinkedList<>();
+
+    //public void ReduceDomainByObjectConstants
     //List<TemporalEvent> events = new LinkedList<>();
-
     /**
      *
      */
-        public LinkedList<ChainComponent> chain = new LinkedList<>();
+    public LinkedList<ChainComponent> chain = new LinkedList<>();
 }

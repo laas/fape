@@ -10,6 +10,7 @@
  */
 package fape.core.planning.states;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -42,7 +43,7 @@ public class State {
      *
      */
     public List<TemporalDatabase> consumers;
-    //public ConstraintNetworkManager conNet;
+    public ConstraintNetworkManager conNet;
     //public BindingManager bindings;
     //public CausalNetworkManager causalNet;
 
@@ -62,7 +63,7 @@ public class State {
         tempoNet.Init();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
-        //conNet = new ConstraintNetworkManager();
+        conNet = new ConstraintNetworkManager();
         //bindings = new BindingManager();
         //causalNet = new CausalNetworkManager();
     }
@@ -76,6 +77,7 @@ public class State {
         this.tdb = st.tdb.DeepCopy();
         this.tempoNet = st.tempoNet.DeepCopy();
         this.consumers = new LinkedList<>();
+        this.conNet = st.conNet.DeepCopy();
         for(TemporalDatabase sb:st.consumers){
             consumers.add(sb.DeepCopy());
         }

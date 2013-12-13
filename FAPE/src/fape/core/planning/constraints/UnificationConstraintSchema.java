@@ -15,7 +15,7 @@ package fape.core.planning.constraints;
  *
  * @author FD
  */
-public class UnifyingConstraintSchema {
+public class UnificationConstraintSchema {
 
     /**
      *
@@ -44,7 +44,7 @@ public class UnifyingConstraintSchema {
      * @param decompositionActionID_
      * @param actionEventID_
      */
-    public UnifyingConstraintSchema(int mDecompositionID_, int mEventID_, int decompositionActionID_, int actionEventID_){
+    public UnificationConstraintSchema(int mDecompositionID_, int mEventID_, int decompositionActionID_, int actionEventID_){
         mDecompositionID = mDecompositionID_;
         mEventID = mEventID_;
         decompositionActionID = decompositionActionID_;

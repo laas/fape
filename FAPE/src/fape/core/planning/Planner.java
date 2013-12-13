@@ -20,7 +20,7 @@ import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
 //import fape.core.execution.model.types.Type;
 
-import fape.core.planning.constraints.UnifyingConstraintSchema;
+import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.Action;
@@ -90,7 +90,7 @@ public class Planner {
     /**
      *
      */
-    public HashMap<AbstractAction, HashMap<Integer, List<UnifyingConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
+    public HashMap<AbstractAction, HashMap<Integer, List<UnificationConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         //now we can happily apply all the options
@@ -182,9 +182,9 @@ public class Planner {
             for (Action a : l) {
                 next.tempoNet.EnforceBefore(o.actionToDecompose.start, a.start);
                 next.tempoNet.EnforceBefore(a.end, o.actionToDecompose.end);
-                List<UnifyingConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(o.actionToDecompose.name)).get(o.decompositionID);
-                for (UnifyingConstraintSchema s : lt) {
-                    next.tdb.AddUnificationConstraint(o.actionToDecompose.events.get(s.mEventID).mDatabase, a.events.get(s.actionEventID).mDatabase);
+                List<UnificationConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(o.actionToDecompose.name)).get(o.decompositionID);
+                for (UnificationConstraintSchema s : lt) {
+                    next.conNet.AddUnificationConstraint(o.actionToDecompose.events.get(s.mEventID).mDatabase, a.events.get(s.actionEventID).mDatabase);
                 }
             }
             //add temporal constraints between actions
@@ -195,7 +195,7 @@ public class Planner {
             throw new FAPEException("Unknown option.");
         }
 
-        return next.tdb.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
+        return next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
     /**
@@ -452,7 +452,7 @@ public class Planner {
          }*/
         for (Type t : types.values()) {
             if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
-                ADTG dtg = new ADTG(t.instances, t.name, t.instances.size(), actions.values());
+                ADTG dtg = new ADTG(t, actions.values());
 
                 dtg.op_all_paths();
                 dtgs.put(t.name, dtg);
@@ -483,10 +483,10 @@ public class Planner {
         if (st.isInitState) {
 
             for (AbstractAction a : actions.values()) {
-                HashMap<Integer, List<UnifyingConstraintSchema>> schemas = new HashMap<>();
+                HashMap<Integer, List<UnificationConstraintSchema>> schemas = new HashMap<>();
                 int decCnt = 0;
                 for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
-                    List<UnifyingConstraintSchema> cons = new LinkedList<>();
+                    List<UnificationConstraintSchema> cons = new LinkedList<>();
                     int refCnt = 0;
                     for (ActionRef rf : p.value1) {
                         //now check for each pair of events if they have the same variable used for them
@@ -500,7 +500,7 @@ public class Planner {
                                         for (int subEventCount = 0; subEventCount < abs.events.size(); subEventCount++) {
                                             if (abs.events.get(subEventCount).stateVariableReference.refs.getFirst().equals(abs.params.get(subActionParameterCounter).name)
                                                     && a.events.get(mainEventCount).stateVariableReference.refs.getFirst().equals(i.name)) {
-                                                cons.add(new UnifyingConstraintSchema(decCnt, mainEventCount, refCnt, subEventCount));
+                                                cons.add(new UnificationConstraintSchema(decCnt, mainEventCount, refCnt, subEventCount));
                                             }
                                         }
                                     }
@@ -599,7 +599,7 @@ public class Planner {
         //now we need to propagate the binding constraints
         List<Pair<Integer, Integer>> binds = abs.GetLocalBindings();
         for (Pair<Integer, Integer> p : binds) {
-            st.tdb.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
+            st.conNet.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
         }
 
         //lets add the action into the task network
