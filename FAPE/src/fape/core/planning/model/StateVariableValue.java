@@ -33,6 +33,13 @@ public class StateVariableValue extends IUnifiable {
      * defines the parameter representing the value
      */
     public String valueDescription;
+    /**
+     * 
+     * @return the parameter value used to describe this main object constant
+     */
+    public String GetObjectParameter(){
+        return valueDescription.substring(0, valueDescription.indexOf("."));
+    }
 
     /**
      *

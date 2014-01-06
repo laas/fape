@@ -16,7 +16,12 @@ package fape.core.planning.constraints;
  * @author FD
  */
 public class UnificationConstraintSchema {
-
+    
+    public enum EConType{
+        FIRST_VALUE, SECOND_VALUE, EVENT
+    }
+    public EConType typeLeft, typeRight;
+    
     /**
      *
      */
@@ -43,11 +48,15 @@ public class UnificationConstraintSchema {
      * @param mEventID_
      * @param decompositionActionID_
      * @param actionEventID_
+     * @param left
+     * @param right
      */
-    public UnificationConstraintSchema(int mDecompositionID_, int mEventID_, int decompositionActionID_, int actionEventID_){
+    public UnificationConstraintSchema(int mDecompositionID_, int mEventID_, int decompositionActionID_, int actionEventID_, EConType left, EConType right){
         mDecompositionID = mDecompositionID_;
         mEventID = mEventID_;
         decompositionActionID = decompositionActionID_;
         actionEventID = actionEventID_;
+        typeLeft = left;
+        typeRight = right;
     }
 }

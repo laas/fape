@@ -13,9 +13,14 @@ package fape.core.planning.model;
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.TemporalConstraint;
+import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.util.Pair;
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,6 +29,21 @@ import java.util.List;
  * @author FD
  */
 public class AbstractAction {
+    
+    public AbstractAction(){
+        
+    }
+
+    public class SharedParameterStruct {
+
+        public UnificationConstraintSchema.EConType type;
+        public int relativeEventIndex;
+
+        public SharedParameterStruct(int index, UnificationConstraintSchema.EConType tp) {
+            type = tp;
+            relativeEventIndex = index;
+        }
+    }
 
     /**
      *
@@ -39,7 +59,38 @@ public class AbstractAction {
      *
      */
     public List<Instance> params;
+    /**
+     * maps parametr static variable into relative index of an event itself or
+     * one of its values
+     */
+    public List<List<SharedParameterStruct>> param2Event = new ArrayList<>(params.size());
 
+    public void MapParametersToEvents() {
+        int cnt = 0;
+        for (Instance i : params) {
+            List<SharedParameterStruct> l = new LinkedList<>();
+            //now check all events and its values, if they use the given parameter
+            int eventCount = 0;
+            for (AbstractTemporalEvent ae : events) {
+                if (i.name.equals(ae.stateVariableReference.refs.getFirst())) {
+                    //sharing the event itself
+                    l.add(new SharedParameterStruct(eventCount, UnificationConstraintSchema.EConType.EVENT));
+                }
+                if(ae.event instanceof PersistenceEvent && ((PersistenceEvent)ae.event).value.GetObjectParameter().equals(i.name)){
+                    l.add(new SharedParameterStruct(eventCount, UnificationConstraintSchema.EConType.FIRST_VALUE));
+                }
+                if(ae.event instanceof TransitionEvent && ((TransitionEvent)ae.event).from.GetObjectParameter().equals(i.name)){
+                    l.add(new SharedParameterStruct(eventCount, UnificationConstraintSchema.EConType.FIRST_VALUE));
+                }
+                if(ae.event instanceof TransitionEvent && ((TransitionEvent)ae.event).to.GetObjectParameter().equals(i.name)){
+                    l.add(new SharedParameterStruct(eventCount, UnificationConstraintSchema.EConType.SECOND_VALUE));
+                }
+                eventCount++;
+            }
+            param2Event.add(l);
+            cnt++;
+        }
+    }
     /**
      *
      */
@@ -55,25 +106,27 @@ public class AbstractAction {
     }
 
     /**
-     * we use relative references here .. if they share the same variable, they are tied together by the same predecesor constraint
-     * @return 
+     * we use relative references here .. if they share the same variable, they
+     * are tied together by the same predecesor constraint
+     *
+     * @return
      */
-    public List<Pair<Integer, Integer>> GetLocalBindings() {
+    /*public List<Pair<Integer, Integer>> GetLocalBindings() {
         if (localBindings == null) {
             localBindings = new LinkedList<>();
             for (int i = 0; i < events.size(); i++) {
                 for (int j = i + 1; j < events.size(); j++) {
                     AbstractTemporalEvent e1 = events.get(i), e2 = events.get(j);
                     if (e1.stateVariableReference.refs.getFirst().equals(e2.stateVariableReference.refs.getFirst())) {
-                        localBindings.add(new Pair(i,j));
+                        localBindings.add(new Pair(i, j));
                     }
                 }
             }
         }
         return localBindings;
+    }*/
 
-    }
-
+    @Override
     public String toString() {
         return name;
     }

@@ -12,10 +12,16 @@ package fape.core.planning.model;
 
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.TemporalConstraint;
+import fape.core.planning.constraints.UnificationConstraintSchema;
 
 import fape.core.planning.stn.TemporalVariable;
+import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
+import java.beans.PersistenceDelegate;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,11 +41,10 @@ public class Action {
      *
      */
     public TemporalVariable start,
-
-    /**
-     *
-     */
-    end;
+            /**
+             *
+             */
+            end;
 
     /**
      *
@@ -50,7 +55,7 @@ public class Action {
     /**
      *
      */
-        public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
+    public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
 
     /**
      *
@@ -81,23 +86,21 @@ public class Action {
      }
      }
      }*/
-
     /**
      *
      * @return
      */
-    
     public Action DeepCopy() {
         Action a = new Action();
-        if(this.decomposition == null){
+        if (this.decomposition == null) {
             a.decomposition = null;
-        }else{
+        } else {
             a.decomposition = new LinkedList<>();
-            for(Action b:this.decomposition){
+            for (Action b : this.decomposition) {
                 a.decomposition.add(b.DeepCopy());
             }
         }
-        
+
         a.duration = this.duration;
         a.end = this.end;
         a.events = this.events;
@@ -105,5 +108,19 @@ public class Action {
         a.refinementOptions = this.refinementOptions;
         a.start = this.start;
         return a;
+    }
+
+    public IUnifiable GetUnifiableComponent(AbstractAction.SharedParameterStruct get) {
+        TemporalEvent e = events.get(get.relativeEventIndex);
+        if (get.type == UnificationConstraintSchema.EConType.EVENT) {
+            return e.mDatabase;
+        } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof TransitionEvent) {
+            return ((TransitionEvent)e).from;
+        }else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {
+            return ((PersistenceEvent)e).value;
+        }else if (get.type == UnificationConstraintSchema.EConType.SECOND_VALUE) {
+            return ((TransitionEvent)e).from;
+        }
+        throw new FAPEException("unsupported unification");
     }
 }

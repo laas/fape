@@ -30,6 +30,7 @@ import fape.core.planning.search.Queue;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.STNManager;
+import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
@@ -61,9 +62,8 @@ public class Planner {
     public static int searchWidth = 5;
 
     //public State init;
-    // a list of types keyed by its name
     /**
-     *
+     * a list of types keyed by its name
      */
     public HashMap<String, fape.core.planning.model.Type> types = new HashMap<>();
 
@@ -382,7 +382,6 @@ public class Planner {
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
 
-        
         //TODO: apply ANML to more states and choose the best after the applciation
         State st = GetCurrentState();
 
@@ -484,35 +483,58 @@ public class Planner {
 
             for (AbstractAction a : actions.values()) {
                 HashMap<Integer, List<UnificationConstraintSchema>> schemas = new HashMap<>();
-                int decCnt = 0;
+                int decompositionCounter = 0; //indexes which decomposition we are working on
                 for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
                     List<UnificationConstraintSchema> cons = new LinkedList<>();
-                    int refCnt = 0;
+                    int referenceActionCounter = 0;
                     for (ActionRef rf : p.value1) {
-                        //now check for each pair of events if they have the same variable used for them
-                        AbstractAction abs = actions.get(rf.name);
-                        for (Instance i : a.params) {
-                            int subActionParameterCounter = 0;
-                            for (Reference r : rf.args) {
-                                if (r.refs.get(0).equals(i.name)) {
-                                    //this parameter is passed by, now we need to find the pairs of events
-                                    for (int mainEventCount = 0; mainEventCount < a.events.size(); mainEventCount++) {
-                                        for (int subEventCount = 0; subEventCount < abs.events.size(); subEventCount++) {
-                                            if (abs.events.get(subEventCount).stateVariableReference.refs.getFirst().equals(abs.params.get(subActionParameterCounter).name)
-                                                    && a.events.get(mainEventCount).stateVariableReference.refs.getFirst().equals(i.name)) {
-                                                cons.add(new UnificationConstraintSchema(decCnt, mainEventCount, refCnt, subEventCount));
-                                            }
+                        AbstractAction rfAbs = actions.get(rf.name);
+                        //now we prepare the bindings
+                        //List<Pair<List<AbstractAction.SharedParameterStruct>, List<AbstractAction.SharedParameterStruct>>> pairs = new LinkedList<>();                        
+                        int referenceActionParameterCounter = 0;
+                        for (Reference ref : rf.args) {
+                            if (ref.refs.toString().endsWith("_")) {
+                                continue; //this is unbinded reference
+                            }
+                            int mainActionParameterCounter = 0;
+                            for (Instance i : a.params) {
+                                if (i.name.equals(ref.GetTypeReference())) {
+                                    //now we create the constrain schemas for all the combinations of events and values that share the parameter
+                                    for (AbstractAction.SharedParameterStruct u : a.param2Event.get(mainActionParameterCounter)) {
+                                        for (AbstractAction.SharedParameterStruct v : rfAbs.param2Event.get(referenceActionParameterCounter)) {
+                                            cons.add(new UnificationConstraintSchema(decompositionCounter, u.relativeEventIndex, referenceActionCounter, v.relativeEventIndex, u.type, v.type));
                                         }
                                     }
-
                                 }
-                                subActionParameterCounter++;
+                                mainActionParameterCounter++;
                             }
+                            referenceActionParameterCounter++;
                         }
-                        refCnt++;
+
+                        /*
+                         AbstractAction abs = actions.get(rf.name);
+                         for (Instance i : a.params) {
+                         int subActionParameterCounter = 0;
+                         for (Reference r : rf.args) {
+                         if (r.refs.get(0).equals(i.name)) {
+                         //this parameter is passed by, now we need to find the pairs of events
+                         for (int mainEventCount = 0; mainEventCount < a.events.size(); mainEventCount++) {
+                         for (int subEventCount = 0; subEventCount < abs.events.size(); subEventCount++) {
+                         if (abs.events.get(subEventCount).stateVariableReference.refs.getFirst().equals(abs.params.get(subActionParameterCounter).name)
+                         && a.events.get(mainEventCount).stateVariableReference.refs.getFirst().equals(i.name)) {
+                         
+                         }
+                         }
+                         }
+
+                         }
+                         subActionParameterCounter++;
+                         }
+                         }*/
+                        referenceActionCounter++;
                     }
-                    schemas.put(decCnt, cons);
-                    decCnt++;
+                    schemas.put(decompositionCounter, cons);
+                    decompositionCounter++;
                 }
                 unificationConstraintPropagationSchema.put(a, schemas);
             }
@@ -596,11 +618,16 @@ public class Planner {
             db.AddEvent(event);
         }//event transformation end
 
-        //now we need to propagate the binding constraints
-        List<Pair<Integer, Integer>> binds = abs.GetLocalBindings();
-        for (Pair<Integer, Integer> p : binds) {
-            st.conNet.AddUnificationConstraint(dbList.get(p.value1), dbList.get(p.value2));
-        }
+        //now we need to propagate the binding constraints, those are the binding constraints between events in one action
+        for (List<AbstractAction.SharedParameterStruct> structs : abs.param2Event) {
+            for(int ii = 0; ii < structs.size(); ii++){
+                for(int jj = ii+1; jj < structs.size();jj++){
+                    IUnifiable uni1 = act.GetUnifiableComponent(structs.get(ii));
+                    IUnifiable uni2 = act.GetUnifiableComponent(structs.get(jj));
+                    st.conNet.AddUnificationConstraint(uni1, uni2);
+                }
+            }
+        }co se deje, kdyz mergneme databaze, prehazime vsechny linky na ne v jejich udalostech?
 
         //lets add the action into the task network
         st.taskNet.AddSeed(act);

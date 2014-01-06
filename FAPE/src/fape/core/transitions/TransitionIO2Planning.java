@@ -302,6 +302,7 @@ public class TransitionIO2Planning {
              }*/
         }
         act.strongDecompositions = a.strongDecompositions;
+        act.MapParametersToEvents();
         return act;
     }
 }
