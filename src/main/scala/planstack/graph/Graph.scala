@@ -2,6 +2,8 @@ package planstack.graph
 
 import scala.collection.mutable.ArrayBuffer
 import planstack.graph.printers.GraphPrinter
+import scala.collection.mutable
+
 
 
 class GenEdge[_EdgePL](val orig:Int, val dest:Int, val pl:_EdgePL) {
@@ -11,6 +13,7 @@ class GenEdge[_EdgePL](val orig:Int, val dest:Int, val pl:_EdgePL) {
 
 
 trait GenGraph[_Node, _EdgePL] {
+  type NodeType = _Node
   type Edge = GenEdge[_EdgePL]
   type Graph = GenGraph[_Node, _EdgePL]
 
@@ -46,12 +49,29 @@ trait GenGraph[_Node, _EdgePL] {
 trait InGraphVerticesGenGraph[_Node, _EdgePL] extends GenGraph[_Node, _EdgePL] {
 
   var mVertices = new ArrayBuffer[_Node](0)
+  var mIndexes = mutable.Map[_Node, Int]()
 
   def addVertex(v:_Node) : Int = {
     mVertices.append(v)
+    mIndexes.+=((v, this.numVertices))
     super.addVertex()
   }
   def vertex(id:Int) : _Node = { mVertices(id) }
+
+  /** Add an edge from u to v with payload pl
+   *
+   * @param u
+   * @param v
+   * @param pl
+   * @return
+   */
+  def addEdgeWithVertices(u:_Node, v:_Node, pl:_EdgePL) = {
+    if(!mIndexes.contains(u))
+      addVertex(u)
+    if(!mIndexes.contains(v))
+      addVertex(v)
+    setEdge(mIndexes(u), mIndexes(v), pl)
+  }
 
   override def clone() : Graph = {
     val newGraph = super.clone().asInstanceOf[InGraphVerticesGenGraph[_Node, _EdgePL]]
