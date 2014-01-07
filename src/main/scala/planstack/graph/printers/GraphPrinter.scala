@@ -13,33 +13,48 @@ import planstack.graph.{InGraphVerticesGenGraph, GenGraph}
   */
 class GraphPrinter[N, E](val g:GenGraph[N,E]) {
 
-  val header = "digraph g {\n  node [shape=plaintext];"
+  def writeToFile(filename: String, s: String): Unit = {
+    val pw = new java.io.PrintWriter(new java.io.File(filename))
+    try pw.write(s) finally pw.close()
+  }
+
+  val header = "digraph g {\n  node [shape=plaintext]\n;"
   val footer = "\n}"
 
-  def rmSpaces(str:String) =
-    str.replaceAll("-","")
-      .replaceAll(",","")
-      .replaceAll("\\(","")
-      .replaceAll("\\)","")
-      .replaceAll(">","")
-      .replaceAll(" ","")
-      .replaceAll("=","")
-      .replaceAll("\\.","")
+  def toDotString(str:String) = "\"" + str + "\""
 
+  /**
+   * Gives a String representation of a vertex.
+   * If the graph has InGraphVertices, it uses those for output
+   * @param id
+   * @return
+   */
   def nodeId2Str(id:Int) : String = {
     g match {
-      case g1:InGraphVerticesGenGraph[N,E] => rmSpaces(g1.vertex(id).toString)
-      case g => rmSpaces(id.toString)
+      case g1:InGraphVerticesGenGraph[N,E] => toDotString(""+ id +":"+ g1.vertex(id))
+      case g => toDotString(id.toString)
     }
   }
 
-  //TODO: write to file and not stdout
-  def print2Dot(file:String) {
-    println(header)
+  /**
+   * Creates the dot representation of the graph.
+   * @return
+   */
+  def graph2DotString : String = {
+    var out = header
     g.getEdges.foreach(e =>{
-      println("%s -> %s".format(nodeId2Str(e.orig), nodeId2Str(e.dest)))
+      out += "  %s -> %s\n".format(nodeId2Str(e.orig), nodeId2Str(e.dest))
     })
-    println(footer)
+    out += footer
+    out
+  }
+
+  /**
+   * Print the graph to a file in dot format.
+   * @param file File to write the graph to
+   */
+  def print2Dot(file:String) {
+    writeToFile(file, graph2DotString)
   }
 
 }
