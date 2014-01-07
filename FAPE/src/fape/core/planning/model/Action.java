@@ -115,11 +115,11 @@ public class Action {
         if (get.type == UnificationConstraintSchema.EConType.EVENT) {
             return e.mDatabase;
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof TransitionEvent) {
-            return ((TransitionEvent)e).from;
-        }else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {
-            return ((PersistenceEvent)e).value;
-        }else if (get.type == UnificationConstraintSchema.EConType.SECOND_VALUE) {
-            return ((TransitionEvent)e).from;
+            return ((TransitionEvent) e).from;
+        } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {
+            return ((PersistenceEvent) e).value;
+        } else if (get.type == UnificationConstraintSchema.EConType.SECOND_VALUE) {
+            return ((TransitionEvent) e).from;
         }
         throw new FAPEException("unsupported unification");
     }

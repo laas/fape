@@ -26,69 +26,39 @@ import java.util.List;
  */
 public class ConstraintNetworkManager {
 
-    HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // database id -> constraints on that db with db with smaller id
+    HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // (database id|state variable value id) -> constraint
+    public HashMap<Integer, IUnifiable> objectMapper = new HashMap<>();
 
     boolean AC3(HashSet<UnificationConstraint> set) {
         HashMap<Integer, List<UnificationConstraint>> smartList = new HashMap<>();
         for (UnificationConstraint u : set) {
-            if (!smartList.containsKey(u.one.mID)) {
-                smartList.put(u.one.mID, new LinkedList<UnificationConstraint>());
+            if (!smartList.containsKey(u.one)) {
+                smartList.put(u.one, new LinkedList<UnificationConstraint>());
             }
-            smartList.get(u.one.mID).add(u);
-            if (!smartList.containsKey(u.two.mID)) {
-                smartList.put(u.two.mID, new LinkedList<UnificationConstraint>());
+            smartList.get(u.one).add(u);
+            if (!smartList.containsKey(u.two)) {
+                smartList.put(u.two, new LinkedList<UnificationConstraint>());
             }
-            smartList.get(u.two.mID).add(u);
+            smartList.get(u.two).add(u);
         }
         LinkedList<UnificationConstraint> queue = new LinkedList<>(set);
         while (!queue.isEmpty()) {
             UnificationConstraint u = queue.pop();
             if (AC3_Revise(u)) {
-                queue.addAll(smartList.get(u.one.mID));
-                queue.addAll(smartList.get(u.two.mID));
-            }
-        }
-        for (TemporalDatabase d : this.vars) {
-            if (d.domain.isEmpty()) {
-                return false;
+                if (objectMapper.get(u.one).EmptyDomain() || objectMapper.get(u.two).EmptyDomain()) {
+                    return false;
+                }
+                queue.addAll(smartList.get(u.one));
+                queue.addAll(smartList.get(u.two));
             }
         }
         return true;
     }
 
     boolean AC3_Revise(UnificationConstraint u) {
-        HashSet<String> supportOne = new HashSet<>(), supportTwo = new HashSet<>();
-        for (StateVariable v : u.one.domain) {
-            supportOne.add(v.GetObjectConstant());
-        }
-        for (StateVariable v : u.two.domain) {
-            supportTwo.add(v.GetObjectConstant());
-        }
         boolean reduced = false;
-        {
-            LinkedList<StateVariable> remove = new LinkedList<>();
-            for (StateVariable v : u.one.domain) {
-                if (!supportTwo.contains(v.GetObjectConstant())) {
-                    remove.add(v);
-                }
-            }
-            if (!remove.isEmpty()) {
-                reduced = true;
-                u.one.domain.removeAll(remove);
-            }
-        }
-        {
-            LinkedList<StateVariable> remove = new LinkedList<>();
-            for (StateVariable v : u.two.domain) {
-                if (!supportOne.contains(v.GetObjectConstant())) {
-                    remove.add(v);
-                }
-            }
-            if (!remove.isEmpty()) {
-                reduced = true;
-                u.two.domain.removeAll(remove);
-            }
-        }
+        reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
+        reduced = reduced || objectMapper.get(u.two).ReduceDomain(new HashSet<>(objectMapper.get(u.one).GetDomainObjectConstants()));
         return reduced;
     }
 
@@ -100,6 +70,14 @@ public class ConstraintNetworkManager {
      */
     public boolean PropagateAndCheckConsistency(State st) {
         return AC3(unificationConstraints);
+    }
+
+    /**
+     * we maintain an index of unifiables across states
+     * @param a
+     */
+    public void AddUnifiable(IUnifiable a) {
+        objectMapper.put(a.GetUniqueID(), a);
     }
 
     /**
@@ -117,36 +95,35 @@ public class ConstraintNetworkManager {
          */
         List<UnificationConstraint> remove = new LinkedList<>(), add = new LinkedList<>();
         for (UnificationConstraint p : unificationConstraints) {
-            if (p.one.mID == consumer.mID) {
-                //p.one = tdb;
+            if (p.one == mergeFrom.mID) {
                 remove.add(p);
             }
-            if (p.two.mID == consumer.mID) {
-                //p.two = tdb;
+            if (p.two == mergeFrom.mID) {
                 remove.add(p);
             }
         }
         unificationConstraints.removeAll(remove);
         for (UnificationConstraint u : remove) {
-            if (u.one.mID == consumer.mID) {
-                u.one = tdb;
-                if (u.two != tdb) {
+            if (u.one == mergeFrom.mID) {
+                u.one = mergeInto.mID;
+                if (u.two != mergeInto.mID) {
                     add.add(u);
                 }
             }
-            if (u.two.mID == consumer.mID) {
-                u.two = tdb;
-                if (u.one != tdb) {
+            if (u.two == mergeFrom.mID) {
+                u.two = mergeInto.mID;
+                if (u.one != mergeInto.mID) {
                     add.add(u);
                 }
             }
         }
         unificationConstraints.addAll(add);
-        vars.remove(consumer);
     }
 
     public ConstraintNetworkManager DeepCopy() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        ConstraintNetworkManager nm = new ConstraintNetworkManager();
+        nm.unificationConstraints = new HashSet<>(this.unificationConstraints);
+        return nm;
     }
 
 }

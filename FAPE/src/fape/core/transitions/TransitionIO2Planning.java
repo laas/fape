@@ -15,6 +15,7 @@ import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.StateVariable;
@@ -37,6 +38,7 @@ import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -122,9 +124,10 @@ public class TransitionIO2Planning {
     /**
      *
      * @param s
+     * @param assignUniqueIDToValues
      * @return
      */
-    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn) {
         TemporalEvent ev = null;
         if (s.operator == null) {
             throw new FAPEException(null);
@@ -150,6 +153,7 @@ public class TransitionIO2Planning {
                     eve4.from = null; // can be any value
                     eve4.to = new StateVariableValue(assignUniqueIDToValues);
                     eve4.to.valueDescription = s.from.toString();
+                    mn.AddUnifiable(eve4.to);
                     ev = eve4;
                 }
                 break;
@@ -162,6 +166,8 @@ public class TransitionIO2Planning {
                         TransitionEvent eve5 = new TransitionEvent();
                         eve5.from = new StateVariableValue(assignUniqueIDToValues);
                         eve5.to = new StateVariableValue(assignUniqueIDToValues);
+                        mn.AddUnifiable(eve5.from);
+                        mn.AddUnifiable(eve5.to);
                         eve5.from.valueDescription = s.from.toString();
                         eve5.to.valueDescription = s.to.toString();
                         ev = eve5;
@@ -169,6 +175,7 @@ public class TransitionIO2Planning {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
                         eve6.value = new StateVariableValue(assignUniqueIDToValues);
+                        mn.AddUnifiable(eve6.value);
                         eve6.value.valueDescription = s.rightRef.toString();
                         ev = eve6;
                     }
@@ -242,20 +249,20 @@ public class TransitionIO2Planning {
         //ObjectVariable var = st.bindings.getNewObjectVariable();
         //var.domain.add(v);
         // create a temporal database for this variable
-        TemporalDatabase db = st.tdb.GetNewDatabase();
+        TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
         db.domain.add(v);
         //db.var = var;
 
         // create a new event for the termporal database that corresponds to the
         // statement
-        TemporalEvent ev = ProduceTemporalEvent(s, true);
+        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet);
         AddTimePoints(ev, s, st);
 
         //add the event to the database
         db.AddEvent(ev);
-        
+
         //add the event into the consumers, unless it is a statement event
-        if(ev instanceof PersistenceEvent || (ev instanceof TransitionEvent && ((TransitionEvent) ev).from != null)){
+        if (ev instanceof PersistenceEvent || (ev instanceof TransitionEvent && ((TransitionEvent) ev).from != null)) {
             st.consumers.add(db);
         }
     }
@@ -264,29 +271,31 @@ public class TransitionIO2Planning {
      *
      * @param a
      * @param vars
+     * @param mn
      * @return
      */
-    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars) {
+    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
+        act.param2Event = new ArrayList<>(act.params.size());
         for (Statement s : a.statements) {
             String varName = s.GetVariableName();
             String varType = "-1";
             varName = varName.substring(varName.indexOf("."));
-            for(StateVariable sv:vars.values()){
+            for (StateVariable sv : vars.values()) {
                 String smallDeriv = sv.typeDerivationName.substring(sv.typeDerivationName.indexOf("."));
-                if(smallDeriv.equals(varName)){
+                if (smallDeriv.equals(varName)) {
                     varType = sv.type;
                 }
             }
             /*String nm = s.leftRef.refs.getFirst();
-            for (Instance i : act.params) {
-                if (i.name.equals(nm)) {
-                    varType = i.type;
-                }
-            }*/
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s, false), s.interval, s.leftRef, varType);
+             for (Instance i : act.params) {
+             if (i.name.equals(nm)) {
+             varType = i.type;
+             }
+             }*/
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s, false, mn), s.interval, s.leftRef, varType);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();

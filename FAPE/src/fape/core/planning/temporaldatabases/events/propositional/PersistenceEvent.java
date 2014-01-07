@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases.events.propositional;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
@@ -36,6 +37,16 @@ public class PersistenceEvent extends TemporalEvent {
     }
 
     public String toString() {
-        return "@["+start+","+end+"):="+value;
+        return "@[" + start + "," + end + "):=" + value;
+    }
+
+    @Override
+
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+        PersistenceEvent e = new PersistenceEvent();
+        e.value = this.value.DeepCopy(m);
+        e.start = this.start;
+        e.end = this.end;
+        return e;
     }
 }

@@ -1,9 +1,13 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Author:  Filip Dvořák <filip.dvorak@runbox.com>
+ *
+ * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
+ *
+ * Publishing, providing further or using this program is prohibited
+ * without previous written permission of the author. Publishing or providing
+ * further the contents of this file is prohibited without previous written
+ * permission of the author.
  */
-
 package fape.core.planning.temporaldatabases;
 
 import java.util.HashSet;
@@ -14,9 +18,21 @@ import java.util.List;
  * @author FD
  */
 public abstract class IUnifiable {
+
     public static int idCounter = 0;
     public int mID;
+
     public abstract List<String> GetDomainObjectConstants();
+
+    /**
+     * reduces the domain, if elements were removed, returns true
+     *
+     * @param supported
+     * @return
+     */
     public abstract boolean ReduceDomain(HashSet<String> supported);
+
     public abstract int GetUniqueID();
+
+    public abstract boolean EmptyDomain();
 }

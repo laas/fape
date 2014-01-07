@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.states.State;
@@ -82,14 +83,20 @@ public class TemporalDatabase extends IUnifiable {
 
     /**
      *
+     * @param m
      * @return
      */
-    public TemporalDatabase DeepCopy() {
+    public TemporalDatabase DeepCopy(ConstraintNetworkManager m) {
         TemporalDatabase newDB = new TemporalDatabase(false);
         newDB.mID = mID;
         newDB.domain = new LinkedList(this.domain);
         for (ChainComponent c : this.chain) {
-            newDB.chain.add(c.DeepCopy());
+            newDB.chain.add(c.DeepCopy(m));
+        }
+        m.AddUnifiable(newDB);
+        // set the mDatabase variables in the events
+        for(ChainComponent c :newDB.chain){
+            c.SetDatabase(newDB);
         }
         return newDB;
     }
@@ -152,6 +159,11 @@ public class TemporalDatabase extends IUnifiable {
     @Override
     public int GetUniqueID() {
         return mID;
+    }
+
+    @Override
+    public boolean EmptyDomain() {
+        return domain.isEmpty();
     }
 
     /**
@@ -231,11 +243,20 @@ public class TemporalDatabase extends IUnifiable {
             return this.contents.getLast().end;
         }
 
-        private ChainComponent DeepCopy() {
+        private ChainComponent DeepCopy(ConstraintNetworkManager m) {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
-            cp.contents = new LinkedList<>(this.contents);
+            cp.contents = new LinkedList<>();
+            for(TemporalEvent e:this.contents){
+                cp.contents.add(e.DeepCopy(m));
+            }
             return cp;
+        }
+
+        private void SetDatabase(TemporalDatabase db) {
+            for(TemporalEvent e:contents){
+                e.mDatabase = db;
+            }
         }
     }
 

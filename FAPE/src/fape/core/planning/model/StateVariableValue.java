@@ -10,6 +10,7 @@
  */
 package fape.core.planning.model;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.temporaldatabases.IUnifiable;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -38,7 +39,11 @@ public class StateVariableValue extends IUnifiable {
      * @return the parameter value used to describe this main object constant
      */
     public String GetObjectParameter(){
-        return valueDescription.substring(0, valueDescription.indexOf("."));
+        if(valueDescription.contains(".")){
+            return valueDescription.substring(0, valueDescription.indexOf("."));
+        }else{
+            return valueDescription;
+        }        
     }
 
     /**
@@ -51,11 +56,12 @@ public class StateVariableValue extends IUnifiable {
         }
     }
 
-    public StateVariableValue DeepCopy() {
+    public StateVariableValue DeepCopy(ConstraintNetworkManager m) {
         StateVariableValue newVar = new StateVariableValue(false);
         newVar.mID = this.mID;
         newVar.valueDescription = this.valueDescription;
         newVar.values = new LinkedList<>(this.values);
+        m.AddUnifiable(newVar);
         return newVar;
     }
 
@@ -78,6 +84,11 @@ public class StateVariableValue extends IUnifiable {
 
     @Override
     public int GetUniqueID() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return mID;
+    }
+
+    @Override
+    public boolean EmptyDomain() {
+        return values.isEmpty();
     }
 }

@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
@@ -27,13 +28,6 @@ import java.util.List;
  */
 public class TemporalDatabaseManager {
 
-    /*class UnificationConstraint {
-
-        
-    }*/
-
-    
-
     /**
      *
      */
@@ -41,33 +35,35 @@ public class TemporalDatabaseManager {
 
     /**
      *
+     * @param m
      * @return
      */
-    public TemporalDatabase GetNewDatabase() {
+    public TemporalDatabase GetNewDatabase(ConstraintNetworkManager m) {
         TemporalDatabase db = new TemporalDatabase(true);
         vars.add(db);
+        m.AddUnifiable(db);
         return db;
     }
 
-    
-
-
-
     /**
      *
+     * @param m
      * @return
      */
-    public TemporalDatabaseManager DeepCopy() {
+    public TemporalDatabaseManager DeepCopy(ConstraintNetworkManager m) {
         TemporalDatabaseManager mng = new TemporalDatabaseManager();
         mng.vars = new LinkedList<>();
         for (TemporalDatabase b : this.vars) {
-            mng.vars.add(b.DeepCopy());
+            TemporalDatabase db = b.DeepCopy(m);
+            m.AddUnifiable(db); //keep the index
+            mng.vars.add(db);
         }
         return mng;
     }
 
     /**
      *
+     * @param st
      * @param tdb
      * @param consumer
      */
@@ -81,9 +77,9 @@ public class TemporalDatabaseManager {
                 e.mDatabase = tdb;
             }
         }
-        
+
         //propagate merge into the constraints
         st.conNet.Merge(tdb, consumer);
-        
+
     }
 }

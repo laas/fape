@@ -73,16 +73,14 @@ public class State {
      * @param st
      */
     public State(State st) {
-        this.taskNet = st.taskNet.DeepCopy();
-        this.tdb = st.tdb.DeepCopy();
-        this.tempoNet = st.tempoNet.DeepCopy();
-        this.consumers = new LinkedList<>();
-        this.conNet = st.conNet.DeepCopy();
+        conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
+        taskNet = st.taskNet.DeepCopy();
+        tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
+        tempoNet = st.tempoNet.DeepCopy();
+        consumers = new LinkedList<>();
         for(TemporalDatabase sb:st.consumers){
-            consumers.add(sb.DeepCopy());
+            consumers.add((TemporalDatabase)conNet.objectMapper.get(sb.GetUniqueID()));
         }
-                
-        
     }
     
     /**

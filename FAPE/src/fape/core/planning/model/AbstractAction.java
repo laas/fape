@@ -63,10 +63,10 @@ public class AbstractAction {
      * maps parametr static variable into relative index of an event itself or
      * one of its values
      */
-    public List<List<SharedParameterStruct>> param2Event = new ArrayList<>(params.size());
+    public List<List<SharedParameterStruct>> param2Event;
 
     public void MapParametersToEvents() {
-        int cnt = 0;
+        //int cnt = 0;
         for (Instance i : params) {
             List<SharedParameterStruct> l = new LinkedList<>();
             //now check all events and its values, if they use the given parameter
@@ -88,7 +88,7 @@ public class AbstractAction {
                 eventCount++;
             }
             param2Event.add(l);
-            cnt++;
+            //cnt++;
         }
     }
     /**

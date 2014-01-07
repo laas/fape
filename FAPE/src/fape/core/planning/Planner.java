@@ -59,8 +59,7 @@ public class Planner {
     /**
      *
      */
-    public static int searchWidth = 5;
-
+    //public static int searchWidth = 5;
     //public State init;
     /**
      * a list of types keyed by its name
@@ -108,7 +107,7 @@ public class Planner {
                     TemporalDatabase.PropagatePrecedence(comp, comp2, next);
                 }
                 //merge databases
-                next.tdb.Merge(o.tdb, consumer);
+                next.tdb.Merge(next, o.tdb, consumer);
             } else {
                 //add a new persistence just after the chosen element
                 o.tdb.chain.add(index + 1, consumer.chain.get(0));
@@ -117,7 +116,7 @@ public class Planner {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
                 }
-                next.tdb.Merge(o.tdb, consumer);
+                next.tdb.Merge(next, o.tdb, consumer);
             }
         } else if (o.tdb != null) {
             //this is a database concatenation
@@ -135,7 +134,7 @@ public class Planner {
                 }
                 TemporalDatabase.PropagatePrecedence(first, second, next);
                 TemporalDatabase.PropagatePrecedence(second, third, next);
-                next.tdb.Merge(o.tdb, consumer);
+                next.tdb.Merge(next, o.tdb, consumer);
             } else {
                 //concatenate
                 TemporalDatabase.ChainComponent second = o.tdb.chain.getLast(),
@@ -144,7 +143,7 @@ public class Planner {
                     o.tdb.chain.add(c);
                 }
                 TemporalDatabase.PropagatePrecedence(first, second, next);
-                next.tdb.Merge(o.tdb, consumer);
+                next.tdb.Merge(next, o.tdb, consumer);
             }
         } else if (o.supportingAction != null) {
             //this is a simple applciation of an action
@@ -184,7 +183,46 @@ public class Planner {
                 next.tempoNet.EnforceBefore(a.end, o.actionToDecompose.end);
                 List<UnificationConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(o.actionToDecompose.name)).get(o.decompositionID);
                 for (UnificationConstraintSchema s : lt) {
-                    next.conNet.AddUnificationConstraint(o.actionToDecompose.events.get(s.mEventID).mDatabase, a.events.get(s.actionEventID).mDatabase);
+                    //now we are adding a constraint between a pair of temporal databases and/or state variable values
+                    TemporalEvent e = o.actionToDecompose.events.get(s.mEventID);
+                    TemporalEvent e2 = a.events.get(s.actionEventID);
+                    IUnifiable aa = null, bb = null;
+                    switch (s.typeLeft) {
+                        case EVENT:
+                            aa = e.mDatabase;
+                            break;
+                        case FIRST_VALUE:
+                            if (e instanceof TransitionEvent) {
+                                aa = ((TransitionEvent) e).from;
+                            } else if (e instanceof PersistenceEvent) {
+                                aa = ((PersistenceEvent) e).value;
+                            } else {
+                                throw new FAPEException("Unknown event type.");
+                            }
+                            break;
+                        case SECOND_VALUE:
+                            aa = ((TransitionEvent) e).to;
+                            break;
+                    }
+
+                    switch (s.typeRight) {
+                        case EVENT:
+                            bb = e2.mDatabase;
+                            break;
+                        case FIRST_VALUE:
+                            if (e2 instanceof TransitionEvent) {
+                                bb = ((TransitionEvent) e2).from;
+                            } else if (e2 instanceof PersistenceEvent) {
+                                bb = ((PersistenceEvent) e2).value;
+                            } else {
+                                throw new FAPEException("Unknown event type.");
+                            }
+                            break;
+                        case SECOND_VALUE:
+                            bb = ((TransitionEvent) e2).to;
+                            break;
+                    }
+                    next.conNet.AddUnificationConstraint(aa, bb);
                 }
             }
             //add temporal constraints between actions
@@ -418,7 +456,7 @@ public class Planner {
             if (actions.containsKey(a.name)) {
                 throw new FAPEException("Overriding action abstraction: " + a.name);
             }
-            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars);
+            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars, st.conNet);
             actions.put(act.name, act);
         }
 
@@ -569,7 +607,7 @@ public class Planner {
             throw new FAPEException("The temporal network is inconsistent.");
         }
 
-        ArrayList<TemporalDatabase> dbList = new ArrayList<>();
+        //ArrayList<TemporalDatabase> dbList = new ArrayList<>();
         //set up the events
         for (AbstractTemporalEvent ev : abs.events) {
 
@@ -581,9 +619,9 @@ public class Planner {
             String stateVariableReferenceSuffix = ev.stateVariableReference.toString();
             stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
 
-            TemporalDatabase db = st.tdb.GetNewDatabase();
+            TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
             event.mDatabase = db;
-            dbList.add(db);
+            //dbList.add(db);
             for (int i = 0; i < abs.params.size(); i++) {
                 Instance instanceOfTheParameter = abs.params.get(i);
                 if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
@@ -620,14 +658,14 @@ public class Planner {
 
         //now we need to propagate the binding constraints, those are the binding constraints between events in one action
         for (List<AbstractAction.SharedParameterStruct> structs : abs.param2Event) {
-            for(int ii = 0; ii < structs.size(); ii++){
-                for(int jj = ii+1; jj < structs.size();jj++){
+            for (int ii = 0; ii < structs.size(); ii++) {
+                for (int jj = ii + 1; jj < structs.size(); jj++) {
                     IUnifiable uni1 = act.GetUnifiableComponent(structs.get(ii));
                     IUnifiable uni2 = act.GetUnifiableComponent(structs.get(jj));
                     st.conNet.AddUnificationConstraint(uni1, uni2);
                 }
             }
-        }co se deje, kdyz mergneme databaze, prehazime vsechny linky na ne v jejich udalostech?
+        }
 
         //lets add the action into the task network
         st.taskNet.AddSeed(act);

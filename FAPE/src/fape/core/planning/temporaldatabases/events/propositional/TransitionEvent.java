@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases.events.propositional;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
@@ -37,7 +38,18 @@ public class TransitionEvent extends TemporalEvent {
         return ret;
     }
 
+    @Override
     public String toString() {
         return "@["+start+","+end+"):"+from+"->"+to;
+    }
+
+    @Override
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+        TransitionEvent e = new TransitionEvent();
+        e.from = this.from.DeepCopy(m);
+        e.to = this.to.DeepCopy(m);
+        e.start = this.start;
+        e.end = this.end;
+        return e;
     }
 }

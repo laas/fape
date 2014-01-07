@@ -19,7 +19,7 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
  * @author FD
  */
 public class UnificationConstraint {
-    IUnifiable one, two;
+    int one, two;
 
         @Override
         public boolean equals(Object obj) {
@@ -30,12 +30,12 @@ public class UnificationConstraint {
         @Override
         public int hashCode() {
             int hash = 7;
-            hash = 67 * hash + this.one.mID + this.two.mID;
+            hash = 67 * hash + one + two;
             return hash;
         }
 
         public UnificationConstraint(IUnifiable f, IUnifiable s) {
-            one = f;
-            two = s;
+            one = f.GetUniqueID();
+            two = s.GetUniqueID();
         }
 }

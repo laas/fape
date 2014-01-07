@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases.events.resources;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
 /**
@@ -32,5 +33,10 @@ public class ProduceEvent extends TemporalEvent {
         ProduceEvent ret = new ProduceEvent();
         ret.howMuch = howMuch;
         return ret;
+    }
+
+    @Override
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
