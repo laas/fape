@@ -40,6 +40,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -125,9 +126,12 @@ public class TransitionIO2Planning {
      *
      * @param s
      * @param assignUniqueIDToValues
+     * @param mn
+     * @param fromDomain
+     * @param toDomain
      * @return
      */
-    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn, List<String> fromDomain, List<String> toDomain) {
         TemporalEvent ev = null;
         if (s.operator == null) {
             throw new FAPEException(null);
@@ -152,7 +156,9 @@ public class TransitionIO2Planning {
                     TransitionEvent eve4 = new TransitionEvent();
                     eve4.from = null; // can be any value
                     eve4.to = new StateVariableValue(assignUniqueIDToValues);
+                    eve4.to.values = new LinkedList<>(fromDomain);
                     eve4.to.valueDescription = s.from.toString();
+                    //if(eve4.to.valueDescription.substring(0, 1).)
                     mn.AddUnifiable(eve4.to);
                     ev = eve4;
                 }
@@ -161,7 +167,7 @@ public class TransitionIO2Planning {
                 if (s.IsResourceRelated()) {
                     throw new UnsupportedOperationException();
                 } else {
-                    if (s.to != null) {
+                    if (s.from != null) {
                         //this is a transition event
                         TransitionEvent eve5 = new TransitionEvent();
                         eve5.from = new StateVariableValue(assignUniqueIDToValues);
@@ -175,8 +181,9 @@ public class TransitionIO2Planning {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
                         eve6.value = new StateVariableValue(assignUniqueIDToValues);
+                        eve6.value.values = new LinkedList<>(toDomain);
                         mn.AddUnifiable(eve6.value);
-                        eve6.value.valueDescription = s.rightRef.toString();
+                        eve6.value.valueDescription = s.to.toString();
                         ev = eve6;
                     }
                 }
@@ -238,6 +245,7 @@ public class TransitionIO2Planning {
      * @param s
      * @param v
      * @param st
+     * @param types
      */
     public static void InsertStatementIntoState(Statement s, StateVariable v, State st) {
         if (v == null) {
@@ -255,7 +263,17 @@ public class TransitionIO2Planning {
 
         // create a new event for the termporal database that corresponds to the
         // statement
-        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet);
+        List<String> firstDomain = null;
+        List<String> secondDomain = null;
+        if (s.from != null) {
+            firstDomain = new LinkedList<>();
+            firstDomain.add(s.from.GetConstantReference());
+        }
+        if (s.to != null) {
+            secondDomain = new LinkedList<>();
+            secondDomain.add(s.to.GetConstantReference());
+        }
+        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, firstDomain, secondDomain);
         AddTimePoints(ev, s, st);
 
         //add the event to the database
@@ -272,9 +290,10 @@ public class TransitionIO2Planning {
      * @param a
      * @param vars
      * @param mn
+     * @param types
      * @return
      */
-    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn) {
+    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn, HashMap<String, fape.core.planning.model.Type> types) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
@@ -295,7 +314,32 @@ public class TransitionIO2Planning {
              varType = i.type;
              }
              }*/
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(ProduceTemporalEvent(s, false, mn), s.interval, s.leftRef, varType);
+            HashMap<String, Type> parameterName2Type = new HashMap<>();
+            for(Instance i:a.params){
+                parameterName2Type.put(i.name, types.get(i.type));
+            }
+            List<String> firstDomain = null;
+            List<String> secondDomain = null;
+            if (s.from != null) {
+                firstDomain = new LinkedList<>();
+                Type t = parameterName2Type.get(s.from.GetConstantReference());
+                if(t != null){
+                    firstDomain.addAll(t.instances.keySet());
+                }else{
+                    firstDomain.add(s.from.toString());
+                }
+            }
+            if (s.to != null) {
+                secondDomain = new LinkedList<>();
+                Type t = parameterName2Type.get(s.to.GetConstantReference());
+                if(t != null){
+                    secondDomain.addAll(t.instances.keySet());
+                }else{
+                    secondDomain.add(s.to.toString());
+                }          
+            }
+            TemporalEvent eve = ProduceTemporalEvent(s, false, mn, firstDomain, secondDomain);
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(eve, s.interval, s.leftRef, varType);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();

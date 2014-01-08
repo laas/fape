@@ -30,7 +30,7 @@ public class ConsumeEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn) {
         ConsumeEvent ret = new ConsumeEvent();
         ret.howMuch = howMuch;
         return ret;

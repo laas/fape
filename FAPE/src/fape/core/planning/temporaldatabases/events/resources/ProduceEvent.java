@@ -29,7 +29,7 @@ public class ProduceEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn) {
         ProduceEvent ret = new ProduceEvent();
         ret.howMuch = howMuch;
         return ret;

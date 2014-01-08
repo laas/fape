@@ -150,7 +150,7 @@ public class ANMLFactory {
                 //Equality rt = new Equality();
                 rt.operator = "==";
                 rt.leftRef = parseReference(child.getChild(0));
-                rt.rightRef = parseReference(child.getChild(1));
+                rt.to = parseReference(child.getChild(1));
                 ret.add(rt);
                 break;
             }

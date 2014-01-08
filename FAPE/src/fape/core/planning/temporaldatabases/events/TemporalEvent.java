@@ -44,7 +44,7 @@ public abstract class TemporalEvent {
      *
      * @return
      */
-    public abstract TemporalEvent cc();
+    public abstract TemporalEvent cc(ConstraintNetworkManager mn);
 
     public abstract TemporalEvent DeepCopy(ConstraintNetworkManager m);
 }

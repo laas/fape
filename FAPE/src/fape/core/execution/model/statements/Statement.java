@@ -48,7 +48,7 @@ public class Statement {
     /**
      *
      */
-    public Reference rightRef;
+    //public Reference rightRef;
 
     /**
      *

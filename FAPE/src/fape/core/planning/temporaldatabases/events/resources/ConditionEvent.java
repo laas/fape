@@ -35,7 +35,7 @@ public class ConditionEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn) {
         ConditionEvent ret = new ConditionEvent();
         ret.operator = operator;
         ret.value = value;

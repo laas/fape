@@ -30,7 +30,7 @@ public class SetEvent extends TemporalEvent{
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn) {
         SetEvent ret = new SetEvent();
         ret.howMuch = howMuch;
         return ret;

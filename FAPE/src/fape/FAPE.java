@@ -4,6 +4,7 @@ import fape.core.acting.Actor;
 import fape.core.execution.Executor;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
+import fape.util.TinyLogger;
 
 /*
  * Author:  Filip Dvořák <filip.dvorak@runbox.com>
@@ -27,11 +28,11 @@ public class FAPE {
      * @throws java.lang.InterruptedException
      */
     public static void main(String[] args) throws InterruptedException {
+        TinyLogger.logging = true;
         Actor a = null;
         Planner p = null;
         Executor e = null;
         Listener l = null;
-
 
         try {
             a = new Actor();

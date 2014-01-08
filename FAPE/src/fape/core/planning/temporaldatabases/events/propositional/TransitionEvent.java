@@ -23,30 +23,33 @@ public class TransitionEvent extends TemporalEvent {
 
     /**
      *
-     */    
+     */
     public StateVariableValue from, to;
 
     /**
      *
+     * @param mn
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn) {
         TransitionEvent ret = new TransitionEvent();
-        ret.from = from;
-        ret.to = to;
+        ret.from = from.DeepCopy(mn);
+        ret.to = to.DeepCopy(mn);
         return ret;
     }
 
     @Override
     public String toString() {
-        return "@["+start+","+end+"):"+from+"->"+to;
+        return "@[" + start + "," + end + "):" + from + "->" + to;
     }
 
     @Override
     public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
         TransitionEvent e = new TransitionEvent();
-        e.from = this.from.DeepCopy(m);
+        if (this.from != null) {
+            e.from = this.from.DeepCopy(m);
+        }
         e.to = this.to.DeepCopy(m);
         e.start = this.start;
         e.end = this.end;

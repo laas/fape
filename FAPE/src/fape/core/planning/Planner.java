@@ -106,8 +106,6 @@ public class Planner {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(comp, comp2, next);
                 }
-                //merge databases
-                next.tdb.Merge(next, o.tdb, consumer);
             } else {
                 //add a new persistence just after the chosen element
                 o.tdb.chain.add(index + 1, consumer.chain.get(0));
@@ -116,8 +114,18 @@ public class Planner {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
                 }
-                next.tdb.Merge(next, o.tdb, consumer);
+
             }
+            //merge databases
+            next.tdb.Merge(next, o.tdb, consumer);
+            //remove consumer
+            TemporalDatabase dbRemove = null;
+            for (TemporalDatabase db : next.consumers) {
+                if (consumer.mID == db.mID) {
+                    dbRemove = db;
+                }
+            }
+            next.consumers.remove(dbRemove);
         } else if (o.tdb != null) {
             //this is a database concatenation
             if (!o.tdb.chain.getLast().change && !consumer.chain.getFirst().change) {
@@ -456,7 +464,7 @@ public class Planner {
             if (actions.containsKey(a.name)) {
                 throw new FAPEException("Overriding action abstraction: " + a.name);
             }
-            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars, st.conNet);
+            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars, st.conNet, types);
             actions.put(act.name, act);
         }
 
@@ -536,7 +544,7 @@ public class Planner {
                             }
                             int mainActionParameterCounter = 0;
                             for (Instance i : a.params) {
-                                if (i.name.equals(ref.GetTypeReference())) {
+                                if (i.name.equals(ref.GetConstantReference())) {
                                     //now we create the constrain schemas for all the combinations of events and values that share the parameter
                                     for (AbstractAction.SharedParameterStruct u : a.param2Event.get(mainActionParameterCounter)) {
                                         for (AbstractAction.SharedParameterStruct v : rfAbs.param2Event.get(referenceActionParameterCounter)) {
@@ -611,7 +619,7 @@ public class Planner {
         //set up the events
         for (AbstractTemporalEvent ev : abs.events) {
 
-            TemporalEvent event = ev.event.cc();
+            TemporalEvent event = ev.event.cc(st.conNet);
 
             // sets the temporal interval into the context of the temporal context of the parent action
             ev.interval.AssignTemporalContext(event, act.start, act.end);
