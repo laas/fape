@@ -18,7 +18,7 @@ class GraphPrinter[N, E](val g:GenGraph[N,E]) {
     try pw.write(s) finally pw.close()
   }
 
-  val header = "digraph g {\n  node [shape=plaintext]\n;"
+  val header = "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;"
   val footer = "\n}"
 
   def toDotString(str:String) = "\"" + str + "\""

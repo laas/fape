@@ -57,6 +57,7 @@ trait InGraphVerticesGenGraph[_Node, _EdgePL] extends GenGraph[_Node, _EdgePL] {
     super.addVertex()
   }
   def vertex(id:Int) : _Node = { mVertices(id) }
+  def setVertex(id:Int, node:_Node) { mVertices(id) = node }
 
   /** Add an edge from u to v with payload pl
    *
