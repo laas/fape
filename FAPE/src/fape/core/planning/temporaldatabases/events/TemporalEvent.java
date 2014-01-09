@@ -19,11 +19,12 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
  * @author FD
  */
 public abstract class TemporalEvent {
+
     //public ObjectVariable objectVar;
     /*public enum ETemporalEventType{
      CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
      }*/
-
+    public abstract String Report();
     /**
      *
      */
@@ -42,6 +43,7 @@ public abstract class TemporalEvent {
     //public ObjectVariable objectVar;
     /**
      *
+     * @param mn
      * @return
      */
     public abstract TemporalEvent cc(ConstraintNetworkManager mn);

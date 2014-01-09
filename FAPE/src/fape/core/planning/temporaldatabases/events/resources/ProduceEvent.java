@@ -39,4 +39,9 @@ public class ProduceEvent extends TemporalEvent {
     public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    @Override
+    public String Report() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

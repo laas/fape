@@ -82,4 +82,17 @@ public class TemporalDatabaseManager {
         st.conNet.Merge(tdb, consumer);
 
     }
+
+    public String Report() {
+        String ret = "";
+
+        ret += "  size: " + this.vars.size() + "\n";
+        for(TemporalDatabase b:vars){
+            ret += b.Report();
+        }
+        ret += "\n";
+        
+        return ret;
+
+    }
 }

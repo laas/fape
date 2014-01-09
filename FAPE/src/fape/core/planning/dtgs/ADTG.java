@@ -10,8 +10,12 @@
 package fape.core.planning.dtgs;
 
 import fape.core.planning.model.AbstractAction;
+import fape.core.planning.model.AbstractTemporalEvent;
+import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.model.Type;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import java.util.Collection;
@@ -265,10 +269,11 @@ public class ADTG {
 
     /**
      *
-     * @param GetGlobalConsumeValue
+     * @param db
      * @return
      */
-    public HashSet<String> GetActionSupporters(StateVariableValue GetGlobalConsumeValue) {
+    public HashSet<String> GetActionSupporters(TemporalDatabase db) {
+        StateVariableValue GetGlobalConsumeValue = db.GetGlobalConsumeValue();
         List<Integer> mValues = new LinkedList<>();
         for (String st : GetGlobalConsumeValue.values) {
             mValues.add(mType.instances.get(st));
@@ -280,7 +285,14 @@ public class ADTG {
                 DTGEdge e = graph1[i];
                 if (e != null && e.act != null) {
                     for (AbstractAction a : e.act) {
-                        actionNames.add(a.name);
+                        boolean support = false;
+                        for(AbstractTemporalEvent eve:a.events){
+                            List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
+                            list.retainAll(db.domain);
+                            if(!list.isEmpty()){
+                                actionNames.add(a.name);
+                            }
+                        }
                     }
                 }
             }

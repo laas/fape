@@ -174,6 +174,8 @@ public class TransitionIO2Planning {
                         eve5.to = new StateVariableValue(assignUniqueIDToValues);
                         mn.AddUnifiable(eve5.from);
                         mn.AddUnifiable(eve5.to);
+                        eve5.from.values = new LinkedList<>(fromDomain);
+                        eve5.to.values = new LinkedList<>(toDomain);
                         eve5.from.valueDescription = s.from.toString();
                         eve5.to.valueDescription = s.to.toString();
                         ev = eve5;
@@ -315,7 +317,7 @@ public class TransitionIO2Planning {
              }
              }*/
             HashMap<String, Type> parameterName2Type = new HashMap<>();
-            for(Instance i:a.params){
+            for (Instance i : a.params) {
                 parameterName2Type.put(i.name, types.get(i.type));
             }
             List<String> firstDomain = null;
@@ -323,23 +325,45 @@ public class TransitionIO2Planning {
             if (s.from != null) {
                 firstDomain = new LinkedList<>();
                 Type t = parameterName2Type.get(s.from.GetConstantReference());
-                if(t != null){
+                if (t != null) {
                     firstDomain.addAll(t.instances.keySet());
-                }else{
+                } else {
                     firstDomain.add(s.from.toString());
                 }
             }
             if (s.to != null) {
                 secondDomain = new LinkedList<>();
                 Type t = parameterName2Type.get(s.to.GetConstantReference());
-                if(t != null){
+                if (t != null) {
                     secondDomain.addAll(t.instances.keySet());
-                }else{
+                } else {
                     secondDomain.add(s.to.toString());
-                }          
+                }
             }
             TemporalEvent eve = ProduceTemporalEvent(s, false, mn, firstDomain, secondDomain);
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(eve, s.interval, s.leftRef, varType);
+
+            //find the supported state variables
+            List<StateVariable> supportedStateVariables = new LinkedList<>();
+            if (eve instanceof TransitionEvent) {
+                //((TransitionEvent) eve).to.
+                String tp = null;
+                for(Instance i:act.params){
+                    if(i.name.equals(s.leftRef.GetConstantReference())){
+                        tp = i.type;
+                    }
+                }
+                String searchStr = tp + s.leftRef.toString().substring(s.leftRef.toString().indexOf("."));
+                for (StateVariable sv : vars.values()) {
+                    if(sv.typeDerivationName.equals(searchStr)){
+                        supportedStateVariables.add(sv);
+                    }
+                }
+                if(supportedStateVariables.isEmpty()){
+                    throw new FAPEException("Empty domain.");
+                }
+            }
+
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(eve, s.interval, s.leftRef, varType, supportedStateVariables);
             act.events.add(ev);
             // now lets get all unmentioned parameters and add them from events to parameters
             /*String paramName = s.leftRef.refs.getFirst();

@@ -83,6 +83,13 @@ public class StateVariable {
         hash = 17 * hash + Objects.hashCode(this.name);
         return hash;
     }
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
+    
+    
     
     
 }

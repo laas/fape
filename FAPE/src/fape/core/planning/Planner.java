@@ -41,6 +41,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+import fape.util.TinyLogger;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -153,6 +154,14 @@ public class Planner {
                 TemporalDatabase.PropagatePrecedence(first, second, next);
                 next.tdb.Merge(next, o.tdb, consumer);
             }
+            //remove consumer
+            TemporalDatabase dbRemove = null;
+            for (TemporalDatabase db : next.consumers) {
+                if (consumer.mID == db.mID) {
+                    dbRemove = db;
+                }
+            }
+            next.consumers.remove(dbRemove);
         } else if (o.supportingAction != null) {
             //this is a simple applciation of an action
             ActionRef ref = new ActionRef();
@@ -163,7 +172,7 @@ public class Planner {
                 rf.refs.add("a" + (ct++) + "_"); //random unbinded parameters
                 ref.args.add(rf);
             }
-            AddAction(ref, next);
+            AddAction(ref, next, null);
         } else if (o.actionToDecompose != null) {
             // this is a task decomposition
             // we need to decompose all the actions of the chosen decomposition
@@ -181,7 +190,7 @@ public class Planner {
             //put the actions into the plan
             ArrayList<Action> l = new ArrayList<>();
             for (ActionRef ref : actionsForDecomposition) {
-                l.add(AddAction(ref, next));
+                l.add(AddAction(ref, next, o.actionToDecompose));
             }
 
             //now we need to introduce binding constraints between the events through the parameter binding
@@ -311,6 +320,7 @@ public class Planner {
                 end = true;
             }
             State st = queue.Pop();
+            TinyLogger.LogInfo(st.Report());
             if (st.consumers.isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 end = true;
@@ -319,7 +329,9 @@ public class Planner {
                 List<SupportOption> supporters = GetSupporters(db, st);
                 for (SupportOption o : supporters) {
                     State next = new State(st);
-                    if (ApplyOption(next, o, db)) {
+                    boolean suc = ApplyOption(next, o, db);
+                    TinyLogger.LogInfo(next.Report());
+                    if (suc) {
                         queue.Add(next);
                     } else {
                         //inconsistent state, doing nothing
@@ -376,7 +388,7 @@ public class Planner {
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
         ADTG dtg = dtgs.get(db.domain.getFirst().type);
-        HashSet<String> abs = dtg.GetActionSupporters(db.GetGlobalConsumeValue());
+        HashSet<String> abs = dtg.GetActionSupporters(db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
         ret.addAll(options);
@@ -470,7 +482,7 @@ public class Planner {
 
         //process seeds
         for (ActionRef ref : pl.actionsForTaskNetwork) {
-            AddAction(ref, st);
+            AddAction(ref, st, null);
         } //end of seed processing
 
         //add the values of state variables
@@ -594,7 +606,7 @@ public class Planner {
      * @param st
      * @return
      */
-    public Action AddAction(ActionRef ref, State st) {
+    public Action AddAction(ActionRef ref, State st, Action parent) {
         AbstractAction abs = actions.get(ref.name);
         if (abs == null) {
             throw new FAPEException("Seeding unknown action: " + ref.name);
@@ -659,8 +671,9 @@ public class Planner {
                 }
             }
 
-            //we add the event into the database and the action
+            //we add the event into the database and the action and the consumers
             act.events.add(event);
+            st.consumers.add(db);
             db.AddEvent(event);
         }//event transformation end
 
@@ -676,7 +689,11 @@ public class Planner {
         }
 
         //lets add the action into the task network
-        st.taskNet.AddSeed(act);
+        if (parent == null) {
+            st.taskNet.AddSeed(act);
+        } else {
+            parent.decomposition.add(act);
+        }
         //add 
 
         return act;

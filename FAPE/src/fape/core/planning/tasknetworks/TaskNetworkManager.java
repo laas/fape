@@ -29,7 +29,25 @@ public class TaskNetworkManager {
 
     //TaskNetwork net = new TaskNetwork();
     List<Action> roots = new LinkedList<>();
-    List<Action> openLeaves = new LinkedList<>();
+    //List<Action> openLeaves = new LinkedList<>();
+    
+    private void findLeaves(LinkedList<Action> leaves, Action current){
+        if(current.IsRefinable()){
+            leaves.add(current);
+        }else if(current.decomposition != null){
+            for(Action a:current.decomposition){
+                findLeaves(leaves, a);
+            }
+        }
+    }
+    
+    public List<Action> GetOpenLeaves(){
+        LinkedList<Action> l = new LinkedList<>();
+        for(Action a:roots){
+            findLeaves(l, a);
+        }        
+        return l;
+    }
     
     /**
      *
@@ -70,6 +88,7 @@ public class TaskNetworkManager {
     public List<SupportOption> GetDecompositionCandidates(HashSet<String> abs, HashMap<String, AbstractAction> actions) {
         List<SupportOption> ret = new LinkedList<>();
         //lets run dfs to find the action names we like
+        List<Action> openLeaves = GetOpenLeaves();
         for(Action a:openLeaves){
             if(DecomposesIntoDesiredAction(actions.get(a.name), abs, actions)){
                 SupportOption o = new SupportOption();
@@ -86,13 +105,13 @@ public class TaskNetworkManager {
      */
     public TaskNetworkManager DeepCopy() {
         TaskNetworkManager tm = new TaskNetworkManager();
-        tm.openLeaves = new LinkedList<>();
-        for(Action a:this.openLeaves){
-            tm.openLeaves.add(a.DeepCopy());
-        }
         for(Action a:this.roots){
             tm.roots.add(a.DeepCopy());
         }
         return tm;
+    }
+
+    public String Report() {
+        return "size: "+roots.size();
     }
 }

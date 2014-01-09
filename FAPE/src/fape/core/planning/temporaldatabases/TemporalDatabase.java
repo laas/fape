@@ -37,6 +37,24 @@ import java.util.List;
  */
 public class TemporalDatabase extends IUnifiable {
 
+    public String Report(){
+        String ret = "";
+        //ret += "{\n";
+        
+        ret += "    "+this.domain+"\n    ";
+        for(ChainComponent c:chain){
+            for(TemporalEvent e:c.contents){
+                ret += e.Report();
+            }
+            ret += "\n";
+        }
+        
+        
+        //ret += "}\n";
+        
+        return ret;
+    }
+    
     /**
      *
      * @param assignNewUniqueID

@@ -125,5 +125,15 @@ public class ConstraintNetworkManager {
         nm.unificationConstraints = new HashSet<>(this.unificationConstraints);
         return nm;
     }
+    
+    public String Report(){
+        String ret = "";
+        
+        ret += "{"+"constraints: "+this.unificationConstraints.size()+", mapper:"+this.objectMapper.size()+"}";
+        
+        
+        
+        return ret;
+    }
 
 }

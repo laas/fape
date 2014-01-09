@@ -49,4 +49,9 @@ public class PersistenceEvent extends TemporalEvent {
         e.end = this.end;
         return e;
     }
+
+    @Override
+    public String Report() {
+        return "persistence "+value.Report();
+    }
 }

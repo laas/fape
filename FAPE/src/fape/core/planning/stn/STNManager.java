@@ -117,4 +117,8 @@ public class STNManager {
         nm.stn = new STN(this.stn);
         return nm;
     }
+
+    public String Report() {
+        return "size: "+this.stn.top;
+    }
 }

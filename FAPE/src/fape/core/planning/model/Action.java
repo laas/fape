@@ -69,7 +69,7 @@ public class Action {
     public boolean IsRefinable() {
         return refinementOptions.size() > 0 && decomposition == null;
     }
-    List<Action> decomposition; //this is the truly realized decomposition
+    public List<Action> decomposition; //this is the truly realized decomposition
 
     /*
      public void AddBindingConstraintsBetweenMyEvents(){

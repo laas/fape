@@ -8,13 +8,14 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.model;
 
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalInterval;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
@@ -26,7 +27,7 @@ public class AbstractTemporalEvent {
     /**
      *
      */
-        public TemporalEvent event;
+    public TemporalEvent event;
 
     /**
      *
@@ -37,6 +38,8 @@ public class AbstractTemporalEvent {
      *
      */
     public Reference stateVariableReference;
+
+    public List<StateVariable> stateVariableDomain = new LinkedList<>();
 
     /**
      *
@@ -50,11 +53,12 @@ public class AbstractTemporalEvent {
      * @param leftRef
      * @param varType_
      */
-    public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef,String varType_) {
+    public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef, String varType_, List<StateVariable> supportedStateVariables) {
         event = ProduceTemporalEvent;
         interval = interval_;
         stateVariableReference = leftRef;
         varType = varType_;
+        stateVariableDomain = supportedStateVariables;
     }
 
     /**
@@ -64,11 +68,10 @@ public class AbstractTemporalEvent {
      */
     public boolean SupportsStateVariable(String var_id) {
         /*String mSuffix = stateVariableReference.toString();
-        mSuffix = mSuffix.substring(mSuffix.indexOf("."));
-        String oSuffix = var_id.substring(var_id.indexOf("."));
-        return mSuffix.equals(oSuffix);*/
+         mSuffix = mSuffix.substring(mSuffix.indexOf("."));
+         String oSuffix = var_id.substring(var_id.indexOf("."));
+         return mSuffix.equals(oSuffix);*/
         return varType.equals(var_id);
     }
-    
-    
+
 }

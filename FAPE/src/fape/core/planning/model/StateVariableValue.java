@@ -91,4 +91,8 @@ public class StateVariableValue extends IUnifiable {
     public boolean EmptyDomain() {
         return values.isEmpty();
     }
+
+    public String Report() {
+        return this.values.toString();
+    }
 }

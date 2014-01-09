@@ -98,4 +98,23 @@ public class State {
     public float GetGoalDistance(){
         return 0.0f;
     }
+    
+    public String Report(){
+        String ret = "";
+        ret += "{\n";
+        
+        ret += "  cons: "+conNet.Report()+"\n";        
+        ret += "  stn: "+this.tempoNet.Report()+"\n";
+        ret += "  consumers: "+this.consumers.size()+"\n";
+        for(TemporalDatabase b:consumers){
+            ret += b.Report();
+        }
+        ret += "\n";
+        ret += "  tasks: "+this.taskNet.Report()+"\n";
+        ret += "  databases: "+this.tdb.Report()+"\n";
+                
+        ret += "}\n";
+        
+        return ret;
+    }
 }

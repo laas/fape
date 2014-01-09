@@ -46,6 +46,7 @@ public class SupportOption {
      */
     public int decompositionID = -1;
 
+    @Override
     public String toString() {
         //return "" + tdb + " " + precedingComponent + " " + supportingAction + " " + actionToDecompose;
         if (tdb != null && precedingComponent != null) {
