@@ -1,6 +1,6 @@
 package planstack.graph.printers
 
-import planstack.graph.{InGraphVerticesGenGraph, GenGraph}
+import planstack.graph._
 
 //TODO: support tree structure
 
@@ -10,8 +10,8 @@ import planstack.graph.{InGraphVerticesGenGraph, GenGraph}
   * @param g
   * @tparam N
   * @tparam E
-  */
-class GraphPrinter[N, E](val g:GenGraph[N,E]) {
+  *
+class OldGraphPrinter[N, E](val g:GenGraph[N,E]) {
 
   def writeToFile(filename: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new java.io.File(filename))
@@ -58,3 +58,27 @@ class GraphPrinter[N, E](val g:GenGraph[N,E]) {
   }
 
 }
+*/
+/*
+trait GraphPrinter {
+
+}
+
+class GraphDotPrinter[V,E](val g:Graph[V,E]) extends GraphPrinter {
+
+
+  val header = g match {
+    case dg:DirectedGraph[V,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;"
+    case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;" //TODO not a digraph
+  }
+  val footer = "\n}"
+
+  def edge2Str(e:E) = g match {
+
+  }
+
+  def node2Str(v:V) = "\"" + v.toString + "\""
+
+
+}
+*/

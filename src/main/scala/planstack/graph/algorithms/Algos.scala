@@ -3,6 +3,9 @@ package planstack.graph.algorithms
 import planstack.graph._
 import scala.collection.immutable
 
+
+
+/*
 object Algos {
   object Marks extends Enumeration {
     type Marks = Value
@@ -36,3 +39,5 @@ object Algos {
     topo
   }
 }
+
+*/
