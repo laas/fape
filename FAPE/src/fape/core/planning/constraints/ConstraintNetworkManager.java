@@ -15,6 +15,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import fape.util.TinyLogger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -86,6 +87,7 @@ public class ConstraintNetworkManager {
      * @param b
      */
     public void AddUnificationConstraint(IUnifiable a, IUnifiable b) {
+        TinyLogger.LogInfo("Adding new constraint between: "+a.mID+a.Explain()+" : "+a.GetDomainObjectConstants()+", "+b.mID+b.Explain()+" : "+b.GetDomainObjectConstants());
         unificationConstraints.add(new UnificationConstraint(a, b));
     }
 

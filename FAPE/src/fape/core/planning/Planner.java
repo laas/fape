@@ -100,6 +100,9 @@ public class Planner {
             if (o.tdb.chain.size() - 1 != index && !o.tdb.chain.get(index + 1).change) {
                 //we add into an existing partially ordered set of perstistance events
                 TemporalDatabase.ChainComponent comp = o.tdb.chain.get(index + 1);
+                //constraint the values
+                next.conNet.AddUnificationConstraint(comp.GetSupportValue(), consumer.GetGlobalConsumeValue());
+                //add it
                 comp.Add(consumer.chain.get(0));
                 //propagate time constraints
                 TemporalDatabase.PropagatePrecedence(o.precedingComponent, comp, next);
@@ -109,8 +112,11 @@ public class Planner {
                 }
             } else {
                 //add a new persistence just after the chosen element
+                
                 o.tdb.chain.add(index + 1, consumer.chain.get(0));
                 TemporalDatabase.PropagatePrecedence(o.precedingComponent, o.tdb.chain.get(index + 1), next);
+                //constraint the values
+                next.conNet.AddUnificationConstraint(o.precedingComponent.GetSupportValue(), consumer.GetGlobalConsumeValue());
                 if (o.tdb.chain.size() > index + 2) {
                     TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
@@ -143,14 +149,16 @@ public class Planner {
                 }
                 TemporalDatabase.PropagatePrecedence(first, second, next);
                 TemporalDatabase.PropagatePrecedence(second, third, next);
+                next.conNet.AddUnificationConstraint(first.GetSupportValue(), third.GetConsumeValue());//adding just the constraint between the border values, the middle should be constrained with both                
                 next.tdb.Merge(next, o.tdb, consumer);
             } else {
                 //concatenate
-                TemporalDatabase.ChainComponent second = o.tdb.chain.getLast(),
-                        first = o.tdb.chain.getFirst();
+                TemporalDatabase.ChainComponent second = consumer.chain.getFirst(),
+                        first = o.tdb.chain.getLast();
                 for (TemporalDatabase.ChainComponent c : consumer.chain) {
                     o.tdb.chain.add(c);
                 }
+                next.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());//adding just the constraint between the border values
                 TemporalDatabase.PropagatePrecedence(first, second, next);
                 next.tdb.Merge(next, o.tdb, consumer);
             }
@@ -172,7 +180,24 @@ public class Planner {
                 rf.refs.add("a" + (ct++) + "_"); //random unbinded parameters
                 ref.args.add(rf);
             }
-            AddAction(ref, next, null);
+            Action addedAction = AddAction(ref, next, null);
+            // create the binding between consumer and the new statement in the action that supports it
+            TemporalDatabase supportingDatabase = null;
+            for (TemporalEvent e : addedAction.events) {
+                if (e instanceof TransitionEvent) {
+                    TransitionEvent ev = (TransitionEvent) e;
+                    if (ev.to.Unifiable(consumer.GetGlobalConsumeValue())) {
+                        supportingDatabase = ev.mDatabase;
+                    }
+                }
+            }
+            if (supportingDatabase == null) {
+                return false;
+            } else {
+                SupportOption opt = new SupportOption();
+                opt.tdb = supportingDatabase;
+                return ApplyOption(next, opt, consumer);
+            }
         } else if (o.actionToDecompose != null) {
             // this is a task decomposition
             // we need to decompose all the actions of the chosen decomposition
@@ -316,25 +341,29 @@ public class Planner {
         boolean end = false;
         while (!end) {
             if (queue.Empty()) {
+                TinyLogger.LogInfo("No plan found.");
                 this.planState = EPlanState.INFESSIBLE;
                 end = true;
-            }
-            State st = queue.Pop();
-            TinyLogger.LogInfo(st.Report());
-            if (st.consumers.isEmpty()) {
-                this.planState = EPlanState.CONSISTENT;
-                end = true;
-            }
-            for (TemporalDatabase db : st.consumers) {
-                List<SupportOption> supporters = GetSupporters(db, st);
-                for (SupportOption o : supporters) {
-                    State next = new State(st);
-                    boolean suc = ApplyOption(next, o, db);
-                    TinyLogger.LogInfo(next.Report());
-                    if (suc) {
-                        queue.Add(next);
-                    } else {
-                        //inconsistent state, doing nothing
+            } else {
+                State st = queue.Pop();
+                TinyLogger.LogInfo(st.Report());
+                if (st.consumers.isEmpty()) {
+                    this.planState = EPlanState.CONSISTENT;
+                    TinyLogger.LogInfo("Plan found.");
+                    end = true;
+                } else {
+                    for (TemporalDatabase db : st.consumers) {
+                        List<SupportOption> supporters = GetSupporters(db, st);
+                        for (SupportOption o : supporters) {
+                            State next = new State(st);
+                            boolean suc = ApplyOption(next, o, db);
+                            TinyLogger.LogInfo(next.Report());
+                            if (suc) {
+                                queue.Add(next);
+                            } else {
+                                //inconsistent state, doing nothing
+                            }
+                        }
                     }
                 }
             }
@@ -631,7 +660,7 @@ public class Planner {
         //set up the events
         for (AbstractTemporalEvent ev : abs.events) {
 
-            TemporalEvent event = ev.event.cc(st.conNet);
+            TemporalEvent event = ev.event.cc(st.conNet, true);
 
             // sets the temporal interval into the context of the temporal context of the parent action
             ev.interval.AssignTemporalContext(event, act.start, act.end);

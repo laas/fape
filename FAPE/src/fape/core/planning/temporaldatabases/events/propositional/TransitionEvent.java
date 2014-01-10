@@ -32,10 +32,10 @@ public class TransitionEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn) {
+    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         TransitionEvent ret = new TransitionEvent();
-        ret.from = from.DeepCopy(mn);
-        ret.to = to.DeepCopy(mn);
+        ret.from = from.DeepCopy(mn, assignNewID);
+        ret.to = to.DeepCopy(mn, assignNewID);
         return ret;
     }
 
@@ -45,12 +45,12 @@ public class TransitionEvent extends TemporalEvent {
     }
 
     @Override
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         TransitionEvent e = new TransitionEvent();
         if (this.from != null) {
-            e.from = this.from.DeepCopy(m);
+            e.from = this.from.DeepCopy(m, assignNewID);
         }
-        e.to = this.to.DeepCopy(m);
+        e.to = this.to.DeepCopy(m, assignNewID);
         e.start = this.start;
         e.end = this.end;
         return e;

@@ -46,7 +46,7 @@ public abstract class TemporalEvent {
      * @param mn
      * @return
      */
-    public abstract TemporalEvent cc(ConstraintNetworkManager mn);
+    public abstract TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID);
 
-    public abstract TemporalEvent DeepCopy(ConstraintNetworkManager m);
+    public abstract TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID);
 }

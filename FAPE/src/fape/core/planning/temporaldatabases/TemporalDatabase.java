@@ -22,6 +22,7 @@ import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
+import fape.util.TinyLogger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -41,10 +42,10 @@ public class TemporalDatabase extends IUnifiable {
         String ret = "";
         //ret += "{\n";
         
-        ret += "    "+this.domain+"\n    ";
+        ret += "    "+this.domain+"\n";
         for(ChainComponent c:chain){
             for(TemporalEvent e:c.contents){
-                ret += e.Report();
+                ret += "    "+e.Report();
             }
             ret += "\n";
         }
@@ -161,6 +162,11 @@ public class TemporalDatabase extends IUnifiable {
                 remove.add(v);
             }
         }
+        if (TinyLogger.logging) {
+            if (!remove.isEmpty()) {
+                TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + remove.toString());
+            }
+        }
         domain.removeAll(remove);
         return !remove.isEmpty();
     }
@@ -182,6 +188,11 @@ public class TemporalDatabase extends IUnifiable {
     @Override
     public boolean EmptyDomain() {
         return domain.isEmpty();
+    }
+
+    @Override
+    public String Explain() {
+        return " tdb";
     }
 
     /**
@@ -241,8 +252,9 @@ public class TemporalDatabase extends IUnifiable {
         public StateVariableValue GetConsumeValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to;
-            }
-            return null;
+            }else{
+                return ((PersistenceEvent) contents.get(0)).value;
+            }            
         }
 
         /**
@@ -266,7 +278,7 @@ public class TemporalDatabase extends IUnifiable {
             cp.change = this.change;
             cp.contents = new LinkedList<>();
             for(TemporalEvent e:this.contents){
-                cp.contents.add(e.DeepCopy(m));
+                cp.contents.add(e.DeepCopy(m, false));
             }
             return cp;
         }
@@ -318,6 +330,9 @@ public class TemporalDatabase extends IUnifiable {
         return chain.getLast().GetSupportTimePoint();
     }
 
+    
+    
+    @Override
     public String toString() {
         String res = "(tdb:" + mID + " dom=[";
         for (StateVariable d : this.domain) {

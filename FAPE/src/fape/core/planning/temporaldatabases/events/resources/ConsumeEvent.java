@@ -30,14 +30,14 @@ public class ConsumeEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn) {
+    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         ConsumeEvent ret = new ConsumeEvent();
         ret.howMuch = howMuch;
         return ret;
     }
 
     @Override
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

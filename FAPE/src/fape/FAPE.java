@@ -50,7 +50,7 @@ public class FAPE {
         }
 
         //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream2.anml"));
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream3.anml"));
 
         p.Init();
         

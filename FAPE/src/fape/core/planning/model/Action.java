@@ -119,8 +119,15 @@ public class Action {
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {
             return ((PersistenceEvent) e).value;
         } else if (get.type == UnificationConstraintSchema.EConType.SECOND_VALUE) {
-            return ((TransitionEvent) e).from;
+            return ((TransitionEvent) e).to;
         }
         throw new FAPEException("unsupported unification");
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+    
+    
 }

@@ -29,14 +29,14 @@ public class ProduceEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn) {
+    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         ProduceEvent ret = new ProduceEvent();
         ret.howMuch = howMuch;
         return ret;
     }
 
     @Override
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

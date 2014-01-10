@@ -112,6 +112,6 @@ public class TaskNetworkManager {
     }
 
     public String Report() {
-        return "size: "+roots.size();
+        return "size: "+roots.size()+", actions: "+roots.toString() ;
     }
 }

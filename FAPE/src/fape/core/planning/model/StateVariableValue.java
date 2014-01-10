@@ -12,6 +12,7 @@ package fape.core.planning.model;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.temporaldatabases.IUnifiable;
+import fape.util.TinyLogger;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,16 +35,17 @@ public class StateVariableValue extends IUnifiable {
      * defines the parameter representing the value
      */
     public String valueDescription;
+
     /**
-     * 
+     *
      * @return the parameter value used to describe this main object constant
      */
-    public String GetObjectParameter(){
-        if(valueDescription.contains(".")){
+    public String GetObjectParameter() {
+        if (valueDescription.contains(".")) {
             return valueDescription.substring(0, valueDescription.indexOf("."));
-        }else{
+        } else {
             return valueDescription;
-        }        
+        }
     }
 
     /**
@@ -56,9 +58,11 @@ public class StateVariableValue extends IUnifiable {
         }
     }
 
-    public StateVariableValue DeepCopy(ConstraintNetworkManager m) {
-        StateVariableValue newVar = new StateVariableValue(false);
-        newVar.mID = this.mID;
+    public StateVariableValue DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
+        StateVariableValue newVar = new StateVariableValue(assignNewID);
+        if (!assignNewID) {
+            newVar.mID = this.mID;
+        }
         newVar.valueDescription = this.valueDescription;
         newVar.values = new LinkedList<>(this.values);
         m.AddUnifiable(newVar);
@@ -78,6 +82,13 @@ public class StateVariableValue extends IUnifiable {
     @Override
     public boolean ReduceDomain(HashSet<String> supported) {
         int orig = values.size();
+        if (TinyLogger.logging) {
+            HashSet<String> newl = new HashSet<>(values);
+            newl.removeAll(supported);
+            if (!newl.isEmpty()) {
+                TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + newl.toString());
+            }
+        }
         values.retainAll(supported);
         return orig != values.size();
     }
@@ -94,5 +105,10 @@ public class StateVariableValue extends IUnifiable {
 
     public String Report() {
         return this.values.toString();
+    }
+
+    @Override
+    public String Explain() {
+        return " val[" + this.valueDescription + "]";
     }
 }

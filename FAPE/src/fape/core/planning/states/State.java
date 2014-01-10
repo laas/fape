@@ -101,8 +101,7 @@ public class State {
     
     public String Report(){
         String ret = "";
-        ret += "{\n";
-        
+        ret += "{\n";   
         ret += "  cons: "+conNet.Report()+"\n";        
         ret += "  stn: "+this.tempoNet.Report()+"\n";
         ret += "  consumers: "+this.consumers.size()+"\n";

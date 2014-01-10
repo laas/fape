@@ -20,7 +20,7 @@ import java.util.List;
 public abstract class IUnifiable {
 
     public static int idCounter = 0;
-    public int mID;
+    public int mID = -1;
 
     public abstract List<String> GetDomainObjectConstants();
 
@@ -35,4 +35,14 @@ public abstract class IUnifiable {
     public abstract int GetUniqueID();
 
     public abstract boolean EmptyDomain();
+
+    public abstract String Explain();
+    
+    @Override
+    public String toString(){
+        return GetDomainObjectConstants().toString();
+        
+    }
+    
+    
 }

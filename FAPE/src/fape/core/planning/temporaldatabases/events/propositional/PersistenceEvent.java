@@ -30,9 +30,9 @@ public class PersistenceEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn) {
+    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         PersistenceEvent ret = new PersistenceEvent();
-        ret.value = value.DeepCopy(mn);
+        ret.value = value.DeepCopy(mn, assignNewID);
         return ret;
     }
 
@@ -42,9 +42,9 @@ public class PersistenceEvent extends TemporalEvent {
 
     @Override
 
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m) {
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         PersistenceEvent e = new PersistenceEvent();
-        e.value = this.value.DeepCopy(m);
+        e.value = this.value.DeepCopy(m, assignNewID);
         e.start = this.start;
         e.end = this.end;
         return e;
