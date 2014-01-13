@@ -28,8 +28,9 @@ import java.util.ListIterator;
 /**
  * Domain transition graph, contains methods for its creation and for providing
  * ordered paths.
- * 
- * this version is abstracted, the edges are labeled with uninstatiated abstract actions
+ *
+ * this version is abstracted, the edges are labeled with uninstatiated abstract
+ * actions
  *
  * @author Filip Dvořák
  */
@@ -283,19 +284,17 @@ public class ADTG {
         for (DTGEdge[] graph1 : graph) {
             for (Integer i : mValues) {
                 DTGEdge e = null;
-                try {
-                    e = graph1[i];
-                } catch (Exception ee) {
-                    int xx = 0;
-                }
+                e = graph1[i];
                 if (e != null && e.act != null) {
                     for (AbstractAction a : e.act) {
                         boolean support = false;
-                        for(AbstractTemporalEvent eve:a.events){
+                        for (AbstractTemporalEvent eve : a.events) {
                             List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
                             list.retainAll(db.domain);
-                            if(!list.isEmpty()){
-                                actionNames.add(a.name);
+                            if (!list.isEmpty() && eve.event instanceof TransitionEvent) {
+                                if (((TransitionEvent) eve.event).to.Unifiable(db.GetGlobalConsumeValue())) {
+                                    actionNames.add(a.name);
+                                }
                             }
                         }
                     }

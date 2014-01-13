@@ -200,6 +200,13 @@ public class TemporalDatabase extends IUnifiable {
      */
     public class ChainComponent {
 
+        @Override
+        public String toString() {
+            return contents.toString(); //To change body of generated methods, choose Tools | Templates.
+        }
+        
+        
+
         /**
          *
          */

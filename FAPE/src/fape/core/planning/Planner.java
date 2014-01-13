@@ -44,6 +44,8 @@ import fape.util.TimePoint;
 import fape.util.TinyLogger;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -321,13 +323,48 @@ public class Planner {
         return queue.Peek();
     }
 
-    /**
-     * starts plan repair, records the best plan, produces the best plan after
-     * <b>forHowLong</b> miliseconds or null, if no plan was found
-     *
-     * @param forHowLong
-     */
-    public void Repair(TimeAmount forHowLong) {
+    private boolean dfsRec(State st) {
+        if (st.consumers.isEmpty()) {
+            this.planState = EPlanState.CONSISTENT;
+            TinyLogger.LogInfo("Plan found:");
+            st.taskNet.Report();
+            return true;
+        } else {
+            for (TemporalDatabase db : st.consumers) {
+                List<SupportOption> supporters = GetSupporters(db, st);
+                if (supporters.isEmpty()) {
+                    return false; //dead end
+                }
+                for (SupportOption o : supporters) {
+                    State next = new State(st);
+                    boolean suc = ApplyOption(next, o, db);
+                    TinyLogger.LogInfo(next.Report());
+                    if (suc) {
+                        if (dfsRec(next)) {
+                            return true;
+                        }
+                    } else {
+                        TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                        //inconsistent state, doing nothing
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    private void dfs(TimeAmount forHowLong) {
+        dfsRec(queue.Pop());
+    }
+
+    Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
+        @Override
+        public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
+            return o1.value2.size() - o2.value2.size();
+        }
+    };
+
+    private void aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -338,36 +375,59 @@ public class Planner {
         /**
          * search
          */
-        boolean end = false;
-        while (!end) {
+        while (true) {
             if (queue.Empty()) {
                 TinyLogger.LogInfo("No plan found.");
                 this.planState = EPlanState.INFESSIBLE;
-                end = true;
-            } else {
-                State st = queue.Pop();
-                TinyLogger.LogInfo(st.Report());
-                if (st.consumers.isEmpty()) {
-                    this.planState = EPlanState.CONSISTENT;
-                    TinyLogger.LogInfo("Plan found.");
-                    end = true;
-                } else {
-                    for (TemporalDatabase db : st.consumers) {
-                        List<SupportOption> supporters = GetSupporters(db, st);
-                        for (SupportOption o : supporters) {
-                            State next = new State(st);
-                            boolean suc = ApplyOption(next, o, db);
-                            TinyLogger.LogInfo(next.Report());
-                            if (suc) {
-                                queue.Add(next);
-                            } else {
-                                //inconsistent state, doing nothing
-                            }
-                        }
+                break;
+            }
+            //get the best state and continue the search
+            State st = queue.Pop();
+            TinyLogger.LogInfo(st.Report());
+            if (st.consumers.isEmpty()) {
+                this.planState = EPlanState.CONSISTENT;
+                TinyLogger.LogInfo("Plan found:");
+                TinyLogger.LogInfo(st.taskNet.Report());
+                TinyLogger.LogInfo(st.tdb.Report());
+                break;
+            }
+            //continue the search
+            LinkedList<Pair<TemporalDatabase, List<SupportOption>>> opts = new LinkedList<>();
+            for (TemporalDatabase db : st.consumers) {
+                List<SupportOption> supporters = GetSupporters(db, st);
+                opts.add(new Pair(db, supporters));
+            }
+            //do some sorting here - min domain
+            Collections.sort(opts, optionsComparatorMinDomain);
+            if (opts.getFirst().value2.isEmpty()) {
+                //dead end
+                continue;
+            }
+            for (Pair<TemporalDatabase, List<SupportOption>> opt : opts) {
+                for (SupportOption o : opt.value2) {
+                    State next = new State(st);
+                    boolean suc = ApplyOption(next, o, opt.value1);
+                    //TinyLogger.LogInfo(next.Report());
+                    if (suc) {
+                        queue.Add(next);
+                    } else {
+                        TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                        //inconsistent state, doing nothing
                     }
                 }
             }
         }
+    }
+
+    /**
+     * starts plan repair, records the best plan, produces the best plan after
+     * <b>forHowLong</b> miliseconds or null, if no plan was found
+     *
+     * @param forHowLong
+     */
+    public void Repair(TimeAmount forHowLong) {
+        aStar(forHowLong);
+        //dfs(forHowLong);
     }
 
     /**
@@ -492,15 +552,15 @@ public class Planner {
         for (Instance i : pl.instances) {
             types.get(i.type).AddInstance(i.name); //this is all of them!
             fape.core.execution.model.types.Type tp = null;
-            for(fape.core.execution.model.types.Type t :pl.types){
-                if(t.name.equals(i.type)){
+            for (fape.core.execution.model.types.Type t : pl.types) {
+                if (t.name.equals(i.type)) {
                     tp = t;
                 }
             }
-            if(tp == null){
+            if (tp == null) {
                 throw new FAPEException("Unknown parent type.");
             }
-            if(tp.parent != null){
+            if (tp.parent != null) {
                 types.get(tp.parent).AddInstance(i.name); //this is all of them!
             }
             List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type, true);

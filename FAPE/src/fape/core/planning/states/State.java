@@ -93,7 +93,7 @@ public class State {
      */
     public float GetCurrentCost(){
         float costs = this.taskNet.GetActionCosts();
-        return 100 - costs;
+        return costs;
     }
     
     /**
@@ -101,7 +101,7 @@ public class State {
      * @return
      */
     public float GetGoalDistance(){
-        float distance = this.consumers.size();
+        float distance = this.consumers.size() * 2;
         return distance;
     }
     
@@ -117,7 +117,7 @@ public class State {
         }
         ret += "\n";
         ret += "  tasks: "+this.taskNet.Report()+"\n";
-        ret += "  databases: "+this.tdb.Report()+"\n";
+        //ret += "  databases: "+this.tdb.Report()+"\n";
                 
         ret += "}\n";
         
