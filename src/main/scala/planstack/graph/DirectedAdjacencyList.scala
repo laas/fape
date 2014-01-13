@@ -2,7 +2,7 @@ package planstack.graph
 
 import scala.collection.mutable
 
-class AdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]],
+class DirectedAdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]],
                                     val mInEdges : mutable.ArrayBuffer[List[E]],
                                     val mIndexes : mutable.Map[V, Int],
                                     val mVertices : mutable.ArrayBuffer[V])
@@ -55,8 +55,8 @@ class AdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]]
     alledges
   }
 
-  override def clone() : AdjacencyList[V,E] = {
-    new AdjacencyList[V,E](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone())
+  override def clone() : DirectedAdjacencyList[V,E] = {
+    new DirectedAdjacencyList[V,E](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone())
   }
 
   def contains(v: V): Boolean = mIndexes.contains(v)

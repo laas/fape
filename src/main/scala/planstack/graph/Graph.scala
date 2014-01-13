@@ -10,7 +10,7 @@ trait Graph[V, E <: Edge[V]] {
 
   def contains(v:V) : Boolean
 
-  def edges : Seq[E]
+  def edges() : Seq[E]
 
   def numVertices : Int
 
@@ -27,7 +27,7 @@ trait Graph[V, E <: Edge[V]] {
 
 object Graph {
 
-  def apply[V]() = new MultiUnlabeledAdjacencyList[V]()
-  def apply[V, EdgeLabel]() = new MultiLabeledAdjacencyList[V, EdgeLabel]()
+  def apply[V]() = new MultiUnlabeledDirectedAdjacencyList[V]()
+  def apply[V, EdgeLabel]() = new MultiLabeledDirectedAdjacencyList[V, EdgeLabel]()
 
 }

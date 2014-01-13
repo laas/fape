@@ -59,13 +59,17 @@ class OldGraphPrinter[N, E](val g:GenGraph[N,E]) {
 
 }
 */
-/*
+
 trait GraphPrinter {
 
 }
 
-class GraphDotPrinter[V,E](val g:Graph[V,E]) extends GraphPrinter {
+class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) extends GraphPrinter {
 
+  def writeToFile(filename: String, s: String): Unit = {
+    val pw = new java.io.PrintWriter(new java.io.File(filename))
+    try pw.write(s) finally pw.close()
+  }
 
   val header = g match {
     case dg:DirectedGraph[V,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;"
@@ -73,12 +77,40 @@ class GraphDotPrinter[V,E](val g:Graph[V,E]) extends GraphPrinter {
   }
   val footer = "\n}"
 
-  def edge2Str(e:E) = g match {
+  def edge2Str(e:E) = {
+    val link = g match {
+      case udg:UndirectedGraph[V,E] => {
+        if(e.isLabeled) {
+          "--" //todo use edge label (i.e. fix typing problem of LabeledGraph
+        } else {
+          "--"
+        }
+      }
+      case dg:DirectedGraph[V,E] => "->"
+    }
 
+    "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v)
   }
 
   def node2Str(v:V) = "\"" + v.toString + "\""
 
+  /**
+   * Creates the dot representation of the graph.
+   * @return
+   */
+  def graph2DotString : String = {
+    var out = header
+    g.edges.foreach(e => out += edge2Str(e))
+    out += footer
+    out
+  }
+
+  /**
+   * Print the graph to a file in dot format.
+   * @param file File to write the graph to
+   */
+  def print2Dot(file:String) {
+    writeToFile(file, graph2DotString)
+  }
 
 }
-*/
