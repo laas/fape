@@ -24,6 +24,8 @@ import java.util.List;
  */
 public class State {
  
+    public static int idCounter = 0;
+    public int mID = idCounter++;
     /**
      *
      */
@@ -73,6 +75,7 @@ public class State {
      * @param st
      */
     public State(State st) {
+        st.conNet.CheckConsistency();
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         taskNet = st.taskNet.DeepCopy();
         tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
@@ -81,14 +84,16 @@ public class State {
         for(TemporalDatabase sb:st.consumers){
             consumers.add((TemporalDatabase)conNet.objectMapper.get(sb.GetUniqueID()));
         }
+        conNet.CheckConsistency();
     }
     
     /**
-     *
+     * 
      * @return
      */
     public float GetCurrentCost(){
-        return 0.0f;
+        float costs = this.taskNet.GetActionCosts();
+        return 100 - costs;
     }
     
     /**
@@ -96,12 +101,14 @@ public class State {
      * @return
      */
     public float GetGoalDistance(){
-        return 0.0f;
+        float distance = this.consumers.size();
+        return distance;
     }
     
     public String Report(){
         String ret = "";
         ret += "{\n";   
+        ret += "  state["+mID+"]\n";   
         ret += "  cons: "+conNet.Report()+"\n";        
         ret += "  stn: "+this.tempoNet.Report()+"\n";
         ret += "  consumers: "+this.consumers.size()+"\n";

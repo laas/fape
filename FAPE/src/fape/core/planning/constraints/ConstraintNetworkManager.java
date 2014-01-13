@@ -15,6 +15,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,17 @@ public class ConstraintNetworkManager {
 
     HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // (database id|state variable value id) -> constraint
     public HashMap<Integer, IUnifiable> objectMapper = new HashMap<>();
+
+    public void CheckConsistency() {
+        for (UnificationConstraint c : unificationConstraints) {
+            if (!objectMapper.containsKey(c.one)) {
+                throw new FAPEException("Unknown IUnifiable reference: " + c.one);
+            }
+            if (!objectMapper.containsKey(c.two)) {
+                throw new FAPEException("Unknown IUnifiable reference: " + c.two);
+            }
+        }
+    }
 
     boolean AC3(HashSet<UnificationConstraint> set) {
         HashMap<Integer, List<UnificationConstraint>> smartList = new HashMap<>();
@@ -58,7 +70,11 @@ public class ConstraintNetworkManager {
 
     boolean AC3_Revise(UnificationConstraint u) {
         boolean reduced = false;
-        reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
+        try {
+            reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
+        } catch (Exception e) {
+            int xx = 0;
+        }
         reduced = reduced || objectMapper.get(u.two).ReduceDomain(new HashSet<>(objectMapper.get(u.one).GetDomainObjectConstants()));
         return reduced;
     }
@@ -75,6 +91,7 @@ public class ConstraintNetworkManager {
 
     /**
      * we maintain an index of unifiables across states
+     *
      * @param a
      */
     public void AddUnifiable(IUnifiable a) {
@@ -87,7 +104,10 @@ public class ConstraintNetworkManager {
      * @param b
      */
     public void AddUnificationConstraint(IUnifiable a, IUnifiable b) {
-        TinyLogger.LogInfo("Adding new constraint between: "+a.mID+a.Explain()+" : "+a.GetDomainObjectConstants()+", "+b.mID+b.Explain()+" : "+b.GetDomainObjectConstants());
+        if (!objectMapper.containsKey(a.mID) || !objectMapper.containsKey(b.mID)) {
+            throw new FAPEException("Unknown IUnifiable reference.");
+        }
+        TinyLogger.LogInfo("Adding new constraint between: " + a.mID + a.Explain() + " : " + a.GetDomainObjectConstants() + ", " + b.mID + b.Explain() + " : " + b.GetDomainObjectConstants());
         unificationConstraints.add(new UnificationConstraint(a, b));
     }
 
@@ -106,17 +126,13 @@ public class ConstraintNetworkManager {
         }
         unificationConstraints.removeAll(remove);
         for (UnificationConstraint u : remove) {
-            if (u.one == mergeFrom.mID) {
-                u.one = mergeInto.mID;
-                if (u.two != mergeInto.mID) {
-                    add.add(u);
-                }
+            if (u.one == mergeFrom.mID && u.two != mergeInto.mID) {
+                UnificationConstraint c = new UnificationConstraint(mergeInto, objectMapper.get(u.two));
+                add.add(c);
             }
-            if (u.two == mergeFrom.mID) {
-                u.two = mergeInto.mID;
-                if (u.one != mergeInto.mID) {
-                    add.add(u);
-                }
+            if (u.two == mergeFrom.mID && u.one != mergeInto.mID) {
+                UnificationConstraint c = new UnificationConstraint(objectMapper.get(u.one), mergeInto);
+                add.add(c);
             }
         }
         unificationConstraints.addAll(add);
@@ -127,14 +143,12 @@ public class ConstraintNetworkManager {
         nm.unificationConstraints = new HashSet<>(this.unificationConstraints);
         return nm;
     }
-    
-    public String Report(){
+
+    public String Report() {
         String ret = "";
-        
-        ret += "{"+"constraints: "+this.unificationConstraints.size()+", mapper:"+this.objectMapper.size()+"}";
-        
-        
-        
+
+        ret += "{" + "constraints: " + this.unificationConstraints.size() + ", mapper:" + this.objectMapper.size() + "}";
+
         return ret;
     }
 

@@ -251,7 +251,7 @@ public class TemporalDatabase extends IUnifiable {
          */
         public StateVariableValue GetConsumeValue() {
             if (change) {
-                return ((TransitionEvent) contents.get(0)).to;
+                return ((TransitionEvent) contents.get(0)).from;
             }else{
                 return ((PersistenceEvent) contents.get(0)).value;
             }            
@@ -311,7 +311,7 @@ public class TemporalDatabase extends IUnifiable {
      * @return
      */
     public StateVariableValue GetGlobalConsumeValue() {
-        return chain.getFirst().GetSupportValue();
+        return chain.getFirst().GetConsumeValue();
     }
 
     /**

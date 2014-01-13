@@ -282,7 +282,12 @@ public class ADTG {
 
         for (DTGEdge[] graph1 : graph) {
             for (Integer i : mValues) {
-                DTGEdge e = graph1[i];
+                DTGEdge e = null;
+                try {
+                    e = graph1[i];
+                } catch (Exception ee) {
+                    int xx = 0;
+                }
                 if (e != null && e.act != null) {
                     for (AbstractAction a : e.act) {
                         boolean support = false;

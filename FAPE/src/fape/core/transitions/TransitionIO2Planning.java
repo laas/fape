@@ -83,12 +83,14 @@ public class TransitionIO2Planning {
      * @param rootType
      * @return
      */
-    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types, String rootType) {
+    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types, String rootType, boolean firstLevel) {
         LinkedList<fape.core.planning.model.StateVariable> ret = new LinkedList<>();
         if (types.containsKey(type)) {
             Type tp = types.get(type);
-            for (String nm : tp.contents.keySet()) {
-                ret.addAll(decomposeInstance(qualifyingName + name + ".", nm, tp.contents.get(nm), types, rootType));
+            if (firstLevel) {
+                for (String nm : tp.contents.keySet()) {
+                    ret.addAll(decomposeInstance(qualifyingName + name + ".", nm, tp.contents.get(nm), types, rootType, false));
+                }
             }
             // we yet need to add a type of itself, if this is not the top level
             if (!"".equals(qualifyingName)) {
@@ -347,18 +349,18 @@ public class TransitionIO2Planning {
             if (eve instanceof TransitionEvent) {
                 //((TransitionEvent) eve).to.
                 String tp = null;
-                for(Instance i:act.params){
-                    if(i.name.equals(s.leftRef.GetConstantReference())){
+                for (Instance i : act.params) {
+                    if (i.name.equals(s.leftRef.GetConstantReference())) {
                         tp = i.type;
                     }
                 }
                 String searchStr = tp + s.leftRef.toString().substring(s.leftRef.toString().indexOf("."));
                 for (StateVariable sv : vars.values()) {
-                    if(sv.typeDerivationName.equals(searchStr)){
+                    if (sv.typeDerivationName.equals(searchStr)) {
                         supportedStateVariables.add(sv);
                     }
                 }
-                if(supportedStateVariables.isEmpty()){
+                if (supportedStateVariables.isEmpty()) {
                     throw new FAPEException("Empty domain.");
                 }
             }

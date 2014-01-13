@@ -128,6 +128,10 @@ public class Action {
     public String toString() {
         return name;
     }
+
+    public float GetCost() {
+        return 1.0f;
+    }
     
     
 }

@@ -112,7 +112,7 @@ public class Planner {
                 }
             } else {
                 //add a new persistence just after the chosen element
-                
+
                 o.tdb.chain.add(index + 1, consumer.chain.get(0));
                 TemporalDatabase.PropagatePrecedence(o.precedingComponent, o.tdb.chain.get(index + 1), next);
                 //constraint the values
@@ -274,7 +274,7 @@ public class Planner {
         } else {
             throw new FAPEException("Unknown option.");
         }
-
+        next.conNet.CheckConsistency();
         return next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
@@ -417,7 +417,8 @@ public class Planner {
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
         ADTG dtg = dtgs.get(db.domain.getFirst().type);
-        HashSet<String> abs = dtg.GetActionSupporters(db);
+        HashSet<String> abs = null;
+        abs = dtg.GetActionSupporters(db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
         ret.addAll(options);
@@ -475,6 +476,10 @@ public class Planner {
         // this a generic predecesor of all types
         if (st.isInitState) {
             types.put("object", new fape.core.planning.model.Type("object"));
+            Type bool = new fape.core.planning.model.Type("boolean");
+            bool.AddInstance("true");
+            bool.AddInstance("false");
+            types.put("boolean", bool);
             //STNManager.Init();
         }
 
@@ -486,7 +491,19 @@ public class Planner {
         //convert instances and create state variables from them
         for (Instance i : pl.instances) {
             types.get(i.type).AddInstance(i.name); //this is all of them!
-            List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type);
+            fape.core.execution.model.types.Type tp = null;
+            for(fape.core.execution.model.types.Type t :pl.types){
+                if(t.name.equals(i.type)){
+                    tp = t;
+                }
+            }
+            if(tp == null){
+                throw new FAPEException("Unknown parent type.");
+            }
+            if(tp.parent != null){
+                types.get(tp.parent).AddInstance(i.name); //this is all of them!
+            }
+            List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type, true);
             for (StateVariable v : l) {
                 vars.put(v.name, v);
             }

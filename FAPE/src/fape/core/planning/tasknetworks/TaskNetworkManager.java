@@ -114,4 +114,22 @@ public class TaskNetworkManager {
     public String Report() {
         return "size: "+roots.size()+", actions: "+roots.toString() ;
     }
+
+    private float recCost(Action a){
+        float sum = a.GetCost();
+        if(a.decomposition != null && !a.decomposition.isEmpty()){
+            for(Action b:a.decomposition){
+                sum += b.GetCost();
+            }
+        }
+        return sum;
+    }
+    
+    public float GetActionCosts() {
+        float sum = 0;
+        for(Action a:this.roots){
+            sum += recCost(a);
+        }
+        return sum;        
+    }
 }
