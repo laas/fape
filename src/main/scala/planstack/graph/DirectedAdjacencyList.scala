@@ -28,6 +28,8 @@ class DirectedAdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[
     return vertId
   }
 
+  def vertices = mVertices.toSeq
+
   def addEdge(e:E) { ??? }
 
   def addEdgeImpl(e:E) {

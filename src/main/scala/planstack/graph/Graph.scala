@@ -4,6 +4,8 @@ trait Graph[V, E <: Edge[V]] {
 
   def addVertex(v:V) : Int
 
+  def vertices() : Seq[V]
+
   def addEdge(e:E)
 
   protected def addEdgeImpl(e:E)

@@ -1,6 +1,7 @@
 package planstack.graph.printers
 
 import planstack.graph._
+import scala.collection.mutable
 
 //TODO: support tree structure
 
@@ -72,8 +73,8 @@ class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) extends GraphPrinter {
   }
 
   val header = g match {
-    case dg:DirectedGraph[V,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;"
-    case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"RL\"\n;" //TODO not a digraph
+    case dg:DirectedGraph[V,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"
+    case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"  //TODO not a digraph
   }
   val footer = "\n}"
 
@@ -81,7 +82,7 @@ class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) extends GraphPrinter {
     val link = g match {
       case udg:UndirectedGraph[V,E] => {
         if(e.isLabeled) {
-          "--" //todo use edge label (i.e. fix typing problem of LabeledGraph
+          "--" //todo use edge label (i.e. fix typing problem of LabeledGraph)
         } else {
           "--"
         }
@@ -92,7 +93,13 @@ class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) extends GraphPrinter {
     "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v)
   }
 
-  def node2Str(v:V) = "\"" + v.toString + "\""
+  val nodeId = mutable.Map[V, Int]()
+
+  def node2Str(v:V) = {
+    if(!nodeId.contains(v))
+      nodeId(v) = nodeId.size
+    "\"" + nodeId(v) +":"+ v.toString + "\""
+  }
 
   /**
    * Creates the dot representation of the graph.

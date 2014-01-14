@@ -61,7 +61,11 @@ class SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[Li
                                       mVertices : mutable.ArrayBuffer[V])
   extends SimpleDirectedAdjacencyList[V, Edge[V]](mOutEdges, mInEdges, mIndexes, mVertices)
   with UnlabeledGraph[V]
+{
+  def this() = this(new ArrayBuffer[List[Edge[V]]], new ArrayBuffer[List[Edge[V]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
+  override def clone() = { new SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+}
 
 
 class MultiUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[List[Edge[V]]],

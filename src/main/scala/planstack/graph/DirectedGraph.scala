@@ -13,3 +13,11 @@ trait DirectedGraph[V, E <: Edge[V]] extends Graph[V,E] {
 
   def outDegree(v:V) = outEdges(v).length
 }
+
+
+object DirectedGraph {
+
+  def apply[V]() = new MultiUnlabeledDirectedAdjacencyList[V]()
+  def apply[V,EL]() = new MultiLabeledDirectedAdjacencyList[V, EL]()
+
+}

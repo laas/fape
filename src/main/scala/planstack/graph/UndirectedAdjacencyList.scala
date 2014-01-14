@@ -25,6 +25,18 @@ class UndirectedAdjacencyList[V,E <: Edge[V]](val mEdges : mutable.ArrayBuffer[L
     return vertId
   }
 
+  def vertices = mVertices.toSeq
+
+  /** Changes a vertex to another object.
+    * The new vertex _must_ have the same hash code and be equal to the previous one.
+    * @param v
+    */
+  def updateVertex(v:V) {
+    assert(contains(v))
+    val id = mIndexes(v)
+    mVertices(id) = v
+  }
+
   def addEdge(e: E): Unit = ???
 
   protected def addEdgeImpl(e: E): Unit = {

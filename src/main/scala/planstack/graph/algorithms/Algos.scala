@@ -1,11 +1,11 @@
 package planstack.graph.algorithms
 
 import planstack.graph._
-import scala.collection.immutable
+import scala.collection.mutable
 
 
 
-/*
+
 object Algos {
   object Marks extends Enumeration {
     type Marks = Value
@@ -13,23 +13,25 @@ object Algos {
   }
   import Marks._
 
-  def topologicalSorting[A,B](g:GenGraph[A,B]) : immutable.Seq[Int] = {
-    var topo = List[Int]()
-    val marks = Array.fill[Marks](g.numVertices)(untouched)
+  def topologicalSorting[A,B <: Edge[A]](g:DirectedGraph[A,B]) : Seq[A] = {
+    var topo = List[A]()
+    val marksMap = mutable.Map[A, Marks]()
 
-    def visit(n:Int) {
-      if(marks(n) == touched)
+    def mark(a:A) = marksMap.getOrElse(a, untouched)
+
+    def visit(n:A) {
+      if(mark(n) == touched)
         throw new Exception("This is not a DAG")
-      if(marks(n) == untouched) {
-        marks(n) = touched
-        g.outEdges(n).foreach(e => visit(e.dest))
-        marks(n) = marked
+      if(mark(n) == untouched) {
+        marksMap(n) = touched
+        g.outEdges(n).foreach(e => visit(e.v))
+        marksMap(n) = marked
         topo = n :: topo
       }
     }
 
-    while(!marks.forall(_ != untouched)) {
-      val optN = (0 to g.numVertices).find(i => marks(i) == untouched)
+    while(!g.vertices().forall(mark(_) != untouched)) {
+      val optN = g.vertices().find(i => mark(i) == untouched)
       optN match  {
         case Some(n) => visit(n)
         case _ => throw new Exception("Problem, no untouched vertex could be found")
@@ -40,4 +42,3 @@ object Algos {
   }
 }
 
-*/
