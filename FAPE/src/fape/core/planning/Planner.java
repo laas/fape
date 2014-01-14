@@ -95,38 +95,46 @@ public class Planner {
     public HashMap<AbstractAction, HashMap<Integer, List<UnificationConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
+        TemporalDatabase supporter = null;
+        TemporalDatabase.ChainComponent precedingComponent = null;
+        if (o.temporalDatabase != -1) {
+            supporter = next.GetDatabase(o.temporalDatabase);
+            if (o.precedingChainComponent != -1) {
+                precedingComponent = supporter.GetChainComponent(o.precedingChainComponent);
+            }
+        }
         //now we can happily apply all the options
-        if (o.tdb != null && o.precedingComponent != null) {
+        if (supporter != null && precedingComponent != null) {
             // this is database merge of one persistence into another
-            int index = o.tdb.chain.indexOf(o.precedingComponent);
-            if (o.tdb.chain.size() - 1 != index && !o.tdb.chain.get(index + 1).change) {
+            int index = supporter.chain.indexOf(precedingComponent);
+            if (supporter.chain.size() - 1 != index && !supporter.chain.get(index + 1).change) {
                 //we add into an existing partially ordered set of perstistance events
-                TemporalDatabase.ChainComponent comp = o.tdb.chain.get(index + 1);
+                TemporalDatabase.ChainComponent comp = supporter.chain.get(index + 1);
                 //constraint the values
                 next.conNet.AddUnificationConstraint(comp.GetSupportValue(), consumer.GetGlobalConsumeValue());
                 //add it
                 comp.Add(consumer.chain.get(0));
                 //propagate time constraints
-                TemporalDatabase.PropagatePrecedence(o.precedingComponent, comp, next);
-                if (o.tdb.chain.size() > index + 2) {
-                    TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
+                TemporalDatabase.PropagatePrecedence(precedingComponent, comp, next);
+                if (supporter.chain.size() > index + 2) {
+                    TemporalDatabase.ChainComponent comp2 = supporter.chain.get(index + 2);
                     TemporalDatabase.PropagatePrecedence(comp, comp2, next);
                 }
             } else {
                 //add a new persistence just after the chosen element
 
-                o.tdb.chain.add(index + 1, consumer.chain.get(0));
-                TemporalDatabase.PropagatePrecedence(o.precedingComponent, o.tdb.chain.get(index + 1), next);
+                supporter.chain.add(index + 1, consumer.chain.get(0));
+                TemporalDatabase.PropagatePrecedence(precedingComponent, supporter.chain.get(index + 1), next);
                 //constraint the values
-                next.conNet.AddUnificationConstraint(o.precedingComponent.GetSupportValue(), consumer.GetGlobalConsumeValue());
-                if (o.tdb.chain.size() > index + 2) {
-                    TemporalDatabase.ChainComponent comp2 = o.tdb.chain.get(index + 2);
-                    TemporalDatabase.PropagatePrecedence(o.tdb.chain.get(index + 1), comp2, next);
+                next.conNet.AddUnificationConstraint(precedingComponent.GetSupportValue(), consumer.GetGlobalConsumeValue());
+                if (supporter.chain.size() > index + 2) {
+                    TemporalDatabase.ChainComponent comp2 = supporter.chain.get(index + 2);
+                    TemporalDatabase.PropagatePrecedence(supporter.chain.get(index + 1), comp2, next);
                 }
 
             }
             //merge databases
-            next.tdb.Merge(next, o.tdb, consumer);
+            next.tdb.Merge(next, supporter, consumer);
             //remove consumer
             TemporalDatabase dbRemove = null;
             for (TemporalDatabase db : next.consumers) {
@@ -135,34 +143,34 @@ public class Planner {
                 }
             }
             next.consumers.remove(dbRemove);
-        } else if (o.tdb != null) {
+        } else if (supporter != null) {
             //this is a database concatenation
-            if (!o.tdb.chain.getLast().change && !consumer.chain.getFirst().change) {
+            if (!supporter.chain.getLast().change && !consumer.chain.getFirst().change) {
                 //merge the changes
-                TemporalDatabase.ChainComponent second = o.tdb.chain.getLast(),
+                TemporalDatabase.ChainComponent second = supporter.chain.getLast(),
                         third = consumer.chain.get(1),
-                        first = o.tdb.chain.get(o.tdb.chain.size() - 2);
+                        first = supporter.chain.get(supporter.chain.size() - 2);
                 for (TemporalEvent e : consumer.chain.getFirst().contents) {
-                    o.tdb.chain.getLast().contents.add(e);
+                    supporter.chain.getLast().contents.add(e);
                 }
                 consumer.chain.removeFirst();
                 for (TemporalDatabase.ChainComponent c : consumer.chain) {
-                    o.tdb.chain.add(c);
+                    supporter.chain.add(c);
                 }
                 TemporalDatabase.PropagatePrecedence(first, second, next);
                 TemporalDatabase.PropagatePrecedence(second, third, next);
                 next.conNet.AddUnificationConstraint(first.GetSupportValue(), third.GetConsumeValue());//adding just the constraint between the border values, the middle should be constrained with both                
-                next.tdb.Merge(next, o.tdb, consumer);
+                next.tdb.Merge(next, supporter, consumer);
             } else {
                 //concatenate
                 TemporalDatabase.ChainComponent second = consumer.chain.getFirst(),
-                        first = o.tdb.chain.getLast();
+                        first = supporter.chain.getLast();
                 for (TemporalDatabase.ChainComponent c : consumer.chain) {
-                    o.tdb.chain.add(c);
+                    supporter.chain.add(c);
                 }
                 next.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());//adding just the constraint between the border values
                 TemporalDatabase.PropagatePrecedence(first, second, next);
-                next.tdb.Merge(next, o.tdb, consumer);
+                next.tdb.Merge(next, supporter, consumer);
             }
             //remove consumer
             TemporalDatabase dbRemove = null;
@@ -197,7 +205,7 @@ public class Planner {
                 return false;
             } else {
                 SupportOption opt = new SupportOption();
-                opt.tdb = supportingDatabase;
+                opt.temporalDatabase = supportingDatabase.mID;
                 return ApplyOption(next, opt, consumer);
             }
         } else if (o.actionToDecompose != null) {
@@ -406,7 +414,7 @@ public class Planner {
             for (Pair<TemporalDatabase, List<SupportOption>> opt : opts) {
                 for (SupportOption o : opt.value2) {
                     State next = new State(st);
-                    boolean suc = ApplyOption(next, o, opt.value1);
+                    boolean suc = ApplyOption(next, o, next.GetConsumer(opt.value1));
                     //TinyLogger.LogInfo(next.Report());
                     if (suc) {
                         queue.Add(next);
@@ -450,20 +458,22 @@ public class Planner {
             }
             if (db.HasSinglePersistence()) {
                 //we are looking for chain integration too
+                int ct = 0;
                 for (TemporalDatabase.ChainComponent comp : b.chain) {
                     if (comp.change && comp.GetSupportValue().Unifiable(db.GetGlobalConsumeValue())
                             && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                         SupportOption o = new SupportOption();
-                        o.precedingComponent = comp;
-                        o.tdb = b;
+                        o.precedingChainComponent = ct;
+                        o.temporalDatabase = b.mID;
                         ret.add(o);
                     }
+                    ct++;
                 }
             } else {
                 if (b.GetGlobalSupportValue().Unifiable(db.GetGlobalConsumeValue())
                         && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                     SupportOption o = new SupportOption();
-                    o.tdb = b;
+                    o.temporalDatabase = b.mID;
                     ret.add(o);
                 }
             }
@@ -477,8 +487,7 @@ public class Planner {
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
         ADTG dtg = dtgs.get(db.domain.getFirst().type);
-        HashSet<String> abs = null;
-        abs = dtg.GetActionSupporters(db);
+        HashSet<String> abs = dtg.GetActionSupporters(db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
         ret.addAll(options);

@@ -195,6 +195,10 @@ public class TemporalDatabase extends IUnifiable {
         return " tdb";
     }
 
+    public ChainComponent GetChainComponent(int precedingChainComponent) {
+        return chain.get(precedingChainComponent);
+    }
+
     /**
      *
      */

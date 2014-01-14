@@ -71,7 +71,7 @@ public class StateVariableValue extends IUnifiable {
 
     @Override
     public String toString() {
-        return valueDescription + " " + values.toString();
+        return valueDescription + "("+mID+") " + values.toString();
     }
 
     @Override

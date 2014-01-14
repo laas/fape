@@ -80,6 +80,7 @@ public class TemporalDatabaseManager {
 
         //propagate merge into the constraints
         st.conNet.Merge(tdb, consumer);
+        st.tdb.vars.remove(consumer);
 
     }
 
