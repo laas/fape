@@ -10,6 +10,7 @@
  */
 package fape.core.planning.model;
 
+import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.util.TinyLogger;
@@ -82,7 +83,7 @@ public class StateVariableValue extends IUnifiable {
     @Override
     public boolean ReduceDomain(HashSet<String> supported) {
         int orig = values.size();
-        if (TinyLogger.logging) {
+        if (Planner.logging) {
             HashSet<String> newl = new HashSet<>(values);
             newl.removeAll(supported);
             if (!newl.isEmpty()) {

@@ -11,6 +11,7 @@
 package fape.core.planning.stn;
 
 import fape.exceptions.FAPEException;
+import fape.util.TinyLogger;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -56,6 +57,7 @@ public class STNManager {
      * @param b
      */
     public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
+        TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" < "+b.getID());
         stn.eless(a.getID(), b.getID());
     }
 
@@ -68,6 +70,7 @@ public class STNManager {
      * @return
      */
     public final boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) {
+        TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" ["+min+","+max+"] "+b.getID());
         if (stn.edge_consistent(a.getID(), b.getID(), min, max)) {
             stn.propagate(a.getID(), b.getID(), min, max);
             return true;
@@ -83,7 +86,9 @@ public class STNManager {
      * @return
      */
     public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second) {
-        return stn.pless(first.getID(), second.getID());
+        boolean ret = stn.pless(first.getID(), second.getID());
+        TinyLogger.LogInfo("STN: "+first.getID()+" can occour before "+second.getID());
+        return ret;
     }
 
     /**
@@ -119,6 +124,52 @@ public class STNManager {
     }
 
     public String Report() {
-        return "size: "+this.stn.top;
+        String ret = "size: "+this.stn.top+"\n";
+        int n = this.stn.top;
+        for(int i = 0; i < n; i++){
+            for(int j = i + 1; j < n; j++){
+                if(stn.ga(i, j) != STN.inf || stn.gb(i, j) != STN.sup){
+                    ret += i+" ["+stn.ga(i, j)+","+stn.gb(i, j)+"] "+j+"\n";
+                }
+                if(stn.ga(i, j) > stn.gb(i, j)){
+                    throw new FAPEException("Inconsistent STN.");
+                }
+            }
+        }
+        return ret;
+    }
+
+    public void TestConsistent(){
+        int n = this.stn.top;
+        for(int i = 0; i < n; i++){
+            for(int j = i + 1; j < n; j++){
+                if(stn.ga(i, j) > stn.gb(i, j)){
+                    throw new FAPEException("Inconsistent STN.");
+                }
+            }
+        }
+    }
+    
+    public static void main(String[] args) {
+        //self test
+        STNManager m = new STNManager();
+        m.Init();
+        TemporalVariable a = m.getNewTemporalVariable(),
+                b = m.getNewTemporalVariable(),
+                c = m.getNewTemporalVariable();
+        //m.EnforceBefore(a, b);
+        m.EnforceConstraint(a, b, 10, 10);
+        m.EnforceBefore(b, c);
+        m.EnforceBefore(c, a);
+        STNManager m2 = m.DeepCopy();
+        m2.CanBeBefore(a, b);
+        
+        
+        
+        int xx = 0;
+    }
+
+    public long GetEarliestStartTime(TemporalVariable start) {
+        return stn.ga(0, start.getID());
     }
 }

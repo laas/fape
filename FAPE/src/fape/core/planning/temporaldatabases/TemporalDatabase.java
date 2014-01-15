@@ -38,24 +38,22 @@ import java.util.List;
  */
 public class TemporalDatabase extends IUnifiable {
 
-    public String Report(){
+    public String Report() {
         String ret = "";
         //ret += "{\n";
-        
-        ret += "    "+this.domain+"\n";
-        for(ChainComponent c:chain){
-            for(TemporalEvent e:c.contents){
-                ret += "    "+e.Report();
+
+        ret += "    " + this.domain + "\n";
+        for (ChainComponent c : chain) {
+            for (TemporalEvent e : c.contents) {
+                ret += "    " + e.Report();
             }
             ret += "\n";
         }
-        
-        
+
         //ret += "}\n";
-        
         return ret;
     }
-    
+
     /**
      *
      * @param assignNewUniqueID
@@ -114,7 +112,7 @@ public class TemporalDatabase extends IUnifiable {
         }
         m.AddUnifiable(newDB);
         // set the mDatabase variables in the events
-        for(ChainComponent c :newDB.chain){
+        for (ChainComponent c : newDB.chain) {
             c.SetDatabase(newDB);
         }
         return newDB;
@@ -127,7 +125,12 @@ public class TemporalDatabase extends IUnifiable {
      * @param st
      */
     public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
-        if (!first.change) {
+        for (TemporalEvent f : first.contents) {
+            for(TemporalEvent s : second.contents){
+                st.tempoNet.EnforceBefore(f.end, s.start);
+            }
+        }
+        /*if (!first.change) {
             for (TemporalEvent e : first.contents) {
                 if (!second.change) {
                     for (TemporalEvent e2 : second.contents) {
@@ -145,7 +148,7 @@ public class TemporalDatabase extends IUnifiable {
             } else {
                 st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
             }
-        }
+        }*/
     }
 
     /**
@@ -162,10 +165,8 @@ public class TemporalDatabase extends IUnifiable {
                 remove.add(v);
             }
         }
-        if (TinyLogger.logging) {
-            if (!remove.isEmpty()) {
-                TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + remove.toString());
-            }
+        if (!remove.isEmpty()) {
+            TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + remove.toString());
         }
         domain.removeAll(remove);
         return !remove.isEmpty();
@@ -208,8 +209,6 @@ public class TemporalDatabase extends IUnifiable {
         public String toString() {
             return contents.toString(); //To change body of generated methods, choose Tools | Templates.
         }
-        
-        
 
         /**
          *
@@ -263,9 +262,9 @@ public class TemporalDatabase extends IUnifiable {
         public StateVariableValue GetConsumeValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).from;
-            }else{
+            } else {
                 return ((PersistenceEvent) contents.get(0)).value;
-            }            
+            }
         }
 
         /**
@@ -288,14 +287,14 @@ public class TemporalDatabase extends IUnifiable {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
             cp.contents = new LinkedList<>();
-            for(TemporalEvent e:this.contents){
+            for (TemporalEvent e : this.contents) {
                 cp.contents.add(e.DeepCopy(m, false));
             }
             return cp;
         }
 
         private void SetDatabase(TemporalDatabase db) {
-            for(TemporalEvent e:contents){
+            for (TemporalEvent e : contents) {
                 e.mDatabase = db;
             }
         }
@@ -341,8 +340,6 @@ public class TemporalDatabase extends IUnifiable {
         return chain.getLast().GetSupportTimePoint();
     }
 
-    
-    
     @Override
     public String toString() {
         String res = "(tdb:" + mID + " dom=[";

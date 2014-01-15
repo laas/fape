@@ -59,6 +59,9 @@ import javax.swing.SwingWorker;
  */
 public class Planner {
 
+    public static boolean debugging = true;
+    public static boolean logging = true;
+    
     /**
      *
      */
@@ -315,6 +318,9 @@ public class Planner {
      */
     public EPlanState planState = EPlanState.UNINITIALIZED;
 
+    //current best state
+    private State best = null;
+    
     /**
      * initializes the data structures of the planning problem
      *
@@ -371,8 +377,30 @@ public class Planner {
             return o1.value2.size() - o2.value2.size();
         }
     };
+    
+    Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsActionsPreffered = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
+        @Override
+        public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
+            int sum1 = 0, sum2 = 0;
+            for(SupportOption op:o1.value2){
+                if(op.supportingAction != null){
+                    sum1+=1;
+                }else{
+                    sum1+=100;
+                }
+            }
+            for(SupportOption op:o2.value2){
+                if(op.supportingAction != null){
+                    sum2+=1;
+                }else{
+                    sum2+=100;
+                }
+            }
+            return sum1 - sum2;
+        }
+    };
 
-    private void aStar(TimeAmount forHowLong) {
+    private State aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -380,8 +408,8 @@ public class Planner {
         //st.bindings.PropagateNecessary(st);
         //st.tdb.Propagate(st);
 
-        /**
-         * search
+        /** 
+        * search
          */
         while (true) {
             if (queue.Empty()) {
@@ -397,7 +425,8 @@ public class Planner {
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(st.taskNet.Report());
                 TinyLogger.LogInfo(st.tdb.Report());
-                break;
+                TinyLogger.LogInfo(st.tempoNet.Report());
+                return st;
             }
             //continue the search
             LinkedList<Pair<TemporalDatabase, List<SupportOption>>> opts = new LinkedList<>();
@@ -406,6 +435,7 @@ public class Planner {
                 opts.add(new Pair(db, supporters));
             }
             //do some sorting here - min domain
+            //Collections.sort(opts, optionsComparatorMinDomain);
             Collections.sort(opts, optionsComparatorMinDomain);
             if (opts.getFirst().value2.isEmpty()) {
                 //dead end
@@ -425,16 +455,17 @@ public class Planner {
                 }
             }
         }
+        return null;
     }
 
     /**
      * starts plan repair, records the best plan, produces the best plan after
      * <b>forHowLong</b> miliseconds or null, if no plan was found
      *
-     * @param forHowLong
+     * @param forHowLong 
      */
     public void Repair(TimeAmount forHowLong) {
-        aStar(forHowLong);
+        best = aStar(forHowLong);
         //dfs(forHowLong);
     }
 
@@ -519,7 +550,16 @@ public class Planner {
      * @return
      */
     public List<Pair<AtomicAction, TimePoint>> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        State myState = best;
+        
+        List<Pair<AtomicAction, TimePoint>> ret = new LinkedList<>();
+        for(Action a:myState.taskNet.GetAllActions()){
+            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
+            AtomicAction aa = new AtomicAction();
+            aa.name = a.name;
+            //a.
+        }        
+        return ret;
     }
 
     /**
@@ -728,8 +768,9 @@ public class Planner {
         }
 
         Action act = new Action();
+        act.params = abs.params;
         // set the same name
-        act.name = abs.name;
+        act.name = abs.name;        
         //prepare the time points
         //add the refinements 
         act.refinementOptions = abs.strongDecompositions;

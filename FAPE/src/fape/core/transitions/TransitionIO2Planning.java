@@ -232,15 +232,16 @@ public class TransitionIO2Planning {
      * @param s
      * @param state
      */
-    public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
-        TemporalVariable vs = state.tempoNet.getNewTemporalVariable(), ve = state.tempoNet.getNewTemporalVariable();
+    /*public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
+        TemporalVariable vs = state.tempoNet.getNewTemporalVariable();
+        TemporalVariable ve = state.tempoNet.getNewTemporalVariable();
 
         //TODO: include some other constraints on those two ...
         ev.start = vs;
         ev.end = ve;
 
         state.tempoNet.EnforceBefore(vs, ve);
-    }
+    }*/
 
     /**
      * we take the statement on input and add it into the corresponding state
@@ -249,7 +250,6 @@ public class TransitionIO2Planning {
      * @param s
      * @param v
      * @param st
-     * @param types
      */
     public static void InsertStatementIntoState(Statement s, StateVariable v, State st) {
         if (v == null) {
@@ -278,7 +278,11 @@ public class TransitionIO2Planning {
             secondDomain.add(s.to.GetConstantReference());
         }
         TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, firstDomain, secondDomain);
-        AddTimePoints(ev, s, st);
+        // statements at the start of the of the world
+        TemporalVariable tv = st.tempoNet.getNewTemporalVariable();
+        ev.start = tv;
+        ev.end = tv;
+        //AddTimePoints(ev, s, st);
 
         //add the event to the database
         db.AddEvent(ev);

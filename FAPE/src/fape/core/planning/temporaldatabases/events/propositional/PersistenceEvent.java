@@ -52,6 +52,6 @@ public class PersistenceEvent extends TemporalEvent {
 
     @Override
     public String Report() {
-        return "persistence "+value.Report();
+        return "[" + start + "," + end + "] persistence "+value.Report();
     }
 }

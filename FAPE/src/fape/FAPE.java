@@ -28,7 +28,6 @@ public class FAPE {
      * @throws java.lang.InterruptedException
      */
     public static void main(String[] args) throws InterruptedException {
-        TinyLogger.logging = true;
         Actor a = null;
         Planner p = null;
         Executor e = null;
@@ -39,6 +38,9 @@ public class FAPE {
             p = new Planner();
             e = new Executor();
             // this is a hack, we do not need listener for planner scenerio testing
+            
+            //"name of the machine", "who am I talking to", "my name (fape)", "3300"
+            //
             //l = new Listener(null, null, null, null);
 
             a.bind(e, p);

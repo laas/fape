@@ -58,6 +58,6 @@ public class TransitionEvent extends TemporalEvent {
 
     @Override
     public String Report() {
-        return "transition "+((from==null)?"null":from.Report())+" -> "+((to==null)?"null":to.Report());
+        return "[" + start + "," + end + "] transition "+((from==null)?"null":from.Report())+" -> "+((to==null)?"null":to.Report());
     }
 }

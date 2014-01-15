@@ -11,6 +11,7 @@
 package fape.core.planning.model;
 
 import fape.core.execution.model.ActionRef;
+import fape.core.execution.model.Instance;
 import fape.core.execution.model.TemporalConstraint;
 import fape.core.planning.constraints.UnificationConstraintSchema;
 
@@ -21,7 +22,6 @@ import fape.core.planning.temporaldatabases.events.propositional.PersistenceEven
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import java.beans.PersistenceDelegate;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,6 +32,9 @@ import java.util.List;
  */
 public class Action {
 
+    public static int idCounter = 0;
+    public int mID = idCounter++;
+    
     /**
      *
      */
@@ -61,6 +64,7 @@ public class Action {
      *
      */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
+    public List<Instance> params;
 
     /**
      *
@@ -92,6 +96,7 @@ public class Action {
      */
     public Action DeepCopy() {
         Action a = new Action();
+        a.params = this.params;
         if (this.decomposition == null) {
             a.decomposition = null;
         } else {

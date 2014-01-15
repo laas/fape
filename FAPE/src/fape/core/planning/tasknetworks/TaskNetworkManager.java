@@ -132,4 +132,19 @@ public class TaskNetworkManager {
         }
         return sum;        
     }
+
+    public Iterable<Action> GetAllActions() {
+        LinkedList<Action> list = new LinkedList<>(roots);
+        List<Action> ret = new LinkedList<>();
+        while(!list.isEmpty()){
+            Action a = list.poll();
+            ret.add(a);
+            if(a.decomposition != null){
+                for(Action b:a.decomposition){
+                    list.add(b);
+                }
+            }
+        }
+        return ret;            
+    }
 }
