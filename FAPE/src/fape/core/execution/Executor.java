@@ -73,7 +73,17 @@ public class Executor {
      *
      * @param acts
      */
-    public void executeAtomicActions(List<Pair<AtomicAction, TimePoint>> acts) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void executeAtomicActions(List<Pair<AtomicAction, Long>> acts) {
+        
+        for(Pair<AtomicAction, Long> p:acts){
+            String msg = "(FAPE-action "+
+                    p.value1.mID+" "+
+                    p.value2+" "+
+                    (p.value2+ p.value1.duration)+
+                    " "+
+                    p.value1.GetDescription()+
+                    ")\n";
+            this.mListener.sendMessage(msg);
+        }        
     }
 }

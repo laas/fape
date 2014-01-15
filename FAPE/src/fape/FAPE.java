@@ -41,7 +41,9 @@ public class FAPE {
             
             //"name of the machine", "who am I talking to", "my name (fape)", "3300"
             //
-            //l = new Listener(null, null, null, null);
+            l = new Listener("maxc1", "PR2", "FAPE", "3300");
+            
+            //l.sendMessage("(test message)");
 
             a.bind(e, p);
             e.bind(a, l);
@@ -52,7 +54,7 @@ public class FAPE {
         }
 
         //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream3.anml"));
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream4.anml"));
 
         p.Init();
         

@@ -133,7 +133,7 @@ public class TaskNetworkManager {
         return sum;        
     }
 
-    public Iterable<Action> GetAllActions() {
+    public List<Action> GetAllActions() {
         LinkedList<Action> list = new LinkedList<>(roots);
         List<Action> ret = new LinkedList<>();
         while(!list.isEmpty()){

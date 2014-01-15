@@ -19,6 +19,8 @@ import java.util.List;
  * @author FD
  */
 public class AtomicAction {
+    public int mID;
+    public int duration;
     public String name;
     public List<String> params = new LinkedList<>();
     public String GetDescription(){

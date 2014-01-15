@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.execution.model.Instance;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.StateVariableValue;
@@ -22,6 +23,7 @@ import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
+import fape.util.Pair;
 import fape.util.TinyLogger;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -105,6 +107,7 @@ public class TemporalDatabase extends IUnifiable {
      */
     public TemporalDatabase DeepCopy(ConstraintNetworkManager m) {
         TemporalDatabase newDB = new TemporalDatabase(false);
+        newDB.actionAssociations = new HashMap<>(this.actionAssociations);
         newDB.mID = mID;
         newDB.domain = new LinkedList(this.domain);
         for (ChainComponent c : this.chain) {
@@ -198,6 +201,12 @@ public class TemporalDatabase extends IUnifiable {
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
+    }
+
+    public HashMap<Integer, String> actionAssociations = new HashMap<>();
+    
+    public void AddActionParam(int mID, Instance instanceOfTheParameter) {
+        actionAssociations.put(mID, instanceOfTheParameter.name);
     }
 
     /**

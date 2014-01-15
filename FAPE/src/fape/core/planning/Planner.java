@@ -61,7 +61,7 @@ public class Planner {
 
     public static boolean debugging = true;
     public static boolean logging = true;
-    
+
     /**
      *
      */
@@ -320,7 +320,7 @@ public class Planner {
 
     //current best state
     private State best = null;
-    
+
     /**
      * initializes the data structures of the planning problem
      *
@@ -336,7 +336,7 @@ public class Planner {
     public State GetCurrentState() {
         return queue.Peek();
     }
-
+/*
     private boolean dfsRec(State st) {
         if (st.consumers.isEmpty()) {
             this.planState = EPlanState.CONSISTENT;
@@ -370,30 +370,30 @@ public class Planner {
     private void dfs(TimeAmount forHowLong) {
         dfsRec(queue.Pop());
     }
-
+*/
     Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
         @Override
         public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
             return o1.value2.size() - o2.value2.size();
         }
     };
-    
+
     Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsActionsPreffered = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
         @Override
         public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
             int sum1 = 0, sum2 = 0;
-            for(SupportOption op:o1.value2){
-                if(op.supportingAction != null){
-                    sum1+=1;
-                }else{
-                    sum1+=100;
+            for (SupportOption op : o1.value2) {
+                if (op.supportingAction != null) {
+                    sum1 += 1;
+                } else {
+                    sum1 += 100;
                 }
             }
-            for(SupportOption op:o2.value2){
-                if(op.supportingAction != null){
-                    sum2+=1;
-                }else{
-                    sum2+=100;
+            for (SupportOption op : o2.value2) {
+                if (op.supportingAction != null) {
+                    sum2 += 1;
+                } else {
+                    sum2 += 100;
                 }
             }
             return sum1 - sum2;
@@ -408,8 +408,8 @@ public class Planner {
         //st.bindings.PropagateNecessary(st);
         //st.tdb.Propagate(st);
 
-        /** 
-        * search
+        /**
+         * search
          */
         while (true) {
             if (queue.Empty()) {
@@ -462,7 +462,7 @@ public class Planner {
      * starts plan repair, records the best plan, produces the best plan after
      * <b>forHowLong</b> miliseconds or null, if no plan was found
      *
-     * @param forHowLong 
+     * @param forHowLong
      */
     public void Repair(TimeAmount forHowLong) {
         best = aStar(forHowLong);
@@ -549,16 +549,20 @@ public class Planner {
      * @param forHowLong
      * @return
      */
-    public List<Pair<AtomicAction, TimePoint>> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
+    public List<Pair<AtomicAction, Long>> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
         State myState = best;
-        
-        List<Pair<AtomicAction, TimePoint>> ret = new LinkedList<>();
-        for(Action a:myState.taskNet.GetAllActions()){
-            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
+
+        List<Pair<AtomicAction, Long>> ret = new LinkedList<>();
+        List<Action> l = myState.taskNet.GetAllActions();
+        for (Action a : l) {
+            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);            
             AtomicAction aa = new AtomicAction();
+            aa.mID = a.mID;
+            aa.duration = (int) a.duration;
             aa.name = a.name;
-            //a.
-        }        
+            aa.params = a.ProduceParameters(myState);
+            ret.add(new Pair(aa,startTime));
+        }
         return ret;
     }
 
@@ -770,7 +774,7 @@ public class Planner {
         Action act = new Action();
         act.params = abs.params;
         // set the same name
-        act.name = abs.name;        
+        act.name = abs.name;
         //prepare the time points
         //add the refinements 
         act.refinementOptions = abs.strongDecompositions;
@@ -824,8 +828,10 @@ public class Planner {
                         //obj.domain.add(var);
                         db.domain.add(var);
                     }
+                    db.AddActionParam(act.mID, instanceOfTheParameter);
                 }
             }
+            
 
             //we add the event into the database and the action and the consumers
             act.events.add(event);

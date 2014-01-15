@@ -203,7 +203,7 @@ public class Listener {
      *
      * @param msg The message to send
      */
-    private int sendMessage(String msg) {
+    public int sendMessage(String msg) {
         /* The format of a message is :
          MessageType+sizeof(DestinationName)+DestinationName+sizeof(msg)+msg*/
         // This code works, but I am not sure why it is not using write_int and write_string above...

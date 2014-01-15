@@ -77,6 +77,8 @@ public class TemporalDatabaseManager {
                 e.mDatabase = tdb;
             }
         }
+        
+        tdb.actionAssociations.putAll(consumer.actionAssociations);
 
         //propagate merge into the constraints
         st.conNet.Merge(tdb, consumer);

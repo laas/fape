@@ -24,5 +24,5 @@ public class TimePoint {
     public TimePoint(long tp){
         val = tp;
     }
-    long val;
+    public long val;
 }

@@ -102,7 +102,7 @@ public class AbstractAction {
      * @return
      */
     public float GetDuration() {
-        return 1.0f;
+        return 10.0f;
     }
 
     /**
