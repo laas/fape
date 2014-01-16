@@ -187,6 +187,9 @@ class STN {
      * @param tp2 time point
      */
     public void eless(int tp1, int tp2) {
+        /*if(!pless(tp1, tp2)){
+            int xx = 0;
+        }*/
         propagate(tp1, tp2, 0, sup);
     }
 

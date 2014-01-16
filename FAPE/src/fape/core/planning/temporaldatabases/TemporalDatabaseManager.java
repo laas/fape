@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
@@ -27,31 +28,6 @@ import java.util.List;
  */
 public class TemporalDatabaseManager {
 
-    class UnificationConstraint {
-
-        TemporalDatabase one, two;
-
-        @Override
-        public boolean equals(Object obj) {
-            UnificationConstraint u = (UnificationConstraint) obj;
-            return (u.one == one && u.two == two) || (u.one == two && u.two == one);
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 67 * hash + this.one.mID + this.two.mID;
-            return hash;
-        }
-
-        public UnificationConstraint(TemporalDatabase f, TemporalDatabase s) {
-            one = f;
-            two = s;
-        }
-    }
-
-    HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // database id -> constraints on that db with db with smaller id
-
     /**
      *
      */
@@ -59,121 +35,39 @@ public class TemporalDatabaseManager {
 
     /**
      *
+     * @param m
      * @return
      */
-    public TemporalDatabase GetNewDatabase() {
-        TemporalDatabase db = new TemporalDatabase();
+    public TemporalDatabase GetNewDatabase(ConstraintNetworkManager m) {
+        TemporalDatabase db = new TemporalDatabase(true);
         vars.add(db);
+        m.AddUnifiable(db);
         return db;
     }
 
-    boolean AC3(HashSet<UnificationConstraint> set) {
-        HashMap<Integer, List<UnificationConstraint>> smartList = new HashMap<>();
-        for (UnificationConstraint u : set) {
-            if (!smartList.containsKey(u.one.mID)) {
-                smartList.put(u.one.mID, new LinkedList<UnificationConstraint>());
-            }
-            smartList.get(u.one.mID).add(u);
-            if (!smartList.containsKey(u.two.mID)) {
-                smartList.put(u.two.mID, new LinkedList<UnificationConstraint>());
-            }
-            smartList.get(u.two.mID).add(u);
-        }
-        LinkedList<UnificationConstraint> queue = new LinkedList<>(set);
-        while (!queue.isEmpty()) {
-            UnificationConstraint u = queue.pop();
-            if(AC3_Revise(u)){
-                queue.addAll(smartList.get(u.one.mID));
-                queue.addAll(smartList.get(u.two.mID));
-            }
-        }
-        for(TemporalDatabase d:this.vars){
-            if(d.domain.isEmpty()){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    boolean AC3_Revise(UnificationConstraint u) {
-        HashSet<String> supportOne = new HashSet<>(), supportTwo = new HashSet<>();
-        for (StateVariable v : u.one.domain) {
-            supportOne.add(v.GetObjectConstant());
-        }
-        for (StateVariable v : u.two.domain) {
-            supportTwo.add(v.GetObjectConstant());
-        }
-        boolean reduced = false;
-        {
-            LinkedList<StateVariable> remove = new LinkedList<>();
-            for (StateVariable v : u.one.domain) {
-                if (!supportTwo.contains(v.GetObjectConstant())) {
-                    remove.add(v);
-                }
-            }
-            if (!remove.isEmpty()) {
-                reduced = true;
-                u.one.domain.removeAll(remove);
-            }
-        }
-        {
-            LinkedList<StateVariable> remove = new LinkedList<>();
-            for (StateVariable v : u.two.domain) {
-                if (!supportOne.contains(v.GetObjectConstant())) {
-                    remove.add(v);
-                }
-            }
-            if (!remove.isEmpty()) {
-                reduced = true;
-                u.two.domain.removeAll(remove);
-            }
-        }
-        return reduced;
-    }
-
     /**
-     * propagates the necessary unification constraints
      *
-     * @param st
+     * @param m
      * @return
      */
-    public boolean PropagateAndCheckConsistency(State st) {
-        return AC3(unificationConstraints);
-    }
-
-    /**
-     *
-     * @param a
-     * @param b
-     */
-    public void AddUnificationConstraint(TemporalDatabase a, TemporalDatabase b) {
-        /*UnificationConstraint uc = new UnificationConstraint(a, b);
-         int max = Math.max(a.mID, b.mID);
-         if(!unificationConstraints.containsKey(max)){
-         unificationConstraints.put(max, new HashSet<UnificationConstraint>());
-         }*/
-        unificationConstraints.add(new UnificationConstraint(a, b));
-    }
-
-    /**
-     *
-     * @return
-     */
-    public TemporalDatabaseManager DeepCopy() {
+    public TemporalDatabaseManager DeepCopy(ConstraintNetworkManager m) {
         TemporalDatabaseManager mng = new TemporalDatabaseManager();
         mng.vars = new LinkedList<>();
         for (TemporalDatabase b : this.vars) {
-            mng.vars.add(b.DeepCopy());
+            TemporalDatabase db = b.DeepCopy(m);
+            m.AddUnifiable(db); //keep the index
+            mng.vars.add(db);
         }
         return mng;
     }
 
     /**
      *
+     * @param st
      * @param tdb
      * @param consumer
      */
-    public void Merge(TemporalDatabase tdb, TemporalDatabase consumer) {
+    public void Merge(State st, TemporalDatabase tdb, TemporalDatabase consumer) {
         // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
         // also intersecting the domains
         tdb.domain.retainAll(consumer.domain);
@@ -183,38 +77,25 @@ public class TemporalDatabaseManager {
                 e.mDatabase = tdb;
             }
         }
+        
+        tdb.actionAssociations.putAll(consumer.actionAssociations);
 
-        /**
-         * TODO: careful here, we need to rehash the parts we change ....
-         */
-        List<UnificationConstraint> remove = new LinkedList<>(), add = new LinkedList<>();
-        for (UnificationConstraint p : unificationConstraints) {
-            if (p.one.mID == consumer.mID) {
-                //p.one = tdb;
-                remove.add(p);
-            }
-            if (p.two.mID == consumer.mID) {
-                //p.two = tdb;
-                remove.add(p);
-            }
-        }
-        unificationConstraints.removeAll(remove);
-        for (UnificationConstraint u : remove) {
-            if (u.one.mID == consumer.mID) {
-                u.one = tdb;
-                if (u.two != tdb) {
-                    add.add(u);
-                }
-            }
-            if (u.two.mID == consumer.mID) {
-                u.two = tdb;
-                if (u.one != tdb) {
-                    add.add(u);
-                }
-            }
-        }
-        unificationConstraints.addAll(add);
-        vars.remove(consumer);
+        //propagate merge into the constraints
+        st.conNet.Merge(tdb, consumer);
+        st.tdb.vars.remove(consumer);
+
     }
 
+    public String Report() {
+        String ret = "";
+
+        ret += "  size: " + this.vars.size() + "\n";
+        for(TemporalDatabase b:vars){
+            ret += b.Report();
+        }
+        ret += "\n";
+        
+        return ret;
+
+    }
 }

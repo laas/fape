@@ -34,7 +34,17 @@ public class Queue {
      * @return
      */
     public State Pop(){
-        return list.pollFirst();
+        float min = Float.MAX_VALUE;
+        State best = null;
+        for(State s:list){
+            float val = s.GetCurrentCost() + s.GetGoalDistance();
+            if(val < min){
+                best = s;
+                min = val;
+            }
+        }
+        list.remove(best);
+        return best;
     }
 
     /**

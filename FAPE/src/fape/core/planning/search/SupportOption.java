@@ -24,12 +24,14 @@ public class SupportOption {
     /**
      *
      */
-    public TemporalDatabase tdb;
+    public int temporalDatabase = -1;
+    //public TemporalDatabase tdb;
 
     /**
      *
      */
-    public TemporalDatabase.ChainComponent precedingComponent;
+    public int precedingChainComponent = -1;
+    //public TemporalDatabase.ChainComponent precedingComponent;
 
     /**
      *
@@ -46,14 +48,15 @@ public class SupportOption {
      */
     public int decompositionID = -1;
 
+    @Override
     public String toString() {
         //return "" + tdb + " " + precedingComponent + " " + supportingAction + " " + actionToDecompose;
-        if (tdb != null && precedingComponent != null) {
+        if (temporalDatabase != -1 && precedingChainComponent != -1) {
             // this is database merge of one persistence into another
-            return "{merge of two persistences, tdb="+tdb+", preceding="+precedingComponent;
-        } else if (tdb != null) {
+            return "{merge of two persistences, tdb="+temporalDatabase+", preceding="+precedingChainComponent;
+        } else if (temporalDatabase != -1) {
             //this is a database concatenation
-            return "{DB Concatenation w/ "+tdb+"}";
+            return "{DB Concatenation w/ "+temporalDatabase+"}";
         } else if (supportingAction != null) {
             //this is a simple applciation of an action
             return "{ActionApplication "+supportingAction+"}";

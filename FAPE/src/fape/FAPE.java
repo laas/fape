@@ -4,6 +4,7 @@ import fape.core.acting.Actor;
 import fape.core.execution.Executor;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
+import fape.util.TinyLogger;
 
 /*
  * Author:  Filip Dvořák <filip.dvorak@runbox.com>
@@ -32,24 +33,28 @@ public class FAPE {
         Executor e = null;
         Listener l = null;
 
-
         try {
             a = new Actor();
             p = new Planner();
             e = new Executor();
             // this is a hack, we do not need listener for planner scenerio testing
-            //l = new Listener(null, null, null, null);
+            
+            //"name of the machine", "who am I talking to", "my name (fape)", "3300"
+            //
+            l = new Listener("maxc1", "PR2", "FAPE", "3300");
+            
+            //l.sendMessage("(test message)");
 
             a.bind(e, p);
             e.bind(a, l);
-            //l.bind(e);
+            l.bind(e);
         }catch(Exception ex){
             System.out.println("FAPE setup failed.");
             throw ex;
         }
 
         //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream2.anml"));
+        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\Dream4.anml"));
 
         p.Init();
         

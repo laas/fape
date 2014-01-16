@@ -11,10 +11,26 @@
 
 package fape.core.execution.model;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author FD
  */
 public class AtomicAction {
-
+    public int mID;
+    public int duration;
+    public String name;
+    public List<String> params = new LinkedList<>();
+    public String GetDescription(){
+        String ret = "";
+        
+        ret += "("+name;
+        for(String st:params){
+            ret += " "+st;
+        }
+        ret += ")";        
+        return ret;
+    }   
 }

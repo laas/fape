@@ -23,16 +23,16 @@ public class TemporalInterval {
     /**
      *
      */
-    public String s,
+    public String start,
 
     /**
      *
      */
-    e;
+    end;
 
     @Override
     public String toString() {
-        return "[" + e + ", " + s + "]";
+        return "[" + start + ", " + end + "]";
     }
     
     /**
@@ -42,7 +42,7 @@ public class TemporalInterval {
      * @param end
      */
     public void AssignTemporalContext(TemporalEvent ev, TemporalVariable start, TemporalVariable end){
-        switch (s) {
+        switch (this.start) {
             case "TStart":
                 ev.start = start;
                 break;
@@ -53,7 +53,7 @@ public class TemporalInterval {
                 throw new FAPEException("Unsupported temporal annotation.");
         }
         
-        switch (e) {
+        switch (this.end) {
             case "TStart":
                 ev.end = start;
                 break;

@@ -150,7 +150,7 @@ public class ANMLFactory {
                 //Equality rt = new Equality();
                 rt.operator = "==";
                 rt.leftRef = parseReference(child.getChild(0));
-                rt.rightRef = parseReference(child.getChild(1));
+                rt.to = parseReference(child.getChild(1));
                 ret.add(rt);
                 break;
             }
@@ -205,11 +205,11 @@ public class ANMLFactory {
     private static TemporalInterval parseInterval(Tree child) {
         TemporalInterval in = new TemporalInterval();
         if (child.getChildCount() == 1) {
-            in.e = child.getChild(0).getText();
-            in.s = child.getChild(0).getText();
+            in.start = child.getChild(0).getText();
+            in.end = child.getChild(0).getText();
         } else {
-            in.e = child.getChild(1).getText();
-            in.s = child.getChild(3).getText();
+            in.start = child.getChild(1).getText();
+            in.end = child.getChild(3).getText();
         }
         return in;
     }

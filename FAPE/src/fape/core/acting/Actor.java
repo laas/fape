@@ -17,6 +17,8 @@ import fape.core.planning.Planner;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+import java.util.Collections;
+import java.util.Comparator;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -65,12 +67,10 @@ public class Actor {
          *
          */
         STOPPED,
-
         /**
          *
          */
         ACTING,
-
         /**
          *
          */
@@ -80,6 +80,7 @@ public class Actor {
 
     /**
      * runs the acting agent
+     *
      * @throws java.lang.InterruptedException
      */
     public void run() throws InterruptedException {
@@ -90,7 +91,7 @@ public class Actor {
                     end = true;
                 case STOPPED:
                     Thread.sleep(sleepTime);
-                    mState = EActorState.ACTING;
+                    //mState = EActorState.ACTING;
                     break;
                 case ACTING:
                     while (!newEventBuffer.isEmpty()) {
@@ -98,7 +99,14 @@ public class Actor {
                     }
                     //performing repair and progress here
                     mPlanner.Repair(new TimeAmount(repairTime));
-                    List<Pair<AtomicAction, TimePoint>> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
+                    List<Pair<AtomicAction, Long>> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
+                    Collections.sort(scheduledActions, new Comparator<Pair<AtomicAction, Long>>() {
+                        
+                        @Override
+                        public int compare(Pair<AtomicAction, Long> o1, Pair<AtomicAction, Long> o2) {
+                            return (int) (o1.value2 - o2.value2);
+                        }
+                    });
                     mExecutor.executeAtomicActions(scheduledActions);
                     mState = EActorState.STOPPED;
                     break;

@@ -11,6 +11,7 @@
 
 package fape.core.planning.temporaldatabases.events.resources;
 
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
 /**
@@ -34,11 +35,21 @@ public class ConditionEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc() {
+    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         ConditionEvent ret = new ConditionEvent();
         ret.operator = operator;
         ret.value = value;
         return ret;
+    }
+
+    @Override
+    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String Report() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

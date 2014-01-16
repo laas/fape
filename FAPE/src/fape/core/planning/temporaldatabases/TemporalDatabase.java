@@ -10,8 +10,10 @@
  */
 package fape.core.planning.temporaldatabases;
 
-
+import fape.core.execution.model.Instance;
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.StateVariable;
+import fape.core.planning.model.StateVariableValue;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -21,6 +23,8 @@ import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
+import fape.util.Pair;
+import fape.util.TinyLogger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,28 +38,32 @@ import java.util.List;
  *
  * @author FD
  */
-public class TemporalDatabase {
+public class TemporalDatabase extends IUnifiable {
 
-    private static int idCounter = 0;
+    public String Report() {
+        String ret = "";
+        //ret += "{\n";
 
-    /**
-     *
-     */
-    public int mID;
+        ret += "    " + this.domain + "\n";
+        for (ChainComponent c : chain) {
+            for (TemporalEvent e : c.contents) {
+                ret += "    " + e.Report();
+            }
+            ret += "\n";
+        }
 
-    /**
-     *
-     */
-    public TemporalDatabase() {
-        mID = idCounter++;
+        //ret += "}\n";
+        return ret;
     }
 
     /**
      *
-     * @param noCount
+     * @param assignNewUniqueID
      */
-    public TemporalDatabase(TemporalDatabase noCount) {
-        mID = noCount.mID;
+    public TemporalDatabase(boolean assignNewUniqueID) {
+        if (assignNewUniqueID) {
+            mID = idCounter++;
+        }
     }
 
     /**
@@ -66,8 +74,8 @@ public class TemporalDatabase {
      */
     public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
         LinkedList<StateVariable> inter = new LinkedList(db.domain);
-        inter.retainAll(b.domain);        
-        return inter.size() > 0;        
+        inter.retainAll(b.domain);
+        return inter.size() > 0;
     }
 
     /**
@@ -94,13 +102,21 @@ public class TemporalDatabase {
 
     /**
      *
+     * @param m
      * @return
      */
-    public TemporalDatabase DeepCopy() {
-        TemporalDatabase newDB = new TemporalDatabase(this);
+    public TemporalDatabase DeepCopy(ConstraintNetworkManager m) {
+        TemporalDatabase newDB = new TemporalDatabase(false);
+        newDB.actionAssociations = new HashMap<>(this.actionAssociations);
+        newDB.mID = mID;
         newDB.domain = new LinkedList(this.domain);
         for (ChainComponent c : this.chain) {
-            newDB.chain.add(c.DeepCopy());
+            newDB.chain.add(c.DeepCopy(m));
+        }
+        m.AddUnifiable(newDB);
+        // set the mDatabase variables in the events
+        for (ChainComponent c : newDB.chain) {
+            c.SetDatabase(newDB);
         }
         return newDB;
     }
@@ -112,7 +128,12 @@ public class TemporalDatabase {
      * @param st
      */
     public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
-        if (!first.change) {
+        for (TemporalEvent f : first.contents) {
+            for(TemporalEvent s : second.contents){
+                st.tempoNet.EnforceBefore(f.end, s.start);
+            }
+        }
+        /*if (!first.change) {
             for (TemporalEvent e : first.contents) {
                 if (!second.change) {
                     for (TemporalEvent e2 : second.contents) {
@@ -130,13 +151,73 @@ public class TemporalDatabase {
             } else {
                 st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
             }
+        }*/
+    }
+
+    /**
+     * reduces the domain, if elements were removed, returns true
+     *
+     * @param supported
+     * @return
+     */
+    @Override
+    public boolean ReduceDomain(HashSet<String> supported) {
+        LinkedList<StateVariable> remove = new LinkedList<>();
+        for (StateVariable v : domain) {
+            if (!supported.contains(v.GetObjectConstant())) {
+                remove.add(v);
+            }
         }
+        if (!remove.isEmpty()) {
+            TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + remove.toString());
+        }
+        domain.removeAll(remove);
+        return !remove.isEmpty();
+    }
+
+    @Override
+    public List<String> GetDomainObjectConstants() {
+        List<String> ret = new LinkedList<>();
+        for (StateVariable sv : domain) {
+            ret.add(sv.GetObjectConstant());
+        }
+        return ret;
+    }
+
+    @Override
+    public int GetUniqueID() {
+        return mID;
+    }
+
+    @Override
+    public boolean EmptyDomain() {
+        return domain.isEmpty();
+    }
+
+    @Override
+    public String Explain() {
+        return " tdb";
+    }
+
+    public ChainComponent GetChainComponent(int precedingChainComponent) {
+        return chain.get(precedingChainComponent);
+    }
+
+    public HashMap<Integer, String> actionAssociations = new HashMap<>();
+    
+    public void AddActionParam(int mID, Instance instanceOfTheParameter) {
+        actionAssociations.put(mID, instanceOfTheParameter.name);
     }
 
     /**
      *
      */
     public class ChainComponent {
+
+        @Override
+        public String toString() {
+            return contents.toString(); //To change body of generated methods, choose Tools | Templates.
+        }
 
         /**
          *
@@ -175,11 +256,11 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetSupportValue() {
+        public StateVariableValue GetSupportValue() {
             if (change) {
-                return ((TransitionEvent) contents.get(0)).to.value;
-            }else{
-                return((PersistenceEvent) contents.get(0)).value.value;
+                return ((TransitionEvent) contents.get(0)).to;
+            } else {
+                return ((PersistenceEvent) contents.get(0)).value;
             }
         }
 
@@ -187,11 +268,12 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetConsumeValue() {
+        public StateVariableValue GetConsumeValue() {
             if (change) {
-                return ((TransitionEvent) contents.get(0)).to.value;
+                return ((TransitionEvent) contents.get(0)).from;
+            } else {
+                return ((PersistenceEvent) contents.get(0)).value;
             }
-            return null;
         }
 
         /**
@@ -210,11 +292,20 @@ public class TemporalDatabase {
             return this.contents.getLast().end;
         }
 
-        private ChainComponent DeepCopy() {
+        private ChainComponent DeepCopy(ConstraintNetworkManager m) {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
-            cp.contents = new LinkedList<>(this.contents);
+            cp.contents = new LinkedList<>();
+            for (TemporalEvent e : this.contents) {
+                cp.contents.add(e.DeepCopy(m, false));
+            }
             return cp;
+        }
+
+        private void SetDatabase(TemporalDatabase db) {
+            for (TemporalEvent e : contents) {
+                e.mDatabase = db;
+            }
         }
     }
 
@@ -230,7 +321,7 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public String GetGlobalSupportValue() {
+    public StateVariableValue GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
@@ -238,8 +329,8 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public String GetGlobalConsumeValue() {
-        return chain.getFirst().GetSupportValue();
+    public StateVariableValue GetGlobalConsumeValue() {
+        return chain.getFirst().GetConsumeValue();
     }
 
     /**
@@ -258,15 +349,16 @@ public class TemporalDatabase {
         return chain.getLast().GetSupportTimePoint();
     }
 
+    @Override
     public String toString() {
-        String res =  "(tdb:" + mID + " dom=[";
-        for(StateVariable d : this.domain) {
+        String res = "(tdb:" + mID + " dom=[";
+        for (StateVariable d : this.domain) {
             res += d.name + " ";
         }
         res += "] chains=[";
 
-        for(ChainComponent comp : this.chain) {
-            for(TemporalEvent ev : comp.contents) {
+        for (ChainComponent comp : this.chain) {
+            for (TemporalEvent ev : comp.contents) {
                 res += ev.toString() + ", ";
             }
         }
@@ -276,15 +368,15 @@ public class TemporalDatabase {
     }
 
     //public ObjectVariable var;
-
     /**
      *
      */
-        public LinkedList<StateVariable> domain = new LinkedList<>();
+    public LinkedList<StateVariable> domain = new LinkedList<>();
+
+    //public void ReduceDomainByObjectConstants
     //List<TemporalEvent> events = new LinkedList<>();
-
     /**
      *
      */
-        public LinkedList<ChainComponent> chain = new LinkedList<>();
+    public LinkedList<ChainComponent> chain = new LinkedList<>();
 }

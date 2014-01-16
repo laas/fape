@@ -22,6 +22,6 @@ public class Equality extends Statement {
 
     @Override
     public String toString() {
-        return interval + " " + leftRef + " == " + rightRef;
+        return interval + " " + leftRef + " == " + to;
     }
 }

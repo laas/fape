@@ -8,7 +8,6 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.execution.model;
 
 import java.util.LinkedList;
@@ -27,21 +26,22 @@ public class Reference {
     @Override
     public String toString() {
         String ret = "";
-        for(String s:refs){
+        for (String s : refs) {
             ret += s + ".";
         }
-        ret = ret.substring(0, ret.length()-1);
+        ret = ret.substring(0, ret.length() - 1);
         return ret;
     }
-    
+
     /**
      *
      * @return
      */
-    public String GetTypeReference(){
+    public String GetConstantReference() {
         String st = toString();
-        st = st.substring(st.indexOf("."));
+        if (st.contains(".")) {
+            st = st.substring(0, st.indexOf("."));
+        }
         return st;
     }
-    
 }

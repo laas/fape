@@ -8,10 +8,9 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.temporaldatabases.events;
 
-
+import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 
@@ -20,33 +19,34 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
  * @author FD
  */
 public abstract class TemporalEvent {
+
     //public ObjectVariable objectVar;
     /*public enum ETemporalEventType{
-        CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
-    }*/
-    
+     CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
+     }*/
+    public abstract String Report();
     /**
      *
      */
     public TemporalVariable start,
-
-    /**
-     *
-     */
-    end;
+            /**
+             *
+             */
+            end;
     //reflection needed for stronger reasoning
 
     /**
      *
      */
-        public TemporalDatabase mDatabase = null;
-    
+    public TemporalDatabase mDatabase = null;
+
     //public ObjectVariable objectVar;
-    
     /**
      *
+     * @param mn
      * @return
      */
-        
-    public abstract TemporalEvent cc();
+    public abstract TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID);
+
+    public abstract TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID);
 }
