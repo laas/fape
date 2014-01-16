@@ -2,4 +2,7 @@
 /FAPE/build/
 /FAPE/dist/
 out
-.idea
+.idea*
+project/
+target/
+build.sbt
