@@ -60,12 +60,12 @@ public class Executor {
     }
 
     /**
-     * performs the translation between openPRS and ANML model
+     * performs the translation between openPRS and ANML model, with some message interpretatiton
      *
      * @param message
      */
     public void eventReceived(String message) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        //throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**

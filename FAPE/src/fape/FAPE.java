@@ -47,7 +47,7 @@ public class FAPE {
 
             a.bind(e, p);
             e.bind(a, l);
-            //l.bind(e);
+            l.bind(e);
         }catch(Exception ex){
             System.out.println("FAPE setup failed.");
             throw ex;

@@ -10,6 +10,7 @@
  */
 package fape.core.execution;
 
+import fape.util.TinyLogger;
 import java.io.*;
 import java.net.Socket;
 
@@ -191,6 +192,7 @@ public class Listener {
     }
 
     private void receivedMessage(String from, String message) {
+        TinyLogger.LogInfo("Message received: "+message);
         exec.eventReceived(message);
         //we intepret the message here
         //Calendar cal = Calendar.getInstance();
@@ -204,6 +206,7 @@ public class Listener {
      * @param msg The message to send
      */
     public int sendMessage(String msg) {
+        TinyLogger.LogInfo("Sending message: "+msg);
         /* The format of a message is :
          MessageType+sizeof(DestinationName)+DestinationName+sizeof(msg)+msg*/
         // This code works, but I am not sure why it is not using write_int and write_string above...
