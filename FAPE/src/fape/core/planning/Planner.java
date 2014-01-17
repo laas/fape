@@ -61,6 +61,7 @@ public class Planner {
 
     public static boolean debugging = true;
     public static boolean logging = true;
+    public static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
     /**
      *
@@ -193,7 +194,11 @@ public class Planner {
                 rf.refs.add("a" + (ct++) + "_"); //random unbinded parameters
                 ref.args.add(rf);
             }
-            Action addedAction = AddAction(ref, next, null);
+            boolean enforceDuration = true;
+            if (!this.actions.get(ref.name).strongDecompositions.isEmpty()) {
+                enforceDuration = false;
+            }
+            Action addedAction = AddAction(ref, next, null, enforceDuration);
             // create the binding between consumer and the new statement in the action that supports it
             TemporalDatabase supportingDatabase = null;
             for (TemporalEvent e : addedAction.events) {
@@ -211,7 +216,8 @@ public class Planner {
                 opt.temporalDatabase = supportingDatabase.mID;
                 return ApplyOption(next, opt, consumer);
             }
-        } else if (o.actionToDecompose != null) {
+        } else if (o.actionToDecompose != -1) {
+            Action decomposedAction = next.taskNet.GetAction(o.actionToDecompose);
             // this is a task decomposition
             // we need to decompose all the actions of the chosen decomposition
             // which represents adding all of them into the plan through AddAction and
@@ -219,27 +225,28 @@ public class Planner {
             List<ActionRef> actionsForDecomposition = null;
             List<TemporalConstraint> tempCons = null;
             int ct = 0;
-            for (Pair<List<ActionRef>, List<TemporalConstraint>> p : o.actionToDecompose.refinementOptions) {
+            for (Pair<List<ActionRef>, List<TemporalConstraint>> p : decomposedAction.refinementOptions) {
                 if (ct++ == o.decompositionID) {
                     actionsForDecomposition = p.value1;
                     tempCons = p.value2;
                 }
             }
             //put the actions into the plan
+            decomposedAction.decomposition = new LinkedList<>();
             ArrayList<Action> l = new ArrayList<>();
             for (ActionRef ref : actionsForDecomposition) {
-                l.add(AddAction(ref, next, o.actionToDecompose));
+                l.add(AddAction(ref, next, decomposedAction, true));
             }
 
             //now we need to introduce binding constraints between the events through the parameter binding
             //add the constraints parent-child temporal constraints
             for (Action a : l) {
-                next.tempoNet.EnforceBefore(o.actionToDecompose.start, a.start);
-                next.tempoNet.EnforceBefore(a.end, o.actionToDecompose.end);
-                List<UnificationConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(o.actionToDecompose.name)).get(o.decompositionID);
+                next.tempoNet.EnforceBefore(decomposedAction.start, a.start);
+                next.tempoNet.EnforceBefore(a.end, decomposedAction.end);
+                List<UnificationConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(decomposedAction.name)).get(o.decompositionID);
                 for (UnificationConstraintSchema s : lt) {
                     //now we are adding a constraint between a pair of temporal databases and/or state variable values
-                    TemporalEvent e = o.actionToDecompose.events.get(s.mEventID);
+                    TemporalEvent e = decomposedAction.events.get(s.mEventID);
                     TemporalEvent e2 = a.events.get(s.actionEventID);
                     IUnifiable aa = null, bb = null;
                     switch (s.typeLeft) {
@@ -336,41 +343,41 @@ public class Planner {
     public State GetCurrentState() {
         return queue.Peek();
     }
-/*
-    private boolean dfsRec(State st) {
-        if (st.consumers.isEmpty()) {
-            this.planState = EPlanState.CONSISTENT;
-            TinyLogger.LogInfo("Plan found:");
-            st.taskNet.Report();
-            return true;
-        } else {
-            for (TemporalDatabase db : st.consumers) {
-                List<SupportOption> supporters = GetSupporters(db, st);
-                if (supporters.isEmpty()) {
-                    return false; //dead end
-                }
-                for (SupportOption o : supporters) {
-                    State next = new State(st);
-                    boolean suc = ApplyOption(next, o, db);
-                    TinyLogger.LogInfo(next.Report());
-                    if (suc) {
-                        if (dfsRec(next)) {
-                            return true;
-                        }
-                    } else {
-                        TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
-                        //inconsistent state, doing nothing
-                    }
-                }
-            }
-            return false;
-        }
-    }
+    /*
+     private boolean dfsRec(State st) {
+     if (st.consumers.isEmpty()) {
+     this.planState = EPlanState.CONSISTENT;
+     TinyLogger.LogInfo("Plan found:");
+     st.taskNet.Report();
+     return true;
+     } else {
+     for (TemporalDatabase db : st.consumers) {
+     List<SupportOption> supporters = GetSupporters(db, st);
+     if (supporters.isEmpty()) {
+     return false; //dead end
+     }
+     for (SupportOption o : supporters) {
+     State next = new State(st);
+     boolean suc = ApplyOption(next, o, db);
+     TinyLogger.LogInfo(next.Report());
+     if (suc) {
+     if (dfsRec(next)) {
+     return true;
+     }
+     } else {
+     TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+     //inconsistent state, doing nothing
+     }
+     }
+     }
+     return false;
+     }
+     }
 
-    private void dfs(TimeAmount forHowLong) {
-        dfsRec(queue.Pop());
-    }
-*/
+     private void dfs(TimeAmount forHowLong) {
+     dfsRec(queue.Pop());
+     }
+     */
     Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
         @Override
         public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
@@ -420,7 +427,7 @@ public class Planner {
             //get the best state and continue the search
             State st = queue.Pop();
             TinyLogger.LogInfo(st.Report());
-            if (st.consumers.isEmpty()) {
+            if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(st.taskNet.Report());
@@ -437,10 +444,19 @@ public class Planner {
             //do some sorting here - min domain
             //Collections.sort(opts, optionsComparatorMinDomain);
             Collections.sort(opts, optionsComparatorMinDomain);
-            if (opts.getFirst().value2.isEmpty()) {
+
+            if (opts.isEmpty()) {
+                TinyLogger.LogInfo("Dead-end, no options: " + st.mID);
                 //dead end
                 continue;
             }
+
+            if (opts.getFirst().value2.isEmpty()) {
+                TinyLogger.LogInfo("Dead-end, consumer without resolvers: " + st.mID);
+                //dead end
+                continue;
+            }
+
             for (Pair<TemporalDatabase, List<SupportOption>> opt : opts) {
                 for (SupportOption o : opt.value2) {
                     State next = new State(st);
@@ -524,10 +540,12 @@ public class Planner {
         ret.addAll(options);
 
         //now we can look for adding the actions ad-hoc ...
-        for (String s : abs) {
-            SupportOption o = new SupportOption();
-            o.supportingAction = actions.get(s);
-            ret.add(o);
+        if (Planner.actionResolvers) {
+            for (String s : abs) {
+                SupportOption o = new SupportOption();
+                o.supportingAction = actions.get(s);
+                ret.add(o);
+            }
         }
 
         return ret;
@@ -555,13 +573,13 @@ public class Planner {
         List<Pair<AtomicAction, Long>> ret = new LinkedList<>();
         List<Action> l = myState.taskNet.GetAllActions();
         for (Action a : l) {
-            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);            
+            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
             AtomicAction aa = new AtomicAction();
             aa.mID = a.mID;
-            aa.duration = (int) a.duration;
+            aa.duration = (int) a.maxDuration;
             aa.name = a.name;
             aa.params = a.ProduceParameters(myState);
-            ret.add(new Pair(aa,startTime));
+            ret.add(new Pair(aa, startTime));
         }
         return ret;
     }
@@ -641,7 +659,7 @@ public class Planner {
 
         //process seeds
         for (ActionRef ref : pl.actionsForTaskNetwork) {
-            AddAction(ref, st, null);
+            AddAction(ref, st, null, false);
         } //end of seed processing
 
         //add the values of state variables
@@ -763,9 +781,10 @@ public class Planner {
      *
      * @param ref
      * @param st
+     * @param parent
      * @return
      */
-    public Action AddAction(ActionRef ref, State st, Action parent) {
+    public Action AddAction(ActionRef ref, State st, Action parent, boolean enforceDuration) {
         AbstractAction abs = actions.get(ref.name);
         if (abs == null) {
             throw new FAPEException("Seeding unknown action: " + ref.name);
@@ -773,6 +792,22 @@ public class Planner {
 
         Action act = new Action();
         act.params = abs.params;
+        act.constantParams = ref.args;
+        if (parent != null) {
+            //we need to pair arguments of the method with the parameters of the added action
+            int refCt = 0;
+            for (Reference r : act.constantParams) {
+                String firstObject = r.GetConstantReference();
+                int ct = 0;
+                for (Instance rr : parent.params) {
+                    if (firstObject.equals(rr.name)) {
+                        act.constantParams.get(refCt).ReplaceFirstReference(parent.constantParams.get(ct));
+                    }
+                    ct++;
+                }
+                refCt++;
+            }
+        }
         // set the same name
         act.name = abs.name;
         //prepare the time points
@@ -781,10 +816,14 @@ public class Planner {
 
         act.start = st.tempoNet.getNewTemporalVariable();
         act.end = st.tempoNet.getNewTemporalVariable();
-        act.duration = abs.GetDuration();
-        boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.duration, (int) act.duration);
-        if (!success) {
-            throw new FAPEException("The temporal network is inconsistent.");
+        if (enforceDuration) {
+            act.maxDuration = abs.GetDuration();
+            boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.maxDuration, (int) act.maxDuration);
+            if (!success) {
+                throw new FAPEException("The temporal network is inconsistent.");
+            }
+        } else {
+            st.tempoNet.EnforceBefore(act.start, act.end);
         }
 
         //ArrayList<TemporalDatabase> dbList = new ArrayList<>();
@@ -812,10 +851,8 @@ public class Planner {
                         // this is an unbinded reference, we need to add all possible state variables     
                         String typeDerivation = instanceOfTheParameter.type + stateVariableReferenceSuffix;
                         for (String str : vars.keySet()) {
-
                             StateVariable var = vars.get(str);
                             if (var.typeDerivationName.equals(typeDerivation)) {
-
                                 db.domain.add(vars.get(str));
                             }
                         }
@@ -831,7 +868,6 @@ public class Planner {
                     db.AddActionParam(act.mID, instanceOfTheParameter);
                 }
             }
-            
 
             //we add the event into the database and the action and the consumers
             act.events.add(event);

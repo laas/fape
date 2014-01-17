@@ -10,6 +10,7 @@
  */
 package fape.core.execution.model;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
 /**
@@ -43,5 +44,13 @@ public class Reference {
             st = st.substring(0, st.indexOf("."));
         }
         return st;
+    }
+
+    public void ReplaceFirstReference(Reference get) {
+        this.refs.pollFirst();
+        Iterator<String> it = get.refs.descendingIterator();
+        while(it.hasNext()){
+            refs.addFirst(it.next());
+        }        
     }
 }

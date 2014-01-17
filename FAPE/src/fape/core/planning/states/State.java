@@ -118,7 +118,7 @@ public class State {
      */
     public float GetGoalDistance() {
         float distance = this.consumers.size();
-        return distance;
+        return distance * 3;
     }
 
     public String Report() {

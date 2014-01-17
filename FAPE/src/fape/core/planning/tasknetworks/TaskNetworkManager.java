@@ -30,25 +30,25 @@ public class TaskNetworkManager {
     //TaskNetwork net = new TaskNetwork();
     List<Action> roots = new LinkedList<>();
     //List<Action> openLeaves = new LinkedList<>();
-    
-    private void findLeaves(LinkedList<Action> leaves, Action current){
-        if(current.IsRefinable()){
+
+    private void findLeaves(LinkedList<Action> leaves, Action current) {
+        if (current.IsRefinable()) {
             leaves.add(current);
-        }else if(current.decomposition != null){
-            for(Action a:current.decomposition){
+        } else if (current.decomposition != null) {
+            for (Action a : current.decomposition) {
                 findLeaves(leaves, a);
             }
         }
     }
-    
-    public List<Action> GetOpenLeaves(){
+
+    public List<Action> GetOpenLeaves() {
         LinkedList<Action> l = new LinkedList<>();
-        for(Action a:roots){
+        for (Action a : roots) {
             findLeaves(l, a);
-        }        
+        }
         return l;
     }
-    
+
     /**
      *
      * @param act
@@ -62,21 +62,26 @@ public class TaskNetworkManager {
      * @param a
      * @param abs
      * @param actions
-     * @return
+     * @return which decompositions (numbers in the sequence) provides the
+     * needed action
      */
-    public boolean DecomposesIntoDesiredAction(AbstractAction a, HashSet<String> abs, HashMap<String, AbstractAction> actions) {
+    public List<Integer> DecomposesIntoDesiredAction(AbstractAction a, HashSet<String> abs, HashMap<String, AbstractAction> actions) {
+        List<Integer> ret = new LinkedList<>();
         if (abs.contains(a.name)) {
-            return true;
+            ret.add(0);
         } else {
+            int ct = 0; //relative number of the decomposition
             for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
                 for (ActionRef ref : p.value1) {
-                    if (DecomposesIntoDesiredAction(actions.get(ref.name), abs, actions)) {
-                        return true;
+                    List<Integer> res = DecomposesIntoDesiredAction(actions.get(ref.name), abs, actions);
+                    if (!res.isEmpty()) {
+                        ret.add(ct);
                     }
                 }
+                ct++;
             }
         }
-        return false;
+        return ret;
     }
 
     /**
@@ -89,11 +94,15 @@ public class TaskNetworkManager {
         List<SupportOption> ret = new LinkedList<>();
         //lets run dfs to find the action names we like
         List<Action> openLeaves = GetOpenLeaves();
-        for(Action a:openLeaves){
-            if(DecomposesIntoDesiredAction(actions.get(a.name), abs, actions)){
-                SupportOption o = new SupportOption();
-                o.actionToDecompose = a;
-                ret.add(o);
+        for (Action a : openLeaves) {
+            List<Integer> res = DecomposesIntoDesiredAction(actions.get(a.name), abs, actions);
+            if (!res.isEmpty()) {
+                for (Integer i : res) {
+                    SupportOption o = new SupportOption();
+                    o.actionToDecompose = a.mID;
+                    o.decompositionID = i;
+                    ret.add(o);
+                }
             }
         }
         return ret;
@@ -105,46 +114,72 @@ public class TaskNetworkManager {
      */
     public TaskNetworkManager DeepCopy() {
         TaskNetworkManager tm = new TaskNetworkManager();
-        for(Action a:this.roots){
+        for (Action a : this.roots) {
             tm.roots.add(a.DeepCopy());
         }
         return tm;
     }
 
     public String Report() {
-        return "size: "+roots.size()+", actions: "+roots.toString() ;
+        return "size: " + roots.size() + ", actions: " + roots.toString();
     }
 
-    private float recCost(Action a){
+    private float recCost(Action a) {
         float sum = a.GetCost();
-        if(a.decomposition != null && !a.decomposition.isEmpty()){
-            for(Action b:a.decomposition){
+        if (a.decomposition != null && !a.decomposition.isEmpty()) {
+            for (Action b : a.decomposition) {
                 sum += b.GetCost();
             }
         }
         return sum;
     }
-    
+
     public float GetActionCosts() {
         float sum = 0;
-        for(Action a:this.roots){
+        for (Action a : this.roots) {
             sum += recCost(a);
         }
-        return sum;        
+        return sum;
     }
 
     public List<Action> GetAllActions() {
         LinkedList<Action> list = new LinkedList<>(roots);
         List<Action> ret = new LinkedList<>();
-        while(!list.isEmpty()){
+        while (!list.isEmpty()) {
             Action a = list.poll();
-            ret.add(a);
-            if(a.decomposition != null){
-                for(Action b:a.decomposition){
+            if (a.decomposition == null || a.decomposition.isEmpty()) {
+                ret.add(a);
+            } else {
+                for (Action b : a.decomposition) {
                     list.add(b);
                 }
             }
         }
-        return ret;            
+        return ret;
+    }
+
+    /**
+     * returns the action with the given id
+     *
+     * @param actionToDecompose
+     * @return
+     */
+    public Action GetAction(int actionToDecompose) {
+        LinkedList<Action> qu = new LinkedList<>();
+        for(Action a:roots){
+            qu.add(a);
+        }
+        while(!qu.isEmpty()){
+            Action a = qu.pop();
+            if(a.mID == actionToDecompose){
+                return a;
+            }
+            if(a.decomposition != null){
+                for(Action b:a.decomposition){
+                    qu.add(b);
+                }
+            }
+        }
+        return null;
     }
 }
