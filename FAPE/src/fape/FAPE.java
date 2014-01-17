@@ -23,6 +23,9 @@ import fape.util.TinyLogger;
  */
 public class FAPE {
 
+    public static boolean localTesting = true;
+    private static boolean runListener;
+
     /**
      * @param args the command line arguments
      * @throws java.lang.InterruptedException
@@ -38,28 +41,29 @@ public class FAPE {
             p = new Planner();
             Planner.debugging = true;
             Planner.logging = true;
-            Planner.actionResolvers = false;
+            Planner.actionResolvers = true;
+            FAPE.localTesting = true;
+            FAPE.runListener = true;
             e = new Executor();
-            // this is a hack, we do not need listener for planner scenerio testing
-            
-            //"name of the machine", "who am I talking to", "my name (fape)", "3300"
-            //
-            //l = new Listener("bobc1", "PR2", "FAPE", "3300");l.bind(e);
-            
-            //l.sendMessage("(test message)");
-
+            if (FAPE.runListener) {               
+                l = new Listener("bobc1", "PR2", "FAPE", "3300");
+                l.bind(e);
+            }
             a.bind(e, p);
             e.bind(a, l);
-        }catch(Exception ex){
+        } catch (Exception ex) {
             System.out.println("FAPE setup failed.");
             throw ex;
         }
 
-        //pushing the initial event
-        a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamDecomposition.anml"));
+        if (FAPE.localTesting) {
+            //pushing the initial event
+            a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
 
-        p.Init();
-        
-        a.run();
+            p.Init();
+
+            a.run();
+        }
+
     }
 }

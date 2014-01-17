@@ -19,6 +19,15 @@ import java.util.List;
  * @author FD
  */
 public class AtomicAction {
+    /*
+    private static int idCounter = 0;
+    public int mID = idCounter++;*/
+    
+    public enum EResult{
+        SUCCESS, FAILURE
+    }
+    
+    public int mStartTime;
     public int mID;
     public int duration;
     public String name;

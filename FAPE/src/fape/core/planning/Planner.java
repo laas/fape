@@ -63,6 +63,7 @@ public class Planner {
     public static boolean logging = true;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
+
     /**
      *
      */
@@ -296,6 +297,14 @@ public class Planner {
         }
         next.conNet.CheckConsistency();
         return next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
+    }
+
+    public void FailAction(Integer pop) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void AddActionEnding(int actionID, int realEndTime) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     /**
@@ -567,19 +576,20 @@ public class Planner {
      * @param forHowLong
      * @return
      */
-    public List<Pair<AtomicAction, Long>> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
+    public List<AtomicAction> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
         State myState = best;
 
-        List<Pair<AtomicAction, Long>> ret = new LinkedList<>();
+        List<AtomicAction> ret = new LinkedList<>();
         List<Action> l = myState.taskNet.GetAllActions();
         for (Action a : l) {
             long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
             AtomicAction aa = new AtomicAction();
+            aa.mStartTime = (int) startTime;
             aa.mID = a.mID;
             aa.duration = (int) a.maxDuration;
             aa.name = a.name;
             aa.params = a.ProduceParameters(myState);
-            ret.add(new Pair(aa, startTime));
+            ret.add(aa);
         }
         return ret;
     }

@@ -19,6 +19,8 @@ import fape.util.TimeAmount;
 import fape.util.TimePoint;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -53,10 +55,28 @@ public class Actor {
     Executor mExecutor;
     Planner mPlanner;
 
+    boolean planNeedsRepair = false;
+    
+    List<AtomicAction> actionsToDispatch = new LinkedList<>();
+    LinkedList<Integer> failures = new LinkedList<>();
+    boolean planReady = false;
+
     /**
      *
      */
     public LinkedList<ANMLBlock> newEventBuffer = new LinkedList<>();
+    public HashMap<Integer, String> idToSignature = new HashMap<>();
+    HashSet<String> successfulActions = new HashSet<>();
+
+    public void ReportSuccess(int actionID, int realEndTime) {
+        successfulActions.add(idToSignature.get(actionID));
+        mPlanner.AddActionEnding(actionID, realEndTime);        
+    }
+
+    public void ReportFailure(int actionID) {
+        planNeedsRepair = true;
+        failures.add(actionID);
+    }
 
     /**
      *
@@ -85,6 +105,7 @@ public class Actor {
      */
     public void run() throws InterruptedException {
         boolean end = false;
+        long timeZero = System.currentTimeMillis();
         while (!end) {
             switch (mState) {
                 case ENDING:
@@ -94,21 +115,41 @@ public class Actor {
                     //mState = EActorState.ACTING;
                     break;
                 case ACTING:
-                    while (!newEventBuffer.isEmpty()) {
-                        mPlanner.ForceFact(newEventBuffer.pop());
-                    }
-                    //performing repair and progress here
-                    mPlanner.Repair(new TimeAmount(repairTime));
-                    List<Pair<AtomicAction, Long>> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
-                    Collections.sort(scheduledActions, new Comparator<Pair<AtomicAction, Long>>() {
-                        
-                        @Override
-                        public int compare(Pair<AtomicAction, Long> o1, Pair<AtomicAction, Long> o2) {
-                            return (int) (o1.value2 - o2.value2);
+                    if(!failures.isEmpty()){
+                        while(!failures.isEmpty()){
+                            mPlanner.FailAction(failures.pop());
                         }
-                    });
-                    mExecutor.executeAtomicActions(scheduledActions);
-                    mState = EActorState.STOPPED;
+                        planNeedsRepair = true;
+                    }
+                    if (!newEventBuffer.isEmpty()) {
+                        while (!newEventBuffer.isEmpty()) {
+                            mPlanner.ForceFact(newEventBuffer.pop());
+                        }
+                        planNeedsRepair = true;
+                    }
+                    if (planNeedsRepair) {
+                        mPlanner.Repair(new TimeAmount(repairTime));
+                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
+                        Collections.sort(scheduledActions, new Comparator<AtomicAction>() {
+                            @Override
+                            public int compare(AtomicAction o1, AtomicAction o2) {
+                                return (int) (o1.mStartTime - o2.mStartTime);
+                            }
+                        });
+                        actionsToDispatch = new LinkedList<>(scheduledActions);
+                    }
+                    int now = (int) (System.currentTimeMillis() / 1000);
+                    List<AtomicAction> remove = new LinkedList<>();
+                    for(AtomicAction a:actionsToDispatch){
+                        if(a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.mID))){
+                            idToSignature.put(a.mID, a.GetDescription());
+                            a.mStartTime = (int) (now - timeZero + a.mStartTime);
+                            mExecutor.executeAtomicActions(a);
+                            remove.add(a);
+                        }
+                    }
+                    actionsToDispatch.removeAll(remove);
+                    Thread.sleep(sleepTime);
                     break;
             }
         }

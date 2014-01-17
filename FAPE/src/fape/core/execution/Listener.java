@@ -29,7 +29,7 @@ public class Listener {
     }
     
     /**
-     *
+     * "name of the machine", "who am I talking to", "my name (fape)", "3300"
      * @param oprs_host
      * @param oprs_manip
      * @param client_name
