@@ -1,7 +1,6 @@
 package planstack.constraints.bindings
 
 import org.scalatest.Suite
-import planstack.constraints.bindings.ConstraintManager
 
 
 class ConstraintManagerSuite extends Suite {

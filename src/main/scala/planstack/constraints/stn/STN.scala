@@ -1,59 +1,192 @@
 package planstack.constraints.stn
 
-import planstack.constraints.stn.Weight
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
+import StnPredef._
+import planstack.graph.printers.GraphDotPrinter
 
 /**
- * The STN base abstract class.
- * It contains pretty much everything except the implementation of checkConsistency.
+ *
+ * @param g A directed simple graph with integer edge labels.
+ * @param consistent True if the STN is consistent, false otherwise
  */
-abstract class STN(val g : Graph, var consistent : Boolean) extends AbstractSTN {
+abstract class STN(val g : G, var consistent : Boolean) {
 
-  def this() = this(new AdjacencyList(), true)
+  // Creates start and end time points if the STN is empty
+  if(size == 0) {
+    addVarUnsafe()
+    addVarUnsafe()
+    enforceBefore(start, end)
+  }
 
-  def addVar() : Int = {
+  /** Id of the Start time point. No time points in the STN should happen before this one. */
+  val start = 0
+
+  /** Id of the End time point. No time point in the STN should happen after this one. */
+  val end = 1
+
+  /**
+   * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
+   *
+   * @return ID of the created time point
+   */
+  final def addVar() : Int = {
     if(!consistent) println("Error: adding variable %d to inconsistent STN".format(g.numVertices))
 
-    return g.addVertex()
+    val id = addVarUnsafe()
+    enforceBefore(start, id)
+    enforceBefore(id, end)
+
+    id
   }
 
   /**
-   * Adds a constraint to the STN specifying that v2 - v1 <= w
+   * Creates a new time point _without_ adding constraints regarding start and end.
+   * Note that it might cause the consistency checking to fail if some parts of the network are not reachable from/to start/end.
+   * @return
+   */
+  def addVarUnsafe() : Int = {
+    g.addVertex(g.numVertices)
+  }
+
+  /**
+   * Return the number of time points in the STN
+   * @return
+   */
+  def size = g.numVertices
+
+  /**
+   * Returns the weight of an edge in the STN. If no such edge is present, an infinite weight will be returned.
+   * Note that constraints are _not_ necessarily tightened and that a stronger indirect constraint might exist.
+   * @param u
+   * @param v
+   * @return
+   */
+  protected def getWeight(u:Int, v:Int) = {
+    g.edge(u,v) match {
+      case Some(e) => new Weight(e.l)
+      case None => Weight.InfWeight
+    }
+  }
+
+
+  /**
+   * Adds a constraint to the STN specifying that v - u <= w
    * If a stronger constraint is already present, the STN isn't modified
-   * @param v1
-   * @param v2
+   *
+   * If the STN was indeed updated, its consistency is set to false.
+   * @param u
+   * @param v
    * @param w
    * @return true if the STN was updated
    */
-  def addConstraintFast(v1:Int, v2:Int, w:Int) : Boolean = {
+  protected def addConstraintFast(u:Int, v:Int, w:Int) : Boolean = {
     if(!consistent) {
-      println("Error: adding constraint to inconsistent STN")
+      println("Warning: adding constraint to inconsistent STN")
       return false
     }
-    consistent = false
-    val oldW = g.getWeight(v1, v2)
+    val oldW = getWeight(u, v)
     if(oldW > new Weight(w)) {
-      g.setEdge(v1, v2, w)
+      g.addEdge(u, v, w)
+      consistent = false
       return true
     } else {
       return false
     }
   }
 
-  def addConstraint(v1:Int, v2:Int, w:Int) : Boolean = {
-    addConstraintFast(v1, v2, w)
+
+  /**
+   * Adds a constraint to the STN specifying that v - u <= w.
+   *
+   * @param u
+   * @param v
+   * @param w
+   * @return
+   */
+  def addConstraint(u:Int, v:Int, w:Int) : Boolean = {
+    addConstraintFast(u, v, w)
     checkConsistency()
   }
-
+  
   def checkConsistency() : Boolean
 
-  override def clone() : STN = { throw new Exception("Clone in STN is abstract") }
+  /**
+   * Enforces that the time point u must happens before time point v or at the same time
+   *
+   * Results in the addition of an edge from v to u with weight 0: (v, u, 0)
+   * @param u
+   * @param v
+   */
+  def enforceBefore(u:Int, v:Int) {
+    addConstraint(v, u, 0)
+  }
+
+  /**
+   * Creates a constraint stipulating that v in [u+min, u+max]
+   * @param u
+   * @param v
+   * @param min
+   * @param max
+   */
+  def enforceInterval(u:Int, v:Int, min:Int, max:Int) {
+    addConstraint(u, v, max)
+    addConstraint(v, u, -min)
+  }
+
+  /**
+   * Write a dot serialisation of the graph to file
+   * @param file
+   */
+  def writeToDotFile(file:String) { new GraphDotPrinter(g).print2Dot(file) }
+
+  /**
+   * Returns the earliest start time of time point u with respect to the start time point of the STN
+   * @param u
+   * @return
+   */
+  def earliestStart(u:Int) : Int
+
+  /**
+   * Returns the latest start time of time point u with respect to the start TP of the STN
+   * @param u
+   * @return
+   */
+  def latestStart(u:Int) : Int
+
+  /**
+   * Makespan of the STN (ie the earliest start of End)
+   * @return
+   */
+  def makespan = earliestStart(end)
+
+  /**
+   * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.
+   *
+   * Note that the default implementation works by propagating constraints on a clone of the current STN.
+   * @param u
+   * @param v
+   * @param w
+   * @return
+   */
+  def isConstraintPossible(u:Int, v:Int, w:Int) : Boolean = {
+    val tmpSTN = cc()
+    tmpSTN.addConstraint(u, v, w)
+    tmpSTN.consistent
+  }
+
+  /**
+   * Returns a complete clone of the STN.
+   * @return
+   */
+  def cc() : STN
+
 }
 
+object STN {
 
-
-
-
-
+  /**
+   * Return a an instance of the default implementation of an STN which uses an Incremental Bellman-Ford
+   * algorithm to check its consistency.
+   * @return
+   */
+  def apply() : STN = new STNIncBellmanFord()
+}

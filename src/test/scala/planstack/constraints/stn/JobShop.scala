@@ -7,16 +7,27 @@ import scala.util.Random
 
 
 
-object Main {
+object JobShop {
+
+  def mem2String = {
+    val mb = 1024*1024;
+
+    //Getting the runtime reference from system
+    val runtime = Runtime.getRuntime();
+
+    //Print used memory
+    "Used Memory:" + (runtime.totalMemory() - runtime.freeMemory()) / mb
+  }
 
   def test(size:Int) {
     val rand = new Random(System.currentTimeMillis())
 
-    val pb = new Problem(size, size, 500000)
+    val pb = new JobShopProblem(size, size, 500000)
     for(i <- 0 to size -1) {
       for(j <- 0 to size -1 ) {
-        pb.addTask(new Task(i, j, rand.nextInt(200)))
+        pb.addTask(new JobShopTask(i, j, rand.nextInt(200)))
       }
+      println(mem2String)
     }
 
   }
@@ -24,12 +35,6 @@ object Main {
   def main(args: Array[String]) {
     println("JobShop")
 
-//    val pb1 = new planstack.constraints.stn.Problem(2, 2, 10)
-//    pb1.addTask(new planstack.constraints.stn.Task(0, 0, 5))
-//    pb1.addTask(new planstack.constraints.stn.Task(0, 1, 5))
-//    pb1.addTask(new planstack.constraints.stn.Task(1, 0, 5))
-//    pb1.addTask(new planstack.constraints.stn.Task(1, 1, 6))
-    var allstn = List[AbstractSTN]()
 
     /*
     val filename = "res/instances/la40"
@@ -50,9 +55,11 @@ object Main {
       }
     }
     */
+
+    println(mem2String)
     def t = System.currentTimeMillis
     val s = t
-    test(10)
+    test(20)
     println("Runtime: %d".format(t - s))
 
 //    val stn = new planstack.constraints.stn.planstack.constraints.stn.STNIBF
@@ -64,6 +71,10 @@ object Main {
 //    stn.addConstraint(3, 1, 10)
 
     println("Runtime: %d".format(t - s))
+
+    val runtime = Runtime.getRuntime()
+    import runtime.{ totalMemory, freeMemory, maxMemory }
+    System.out.println(mem2String)
   }
 
 

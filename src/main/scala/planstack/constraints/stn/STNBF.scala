@@ -1,5 +1,9 @@
 package planstack.constraints.stn
 
+
+/** TODO This class is now broken.
+  * It would be interesting to fix for testing purposes.
+  *
 class STNBF extends STN {
 
   def checkConsistency(): Boolean = {
@@ -17,16 +21,16 @@ class STNBF extends STN {
     dist(origin) = new Weight(0)
 
     for(i <- 1 to g.numVertices) {
-      for(e <- g.getEdges) {
-        val new_dist = dist(e.orig) + e.w
-        if(dist(e.dest) > new_dist)
-          dist(e.dest) = new_dist
+      for(e <- g.edges()) {
+        val new_dist = dist(e.u) + e.l
+        if(dist(e.v) > new_dist)
+          dist(e.v) = new_dist
       }
     }
 
     var ret = true
-    for(e <- g.getEdges) {
-      if(dist(e.dest) > dist(e.orig) + e.w)
+    for(e <- g.edges()) {
+      if(dist(e.v) > dist(e.u) + e.l)
         ret = false
     }
 
@@ -38,3 +42,4 @@ class STNBF extends STN {
     ret
   }
 }
+*/
