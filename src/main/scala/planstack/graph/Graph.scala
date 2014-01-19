@@ -14,6 +14,8 @@ trait Graph[V, E <: Edge[V]] {
 
   def edges() : Seq[E]
 
+  def edges(u:V, v:V) : Seq[E]
+
   def numVertices : Int
 
   /**
@@ -22,6 +24,8 @@ trait Graph[V, E <: Edge[V]] {
    * @param v
    */
   def deleteEdges(u:V, v:V)
+
+  def cc() : Graph[V,E]
 }
 
 

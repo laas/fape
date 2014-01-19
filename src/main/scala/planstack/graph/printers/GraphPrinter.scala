@@ -21,17 +21,16 @@ class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) {
 
   def edge2Str(e:E) = {
     val link = g match {
-      case udg:UndirectedGraph[V,E] => {
-        if(e.isLabeled) {
-          "--" //todo use edge label (i.e. fix typing problem of LabeledGraph)
-        } else {
-          "--"
-        }
-      }
+      case udg:UndirectedGraph[V,E] => "--"
       case dg:DirectedGraph[V,E] => "->"
     }
+    val label =
+      if(e.isLabeled)
+        "[label=\"" + e.edgeLabel2String + "\"]"
+      else
+        ""
 
-    "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v)
+    "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v) + label
   }
 
   val nodeId = mutable.Map[V, Int]()

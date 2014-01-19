@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 
-class SimpleDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
+abstract class SimpleDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
                                           mInEdges : mutable.ArrayBuffer[List[E]],
                                           mIndexes : mutable.Map[V, Int],
                                           mVertices : mutable.ArrayBuffer[V])
@@ -17,7 +17,7 @@ class SimpleDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffe
 
 
 
-class MultiDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
+abstract class MultiDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
                                          mInEdges : mutable.ArrayBuffer[List[E]],
                                          mIndexes : mutable.Map[V, Int],
                                          mVertices : mutable.ArrayBuffer[V])
@@ -38,7 +38,7 @@ class SimpleLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges : mutable.Array
 {
   def this() = this(new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def clone() = { new SimpleLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  override def cc() = { new SimpleLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }
 
 
@@ -51,7 +51,7 @@ class MultiLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges : mutable.ArrayB
 {
   def this() = this(new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def clone() = { new MultiLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  override def cc() = { new MultiLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }
 
 
@@ -64,7 +64,7 @@ class SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[Li
 {
   def this() = this(new ArrayBuffer[List[Edge[V]]], new ArrayBuffer[List[Edge[V]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def clone() = { new SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  override def cc() = { new SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }
 
 
@@ -77,5 +77,5 @@ class MultiUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[Lis
 {
   def this() = this(new ArrayBuffer[List[Edge[V]]], new ArrayBuffer[List[Edge[V]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def clone() = { new MultiUnlabeledDirectedAdjacencyList[V](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  override def cc() = { new MultiUnlabeledDirectedAdjacencyList[V](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }

@@ -5,6 +5,8 @@ package planstack.graph
 
 trait DirectedGraph[V, E <: Edge[V]] extends Graph[V,E] {
 
+  def edges(u:V, v:V) : Seq[E] = outEdges(u).filter(e => e.v == v)
+
   def inEdges(v:V) : Seq[E]
 
   def outEdges(u:V) : Seq[E]

@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 
-class MultiUndirectedAdjacencyList[V,E <: Edge[V]](mEdges : mutable.ArrayBuffer[List[E]],
+abstract class MultiUndirectedAdjacencyList[V,E <: Edge[V]](mEdges : mutable.ArrayBuffer[List[E]],
                                                    mIndexes : mutable.Map[V, Int],
                                                    mVertices : mutable.ArrayBuffer[V])
   extends UndirectedAdjacencyList[V,E](mEdges, mIndexes, mVertices)
@@ -21,5 +21,5 @@ class MultiLabeledUndirectedAdjacencyList[V, EdgeLabel](mEdges : mutable.ArrayBu
 {
   def this() = this(new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def clone() = { new MultiLabeledUndirectedAdjacencyList[V, EdgeLabel](mEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  def cc() = { new MultiLabeledUndirectedAdjacencyList[V, EdgeLabel](mEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }

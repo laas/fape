@@ -57,7 +57,7 @@ class DirectedAdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[
     alledges
   }
 
-  override def clone() : DirectedAdjacencyList[V,E] = {
+  def cc() : DirectedAdjacencyList[V,E] = {
     new DirectedAdjacencyList[V,E](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone())
   }
 
