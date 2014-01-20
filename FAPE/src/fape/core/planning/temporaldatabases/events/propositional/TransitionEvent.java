@@ -29,11 +29,17 @@ public class TransitionEvent extends TemporalEvent {
     /**
      *
      * @param mn
+     * @param assignNewID
      * @return
      */
     @Override
     public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         TransitionEvent ret = new TransitionEvent();
+        if(assignNewID){
+            ret.mID = counter++;
+        }else{
+            ret.mID = this.mID;
+        }
         ret.from = from.DeepCopy(mn, assignNewID);
         ret.to = to.DeepCopy(mn, assignNewID);
         return ret;
@@ -50,6 +56,7 @@ public class TransitionEvent extends TemporalEvent {
         if (this.from != null) {
             e.from = this.from.DeepCopy(m, assignNewID);
         }
+        e.mID = this.mID;
         e.to = this.to.DeepCopy(m, assignNewID);
         e.start = this.start;
         e.end = this.end;

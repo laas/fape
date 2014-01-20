@@ -63,7 +63,6 @@ public class Planner {
     public static boolean logging = true;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
-
     /**
      *
      */
@@ -299,12 +298,26 @@ public class Planner {
         return next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
+    /**
+     * we remove the action results from the system
+     *
+     * @param pop
+     */
     public void FailAction(Integer pop) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (best == null) {
+            throw new FAPEException("No current state.");
+        } else {
+            State bestState = GetCurrentState();
+            Action remove = bestState.taskNet.GetAction(pop);
+            for(TemporalEvent t:remove.events){
+                bestState.SplitDatabase(t);
+            }
+            bestState.RemoveAction(pop);
+        }
     }
 
     public void AddActionEnding(int actionID, int realEndTime) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        TinyLogger.LogInfo("Here we should take into account the new ending of an action and introduce it into the plan.");
     }
 
     /**
@@ -343,6 +356,7 @@ public class Planner {
      */
     public void Init() {
         queue.Add(new State());
+        best = queue.Peek();
     }
 
     /**
@@ -350,7 +364,7 @@ public class Planner {
      * @return
      */
     public State GetCurrentState() {
-        return queue.Peek();
+        return best;
     }
     /*
      private boolean dfsRec(State st) {
@@ -492,6 +506,10 @@ public class Planner {
     public void Repair(TimeAmount forHowLong) {
         best = aStar(forHowLong);
         //dfs(forHowLong);
+
+        //we empty the queue now and leave only the best state there
+        queue.Clear();
+        queue.Add(best);
     }
 
     /**
@@ -784,7 +802,6 @@ public class Planner {
                 unificationConstraintPropagationSchema.put(a, schemas);
             }
         }
-        int xx = 0;
     }
 
     /**
@@ -906,5 +923,4 @@ public class Planner {
 
         return act;
     }
-
 }

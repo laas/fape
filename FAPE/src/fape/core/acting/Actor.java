@@ -108,12 +108,12 @@ public class Actor {
         long timeZero = System.currentTimeMillis();
         while (!end) {
             switch (mState) {
-                case ENDING:
+                /*case ENDING:
                     end = true;
                 case STOPPED:
                     Thread.sleep(sleepTime);
                     //mState = EActorState.ACTING;
-                    break;
+                    break;*/
                 case ACTING:
                     if(!failures.isEmpty()){
                         while(!failures.isEmpty()){

@@ -166,20 +166,44 @@ public class TaskNetworkManager {
      */
     public Action GetAction(int actionToDecompose) {
         LinkedList<Action> qu = new LinkedList<>();
-        for(Action a:roots){
+        for (Action a : roots) {
             qu.add(a);
         }
-        while(!qu.isEmpty()){
+        while (!qu.isEmpty()) {
             Action a = qu.pop();
-            if(a.mID == actionToDecompose){
+            if (a.mID == actionToDecompose && !a.removed) {
                 return a;
             }
-            if(a.decomposition != null){
-                for(Action b:a.decomposition){
+            if (a.decomposition != null) {
+                for (Action b : a.decomposition) {
                     qu.add(b);
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * flips the "removed" switch on an action, since the action failed we do
+     * not consider it to ba a part of plan anymore
+     *
+     * @param pop the id of the action
+     */
+    public void RemoveAction(Integer pop) {
+        LinkedList<Action> qu = new LinkedList<>();
+        for (Action a : roots) {
+            qu.add(a);
+        }
+        while (!qu.isEmpty()) {
+            Action a = qu.pop();
+            if (a.mID == pop) {
+                a.removed = true;
+            }
+            if (a.decomposition != null) {
+                for (Action b : a.decomposition) {
+                    qu.add(b);
+                }
+            }
+        }
     }
 }

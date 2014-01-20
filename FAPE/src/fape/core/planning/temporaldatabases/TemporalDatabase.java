@@ -292,7 +292,7 @@ public class TemporalDatabase extends IUnifiable {
             return this.contents.getLast().end;
         }
 
-        private ChainComponent DeepCopy(ConstraintNetworkManager m) {
+        public ChainComponent DeepCopy(ConstraintNetworkManager m) {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
             cp.contents = new LinkedList<>();

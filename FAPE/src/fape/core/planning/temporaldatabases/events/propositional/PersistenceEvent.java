@@ -27,15 +27,22 @@ public class PersistenceEvent extends TemporalEvent {
 
     /**
      *
+     * @param assignNewID
      * @return
      */
     @Override
     public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
         PersistenceEvent ret = new PersistenceEvent();
+        if(assignNewID){
+            ret.mID = counter++;
+        }else{
+            ret.mID = this.mID;
+        }
         ret.value = value.DeepCopy(mn, assignNewID);
         return ret;
     }
 
+    @Override
     public String toString() {
         return "@[" + start + "," + end + "):=" + value;
     }
@@ -44,6 +51,7 @@ public class PersistenceEvent extends TemporalEvent {
 
     public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         PersistenceEvent e = new PersistenceEvent();
+        e.mID = this.mID;
         e.value = this.value.DeepCopy(m, assignNewID);
         e.start = this.start;
         e.end = this.end;

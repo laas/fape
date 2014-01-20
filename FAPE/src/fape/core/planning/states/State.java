@@ -12,10 +12,14 @@ package fape.core.planning.states;
 
 import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.model.StateVariable;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,8 +89,8 @@ public class State {
      *
      * @param st
      */
-    public State(State st) {   
-        if(Planner.debugging){
+    public State(State st) {
+        if (Planner.debugging) {
             st.conNet.CheckConsistency();
         }
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
@@ -97,7 +101,7 @@ public class State {
         for (TemporalDatabase sb : st.consumers) {
             consumers.add((TemporalDatabase) conNet.objectMapper.get(sb.GetUniqueID()));
         }
-        if(Planner.debugging){
+        if (Planner.debugging) {
             st.conNet.CheckConsistency();
             tempoNet.TestConsistent();
         }
@@ -141,7 +145,8 @@ public class State {
     }
 
     /**
-     * we need to track the databases by their ids, not the object references, this method creates the mapping
+     * we need to track the databases by their ids, not the object references,
+     * this method creates the mapping
      *
      * @param value1
      * @return
@@ -156,11 +161,76 @@ public class State {
     }
 
     public TemporalDatabase GetDatabase(int temporalDatabase) {
-        for(TemporalDatabase db:tdb.vars){
-            if(db.mID == temporalDatabase){
+        for (TemporalDatabase db : tdb.vars) {
+            if (db.mID == temporalDatabase) {
                 return db;
             }
         }
         throw new FAPEException("Reference to unknown database.");
+    }
+
+    public void RemoveAction(Integer pop) {
+        taskNet.RemoveAction(pop);
+    }
+
+    public void SplitDatabase(TemporalEvent t) {
+        TemporalDatabase theDatabase = t.mDatabase;
+        if (t instanceof TransitionEvent) {
+            int ct = 0;
+            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
+                if (comp.contents.getFirst().mID == t.mID) {
+                    TemporalDatabase one = theDatabase;
+                    if (ct + 1 < theDatabase.chain.size()) {
+                        //this was not the last element, we need to create another database and make split
+                        TemporalDatabase newDB = tdb.GetNewDatabase(conNet);
+                        for (StateVariable var : theDatabase.domain) {
+                            newDB.domain.add(var);
+                        }
+                        //add all extra chain components to the new database
+                        List<TemporalDatabase.ChainComponent> remove = new LinkedList<>();
+                        for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
+                            TemporalDatabase.ChainComponent origComp = theDatabase.chain.get(i);
+                            remove.add(origComp);
+                            TemporalDatabase.ChainComponent pc = origComp.DeepCopy(conNet);
+                            newDB.chain.add(pc);
+                            for (TemporalEvent eve : pc.contents) {
+                                eve.mDatabase = newDB;
+                            }
+                        }
+                        this.consumers.add(newDB);
+                        this.tdb.vars.add(newDB);                        
+                        theDatabase.chain.remove(comp);
+                        theDatabase.chain.removeAll(remove);
+                        break;
+                    } else {
+                        //this was the last element so we can just remove it and we are done
+                        theDatabase.chain.remove(comp);
+                        break;
+                    }
+                }
+                ct++;
+            }
+        } else if (t instanceof PersistenceEvent) {
+            TemporalDatabase.ChainComponent theComponent = null;
+            TemporalEvent theEvent = null;
+            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
+                for (TemporalEvent e : comp.contents) {
+                    if (e.mID == t.mID) {
+                        theComponent = comp;
+                        theEvent = e;
+                    }
+                }
+            }
+            if (theComponent == null) {
+                throw new FAPEException("Unknown event.");
+            } else if (theComponent.contents.size() == 1) {
+                theDatabase.chain.remove(theComponent);
+            } else {
+                theComponent.contents.remove(theEvent);
+            }
+        } else {
+            throw new FAPEException("Unknown event type.");
+        }
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

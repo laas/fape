@@ -19,6 +19,10 @@ import java.util.LinkedList;
  * @author FD
  */
 public class Queue {
+    public void Clear(){
+        list.clear();
+    }
+    
     LinkedList<State> list = new LinkedList<>();
 
     /**

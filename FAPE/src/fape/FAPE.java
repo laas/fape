@@ -58,7 +58,7 @@ public class FAPE {
 
         if (FAPE.localTesting) {
             //pushing the initial event
-            a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
+            //a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
 
             p.Init();
 

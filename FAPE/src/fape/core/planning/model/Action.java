@@ -70,6 +70,7 @@ public class Action {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
+    public boolean removed = false;
 
     /**
      *
@@ -101,6 +102,7 @@ public class Action {
      */
     public Action DeepCopy() {
         Action a = new Action();
+        a.removed = this.removed;
         a.mID = mID;
         a.params = this.params;
         a.constantParams = this.constantParams;
