@@ -2,7 +2,7 @@ package planstack.graph
 
 import Predef._
 
-trait SimpleGraph[V, E <: Edge[V]] extends Graph[V,E] {
+trait SimpleGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
 
   /**
    * Look for an instance of an edge e=(u,v) in the graph.

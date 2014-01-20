@@ -15,8 +15,8 @@ class GraphSuite extends Suite {
   assert(g.edges.length === 1)
 
   def testGraphTypes() {
-    assert(g.isInstanceOf[Graph[Int, Edge[Int]]])
-    assert(g.isInstanceOf[MultiGraph[Int,Edge[Int]]])
+    assert(g.isInstanceOf[Graph[Int, Nothing, Edge[Int]]])
+    assert(g.isInstanceOf[MultiGraph[Int, Nothing, Edge[Int]]])
     assert(g.isInstanceOf[UnlabeledGraph[Int]])
   }
 

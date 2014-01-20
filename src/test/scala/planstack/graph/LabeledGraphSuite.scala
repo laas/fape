@@ -3,7 +3,7 @@ package planstack.graph
 import org.scalatest.Suite
 
 
-trait LabeledGraphSuite[V,EdgeLabel] extends BaseGraphSuite[V, LabeledEdge[V,EdgeLabel]] {
+trait LabeledGraphSuite[V,EdgeLabel] extends BaseGraphSuite[V, EdgeLabel, LabeledEdge[V,EdgeLabel]] {
 
   private def g = graph.asInstanceOf[LabeledGraph[V,EdgeLabel]]
 

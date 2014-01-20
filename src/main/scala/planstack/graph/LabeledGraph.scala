@@ -1,7 +1,6 @@
 package planstack.graph
 
-trait LabeledGraph[V, EdgeLabel] extends Graph[V, LabeledEdge[V, EdgeLabel]] {
-  type LabelType = EdgeLabel
+trait LabeledGraph[V, EL] extends Graph[V, EL, LabeledEdge[V, EL]] {
 
-  def addEdge(u:V, v:V, l:EdgeLabel) { addEdge(new LabeledEdge[V,EdgeLabel](u, v, l)) }
+  def addEdge(u:V, v:V, l:EL) { addEdge(new LabeledEdge[V,EL](u, v, l)) }
 }

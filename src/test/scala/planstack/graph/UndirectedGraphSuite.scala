@@ -2,11 +2,11 @@ package planstack.graph
 
 
 
-trait UndirectedGraphSuite[V,E <: Edge[V]] extends BaseGraphSuite[V, E] {
+trait UndirectedGraphSuite[V, EL, E <: Edge[V]] extends BaseGraphSuite[V, EL, E] {
 
-  private def g = graph.asInstanceOf[UndirectedGraph[Int,LabeledEdge[Int, Int]]]
+  private def g = graph.asInstanceOf[UndirectedGraph[Int,Int, LabeledEdge[Int, Int]]]
 
-  def testUndirectedType { assert(graph.isInstanceOf[UndirectedGraph[V,E]])}
+  def testUndirectedType { assert(graph.isInstanceOf[UndirectedGraph[V,EL,E]])}
 
   // TODO : find to start from a clean graph
   def testAddUndirectedEdges {

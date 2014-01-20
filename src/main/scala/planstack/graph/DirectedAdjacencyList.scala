@@ -2,11 +2,11 @@ package planstack.graph
 
 import scala.collection.mutable
 
-class DirectedAdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]],
+abstract class DirectedAdjacencyList[V, EL, E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]],
                                     val mInEdges : mutable.ArrayBuffer[List[E]],
                                     val mIndexes : mutable.Map[V, Int],
                                     val mVertices : mutable.ArrayBuffer[V])
-  extends DirectedGraph[V,E] {
+  extends DirectedGraph[V,EL,E] {
 
   var mNumVertices = mOutEdges.length
 
@@ -55,10 +55,6 @@ class DirectedAdjacencyList[V,E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[
     var alledges = List[E]()
     mOutEdges.foreach(edgelist => alledges = alledges ++ edgelist)
     alledges
-  }
-
-  def cc() : DirectedAdjacencyList[V,E] = {
-    new DirectedAdjacencyList[V,E](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone())
   }
 
   def contains(v: V): Boolean = mIndexes.contains(v)

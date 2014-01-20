@@ -13,13 +13,13 @@ object Algos {
   }
   import Marks._
 
-  def topologicalSorting[A,B <: Edge[A]](g:DirectedGraph[A,B]) : Seq[A] = {
-    var topo = List[A]()
-    val marksMap = mutable.Map[A, Marks]()
+  def topologicalSorting[V,EL,E <: Edge[V]](g:DirectedGraph[V,EL,E]) : Seq[V] = {
+    var topo = List[V]()
+    val marksMap = mutable.Map[V, Marks]()
 
-    def mark(a:A) = marksMap.getOrElse(a, untouched)
+    def mark(a:V) = marksMap.getOrElse(a, untouched)
 
-    def visit(n:A) {
+    def visit(n:V) {
       if(mark(n) == touched)
         throw new Exception("This is not a DAG")
       if(mark(n) == untouched) {

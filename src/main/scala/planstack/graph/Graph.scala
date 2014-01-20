@@ -1,6 +1,6 @@
 package planstack.graph
 
-trait Graph[V, E <: Edge[V]] {
+trait Graph[V, +EL, E <: Edge[V]] {
 
   def addVertex(v:V) : Int
 
@@ -25,7 +25,7 @@ trait Graph[V, E <: Edge[V]] {
    */
   def deleteEdges(u:V, v:V)
 
-  def cc() : Graph[V,E]
+  def cc() : Graph[V, EL, E]
 }
 
 

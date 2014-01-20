@@ -12,7 +12,7 @@ object Main {
   g.addEdge("Base", "Bot1")
   g.addEdge("Base", "Bot2")
 
-  val printer = new GraphDotPrinter[String, Edge[String]](g)
+  val printer = new GraphDotPrinter(g)
   printer.print2Dot("/home/abitmonn/tmp/g.dot")
 
 }

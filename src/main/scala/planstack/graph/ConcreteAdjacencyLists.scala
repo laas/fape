@@ -6,52 +6,35 @@ import scala.collection.mutable.ArrayBuffer
 
 
 
-abstract class SimpleDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
-                                          mInEdges : mutable.ArrayBuffer[List[E]],
-                                          mIndexes : mutable.Map[V, Int],
-                                          mVertices : mutable.ArrayBuffer[V])
-  extends DirectedAdjacencyList[V,E](mOutEdges, mInEdges, mIndexes, mVertices)
-  with SimpleGraph[V,E]
 
 
-
-
-
-abstract class MultiDirectedAdjacencyList[V,E <: Edge[V]](mOutEdges : mutable.ArrayBuffer[List[E]],
-                                         mInEdges : mutable.ArrayBuffer[List[E]],
-                                         mIndexes : mutable.Map[V, Int],
-                                         mVertices : mutable.ArrayBuffer[V])
-  extends DirectedAdjacencyList[V,E](mOutEdges, mInEdges, mIndexes, mVertices)
-  with MultiGraph[V,E]
-
-
-
-
-
-
-class SimpleLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]],
-                                               mInEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]],
+class SimpleLabeledDirectedAdjacencyList[V, EL](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[V,EL]]],
+                                               mInEdges : mutable.ArrayBuffer[List[LabeledEdge[V,EL]]],
                                                mIndexes : mutable.Map[V, Int],
                                                mVertices : mutable.ArrayBuffer[V])
-  extends SimpleDirectedAdjacencyList[V, LabeledEdge[V, EdgeLabel]](mOutEdges, mInEdges, mIndexes, mVertices)
-  with LabeledGraph[V, EdgeLabel]
+  extends DirectedAdjacencyList[V, EL, LabeledEdge[V,EL]](mOutEdges, mInEdges, mIndexes, mVertices)
+  with LabeledGraph[V, EL]
+  with SimpleGraph[V, EL, LabeledEdge[V,EL]]
 {
-  def this() = this(new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], mutable.Map[V,Int](), new ArrayBuffer[V])
+  def this() = this(new ArrayBuffer[List[LabeledEdge[V,EL]]], new ArrayBuffer[List[LabeledEdge[V,EL]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
-  override def cc() = { new SimpleLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  override def cc() = { new SimpleLabeledDirectedAdjacencyList[V, EL](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }
 
 
-class MultiLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]],
-                                              mInEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]],
+class MultiLabeledDirectedAdjacencyList[V, EL](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EL]]],
+                                              mInEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EL]]],
                                               mIndexes : mutable.Map[V, Int],
                                               mVertices : mutable.ArrayBuffer[V])
-  extends MultiDirectedAdjacencyList[V, LabeledEdge[V, EdgeLabel]](mOutEdges, mInEdges, mIndexes, mVertices)
-  with LabeledGraph[V, EdgeLabel]
+  extends DirectedAdjacencyList[V, EL, LabeledEdge[V, EL]](mOutEdges, mInEdges, mIndexes, mVertices)
+  with LabeledGraph[V, EL]
+  with MultiGraph[V, EL, LabeledEdge[V, EL]]
 {
-  def this() = this(new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], new ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]], mutable.Map[V,Int](), new ArrayBuffer[V])
+  type E = LabeledEdge[V,EL]
 
-  override def cc() = { new MultiLabeledDirectedAdjacencyList[V, EdgeLabel](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
+  def this() = this(new ArrayBuffer[List[LabeledEdge[V,EL]]], new ArrayBuffer[List[LabeledEdge[V,EL]]], mutable.Map[V,Int](), new ArrayBuffer[V])
+
+  override def cc() = { new MultiLabeledDirectedAdjacencyList[V, EL](mOutEdges.clone(), mInEdges.clone(), mIndexes.clone(), mVertices.clone()) }
 }
 
 
@@ -59,8 +42,9 @@ class SimpleUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[Li
                                       mInEdges : mutable.ArrayBuffer[List[Edge[V]]],
                                       mIndexes : mutable.Map[V, Int],
                                       mVertices : mutable.ArrayBuffer[V])
-  extends SimpleDirectedAdjacencyList[V, Edge[V]](mOutEdges, mInEdges, mIndexes, mVertices)
+  extends DirectedAdjacencyList[V, Nothing, Edge[V]](mOutEdges, mInEdges, mIndexes, mVertices)
   with UnlabeledGraph[V]
+  with SimpleGraph[V, Nothing, Edge[V]]
 {
   def this() = this(new ArrayBuffer[List[Edge[V]]], new ArrayBuffer[List[Edge[V]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 
@@ -72,8 +56,9 @@ class MultiUnlabeledDirectedAdjacencyList[V](mOutEdges : mutable.ArrayBuffer[Lis
                                      mInEdges : mutable.ArrayBuffer[List[Edge[V]]],
                                      mIndexes : mutable.Map[V, Int],
                                      mVertices : mutable.ArrayBuffer[V])
-  extends MultiDirectedAdjacencyList[V, Edge[V]](mOutEdges, mInEdges, mIndexes, mVertices)
+  extends DirectedAdjacencyList[V, Nothing, Edge[V]](mOutEdges, mInEdges, mIndexes, mVertices)
   with UnlabeledGraph[V]
+  with MultiGraph[V, Nothing, Edge[V]]
 {
   def this() = this(new ArrayBuffer[List[Edge[V]]], new ArrayBuffer[List[Edge[V]]], mutable.Map[V,Int](), new ArrayBuffer[V])
 

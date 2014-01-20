@@ -1,6 +1,6 @@
 package planstack.graph
 
-trait UndirectedGraph[V, E <: Edge[V]] extends Graph[V,E] {
+trait UndirectedGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
 
   /**
    * Returns all edges touching v

@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 
 
-class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) {
+class GraphDotPrinter[V,EL,E <: Edge[V]](val g:Graph[V,EL,E]) {
 
   def writeToFile(filename: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new java.io.File(filename))
@@ -14,22 +14,20 @@ class GraphDotPrinter[V,E <: Edge[V]](val g:Graph[V,E]) {
   }
 
   val header = g match {
-    case dg:DirectedGraph[V,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"
+    case dg:DirectedGraph[V,EL,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"
     case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"  //TODO not a digraph
   }
   val footer = "\n}"
 
   def edge2Str(e:E) = {
     val link = g match {
-      case udg:UndirectedGraph[V,E] => "--"
-      case dg:DirectedGraph[V,E] => "->"
+      case udg:UndirectedGraph[V,EL,E] => "--"
+      case dg:DirectedGraph[V,EL,E] => "->"
     }
-    val label =
-      if(e.isLabeled)
-        "[label=\"" + e.edgeLabel2String + "\"]"
-      else
-        ""
-
+    val label = e match {
+      case e:LabeledEdge[V,EL] => "[label=\"%s\"]".format(e.l)
+      case _ => ""
+    }
     "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v) + label
   }
 

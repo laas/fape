@@ -3,11 +3,11 @@ package planstack.graph
 import org.scalatest.Suite
 
 
-trait SimpleGraphSuite[V,E <: Edge[V]] extends BaseGraphSuite[V,E] {
+trait SimpleGraphSuite[V,EL,E <: Edge[V]] extends BaseGraphSuite[V,EL,E] {
 
-  private def g = graph.asInstanceOf[SimpleGraph[Int,Edge[Int]]]
+  private def g = graph.asInstanceOf[SimpleGraph[Int,EL,Edge[Int]]]
 
-  def testSimpleType { assert(graph.isInstanceOf[SimpleGraph[Int,Edge[Int]]])}
+  def testSimpleType { assert(graph.isInstanceOf[SimpleGraph[Int,EL,Edge[Int]]])}
 
 
   def testAddEdges {

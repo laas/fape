@@ -3,7 +3,7 @@ package planstack.graph
 
 
 
-trait DirectedGraph[V, E <: Edge[V]] extends Graph[V,E] {
+trait DirectedGraph[V, EL, E <: Edge[V]] extends Graph[V, EL, E] {
 
   def edges(u:V, v:V) : Seq[E] = outEdges(u).filter(e => e.v == v)
 

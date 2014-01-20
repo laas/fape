@@ -2,10 +2,10 @@ package planstack.graph
 
 import scala.collection.mutable
 
-abstract class UndirectedAdjacencyList[V,E <: Edge[V]](val mEdges : mutable.ArrayBuffer[List[E]],
+abstract class UndirectedAdjacencyList[V, EL, E <: Edge[V]](val mEdges : mutable.ArrayBuffer[List[E]],
                                               val mIndexes : mutable.Map[V, Int],
                                               val mVertices : mutable.ArrayBuffer[V])
-  extends UndirectedGraph[V,E] {
+  extends UndirectedGraph[V,EL,E] {
 
 
   var mNumVertices = mVertices.length
