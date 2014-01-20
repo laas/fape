@@ -1,4 +1,5 @@
-package planstack.graph
+package planstack.graph.core
+
 
 trait LabeledGraph[V, EL] extends Graph[V, EL, LabeledEdge[V, EL]] {
 

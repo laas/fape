@@ -2,8 +2,7 @@ package planstack.graph.algorithms
 
 import planstack.graph._
 import scala.collection.mutable
-
-
+import planstack.graph.core.{Edge, DirectedGraph}
 
 
 object Algos {

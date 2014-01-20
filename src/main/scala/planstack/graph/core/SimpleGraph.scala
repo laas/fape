@@ -1,6 +1,7 @@
-package planstack.graph
+package planstack.graph.core
 
-import Predef._
+import planstack.graph.Predef._
+import scala.Some
 
 trait SimpleGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
 

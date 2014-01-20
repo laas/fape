@@ -1,6 +1,7 @@
 package planstack.graph
 
 import org.scalatest.Suite
+import planstack.graph.core.{MultiGraph, Edge, LabeledEdge}
 
 
 trait MultiGraphSuite[V, EL, E <: Edge[V]] extends BaseGraphSuite[V, EL, E]{

@@ -1,4 +1,5 @@
-package planstack.graph
+package planstack.graph.core
+
 
 trait MultiGraph[V, EL, E <:Edge[V]] extends Graph[V,EL,E] {
 

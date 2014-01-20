@@ -1,6 +1,4 @@
-package planstack.graph
-
-
+package planstack.graph.core
 
 
 trait DirectedGraph[V, EL, E <: Edge[V]] extends Graph[V, EL, E] {
@@ -19,7 +17,7 @@ trait DirectedGraph[V, EL, E <: Edge[V]] extends Graph[V, EL, E] {
 
 object DirectedGraph {
 
-  def apply[V]() = new MultiUnlabeledDirectedAdjacencyList[V]()
-  def apply[V,EL]() = new MultiLabeledDirectedAdjacencyList[V, EL]()
+  def apply[V]() = new impl.MultiUnlabeledDirectedAdjacencyList[V]()
+  def apply[V,EL]() = new impl.MultiLabeledDirectedAdjacencyList[V, EL]()
 
 }

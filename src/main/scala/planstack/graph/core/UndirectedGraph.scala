@@ -1,4 +1,6 @@
-package planstack.graph
+package planstack.graph.core
+
+import planstack.graph.core.{Graph, Edge}
 
 trait UndirectedGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
 
@@ -37,5 +39,5 @@ object UndirectedGraph {
    * @tparam EdgeLabel Type of the label on the edges
    * @return
    */
-  def apply[V, EdgeLabel]() = new MultiLabeledUndirectedAdjacencyList[V, EdgeLabel]()
+  def apply[V, EdgeLabel]() = new impl.MultiLabeledUndirectedAdjacencyList[V, EdgeLabel]()
 }

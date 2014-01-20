@@ -1,5 +1,8 @@
 package planstack.graph
 
+import planstack.graph.core._
+import planstack.graph.core.impl.SimpleLabeledDirectedAdjacencyList
+
 
 object Predef {
 

@@ -1,7 +1,7 @@
 package planstack.graph.algorithms
 
-import planstack.graph.DirectedGraph
 import org.scalatest.Suite
+import planstack.graph.core.DirectedGraph
 
 class TopologicalSortingSuite extends Suite {
 

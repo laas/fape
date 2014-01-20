@@ -1,5 +1,6 @@
 package planstack.graph
 
+import planstack.graph.core.{UndirectedGraph, Edge, LabeledEdge}
 
 
 trait UndirectedGraphSuite[V, EL, E <: Edge[V]] extends BaseGraphSuite[V, EL, E] {

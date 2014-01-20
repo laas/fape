@@ -1,4 +1,5 @@
-package planstack.graph
+package planstack.graph.core
+
 
 trait UnlabeledGraph[V] extends Graph[V, Nothing, Edge[V]] {
 

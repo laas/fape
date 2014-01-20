@@ -3,6 +3,7 @@ package planstack.graph
 import org.scalatest.Suite
 
 import planstack.graph._
+import planstack.graph.core.{UnlabeledGraph, MultiGraph, Graph, Edge}
 
 
 class GraphSuite extends Suite {

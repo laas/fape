@@ -1,4 +1,4 @@
-package planstack.graph
+package planstack.graph.core
 
 class Edge[V](val u:V, val v:V) {
 

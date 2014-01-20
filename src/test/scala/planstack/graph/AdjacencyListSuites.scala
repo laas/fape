@@ -2,7 +2,8 @@ package planstack.graph
 
 
 import org.scalatest.Suite
-
+import planstack.graph.core.LabeledEdge
+import planstack.graph.core.impl.{MultiLabeledUndirectedAdjacencyList, MultiLabeledDirectedAdjacencyList, SimpleLabeledDirectedAdjacencyList}
 
 
 class SimpleLabeledAdjListSuite extends LabeledGraphSuite[Int, Int] with SimpleGraphSuite[Int, Int, LabeledEdge[Int, Int]]{

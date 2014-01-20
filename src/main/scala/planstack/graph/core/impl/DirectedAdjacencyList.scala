@@ -1,6 +1,7 @@
-package planstack.graph
+package planstack.graph.core.impl
 
 import scala.collection.mutable
+import planstack.graph.core.{Edge, DirectedGraph}
 
 abstract class DirectedAdjacencyList[V, EL, E <: Edge[V]](val mOutEdges : mutable.ArrayBuffer[List[E]],
                                     val mInEdges : mutable.ArrayBuffer[List[E]],

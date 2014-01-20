@@ -2,8 +2,7 @@ package planstack.graph.printers
 
 import planstack.graph._
 import scala.collection.mutable
-
-
+import planstack.graph.core._
 
 
 class GraphDotPrinter[V,EL,E <: Edge[V]](val g:Graph[V,EL,E]) {
