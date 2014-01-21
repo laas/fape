@@ -56,10 +56,11 @@ public class Actor {
     Planner mPlanner;
 
     boolean planNeedsRepair = false;
-    
+
     List<AtomicAction> actionsToDispatch = new LinkedList<>();
     LinkedList<Integer> failures = new LinkedList<>();
     boolean planReady = false;
+    int currentDelay = 0;
 
     /**
      *
@@ -70,7 +71,7 @@ public class Actor {
 
     public void ReportSuccess(int actionID, int realEndTime) {
         successfulActions.add(idToSignature.get(actionID));
-        mPlanner.AddActionEnding(actionID, realEndTime);        
+        mPlanner.AddActionEnding(actionID, realEndTime);
     }
 
     public void ReportFailure(int actionID) {
@@ -105,18 +106,18 @@ public class Actor {
      */
     public void run() throws InterruptedException {
         boolean end = false;
-        long timeZero = System.currentTimeMillis();
+        int timeZero = (int) (System.currentTimeMillis() / 1000);
         while (!end) {
             switch (mState) {
                 /*case ENDING:
-                    end = true;
-                case STOPPED:
-                    Thread.sleep(sleepTime);
-                    //mState = EActorState.ACTING;
-                    break;*/
+                 end = true;
+                 case STOPPED:
+                 Thread.sleep(sleepTime);
+                 //mState = EActorState.ACTING;
+                 break;*/
                 case ACTING:
-                    if(!failures.isEmpty()){
-                        while(!failures.isEmpty()){
+                    if (!failures.isEmpty()) {
+                        while (!failures.isEmpty()) {
                             mPlanner.FailAction(failures.pop());
                         }
                         planNeedsRepair = true;
@@ -128,6 +129,7 @@ public class Actor {
                         planNeedsRepair = true;
                     }
                     if (planNeedsRepair) {
+                        planNeedsRepair = false;
                         mPlanner.Repair(new TimeAmount(repairTime));
                         List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(progressStep), new TimeAmount(repairTime));
                         Collections.sort(scheduledActions, new Comparator<AtomicAction>() {
@@ -140,10 +142,13 @@ public class Actor {
                     }
                     int now = (int) (System.currentTimeMillis() / 1000);
                     List<AtomicAction> remove = new LinkedList<>();
-                    for(AtomicAction a:actionsToDispatch){
-                        if(a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.mID))){
+                    for (AtomicAction a : actionsToDispatch) {
+                        if (a.mStartTime + timeZero + currentDelay < now && !successfulActions.contains(idToSignature.get(a.mID))) {
                             idToSignature.put(a.mID, a.GetDescription());
-                            a.mStartTime = (int) (now - timeZero + a.mStartTime);
+                            if((now - timeZero) - a.mStartTime > currentDelay){
+                                currentDelay = (now - timeZero) - a.mStartTime;
+                            }
+                            a.mStartTime = (int) (currentDelay + a.mStartTime);                            
                             mExecutor.executeAtomicActions(a);
                             remove.add(a);
                         }

@@ -45,7 +45,7 @@ public class FAPE {
             FAPE.localTesting = true;
             FAPE.runListener = true;
             e = new Executor();
-            if (FAPE.runListener) {               
+            if (FAPE.runListener) {
                 l = new Listener("bobc1", "PR2", "FAPE", "3300");
                 l.bind(e);
             }
@@ -56,14 +56,15 @@ public class FAPE {
             throw ex;
         }
 
-        if (FAPE.localTesting) {
+        /*if (FAPE.localTesting) {
             //pushing the initial event
             //a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
 
-            p.Init();
+        }*/
 
-            a.run();
-        }
+        p.Init();       
+        int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
+        a.run();
 
     }
 }
