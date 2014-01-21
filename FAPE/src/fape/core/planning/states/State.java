@@ -231,6 +231,5 @@ public class State {
         } else {
             throw new FAPEException("Unknown event type.");
         }
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

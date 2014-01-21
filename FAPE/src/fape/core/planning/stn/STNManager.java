@@ -172,4 +172,12 @@ public class STNManager {
     public long GetEarliestStartTime(TemporalVariable start) {
         return stn.ga(0, start.getID());
     }
+
+    public TemporalVariable GetGlobalStart() {
+        return start;
+    }
+    
+    public TemporalVariable GetGlobalEnd() {
+        return end;
+    }
 }
