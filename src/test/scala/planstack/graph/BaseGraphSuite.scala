@@ -15,7 +15,6 @@ trait BaseGraphSuite[V,EL,E <: Edge[V]] extends Suite {
   def newVert(g:Graph[V,EL,E] = graph) : Int = {
     val vert = vertices(nextVert)
     nextVert += 1
-    println("New vert : " + vert + "  numVert: "+graph.numVertices)
     vert
   }
 

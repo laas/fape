@@ -1,7 +1,5 @@
 package planstack.graph.core
 
-import planstack.graph.core.{Graph, Edge}
-
 trait UndirectedGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
 
   /**

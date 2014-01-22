@@ -13,12 +13,10 @@ abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.Arr
 
 
   def addVertex() : Int = {
-    println("1AddVertex()  "+numVertices)
     val id = mNumVertices
     mInEdges.append(List[E]())
     mOutEdges.append(List[E]())
     mNumVertices += 1
-    println("2AddVertex()  "+numVertices)
     id
   }
 
@@ -32,7 +30,6 @@ abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.Arr
    * @return
    */
   def addVertex(v:Int) : Int = {
-    println("Addvertex( id )")
     assert(numVertices == v, "Vertex ids have to be the stricly growing (%s != %s)".format(numVertices, v))
     addVertex()
   }

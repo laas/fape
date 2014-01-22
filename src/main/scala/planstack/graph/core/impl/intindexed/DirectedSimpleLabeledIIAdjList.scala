@@ -6,8 +6,7 @@ import scala.collection.mutable
 class DirectedSimpleLabeledIIAdjList[EL](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[Int,EL]]],
                                         mInEdges : mutable.ArrayBuffer[List[LabeledEdge[Int,EL]]])
   extends DirectedIIAdjList[EL, LabeledEdge[Int,EL]](mOutEdges, mInEdges)
-  with SimpleGraph[Int, EL, LabeledEdge[Int,EL]]
-  with LabeledGraph[Int, EL]
+  with SimpleLabeledDigraph[Int, EL]
 {
   def this() = this(new mutable.ArrayBuffer[List[LabeledEdge[Int, EL]]](), new mutable.ArrayBuffer[List[LabeledEdge[Int, EL]]]())
 
