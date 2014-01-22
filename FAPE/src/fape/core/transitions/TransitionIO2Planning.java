@@ -304,7 +304,7 @@ public class TransitionIO2Planning {
             default:
                 //number
                 int time = Integer.parseInt(s.interval.end);
-                st.tempoNet.EnforceConstraint(tve, st.tempoNet.GetGlobalEnd(), time, time);
+                st.tempoNet.EnforceConstraint(st.tempoNet.GetGlobalStart(), tve, time, time);
                 break;
         }
 

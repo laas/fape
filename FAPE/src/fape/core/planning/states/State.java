@@ -91,6 +91,7 @@ public class State {
      */
     public State(State st) {
         if (Planner.debugging) {
+            st.tempoNet.TestConsistent();
             st.conNet.CheckConsistency();
         }
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables

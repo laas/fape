@@ -294,8 +294,8 @@ public class Planner {
         } else {
             throw new FAPEException("Unknown option.");
         }
-        next.conNet.CheckConsistency();
-        return next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
+        //next.conNet.CheckConsistency();
+        return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
     /**
@@ -309,7 +309,7 @@ public class Planner {
         } else {
             State bestState = GetCurrentState();
             Action remove = bestState.taskNet.GetAction(pop);
-            for(TemporalEvent t:remove.events){
+            for (TemporalEvent t : remove.events) {
                 bestState.SplitDatabase(t);
             }
             bestState.RemoveAction(pop);
@@ -712,15 +712,6 @@ public class Planner {
          }
          }
          }*/
-        for (Type t : types.values()) {
-            if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
-                ADTG dtg = new ADTG(t, actions.values());
-
-                dtg.op_all_paths();
-                dtgs.put(t.name, dtg);
-            }
-        }
-
         //get values for the state variables
         /*for (AbstractAction a : actions.values()) {
          for (AbstractTemporalEvent e : a.events) {
@@ -741,9 +732,20 @@ public class Planner {
         //}
         //}
         // }
-        //create propagation schemas
+        
         if (st.isInitState) {
+            
+            //create domain transition graphs
+            for (Type t : types.values()) {
+                if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
+                    ADTG dtg = new ADTG(t, actions.values());
 
+                    dtg.op_all_paths();
+                    dtgs.put(t.name, dtg);
+                }
+            }
+
+            //create propagation schemas
             for (AbstractAction a : actions.values()) {
                 HashMap<Integer, List<UnificationConstraintSchema>> schemas = new HashMap<>();
                 int decompositionCounter = 0; //indexes which decomposition we are working on
@@ -802,6 +804,7 @@ public class Planner {
                 unificationConstraintPropagationSchema.put(a, schemas);
             }
         }
+        st.isInitState = false;
     }
 
     /**
