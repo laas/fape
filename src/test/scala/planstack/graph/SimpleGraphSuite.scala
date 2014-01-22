@@ -11,11 +11,13 @@ trait SimpleGraphSuite[V,EL,E <: Edge[V]] extends BaseGraphSuite[V,EL,E] {
 
 
   def testAddEdges {
-    g.addVertex(1)
-    g.addVertex(3)
-    g.addEdge(new LabeledEdge[Int,Int](1, 3, 4))
+    val u = newVert()
+    val v = newVert()
+    g.addVertex(u)
+    g.addVertex(v)
+    g.addEdge(new LabeledEdge[Int,Int](u, v, 4))
     assert(g.edges.length === 1)
-    g.addEdge(new LabeledEdge[Int,Int](1, 3, 4))
+    g.addEdge(new LabeledEdge[Int,Int](u, v, 4))
     assert(g.edges.length === 1)
   }
 

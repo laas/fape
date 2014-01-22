@@ -11,18 +11,22 @@ trait UndirectedGraphSuite[V, EL, E <: Edge[V]] extends BaseGraphSuite[V, EL, E]
 
   // TODO : find to start from a clean graph
   def testAddUndirectedEdges {
-    g.addVertex(8001)
-    g.addVertex(8002)
-    g.addVertex(8003)
-    g.addEdge(new LabeledEdge[Int,Int](8001,8002, 20))
-    assert(g.degree(8001) === 1)
-    assert(g.degree(8002) === 1)
-    assert(g.degree(8003) === 0)
+    val u = newVert()
+    g.addVertex(u)
+    val v = newVert()
+    g.addVertex(v)
+    val w = newVert()
+    g.addVertex(w)
+    
+    g.addEdge(new LabeledEdge[Int,Int](u,v, 20))
+    assert(g.degree(u) === 1)
+    assert(g.degree(v) === 1)
+    assert(g.degree(w) === 0)
 
-    g.deleteEdges(8001, 8002)
-    assert(g.degree(8001) === 0)
-    assert(g.degree(8002) === 0)
-    assert(g.degree(8003) === 0)
+    g.deleteEdges(u, v)
+    assert(g.degree(u) === 0)
+    assert(g.degree(v) === 0)
+    assert(g.degree(w) === 0)
   }
 
 }
