@@ -76,7 +76,7 @@ public class State {
     public State() {
         isInitState = true;
         tdb = new TemporalDatabaseManager();
-        tempoNet = new STNManager();
+        tempoNet = STNManager.newInstance();
         tempoNet.Init();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
