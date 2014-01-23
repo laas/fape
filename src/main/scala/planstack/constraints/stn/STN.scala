@@ -2,13 +2,14 @@ package planstack.constraints.stn
 
 import StnPredef._
 import planstack.graph.printers.GraphDotPrinter
+import planstack.graph.core.LabeledDigraph
 
 /**
  *
  * @param g A directed simple graph with integer edge labels.
  * @param consistent True if the STN is consistent, false otherwise
  */
-abstract class STN(val g : G, var consistent : Boolean) {
+abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
 
   // Creates start and end time points if the STN is empty
   if(size == 0) {
@@ -29,7 +30,7 @@ abstract class STN(val g : G, var consistent : Boolean) {
    * @return ID of the created time point
    */
   final def addVar() : Int = {
-    if(!consistent) println("Error: adding variable %d to inconsistent STN".format(g.numVertices))
+//    if(!consistent) println("Error: adding variable %d to inconsistent STN".format(g.numVertices))
 
     val id = addVarUnsafe()
     enforceBefore(start, id)
@@ -61,10 +62,11 @@ abstract class STN(val g : G, var consistent : Boolean) {
    * @return
    */
   protected def getWeight(u:Int, v:Int) = {
-    g.edge(u,v) match {
-      case Some(e) => new Weight(e.l)
-      case None => Weight.InfWeight
-    }
+    val edges = g.edges(u,v)
+    if(edges.length == 0)
+      Weight.InfWeight
+    else // first edge _must_ be the one with the minimum weight
+      new Weight(edges.head.l)
   }
 
 
@@ -108,6 +110,7 @@ abstract class STN(val g : G, var consistent : Boolean) {
   }
   
   def checkConsistency() : Boolean
+  def checkConsistencyFromScratch() : Boolean
 
   /**
    * Enforces that the time point u must happens before time point v or at the same time
@@ -118,6 +121,17 @@ abstract class STN(val g : G, var consistent : Boolean) {
    */
   def enforceBefore(u:Int, v:Int) {
     addConstraint(v, u, 0)
+  }
+
+  /**
+   * Enforces that the time point u must happens strictly before time point v
+   *
+   * Results in the addition of an edge from v to u with weight -1: (v, u, -1)
+   * @param u
+   * @param v
+   */
+  def enforceStrictlyBefore(u:Int, v:Int) {
+    addConstraint(v, u, -1)
   }
 
   /**
@@ -171,6 +185,33 @@ abstract class STN(val g : G, var consistent : Boolean) {
     val tmpSTN = cc()
     tmpSTN.addConstraint(u, v, w)
     tmpSTN.consistent
+  }
+
+  def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
+
+
+  /**
+   * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
+   * Performs a consistency check from scratch (expensive try to use removeCOnstraints if you are to remove
+   * more than one constraint)
+   * @param u
+   * @param v
+   * @return True if the STN is consistent after removal
+   */
+  def removeConstraint(u:Int, v:Int) : Boolean = {
+    g.deleteEdges(u, v)
+    checkConsistencyFromScratch()
+  }
+
+  /**
+   * For all pairs, remove the corresponding directed edge in the constraint graph. After all of every pair are removed,
+   * a consistency check is performed from scratch.
+   * @param edges
+   * @return true if the STN is consistent after removal
+   */
+  def removeConstraints(edges:Pair[Int,Int]*) = {
+    edges.foreach(e => g.deleteEdges(e._1, e._2))
+    checkConsistencyFromScratch()
   }
 
   /**

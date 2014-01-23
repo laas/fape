@@ -44,6 +44,14 @@ class Weight(val inf : Boolean, val w : Int) {
       w < o
   }
 
+  def == (o:Weight) : Boolean = {
+    if(inf) o.inf
+    else if(o.inf) false
+    else w == o.w
+  }
+
+  def <= (o:Weight) : Boolean = this < o || this == o
+
   override def toString = {
     if(inf) "inf"
     else w.toString

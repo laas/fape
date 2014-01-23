@@ -3,11 +3,12 @@ package planstack.constraints.stn
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import StnPredef._
+import planstack.graph.core.LabeledDigraph
 
 class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
                         val forwardDist:ArrayBuffer[Weight],
                         val backwardDist:ArrayBuffer[Weight],
-                        sup_g: G,
+                        sup_g: LabeledDigraph[Int,Int],
                         sup_consistent:Boolean)
   extends STN(sup_g, sup_consistent) {
 
@@ -18,13 +19,6 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
                     new ArrayBuffer[Weight](0),
                     NewGraph(), true)
 
-
-  /**
-   * Data structures to keep track of the distances from/to 0 to/from all vertices
-   * This is used as part of the Iterative Bellman-Ford algorithm.
-   */
-//  val forwardDist = new Array[planstack.constraints.stn.Weight](g.numVertices)
-//  val backwardDist = new Array[planstack.constraints.stn.Weight](g.numVertices)
 
   override def addVarUnsafe() : Int = {
     val dist =
@@ -50,9 +44,8 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
   def checkConsistency() : Boolean = {
     if(!q.isEmpty)
       consistent = incrementalBellmanFord()
+    assert(q.isEmpty)
 
-    if(!consistent)
-      println("Warning: STN is not consistent")
     consistent
   }
 
@@ -88,6 +81,7 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
       }
     }
 
+    //backward
     if(consistent && backwardDist(i) > backwardDist(j) + w) {
       backwardDist(i) = backwardDist(j) + w
       modified += i
@@ -130,8 +124,51 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
     return consistent
   }
 
+  def checkConsistencyFromScratch() : Boolean = {
+    consistent = recomputeAllDistances()
+    consistent
+  }
+
+
+
+  /**
+   * A basic implementation of Bellman-Ford that computes all distances from scratch
+   * @return True if the STN is consistent (no negative cycles)
+   */
+  def recomputeAllDistances() : Boolean = {
+    // set all distances to inf except for the origin
+    for(v <- g.vertices()) {
+      val initialDist =
+        if(v == start) new Weight(0)
+        else Weight.InfWeight
+      forwardDist(v) = initialDist
+      backwardDist(v) = initialDist
+    }
+
+    // O(n*e): recomputes check all edges n times. (necessary because the graph is cyclic with negative values
+    var i = 0
+    while(i < g.numVertices) {
+      i += 1
+      for(e <- g.edges()) {
+        if(forwardDist(e.u) + e.l < forwardDist(e.v)) {
+          forwardDist(e.v) = forwardDist(e.u) + e.l
+        }
+        if(backwardDist(e.v) + e.l < backwardDist(e.u)) {
+          backwardDist(e.u) = backwardDist(e.v) + e.l
+        }
+      }
+    }
+
+    // STN is consistent iff all distances are not updatable
+    val consistent = g.edges().forall(e => {
+      forwardDist(e.v) <= forwardDist(e.u) + e.l && backwardDist(e.u) <= backwardDist(e.v) + e.l
+    })
+
+    consistent
+  }
+
   def cc() : STNIncBellmanFord = {
-    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc().asInstanceOf[G], consistent)
+    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc().asInstanceOf[LabeledDigraph[Int,Int]], consistent)
   }
 
   def distancesToString = {

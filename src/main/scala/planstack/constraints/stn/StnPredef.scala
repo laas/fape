@@ -1,10 +1,11 @@
 package planstack.constraints.stn
 
+import planstack.graph.core
+import planstack.graph.core.LabeledDigraph
 import planstack.graph.Predef._
 
 object StnPredef {
 
-  type G = DirectedSimpleLabeledGraph[Int, Int]
-  def NewGraph() : G = NewDirectedSimpleLabeledGraph[Int, Int]
+  def NewGraph() : LabeledDigraph[Int,Int] = new core.impl.intindexed.DirectedSimpleLabeledIIAdjList[Int] //newSimpleLabeledDigraph[Int, Int]
 
 }

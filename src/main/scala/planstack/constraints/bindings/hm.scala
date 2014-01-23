@@ -1,9 +1,5 @@
 package planstack.constraints.bindings
 
-import planstack.graph
-import planstack.graph.UndirectedGraph
-import scala.collection.mutable
-
 class CSPVar(val id:Int, val dom:Set[Int]) {
   override def toString = "%d={%s}".format(id, dom.toString().replace("Set",""))
 

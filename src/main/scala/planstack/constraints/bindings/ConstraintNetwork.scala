@@ -1,7 +1,7 @@
 package planstack.constraints.bindings
 
 import scala.collection.mutable
-import planstack.graph.UndirectedGraph
+import planstack.graph.core.UndirectedGraph
 import planstack.constraints._
 
 class ConstraintNetwork {

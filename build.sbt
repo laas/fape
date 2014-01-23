@@ -1,6 +1,8 @@
-name := "constraints"
+name := "planstack-constraints"
 
-version := "1.0"
+organization := "planstack"
+
+version := "0.1"
 
 scalaVersion := "2.10.3"
 
@@ -13,3 +15,5 @@ resolvers += "choco.repos" at "http://www.emn.fr/z-info/choco-repo/mvn/repositor
 lazy val graph = RootProject(file("../graph"))
 
 lazy val root = Project(id = "constraints", base = file(".")) dependsOn (graph)
+
+crossPaths := false

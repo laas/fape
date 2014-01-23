@@ -86,4 +86,19 @@ class STNSuite extends Suite {
     assert(stn.makespan == 10)
   }
 
+  def testEdgesSorted {
+    val stn = STN()
+
+    val u = stn.addVar()
+    val v = stn.addVar()
+    stn.addConstraint(u, v, 10)
+    stn.addConstraint(u, v, 100)
+    stn.addConstraint(u, v, 5)
+    println(stn.g.edges(u,v))
+    stn.g.edges(u, v).foldLeft(Int.MinValue)((max, e) => {
+      assert(max <= e.l, "the weight on the edges should be growing (since a constraint that does not reduces the value is useless and shouldn't be inserted to the graph")
+      e.l
+    })
+  }
+
 }
