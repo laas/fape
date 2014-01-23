@@ -11,6 +11,7 @@
 package fape.core.planning.stn;
 
 import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import fape.util.TinyLogger;
 
 import java.util.LinkedList;
@@ -50,6 +51,13 @@ public abstract class STNManager {
      */
     abstract public boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) ;
 
+    public boolean RemoveConstraint(int u, int v) {
+        throw new RuntimeException("Not Implemented");
+    }
+
+    public boolean RemoveConstraints(Pair<Integer, Integer>... ps) {
+        throw new RuntimeException("Not Implemented");
+    }
     /**
      *
      * @param first
