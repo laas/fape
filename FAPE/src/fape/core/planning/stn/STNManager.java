@@ -144,7 +144,7 @@ public class STNManager {
         for(int i = 0; i < n; i++){
             for(int j = i + 1; j < n; j++){
                 if(stn.ga(i, j) > stn.gb(i, j)){
-                    throw new FAPEException("Inconsistent STN.");
+                    throw new FAPEException("Inconsistent STN: "+stn.ga(i, j)+" > "+stn.gb(i, j));
                 }
             }
         }
@@ -171,5 +171,22 @@ public class STNManager {
 
     public long GetEarliestStartTime(TemporalVariable start) {
         return stn.ga(0, start.getID());
+    }
+
+    public TemporalVariable GetGlobalStart() {
+        return start;
+    }
+    
+    public TemporalVariable GetGlobalEnd() {
+        return end;
+    }
+
+    public boolean IsConsistent() {
+        try{
+            TestConsistent();
+            return true;
+        }catch(Exception e){
+            return false;
+        }
     }
 }

@@ -10,6 +10,7 @@
  */
 package fape.core.execution;
 
+import fLib.utils.io.FileHandling;
 import fape.core.acting.Actor;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.ANMLFactory;
@@ -29,6 +30,8 @@ import java.util.List;
  * @author FD
  */
 public class Executor {
+
+    public static int eventCounter = 0;
 
     Actor mActor;
     Listener mListener;
@@ -60,12 +63,40 @@ public class Executor {
     }
 
     /**
-     * performs the translation between openPRS and ANML model, with some message interpretatiton
+     * performs the translation between openPRS and ANML model, with some
+     * message interpretatiton
      *
      * @param message
      */
     public void eventReceived(String message) {
-        //throw new UnsupportedOperationException("Not yet implemented");
+        String tokens[] = message.split(" ");
+        String msgType = tokens[0].split("\\(")[1];
+        switch (msgType) {
+            case "PRS-Action-Report":
+                int actionID = Integer.parseInt(tokens[1]);
+                AtomicAction.EResult result = AtomicAction.EResult.valueOf((tokens[2]));
+                int realEndTime = Integer.parseInt(tokens[3]);
+                switch (result) {
+                    case SUCCESS:
+                        mActor.ReportSuccess(actionID, realEndTime);
+                        break;
+                    case FAILURE:
+                        mActor.ReportFailure(actionID);
+                        break;
+                    default:
+                        throw new FAPEException("Unknown result: " + result.name());
+                }
+                break;
+            case "PRS-ANML-Update":
+                String anmlBlock = message.split("\"")[1];
+                String logFileName = "msg_" + (eventCounter++) + ".log";
+                FileHandling.writeFileOutput(logFileName, anmlBlock);
+                ANMLBlock block = this.ProcessANMLfromFile(logFileName);
+                mActor.PushEvent(block);
+                break;
+            default:
+                throw new FAPEException("Unknown message type: " + msgType);
+        }
     }
 
     /**
@@ -73,17 +104,17 @@ public class Executor {
      *
      * @param acts
      */
-    public void executeAtomicActions(List<Pair<AtomicAction, Long>> acts) {
-        
-        for(Pair<AtomicAction, Long> p:acts){
-            String msg = "(FAPE-action "+
-                    p.value1.mID+" "+
-                    p.value2+" "+
-                    (p.value2+ p.value1.duration)+
-                    " "+
-                    p.value1.GetDescription()+
-                    ")\n";
+    public void executeAtomicActions(AtomicAction acts) {
+
+
+            String msg = "(FAPE-action "
+                    + acts.mID + " "
+                    + acts.mStartTime + " "
+                    + (acts.mStartTime + acts.duration)
+                    + " "
+                    + acts.GetDescription()
+                    + ")\n";
             this.mListener.sendMessage(msg);
-        }        
+
     }
 }

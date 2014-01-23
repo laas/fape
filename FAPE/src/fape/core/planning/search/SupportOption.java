@@ -41,7 +41,7 @@ public class SupportOption {
     /**
      *
      */
-    public Action actionToDecompose;
+    public int actionToDecompose = -1;
 
     /**
      *
@@ -60,7 +60,7 @@ public class SupportOption {
         } else if (supportingAction != null) {
             //this is a simple applciation of an action
             return "{ActionApplication "+supportingAction+"}";
-        } else if (actionToDecompose != null) {
+        } else if (actionToDecompose != -1) {
             // this is a task decomposition
             return "{ActionDecomposition "+actionToDecompose+"}";
         } else {

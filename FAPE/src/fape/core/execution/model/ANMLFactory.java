@@ -204,7 +204,10 @@ public class ANMLFactory {
 
     private static TemporalInterval parseInterval(Tree child) {
         TemporalInterval in = new TemporalInterval();
-        if (child.getChildCount() == 1) {
+        if (child.getChildCount() == 4 && child.getChild(1).getText().equals("TStart") && child.getChild(2).getText().equals("TEnd")) {
+            in.start = child.getChild(1).getChild(0).getText();
+            in.end = child.getChild(2).getChild(0).getText();
+        } else if (child.getChildCount() == 1) {
             in.start = child.getChild(0).getText();
             in.end = child.getChild(0).getText();
         } else {

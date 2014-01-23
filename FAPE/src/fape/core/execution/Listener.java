@@ -19,23 +19,24 @@ import java.net.Socket;
  * @author FD
  */
 public class Listener {
-    
+
     /**
      *
      * @param e
      */
-    public void bind(Executor e){
+    public void bind(Executor e) {
         exec = e;
     }
-    
+
     /**
+     * "name of the machine", "who am I talking to", "my name (fape)", "3300"
      *
      * @param oprs_host
      * @param oprs_manip
      * @param client_name
      * @param socket_mp
      */
-    public Listener(String oprs_host, String oprs_manip, String client_name, String socket_mp){
+    public Listener(String oprs_host, String oprs_manip, String client_name, String socket_mp) {
         connect(oprs_host, oprs_manip, client_name, socket_mp);
     }
 
@@ -142,6 +143,12 @@ public class Listener {
 
         public int ReadInt() {
             try {
+                /*byte[] from = new byte[4];
+                int ok = istream.read(from, 0, 4);
+                if (ok == -1) {
+                    throw new UnsupportedOperationException("Stream read failure.");
+                }*/
+
                 int b1 = istream.read();
                 int b2 = istream.read();
                 int b3 = istream.read();
@@ -165,6 +172,16 @@ public class Listener {
             try {
                 // At the very beginning, we receive four 0, so we get rid of them
                 // They correspond to the REGISTER_OK
+                /*while (true) {
+                    int read = istream.read();
+                    if (read == -1) {
+                        break;
+                    } else {
+                        System.out.println(read);
+                    }
+
+                }*/
+
                 int protocol = ReadInt();
                 // In fact, we should check that we are getting REGISTER_OK, otherwise something went wrong.
 
@@ -173,7 +190,6 @@ public class Listener {
                  * an int giving the length of the string for the sender, the sender's name (ascii),
                  * an int for the length of the message, and the message itself (ascii).
                  */
-
                 while (true) {
                     int froms = ReadInt();
                     char[] from = new char[froms];
@@ -192,7 +208,7 @@ public class Listener {
     }
 
     private void receivedMessage(String from, String message) {
-        TinyLogger.LogInfo("Message received: "+message);
+        TinyLogger.LogInfo("Message received: " + message);
         exec.eventReceived(message);
         //we intepret the message here
         //Calendar cal = Calendar.getInstance();
@@ -206,7 +222,7 @@ public class Listener {
      * @param msg The message to send
      */
     public int sendMessage(String msg) {
-        TinyLogger.LogInfo("Sending message: "+msg);
+        TinyLogger.LogInfo("Sending message: " + msg);
         /* The format of a message is :
          MessageType+sizeof(DestinationName)+DestinationName+sizeof(msg)+msg*/
         // This code works, but I am not sure why it is not using write_int and write_string above...

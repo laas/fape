@@ -12,6 +12,7 @@ package fape.core.planning.model;
 
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
+import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalConstraint;
 import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.states.State;
@@ -40,7 +41,8 @@ public class Action {
     /**
      *
      */
-    public float duration = -1.0f;
+    public float minDuration = -1.0f;
+    public float maxDuration = -1.0f;
 
     /**
      *
@@ -67,6 +69,8 @@ public class Action {
      */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
+    public List<Reference> constantParams;
+    public boolean removed = false;
 
     /**
      *
@@ -98,8 +102,10 @@ public class Action {
      */
     public Action DeepCopy() {
         Action a = new Action();
+        a.removed = this.removed;
         a.mID = mID;
         a.params = this.params;
+        a.constantParams = this.constantParams;
         if (this.decomposition == null) {
             a.decomposition = null;
         } else {
@@ -109,7 +115,8 @@ public class Action {
             }
         }
 
-        a.duration = this.duration;
+        a.minDuration = this.minDuration;
+        a.maxDuration = this.maxDuration;
         a.end = this.end;
         a.events = this.events;
         a.name = this.name;

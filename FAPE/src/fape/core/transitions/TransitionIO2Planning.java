@@ -233,16 +233,15 @@ public class TransitionIO2Planning {
      * @param state
      */
     /*public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
-        TemporalVariable vs = state.tempoNet.getNewTemporalVariable();
-        TemporalVariable ve = state.tempoNet.getNewTemporalVariable();
+     TemporalVariable vs = state.tempoNet.getNewTemporalVariable();
+     TemporalVariable ve = state.tempoNet.getNewTemporalVariable();
 
-        //TODO: include some other constraints on those two ...
-        ev.start = vs;
-        ev.end = ve;
+     //TODO: include some other constraints on those two ...
+     ev.start = vs;
+     ev.end = ve;
 
-        state.tempoNet.EnforceBefore(vs, ve);
-    }*/
-
+     state.tempoNet.EnforceBefore(vs, ve);
+     }*/
     /**
      * we take the statement on input and add it into the corresponding state
      * variable
@@ -279,10 +278,35 @@ public class TransitionIO2Planning {
         }
         TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, firstDomain, secondDomain);
         // statements at the start of the of the world
-        TemporalVariable tv = st.tempoNet.getNewTemporalVariable();
-        ev.start = tv;
-        ev.end = tv;
-        //AddTimePoints(ev, s, st);
+        TemporalVariable tvs = st.tempoNet.getNewTemporalVariable();
+        ev.start = tvs;
+        TemporalVariable tve = st.tempoNet.getNewTemporalVariable();
+        ev.end = tve;
+        st.tempoNet.EnforceBefore(tvs, tve);
+        switch (s.interval.start) {
+            case "TStart":
+                break;
+            case "TEnd":
+                st.tempoNet.EnforceConstraint(tvs, tve, 0, 0);
+                break;
+            default:
+                //number
+                int time = Integer.parseInt(s.interval.start);
+                st.tempoNet.EnforceConstraint(st.tempoNet.GetGlobalStart(), tvs, time, time);
+                break;
+        }
+        switch (s.interval.end) {
+            case "TEnd":
+                break;
+            case "TStart":
+                st.tempoNet.EnforceConstraint(tvs, tve, 0, 0);
+                break;
+            default:
+                //number
+                int time = Integer.parseInt(s.interval.end);
+                st.tempoNet.EnforceConstraint(st.tempoNet.GetGlobalStart(), tve, time, time);
+                break;
+        }
 
         //add the event to the database
         db.AddEvent(ev);

@@ -15,6 +15,9 @@ import fape.core.planning.model.StateVariable;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,7 +80,7 @@ public class TemporalDatabaseManager {
                 e.mDatabase = tdb;
             }
         }
-        
+
         tdb.actionAssociations.putAll(consumer.actionAssociations);
 
         //propagate merge into the constraints
@@ -90,12 +93,49 @@ public class TemporalDatabaseManager {
         String ret = "";
 
         ret += "  size: " + this.vars.size() + "\n";
-        for(TemporalDatabase b:vars){
+        for (TemporalDatabase b : vars) {
             ret += b.Report();
         }
         ret += "\n";
-        
+
         return ret;
 
     }
+/*
+    public void SplitDatabase(TemporalEvent t) {
+        TemporalDatabase theDatabase = t.mDatabase;
+        if (t instanceof TransitionEvent) {
+            int ct = 0;
+            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
+                if (comp.contents.getFirst().mID == t.mID) {
+                    TemporalDatabase one = theDatabase;
+                    if (ct + 1 < theDatabase.chain.size()) {
+                        //this was not the last element, we need to create another database and make split
+                        GetNewDatabase()
+                                
+                    }
+                }
+                ct++;
+            }
+        } else if (t instanceof PersistenceEvent) {
+            TemporalDatabase.ChainComponent theComponent = null;
+            TemporalEvent theEvent = null;
+            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
+                for (TemporalEvent e : comp.contents) {
+                    if (e.mID == t.mID) {
+                        theComponent = comp;
+                        theEvent = e;
+                    }
+                }
+            }
+            if (theComponent.contents.size() == 1) {
+                theDatabase.chain.remove(theComponent);
+            } else {
+                theComponent.contents.remove(theEvent);
+            }
+        } else {
+            throw new FAPEException("Unknown event type.");
+        }
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }*/
 }

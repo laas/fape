@@ -20,6 +20,9 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
  */
 public abstract class TemporalEvent {
 
+    public static int counter = 0;
+    public int mID = -1;
+    
     //public ObjectVariable objectVar;
     /*public enum ETemporalEventType{
      CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
