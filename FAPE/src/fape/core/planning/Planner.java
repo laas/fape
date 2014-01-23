@@ -317,7 +317,11 @@ public class Planner {
     }
 
     public void AddActionEnding(int actionID, int realEndTime) {
+        State bestState = GetCurrentState();
+        Action a = bestState.taskNet.GetAction(actionID);
+        bestState.tempoNet.OverrideConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
         TinyLogger.LogInfo("Here we should take into account the new ending of an action and introduce it into the plan.");
+        
     }
 
     /**
@@ -601,6 +605,9 @@ public class Planner {
         List<Action> l = myState.taskNet.GetAllActions();
         for (Action a : l) {
             long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
+            if(startTime > howFarToProgress.val){
+                continue;
+            }
             AtomicAction aa = new AtomicAction();
             aa.mStartTime = (int) startTime;
             aa.mID = a.mID;
@@ -609,6 +616,14 @@ public class Planner {
             aa.params = a.ProduceParameters(myState);
             ret.add(aa);
         }
+        
+        Collections.sort(ret, new Comparator<AtomicAction>() {
+                            @Override
+                            public int compare(AtomicAction o1, AtomicAction o2) {
+                                return (int) (o1.mStartTime - o2.mStartTime);
+                            }
+                        });
+        
         return ret;
     }
 

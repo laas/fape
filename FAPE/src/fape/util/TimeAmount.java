@@ -23,5 +23,5 @@ public class TimeAmount {
     public TimeAmount(long tp) {
         val = tp;
     }
-    long val;
+    public long val;
 }

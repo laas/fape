@@ -81,4 +81,6 @@ public abstract class STNManager {
     abstract public TemporalVariable GetGlobalEnd();
 
     abstract public boolean IsConsistent();
+
+    public abstract void OverrideConstraint(TemporalVariable GetGlobalStart, TemporalVariable end, int realEndTime, int realEndTime0);
 }
