@@ -13,8 +13,6 @@ package fape.core.planning.stn;
 import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  *
@@ -23,12 +21,13 @@ import java.util.List;
 public class STNManagerOrig extends STNManager {
 
     STN stn = new STN();
-    TemporalVariable start, end; //global start and end of the world   
+    //TemporalVariable start, end; //global start and end of the world   
     //List<TemporalVariable> variables = new LinkedList<>();
 
     /**
      *
      */
+    @Override
     public void Init() {
         if (STN.precalc == null) {
             STN.precalc_inic();
@@ -56,6 +55,7 @@ public class STNManagerOrig extends STNManager {
      * @param a
      * @param b
      */
+    @Override
     public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
         TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" < "+b.getID());
         stn.eless(a.getID(), b.getID());
@@ -69,6 +69,7 @@ public class STNManagerOrig extends STNManager {
      * @param max
      * @return
      */
+    @Override
     public final boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) {
         TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" ["+min+","+max+"] "+b.getID());
         if (stn.edge_consistent(a.getID(), b.getID(), min, max)) {
@@ -85,6 +86,7 @@ public class STNManagerOrig extends STNManager {
      * @param second
      * @return
      */
+    @Override
     public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second) {
         boolean ret = stn.pless(first.getID(), second.getID());
         TinyLogger.LogInfo("STN: "+first.getID()+" can occour before "+second.getID());
@@ -95,6 +97,7 @@ public class STNManagerOrig extends STNManager {
      *
      * @return
      */
+    @Override
     public TemporalVariable getNewTemporalVariable() {
         // allocate new space if we are running out of it
         /*if(stn.capacity - 1 == stn.top){
@@ -115,6 +118,7 @@ public class STNManagerOrig extends STNManager {
      *
      * @return
      */
+    @Override
     public STNManager DeepCopy() {
         STNManagerOrig nm = new STNManagerOrig();
         nm.end = this.end;
@@ -123,6 +127,7 @@ public class STNManagerOrig extends STNManager {
         return nm;
     }
 
+    @Override
     public String Report() {
         String ret = "size: "+this.stn.top+"\n";
         int n = this.stn.top;
@@ -139,6 +144,7 @@ public class STNManagerOrig extends STNManager {
         return ret;
     }
 
+    @Override
     public void TestConsistent(){
         int n = this.stn.top;
         for(int i = 0; i < n; i++){
@@ -169,18 +175,22 @@ public class STNManagerOrig extends STNManager {
         int xx = 0;
     }
 
+    @Override
     public long GetEarliestStartTime(TemporalVariable start) {
         return stn.ga(0, start.getID());
     }
 
+    @Override
     public TemporalVariable GetGlobalStart() {
         return start;
     }
 
+    @Override
     public TemporalVariable GetGlobalEnd() {
         return end;
     }
 
+    @Override
     public boolean IsConsistent() {
         try{
             TestConsistent();

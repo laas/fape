@@ -59,11 +59,11 @@ public class FAPE {
         if (FAPE.localTesting) {
             //pushing the initial event
             a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
-            a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\IntervalTest.anml"));
+            //a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\IntervalTest.anml"));
             p.Init();
             a.run();
         } else {
-            int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
+            //int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
             p.Init();
             a.run();
         }

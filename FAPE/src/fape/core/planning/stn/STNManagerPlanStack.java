@@ -8,12 +8,13 @@ import fape.util.TinyLogger;
 public class STNManagerPlanStack extends STNManager {
 
     STN stn = new STNIncBellmanFord();
-    TemporalVariable start, end; //global start and end of the world
+    //TemporalVariable start, end; //global start and end of the world
     //List<TemporalVariable> variables = new LinkedList<>();
 
     /**
      *
      */
+    @Override
     public void Init() {
         start = new TemporalVariable(); //0
         start.mID = stn.start();
@@ -33,6 +34,7 @@ public class STNManagerPlanStack extends STNManager {
      * @param a
      * @param b
      */
+    @Override
     public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
         TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" < "+b.getID());
         stn.enforceBefore(a.getID(), b.getID());
@@ -46,6 +48,7 @@ public class STNManagerPlanStack extends STNManager {
      * @param max
      * @return
      */
+    @Override
     public final boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) {
         STN backup = stn.cc();
         TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" ["+min+","+max+"] "+b.getID());
@@ -64,6 +67,7 @@ public class STNManagerPlanStack extends STNManager {
      * @param second
      * @return
      */
+    @Override
     public final boolean CanBeBefore(TemporalVariable first, TemporalVariable second) {
         boolean ret = stn.canBeBefore(first.getID(), second.getID());
         TinyLogger.LogInfo("STN: "+first.getID()+" can occur before "+second.getID());
@@ -74,6 +78,7 @@ public class STNManagerPlanStack extends STNManager {
      *
      * @return
      */
+    @Override
     public TemporalVariable getNewTemporalVariable() {
         TemporalVariable tv = new TemporalVariable();
         tv.mID = stn.addVar();
@@ -84,6 +89,7 @@ public class STNManagerPlanStack extends STNManager {
      *
      * @return
      */
+    @Override
     public STNManager DeepCopy() {
         STNManagerPlanStack nm = new STNManagerPlanStack();
         nm.end = this.end;
@@ -92,30 +98,36 @@ public class STNManagerPlanStack extends STNManager {
         return nm;
     }
 
+    @Override
     public String Report() {
         String ret = "size: "+this.stn.size()+"\n";
         ret += stn.g().edges().mkString("\n");
         return ret;
     }
 
+    @Override
     public void TestConsistent(){
         if(!stn.consistent())
             throw new RuntimeException("Inconsistent STN:");
     }
 
 
+    @Override
     public long GetEarliestStartTime(TemporalVariable start) {
         return stn.earliestStart(start.getID());
     }
 
+    @Override
     public TemporalVariable GetGlobalStart() {
         return start;
     }
 
+    @Override
     public TemporalVariable GetGlobalEnd() {
         return end;
     }
 
+    @Override
     public boolean IsConsistent() {
         try{
             TestConsistent();
