@@ -4,6 +4,7 @@ package fape.core.planning.stn;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
 import fape.util.TinyLogger;
+import fape.util.Pair;
 
 public class STNManagerPlanStack extends STNManager {
 
@@ -59,6 +60,33 @@ public class STNManagerPlanStack extends STNManager {
             stn = backup;
             return false;
         }
+    }
+
+    /**
+     * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
+     * Performs a consistency check from scratch (expensive, try to use removeConstraints if you are to remove
+     * more than one constraint)
+     * @param u
+     * @param v
+     * @return true if the STN is consistent after removal
+     */
+    @Override
+    public boolean RemoveConstraint(int u, int v) {
+        return stn.removeConstraint(u, v);
+    }
+
+    /**
+     * For all pairs, remove the corresponding directed edge in the constraint graph. After every pair is removed,
+     * a consistency check is performed from scratch.
+     * @param ps
+     * @return true if the STN is consistent after removal
+     */
+    @Override
+    public boolean RemoveConstraints(Pair<Integer, Integer>... ps) {
+        for(Pair<Integer, Integer> p : ps) {
+            stn.removeConstraintUnsafe(p.value1, p.value2);
+        }
+        return stn.checkConsistencyFromScratch();
     }
 
     /**
