@@ -309,6 +309,9 @@ public class Planner {
         } else {
             State bestState = GetCurrentState();
             Action remove = bestState.taskNet.GetAction(pop);
+            if(remove == null){
+                throw new FAPEException("Unknown action.");
+            }
             for (TemporalEvent t : remove.events) {
                 bestState.SplitDatabase(t);
             }
@@ -320,7 +323,7 @@ public class Planner {
         State bestState = GetCurrentState();
         Action a = bestState.taskNet.GetAction(actionID);
         bestState.tempoNet.OverrideConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
-        TinyLogger.LogInfo("Here we should take into account the new ending of an action and introduce it into the plan.");
+        TinyLogger.LogInfo("Overriding constraint.");
         
     }
 

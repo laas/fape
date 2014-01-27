@@ -42,8 +42,8 @@ public class FAPE {
             Planner.debugging = true;
             Planner.logging = true;
             Planner.actionResolvers = true;
-            FAPE.localTesting = true;
-            FAPE.runListener = false;
+            FAPE.localTesting = false;
+            FAPE.runListener = true;
             e = new Executor();
             if (FAPE.runListener) {
                 l = new Listener("bobc1", "PR2", "FAPE", "3300");
@@ -63,7 +63,7 @@ public class FAPE {
             p.Init();
             a.run();
         } else {
-            //int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
+            int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
             p.Init();
             a.run();
         }

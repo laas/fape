@@ -207,6 +207,10 @@ public class Listener {
         }
     }
 
+    public void SimulateMessageReceived(String msg){
+        receivedMessage("", msg);
+    }
+    
     private void receivedMessage(String from, String message) {
         TinyLogger.LogInfo("Message received: " + message);
         exec.eventReceived(message);

@@ -61,7 +61,6 @@ public class Actor {
     List<AtomicAction> actionsToDispatch = new LinkedList<>();
     LinkedList<Integer> failures = new LinkedList<>();
     boolean planReady = false;
-    
 
     /**
      *
@@ -69,11 +68,20 @@ public class Actor {
     public LinkedList<ANMLBlock> newEventBuffer = new LinkedList<>();
     public HashMap<Integer, String> idToSignature = new HashMap<>();
     HashSet<String> successfulActions = new HashSet<>();
+    HashSet<Integer> dispatchedActions = new HashSet<>();
+    List<AtomicAction> actionsBeingExecuted = new LinkedList<>();
 
     public void ReportSuccess(int actionID, int realEndTime) {
         planNeedsRepair = true;
         successfulActions.add(idToSignature.get(actionID));
-        mPlanner.AddActionEnding(actionID, realEndTime-currentDelay);
+        AtomicAction act = null;
+        for (AtomicAction a : actionsBeingExecuted) {
+            if (a.mID == actionID) {
+                act = a;
+            }
+        }
+        actionsBeingExecuted.remove(act);
+        mPlanner.AddActionEnding(actionID, realEndTime - currentDelay);
     }
 
     public void ReportFailure(int actionID) {
@@ -107,15 +115,14 @@ public class Actor {
      * @throws java.lang.InterruptedException
      */
     public void run() throws InterruptedException {
-        int timeZero = (int) (System.currentTimeMillis() / 1000);        
+        int timeZero = (int) (System.currentTimeMillis() / 1000);
+
+        int successReportOne = timeZero + 5;
+        int firstFailureTime = timeZero + 6;
+        int newStatementTime = timeZero + 7;
+
         while (true) {
             switch (mState) {
-                /*case ENDING:
-                 end = true;
-                 case STOPPED:
-                 Thread.sleep(sleepTime);
-                 //mState = EActorState.ACTING;
-                 break;*/
                 case ACTING:
                     int now = (int) (System.currentTimeMillis() / 1000);
                     if (!failures.isEmpty()) {
@@ -133,22 +140,32 @@ public class Actor {
                     if (planNeedsRepair) {
                         planNeedsRepair = false;
                         mPlanner.Repair(new TimeAmount(repairTime));
-                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now-timeZero-currentDelay+progressStep), new TimeAmount(repairTime));
+                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero - currentDelay + progressStep), new TimeAmount(repairTime));
                         actionsToDispatch = new LinkedList<>(scheduledActions);
                     }
                     List<AtomicAction> remove = new LinkedList<>();
                     for (AtomicAction a : actionsToDispatch) {
-                        if (a.mStartTime + timeZero + currentDelay < now && !successfulActions.contains(idToSignature.get(a.mID))) {
+                        if (a.mStartTime + timeZero + currentDelay < now && !successfulActions.contains(idToSignature.get(a.mID)) && !dispatchedActions.contains(a.mID)) {
                             idToSignature.put(a.mID, a.GetDescription());
                             if ((now - timeZero) - a.mStartTime > currentDelay) {
                                 currentDelay = (now - timeZero) - a.mStartTime;
                             }
                             a.mStartTime = (int) (currentDelay + a.mStartTime);
                             mExecutor.executeAtomicActions(a);
+                            dispatchedActions.add(a.mID);
+                            actionsBeingExecuted.add(a);
                             remove.add(a);
                         }
                     }
                     actionsToDispatch.removeAll(remove);
+                    remove.clear();
+                    for (AtomicAction a : actionsBeingExecuted) {
+                        if (a.duration + a.mStartTime + timeZero < now) {
+                            ReportFailure(a.mID);
+                            remove.add(a);
+                        }
+                    }
+                    actionsBeingExecuted.removeAll(remove);
                     Thread.sleep(sleepTime);
                     break;
             }

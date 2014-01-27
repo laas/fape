@@ -164,4 +164,10 @@ public class STNManagerPlanStack extends STNManager {
             return false;
         }
     }
+
+    @Override
+    public void OverrideConstraint(TemporalVariable GetGlobalStart, TemporalVariable end, int realEndTime, int realEndTime0) {
+        stn.removeConstraint(GetGlobalStart.getID(), end.getID());
+        stn.addConstraintFast(GetGlobalStart.getID(), end.getID(), realEndTime);
+    }
 }
