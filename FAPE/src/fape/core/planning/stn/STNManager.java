@@ -55,7 +55,7 @@ public abstract class STNManager {
         throw new RuntimeException("Not Implemented");
     }
 
-    public boolean RemoveConstraints(Pair<Integer, Integer>... ps) {
+    public boolean RemoveConstraints(Pair<TemporalVariable, TemporalVariable>... ps) {
         throw new RuntimeException("Not Implemented");
     }
     /**
