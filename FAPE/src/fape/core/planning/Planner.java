@@ -304,6 +304,7 @@ public class Planner {
      * @param pop
      */
     public void FailAction(Integer pop) {
+        KeepBestStateOnly();
         if (best == null) {
             throw new FAPEException("No current state.");
         } else {
@@ -319,12 +320,22 @@ public class Planner {
         }
     }
 
+    /**
+     * Set the action ending to the its real end time.
+     * It removes the duration constraints between the starts and the end of the action (as given by the duration anml variable).
+     * Adds a new constraint [realEndTime, realEndtime] between the global start and the end of action time points.
+     * @param actionID
+     * @param realEndTime
+     */
     public void AddActionEnding(int actionID, int realEndTime) {
+        KeepBestStateOnly();
         State bestState = GetCurrentState();
         Action a = bestState.taskNet.GetAction(actionID);
-        bestState.tempoNet.OverrideConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
+        // remove the duration constraints of the action
+        bestState.tempoNet.RemoveConstraints(new Pair(a.start, a.end), new Pair(a.end, a.start));
+        // insert new constraint specifying the end time of the action
+        bestState.tempoNet.EnforceConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
-        
     }
 
     /**
@@ -372,6 +383,19 @@ public class Planner {
      */
     public State GetCurrentState() {
         return best;
+    }
+
+
+    /**
+     * Remove all states in the queues except for the best one (which is stored in best).
+     * This is to be used when updating the problem to make sure we don't keep any outdated states.
+     */
+    public void KeepBestStateOnly() {
+        if(best == null) {
+            throw new FAPEException("No known best state.");
+        }
+        queue.Clear();
+        queue.Add(best);
     }
     /*
      private boolean dfsRec(State st) {
@@ -511,12 +535,12 @@ public class Planner {
      * @param forHowLong
      */
     public void Repair(TimeAmount forHowLong) {
+        KeepBestStateOnly();
         best = aStar(forHowLong);
         //dfs(forHowLong);
 
         //we empty the queue now and leave only the best state there
-        queue.Clear();
-        queue.Add(best);
+        KeepBestStateOnly();
     }
 
     /**
@@ -646,6 +670,10 @@ public class Planner {
      */
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
+        if(logging) {
+            TinyLogger.LogInfo("Forcing new fact into best state.");
+        }
+        KeepBestStateOnly();
 
         //TODO: apply ANML to more states and choose the best after the applciation
         State st = GetCurrentState();

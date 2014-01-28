@@ -82,9 +82,9 @@ public class STNManagerPlanStack extends STNManager {
      * @return true if the STN is consistent after removal
      */
     @Override
-    public boolean RemoveConstraints(Pair<Integer, Integer>... ps) {
-        for(Pair<Integer, Integer> p : ps) {
-            stn.removeConstraintUnsafe(p.value1, p.value2);
+    public boolean RemoveConstraints(Pair<TemporalVariable, TemporalVariable>... ps) {
+        for(Pair<TemporalVariable, TemporalVariable> p : ps) {
+            stn.removeConstraintUnsafe(p.value1.getID(), p.value2.getID());
         }
         return stn.checkConsistencyFromScratch();
     }
@@ -135,8 +135,9 @@ public class STNManagerPlanStack extends STNManager {
 
     @Override
     public void TestConsistent(){
-        if(!stn.consistent())
+        if(!stn.consistent()) {
             throw new RuntimeException("Inconsistent STN:");
+        }
     }
 
 
@@ -166,8 +167,9 @@ public class STNManagerPlanStack extends STNManager {
     }
 
     @Override
-    public void OverrideConstraint(TemporalVariable GetGlobalStart, TemporalVariable end, int realEndTime, int realEndTime0) {
-        stn.removeConstraint(GetGlobalStart.getID(), end.getID());
-        stn.addConstraintFast(GetGlobalStart.getID(), end.getID(), realEndTime);
+    public void OverrideConstraint(TemporalVariable start, TemporalVariable end, int realEndTime, int realEndTime0) {
+        stn.removeConstraint(start.getID(), end.getID());
+        stn.removeConstraint(end.getID(), start.getID());
+        stn.addConstraint(start.getID(), end.getID(), realEndTime);
     }
 }

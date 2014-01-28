@@ -18,12 +18,13 @@ import fape.core.execution.model.AtomicAction;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimePoint;
+import fape.util.TinyLogger;
 import gov.nasa.anml.Main;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.Tree;
 
 import java.io.IOException;
-import java.util.List;
+
 
 /**
  *
@@ -35,6 +36,9 @@ public class Executor {
 
     Actor mActor;
     Listener mListener;
+
+    // TODO: use regexp to parse messaged
+    //Pattern failurePattern = Pattern.compile("\\(PRS-Action-Report (\\d+) FAILURE (\\d+) \"([^\"]*)\" \"([^\"]*)\"\\).*");
 
     /**
      *
@@ -80,7 +84,18 @@ public class Executor {
                     case SUCCESS:
                         mActor.ReportSuccess(actionID, realEndTime);
                         break;
-                    case FAILURE:
+                    case FAILURE: // format = (PRS-Action-Report actionID FAILURE endTime "human readable comment" "anml block")
+                        if(message.split("\"").length == 5) {
+                            // this message contains an ANML block
+                            String anmlBlock = message.split("\"")[3];
+                            System.out.println(anmlBlock);
+                            String logFileName = "msg_" + (eventCounter++) + ".log";
+                            FileHandling.writeFileOutput(logFileName, anmlBlock);
+                            ANMLBlock block = this.ProcessANMLfromFile(logFileName);
+                            mActor.PushEvent(block);
+                        } else {
+                            TinyLogger.LogInfo("No ANML block attached to this failure message");
+                        }
                         mActor.ReportFailure(actionID);
                         break;
                     default:

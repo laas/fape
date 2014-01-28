@@ -212,6 +212,7 @@ public class Listener {
     }
     
     private void receivedMessage(String from, String message) {
+        message = message.replaceAll("\\\\n", "\n");
         TinyLogger.LogInfo("Message received: " + message);
         exec.eventReceived(message);
         //we intepret the message here
