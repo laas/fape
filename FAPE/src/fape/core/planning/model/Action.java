@@ -35,6 +35,8 @@ import java.util.List;
  */
 public class Action {
 
+    public enum Status { FAILED, EXECUTED, EXECUTING, PENDING; }
+
     public static int idCounter = 0;
     public int mID = idCounter++;
 
@@ -70,7 +72,8 @@ public class Action {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
-    public boolean removed = false;
+    //public boolean removed = false;
+    public Status status = Status.PENDING;
 
     /**
      *
@@ -102,7 +105,7 @@ public class Action {
      */
     public Action DeepCopy() {
         Action a = new Action();
-        a.removed = this.removed;
+        a.status = this.status;
         a.mID = mID;
         a.params = this.params;
         a.constantParams = this.constantParams;
@@ -125,10 +128,10 @@ public class Action {
         return a;
     }
 
-    public IUnifiable GetUnifiableComponent(AbstractAction.SharedParameterStruct get) {
+    public IUnifiable GetUnifiableComponent(State st, AbstractAction.SharedParameterStruct get) {
         TemporalEvent e = events.get(get.relativeEventIndex);
         if (get.type == UnificationConstraintSchema.EConType.EVENT) {
-            return e.mDatabase;
+            return st.tdb.GetDB(e.tdbID);
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof TransitionEvent) {
             return ((TransitionEvent) e).from;
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {

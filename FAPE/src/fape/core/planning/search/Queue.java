@@ -48,6 +48,7 @@ public class Queue {
             }
         }
         list.remove(best);
+        System.out.println("COSTSSSSS: "+ best.GetCurrentCost() + "   --  "+best.GetGoalDistance());
         return best;
     }
 

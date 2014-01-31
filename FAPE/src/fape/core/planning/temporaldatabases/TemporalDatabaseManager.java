@@ -48,6 +48,14 @@ public class TemporalDatabaseManager {
         return db;
     }
 
+    public TemporalDatabase GetDB(int tdbID) {
+        for(TemporalDatabase db : vars) {
+            if(db.mID == tdbID)
+                return db;
+        }
+        throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+Report());
+    }
+
     /**
      *
      * @param m
@@ -71,13 +79,23 @@ public class TemporalDatabaseManager {
      * @param consumer
      */
     public void Merge(State st, TemporalDatabase tdb, TemporalDatabase consumer) {
+        st.StrongCheck();
+
+        if(!st.tdb.vars.contains(consumer))
+            throw new FAPEException("Something is strange the consumer tdb is not in vars");
+        System.err.println("MERGING BEFORE");
+        System.err.println(Report());
         // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
         // also intersecting the domains
         tdb.domain.retainAll(consumer.domain);
 
+        if(consumer.mID == 15) {
+            int i = 0;
+        }
+
         for (TemporalDatabase.ChainComponent comp : tdb.chain) {
             for (TemporalEvent e : comp.contents) {
-                e.mDatabase = tdb;
+                e.tdbID = tdb.mID;
             }
         }
 
@@ -87,6 +105,10 @@ public class TemporalDatabaseManager {
         st.conNet.Merge(tdb, consumer);
         st.tdb.vars.remove(consumer);
 
+        System.err.println("MERGING AFTER");
+        System.err.println(Report());
+
+        st.StrongCheck();
     }
 
     public String Report() {

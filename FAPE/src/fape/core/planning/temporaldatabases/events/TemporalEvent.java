@@ -41,7 +41,7 @@ public abstract class TemporalEvent {
     /**
      *
      */
-    public TemporalDatabase mDatabase = null;
+    public int tdbID = 0;
 
     //public ObjectVariable objectVar;
     /**

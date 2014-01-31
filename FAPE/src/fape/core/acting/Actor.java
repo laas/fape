@@ -49,7 +49,7 @@ public class Actor {
         mPlanner = p;
     }
     long sleepTime = 100;
-    long repairTime = 5000;
+    long repairTime = 10;
     long progressTime = 10000;
     long progressStep = 5000;
     int currentDelay = 0;
@@ -81,7 +81,7 @@ public class Actor {
             }
         }
         actionsBeingExecuted.remove(act);
-        mPlanner.AddActionEnding(actionID, realEndTime - currentDelay);
+        mPlanner.AddActionEnding(actionID, realEndTime);
     }
 
     public void ReportFailure(int actionID) {
@@ -139,6 +139,7 @@ public class Actor {
                     }
                     if (planNeedsRepair) {
                         planNeedsRepair = false;
+                        mPlanner.SetEarliestExecution((int) (now - timeZero + repairTime));
                         mPlanner.Repair(new TimeAmount(repairTime));
                         List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero - currentDelay + progressStep), new TimeAmount(repairTime));
                         actionsToDispatch = new LinkedList<>(scheduledActions);

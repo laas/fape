@@ -93,6 +93,7 @@ public class State {
         if (Planner.debugging) {
             st.tempoNet.TestConsistent();
             st.conNet.CheckConsistency();
+            st.StrongCheck();
         }
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         taskNet = st.taskNet.DeepCopy();
@@ -105,7 +106,13 @@ public class State {
         if (Planner.debugging) {
             st.conNet.CheckConsistency();
             tempoNet.TestConsistent();
+            try {
+                this.StrongCheck();
+            } catch (FAPEException e) {
+                System.out.println("BREAK");
+            }
         }
+
     }
 
     /**
@@ -170,12 +177,12 @@ public class State {
         throw new FAPEException("Reference to unknown database.");
     }
 
-    public void RemoveAction(Integer pop) {
-        taskNet.RemoveAction(pop);
+    public void FailAction(Integer pop) {
+        taskNet.FailAction(pop);
     }
 
     public void SplitDatabase(TemporalEvent t) {
-        TemporalDatabase theDatabase = t.mDatabase;
+        TemporalDatabase theDatabase = tdb.GetDB(t.tdbID);
         if (t instanceof TransitionEvent) {
             int ct = 0;
             for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
@@ -195,7 +202,7 @@ public class State {
                             TemporalDatabase.ChainComponent pc = origComp.DeepCopy(conNet);
                             newDB.chain.add(pc);
                             for (TemporalEvent eve : pc.contents) {
-                                eve.mDatabase = newDB;
+                                eve.tdbID = newDB.mID;
                             }
                         }
                         this.consumers.add(newDB);
@@ -232,5 +239,9 @@ public class State {
         } else {
             throw new FAPEException("Unknown event type.");
         }
+    }
+
+    public void StrongCheck() {
+        this.taskNet.CheckEventDBBindings(this);
     }
 }

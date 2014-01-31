@@ -26,7 +26,7 @@ public abstract class STNManager {
     public static STNManager newInstance() {
         return new STNManagerPlanStack();
     }
-    TemporalVariable start, end; //global start and end of the world   
+    TemporalVariable start, end, earliestExecution; //global start and end of the world
     //List<TemporalVariable> variables = new LinkedList<>();
 
     /**
@@ -40,6 +40,14 @@ public abstract class STNManager {
      * @param b
      */
     abstract public void EnforceBefore(TemporalVariable a, TemporalVariable b) ;
+
+    /**
+     * Enforces that b must happens at least minDelay after a
+     * @param a
+     * @param b
+     * @param minDelay
+     */
+    abstract public void EnforceDelay(TemporalVariable a, TemporalVariable b, int minDelay);
 
     /**
      *
@@ -84,9 +92,17 @@ public abstract class STNManager {
 
     abstract public long GetEarliestStartTime(TemporalVariable start);
 
-    abstract public TemporalVariable GetGlobalStart();
+    public TemporalVariable GetGlobalStart() {
+        return start;
+    }
 
-    abstract public TemporalVariable GetGlobalEnd();
+    public TemporalVariable GetGlobalEnd() {
+        return end;
+    }
+
+    public TemporalVariable GetEarliestExecution() {
+        return earliestExecution;
+    }
 
     abstract public boolean IsConsistent();
 
