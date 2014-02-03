@@ -15,11 +15,13 @@ import fape.core.execution.model.TemporalConstraint;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.Action;
 import fape.core.planning.search.SupportOption;
+import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import fape.util.TinyLogger;
+
+import java.util.*;
 
 /**
  *
@@ -108,14 +110,17 @@ public class TaskNetworkManager {
         return ret;
     }
 
+
     /**
-     *
+     * Performs recursively a deep copy on the task network manager and all its
+     * actions. Events in actions are changed to those in clonedEvents.
+     * @param clonedEvents
      * @return
      */
-    public TaskNetworkManager DeepCopy() {
+    public TaskNetworkManager DeepCopy(List<TemporalEvent> clonedEvents) {
         TaskNetworkManager tm = new TaskNetworkManager();
         for (Action a : this.roots) {
-            tm.roots.add(a.DeepCopy());
+            tm.roots.add(a.DeepCopy(clonedEvents));
         }
         return tm;
     }
@@ -161,17 +166,17 @@ public class TaskNetworkManager {
     /**
      * returns the action with the given id
      *
-     * @param actionToDecompose
+     * @param id Id of the action
      * @return
      */
-    public Action GetAction(int actionToDecompose) {
+    public Action GetAction(int id) {
         LinkedList<Action> qu = new LinkedList<>();
         for (Action a : roots) {
             qu.add(a);
         }
         while (!qu.isEmpty()) {
             Action a = qu.pop();
-            if (a.mID == actionToDecompose && !a.removed) {
+            if (a.mID == id) {
                 return a;
             }
             if (a.decomposition != null) {
@@ -187,23 +192,50 @@ public class TaskNetworkManager {
      * flips the "removed" switch on an action, since the action failed we do
      * not consider it to ba a part of plan anymore
      *
-     * @param pop the id of the action
+     * @param id the id of the action
      */
-    public void RemoveAction(Integer pop) {
-        LinkedList<Action> qu = new LinkedList<>();
-        for (Action a : roots) {
-            qu.add(a);
-        }
-        while (!qu.isEmpty()) {
-            Action a = qu.pop();
-            if (a.mID == pop) {
-                a.removed = true;
+    public void FailAction(Integer id) {
+        Action a = GetAction(id);
+        if(a != null)
+            a.status = Action.Status.FAILED;
+        else
+            throw new FAPEException("Unable to fail action: id "+id+" does not exist.");
+    }
+
+    public void SetActionSuccess(Integer id) {
+        Action a = GetAction(id);
+        if(a != null) {
+            if(a.status != Action.Status.EXECUTING)
+                TinyLogger.LogInfo("WARNING: setting action' status to EXECUTED while its current status is not EXECUTING");
+            a.status = Action.Status.EXECUTED;
+        } else
+            throw new FAPEException("Unable to report success of action: id "+id+" does not exist.");
+
+    }
+
+    public void SetActionExecuting(Integer id) {
+        Action a = GetAction(id);
+        if(a != null) {
+            if(a.status != Action.Status.PENDING)
+                TinyLogger.LogInfo("WARNING: setting action' status to EXECUTING while its current status is not PENDING");
+            a.status = Action.Status.EXECUTING;
+        } else
+            throw new FAPEException("Unable to report execution of action: id "+id+" does not exist.");
+
+    }
+
+    /**
+     * Checks that all events in the task network points to existing databases
+     * @param st
+     */
+    public void CheckEventDBBindings(State st) {
+        System.err.println(Report());
+        for(Action a : GetAllActions()) {
+            for(TemporalEvent e : a.events) {
+                if(!st.tdb.vars.contains(st.tdb.GetDB(e.tdbID)))
+                    throw new FAPEException("Database "+e.tdbID+" from event "+e+" is not contained in the tdb listing. Action containing the event: "+a);
             }
-            if (a.decomposition != null) {
-                for (Action b : a.decomposition) {
-                    qu.add(b);
-                }
-            }
         }
+
     }
 }

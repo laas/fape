@@ -44,7 +44,7 @@ public class TemporalDatabase extends IUnifiable {
         String ret = "";
         //ret += "{\n";
 
-        ret += "    " + this.domain + "\n";
+        ret += "    " + this.domain + "  :  id="+mID+"\n";
         for (ChainComponent c : chain) {
             for (TemporalEvent e : c.contents) {
                 ret += "    " + e.Report();
@@ -304,7 +304,7 @@ public class TemporalDatabase extends IUnifiable {
 
         private void SetDatabase(TemporalDatabase db) {
             for (TemporalEvent e : contents) {
-                e.mDatabase = db;
+                e.tdbID = db.mID;
             }
         }
     }

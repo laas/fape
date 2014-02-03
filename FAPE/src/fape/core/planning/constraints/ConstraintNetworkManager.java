@@ -70,11 +70,8 @@ public class ConstraintNetworkManager {
 
     boolean AC3_Revise(UnificationConstraint u) {
         boolean reduced = false;
-        try {
-            reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
-        } catch (Exception e) {
-            int xx = 0;
-        }
+        reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
+        // TODO: this second reduction wight no be executed if reduced == true
         reduced = reduced || objectMapper.get(u.two).ReduceDomain(new HashSet<>(objectMapper.get(u.one).GetDomainObjectConstants()));
         return reduced;
     }
@@ -142,6 +139,21 @@ public class ConstraintNetworkManager {
         ConstraintNetworkManager nm = new ConstraintNetworkManager();
         nm.unificationConstraints = new HashSet<>(this.unificationConstraints);
         return nm;
+    }
+
+    /**
+     * Removes constraints between objects that doesn't appear in the object mapper.
+     * This step is necessary on plan repair where some events can be removed (for
+     * instance on action failure).
+     */
+    public void RemoveOutdatedConstraints() {
+        List<UnificationConstraint> toRemove = new LinkedList<>();
+        for(UnificationConstraint uc : this.unificationConstraints) {
+            if(!objectMapper.containsKey(uc.one) || !objectMapper.containsKey(uc.two)) {
+                toRemove.add(uc);
+            }
+        }
+        this.unificationConstraints.removeAll(toRemove);
     }
 
     public String Report() {

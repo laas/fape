@@ -21,6 +21,8 @@ public class STNManagerPlanStack extends STNManager {
         start.mID = stn.start();
         end = new TemporalVariable(); //1
         end.mID = stn.end();
+        earliestExecution = new TemporalVariable();
+        earliestExecution.mID = stn.addVar();
     }
 
     /**
@@ -39,6 +41,16 @@ public class STNManagerPlanStack extends STNManager {
     public final void EnforceBefore(TemporalVariable a, TemporalVariable b) {
         TinyLogger.LogInfo("Adding temporal constraint: "+a.getID()+" < "+b.getID());
         stn.enforceBefore(a.getID(), b.getID());
+    }
+
+    /**
+     * Enforces that b must happens at least minDelay after a
+     * @param a
+     * @param b
+     * @param minDelay
+     */
+    public final void EnforceDelay(TemporalVariable a, TemporalVariable b, int minDelay) {
+        stn.addConstraint(b.getID(), a.getID(), -minDelay);
     }
 
     /**
@@ -122,6 +134,7 @@ public class STNManagerPlanStack extends STNManager {
         STNManagerPlanStack nm = new STNManagerPlanStack();
         nm.end = this.end;
         nm.start = this.start;
+        nm.earliestExecution = this.earliestExecution;
         nm.stn = stn.cc();
         return nm;
     }
@@ -144,16 +157,6 @@ public class STNManagerPlanStack extends STNManager {
     @Override
     public long GetEarliestStartTime(TemporalVariable start) {
         return stn.earliestStart(start.getID());
-    }
-
-    @Override
-    public TemporalVariable GetGlobalStart() {
-        return start;
-    }
-
-    @Override
-    public TemporalVariable GetGlobalEnd() {
-        return end;
     }
 
     @Override

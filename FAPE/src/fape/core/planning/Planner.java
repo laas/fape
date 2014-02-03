@@ -200,20 +200,20 @@ public class Planner {
             }
             Action addedAction = AddAction(ref, next, null, enforceDuration);
             // create the binding between consumer and the new statement in the action that supports it
-            TemporalDatabase supportingDatabase = null;
+            int supportingDatabase = -1;
             for (TemporalEvent e : addedAction.events) {
                 if (e instanceof TransitionEvent) {
                     TransitionEvent ev = (TransitionEvent) e;
                     if (ev.to.Unifiable(consumer.GetGlobalConsumeValue())) {
-                        supportingDatabase = ev.mDatabase;
+                        supportingDatabase = ev.tdbID;
                     }
                 }
             }
-            if (supportingDatabase == null) {
+            if (supportingDatabase == -1) {
                 return false;
             } else {
                 SupportOption opt = new SupportOption();
-                opt.temporalDatabase = supportingDatabase.mID;
+                opt.temporalDatabase = supportingDatabase;
                 return ApplyOption(next, opt, consumer);
             }
         } else if (o.actionToDecompose != -1) {
@@ -251,7 +251,7 @@ public class Planner {
                     IUnifiable aa = null, bb = null;
                     switch (s.typeLeft) {
                         case EVENT:
-                            aa = e.mDatabase;
+                            aa = next.tdb.GetDB(e.tdbID);
                             break;
                         case FIRST_VALUE:
                             if (e instanceof TransitionEvent) {
@@ -269,7 +269,7 @@ public class Planner {
 
                     switch (s.typeRight) {
                         case EVENT:
-                            bb = e2.mDatabase;
+                            bb = next.tdb.GetDB(e2.tdbID);
                             break;
                         case FIRST_VALUE:
                             if (e2 instanceof TransitionEvent) {
@@ -294,7 +294,7 @@ public class Planner {
         } else {
             throw new FAPEException("Unknown option.");
         }
-        //next.conNet.CheckConsistency();
+
         return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
@@ -313,10 +313,12 @@ public class Planner {
             if(remove == null){
                 throw new FAPEException("Unknown action.");
             }
+            //
             for (TemporalEvent t : remove.events) {
                 bestState.SplitDatabase(t);
             }
-            bestState.RemoveAction(pop);
+            remove.events = new LinkedList<>();
+            bestState.FailAction(pop);
         }
     }
 
@@ -330,12 +332,31 @@ public class Planner {
     public void AddActionEnding(int actionID, int realEndTime) {
         KeepBestStateOnly();
         State bestState = GetCurrentState();
+        bestState.taskNet.SetActionSuccess(actionID);
         Action a = bestState.taskNet.GetAction(actionID);
         // remove the duration constraints of the action
         bestState.tempoNet.RemoveConstraints(new Pair(a.start, a.end), new Pair(a.end, a.start));
         // insert new constraint specifying the end time of the action
         bestState.tempoNet.EnforceConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
+    }
+
+    /**
+     * Pushes the earliest execution time point forward.
+     * Causes all pending actions to be delayed
+     * @param earliestExecution
+     */
+    public void SetEarliestExecution(int earliestExecution) {
+        KeepBestStateOnly();
+        State s = GetCurrentState();
+        s.tempoNet.EnforceDelay(s.tempoNet.GetGlobalStart(), s.tempoNet.GetEarliestExecution(), earliestExecution);
+
+        // If the STN is not consistent after this addition, the the current plan is not feasible.
+        // Full replan is necessary
+        if(!s.tempoNet.IsConsistent()) {
+            this.best = null;
+            this.queue.Clear();
+        }
     }
 
     /**
@@ -480,6 +501,7 @@ public class Planner {
             }
             //get the best state and continue the search
             State st = queue.Pop();
+
             TinyLogger.LogInfo(st.Report());
             if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
@@ -617,6 +639,7 @@ public class Planner {
      }
      }*/
     /**
+     * TODO: This is wrong we should only send actions whose dependencies are met (all provider tasks already executed)
      * progresses in the plan up for howFarToProgress, returns either
      * AtomicActions that were instantiated with corresponding start times, or
      * null, if not solution was found in the given time
@@ -635,6 +658,9 @@ public class Planner {
             if(startTime > howFarToProgress.val){
                 continue;
             }
+            if(a.status != Action.Status.PENDING) {
+                continue;
+            }
             AtomicAction aa = new AtomicAction();
             aa.mStartTime = (int) startTime;
             aa.mID = a.mID;
@@ -643,6 +669,8 @@ public class Planner {
             aa.params = a.ProduceParameters(myState);
             ret.add(aa);
         }
+
+
         
         Collections.sort(ret, new Comparator<AtomicAction>() {
                             @Override
@@ -650,7 +678,24 @@ public class Planner {
                                 return (int) (o1.mStartTime - o2.mStartTime);
                             }
                         });
-        
+
+        //TODO awful hack to only return the first task
+        if(ret.size() > 0)
+            ret = ret.subList(0,1);
+        else
+            ret = ret.subList(0,0);
+
+        // for all selecting actions, we set them as being executed and we bind their start time point
+        // to the one we requested.
+        for(AtomicAction aa : ret) {
+            Action a = myState.taskNet.GetAction(aa.mID);
+            myState.taskNet.SetActionExecuting(a.mID);
+            myState.tempoNet.RemoveConstraints(new Pair(myState.tempoNet.GetEarliestExecution(), a.start),
+                    new Pair(a.start, myState.tempoNet.GetEarliestExecution()));
+            myState.tempoNet.EnforceConstraint(myState.tempoNet.GetGlobalStart(), a.start, aa.mStartTime, aa.mStartTime);
+        }
+
+
         return ret;
     }
 
@@ -901,6 +946,8 @@ public class Planner {
         } else {
             st.tempoNet.EnforceBefore(act.start, act.end);
         }
+        // enforce that the current action must be executed after a known time in the future
+        st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
 
         //ArrayList<TemporalDatabase> dbList = new ArrayList<>();
         //set up the events
@@ -915,7 +962,7 @@ public class Planner {
             stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
 
             TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-            event.mDatabase = db;
+            event.tdbID = db.mID;
             //dbList.add(db);
             for (int i = 0; i < abs.params.size(); i++) {
                 Instance instanceOfTheParameter = abs.params.get(i);
@@ -955,8 +1002,8 @@ public class Planner {
         for (List<AbstractAction.SharedParameterStruct> structs : abs.param2Event) {
             for (int ii = 0; ii < structs.size(); ii++) {
                 for (int jj = ii + 1; jj < structs.size(); jj++) {
-                    IUnifiable uni1 = act.GetUnifiableComponent(structs.get(ii));
-                    IUnifiable uni2 = act.GetUnifiableComponent(structs.get(jj));
+                    IUnifiable uni1 = act.GetUnifiableComponent(st, structs.get(ii));
+                    IUnifiable uni2 = act.GetUnifiableComponent(st, structs.get(jj));
                     st.conNet.AddUnificationConstraint(uni1, uni2);
                 }
             }

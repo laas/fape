@@ -35,6 +35,8 @@ import java.util.List;
  */
 public class Action {
 
+    public enum Status { FAILED, EXECUTED, EXECUTING, PENDING; }
+
     public static int idCounter = 0;
     public int mID = idCounter++;
 
@@ -70,7 +72,7 @@ public class Action {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
-    public boolean removed = false;
+    public Status status = Status.PENDING;
 
     /**
      *
@@ -100,9 +102,9 @@ public class Action {
      *
      * @return
      */
-    public Action DeepCopy() {
+    public Action DeepCopy(List<TemporalEvent> updatedEvents) {
         Action a = new Action();
-        a.removed = this.removed;
+        a.status = this.status;
         a.mID = mID;
         a.params = this.params;
         a.constantParams = this.constantParams;
@@ -111,24 +113,39 @@ public class Action {
         } else {
             a.decomposition = new LinkedList<>();
             for (Action b : this.decomposition) {
-                a.decomposition.add(b.DeepCopy());
+                a.decomposition.add(b.DeepCopy(updatedEvents));
             }
         }
 
         a.minDuration = this.minDuration;
         a.maxDuration = this.maxDuration;
         a.end = this.end;
-        a.events = this.events;
         a.name = this.name;
         a.refinementOptions = this.refinementOptions;
         a.start = this.start;
+
+        // events are mutable and hence need to be mapped to the events
+        // cloned by the temporal database manager
+        a.events = new LinkedList<>();
+        for(TemporalEvent ev : this.events) {
+            TemporalEvent updatedEv = null;
+            for(TemporalEvent newEv : updatedEvents) {
+                if(newEv.mID == ev.mID)
+                    updatedEv = newEv;
+            }
+            if(updatedEv == null) {
+                throw new FAPEException("Unable to find the updated event for " + ev);
+            }
+            a.events.add(updatedEv);
+        }
+
         return a;
     }
 
-    public IUnifiable GetUnifiableComponent(AbstractAction.SharedParameterStruct get) {
+    public IUnifiable GetUnifiableComponent(State st, AbstractAction.SharedParameterStruct get) {
         TemporalEvent e = events.get(get.relativeEventIndex);
         if (get.type == UnificationConstraintSchema.EConType.EVENT) {
-            return e.mDatabase;
+            return st.tdb.GetDB(e.tdbID);
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof TransitionEvent) {
             return ((TransitionEvent) e).from;
         } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {

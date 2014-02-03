@@ -10,20 +10,13 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.StateVariable;
-import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
-import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
-import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
-import fape.util.Pair;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
+
+import java.util.*;
 
 /**
  *
@@ -36,6 +29,7 @@ public class TemporalDatabaseManager {
      */
     public List<TemporalDatabase> vars = new LinkedList<>();
 
+
     /**
      *
      * @param m
@@ -46,6 +40,14 @@ public class TemporalDatabaseManager {
         vars.add(db);
         m.AddUnifiable(db);
         return db;
+    }
+
+    public TemporalDatabase GetDB(int tdbID) {
+        for(TemporalDatabase db : vars) {
+            if(db.mID == tdbID)
+                return db;
+        }
+        throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+Report());
     }
 
     /**
@@ -71,13 +73,17 @@ public class TemporalDatabaseManager {
      * @param consumer
      */
     public void Merge(State st, TemporalDatabase tdb, TemporalDatabase consumer) {
+        if(Planner.debugging) {
+            st.ExtensiveCheck();
+        }
+
         // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
         // also intersecting the domains
         tdb.domain.retainAll(consumer.domain);
 
         for (TemporalDatabase.ChainComponent comp : tdb.chain) {
             for (TemporalEvent e : comp.contents) {
-                e.mDatabase = tdb;
+                e.tdbID = tdb.mID;
             }
         }
 
@@ -87,6 +93,9 @@ public class TemporalDatabaseManager {
         st.conNet.Merge(tdb, consumer);
         st.tdb.vars.remove(consumer);
 
+        if(Planner.debugging) {
+            st.ExtensiveCheck();
+        }
     }
 
     public String Report() {
@@ -100,6 +109,22 @@ public class TemporalDatabaseManager {
 
         return ret;
 
+    }
+
+    /**
+     * Returns all temporal events contained in all temporal databases.
+     * @return
+     */
+    public List<TemporalEvent> AllEvents() {
+        LinkedList<TemporalEvent> events = new LinkedList<>();
+        for(TemporalDatabase db : vars) {
+            for(TemporalDatabase.ChainComponent comp : db.chain) {
+                for(TemporalEvent ev : comp.contents) {
+                    events.add(ev);
+                }
+            }
+        }
+        return events;
     }
 /*
     public void SplitDatabase(TemporalEvent t) {

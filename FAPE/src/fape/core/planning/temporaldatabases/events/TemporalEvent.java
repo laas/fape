@@ -13,6 +13,7 @@ package fape.core.planning.temporaldatabases.events;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 
 /**
  *
@@ -39,9 +40,9 @@ public abstract class TemporalEvent {
     //reflection needed for stronger reasoning
 
     /**
-     *
+     * The id of the database containing this event.
      */
-    public TemporalDatabase mDatabase = null;
+    public int tdbID = -1;
 
     //public ObjectVariable objectVar;
     /**

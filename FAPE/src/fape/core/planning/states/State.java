@@ -91,21 +91,26 @@ public class State {
      */
     public State(State st) {
         if (Planner.debugging) {
-            st.tempoNet.TestConsistent();
-            st.conNet.CheckConsistency();
+            st.ExtensiveCheck();
         }
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
-        taskNet = st.taskNet.DeepCopy();
-        tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
         tempoNet = st.tempoNet.DeepCopy();
+        tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
+
+        // copy the task network and updates the events pointers of actions to the newly cloned ones.
+        taskNet = st.taskNet.DeepCopy(tdb.AllEvents());
+
+        // remove constraints on objects that don't exist anymore
+        conNet.RemoveOutdatedConstraints();
+
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
             consumers.add((TemporalDatabase) conNet.objectMapper.get(sb.GetUniqueID()));
         }
         if (Planner.debugging) {
-            st.conNet.CheckConsistency();
-            tempoNet.TestConsistent();
+            this.ExtensiveCheck();
         }
+
     }
 
     /**
@@ -170,12 +175,12 @@ public class State {
         throw new FAPEException("Reference to unknown database.");
     }
 
-    public void RemoveAction(Integer pop) {
-        taskNet.RemoveAction(pop);
+    public void FailAction(Integer pop) {
+        taskNet.FailAction(pop);
     }
 
     public void SplitDatabase(TemporalEvent t) {
-        TemporalDatabase theDatabase = t.mDatabase;
+        TemporalDatabase theDatabase = tdb.GetDB(t.tdbID);
         if (t instanceof TransitionEvent) {
             int ct = 0;
             for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
@@ -195,7 +200,7 @@ public class State {
                             TemporalDatabase.ChainComponent pc = origComp.DeepCopy(conNet);
                             newDB.chain.add(pc);
                             for (TemporalEvent eve : pc.contents) {
-                                eve.mDatabase = newDB;
+                                eve.tdbID = newDB.mID;
                             }
                         }
                         this.consumers.add(newDB);
@@ -232,5 +237,17 @@ public class State {
         } else {
             throw new FAPEException("Unknown event type.");
         }
+    }
+
+    /**
+     * This method is to be used while debugging to make sure the state is consistent
+     */
+    public void ExtensiveCheck() {
+        if(!Planner.debugging) {
+            throw new FAPEException("Those checks are very expensive and shouldn't be done while not in debugging mode");
+        }
+        this.conNet.CheckConsistency();
+        this.tempoNet.TestConsistent();
+        this.taskNet.CheckEventDBBindings(this);
     }
 }
