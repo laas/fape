@@ -1047,9 +1047,11 @@ public class Planner {
         p.ForceFact(Executor.ProcessANMLfromFile(anml));
         boolean timeOut = false;
         try {
-            timeOut = p.Repair(new TimeAmount(1000 * 60 * 5));
+            timeOut = p.Repair(new TimeAmount(1000 * 60));
         } catch (Exception e) {
-            throw new FAPEException("Repair failure.");
+            e.printStackTrace();
+            System.out.println("Planning finished for " + anml + " with failure.");
+            //throw new FAPEException("Repair failure.");
         }
         long end = System.currentTimeMillis();
         float total = (end - start) / 1000f;

@@ -108,7 +108,7 @@ public class ProblemGenerator {
         int numberOfTransports; // < numberofitems
 
         public void Output() {
-            String name = "Dream_" + (problemCounter++)+ "_" + numberOfRobots + "_" + numberOfItems + "_" + numberOfTransports + ".anml";
+            String name = "Dream_" + (problemCounter++)+ "_" + numberOfRobots + "_" + numberOfItems + "_" + numberOfTransports + "_" + numberOfLocations + ".anml";
             String path = "problems/generated/"+name;
 
             String instanceRobot = "instance Robot ", instanceGripper = "instance Gripper ", instanceItem = "instance Item ", instanceLocation = "instance Location ",
@@ -174,33 +174,33 @@ public class ProblemGenerator {
 
         List<Problem> l = new LinkedList<>();
 
-        for (int i = 0; i < 20; i++) {
+        /*for (int i = 0; i < 20; i++) {
             Problem p = new Problem();
-            p.numberOfLocations = 100;
-            p.numberOfItems = rg.nextInt(100);
+            p.numberOfLocations = rg.nextInt(100);
+            p.numberOfItems = p.numberOfLocations;
             p.numberOfRobots = 1;
             p.numberOfTransports = 1;
             l.add(p);
-        }
+        }*/
 
-        for (int i = 0; i < 20; i++) {
+        /*for (int i = 0; i < 20; i++) {
             Problem p = new Problem();
             p.numberOfLocations = 20;
             p.numberOfItems = 15;
             p.numberOfRobots = 1;
-            p.numberOfTransports = rg.nextInt(15);
+            p.numberOfTransports = rg.nextInt(2)+1;
             l.add(p);
-        }
+        }*/
 
         for (int i = 0; i < 20; i++) {
             Problem p = new Problem();
-            p.numberOfLocations = 20;
-            p.numberOfItems = 15;
-            p.numberOfRobots = 15;
-            p.numberOfTransports = rg.nextInt(15);
+            p.numberOfLocations = 5;
+            p.numberOfItems = 5;
+            p.numberOfRobots = 5;
+            p.numberOfTransports = rg.nextInt(3)+1;
             l.add(p);
         }
-        
+
         for(Problem p:l){
             p.Output();
         }
