@@ -10,6 +10,7 @@
  */
 package fape.core.planning;
 
+import fape.core.execution.Executor;
 import fape.core.planning.dtgs.ADTG;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.ActionRef;
@@ -310,7 +311,7 @@ public class Planner {
         } else {
             State bestState = GetCurrentState();
             Action remove = bestState.taskNet.GetAction(pop);
-            if(remove == null){
+            if (remove == null) {
                 throw new FAPEException("Unknown action.");
             }
             for (TemporalEvent t : remove.events) {
@@ -321,9 +322,11 @@ public class Planner {
     }
 
     /**
-     * Set the action ending to the its real end time.
-     * It removes the duration constraints between the starts and the end of the action (as given by the duration anml variable).
-     * Adds a new constraint [realEndTime, realEndtime] between the global start and the end of action time points.
+     * Set the action ending to the its real end time. It removes the duration
+     * constraints between the starts and the end of the action (as given by the
+     * duration anml variable). Adds a new constraint [realEndTime, realEndtime]
+     * between the global start and the end of action time points.
+     *
      * @param actionID
      * @param realEndTime
      */
@@ -343,6 +346,7 @@ public class Planner {
      */
     public enum EPlanState {
 
+        TIMEOUT,
         /**
          *
          */
@@ -385,13 +389,13 @@ public class Planner {
         return best;
     }
 
-
     /**
-     * Remove all states in the queues except for the best one (which is stored in best).
-     * This is to be used when updating the problem to make sure we don't keep any outdated states.
+     * Remove all states in the queues except for the best one (which is stored
+     * in best). This is to be used when updating the problem to make sure we
+     * don't keep any outdated states.
      */
     public void KeepBestStateOnly() {
-        if(best == null) {
+        if (best == null) {
             throw new FAPEException("No known best state.");
         }
         queue.Clear();
@@ -468,11 +472,16 @@ public class Planner {
         //
         //st.bindings.PropagateNecessary(st);
         //st.tdb.Propagate(st);
-
+        long deadLine = System.currentTimeMillis() + forHowLong.val;
         /**
          * search
          */
         while (true) {
+            if (System.currentTimeMillis() > deadLine) {
+                TinyLogger.LogInfo("Timeout.");
+                this.planState = EPlanState.INFESSIBLE;
+                break;
+            }
             if (queue.Empty()) {
                 TinyLogger.LogInfo("No plan found.");
                 this.planState = EPlanState.INFESSIBLE;
@@ -511,19 +520,21 @@ public class Planner {
                 continue;
             }
 
-            for (Pair<TemporalDatabase, List<SupportOption>> opt : opts) {
-                for (SupportOption o : opt.value2) {
-                    State next = new State(st);
-                    boolean suc = ApplyOption(next, o, next.GetConsumer(opt.value1));
-                    //TinyLogger.LogInfo(next.Report());
-                    if (suc) {
-                        queue.Add(next);
-                    } else {
-                        TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
-                        //inconsistent state, doing nothing
-                    }
+            //we just take the first option here as a tie breaker by min-domain
+            Pair<TemporalDatabase, List<SupportOption>> opt = opts.getFirst();
+
+            for (SupportOption o : opt.value2) {
+                State next = new State(st);
+                boolean suc = ApplyOption(next, o, next.GetConsumer(opt.value1));
+                //TinyLogger.LogInfo(next.Report());
+                if (suc) {
+                    queue.Add(next);
+                } else {
+                    TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                    //inconsistent state, doing nothing
                 }
             }
+
         }
         return null;
     }
@@ -534,13 +545,17 @@ public class Planner {
      *
      * @param forHowLong
      */
-    public void Repair(TimeAmount forHowLong) {
+    public boolean Repair(TimeAmount forHowLong) {
         KeepBestStateOnly();
         best = aStar(forHowLong);
+        if (best == null) {
+            return false;
+        }
         //dfs(forHowLong);
 
         //we empty the queue now and leave only the best state there
         KeepBestStateOnly();
+        return true;
     }
 
     /**
@@ -632,7 +647,7 @@ public class Planner {
         List<Action> l = myState.taskNet.GetAllActions();
         for (Action a : l) {
             long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
-            if(startTime > howFarToProgress.val){
+            if (startTime > howFarToProgress.val) {
                 continue;
             }
             AtomicAction aa = new AtomicAction();
@@ -643,14 +658,14 @@ public class Planner {
             aa.params = a.ProduceParameters(myState);
             ret.add(aa);
         }
-        
+
         Collections.sort(ret, new Comparator<AtomicAction>() {
-                            @Override
-                            public int compare(AtomicAction o1, AtomicAction o2) {
-                                return (int) (o1.mStartTime - o2.mStartTime);
-                            }
-                        });
-        
+            @Override
+            public int compare(AtomicAction o1, AtomicAction o2) {
+                return (int) (o1.mStartTime - o2.mStartTime);
+            }
+        });
+
         return ret;
     }
 
@@ -670,9 +685,10 @@ public class Planner {
      */
     public void ForceFact(ANMLBlock pl) {
         //read everything that is contained in the ANML block
-        if(logging) {
+        if (logging) {
             TinyLogger.LogInfo("Forcing new fact into best state.");
         }
+
         KeepBestStateOnly();
 
         //TODO: apply ANML to more states and choose the best after the applciation
@@ -778,9 +794,8 @@ public class Planner {
         //}
         //}
         // }
-        
         if (st.isInitState) {
-            
+
             //create domain transition graphs
             for (Type t : types.values()) {
                 if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
@@ -971,5 +986,33 @@ public class Planner {
         //add 
 
         return act;
+    }
+
+    /**
+     * the goal is to solve a single problem for the given anml input and
+     * produce the plan on the standard output
+     *
+     * @param args
+     * @throws InterruptedException
+     */
+    public static void main(String[] args) throws InterruptedException {
+        long start = System.currentTimeMillis();
+        String anml = args[0];
+        Planner p = new Planner();
+        p.Init();
+        p.ForceFact(Executor.ProcessANMLfromFile(anml));
+        boolean timeOut = false;
+        try {
+            timeOut = p.Repair(new TimeAmount(1000 * 60 * 5));
+        } catch (Exception e) {
+            throw new FAPEException("Repair failure.");
+        }
+        long end = System.currentTimeMillis();
+        float total = (end - start) / 1000f;
+        if (!timeOut) {
+            System.out.println("Planning finished for " + anml + " timed out.");
+        } else {
+            System.out.println("Planning finished for " + anml + " in " + total + "s");
+        }
     }
 }
