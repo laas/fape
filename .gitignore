@@ -6,3 +6,5 @@ out
 project/
 target/
 build.sbt
+/fape/problems/generated
+/fape/problems/testCases
