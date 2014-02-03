@@ -55,7 +55,7 @@ public class Executor {
      * @param path
      * @return
      */
-    public ANMLBlock ProcessANMLfromFile(String path) {
+    public static ANMLBlock ProcessANMLfromFile(String path) {
         ANMLBlock b;
         try {
             Tree t = Main.getTree(path);

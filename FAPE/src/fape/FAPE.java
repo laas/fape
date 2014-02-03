@@ -5,6 +5,10 @@ import fape.core.execution.Executor;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
 import fape.util.TinyLogger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 
 /*
  * Author:  Filip Dvořák <filip.dvorak@runbox.com>
@@ -26,11 +30,11 @@ public class FAPE {
     public static boolean localTesting = true;
     private static boolean runListener;
 
-    /**
-     * @param args the command line arguments
-     * @throws java.lang.InterruptedException
-     */
+    
+    
     public static void main(String[] args) throws InterruptedException {
+
+        
         Actor a = null;
         Planner p = null;
         Executor e = null;

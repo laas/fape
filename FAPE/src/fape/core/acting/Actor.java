@@ -117,9 +117,9 @@ public class Actor {
     public void run() throws InterruptedException {
         int timeZero = (int) (System.currentTimeMillis() / 1000);
 
-        int successReportOne = timeZero + 5;
+        /*int successReportOne = timeZero + 5;
         int firstFailureTime = timeZero + 6;
-        int newStatementTime = timeZero + 7;
+        int newStatementTime = timeZero + 7;*/
 
         while (true) {
             switch (mState) {
