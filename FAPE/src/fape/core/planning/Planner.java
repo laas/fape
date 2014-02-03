@@ -100,6 +100,7 @@ public class Planner {
     public HashMap<AbstractAction, HashMap<Integer, List<UnificationConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
+        next.StrongCheck();
         TemporalDatabase supporter = null;
         TemporalDatabase.ChainComponent precedingComponent = null;
         if (o.temporalDatabase != -1) {
@@ -201,10 +202,11 @@ public class Planner {
             }
             Action addedAction = AddAction(ref, next, null, enforceDuration);
             // create the binding between consumer and the new statement in the action that supports it
+     
             int supportingDatabase = -1;
             for (TemporalEvent e : addedAction.events) {
                 if (e instanceof TransitionEvent) {
-                    TransitionEvent ev = (TransitionEvent) e;
+                    TransitionEvent ev = (TransitionEvent) e;                    
                     if (ev.to.Unifiable(consumer.GetGlobalConsumeValue())) {
                         supportingDatabase = ev.tdbID;
                     }
@@ -295,7 +297,9 @@ public class Planner {
         } else {
             throw new FAPEException("Unknown option.");
         }
+        next.StrongCheck();
 
+        //next.conNet.CheckConsistency();
         return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
     }
 
@@ -318,6 +322,7 @@ public class Planner {
             for (TemporalEvent t : remove.events) {
                 bestState.SplitDatabase(t);
             }
+            bestState.FailAction(pop);
             remove.events = new LinkedList<>();
             bestState.FailAction(pop);
         }
@@ -511,6 +516,9 @@ public class Planner {
             //get the best state and continue the search
             State st = queue.Pop();
 
+
+            StrongChecking(st);
+
             TinyLogger.LogInfo(st.Report());
             if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
@@ -685,14 +693,17 @@ public class Planner {
             ret.add(aa);
         }
 
-        Collections.sort(ret, new Comparator<AtomicAction>() {
-            @Override
-            public int compare(AtomicAction o1, AtomicAction o2) {
-                return (int) (o1.mStartTime - o2.mStartTime);
-            }
-        });
 
-        //TODO awful hack to only return the first task, we need to keep track of causal links to make it cleaner
+        
+
+        Collections.sort(ret, new Comparator<AtomicAction>() {
+                            @Override
+                            public int compare(AtomicAction o1, AtomicAction o2) {
+                                return (int) (o1.mStartTime - o2.mStartTime);
+                            }
+                        });
+
+        //TODO awful hack to only return the first task
         if(ret.size() > 0)
             ret = ret.subList(0,1);
         else
@@ -707,6 +718,7 @@ public class Planner {
                     new Pair(a.start, myState.tempoNet.GetEarliestExecution()));
             myState.tempoNet.EnforceConstraint(myState.tempoNet.GetGlobalStart(), a.start, aa.mStartTime, aa.mStartTime);
         }
+
 
         return ret;
     }
@@ -1030,6 +1042,10 @@ public class Planner {
         //add 
 
         return act;
+    }
+
+    public void StrongChecking(State st) {
+        st.StrongCheck();
     }
 
     /**
