@@ -26,8 +26,13 @@ public class ParseResults {
         String out = "";
         for (int i = 1; i < ar.length; i++) {
             String name = ar[i].split(" ")[0];
-            out += ar[i].split(" ")[0] + "| " + name.split("_")[2] + "| " + name.split("_")[3] + "| " + name.split("_")[4] + "| " + name.split("_")[5].split("\\.")[0] + "| " + ar[i].split(" ")[2].split("\n")[0].replace(".", ",").replace("s", "") + "\n";
+            //out += ar[i].split(" ")[0] + "| " + name.split("_")[2] + "| " + name.split("_")[3] + "| " + name.split("_")[4] + "| " + name.split("_")[5].split("\\.")[0] + "| " + ar[i].split(" ")[2].split("\n")[0].replace(".", ",").replace("s", "") + "\n";
+            try {
+                out += ar[i].split(" ")[0] + "| " + (Integer.parseInt(name.split("_")[2]) * 3 + Integer.parseInt(name.split("_")[3]) * 1 + Integer.parseInt(name.split("_")[5].split("\\.")[0]) * 1) + "| " + ar[i].split(" ")[2].split("\n")[0].replace(".", ",").replace("s", "") + "\n";
+            } catch (Exception e) {
+                int xx = 0;
+            }
         }
-        FileHandling.writeFileOutput("res3.txt", out);
+        FileHandling.writeFileOutput("res4.txt", out);
     }
 }

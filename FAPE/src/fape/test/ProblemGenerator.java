@@ -192,12 +192,12 @@ public class ProblemGenerator {
             l.add(p);
         }*/
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 30; i++) {
             Problem p = new Problem();
-            p.numberOfLocations = 5;
-            p.numberOfItems = 5;
-            p.numberOfRobots = 5;
-            p.numberOfTransports = rg.nextInt(3)+1;
+            p.numberOfLocations = rg.nextInt(100)+1;
+            p.numberOfItems = rg.nextInt(p.numberOfLocations)+1;
+            p.numberOfRobots = rg.nextInt(20)+1;
+            p.numberOfTransports = 1;
             l.add(p);
         }
 
