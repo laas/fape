@@ -92,7 +92,6 @@ public class State {
     public State(State st) {
         if (Planner.debugging) {
             st.ExtensiveCheck();
-            st.StrongCheck();
         }
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
@@ -110,11 +109,6 @@ public class State {
         }
         if (Planner.debugging) {
             this.ExtensiveCheck();
-            try {
-                this.StrongCheck();
-            } catch (FAPEException e) {
-                System.out.println("BREAK");
-            }
         }
 
     }
@@ -243,10 +237,6 @@ public class State {
         } else {
             throw new FAPEException("Unknown event type.");
         }
-    }
-
-    public void StrongCheck() {
-        this.taskNet.CheckEventDBBindings(this);
     }
 
     /**

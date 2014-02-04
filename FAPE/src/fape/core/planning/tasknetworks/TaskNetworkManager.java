@@ -21,12 +21,6 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TinyLogger;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import fape.util.TinyLogger;
-
 import java.util.*;
 
 /**
@@ -226,19 +220,18 @@ public class TaskNetworkManager {
                 TinyLogger.LogInfo("WARNING: setting action' status to EXECUTING while its current status is not PENDING");
             a.status = Action.Status.EXECUTING;
         } else
-            throw new FAPEException("Unable to report success of action: id "+id+" does not exist.");
+            throw new FAPEException("Unable to report execution of action: id "+id+" does not exist.");
 
     }
 
+    /**
+     * Checks that all events in the task network points to existing databases
+     * @param st
+     */
     public void CheckEventDBBindings(State st) {
         System.err.println(Report());
         for(Action a : GetAllActions()) {
             for(TemporalEvent e : a.events) {
-                try { // TODO: remove this is for breaking
-                    st.tdb.GetDB(e.tdbID);
-                } catch (FAPEException ex) {
-                    throw ex;
-                }
                 if(!st.tdb.vars.contains(st.tdb.GetDB(e.tdbID)))
                     throw new FAPEException("Database "+e.tdbID+" from event "+e+" is not contained in the tdb listing. Action containing the event: "+a);
             }

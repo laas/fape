@@ -73,19 +73,13 @@ public class TemporalDatabaseManager {
      * @param consumer
      */
     public void Merge(State st, TemporalDatabase tdb, TemporalDatabase consumer) {
-        st.StrongCheck();
+        if(Planner.debugging) {
+            st.ExtensiveCheck();
+        }
 
-        if(!st.tdb.vars.contains(consumer))
-            throw new FAPEException("Something is strange the consumer tdb is not in vars");
-        System.err.println("MERGING BEFORE");
-        System.err.println(Report());
         // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
         // also intersecting the domains
         tdb.domain.retainAll(consumer.domain);
-
-        if(consumer.mID == 15) {
-            int i = 0;
-        }
 
         for (TemporalDatabase.ChainComponent comp : tdb.chain) {
             for (TemporalEvent e : comp.contents) {
@@ -99,10 +93,9 @@ public class TemporalDatabaseManager {
         st.conNet.Merge(tdb, consumer);
         st.tdb.vars.remove(consumer);
 
-        System.err.println("MERGING AFTER");
-        System.err.println(Report());
-
-        st.StrongCheck();
+        if(Planner.debugging) {
+            st.ExtensiveCheck();
+        }
     }
 
     public String Report() {

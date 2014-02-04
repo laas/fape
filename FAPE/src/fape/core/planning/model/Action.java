@@ -72,7 +72,6 @@ public class Action {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
-    //public boolean removed = false;
     public Status status = Status.PENDING;
 
     /**
