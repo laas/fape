@@ -192,7 +192,7 @@ public class ProblemGenerator {
             l.add(p);
         }*/
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 200; i++) {
             Problem p = new Problem();
             p.numberOfLocations = rg.nextInt(100)+1;
             p.numberOfItems = rg.nextInt(p.numberOfLocations)+1;
