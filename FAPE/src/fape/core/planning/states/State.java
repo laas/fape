@@ -249,5 +249,8 @@ public class State {
         this.conNet.CheckConsistency();
         this.tempoNet.TestConsistent();
         this.taskNet.CheckEventDBBindings(this);
+        for(TemporalDatabase db : this.tdb.vars) {
+            db.CheckChainComposition();
+        }
     }
 }

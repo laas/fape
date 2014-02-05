@@ -23,6 +23,7 @@ import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
 import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TinyLogger;
 import java.util.HashMap;
@@ -230,11 +231,12 @@ public class TemporalDatabase extends IUnifiable {
         public LinkedList<TemporalEvent> contents = new LinkedList<>();
 
         /**
-         *
-         * @param e
+         * Add all events of the parameterized chain component to the current chain component.
+         * @param cc
          */
-        public void Add(ChainComponent e) {
-            contents.addAll(e.contents);
+        public void Add(ChainComponent cc) {
+            assert cc.change == this.change : "Error: merging transition and persistence events in the same chain component.";
+            contents.addAll(cc.contents);
         }
 
         /**
@@ -379,4 +381,17 @@ public class TemporalDatabase extends IUnifiable {
      *
      */
     public LinkedList<ChainComponent> chain = new LinkedList<>();
+
+    /**
+     * Check if there is not two persistence events following each other in the chain.
+     */
+    public void CheckChainComposition() {
+        boolean wasPreviousTransition = true;
+        for(ChainComponent cc : this.chain) {
+            if(!wasPreviousTransition && ! cc.change) {
+                throw new FAPEException("We have two persistence events following each other.");
+            }
+            wasPreviousTransition = cc.change;
+        }
+    }
 }

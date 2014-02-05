@@ -111,80 +111,13 @@ public class Planner {
         //now we can happily apply all the options
         if (supporter != null && precedingComponent != null) {
             // this is database merge of one persistence into another
-            int index = supporter.chain.indexOf(precedingComponent);
-            if (supporter.chain.size() - 1 != index && !supporter.chain.get(index + 1).change) {
-                //we add into an existing partially ordered set of perstistance events
-                TemporalDatabase.ChainComponent comp = supporter.chain.get(index + 1);
-                //constraint the values
-                next.conNet.AddUnificationConstraint(comp.GetSupportValue(), consumer.GetGlobalConsumeValue());
-                //add it
-                comp.Add(consumer.chain.get(0));
-                //propagate time constraints
-                TemporalDatabase.PropagatePrecedence(precedingComponent, comp, next);
-                if (supporter.chain.size() > index + 2) {
-                    TemporalDatabase.ChainComponent comp2 = supporter.chain.get(index + 2);
-                    TemporalDatabase.PropagatePrecedence(comp, comp2, next);
-                }
-            } else {
-                //add a new persistence just after the chosen element
+            assert consumer.chain.size() == 1 && !consumer.chain.get(0).change
+                    : "This is restricted to databases containing single persistence only";
 
-                supporter.chain.add(index + 1, consumer.chain.get(0));
-                TemporalDatabase.PropagatePrecedence(precedingComponent, supporter.chain.get(index + 1), next);
-                //constraint the values
-                next.conNet.AddUnificationConstraint(precedingComponent.GetSupportValue(), consumer.GetGlobalConsumeValue());
-                if (supporter.chain.size() > index + 2) {
-                    TemporalDatabase.ChainComponent comp2 = supporter.chain.get(index + 2);
-                    TemporalDatabase.PropagatePrecedence(supporter.chain.get(index + 1), comp2, next);
-                }
-
-            }
-            //merge databases
-            next.tdb.Merge(next, supporter, consumer);
-            //remove consumer
-            TemporalDatabase dbRemove = null;
-            for (TemporalDatabase db : next.consumers) {
-                if (consumer.mID == db.mID) {
-                    dbRemove = db;
-                }
-            }
-            next.consumers.remove(dbRemove);
+            next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
         } else if (supporter != null) {
-            //this is a database concatenation
-            if (!supporter.chain.getLast().change && !consumer.chain.getFirst().change) {
-                //merge the changes
-                TemporalDatabase.ChainComponent second = supporter.chain.getLast(),
-                        third = consumer.chain.get(1),
-                        first = supporter.chain.get(supporter.chain.size() - 2);
-                for (TemporalEvent e : consumer.chain.getFirst().contents) {
-                    supporter.chain.getLast().contents.add(e);
-                }
-                consumer.chain.removeFirst();
-                for (TemporalDatabase.ChainComponent c : consumer.chain) {
-                    supporter.chain.add(c);
-                }
-                TemporalDatabase.PropagatePrecedence(first, second, next);
-                TemporalDatabase.PropagatePrecedence(second, third, next);
-                next.conNet.AddUnificationConstraint(first.GetSupportValue(), third.GetConsumeValue());//adding just the constraint between the border values, the middle should be constrained with both                
-                next.tdb.Merge(next, supporter, consumer);
-            } else {
-                //concatenate
-                TemporalDatabase.ChainComponent second = consumer.chain.getFirst(),
-                        first = supporter.chain.getLast();
-                for (TemporalDatabase.ChainComponent c : consumer.chain) {
-                    supporter.chain.add(c);
-                }
-                next.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());//adding just the constraint between the border values
-                TemporalDatabase.PropagatePrecedence(first, second, next);
-                next.tdb.Merge(next, supporter, consumer);
-            }
-            //remove consumer
-            TemporalDatabase dbRemove = null;
-            for (TemporalDatabase db : next.consumers) {
-                if (consumer.mID == db.mID) {
-                    dbRemove = db;
-                }
-            }
-            next.consumers.remove(dbRemove);
+            // database concatenation
+            next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
         } else if (o.supportingAction != null) {
             //this is a simple applciation of an action
             ActionRef ref = new ActionRef();

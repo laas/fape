@@ -67,34 +67,105 @@ public class TemporalDatabaseManager {
     }
 
     /**
+     * Inserts all chains of the database @included after the ChainComponent @after of database @tdb.
+     * All necessary constraints (temporal precedence and unification) are added to State st.
      *
-     * @param st
-     * @param tdb
-     * @param consumer
+     * If the both the first chain component of @included and the chain component @after are persistence events, those
+     * two are merged before proceeding to the insertion.
+     *
+     * At the the included database is completely remove from the search state. All reference to it are replaced by references to tdb
+     *
+     * @param st State in which the changes are applied
+     * @param tdb Temporal database in which the events will we included
+     * @param included database that will disappear, all of its components being included in tdb
+     * @param after a chain component of tdb after which the chain of included will be added
      */
-    public void Merge(State st, TemporalDatabase tdb, TemporalDatabase consumer) {
-        if(Planner.debugging) {
-            st.ExtensiveCheck();
-        }
+    public void InsertDatabaseAfter(State st, TemporalDatabase tdb, TemporalDatabase included, TemporalDatabase.ChainComponent after) {
+        assert tdb.chain.size() != 0;
+        assert tdb.chain.contains(after);
 
-        // merging consumer into tdb, which means removing all the references for consumer from the system and replacing them with tdb
-        // also intersecting the domains
-        tdb.domain.retainAll(consumer.domain);
+        int afterIndex = tdb.chain.indexOf(after);
 
-        for (TemporalDatabase.ChainComponent comp : tdb.chain) {
+        // bind all events in included to their new database
+        for (TemporalDatabase.ChainComponent comp : included.chain) {
             for (TemporalEvent e : comp.contents) {
                 e.tdbID = tdb.mID;
             }
         }
 
-        tdb.actionAssociations.putAll(consumer.actionAssociations);
+        if(afterIndex+1 < tdb.chain.size() && !tdb.chain.get(afterIndex+1).change) {
+            // we were about to perform the insertion just before a persistence event.
+            // instead, we make the insertion after the persitence
+            afterIndex = afterIndex + 1;
+            after = tdb.chain.get(afterIndex);
+        }
 
-        //propagate merge into the constraints
-        st.conNet.Merge(tdb, consumer);
-        st.tdb.vars.remove(consumer);
+        if(!included.chain.getFirst().change && !after.change) {
+            //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
+            // into 'after' before going any further.
+            st.conNet.AddUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
+
+            // add persitence events to after, and removing them from the included database
+            after.Add(included.chain.getFirst());
+            included.chain.removeFirst();
+
+            EnforceChainConstraints(st, tdb, afterIndex-1);
+            EnforceChainConstraints(st, tdb, afterIndex);
+        }
+
+        // copy all remaining components
+        if(included.chain.size() > 0) {
+            assert tdb.chain.getLast() == after || included.chain.size() == 1 && !included.chain.getFirst().change:
+                    "Integrating a database with transitions in the middle of another one. " +
+                    "While this should work with the current implementation it might create unexpected problems " +
+                    "because of unexpected unification constraints between two non adjacent chain components.";
+
+            int nextInclusion = afterIndex + 1;
+            for (TemporalDatabase.ChainComponent c : included.chain) {
+                tdb.chain.add(nextInclusion, c);
+                nextInclusion += 1;
+            }
+
+            // add connstraints before and after the inserted chain
+            EnforceChainConstraints(st, tdb, afterIndex);
+            EnforceChainConstraints(st, tdb, nextInclusion-1);
+        }
+
+        // the new domain is the intersection of both domains
+        tdb.domain.retainAll(included.domain);
+
+        // all actions that pointed to events in included should now point to the containing tdb
+        tdb.actionAssociations.putAll(included.actionAssociations);
+
+        // Remove the included database from the system
+        st.tdb.vars.remove(included);
+        st.consumers.remove(included);
 
         if(Planner.debugging) {
             st.ExtensiveCheck();
+        }
+    }
+
+    /**
+     * Given a database tdb, enforces the unification and temporal constraints between
+     * the elements of indexes chainCompIndex and chainCompIndex+1
+     * @param st
+     * @param tdb
+     * @param chainCompIndex
+     */
+    public void EnforceChainConstraints(State st, TemporalDatabase tdb, int chainCompIndex) {
+        assert chainCompIndex < tdb.chain.size();
+
+        if(chainCompIndex < tdb.chain.size()-1 && chainCompIndex >= 0) {
+            // if we are not already the last element of the chain, we add constraints between
+            // the component and its direct follower.
+            TemporalDatabase.ChainComponent first = tdb.chain.get(chainCompIndex);
+            TemporalDatabase.ChainComponent second = tdb.chain.get(chainCompIndex + 1);
+
+            assert first.change || second.change : "There should not be two persistence following each other";
+
+            st.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
+            TemporalDatabase.PropagatePrecedence(first, second, st);
         }
     }
 
