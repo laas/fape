@@ -11,8 +11,11 @@
 package fape.scripting;
 
 import fape.core.planning.Planner;
+import fape.core.execution.Executor;
+import fape.util.TimeAmount;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.PrintStream;
 
 /**
  *
@@ -20,8 +23,35 @@ import java.io.FileFilter;
  */
 public class ExperimentRunner {
 
-    public static void run(String path) throws InterruptedException {
+    public static void main(String[] args) {
+        String path = "problems/generated"; //default problems
+        int maxTime = 1000 * 60;            // default timeout: 1min
+        PrintStream out = new PrintStream(System.out); //print out standard output
 
+        try {
+            if(args.length > 0)
+                path = args[0];
+            if(args.length > 1)
+                maxTime = Integer.parseInt(args[1]) * 1000;
+            if(args.length > 2)
+                out = new PrintStream(args[2]);
+        } catch (Exception e) {
+            System.out.println("Argument format: [directory-with-anml-files [timeout-in-secs [output-file]]]");
+        }
+
+        try {
+            run(path, maxTime, out);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void run(String path) throws InterruptedException {
+        // using a default timeout of 1 minute
+        run(path, 1000 * 10, new PrintStream(System.out));
+    }
+
+    public static void run(String path, int maxRuntime, PrintStream out) throws InterruptedException {
         File f = new File(path);
         File[] anmls = f.listFiles(new FileFilter() {
             @Override
@@ -33,9 +63,37 @@ public class ExperimentRunner {
         Planner.debugging = false;
         Planner.logging = false;
         //Planner.actionResolvers = true;
+
+        out.println("Problem\tTime\t" + Planner.DomainTableReportFormat() + Planner.PlanTableReportFormat());
         
         for (File a : anmls) {
-            Planner.main(new String[]{a.getAbsolutePath()});
+
+            long start = System.currentTimeMillis();
+
+            String anml = a.getAbsolutePath();
+
+            Planner p = new Planner();
+            p.Init();
+            p.ForceFact(Executor.ProcessANMLfromFile(anml));
+            boolean timeOut = false;
+            try {
+                timeOut = ! p.Repair(new TimeAmount(maxRuntime));
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Planning finished for " + anml + " with failure.");
+                //throw new FAPEException("Repair failure.");
+            }
+            long end = System.currentTimeMillis();
+            float total = (end - start) / 1000f;
+
+            String report = "";
+            if(timeOut)
+                report = a.getName() +"\t" + "timeout\t" ;
+            else
+                report = a.getName() + "\t"+total+"\t";
+
+            report = report + p.DomainTableReport() + p.PlanTableReport();
+            out.println(report);
         }
     }
 }
