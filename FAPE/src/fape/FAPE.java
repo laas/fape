@@ -27,6 +27,7 @@ import java.util.LinkedList;
  */
 public class FAPE {
 
+    public static boolean parserLogging = false;
     public static boolean localTesting = true;
     private static boolean runListener;
 
