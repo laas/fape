@@ -64,6 +64,9 @@ public class Planner {
     public static boolean logging = true;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
+    public int GeneratedStates = 1; //count the initial state
+    public int OpenedStates = 0;
+
     /**
      *
      */
@@ -433,7 +436,7 @@ public class Planner {
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
-                this.planState = EPlanState.INFESSIBLE;
+                this.planState = EPlanState.INCONSISTENT;
                 break;
             }
             if (queue.Empty()) {
@@ -443,6 +446,7 @@ public class Planner {
             }
             //get the best state and continue the search
             State st = queue.Pop();
+            OpenedStates++;
 
             TinyLogger.LogInfo(st.Report());
             if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
@@ -484,6 +488,7 @@ public class Planner {
                 //TinyLogger.LogInfo(next.Report());
                 if (suc) {
                     queue.Add(next);
+                    GeneratedStates++;
                 } else {
                     TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
                     //inconsistent state, doing nothing
@@ -978,27 +983,33 @@ public class Planner {
     }
 
     public static String PlanTableReportFormat() {
-        return String.format("%s\t%s\t",
+        return String.format("%s\t%s\t%s\t%s\t",
                 "Status",
-                "Plan length");
+                "Plan length",
+                "Opened States",
+                "Generated States");
     }
 
     public String PlanTableReport() {
+        String status = "INCONS";
+        String planLength = "--";
+
         if(planState == EPlanState.INFESSIBLE) {
-            return String.format("%s\t%s\t",
-                    "INFESS",
-                    "--");
+           status = "INFESS";
         }
-        if(planState == EPlanState.INCONSISTENT) {
-            return String.format("%s\t%s\t",
-                    "INCONS",
-                    "--");
+        else if(planState == EPlanState.INCONSISTENT) {
+            status = "INCONS";
+            planLength = "--";
         } else {
             assert best != null;
-            return String.format("%s\t%s\t",
-                    "SOLVED",
-                    best.taskNet.GetAllActions().size());
+            status = "SOLVED";
+            planLength = ""+ best.taskNet.GetAllActions().size();
         }
+        return String.format("%s\t%s\t%s\t%s\t",
+                status,
+                planLength,
+                OpenedStates,
+                GeneratedStates);
     }
 
     /**
