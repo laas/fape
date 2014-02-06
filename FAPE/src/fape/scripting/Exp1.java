@@ -21,7 +21,7 @@ import java.io.FileFilter;
 public class Exp1 extends ExperimentRunner {
 
     public static void main(String[] args) throws InterruptedException {
-        run("C:/ROOT/PROJECTS/fape/FAPE/problems/generated");
+        run("problems/generated");
     }
 
 }
