@@ -279,28 +279,41 @@ public class ADTG {
         for (String st : GetGlobalConsumeValue.values) {
             mValues.add(mType.instances.get(st));
         }
-        HashSet<String> actionNames = new HashSet<>();
 
+        // All actions that may be enablers for this dtb
+        HashSet<AbstractAction> potentialSupporterActions = new HashSet<>();
+
+        // Get all actions that might be supporting this database according to the DTG
         for (DTGEdge[] graph1 : graph) {
             for (Integer i : mValues) {
                 DTGEdge e = null;
                 e = graph1[i];
                 if (e != null && e.act != null) {
                     for (AbstractAction a : e.act) {
-                        boolean support = false;
-                        for (AbstractTemporalEvent eve : a.events) {
-                            List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
-                            list.retainAll(db.domain);
-                            if (!list.isEmpty() && eve.event instanceof TransitionEvent) {
-                                if (((TransitionEvent) eve.event).to.Unifiable(db.GetGlobalConsumeValue())) {
-                                    actionNames.add(a.name);
-                                }
-                            }
-                        }
+                        potentialSupporterActions.add(a);
                     }
                 }
             }
         }
-        return actionNames;
+
+        // all actions that definitly support the database
+        HashSet<String> supporterActionNames = new HashSet<>();
+
+        // for all actions, check if there is a transition event supporting the database
+        for(AbstractAction a : potentialSupporterActions) {
+            for (AbstractTemporalEvent eve : a.events) {
+                List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
+                list.retainAll(db.domain);
+                if (!list.isEmpty() && eve.event instanceof TransitionEvent) {
+                    if (((TransitionEvent) eve.event).to.Unifiable(db.GetGlobalConsumeValue())) {
+                        //this action is a supporter, add it to the list and go to the next one
+                        supporterActionNames.add(a.name);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return supporterActionNames;
     }
 }
