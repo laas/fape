@@ -18,10 +18,10 @@ import java.io.FileFilter;
  *
  * @author FD
  */
-public class Exp2 extends ExperimentRunner {
+public class Exp2 {
 
     public static void main(String[] args) throws InterruptedException {
-        run("C:/ROOT/PROJECTS/fape/FAPE/problems/testCases");
+        ExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/testCases");
     }
 
 }

@@ -965,6 +965,42 @@ public class Planner {
         return act;
     }
 
+    public static String DomainTableReportFormat() {
+        return String.format("%s\t%s\t",
+                "Num state variables",
+                "Num actions");
+    }
+
+    public String DomainTableReport() {
+        return String.format("%s\t%s\t",
+                vars.size(),
+                actions.size());
+    }
+
+    public static String PlanTableReportFormat() {
+        return String.format("%s\t%s\t",
+                "Status",
+                "Plan length");
+    }
+
+    public String PlanTableReport() {
+        if(planState == EPlanState.INFESSIBLE) {
+            return String.format("%s\t%s\t",
+                    "INFESS",
+                    "--");
+        }
+        if(planState == EPlanState.INCONSISTENT) {
+            return String.format("%s\t%s\t",
+                    "INCONS",
+                    "--");
+        } else {
+            assert best != null;
+            return String.format("%s\t%s\t",
+                    "SOLVED",
+                    best.taskNet.GetAllActions().size());
+        }
+    }
+
     /**
      * the goal is to solve a single problem for the given anml input and
      * produce the plan on the standard output
