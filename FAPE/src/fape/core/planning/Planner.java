@@ -27,7 +27,7 @@ import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.Action;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.Type;
-import fape.core.planning.search.Queue;
+import fape.core.planning.search.StateComparator;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.STNManager;
@@ -44,14 +44,8 @@ import fape.util.TimeAmount;
 import fape.util.TimePoint;
 import fape.util.TinyLogger;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
-import java.util.List;
 import javax.swing.SwingWorker;
 
 /**
@@ -95,7 +89,7 @@ public class Planner {
     /**
      *
      */
-    public Queue queue = new Queue();
+    public PriorityQueue<State> queue = new PriorityQueue<State>(100, new StateComparator());
 
     /**
      *
@@ -294,7 +288,7 @@ public class Planner {
         // Full replan is necessary
         if(!s.tempoNet.IsConsistent()) {
             this.best = null;
-            this.queue.Clear();
+            this.queue.clear();
         }
     }
 
@@ -334,8 +328,8 @@ public class Planner {
      *
      */
     public void Init() {
-        queue.Add(new State());
-        best = queue.Peek();
+        queue.add(new State());
+        best = queue.peek();
     }
 
     /**
@@ -355,8 +349,8 @@ public class Planner {
         if (best == null) {
             throw new FAPEException("No known best state.");
         }
-        queue.Clear();
-        queue.Add(best);
+        queue.clear();
+        queue.add(best);
     }
     /*
      private boolean dfsRec(State st) {
@@ -439,13 +433,13 @@ public class Planner {
                 this.planState = EPlanState.INCONSISTENT;
                 break;
             }
-            if (queue.Empty()) {
+            if (queue.isEmpty()) {
                 TinyLogger.LogInfo("No plan found.");
                 this.planState = EPlanState.INFESSIBLE;
                 break;
             }
             //get the best state and continue the search
-            State st = queue.Pop();
+            State st = queue.remove();
             OpenedStates++;
 
             TinyLogger.LogInfo(st.Report());
@@ -487,7 +481,7 @@ public class Planner {
                 boolean suc = ApplyOption(next, o, next.GetConsumer(opt.value1));
                 //TinyLogger.LogInfo(next.Report());
                 if (suc) {
-                    queue.Add(next);
+                    queue.add(next);
                     GeneratedStates++;
                 } else {
                     TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
