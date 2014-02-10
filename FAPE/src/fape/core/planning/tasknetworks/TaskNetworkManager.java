@@ -33,12 +33,12 @@ public class TaskNetworkManager {
     List<Action> roots = new LinkedList<>();
     //List<Action> openLeaves = new LinkedList<>();
 
-    private void findLeaves(LinkedList<Action> leaves, Action current) {
+    private void findRefinableLeaves(LinkedList<Action> leaves, Action current) {
         if (current.IsRefinable()) {
             leaves.add(current);
         } else if (current.decomposition != null) {
             for (Action a : current.decomposition) {
-                findLeaves(leaves, a);
+                findRefinableLeaves(leaves, a);
             }
         }
     }
@@ -46,7 +46,7 @@ public class TaskNetworkManager {
     public List<Action> GetOpenLeaves() {
         LinkedList<Action> l = new LinkedList<>();
         for (Action a : roots) {
-            findLeaves(l, a);
+            findRefinableLeaves(l, a);
         }
         return l;
     }
@@ -126,7 +126,9 @@ public class TaskNetworkManager {
     }
 
     public String Report() {
-        return "size: " + roots.size() + ", actions: " + roots.toString();
+        String str = "Num roots: " + roots.size() + ", roots: " + roots.toString();
+        str += "\n\tLeaf actions" +  GetAllActions().toString();
+        return str;
     }
 
     private float recCost(Action a) {

@@ -27,8 +27,7 @@ import fape.core.planning.model.AbstractTemporalEvent;
 import fape.core.planning.model.Action;
 import fape.core.planning.model.StateVariable;
 import fape.core.planning.model.Type;
-import fape.core.planning.search.StateComparator;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.*;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.temporaldatabases.IUnifiable;
@@ -107,15 +106,18 @@ public class Planner {
         }
         //now we can happily apply all the options
         if (supporter != null && precedingComponent != null) {
+            assert consumer != null : "Consumer was not passed as an argument";
             // this is database merge of one persistence into another
             assert consumer.chain.size() == 1 && !consumer.chain.get(0).change
                     : "This is restricted to databases containing single persistence only";
 
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
         } else if (supporter != null) {
+            assert consumer != null : "Consumer was not passed as an argument";
             // database concatenation
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
         } else if (o.supportingAction != null) {
+            assert consumer != null : "Consumer was not passed as an argument";
             //this is a simple applciation of an action
             ActionRef ref = new ActionRef();
             ref.name = o.supportingAction.name;
@@ -387,9 +389,9 @@ public class Planner {
      dfsRec(queue.Pop());
      }
      */
-    Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
+    Comparator<Pair<Flaw, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<SupportOption>>>() {
         @Override
-        public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
+        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
             return o1.value2.size() - o2.value2.size();
         }
     };
@@ -415,6 +417,37 @@ public class Planner {
             return sum1 - sum2;
         }
     };
+
+    public List<SupportOption> GetResolvers(State st, Flaw f) {
+        if(f instanceof UnsupportedDatabase) {
+            return GetSupporters(((UnsupportedDatabase) f).consumer, st);
+        } else if(f instanceof UndecomposedAction) {
+            UndecomposedAction ua = (UndecomposedAction) f;
+            List<SupportOption> resolvers = new LinkedList<>();
+            for(int decompositionID=0 ; decompositionID < ua.action.refinementOptions.size() ; decompositionID++) {
+                SupportOption res = new SupportOption();
+                res.actionToDecompose = ua.action.mID;
+                res.decompositionID = decompositionID;
+                resolvers.add(res);
+            }
+            return resolvers;
+        } else {
+            assert false : "Unknown flaw type: " + f;
+            return new LinkedList<>();
+        }
+    }
+
+    public List<Flaw> GetFlaws(State st) {
+        List<Flaw> flaws = new LinkedList<>();
+        for(TemporalDatabase consumer : st.consumers) {
+            flaws.add(new UnsupportedDatabase(consumer));
+        }
+        for(Action refinable : st.taskNet.GetOpenLeaves()) {
+            flaws.add(new UndecomposedAction(refinable));
+        }
+        return flaws;
+    }
+
 
     private State aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
@@ -452,11 +485,11 @@ public class Planner {
                 return st;
             }
             //continue the search
-            LinkedList<Pair<TemporalDatabase, List<SupportOption>>> opts = new LinkedList<>();
-            for (TemporalDatabase db : st.consumers) {
-                List<SupportOption> supporters = GetSupporters(db, st);
-                opts.add(new Pair(db, supporters));
+            LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();
+            for(Flaw flaw : GetFlaws(st)) {
+                opts.add(new Pair<Flaw, List<SupportOption>>(flaw, GetResolvers(st, flaw)));
             }
+
             //do some sorting here - min domain
             //Collections.sort(opts, optionsComparatorMinDomain);
             Collections.sort(opts, optionsComparatorMinDomain);
@@ -474,13 +507,18 @@ public class Planner {
             }
 
             //we just take the first option here as a tie breaker by min-domain
-            Pair<TemporalDatabase, List<SupportOption>> opt = opts.getFirst();
+            Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
 
             for (SupportOption o : opt.value2) {
                 State next = new State(st);
-                boolean suc = ApplyOption(next, o, next.GetConsumer(opt.value1));
+                boolean success = false;
+                if(opt.value1 instanceof UndecomposedAction) {
+                    success = ApplyOption(next, o, null);
+                } else {
+                    success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));
+                }
                 //TinyLogger.LogInfo(next.Report());
-                if (suc) {
+                if (success) {
                     queue.add(next);
                     GeneratedStates++;
                 } else {

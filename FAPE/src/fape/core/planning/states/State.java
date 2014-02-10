@@ -247,7 +247,7 @@ public class State {
             throw new FAPEException("Those checks are very expensive and shouldn't be done while not in debugging mode");
         }
         this.conNet.CheckConsistency();
-        this.tempoNet.TestConsistent();
+        //this.tempoNet.TestConsistent();
         this.taskNet.CheckEventDBBindings(this);
         for(TemporalDatabase db : this.tdb.vars) {
             db.CheckChainComposition();
