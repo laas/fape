@@ -9,21 +9,16 @@
  */
 package fape.core.planning.dtgs;
 
-import fape.core.planning.model.AbstractAction;
-import fape.core.planning.model.AbstractTemporalEvent;
-import fape.core.planning.model.StateVariable;
-import fape.core.planning.model.StateVariableValue;
-import fape.core.planning.model.Type;
+import fape.core.execution.model.Instance;
+import fape.core.execution.model.Reference;
+import fape.core.planning.Planner;
+import fape.core.planning.model.*;
+import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+
+import java.util.*;
 
 /**
  * Domain transition graph, contains methods for its creation and for providing
@@ -60,6 +55,15 @@ public class ADTG {
      valueIndexCounter++;
      }*/
     public Type mType;
+
+    /**
+     * Map every object of type mType to an int id used for
+     * indexing in th graph.
+     */
+    private HashMap<String, Integer> instances = new HashMap<>();
+    private int nextId = 0;
+
+    private final Planner planner;
 
     /**
      *
@@ -240,20 +244,26 @@ public class ADTG {
      * @param t
      * @param actions
      */
-    public ADTG(Type t, Collection<AbstractAction> actions) {
+    public ADTG(Planner planner, Type t, Collection<AbstractAction> actions) {
+        this.planner = planner;
         var_id = t.name;
-        var_size = t.instances.size();
+        List<String> vars = planner.types.instances(t.name);
+        var_size = vars.size();
         mType = t;
 
         int i, j;
         graph = new DTGEdge[var_size][];
-        for (i = 0; i < var_size; i++) {
-            graph[i] = new DTGEdge[var_size];
+        for(String var : vars) {
+            instances.put(var, nextId);
+            graph[nextId] = new DTGEdge[var_size];
+            nextId++;
         }
 
+        // TODO: this is not really usefull, we just repeat the same thing n^2 times
+        // we might need to rethink the whole DTG thing
         for (AbstractAction a : actions) {
             for (j = 0; j < a.events.size(); j++) {
-                if (a.events.get(j).event instanceof TransitionEvent && a.events.get(j).SupportsStateVariable(var_id)) {
+                if (a.events.get(j).isTransitionEvent() && a.events.get(j).SupportsStateVariable(var_id)) {
                     //TransitionEvent te = (TransitionEvent) a.events.get(j).event;
                     for (int ii = 0; ii < graph.length; ii++) {
                         for (int jj = ii; jj < graph.length; jj++) {
@@ -268,16 +278,18 @@ public class ADTG {
         }
     }
 
+
     /**
      *
      * @param db
      * @return
      */
-    public HashSet<String> GetActionSupporters(TemporalDatabase db) {
-        StateVariableValue GetGlobalConsumeValue = db.GetGlobalConsumeValue();
+    public HashSet<String> GetActionSupporters(Planner pl, State st, TemporalDatabase db) { //TODO remove reference to planner
+        VariableRef var = db.GetGlobalConsumeValue();
         List<Integer> mValues = new LinkedList<>();
-        for (String st : GetGlobalConsumeValue.values) {
-            mValues.add(mType.instances.get(st));
+
+        for (String val : st.parameterBindings.get(var).domain) {
+            mValues.add(instances.get(val));
         }
 
         // All actions that may be enablers for this dtb
@@ -296,12 +308,15 @@ public class ADTG {
             }
         }
 
+
+
         // all actions that definitly support the database
         HashSet<String> supporterActionNames = new HashSet<>();
 
         // for all actions, check if there is a transition event supporting the database
         for(AbstractAction a : potentialSupporterActions) {
             for (AbstractTemporalEvent eve : a.events) {
+                /*
                 List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
                 list.retainAll(db.domain);
                 if (!list.isEmpty() && eve.event instanceof TransitionEvent) {
@@ -311,9 +326,94 @@ public class ADTG {
                         break;
                     }
                 }
+                */
+                if(CanBeSupporter(pl, st, a, eve, db)) {
+                    supporterActionNames.add(a.name);
+                    break;
+                }
             }
         }
+
         
         return supporterActionNames;
+    }
+
+
+    /**
+     * Returns true if the TemporalEvent abs of action a can be supporter
+     * of Temporal database db.
+     * @param pl
+     * @param st
+     * @param a
+     * @param abs
+     * @param db
+     * @return
+     */
+    private boolean CanBeSupporter(Planner pl, State st, AbstractAction a, AbstractTemporalEvent abs, TemporalDatabase db) {
+        if(abs.isPersistenceEvent()) {
+            return false;
+        }
+
+        if(!abs.varType.equals(db.stateVariable.type)) {
+            return false;
+        }
+        Reference svRef = new Reference(abs.stateVariableReference);
+        if(svRef.refs.size() != 2)
+            throw new FAPEException("event on something that is not a state variable: "+svRef);
+        if(!svRef.refs.get(1).equals(db.stateVariable.predicateName))
+            return false;
+
+
+        String predVar = svRef.GetConstantReference();
+        Set<String> possiblePredVarValues;
+        if(st.parameterBindings.containsKey(predVar)) {
+            possiblePredVarValues = new TreeSet(st.parameterBindings.get(predVar).domain);
+        } else {
+            String type = null;
+            for(Instance i : a.params) {
+                if(predVar.equals(i.name)) {
+                    type = i.type;
+                }
+            }
+            if(type == null) {
+                throw new FAPEException("Unable to find variable: "+predVar);
+            }
+            possiblePredVarValues = new TreeSet(pl.types.instances(type));
+        }
+
+        Set possibleRightPredVarValues = new TreeSet(st.parameterBindings.get(db.stateVariable.variable).domain);
+        possiblePredVarValues.retainAll(possibleRightPredVarValues);
+        if(possiblePredVarValues.isEmpty())
+            return false;
+
+
+
+
+
+        String supportVar = ((TransitionEvent) abs.event).to.var;
+        Set<String> possibleLeftValues;
+        if(st.parameterBindings.containsKey(supportVar)) {
+            possibleLeftValues = new TreeSet(st.parameterBindings.get(supportVar).domain);
+        } else {
+            String type = null;
+            for(Instance i : a.params) {
+                if(supportVar.equals(i.name)) {
+                    type = i.type;
+                }
+            }
+            if(type == null) {
+                throw new FAPEException("Unable to find variable: "+supportVar);
+            }
+            possibleLeftValues = new TreeSet(pl.types.instances(type));
+        }
+
+        Set possibleRightValues = new TreeSet(st.parameterBindings.get(db.GetGlobalConsumeValue()).domain);
+        possibleLeftValues.retainAll(possibleRightValues);
+        if(possibleLeftValues.isEmpty()) {
+            return false;
+        }
+
+
+        return true;
     }
 }

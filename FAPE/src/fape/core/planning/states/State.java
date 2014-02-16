@@ -12,7 +12,9 @@ package fape.core.planning.states;
 
 import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.StateVariable;
+import fape.core.planning.model.ObjectVariableValues;
+import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.VariableRef;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -21,6 +23,8 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
+
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -64,6 +68,9 @@ public class State {
     //public BindingManager bindings;
     //public CausalNetworkManager causalNet;
 
+
+    public HashMap<String, ObjectVariableValues> parameterBindings = new HashMap<>();
+
     /**
      *
      */
@@ -96,7 +103,12 @@ public class State {
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
-
+        parameterBindings = new HashMap<String, ObjectVariableValues>();
+        for(String key : st.parameterBindings.keySet()) {
+            ObjectVariableValues newBinding = st.parameterBindings.get(key).DeepCopy();
+            parameterBindings.put(key, newBinding);
+            conNet.AddUnifiable(newBinding);
+        }
         // copy the task network and updates the events pointers of actions to the newly cloned ones.
         taskNet = st.taskNet.DeepCopy(tdb.AllEvents());
 
@@ -105,7 +117,7 @@ public class State {
 
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
-            consumers.add((TemporalDatabase) conNet.objectMapper.get(sb.GetUniqueID()));
+            consumers.add(this.GetDatabase(sb.mID));
         }
         if (Planner.debugging) {
             this.ExtensiveCheck();
@@ -128,7 +140,7 @@ public class State {
      */
     public float GetGoalDistance() {
         float distance = this.consumers.size();
-        return distance * 3;
+        return distance;
     }
 
     public String Report() {
@@ -148,22 +160,6 @@ public class State {
         ret += "}\n";
 
         return ret;
-    }
-
-    /**
-     * we need to track the databases by their ids, not the object references,
-     * this method creates the mapping
-     *
-     * @param value1
-     * @return
-     */
-    public TemporalDatabase GetConsumer(TemporalDatabase value1) {
-        for (TemporalDatabase db : consumers) {
-            if (db.mID == value1.mID) {
-                return db;
-            }
-        }
-        throw new FAPEException("Consumer id mismatch.");
     }
 
     public TemporalDatabase GetDatabase(int temporalDatabase) {
@@ -189,9 +185,11 @@ public class State {
                     if (ct + 1 < theDatabase.chain.size()) {
                         //this was not the last element, we need to create another database and make split
                         TemporalDatabase newDB = tdb.GetNewDatabase(conNet);
+                        /** TODO : properly split the databases
                         for (StateVariable var : theDatabase.domain) {
                             newDB.domain.add(var);
                         }
+                         */
                         //add all extra chain components to the new database
                         List<TemporalDatabase.ChainComponent> remove = new LinkedList<>();
                         for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
@@ -239,6 +237,38 @@ public class State {
         }
     }
 
+    public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
+        return Unifiable(a.stateVariable, b.stateVariable);
+    }
+
+    /**
+     * Returns true if two state variables are unifiable (ie: they are on the same predicate
+     * and their variables are unifiable).
+     * @param a
+     * @param b
+     * @return
+     */
+    public boolean Unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        if(a.predicateName.equals(b.predicateName)) {
+            return Unifiable(a.variable, b.variable);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Return true if the two variables are unifiable (ie: share at least one value)
+     * @param a
+     * @param b
+     * @return
+     */
+    public boolean Unifiable(VariableRef a, VariableRef b) {
+        LinkedList<String> inter = new LinkedList<>(parameterBindings.get(a).domain);
+
+        inter.retainAll(parameterBindings.get(b).domain);
+        return inter.size() > 0;
+    }
+
     /**
      * This method is to be used while debugging to make sure the state is consistent
      */
@@ -246,7 +276,9 @@ public class State {
         if(!Planner.debugging) {
             throw new FAPEException("Those checks are very expensive and shouldn't be done while not in debugging mode");
         }
-        this.conNet.CheckConsistency();
+        // TODO: mind where we use that, there might be places where the stn or constraints network are not consistent
+        // but programatically correct
+        //this.conNet.CheckConsistency();
         //this.tempoNet.TestConsistent();
         this.taskNet.CheckEventDBBindings(this);
         for(TemporalDatabase db : this.tdb.vars) {

@@ -9,4 +9,9 @@ public class UnsupportedDatabase extends Flaw {
     public UnsupportedDatabase(TemporalDatabase tdb) {
         this.consumer = tdb;
     }
+
+    @Override
+    public String toString() {
+        return "Unsupported: " + consumer;
+    }
 }

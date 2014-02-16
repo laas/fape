@@ -29,18 +29,19 @@ public class Type {
      */
     public HashMap<String, String> contents;
 
+    public String parentTypeName;
+
+    public Type(String name, String parent) {
+        this.name = name;
+        this.parentTypeName = parent;
+        contents = new HashMap<>();
+    }
+
     /**
      *
      */
-    public HashMap<String, Integer> instances = new HashMap<>();
+    protected HashMap<String, Integer> instances = new HashMap<>();
     int instanceCounter = 0;
-    /**
-     * inherit from a parent type
-     * @param parent 
-     */
-    public Type(Type parent){
-        contents = new HashMap<>(parent.contents);
-    }
     
     /**
      *
@@ -48,6 +49,7 @@ public class Type {
      */
     public Type(String nm){
         name = nm;
+        parentTypeName = "";
         contents = new HashMap<>();
     }
 

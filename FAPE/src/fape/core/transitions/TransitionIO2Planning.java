@@ -10,25 +10,15 @@
  */
 package fape.core.transitions;
 
+import fape.core.execution.model.*;
 import fape.core.execution.model.Action;
-import fape.core.execution.model.ActionRef;
-import fape.core.execution.model.Instance;
-import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
+import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.AbstractAction;
-import fape.core.planning.model.AbstractTemporalEvent;
-import fape.core.planning.model.StateVariable;
-import fape.core.planning.model.StateVariableBoolean;
-import fape.core.planning.model.StateVariableEnum;
-import fape.core.planning.model.StateVariableFloat;
-import fape.core.planning.model.StateVariableInteger;
-import fape.core.planning.model.StateVariableValue;
-import fape.core.planning.model.Type;
+import fape.core.planning.model.*;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
@@ -37,12 +27,13 @@ import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
 import fape.exceptions.FAPEException;
-import fape.util.Pair;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+
+
+
 
 /**
  * realizes the transfers between different models
@@ -50,28 +41,6 @@ import java.util.List;
  * @author FD
  */
 public class TransitionIO2Planning {
-
-    /**
-     * take all of the parent and replicate it into the offspring
-     *
-     * @param t
-     * @param types
-     * @return
-     */
-    public static fape.core.planning.model.Type transformType(fape.core.execution.model.types.Type t, HashMap<String, fape.core.planning.model.Type> types) {
-        if (types.containsKey(t.name)) {
-            throw new FAPEException("Error: incremental type override " + t.name);
-        }
-        if (!types.containsKey(t.parent)) {
-            throw new FAPEException("Error: unknown parent type: " + t.parent);
-        }
-        fape.core.planning.model.Type ret = new Type(types.get(t.parent));
-        ret.name = t.name;
-        for (Instance i : t.instances) {
-            ret.contents.put(i.name, i.type);
-        }
-        return ret;
-    }
 
     /**
      * taking an instance of some type, decompose it into state variables
@@ -83,10 +52,10 @@ public class TransitionIO2Planning {
      * @param rootType
      * @return
      */
-    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, HashMap<String, fape.core.planning.model.Type> types, String rootType, boolean firstLevel) {
+    public static List<fape.core.planning.model.StateVariable> decomposeInstance(String qualifyingName, String name, String type, TypeManager types, String rootType, boolean firstLevel) {
         LinkedList<fape.core.planning.model.StateVariable> ret = new LinkedList<>();
-        if (types.containsKey(type)) {
-            Type tp = types.get(type);
+        if (types.containsType(type)) {
+            Type tp = types.getType(type);
             if (firstLevel) {
                 for (String nm : tp.contents.keySet()) {
                     ret.addAll(decomposeInstance(qualifyingName + name + ".", nm, tp.contents.get(nm), types, rootType, false));
@@ -133,7 +102,7 @@ public class TransitionIO2Planning {
      * @param toDomain
      * @return
      */
-    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn, List<String> fromDomain, List<String> toDomain) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn, VariableRef from, VariableRef to) {
         TemporalEvent ev = null;
         if (s.operator == null) {
             throw new FAPEException(null);
@@ -156,12 +125,8 @@ public class TransitionIO2Planning {
                     ev = eve3;
                 } else {
                     TransitionEvent eve4 = new TransitionEvent();
-                    eve4.from = null; // can be any value
-                    eve4.to = new StateVariableValue(assignUniqueIDToValues);
-                    eve4.to.values = new LinkedList<>(fromDomain);
-                    eve4.to.valueDescription = s.from.toString();
-                    //if(eve4.to.valueDescription.substring(0, 1).)
-                    mn.AddUnifiable(eve4.to);
+                    eve4.from = new VariableRef("null"); // can be any value
+                    eve4.to = from;
                     ev = eve4;
                 }
                 break;
@@ -172,22 +137,13 @@ public class TransitionIO2Planning {
                     if (s.from != null) {
                         //this is a transition event
                         TransitionEvent eve5 = new TransitionEvent();
-                        eve5.from = new StateVariableValue(assignUniqueIDToValues);
-                        eve5.to = new StateVariableValue(assignUniqueIDToValues);
-                        mn.AddUnifiable(eve5.from);
-                        mn.AddUnifiable(eve5.to);
-                        eve5.from.values = new LinkedList<>(fromDomain);
-                        eve5.to.values = new LinkedList<>(toDomain);
-                        eve5.from.valueDescription = s.from.toString();
-                        eve5.to.valueDescription = s.to.toString();
+                        eve5.from = from;
+                        eve5.to = to;
                         ev = eve5;
                     } else {
                         //this is a persistence event
                         PersistenceEvent eve6 = new PersistenceEvent();
-                        eve6.value = new StateVariableValue(assignUniqueIDToValues);
-                        eve6.value.values = new LinkedList<>(toDomain);
-                        mn.AddUnifiable(eve6.value);
-                        eve6.value.valueDescription = s.to.toString();
+                        eve6.value = to;
                         ev = eve6;
                     }
                 }
@@ -250,7 +206,8 @@ public class TransitionIO2Planning {
      * @param v
      * @param st
      */
-    public static void InsertStatementIntoState(Statement s, StateVariable v, State st) {
+    public static void InsertStatementIntoState(Planner pl, Statement s, StateVariable v, State st) {
+        // TODO: parameter v is unused
         if (v == null) {
             throw new FAPEException("Unknown state variable: " + s.GetVariableName());
         }
@@ -261,22 +218,19 @@ public class TransitionIO2Planning {
         //var.domain.add(v);
         // create a temporal database for this variable
         TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-        db.domain.add(v);
-        //db.var = var;
+        db.stateVariable = new ParameterizedStateVariable(s.leftRef, pl.GetType(st, s.leftRef));
 
         // create a new event for the termporal database that corresponds to the
         // statement
-        List<String> firstDomain = null;
-        List<String> secondDomain = null;
+        VariableRef from = null;
+        VariableRef to = null;
         if (s.from != null) {
-            firstDomain = new LinkedList<>();
-            firstDomain.add(s.from.GetConstantReference());
+            from = new VariableRef(s.from.GetConstantReference());
         }
         if (s.to != null) {
-            secondDomain = new LinkedList<>();
-            secondDomain.add(s.to.GetConstantReference());
+            to = new VariableRef(s.to.GetConstantReference());
         }
-        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, firstDomain, secondDomain);
+        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, from, to);
         // statements at the start of the of the world
         TemporalVariable tvs = st.tempoNet.getNewTemporalVariable();
         ev.start = tvs;
@@ -312,7 +266,7 @@ public class TransitionIO2Planning {
         db.AddEvent(ev);
 
         //add the event into the consumers, unless it is a statement event
-        if (ev instanceof PersistenceEvent || (ev instanceof TransitionEvent && ((TransitionEvent) ev).from != null)) {
+        if (db.isConsumer()) {
             st.consumers.add(db);
         }
     }
@@ -325,14 +279,14 @@ public class TransitionIO2Planning {
      * @param types
      * @return
      */
-    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn, HashMap<String, fape.core.planning.model.Type> types) {
+    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn, TypeManager types) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
-        act.param2Event = new ArrayList<>(act.params.size());
+
         for (Statement s : a.statements) {
             String varName = s.GetVariableName();
-            String varType = "-1";
+            String varType = "";
             varName = varName.substring(varName.indexOf("."));
             for (StateVariable sv : vars.values()) {
                 String smallDeriv = sv.typeDerivationName.substring(sv.typeDerivationName.indexOf("."));
@@ -340,76 +294,25 @@ public class TransitionIO2Planning {
                     varType = sv.type;
                 }
             }
-            /*String nm = s.leftRef.refs.getFirst();
-             for (Instance i : act.params) {
-             if (i.name.equals(nm)) {
-             varType = i.type;
-             }
-             }*/
-            HashMap<String, Type> parameterName2Type = new HashMap<>();
-            for (Instance i : a.params) {
-                parameterName2Type.put(i.name, types.get(i.type));
+            if(varType.isEmpty()) {
+                throw new FAPEException("Error: did not find type for state varaiable of statement "+s);
             }
-            List<String> firstDomain = null;
-            List<String> secondDomain = null;
+
+            Reference from = new Reference("null");
+            Reference to = new Reference("null");
             if (s.from != null) {
-                firstDomain = new LinkedList<>();
-                Type t = parameterName2Type.get(s.from.GetConstantReference());
-                if (t != null) {
-                    firstDomain.addAll(t.instances.keySet());
-                } else {
-                    firstDomain.add(s.from.toString());
-                }
+                from = s.from;
             }
             if (s.to != null) {
-                secondDomain = new LinkedList<>();
-                Type t = parameterName2Type.get(s.to.GetConstantReference());
-                if (t != null) {
-                    secondDomain.addAll(t.instances.keySet());
-                } else {
-                    secondDomain.add(s.to.toString());
-                }
-            }
-            TemporalEvent eve = ProduceTemporalEvent(s, false, mn, firstDomain, secondDomain);
-
-            //find the supported state variables
-            List<StateVariable> supportedStateVariables = new LinkedList<>();
-            if (eve instanceof TransitionEvent) {
-                //((TransitionEvent) eve).to.
-                String tp = null;
-                for (Instance i : act.params) {
-                    if (i.name.equals(s.leftRef.GetConstantReference())) {
-                        tp = i.type;
-                    }
-                }
-                String searchStr = tp + s.leftRef.toString().substring(s.leftRef.toString().indexOf("."));
-                for (StateVariable sv : vars.values()) {
-                    if (sv.typeDerivationName.equals(searchStr)) {
-                        supportedStateVariables.add(sv);
-                    }
-                }
-                if (supportedStateVariables.isEmpty()) {
-                    throw new FAPEException("Empty domain.");
-                }
+                to = s.to;
             }
 
-            AbstractTemporalEvent ev = new AbstractTemporalEvent(eve, s.interval, s.leftRef, varType, supportedStateVariables);
+            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, false, mn, new VariableRef(from), new VariableRef(to));
+
+            AbstractTemporalEvent ev = new AbstractTemporalEvent(tEvent, s.interval, s.leftRef, varType);
             act.events.add(ev);
-            // now lets get all unmentioned parameters and add them from events to parameters
-            /*String paramName = s.leftRef.refs.getFirst();
-             boolean found = false;
-             for(Instance i:act.params){
-             if(i.name.equals(paramName)){
-             found = true;
-             }
-             }
-             if(!found){
-             Instance i = new Instance();
-             i.name = paramName;
-             }*/
         }
         act.strongDecompositions = a.strongDecompositions;
-        act.MapParametersToEvents();
         return act;
     }
 }

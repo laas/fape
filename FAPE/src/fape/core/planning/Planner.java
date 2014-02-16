@@ -11,41 +11,29 @@
 package fape.core.planning;
 
 import fape.core.execution.Executor;
+import fape.core.execution.model.*;
+import fape.core.planning.model.TypeManager;
 import fape.core.planning.dtgs.ADTG;
-import fape.core.execution.model.ANMLBlock;
-import fape.core.execution.model.ActionRef;
-import fape.core.execution.model.AtomicAction;
-import fape.core.execution.model.Instance;
-import fape.core.execution.model.Reference;
-import fape.core.execution.model.TemporalConstraint;
 import fape.core.execution.model.statements.Statement;
 //import fape.core.execution.model.types.Type;
 
 import fape.core.planning.constraints.UnificationConstraintSchema;
-import fape.core.planning.model.AbstractAction;
-import fape.core.planning.model.AbstractTemporalEvent;
+import fape.core.planning.model.*;
 import fape.core.planning.model.Action;
-import fape.core.planning.model.StateVariable;
-import fape.core.planning.model.Type;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
-import fape.core.planning.stn.STNManager;
-import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
-import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.transitions.TransitionIO2Planning;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
-import fape.util.TimePoint;
 import fape.util.TinyLogger;
-import java.math.BigDecimal;
-import java.util.*;
 
-import javax.swing.SwingWorker;
+import java.io.PrintStream;
+import java.util.*;
 
 /**
  *
@@ -68,7 +56,7 @@ public class Planner {
     /**
      * a list of types keyed by its name
      */
-    public HashMap<String, fape.core.planning.model.Type> types = new HashMap<>();
+    public TypeManager types = new TypeManager();
 
     /**
      *
@@ -84,6 +72,15 @@ public class Planner {
      *
      */
     public HashMap<String, ADTG> dtgs = new HashMap<>();
+
+    private int nextVarID = 0;
+
+    /**
+     * @return a new unused for an unbinded variable.
+     */
+    public String NewUnbindedVarName() {
+        return "a" + nextVarID++ + "_";
+    }
 
     /**
      *
@@ -124,7 +121,7 @@ public class Planner {
             int ct = 0;
             for (Instance i : o.supportingAction.params) {
                 Reference rf = new Reference();
-                rf.refs.add("a" + (ct++) + "_"); //random unbinded parameters
+                rf.refs.add(NewUnbindedVarName()); //random unbinded parameters
                 ref.args.add(rf);
             }
             boolean enforceDuration = true;
@@ -137,7 +134,8 @@ public class Planner {
             for (TemporalEvent e : addedAction.events) {
                 if (e instanceof TransitionEvent) {
                     TransitionEvent ev = (TransitionEvent) e;
-                    if (ev.to.Unifiable(consumer.GetGlobalConsumeValue())) {
+                    TemporalDatabase potSupporter = next.GetDatabase(ev.tdbID);
+                    if(next.Unifiable(ev.to, consumer.GetGlobalConsumeValue()) && next.Unifiable(potSupporter.stateVariable, consumer.stateVariable)) {
                         supportingDatabase = ev.tdbID;
                     }
                 }
@@ -168,57 +166,13 @@ public class Planner {
             decomposedAction.decomposition = new LinkedList<>();
             ArrayList<Action> l = new ArrayList<>();
             for (ActionRef ref : actionsForDecomposition) {
-                l.add(AddAction(ref, next, decomposedAction, true));
+                l.add(AddAction(ref.cc(), next, decomposedAction, true));
             }
 
-            //now we need to introduce binding constraints between the events through the parameter binding
             //add the constraints parent-child temporal constraints
             for (Action a : l) {
                 next.tempoNet.EnforceBefore(decomposedAction.start, a.start);
                 next.tempoNet.EnforceBefore(a.end, decomposedAction.end);
-                List<UnificationConstraintSchema> lt = unificationConstraintPropagationSchema.get(actions.get(decomposedAction.name)).get(o.decompositionID);
-                for (UnificationConstraintSchema s : lt) {
-                    //now we are adding a constraint between a pair of temporal databases and/or state variable values
-                    TemporalEvent e = decomposedAction.events.get(s.mEventID);
-                    TemporalEvent e2 = a.events.get(s.actionEventID);
-                    IUnifiable aa = null, bb = null;
-                    switch (s.typeLeft) {
-                        case EVENT:
-                            aa = next.tdb.GetDB(e.tdbID);
-                            break;
-                        case FIRST_VALUE:
-                            if (e instanceof TransitionEvent) {
-                                aa = ((TransitionEvent) e).from;
-                            } else if (e instanceof PersistenceEvent) {
-                                aa = ((PersistenceEvent) e).value;
-                            } else {
-                                throw new FAPEException("Unknown event type.");
-                            }
-                            break;
-                        case SECOND_VALUE:
-                            aa = ((TransitionEvent) e).to;
-                            break;
-                    }
-
-                    switch (s.typeRight) {
-                        case EVENT:
-                            bb = next.tdb.GetDB(e2.tdbID);
-                            break;
-                        case FIRST_VALUE:
-                            if (e2 instanceof TransitionEvent) {
-                                bb = ((TransitionEvent) e2).from;
-                            } else if (e2 instanceof PersistenceEvent) {
-                                bb = ((PersistenceEvent) e2).value;
-                            } else {
-                                throw new FAPEException("Unknown event type.");
-                            }
-                            break;
-                        case SECOND_VALUE:
-                            bb = ((TransitionEvent) e2).to;
-                            break;
-                    }
-                    next.conNet.AddUnificationConstraint(aa, bb);
-                }
             }
             //add temporal constraints between actions
             for (TemporalConstraint c : tempCons) {
@@ -228,7 +182,8 @@ public class Planner {
             throw new FAPEException("Unknown option.");
         }
 
-        return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next); //if the propagation failed and we have achieved an inconsistent state
+        // if the propagation failed and we have achieved an inconsistent state
+        return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next);
     }
 
     /**
@@ -487,11 +442,10 @@ public class Planner {
             //continue the search
             LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();
             for(Flaw flaw : GetFlaws(st)) {
-                opts.add(new Pair<Flaw, List<SupportOption>>(flaw, GetResolvers(st, flaw)));
+                opts.add(new Pair(flaw, GetResolvers(st, flaw)));
             }
 
             //do some sorting here - min domain
-            //Collections.sort(opts, optionsComparatorMinDomain);
             Collections.sort(opts, optionsComparatorMinDomain);
 
             if (opts.isEmpty()) {
@@ -565,14 +519,14 @@ public class Planner {
 
         //get chain connections
         for (TemporalDatabase b : st.tdb.vars) {
-            if (db == b || !TemporalDatabase.Unifiable(db, b)) {
+            if (db == b || !st.Unifiable(db, b)) {
                 continue;
             }
             if (db.HasSinglePersistence()) {
                 //we are looking for chain integration too
                 int ct = 0;
                 for (TemporalDatabase.ChainComponent comp : b.chain) {
-                    if (comp.change && comp.GetSupportValue().Unifiable(db.GetGlobalConsumeValue())
+                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
                             && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                         SupportOption o = new SupportOption();
                         o.precedingChainComponent = ct;
@@ -582,7 +536,7 @@ public class Planner {
                     ct++;
                 }
             } else {
-                if (b.GetGlobalSupportValue().Unifiable(db.GetGlobalConsumeValue())
+                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
                         && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
                     SupportOption o = new SupportOption();
                     o.temporalDatabase = b.mID;
@@ -598,8 +552,10 @@ public class Planner {
         //first get the action names from the abstract dtgs
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
-        ADTG dtg = dtgs.get(db.domain.getFirst().type);
-        HashSet<String> abs = dtg.GetActionSupporters(db);
+
+
+        ADTG dtg = dtgs.get(db.stateVariable.type);
+        HashSet<String> abs = dtg.GetActionSupporters(this, st, db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
         ret.addAll(options);
@@ -651,7 +607,9 @@ public class Planner {
             aa.mID = a.mID;
             aa.duration = (int) a.maxDuration;
             aa.name = a.name;
+            /** TODO FIXME
             aa.params = a.ProduceParameters(myState);
+             */
             ret.add(aa);
         }
 
@@ -708,38 +666,35 @@ public class Planner {
 
         // this a generic predecesor of all types
         if (st.isInitState) {
-            types.put("object", new fape.core.planning.model.Type("object"));
-            Type bool = new fape.core.planning.model.Type("boolean");
-            bool.AddInstance("true");
-            bool.AddInstance("false");
-            types.put("boolean", bool);
-            //STNManager.Init();
+            types.addType("object", "");
+            types.addType("boolean", "");
+
+            // add true and false to the instances to be processed
+            pl.instances.add(new Instance("true", "boolean"));
+            pl.instances.add(new Instance("false", "boolean"));
         }
 
         //convert types
         for (fape.core.execution.model.types.Type t : pl.types) {
-            types.put(t.name, TransitionIO2Planning.transformType(t, types));
+            types.addType(t.name, t.parent);
+            for(Instance content : t.instances) {
+                types.addContent(t.name, content);
+            }
         }
 
         //convert instances and create state variables from them
         for (Instance i : pl.instances) {
-            types.get(i.type).AddInstance(i.name); //this is all of them!
-            fape.core.execution.model.types.Type tp = null;
-            for (fape.core.execution.model.types.Type t : pl.types) {
-                if (t.name.equals(i.type)) {
-                    tp = t;
-                }
-            }
-            if (tp == null) {
-                throw new FAPEException("Unknown parent type.");
-            }
-            if (tp.parent != null) {
-                types.get(tp.parent).AddInstance(i.name); //this is all of them!
-            }
+            types.addInstance(i);
+
             List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type, true);
             for (StateVariable v : l) {
                 vars.put(v.name, v);
             }
+
+            // Every instance is also a variable with a unique value in their domain.
+            ObjectVariableValues binding = new ObjectVariableValues(i.name, i.type);
+            assert !st.parameterBindings.containsKey(i.name);
+            st.parameterBindings.put(i.name, binding);
         }
 
         //process statements
@@ -747,7 +702,7 @@ public class Planner {
             if (!vars.containsKey(s.GetVariableName())) {
                 throw new FAPEException("Unknown state variable: " + s.GetVariableName());
             }
-            TransitionIO2Planning.InsertStatementIntoState(s, vars.get(s.GetVariableName()), st);
+            TransitionIO2Planning.InsertStatementIntoState(this, s, vars.get(s.GetVariableName()), st);
         }
 
         //process actions
@@ -764,120 +719,35 @@ public class Planner {
             AddAction(ref, st, null, false);
         } //end of seed processing
 
-        //add the values of state variables
-        /*for (StateVariable v : vars.values()) {
-         Type t = types.get(v.type);
-         t.AddInstance(v.name);
-            
-            
-            
-         }*/
-        /*
-         //add the state variabel value indexes into the abstract actions
-         for(AbstractAction a:actions.values()){
-         for(AbstractTemporalEvent e:a.events){
-         if(e.event instanceof TransitionEvent){
-         TransitionEvent ev = (TransitionEvent) e.event;    
-         ev.from.index = types.get(e.varType).instances.get(ev.from.value);
-         ev.to.index = types.get(e.varType).instances.get(ev.to.value);
-         }else if(e.event instanceof PersistenceEvent){
-         PersistenceEvent ev = (PersistenceEvent) e.event;                    
-         ev.value.index = types.get(e.varType).instances.get(ev.value.value);
-         }
-         }
-         }*/
-        //get values for the state variables
-        /*for (AbstractAction a : actions.values()) {
-         for (AbstractTemporalEvent e : a.events) {
-         if (e.event instanceof TransitionEvent || e.event instanceof PersistenceEvent) {
-         String refe = e.stateVariableReference.GetTypeReference();
-
-         int xx = 0;
-         /*HashSet<String> hs = values.get(refe);
-         if(hs == null){
-         hs = new HashSet<>();
-         }
-         if(e.event instanceof TransitionEvent){
-         hs.add(((TransitionEvent)e.event).from.value);
-         hs.add(((TransitionEvent)e.event).to.value);
-         }else{
-         hs.add(((PersistenceEvent)e.event).value.value);
-         }*/
-        //}
-        //}
-        // }
         if (st.isInitState) {
-
             //create domain transition graphs
-            for (Type t : types.values()) {
+            for (Type t : types.getTypes()) {
                 if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
-                    ADTG dtg = new ADTG(t, actions.values());
+                    ADTG dtg = new ADTG(this, t, actions.values());
 
                     dtg.op_all_paths();
                     dtgs.put(t.name, dtg);
                 }
             }
-
-            //create propagation schemas
-            for (AbstractAction a : actions.values()) {
-                HashMap<Integer, List<UnificationConstraintSchema>> schemas = new HashMap<>();
-                int decompositionCounter = 0; //indexes which decomposition we are working on
-                for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
-                    List<UnificationConstraintSchema> cons = new LinkedList<>();
-                    int referenceActionCounter = 0;
-                    for (ActionRef rf : p.value1) {
-                        AbstractAction rfAbs = actions.get(rf.name);
-                        //now we prepare the bindings
-                        //List<Pair<List<AbstractAction.SharedParameterStruct>, List<AbstractAction.SharedParameterStruct>>> pairs = new LinkedList<>();                        
-                        int referenceActionParameterCounter = 0;
-                        for (Reference ref : rf.args) {
-                            if (ref.refs.toString().endsWith("_")) {
-                                continue; //this is unbinded reference
-                            }
-                            int mainActionParameterCounter = 0;
-                            for (Instance i : a.params) {
-                                if (i.name.equals(ref.GetConstantReference())) {
-                                    //now we create the constrain schemas for all the combinations of events and values that share the parameter
-                                    for (AbstractAction.SharedParameterStruct u : a.param2Event.get(mainActionParameterCounter)) {
-                                        for (AbstractAction.SharedParameterStruct v : rfAbs.param2Event.get(referenceActionParameterCounter)) {
-                                            cons.add(new UnificationConstraintSchema(decompositionCounter, u.relativeEventIndex, referenceActionCounter, v.relativeEventIndex, u.type, v.type));
-                                        }
-                                    }
-                                }
-                                mainActionParameterCounter++;
-                            }
-                            referenceActionParameterCounter++;
-                        }
-
-                        /*
-                         AbstractAction abs = actions.get(rf.name);
-                         for (Instance i : a.params) {
-                         int subActionParameterCounter = 0;
-                         for (Reference r : rf.args) {
-                         if (r.refs.get(0).equals(i.name)) {
-                         //this parameter is passed by, now we need to find the pairs of events
-                         for (int mainEventCount = 0; mainEventCount < a.events.size(); mainEventCount++) {
-                         for (int subEventCount = 0; subEventCount < abs.events.size(); subEventCount++) {
-                         if (abs.events.get(subEventCount).stateVariableReference.refs.getFirst().equals(abs.params.get(subActionParameterCounter).name)
-                         && a.events.get(mainEventCount).stateVariableReference.refs.getFirst().equals(i.name)) {
-                         
-                         }
-                         }
-                         }
-
-                         }
-                         subActionParameterCounter++;
-                         }
-                         }*/
-                        referenceActionCounter++;
-                    }
-                    schemas.put(decompositionCounter, cons);
-                    decompositionCounter++;
-                }
-                unificationConstraintPropagationSchema.put(a, schemas);
-            }
         }
+
         st.isInitState = false;
+    }
+
+    /**
+     * Return the type of the paramererized state varaible ref.
+     * ref bust of the form x.predicate
+     * @param st
+     * @param ref
+     * @return
+     */
+    public String GetType(State st, Reference ref) {
+        assert st.parameterBindings.containsKey(ref.GetConstantReference());
+        assert ref.refs.size() == 2;
+
+        String baseType = st.parameterBindings.get(ref.GetConstantReference()).type;
+        String expressionType = types.getContentType(baseType, ref.refs.get(1));
+        return expressionType;
     }
 
     /**
@@ -896,6 +766,9 @@ public class Planner {
         Action act = new Action();
         act.params = abs.params;
         act.constantParams = ref.args;
+
+        List<Pair<Reference,Reference>> hardBindings = new LinkedList<>();
+
         if (parent != null) {
             //we need to pair arguments of the method with the parameters of the added action
             int refCt = 0;
@@ -910,10 +783,45 @@ public class Planner {
                 }
                 refCt++;
             }
+
+            // this look for parameters that where given a stateVariable value from the parent action
+            // (typically r.right), add a pair of references with the stateVariable and the parameter name
+            for(refCt=0 ; refCt<act.constantParams.size() ; refCt++) {
+                Reference r = act.constantParams.get(refCt);
+                if(r.refs.size() > 1) {
+                    String var = NewUnbindedVarName();
+                    Reference varRef = new Reference(var);
+                    hardBindings.add(new Pair(r, varRef));
+                    act.constantParams.remove(refCt);
+                    act.constantParams.add(refCt, varRef);
+                }
+            }
         }
+
+
+        // for all parameters, create a new variable and add it to the state
+        for(int i=0 ; i<act.params.size() ; i++) {
+            Instance param = act.params.get(i);
+            Reference paramRef = act.constantParams.get(i);
+            String varName = paramRef.GetConstantReference();
+
+            assert types.containsType(param.type) : "Unknown type";
+
+            if(!st.parameterBindings.containsKey(varName)) {
+                // variable does not exists yet, create one
+                if(varName.endsWith("_")) {
+                    List<String> values = types.instances(param.type);
+                    ObjectVariableValues binding = new ObjectVariableValues(values, param.type);
+                    st.parameterBindings.put(varName, binding);
+                } else {
+                    throw new FAPEException("This is a literal, should be already in variables: " + paramRef);
+                }
+            }
+        }
+
         // set the same name
         act.name = abs.name;
-        //prepare the time points
+
         //add the refinements 
         act.refinementOptions = abs.strongDecompositions;
 
@@ -931,65 +839,49 @@ public class Planner {
         // enforce that the current action must be executed after a known time in the future
         st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
 
-        //ArrayList<TemporalDatabase> dbList = new ArrayList<>();
+        // This creates persistence event for every parameter of the form "r.right -> g"
+        for(Pair<Reference,Reference> binding : hardBindings) {
+            PersistenceEvent ev = new PersistenceEvent();
+            ev.value = new VariableRef(binding.value2);
+            TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
+            ev.tdbID = db.mID;
+
+            // Event is forced during the whole action
+            TemporalInterval all = new TemporalInterval("TStart", "TEnd");
+            all.AssignTemporalContext(ev, act.start, act.end);
+
+            // create a stateVariable for the database
+            Reference finalRef = act.BindedReference(binding.value1);
+            String type = GetType(st, finalRef);
+            db.stateVariable = new ParameterizedStateVariable(finalRef, type);
+
+            act.events.add(ev);
+            db.AddEvent(ev);
+            if(db.isConsumer())
+                st.consumers.add(db);
+        }
+
         //set up the events
         for (AbstractTemporalEvent ev : abs.events) {
+            // get the event binded into the current action
+            TemporalEvent event = ev.GetEventInAction(st, act);
 
-            TemporalEvent event = ev.event.cc(st.conNet, true);
-
-            // sets the temporal interval into the context of the temporal context of the parent action
-            ev.interval.AssignTemporalContext(event, act.start, act.end);
-
-            String stateVariableReferenceSuffix = ev.stateVariableReference.toString();
-            stateVariableReferenceSuffix = stateVariableReferenceSuffix.substring(stateVariableReferenceSuffix.indexOf("."), stateVariableReferenceSuffix.length());
-
+            // create new databse and
             TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
             event.tdbID = db.mID;
-            //dbList.add(db);
-            for (int i = 0; i < abs.params.size(); i++) {
-                Instance instanceOfTheParameter = abs.params.get(i);
-                if (instanceOfTheParameter.name.equals(ev.stateVariableReference.refs.getFirst())) {
-                    //this is the right parameter
-                    Reference re = ref.args.get(i);
 
-                    if (re.refs.getFirst().endsWith("_")) {
-                        // this is an unbinded reference, we need to add all possible state variables     
-                        String typeDerivation = instanceOfTheParameter.type + stateVariableReferenceSuffix;
-                        for (String str : vars.keySet()) {
-                            StateVariable var = vars.get(str);
-                            if (var.typeDerivationName.equals(typeDerivation)) {
-                                db.domain.add(vars.get(str));
-                            }
-                        }
-                    } else {
-                        // this is binded to a constant - one specific state variable
-                        StateVariable var = vars.get(re.toString() + stateVariableReferenceSuffix);
-                        if (var == null) {
-                            throw new FAPEException("Unknown state variable.");
-                        }
-                        //obj.domain.add(var);
-                        db.domain.add(var);
-                    }
-                    db.AddActionParam(act.mID, instanceOfTheParameter);
-                }
-            }
+            // Create a stateVariable for the database
+            Reference finalRef = act.BindedReference(ev.stateVariableReference);
+            String type = GetType(st, finalRef);
+            db.stateVariable = new ParameterizedStateVariable(finalRef, type);
 
             //we add the event into the database and the action and the consumers
             act.events.add(event);
-            st.consumers.add(db);
             db.AddEvent(event);
-        }//event transformation end
+            if(db.isConsumer())
+                st.consumers.add(db);
 
-        //now we need to propagate the binding constraints, those are the binding constraints between events in one action
-        for (List<AbstractAction.SharedParameterStruct> structs : abs.param2Event) {
-            for (int ii = 0; ii < structs.size(); ii++) {
-                for (int jj = ii + 1; jj < structs.size(); jj++) {
-                    IUnifiable uni1 = act.GetUnifiableComponent(st, structs.get(ii));
-                    IUnifiable uni2 = act.GetUnifiableComponent(st, structs.get(jj));
-                    st.conNet.AddUnificationConstraint(uni1, uni2);
-                }
-            }
-        }
+        }//event transformation end
 
         //lets add the action into the task network
         if (parent == null) {
@@ -997,7 +889,6 @@ public class Planner {
         } else {
             parent.decomposition.add(act);
         }
-        //add 
 
         return act;
     }
@@ -1053,8 +944,11 @@ public class Planner {
      */
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
-        String anml = args[0];
+        String anml = "problems/DreamDecomposition.anml";
+        if(args.length > 0)
+            anml = args[0];
         Planner p = new Planner();
+        Planner.actionResolvers = true;
         p.Init();
         p.ForceFact(Executor.ProcessANMLfromFile(anml));
         boolean timeOut = false;

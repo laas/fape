@@ -19,6 +19,16 @@ import java.util.LinkedList;
  */
 public class Reference {
 
+    public Reference() {}
+
+    public Reference(String name) {
+        this.refs.add(name);
+    }
+
+    public Reference(Reference ref) {
+        this.refs.addAll(ref.refs);
+    }
+
     /**
      *
      */
@@ -52,5 +62,10 @@ public class Reference {
         while(it.hasNext()){
             refs.addFirst(it.next());
         }        
+    }
+
+    public void ReplaceFirstReference(String first) {
+        this.refs.pollFirst();
+        refs.addFirst(first);
     }
 }

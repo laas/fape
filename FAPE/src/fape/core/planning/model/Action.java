@@ -14,19 +14,13 @@ import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalConstraint;
-import fape.core.planning.constraints.UnificationConstraintSchema;
-import fape.core.planning.states.State;
 
 import fape.core.planning.stn.TemporalVariable;
-import fape.core.planning.temporaldatabases.IUnifiable;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
-import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
-import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import java.util.LinkedList;
-import java.util.List;
+
+import java.util.*;
 
 /**
  * this is an action in the task network, it may be decomposed
@@ -72,6 +66,7 @@ public class Action {
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
+    public HashMap<Instance, ObjectVariableValues> parameterBindings = new HashMap<>();
     public Status status = Status.PENDING;
 
     /**
@@ -83,21 +78,6 @@ public class Action {
     }
     public List<Action> decomposition; //this is the truly realized decomposition
 
-    /*
-     public void AddBindingConstraintsBetweenMyEvents(){
-     for(int i = 0; i < events.size(); i++){
-     for(int j = i + 1; j < events.size(); j++){
-                
-     TemporalEvent e1 = events.get(i), e2 = events.get(j);
-                
-     }
-     }
-     for(TemporalEvent e1:events){
-     for(TemporalEvent e2:events){
-     if(e1.objectVar.)
-     }
-     }
-     }*/
     /**
      *
      * @return
@@ -142,18 +122,21 @@ public class Action {
         return a;
     }
 
-    public IUnifiable GetUnifiableComponent(State st, AbstractAction.SharedParameterStruct get) {
-        TemporalEvent e = events.get(get.relativeEventIndex);
-        if (get.type == UnificationConstraintSchema.EConType.EVENT) {
-            return st.tdb.GetDB(e.tdbID);
-        } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof TransitionEvent) {
-            return ((TransitionEvent) e).from;
-        } else if (get.type == UnificationConstraintSchema.EConType.FIRST_VALUE && e instanceof PersistenceEvent) {
-            return ((PersistenceEvent) e).value;
-        } else if (get.type == UnificationConstraintSchema.EConType.SECOND_VALUE) {
-            return ((TransitionEvent) e).to;
+    /**
+     * Returns a reference where usage of a parameter is replaced by the appropriate variable.
+     * @param ref
+     * @return
+     */
+    public Reference BindedReference(Reference ref) {
+        Reference ret = new Reference(ref);
+        String first = ret.GetConstantReference();
+        for(int i=0 ; i<params.size() ; i++) {
+            if(params.get(i).name.equals(first)) {
+                ret.ReplaceFirstReference(constantParams.get(i));
+            }
         }
-        throw new FAPEException("unsupported unification");
+        return ret;
+
     }
 
     @Override
@@ -165,6 +148,7 @@ public class Action {
         return 1.0f;
     }
 
+    /* TODO: recreate
     public List<String> ProduceParameters(State st) {
         List<String> ret = new LinkedList<>();
         String foundConstantValue = "";
@@ -210,5 +194,6 @@ public class Action {
         }
         return ret;
     }
+    */
 
 }

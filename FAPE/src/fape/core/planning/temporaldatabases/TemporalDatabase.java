@@ -12,8 +12,8 @@ package fape.core.planning.temporaldatabases;
 
 import fape.core.execution.model.Instance;
 import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.StateVariable;
-import fape.core.planning.model.StateVariableValue;
+import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.VariableRef;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -24,28 +24,26 @@ import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
 import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
 import fape.core.planning.temporaldatabases.events.resources.SetEvent;
 import fape.exceptions.FAPEException;
-import fape.util.Pair;
-import fape.util.TinyLogger;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * records the events for one state variable
  *
  * @author FD
  */
-public class TemporalDatabase extends IUnifiable {
+public class TemporalDatabase {
+
+    public int mID;
+
+    public ParameterizedStateVariable stateVariable;
 
     public String Report() {
         String ret = "";
         //ret += "{\n";
 
-        ret += "    " + this.domain + "  :  id="+mID+"\n";
+        ret += "    " + this.stateVariable + "  :  id="+mID+"\n";
         for (ChainComponent c : chain) {
             for (TemporalEvent e : c.contents) {
                 ret += "    " + e.Report();
@@ -63,20 +61,12 @@ public class TemporalDatabase extends IUnifiable {
      */
     public TemporalDatabase(boolean assignNewUniqueID) {
         if (assignNewUniqueID) {
-            mID = idCounter++;
+            mID = IUnifiable.idCounter++;
         }
     }
 
-    /**
-     *
-     * @param db
-     * @param b
-     * @return
-     */
-    public static boolean Unifiable(TemporalDatabase db, TemporalDatabase b) {
-        LinkedList<StateVariable> inter = new LinkedList(db.domain);
-        inter.retainAll(b.domain);
-        return inter.size() > 0;
+    public boolean isConsumer() {
+        return !chain.getFirst().GetConsumeValue().isNull();
     }
 
     /**
@@ -110,11 +100,11 @@ public class TemporalDatabase extends IUnifiable {
         TemporalDatabase newDB = new TemporalDatabase(false);
         newDB.actionAssociations = new HashMap<>(this.actionAssociations);
         newDB.mID = mID;
-        newDB.domain = new LinkedList(this.domain);
+        newDB.stateVariable = stateVariable;
         for (ChainComponent c : this.chain) {
             newDB.chain.add(c.DeepCopy(m));
         }
-        m.AddUnifiable(newDB);
+
         // set the mDatabase variables in the events
         for (ChainComponent c : newDB.chain) {
             c.SetDatabase(newDB);
@@ -153,51 +143,6 @@ public class TemporalDatabase extends IUnifiable {
                 st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
             }
         }*/
-    }
-
-    /**
-     * reduces the domain, if elements were removed, returns true
-     *
-     * @param supported
-     * @return
-     */
-    @Override
-    public boolean ReduceDomain(HashSet<String> supported) {
-        LinkedList<StateVariable> remove = new LinkedList<>();
-        for (StateVariable v : domain) {
-            if (!supported.contains(v.GetObjectConstant())) {
-                remove.add(v);
-            }
-        }
-        if (!remove.isEmpty()) {
-            TinyLogger.LogInfo("Reducing domain " + this.mID + " by: " + remove.toString());
-        }
-        domain.removeAll(remove);
-        return !remove.isEmpty();
-    }
-
-    @Override
-    public List<String> GetDomainObjectConstants() {
-        List<String> ret = new LinkedList<>();
-        for (StateVariable sv : domain) {
-            ret.add(sv.GetObjectConstant());
-        }
-        return ret;
-    }
-
-    @Override
-    public int GetUniqueID() {
-        return mID;
-    }
-
-    @Override
-    public boolean EmptyDomain() {
-        return domain.isEmpty();
-    }
-
-    @Override
-    public String Explain() {
-        return " tdb";
     }
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
@@ -258,7 +203,7 @@ public class TemporalDatabase extends IUnifiable {
          *
          * @return
          */
-        public StateVariableValue GetSupportValue() {
+        public VariableRef GetSupportValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).to;
             } else {
@@ -270,7 +215,7 @@ public class TemporalDatabase extends IUnifiable {
          *
          * @return
          */
-        public StateVariableValue GetConsumeValue() {
+        public VariableRef GetConsumeValue() {
             if (change) {
                 return ((TransitionEvent) contents.get(0)).from;
             } else {
@@ -323,7 +268,7 @@ public class TemporalDatabase extends IUnifiable {
      *
      * @return
      */
-    public StateVariableValue GetGlobalSupportValue() {
+    public VariableRef GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
@@ -331,7 +276,7 @@ public class TemporalDatabase extends IUnifiable {
      *
      * @return
      */
-    public StateVariableValue GetGlobalConsumeValue() {
+    public VariableRef GetGlobalConsumeValue() {
         return chain.getFirst().GetConsumeValue();
     }
 
@@ -353,11 +298,7 @@ public class TemporalDatabase extends IUnifiable {
 
     @Override
     public String toString() {
-        String res = "(tdb:" + mID + " dom=[";
-        for (StateVariable d : this.domain) {
-            res += d.name + " ";
-        }
-        res += "] chains=[";
+        String res = "(tdb:" + mID + " dom=[" + this.stateVariable + "] chains=[";
 
         for (ChainComponent comp : this.chain) {
             for (TemporalEvent ev : comp.contents) {
@@ -368,12 +309,6 @@ public class TemporalDatabase extends IUnifiable {
 
         return res;
     }
-
-    //public ObjectVariable var;
-    /**
-     *
-     */
-    public LinkedList<StateVariable> domain = new LinkedList<>();
 
     //public void ReduceDomainByObjectConstants
     //List<TemporalEvent> events = new LinkedList<>();

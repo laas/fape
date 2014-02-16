@@ -10,11 +10,10 @@
  */
 package fape.core.planning.constraints;
 
-import fape.core.planning.model.StateVariable;
+import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.VariableRef;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.IUnifiable;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import java.util.HashMap;
@@ -93,6 +92,24 @@ public class ConstraintNetworkManager {
      */
     public void AddUnifiable(IUnifiable a) {
         objectMapper.put(a.GetUniqueID(), a);
+    }
+
+    public void AddUnificationConstraint(State st, VariableRef a, VariableRef b) {
+        IUnifiable aObj = st.parameterBindings.get(a);
+        IUnifiable bObj = st.parameterBindings.get(b);
+        if(!objectMapper.containsKey(aObj.GetUniqueID())) {
+            AddUnifiable(aObj);
+        }
+        if(!objectMapper.containsKey(bObj.GetUniqueID())) {
+            AddUnifiable(bObj);
+        }
+        AddUnificationConstraint(aObj, bObj);
+    }
+
+    public void AddUnificationConstraint(State st, ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        if(!a.predicateName.equals(b.predicateName))
+            throw new FAPEException("Error: adding unification constraint between two different predicates: "+ a +"  --  "+ b);
+        AddUnificationConstraint(st, a.variable, b.variable);
     }
 
     /**

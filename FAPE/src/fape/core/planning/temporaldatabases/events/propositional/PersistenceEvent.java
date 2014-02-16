@@ -11,7 +11,7 @@
 package fape.core.planning.temporaldatabases.events.propositional;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.StateVariableValue;
+import fape.core.planning.model.VariableRef;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
 /**
@@ -21,9 +21,9 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
 public class PersistenceEvent extends TemporalEvent {
 
     /**
-     *
+     * The value (in the form of variable) at which this persistence condition refers
      */
-    public StateVariableValue value;
+    public VariableRef value;
 
     /**
      *
@@ -38,7 +38,7 @@ public class PersistenceEvent extends TemporalEvent {
         }else{
             ret.mID = this.mID;
         }
-        ret.value = value.DeepCopy(mn, assignNewID);
+        ret.value = value;
         return ret;
     }
 
@@ -52,7 +52,7 @@ public class PersistenceEvent extends TemporalEvent {
     public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
         PersistenceEvent e = new PersistenceEvent();
         e.mID = this.mID;
-        e.value = this.value.DeepCopy(m, assignNewID);
+        e.value = this.value;
         e.start = this.start;
         e.end = this.end;
         return e;
@@ -60,6 +60,6 @@ public class PersistenceEvent extends TemporalEvent {
 
     @Override
     public String Report() {
-        return "[" + start + "," + end + "] persistence "+value.Report();
+        return "[" + start + "," + end + "] persistence "+value;
     }
 }

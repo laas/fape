@@ -17,6 +17,13 @@ package fape.core.execution.model;
  */
 public class Instance {
 
+    public Instance() {}
+
+    public Instance(String name, String type) {
+        this.name = name;
+        this.type = type;
+    }
+
     /**
      *
      */

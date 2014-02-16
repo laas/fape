@@ -9,4 +9,9 @@ public class UndecomposedAction extends Flaw {
     public UndecomposedAction(Action a) {
         this.action = a;
     }
+
+    @Override
+    public String toString() {
+        return "Undecomposed: " + action;
+    }
 }

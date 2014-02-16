@@ -12,8 +12,13 @@ package fape.core.planning.model;
 
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalInterval;
+import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
+import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.exceptions.FAPEException;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,8 +44,6 @@ public class AbstractTemporalEvent {
      */
     public Reference stateVariableReference;
 
-    public List<StateVariable> stateVariableDomain = new LinkedList<>();
-
     /**
      *
      */
@@ -53,12 +56,42 @@ public class AbstractTemporalEvent {
      * @param leftRef
      * @param varType_
      */
-    public AbstractTemporalEvent(TemporalEvent ProduceTemporalEvent, TemporalInterval interval_, Reference leftRef, String varType_, List<StateVariable> supportedStateVariables) {
-        event = ProduceTemporalEvent;
+    public AbstractTemporalEvent(TemporalEvent event, TemporalInterval interval_, Reference leftRef, String varType_) {
+        this.event = event;
         interval = interval_;
         stateVariableReference = leftRef;
         varType = varType_;
-        stateVariableDomain = supportedStateVariables;
+    }
+
+    public boolean isTransitionEvent() {
+        return this.event instanceof TransitionEvent;
+    }
+
+    public boolean isPersistenceEvent() {
+        return this.event instanceof PersistenceEvent;
+    }
+
+    /**
+     * Produces a temporal event whose parameter and time points are
+     * binded to those of the action act.
+     * @param st
+     * @param act
+     * @return
+     */
+    public TemporalEvent GetEventInAction(State st, Action act) {
+        TemporalEvent e = this.event.cc(st.conNet, true);
+        if(e instanceof PersistenceEvent) {
+            PersistenceEvent pe = (PersistenceEvent) e;
+            pe.value = new VariableRef(act.BindedReference(pe.value.GetReference()));
+        } else if(e instanceof TransitionEvent) {
+            TransitionEvent te = (TransitionEvent) e;
+            te.from = new VariableRef(act.BindedReference(te.from.GetReference()));
+            te.to = new VariableRef(act.BindedReference(te.to.GetReference()));
+        } else {
+            throw new FAPEException("Unsupported event type: " + e);
+        }
+        interval.AssignTemporalContext(e, act.start, act.end);
+        return e;
     }
 
     /**
@@ -66,12 +99,11 @@ public class AbstractTemporalEvent {
      * @param var_id
      * @return
      */
-    public boolean SupportsStateVariable(String var_id) {
-        /*String mSuffix = stateVariableReference.toString();
-         mSuffix = mSuffix.substring(mSuffix.indexOf("."));
-         String oSuffix = var_id.substring(var_id.indexOf("."));
-         return mSuffix.equals(oSuffix);*/
-        return varType.equals(var_id);
+    @Deprecated
+    public boolean SupportsStateVariable(String var_type) {
+        //TODO: this is probably wrong, we might have a type that is a
+        // descendent, of simply a differenct predicate
+        return varType.equals(var_type);
     }
 
 }

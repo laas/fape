@@ -73,7 +73,7 @@ public class StateVariable {
     }
     
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(Object obj) { //TODO, should consider equality to String
         return ((StateVariable)obj).name.equals(name);
     }
 

@@ -38,7 +38,6 @@ public class TemporalDatabaseManager {
     public TemporalDatabase GetNewDatabase(ConstraintNetworkManager m) {
         TemporalDatabase db = new TemporalDatabase(true);
         vars.add(db);
-        m.AddUnifiable(db);
         return db;
     }
 
@@ -60,7 +59,6 @@ public class TemporalDatabaseManager {
         mng.vars = new LinkedList<>();
         for (TemporalDatabase b : this.vars) {
             TemporalDatabase db = b.DeepCopy(m);
-            m.AddUnifiable(db); //keep the index
             mng.vars.add(db);
         }
         return mng;
@@ -103,7 +101,7 @@ public class TemporalDatabaseManager {
         if(!included.chain.getFirst().change && !after.change) {
             //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
             // into 'after' before going any further.
-            st.conNet.AddUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
+            st.conNet.AddUnificationConstraint(st, after.GetSupportValue(), included.GetGlobalConsumeValue());
 
             // add persitence events to after, and removing them from the included database
             after.Add(included.chain.getFirst());
@@ -132,7 +130,7 @@ public class TemporalDatabaseManager {
         }
 
         // the new domain is the intersection of both domains
-        tdb.domain.retainAll(included.domain);
+        st.conNet.AddUnificationConstraint(st, tdb.stateVariable, included.stateVariable);
 
         // all actions that pointed to events in included should now point to the containing tdb
         tdb.actionAssociations.putAll(included.actionAssociations);
@@ -164,7 +162,7 @@ public class TemporalDatabaseManager {
 
             assert first.change || second.change : "There should not be two persistence following each other";
 
-            st.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
+            st.conNet.AddUnificationConstraint(st, first.GetSupportValue(), second.GetConsumeValue());
             TemporalDatabase.PropagatePrecedence(first, second, st);
         }
     }

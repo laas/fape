@@ -19,6 +19,8 @@ import java.util.List;
  */
 public class ActionRef {
 
+
+
     /**
      *
      */
@@ -40,5 +42,14 @@ public class ActionRef {
         }
         st += ")";
         return st;
+    }
+
+    public ActionRef cc() {
+        ActionRef ar = new ActionRef();
+        ar.name = name;
+        for(Reference ref : args) {
+            ar.args.add(new Reference(ref));
+        }
+        return ar;
     }
 }
