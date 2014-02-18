@@ -11,7 +11,7 @@ import java.util.Comparator;
 public class StateComparator implements Comparator<State> {
 
     public float f(State s) {
-        return s.GetCurrentCost() + s.GetGoalDistance();
+        return s.GetCurrentCost() + s.GetGoalDistance() * 3;
     }
 
     @Override

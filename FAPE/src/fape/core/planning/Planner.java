@@ -21,6 +21,7 @@ import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.model.*;
 import fape.core.planning.model.Action;
 import fape.core.planning.search.*;
+import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -31,8 +32,6 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
-
-import java.io.PrintStream;
 import java.util.*;
 
 /**
@@ -351,6 +350,45 @@ public class Planner {
         }
     };
 
+    public class FlawSelector implements Comparator<Pair<Flaw, List<SupportOption>>> {
+
+        private final State state;
+        private final Planner planner;
+        private final AbstractionHierarchy hierarchy;
+
+        public FlawSelector(Planner pl, State st, AbstractionHierarchy hierarchy) {
+            this.state = st;
+            this.planner = pl;
+            this.hierarchy = hierarchy;
+        }
+
+        private int priority(Pair<Flaw, List<SupportOption>> flawAndResolvers) {
+            Flaw flaw = flawAndResolvers.value1;
+            List<SupportOption> options = flawAndResolvers.value2;
+            int base;
+            if(options.size() <= 1) {
+                base = 0;
+            } else if(flaw instanceof UnsupportedDatabase) {
+                TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
+                String predicate = consumer.stateVariable.predicateName;
+                String argType = planner.GetType(state, consumer.stateVariable.variable.GetReference());
+                String valueType = planner.GetType(state, consumer.GetGlobalConsumeValue().GetReference());
+                int level = hierarchy.getLevel(predicate, argType, valueType);
+                base = (level +1) * 500;
+            } else {
+                base = 99999;
+            }
+
+            return base + options.size();
+        }
+
+
+        @Override
+        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
+            return priority(o1) - priority(o2);
+        }
+    };
+
     Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsActionsPreffered = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
         @Override
         public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
@@ -405,6 +443,8 @@ public class Planner {
 
 
     private State aStar(TimeAmount forHowLong) {
+        AbstractionHierarchy hier = new AbstractionHierarchy(this);
+
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -446,7 +486,8 @@ public class Planner {
             }
 
             //do some sorting here - min domain
-            Collections.sort(opts, optionsComparatorMinDomain);
+            //Collections.sort(opts, optionsComparatorMinDomain);
+            Collections.sort(opts, new FlawSelector(this, st, hier));
 
             if (opts.isEmpty()) {
                 TinyLogger.LogInfo("Dead-end, no options: " + st.mID);
@@ -743,11 +784,16 @@ public class Planner {
      */
     public String GetType(State st, Reference ref) {
         assert st.parameterBindings.containsKey(ref.GetConstantReference());
-        assert ref.refs.size() == 2;
-
-        String baseType = st.parameterBindings.get(ref.GetConstantReference()).type;
-        String expressionType = types.getContentType(baseType, ref.refs.get(1));
-        return expressionType;
+        if(ref.refs.size() == 2) {
+            String baseType = st.parameterBindings.get(ref.GetConstantReference()).type;
+            String expressionType = types.getContentType(baseType, ref.refs.get(1));
+            return expressionType;
+        } else if(ref.refs.size() == 1){
+            String varType = st.parameterBindings.get(ref.GetConstantReference()).type;
+            return varType;
+        } else {
+            throw new FAPEException("Error: can't look up type for " + ref);
+        }
     }
 
     /**

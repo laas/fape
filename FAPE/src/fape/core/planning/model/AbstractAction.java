@@ -17,6 +17,7 @@ import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -53,6 +54,15 @@ public class AbstractAction {
      *
      */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> strongDecompositions;
+
+    public String typeOfParameter(String paramName) {
+        for(Instance i : params) {
+            if(i.name.equals(paramName))
+                return i.type;
+        }
+
+        throw new FAPEException("Unable to find param: " + paramName);
+    }
 
     /**
      *

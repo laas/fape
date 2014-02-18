@@ -16,7 +16,15 @@ import java.util.*;
  */
 public class TypeManager {
 
+    /**
+     * Maps from the name of the type to its definition.
+     */
     HashMap<String, Type> map = new HashMap();
+
+    /**
+     * Maps from an object name to its type.
+     */
+    HashMap<String, String> objectTypes = new HashMap();
 
     public Type getType(String typeName) {
         return map.get(typeName);
@@ -31,7 +39,7 @@ public class TypeManager {
      * @param typeName
      * @return
      */
-    Set<Type> subtypes(String typeName) {
+    public Set<Type> subtypes(String typeName) {
         Type baseType = map.get(typeName);
         Set<Type> subTypes = new HashSet<>();
         subTypes.add(baseType);
@@ -69,6 +77,7 @@ public class TypeManager {
             throw new FAPEException("Error: unknown type: "+i.type);
         }
         map.get(i.type).AddInstance(i.name);
+        objectTypes.put(i.name, i.type);
     }
 
     public void addContent(String type, Instance i) {
@@ -101,6 +110,10 @@ public class TypeManager {
         Type t = new Type(name, parent);
 
         map.put(name, t);
+    }
+
+    public String getObjectType(String objectName) {
+        return objectTypes.get(objectName);
     }
 
     public Collection<Type> getTypes() {
