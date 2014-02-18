@@ -8,7 +8,7 @@
  * of the contents of this file is prohibited without previous written permission
  * of the author.
  */
-package fLib.utils.io;
+package fape.util;
 
 import java.io.*;
 

@@ -166,7 +166,7 @@ public class ProblemGenerator {
 
             String out = domain + instances + start + all + goal;
 
-            fLib.utils.io.FileHandling.writeFileOutput(path, out);
+            fape.util.FileHandling.writeFileOutput(path, out);
         }
     }
 
