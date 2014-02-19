@@ -48,11 +48,6 @@ public class Statement {
     /**
      *
      */
-    //public Reference rightRef;
-
-    /**
-     *
-     */
     public float value;
 
     /**

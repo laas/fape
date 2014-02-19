@@ -51,7 +51,7 @@ public class AbstractTemporalEvent {
 
     /**
      *
-     * @param ProduceTemporalEvent
+     * @param event
      * @param interval_
      * @param leftRef
      * @param varType_
@@ -94,11 +94,6 @@ public class AbstractTemporalEvent {
         return e;
     }
 
-    /**
-     *
-     * @param var_id
-     * @return
-     */
     @Deprecated
     public boolean SupportsStateVariable(String var_type) {
         //TODO: this is probably wrong, we might have a type that is a
