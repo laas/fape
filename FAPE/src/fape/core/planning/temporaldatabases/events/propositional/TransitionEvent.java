@@ -31,6 +31,7 @@ public class TransitionEvent extends TemporalEvent {
         this.stateVariable = sv;
         this.from = from;
         this.to = to;
+        this.mID = counter++;
     }
 
     public TransitionEvent bindedCopy(Action a) {
@@ -40,24 +41,8 @@ public class TransitionEvent extends TemporalEvent {
                 a.GetBindedVariableRef(to.GetReference()));
         te.start = start;
         te.end = end;
+        te.mID = counter++;
         return te;
-    }
-
-
-    /**
-     *
-     * @param assignNewID
-     * @return
-     */
-    @Override
-    public TemporalEvent cc(boolean assignNewID) {
-        TransitionEvent ret = new TransitionEvent(stateVariable, from, to);
-        if(assignNewID){
-            ret.mID = counter++;
-        }else{
-            ret.mID = this.mID;
-        }
-        return ret;
     }
 
     @Override
@@ -68,9 +53,7 @@ public class TransitionEvent extends TemporalEvent {
     @Override
     public TemporalEvent DeepCopy(boolean assignNewID) {
         TransitionEvent e = new TransitionEvent(stateVariable, from, to);
-        if(assignNewID)
-            e.mID = this.mID;
-
+        e.mID = this.mID;
         e.start = this.start;
         e.end = this.end;
         return e;

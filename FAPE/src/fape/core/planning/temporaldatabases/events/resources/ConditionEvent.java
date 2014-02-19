@@ -31,18 +31,6 @@ public class ConditionEvent extends TemporalEvent {
      */
     public float value;
 
-    /**
-     *
-     * @return
-     */
-    @Override
-    public TemporalEvent cc(boolean assignNewID) {
-        ConditionEvent ret = new ConditionEvent();
-        ret.operator = operator;
-        ret.value = value;
-        return ret;
-    }
-
     @Override
     public TemporalEvent DeepCopy(boolean assignNewID) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

@@ -25,17 +25,6 @@ public class ProduceEvent extends TemporalEvent {
      */
     public double howMuch;
 
-    /**
-     *
-     * @return
-     */
-    @Override
-    public TemporalEvent cc(boolean assignNewID) {
-        ProduceEvent ret = new ProduceEvent();
-        ret.howMuch = howMuch;
-        return ret;
-    }
-
     @Override
     public TemporalEvent DeepCopy(boolean assignNewID) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

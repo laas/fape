@@ -728,6 +728,7 @@ public class Planner {
      * @return
      */
     public Action AddAction(ActionRef ref, State st, Action parent, boolean enforceDuration) {
+
         AbstractAction abs = pb.actions.get(ref.name);
         if (abs == null) {
             throw new FAPEException("Seeding unknown action: " + ref.name);
@@ -811,8 +812,12 @@ public class Planner {
         // This creates persistence event for every parameter of the form "r.right -> g"
         for(Pair<Reference,Reference> binding : hardBindings) {
             Reference finalRef = act.BindedReference(binding.value1);
+
+            // state variable is the reference passed (ex: r.right)
             String type = st.GetType(finalRef);
             ParameterizedStateVariable sv = new ParameterizedStateVariable(finalRef, type);
+
+            // create persistence on the value (ex: g)
             PersistenceEvent ev = new PersistenceEvent(sv, new VariableRef(binding.value2));
             TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
             ev.tdbID = db.mID;
@@ -924,7 +929,7 @@ public class Planner {
         p.ForceFact(Executor.ProcessANMLfromFile(anml));
         boolean timeOut = false;
         try {
-            timeOut = p.Repair(new TimeAmount(1000 * 60));
+            timeOut = p.Repair(new TimeAmount(1000 * 6000));
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Planning finished for " + anml + " with failure.");

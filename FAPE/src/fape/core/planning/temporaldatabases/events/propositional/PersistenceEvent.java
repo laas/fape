@@ -32,6 +32,7 @@ public class PersistenceEvent extends TemporalEvent {
     public PersistenceEvent(ParameterizedStateVariable sv, VariableRef value) {
         this.stateVariable = sv;
         this.value = value;
+        this.mID = counter++;
     }
 
     public PersistenceEvent bindedCopy(Action a) {
@@ -40,23 +41,8 @@ public class PersistenceEvent extends TemporalEvent {
                 a.GetBindedVariableRef(value.GetReference()));
         pe.start = start;
         pe.end = end;
+        pe.mID = counter++;
         return pe;
-    }
-
-    /**
-     *
-     * @param assignNewID
-     * @return
-     */
-    @Override
-    public TemporalEvent cc(boolean assignNewID) {
-        PersistenceEvent ret = new PersistenceEvent(stateVariable, value);
-        if(assignNewID){
-            ret.mID = counter++;
-        }else{
-            ret.mID = this.mID;
-        }
-        return ret;
     }
 
     @Override

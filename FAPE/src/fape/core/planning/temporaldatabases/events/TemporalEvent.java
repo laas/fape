@@ -35,8 +35,6 @@ public abstract class TemporalEvent {
      */
     public int tdbID = -1;
 
-    public abstract TemporalEvent cc(boolean assignNewID);
-
     public abstract TemporalEvent DeepCopy(boolean assignNewID);
 
     /**
