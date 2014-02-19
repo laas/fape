@@ -10,7 +10,8 @@
  */
 package fape.core.planning.temporaldatabases.events.propositional;
 
-import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.model.Action;
+import fape.core.planning.model.ParameterizedStateVariable;
 import fape.core.planning.model.VariableRef;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
@@ -23,24 +24,39 @@ public class TransitionEvent extends TemporalEvent {
     /**
      *
      */
-    public VariableRef from, to;
+    public final VariableRef from, to;
+    public final ParameterizedStateVariable stateVariable;
+
+    public TransitionEvent(ParameterizedStateVariable sv, VariableRef from, VariableRef to) {
+        this.stateVariable = sv;
+        this.from = from;
+        this.to = to;
+    }
+
+    public TransitionEvent bindedCopy(Action a) {
+        TransitionEvent te = new TransitionEvent(
+                a.getBindedStateVariable(stateVariable),
+                a.GetBindedVariableRef(from.GetReference()),
+                a.GetBindedVariableRef(to.GetReference()));
+        te.start = start;
+        te.end = end;
+        return te;
+    }
+
 
     /**
      *
-     * @param mn
      * @param assignNewID
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
-        TransitionEvent ret = new TransitionEvent();
+    public TemporalEvent cc(boolean assignNewID) {
+        TransitionEvent ret = new TransitionEvent(stateVariable, from, to);
         if(assignNewID){
             ret.mID = counter++;
         }else{
             ret.mID = this.mID;
         }
-        ret.from = from;
-        ret.to = to;
         return ret;
     }
 
@@ -50,13 +66,11 @@ public class TransitionEvent extends TemporalEvent {
     }
 
     @Override
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
-        TransitionEvent e = new TransitionEvent();
-        if (this.from != null) {
-            e.from = this.from;
-        }
-        e.mID = this.mID;
-        e.to = this.to;
+    public TemporalEvent DeepCopy(boolean assignNewID) {
+        TransitionEvent e = new TransitionEvent(stateVariable, from, to);
+        if(assignNewID)
+            e.mID = this.mID;
+
         e.start = this.start;
         e.end = this.end;
         return e;

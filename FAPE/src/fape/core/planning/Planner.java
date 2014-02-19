@@ -810,19 +810,21 @@ public class Planner {
 
         // This creates persistence event for every parameter of the form "r.right -> g"
         for(Pair<Reference,Reference> binding : hardBindings) {
-            PersistenceEvent ev = new PersistenceEvent();
-            ev.value = new VariableRef(binding.value2);
+            Reference finalRef = act.BindedReference(binding.value1);
+            String type = st.GetType(finalRef);
+            ParameterizedStateVariable sv = new ParameterizedStateVariable(finalRef, type);
+            PersistenceEvent ev = new PersistenceEvent(sv, new VariableRef(binding.value2));
             TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
             ev.tdbID = db.mID;
+            db.stateVariable = sv;
 
             // Event is forced during the whole action
             TemporalInterval all = new TemporalInterval("TStart", "TEnd");
             all.AssignTemporalContext(ev, act.start, act.end);
 
             // create a stateVariable for the database
-            Reference finalRef = act.BindedReference(binding.value1);
-            String type = st.GetType(finalRef);
-            db.stateVariable = new ParameterizedStateVariable(finalRef, type);
+
+
 
             act.events.add(ev);
             db.AddEvent(ev);

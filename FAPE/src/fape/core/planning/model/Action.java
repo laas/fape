@@ -140,6 +140,18 @@ public class Action {
 
     }
 
+    public VariableRef GetBindedVariableRef(VariableRef var) {
+        return GetBindedVariableRef(var.GetReference());
+    }
+
+    public VariableRef GetBindedVariableRef(Reference ref) {
+        return new VariableRef(BindedReference(ref));
+    }
+
+    public ParameterizedStateVariable getBindedStateVariable(ParameterizedStateVariable sv) {
+        return new ParameterizedStateVariable(sv.predicateName, GetBindedVariableRef(sv.variable.GetReference()), sv.type);
+    }
+
     @Override
     public String toString() {
         return name;

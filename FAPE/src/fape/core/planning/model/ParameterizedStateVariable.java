@@ -27,6 +27,12 @@ public class ParameterizedStateVariable {
         this.type = type;
     }
 
+    public ParameterizedStateVariable(String predicate, VariableRef var, String type) {
+        this.predicateName = predicate;
+        this.variable = var;
+        this.type = type;
+    }
+
     @Override
     public String toString() {
         return variable.toString() + "." + predicateName;

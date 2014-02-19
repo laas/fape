@@ -93,16 +93,10 @@ public class TransitionIO2Planning {
         return ret;
     }
 
-    /**
-     *
-     * @param s
-     * @param assignUniqueIDToValues
-     * @param from
-     * @param to
-     * @return
-     */
-    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, VariableRef from, VariableRef to) {
+
+    public static TemporalEvent ProduceTemporalEvent(Statement s, String varType, VariableRef from, VariableRef to) {
         TemporalEvent ev = null;
+        ParameterizedStateVariable stateVariable = new ParameterizedStateVariable(s.leftRef, varType);
         if (s.operator == null) {
             throw new FAPEException(null);
         }
@@ -123,9 +117,7 @@ public class TransitionIO2Planning {
                     eve3.howMuch = s.GetResourceValue();
                     ev = eve3;
                 } else {
-                    TransitionEvent eve4 = new TransitionEvent();
-                    eve4.from = new VariableRef("null"); // can be any value
-                    eve4.to = from;
+                    TransitionEvent eve4 = new TransitionEvent(stateVariable, new VariableRef("null"), from);
                     ev = eve4;
                 }
                 break;
@@ -135,14 +127,11 @@ public class TransitionIO2Planning {
                 } else {
                     if (s.from != null) {
                         //this is a transition event
-                        TransitionEvent eve5 = new TransitionEvent();
-                        eve5.from = from;
-                        eve5.to = to;
+                        TransitionEvent eve5 = new TransitionEvent(stateVariable, from, to);
                         ev = eve5;
                     } else {
                         //this is a persistence event
-                        PersistenceEvent eve6 = new PersistenceEvent();
-                        eve6.value = to;
+                        PersistenceEvent eve6 = new PersistenceEvent(stateVariable, to);
                         ev = eve6;
                     }
                 }
@@ -229,7 +218,7 @@ public class TransitionIO2Planning {
         if (s.to != null) {
             to = new VariableRef(s.to.GetConstantReference());
         }
-        TemporalEvent ev = ProduceTemporalEvent(s, true, from, to);
+        TemporalEvent ev = ProduceTemporalEvent(s, st.GetType(s.leftRef), from, to);
         // statements at the start of the of the world
         TemporalVariable tvs = st.tempoNet.getNewTemporalVariable();
         ev.start = tvs;
@@ -293,7 +282,7 @@ public class TransitionIO2Planning {
                 }
             }
             if(varType.isEmpty()) {
-                throw new FAPEException("Error: did not find type for state varaiable of statement "+s);
+                throw new FAPEException("Error: did not find type for state variable of statement "+s);
             }
 
             Reference from = new Reference("null");
@@ -305,7 +294,7 @@ public class TransitionIO2Planning {
                 to = s.to;
             }
 
-            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, false, new VariableRef(from), new VariableRef(to));
+            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, varType, new VariableRef(from), new VariableRef(to));
 
             AbstractTemporalEvent ev = new AbstractTemporalEvent(tEvent, s.interval, s.leftRef, varType);
             act.events.add(ev);

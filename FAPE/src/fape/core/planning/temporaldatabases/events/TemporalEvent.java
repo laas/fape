@@ -11,6 +11,7 @@
 package fape.core.planning.temporaldatabases.events;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.model.Action;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
@@ -23,34 +24,26 @@ public abstract class TemporalEvent {
 
     public static int counter = 0;
     public int mID = -1;
-    
-    //public ObjectVariable objectVar;
-    /*public enum ETemporalEventType{
-     CONSUME, PRODUCE, SET, PERSIST, TRANSITION, CONDITION
-     }*/
+
     public abstract String Report();
-    /**
-     *
-     */
-    public TemporalVariable start,
-            /**
-             *
-             */
-            end;
-    //reflection needed for stronger reasoning
+
+    public TemporalVariable start, end;
 
     /**
      * The id of the database containing this event.
+     * TODO: only thing preventing us from immutable events
      */
     public int tdbID = -1;
 
-    //public ObjectVariable objectVar;
+    public abstract TemporalEvent cc(boolean assignNewID);
+
+    public abstract TemporalEvent DeepCopy(boolean assignNewID);
+
     /**
-     *
-     * @param mn
+     * Creates a copy of the temporal event where all references to local
+     * variables (from action a) are replaced with global ones.
+     * @param a
      * @return
      */
-    public abstract TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID);
-
-    public abstract TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID);
+    public abstract TemporalEvent bindedCopy(Action a);
 }

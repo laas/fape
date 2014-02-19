@@ -124,25 +124,6 @@ public class TemporalDatabase {
                 st.tempoNet.EnforceBefore(f.end, s.start);
             }
         }
-        /*if (!first.change) {
-            for (TemporalEvent e : first.contents) {
-                if (!second.change) {
-                    for (TemporalEvent e2 : second.contents) {
-                        st.tempoNet.EnforceBefore(e.end, e2.start);
-                    }
-                } else {
-                    st.tempoNet.EnforceBefore(e.end, second.GetConsumeTimePoint());
-                }
-            }
-        } else {
-            if (!second.change) {
-                for (TemporalEvent e2 : second.contents) {
-                    st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), e2.start);
-                }
-            } else {
-                st.tempoNet.EnforceBefore(first.GetSupportTimePoint(), second.GetConsumeTimePoint());
-            }
-        }*/
     }
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
@@ -162,7 +143,7 @@ public class TemporalDatabase {
 
         @Override
         public String toString() {
-            return contents.toString(); //To change body of generated methods, choose Tools | Templates.
+            return contents.toString();
         }
 
         /**
@@ -244,7 +225,7 @@ public class TemporalDatabase {
             cp.change = this.change;
             cp.contents = new LinkedList<>();
             for (TemporalEvent e : this.contents) {
-                cp.contents.add(e.DeepCopy(m, false));
+                cp.contents.add(e.DeepCopy(false));
             }
             return cp;
         }

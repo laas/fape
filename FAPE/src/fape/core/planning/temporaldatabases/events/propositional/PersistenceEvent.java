@@ -11,6 +11,8 @@
 package fape.core.planning.temporaldatabases.events.propositional;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.model.Action;
+import fape.core.planning.model.ParameterizedStateVariable;
 import fape.core.planning.model.VariableRef;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 
@@ -23,7 +25,23 @@ public class PersistenceEvent extends TemporalEvent {
     /**
      * The value (in the form of variable) at which this persistence condition refers
      */
-    public VariableRef value;
+    public final VariableRef value;
+
+    public final ParameterizedStateVariable stateVariable;
+
+    public PersistenceEvent(ParameterizedStateVariable sv, VariableRef value) {
+        this.stateVariable = sv;
+        this.value = value;
+    }
+
+    public PersistenceEvent bindedCopy(Action a) {
+        PersistenceEvent pe = new PersistenceEvent(
+                a.getBindedStateVariable(stateVariable),
+                a.GetBindedVariableRef(value.GetReference()));
+        pe.start = start;
+        pe.end = end;
+        return pe;
+    }
 
     /**
      *
@@ -31,14 +49,13 @@ public class PersistenceEvent extends TemporalEvent {
      * @return
      */
     @Override
-    public TemporalEvent cc(ConstraintNetworkManager mn, boolean assignNewID) {
-        PersistenceEvent ret = new PersistenceEvent();
+    public TemporalEvent cc(boolean assignNewID) {
+        PersistenceEvent ret = new PersistenceEvent(stateVariable, value);
         if(assignNewID){
             ret.mID = counter++;
         }else{
             ret.mID = this.mID;
         }
-        ret.value = value;
         return ret;
     }
 
@@ -49,10 +66,9 @@ public class PersistenceEvent extends TemporalEvent {
 
     @Override
 
-    public TemporalEvent DeepCopy(ConstraintNetworkManager m, boolean assignNewID) {
-        PersistenceEvent e = new PersistenceEvent();
+    public TemporalEvent DeepCopy(boolean assignNewID) {
+        PersistenceEvent e = new PersistenceEvent(stateVariable, value);
         e.mID = this.mID;
-        e.value = this.value;
         e.start = this.start;
         e.end = this.end;
         return e;

@@ -79,17 +79,7 @@ public class AbstractTemporalEvent {
      * @return
      */
     public TemporalEvent GetEventInAction(State st, Action act) {
-        TemporalEvent e = this.event.cc(st.conNet, true);
-        if(e instanceof PersistenceEvent) {
-            PersistenceEvent pe = (PersistenceEvent) e;
-            pe.value = new VariableRef(act.BindedReference(pe.value.GetReference()));
-        } else if(e instanceof TransitionEvent) {
-            TransitionEvent te = (TransitionEvent) e;
-            te.from = new VariableRef(act.BindedReference(te.from.GetReference()));
-            te.to = new VariableRef(act.BindedReference(te.to.GetReference()));
-        } else {
-            throw new FAPEException("Unsupported event type: " + e);
-        }
+        TemporalEvent e = this.event.bindedCopy(act);
         interval.AssignTemporalContext(e, act.start, act.end);
         return e;
     }
