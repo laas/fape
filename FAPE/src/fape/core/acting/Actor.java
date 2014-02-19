@@ -49,7 +49,7 @@ public class Actor {
         mPlanner = p;
     }
     long sleepTime = 100;
-    long repairTime = 10;
+    long repairTime = 1000;
     long progressTime = 10000;
     long progressStep = 5000;
     int currentDelay = 0;
@@ -87,6 +87,13 @@ public class Actor {
     public void ReportFailure(int actionID) {
         planNeedsRepair = true;
         failures.add(actionID);
+        AtomicAction act = null;
+        for (AtomicAction a : actionsBeingExecuted) {
+            if (a.mID == actionID) {
+                act = a;
+            }
+        }
+        actionsBeingExecuted.remove(act);
     }
 
     /**
@@ -121,6 +128,8 @@ public class Actor {
         int firstFailureTime = timeZero + 6;
         int newStatementTime = timeZero + 7;*/
 
+        newEventBuffer.add(Executor.ProcessANMLfromFile("problems/DreamAddition.anml"));
+
         while (true) {
             switch (mState) {
                 case ACTING:
@@ -139,19 +148,17 @@ public class Actor {
                     }
                     if (planNeedsRepair) {
                         planNeedsRepair = false;
-                        mPlanner.SetEarliestExecution((int) (now - timeZero + repairTime));
+                        mPlanner.SetEarliestExecution((int) (now - timeZero + repairTime/1000));
                         mPlanner.Repair(new TimeAmount(repairTime));
-                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero - currentDelay + progressStep), new TimeAmount(repairTime));
-                        actionsToDispatch = new LinkedList<>(scheduledActions);
+                    }
+                    if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
+                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero + progressStep/1000));
+                        actionsToDispatch.addAll(scheduledActions);
                     }
                     List<AtomicAction> remove = new LinkedList<>();
                     for (AtomicAction a : actionsToDispatch) {
-                        if (a.mStartTime + timeZero + currentDelay < now && !successfulActions.contains(idToSignature.get(a.mID)) && !dispatchedActions.contains(a.mID)) {
+                        if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.mID)) && !dispatchedActions.contains(a.mID)) {
                             idToSignature.put(a.mID, a.GetDescription());
-                            if ((now - timeZero) - a.mStartTime > currentDelay) {
-                                currentDelay = (now - timeZero) - a.mStartTime;
-                            }
-                            a.mStartTime = (int) (currentDelay + a.mStartTime);
                             mExecutor.executeAtomicActions(a);
                             dispatchedActions.add(a.mID);
                             actionsBeingExecuted.add(a);
@@ -160,12 +167,14 @@ public class Actor {
                     }
                     actionsToDispatch.removeAll(remove);
                     remove.clear();
+                    /*
                     for (AtomicAction a : actionsBeingExecuted) {
                         if (a.duration + a.mStartTime + timeZero < now) {
                             ReportFailure(a.mID);
                             remove.add(a);
                         }
                     }
+                    */
                     actionsBeingExecuted.removeAll(remove);
                     Thread.sleep(sleepTime);
                     break;

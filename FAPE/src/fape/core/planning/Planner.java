@@ -596,7 +596,7 @@ public class Planner {
      * @param forHowLong
      * @return
      */
-    public List<AtomicAction> Progress(TimeAmount howFarToProgress, TimeAmount forHowLong) {
+    public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
         State myState = best;
 
         List<AtomicAction> ret = new LinkedList<>();
@@ -644,12 +644,12 @@ public class Planner {
         return ret;
     }
 
-    public boolean pendingActions() {
+    public boolean hasPendingActions() {
         for(Action a : best.taskNet.GetAllActions()) {
             if(a.status == Action.Status.PENDING)
-                return false;
+                return true;
         }
-        return true;
+        return false;
     }
 
     /**

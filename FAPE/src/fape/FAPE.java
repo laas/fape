@@ -44,14 +44,14 @@ public class FAPE {
         try {
             a = new Actor();
             p = new Planner();
-            Planner.debugging = true;
-            Planner.logging = true;
+            Planner.debugging = false;
+            Planner.logging = false;
             Planner.actionResolvers = true;
             FAPE.localTesting = false;
             FAPE.runListener = true;
             e = new Executor();
             if (FAPE.runListener) {
-                l = new Listener("bobc1", "PR2", "FAPE", "3300");
+                l = new Listener("localhost", "PR2", "FAPE", "3300");
                 l.bind(e);
             }
             a.bind(e, p);
