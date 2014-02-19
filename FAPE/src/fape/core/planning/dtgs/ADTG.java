@@ -63,7 +63,7 @@ public class ADTG {
     private HashMap<String, Integer> instances = new HashMap<>();
     private int nextId = 0;
 
-    private final Planner planner;
+    private final Problem pb;
 
     /**
      *
@@ -244,10 +244,10 @@ public class ADTG {
      * @param t
      * @param actions
      */
-    public ADTG(Planner planner, Type t, Collection<AbstractAction> actions) {
-        this.planner = planner;
+    public ADTG(Problem pb, Type t, Collection<AbstractAction> actions) {
+        this.pb = pb;
         var_id = t.name;
-        List<String> vars = planner.types.instances(t.name);
+        List<String> vars = pb.types.instances(t.name);
         var_size = vars.size();
         mType = t;
 
@@ -378,7 +378,7 @@ public class ADTG {
             if(type == null) {
                 throw new FAPEException("Unable to find variable: "+predVar);
             }
-            possiblePredVarValues = new TreeSet(pl.types.instances(type));
+            possiblePredVarValues = new TreeSet(pb.types.instances(type));
         }
 
         Set possibleRightPredVarValues = new TreeSet(st.parameterBindings.get(db.stateVariable.variable).domain);
@@ -404,7 +404,7 @@ public class ADTG {
             if(type == null) {
                 throw new FAPEException("Unable to find variable: "+supportVar);
             }
-            possibleLeftValues = new TreeSet(pl.types.instances(type));
+            possibleLeftValues = new TreeSet(pb.types.instances(type));
         }
 
         Set possibleRightValues = new TreeSet(st.parameterBindings.get(db.GetGlobalConsumeValue()).domain);

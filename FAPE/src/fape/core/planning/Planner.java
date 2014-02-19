@@ -47,30 +47,7 @@ public class Planner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
-    /**
-     *
-     */
-    //public static int searchWidth = 5;
-    //public State init;
-    /**
-     * a list of types keyed by its name
-     */
-    public TypeManager types = new TypeManager();
-
-    /**
-     *
-     */
-    public HashMap<String, StateVariable> vars = new HashMap<>();
-
-    /**
-     *
-     */
-    public HashMap<String, AbstractAction> actions = new HashMap<>();
-
-    /**
-     *
-     */
-    public HashMap<String, ADTG> dtgs = new HashMap<>();
+    public Problem pb = new Problem();
 
     private int nextVarID = 0;
 
@@ -85,11 +62,6 @@ public class Planner {
      *
      */
     public PriorityQueue<State> queue = new PriorityQueue<State>(100, new StateComparator());
-
-    /**
-     *
-     */
-    public HashMap<AbstractAction, HashMap<Integer, List<UnificationConstraintSchema>>> unificationConstraintPropagationSchema = new HashMap<>();
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
@@ -124,7 +96,7 @@ public class Planner {
                 ref.args.add(rf);
             }
             boolean enforceDuration = true;
-            if (!this.actions.get(ref.name).strongDecompositions.isEmpty()) {
+            if (!pb.actions.get(ref.name).strongDecompositions.isEmpty()) {
                 enforceDuration = false;
             }
             Action addedAction = AddAction(ref, next, null, enforceDuration);
@@ -284,7 +256,7 @@ public class Planner {
      *
      */
     public void Init() {
-        queue.add(new State());
+        queue.add(new State(pb));
         best = queue.peek();
     }
 
@@ -353,13 +325,9 @@ public class Planner {
     public class FlawSelector implements Comparator<Pair<Flaw, List<SupportOption>>> {
 
         private final State state;
-        private final Planner planner;
-        private final AbstractionHierarchy hierarchy;
 
-        public FlawSelector(Planner pl, State st, AbstractionHierarchy hierarchy) {
+        public FlawSelector(State st) {
             this.state = st;
-            this.planner = pl;
-            this.hierarchy = hierarchy;
         }
 
         private int priority(Pair<Flaw, List<SupportOption>> flawAndResolvers) {
@@ -371,9 +339,9 @@ public class Planner {
             } else if(flaw instanceof UnsupportedDatabase) {
                 TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
                 String predicate = consumer.stateVariable.predicateName;
-                String argType = planner.GetType(state, consumer.stateVariable.variable.GetReference());
-                String valueType = planner.GetType(state, consumer.GetGlobalConsumeValue().GetReference());
-                int level = hierarchy.getLevel(predicate, argType, valueType);
+                String argType = state.GetType(consumer.stateVariable.variable.GetReference());
+                String valueType = state.GetType(consumer.GetGlobalConsumeValue().GetReference());
+                int level = state.pb.hierarchy.getLevel(predicate, argType, valueType);
                 base = (level +1) * 500;
             } else {
                 base = 99999;
@@ -443,8 +411,6 @@ public class Planner {
 
 
     private State aStar(TimeAmount forHowLong) {
-        AbstractionHierarchy hier = new AbstractionHierarchy(this);
-
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -487,7 +453,7 @@ public class Planner {
 
             //do some sorting here - min domain
             //Collections.sort(opts, optionsComparatorMinDomain);
-            Collections.sort(opts, new FlawSelector(this, st, hier));
+            Collections.sort(opts, new FlawSelector(st));
 
             if (opts.isEmpty()) {
                 TinyLogger.LogInfo("Dead-end, no options: " + st.mID);
@@ -595,17 +561,17 @@ public class Planner {
         //varis = db.domain.values().toArray(varis);
 
 
-        ADTG dtg = dtgs.get(db.stateVariable.type);
+        ADTG dtg = pb.dtgs.get(db.stateVariable.type);
         HashSet<String> abs = dtg.GetActionSupporters(this, st, db);
         //now we need to gather the decompositions that provide the intended actions
-        List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, actions);
+        List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, pb.actions);
         ret.addAll(options);
 
         //now we can look for adding the actions ad-hoc ...
         if (Planner.actionResolvers) {
             for (String s : abs) {
                 SupportOption o = new SupportOption();
-                o.supportingAction = actions.get(s);
+                o.supportingAction = pb.actions.get(s);
                 ret.add(o);
             }
         }
@@ -688,13 +654,45 @@ public class Planner {
     }
 
     /**
+     * Catch up with all problem updates that were not forced into the state.
+     * @param st
+     * @return
+     */
+    public boolean updateState(State st) {
+        // apply all pending revisions
+        while(st.problemRevision < pb.currentRevision) {
+            st.problemRevision++;
+
+            // for every update in this revision, apply it to state.
+            for(Problem.ProblemRevision update : pb.revisions.get(st.problemRevision)) {
+                if(update.isActionAddition()) {
+                    AddAction(update.addAction, st, null, false);
+                } else if(update.isStatementAddition()) {
+                    Statement s = update.statement;
+                    TransitionIO2Planning.InsertStatementIntoState(st, s, pb.vars.get(s.GetVariableName()));
+                } else if(update.isObjectAddition()) {
+                    Instance i = update.object;
+                    ObjectVariableValues binding = new ObjectVariableValues(i.name, i.type);
+                    assert !st.parameterBindings.containsKey(i.name);
+                    st.parameterBindings.put(i.name, binding);
+                } else {
+                    throw new FAPEException("Unrecognized problem revision: " + update);
+                }
+            }
+        }
+
+        // true if state is consistent
+        return st.tempoNet.IsConsistent() && st.conNet.PropagateAndCheckConsistency(st);
+    }
+
+    /**
      * enforces given facts into the plan (possibly breaking it) this is an
      * incremental step, if there was something already defined, the name
      * collisions are considered to be intentional
      *
-     * @param pl
+     * @param anml
      */
-    public void ForceFact(ANMLBlock pl) {
+    public void ForceFact(ANMLBlock anml) {
         //read everything that is contained in the ANML block
         if (logging) {
             TinyLogger.LogInfo("Forcing new fact into best state.");
@@ -703,96 +701,16 @@ public class Planner {
         KeepBestStateOnly();
 
         //TODO: apply ANML to more states and choose the best after the applciation
+
+
+        pb.ForceFact(anml);
+
+        // apply revisions to best state and check if it is consistent
         State st = GetCurrentState();
 
-        // this a generic predecesor of all types
-        if (st.isInitState) {
-            types.addType("object", "");
-            types.addType("boolean", "");
-
-            // add true and false to the instances to be processed
-            pl.instances.add(new Instance("true", "boolean"));
-            pl.instances.add(new Instance("false", "boolean"));
-        }
-
-        //convert types
-        for (fape.core.execution.model.types.Type t : pl.types) {
-            types.addType(t.name, t.parent);
-            for(Instance content : t.instances) {
-                types.addContent(t.name, content);
-            }
-        }
-
-        //convert instances and create state variables from them
-        for (Instance i : pl.instances) {
-            types.addInstance(i);
-
-            List<StateVariable> l = TransitionIO2Planning.decomposeInstance("", i.name, i.type, types, i.type, true);
-            for (StateVariable v : l) {
-                vars.put(v.name, v);
-            }
-
-            // Every instance is also a variable with a unique value in their domain.
-            ObjectVariableValues binding = new ObjectVariableValues(i.name, i.type);
-            assert !st.parameterBindings.containsKey(i.name);
-            st.parameterBindings.put(i.name, binding);
-        }
-
-        //process statements
-        for (Statement s : pl.statements) {
-            if (!vars.containsKey(s.GetVariableName())) {
-                throw new FAPEException("Unknown state variable: " + s.GetVariableName());
-            }
-            TransitionIO2Planning.InsertStatementIntoState(this, s, vars.get(s.GetVariableName()), st);
-        }
-
-        //process actions
-        for (fape.core.execution.model.Action a : pl.actions) {
-            if (actions.containsKey(a.name)) {
-                throw new FAPEException("Overriding action abstraction: " + a.name);
-            }
-            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars, st.conNet, types);
-            actions.put(act.name, act);
-        }
-
-        //process seeds
-        for (ActionRef ref : pl.actionsForTaskNetwork) {
-            AddAction(ref, st, null, false);
-        } //end of seed processing
-
-        if (st.isInitState) {
-            //create domain transition graphs
-            for (Type t : types.getTypes()) {
-                if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
-                    ADTG dtg = new ADTG(this, t, actions.values());
-
-                    dtg.op_all_paths();
-                    dtgs.put(t.name, dtg);
-                }
-            }
-        }
-
-        st.isInitState = false;
-    }
-
-    /**
-     * Return the type of the paramererized state varaible ref.
-     * ref bust of the form x.predicate
-     * @param st
-     * @param ref
-     * @return
-     */
-    public String GetType(State st, Reference ref) {
-        assert st.parameterBindings.containsKey(ref.GetConstantReference());
-        if(ref.refs.size() == 2) {
-            String baseType = st.parameterBindings.get(ref.GetConstantReference()).type;
-            String expressionType = types.getContentType(baseType, ref.refs.get(1));
-            return expressionType;
-        } else if(ref.refs.size() == 1){
-            String varType = st.parameterBindings.get(ref.GetConstantReference()).type;
-            return varType;
-        } else {
-            throw new FAPEException("Error: can't look up type for " + ref);
+        boolean consistent = updateState(st);
+        if(!consistent) {
+            this.planState = EPlanState.INFESSIBLE;
         }
     }
 
@@ -804,7 +722,7 @@ public class Planner {
      * @return
      */
     public Action AddAction(ActionRef ref, State st, Action parent, boolean enforceDuration) {
-        AbstractAction abs = actions.get(ref.name);
+        AbstractAction abs = pb.actions.get(ref.name);
         if (abs == null) {
             throw new FAPEException("Seeding unknown action: " + ref.name);
         }
@@ -844,19 +762,18 @@ public class Planner {
             }
         }
 
-
         // for all parameters, create a new variable and add it to the state
         for(int i=0 ; i<act.params.size() ; i++) {
             Instance param = act.params.get(i);
             Reference paramRef = act.constantParams.get(i);
             String varName = paramRef.GetConstantReference();
 
-            assert types.containsType(param.type) : "Unknown type";
+            assert pb.types.containsType(param.type) : "Unknown type";
 
             if(!st.parameterBindings.containsKey(varName)) {
                 // variable does not exists yet, create one
                 if(varName.endsWith("_")) {
-                    List<String> values = types.instances(param.type);
+                    List<String> values = pb.types.instances(param.type);
                     ObjectVariableValues binding = new ObjectVariableValues(values, param.type);
                     st.parameterBindings.put(varName, binding);
                 } else {
@@ -898,7 +815,7 @@ public class Planner {
 
             // create a stateVariable for the database
             Reference finalRef = act.BindedReference(binding.value1);
-            String type = GetType(st, finalRef);
+            String type = st.GetType(finalRef);
             db.stateVariable = new ParameterizedStateVariable(finalRef, type);
 
             act.events.add(ev);
@@ -918,7 +835,7 @@ public class Planner {
 
             // Create a stateVariable for the database
             Reference finalRef = act.BindedReference(ev.stateVariableReference);
-            String type = GetType(st, finalRef);
+            String type = st.GetType(finalRef);
             db.stateVariable = new ParameterizedStateVariable(finalRef, type);
 
             //we add the event into the database and the action and the consumers
@@ -947,8 +864,8 @@ public class Planner {
 
     public String DomainTableReport() {
         return String.format("%s\t%s\t",
-                vars.size(),
-                actions.size());
+                pb.vars.size(),
+                pb.actions.size());
     }
 
     public static String PlanTableReportFormat() {

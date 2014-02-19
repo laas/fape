@@ -10,10 +10,12 @@
  */
 package fape.core.planning.states;
 
+import fape.core.execution.model.Reference;
 import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.ObjectVariableValues;
 import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.Problem;
 import fape.core.planning.model.VariableRef;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
@@ -65,8 +67,9 @@ public class State {
      */
     public List<TemporalDatabase> consumers;
     public ConstraintNetworkManager conNet;
-    //public BindingManager bindings;
-    //public CausalNetworkManager causalNet;
+
+    public final Problem pb;
+    public int problemRevision = -1;
 
 
     public HashMap<String, ObjectVariableValues> parameterBindings = new HashMap<>();
@@ -80,8 +83,8 @@ public class State {
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
      */
-    public State() {
-        isInitState = true;
+    public State(Problem pb) {
+        this.pb = pb;
         tdb = new TemporalDatabaseManager();
         tempoNet = STNManager.newInstance();
         tempoNet.Init();
@@ -100,6 +103,8 @@ public class State {
         if (Planner.debugging) {
             st.ExtensiveCheck();
         }
+        pb = st.pb;
+        problemRevision = st.problemRevision;
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
@@ -234,6 +239,26 @@ public class State {
             }
         } else {
             throw new FAPEException("Unknown event type.");
+        }
+    }
+
+    /**
+     * Return the type of the paramererized state varaible ref.
+     * ref must be of the form x.predicate
+     * @param ref
+     * @return
+     */
+    public String GetType(Reference ref) {
+        assert parameterBindings.containsKey(ref.GetConstantReference());
+        if(ref.refs.size() == 2) {
+            String baseType = parameterBindings.get(ref.GetConstantReference()).type;
+            String expressionType = pb.types.getContentType(baseType, ref.refs.get(1));
+            return expressionType;
+        } else if(ref.refs.size() == 1){
+            String varType = parameterBindings.get(ref.GetConstantReference()).type;
+            return varType;
+        } else {
+            throw new FAPEException("Error: can't look up type for " + ref);
         }
     }
 

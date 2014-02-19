@@ -97,12 +97,11 @@ public class TransitionIO2Planning {
      *
      * @param s
      * @param assignUniqueIDToValues
-     * @param mn
-     * @param fromDomain
-     * @param toDomain
+     * @param from
+     * @param to
      * @return
      */
-    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, ConstraintNetworkManager mn, VariableRef from, VariableRef to) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, boolean assignUniqueIDToValues, VariableRef from, VariableRef to) {
         TemporalEvent ev = null;
         if (s.operator == null) {
             throw new FAPEException(null);
@@ -206,7 +205,7 @@ public class TransitionIO2Planning {
      * @param v
      * @param st
      */
-    public static void InsertStatementIntoState(Planner pl, Statement s, StateVariable v, State st) {
+    public static void InsertStatementIntoState(State st, Statement s, StateVariable v) {
         // TODO: parameter v is unused
         if (v == null) {
             throw new FAPEException("Unknown state variable: " + s.GetVariableName());
@@ -218,7 +217,7 @@ public class TransitionIO2Planning {
         //var.domain.add(v);
         // create a temporal database for this variable
         TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-        db.stateVariable = new ParameterizedStateVariable(s.leftRef, pl.GetType(st, s.leftRef));
+        db.stateVariable = new ParameterizedStateVariable(s.leftRef, st.GetType(s.leftRef));
 
         // create a new event for the termporal database that corresponds to the
         // statement
@@ -230,7 +229,7 @@ public class TransitionIO2Planning {
         if (s.to != null) {
             to = new VariableRef(s.to.GetConstantReference());
         }
-        TemporalEvent ev = ProduceTemporalEvent(s, true, st.conNet, from, to);
+        TemporalEvent ev = ProduceTemporalEvent(s, true, from, to);
         // statements at the start of the of the world
         TemporalVariable tvs = st.tempoNet.getNewTemporalVariable();
         ev.start = tvs;
@@ -275,11 +274,10 @@ public class TransitionIO2Planning {
      *
      * @param a
      * @param vars
-     * @param mn
      * @param types
      * @return
      */
-    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, ConstraintNetworkManager mn, TypeManager types) {
+    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, TypeManager types) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
@@ -307,7 +305,7 @@ public class TransitionIO2Planning {
                 to = s.to;
             }
 
-            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, false, mn, new VariableRef(from), new VariableRef(to));
+            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, false, new VariableRef(from), new VariableRef(to));
 
             AbstractTemporalEvent ev = new AbstractTemporalEvent(tEvent, s.interval, s.leftRef, varType);
             act.events.add(ev);

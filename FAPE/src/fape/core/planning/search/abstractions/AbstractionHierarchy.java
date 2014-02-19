@@ -3,6 +3,7 @@ package fape.core.planning.search.abstractions;
 import fape.core.planning.Planner;
 import fape.core.planning.model.AbstractAction;
 import fape.core.planning.model.AbstractTemporalEvent;
+import fape.core.planning.model.Problem;
 import fape.core.planning.model.Type;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
@@ -27,7 +28,7 @@ import java.util.*;
  */
 public class AbstractionHierarchy {
 
-    final Planner planner;
+    final Problem problem;
 
     /**
      * Maps every fluent type to its group.
@@ -36,11 +37,11 @@ public class AbstractionHierarchy {
 
     private UnlabeledDigraph<FluentType> dag = new SimpleUnlabeledDirectedAdjacencyList<FluentType>();
 
-    public AbstractionHierarchy(Planner planner) { //TODO: should be problem, not planner
-        this.planner = planner;
+    public AbstractionHierarchy(Problem pb) {
+        this.problem = pb;
 
         // build the constraint between fluents types
-        for(AbstractAction aa : planner.actions.values()) {
+        for(AbstractAction aa : problem.actions.values()) {
             Set<FluentType> effects = getEffects(aa);
             Set<FluentType> preconditions = getPreconditions(aa);
             // given an effect t1 of action a
@@ -102,7 +103,7 @@ public class AbstractionHierarchy {
         try {
             ret = a.typeOfParameter(var);
         } catch (Exception e) {
-            ret = planner.types.getObjectType(var);
+            ret = problem.types.getObjectType(var);
         }
         return ret;
     }
@@ -163,8 +164,8 @@ public class AbstractionHierarchy {
         if(ft == null) {
             return allFluents;
         } else {
-            for(Type argSubType : planner.types.subtypes(ft.argType)) {
-                for(Type valueSubType : planner.types.subtypes(ft.valueType)) {
+            for(Type argSubType : problem.types.subtypes(ft.argType)) {
+                for(Type valueSubType : problem.types.subtypes(ft.valueType)) {
                     allFluents.add(new FluentType(ft.predicateName, argSubType.name, valueSubType.name));
                 }
             }
