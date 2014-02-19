@@ -15,6 +15,7 @@ import fape.core.execution.model.Instance;
 import fape.core.execution.model.Reference;
 import fape.core.execution.model.TemporalConstraint;
 
+import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.exceptions.FAPEException;
@@ -148,52 +149,18 @@ public class Action {
         return 1.0f;
     }
 
-    /* TODO: recreate
     public List<String> ProduceParameters(State st) {
         List<String> ret = new LinkedList<>();
-        String foundConstantValue = "";
-        
-        for (Instance i : this.params) {
-            StateVariableValue val = null;
-            //first search databases
-            for (TemporalDatabase db : st.tdb.vars) {
-                String param = db.actionAssociations.get(mID);
-                if (param != null && param.equals(i.name)) {
-                    StateVariable sv = db.domain.getFirst();
-                    foundConstantValue = sv.name.split("\\.")[0];
-                }
-            }
-            //then search event values
-            for (TemporalEvent ev : this.events) {
-                if (ev instanceof TransitionEvent) {
-                    String fromVal = ((TransitionEvent) ev).from.valueDescription.split("\\.")[0];
-                    String toVal = ((TransitionEvent) ev).to.valueDescription.split("\\.")[0];
-                    if (fromVal.equals(i.name)) {
-                        val = ((TransitionEvent) ev).from;
-                    }
-                    if (toVal.equals(i.name)) {
-                        val = ((TransitionEvent) ev).to;
-                    }
-                } else if (ev instanceof PersistenceEvent) {
-                    String value = ((PersistenceEvent) ev).value.valueDescription.split("\\.")[0];
-                    if (value.equals(i.name)) {
-                        val = ((PersistenceEvent) ev).value;
-                    }
-                }
-            }
-            if(val != null){
-                StateVariableValue ev = (StateVariableValue)st.conNet.objectMapper.get(val.mID);
-                foundConstantValue = ev.values.get(0);
-            }
-            //get the most recent version of the value
-            
-            if (foundConstantValue.equals("")) {
-                throw new FAPEException("Cannot discover parameter value.");
-            }
-            ret.add(foundConstantValue);
+
+        for(Reference param : this.constantParams) {
+            assert param.refs.size() == 1;
+            String varName = param.GetConstantReference();
+            assert st.parameterBindings.containsKey(varName);
+            assert st.parameterBindings.get(varName).domain.size() == 1;
+            ret.add(st.parameterBindings.get(varName).domain.getFirst());
         }
+
         return ret;
     }
-    */
 
 }

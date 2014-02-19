@@ -41,5 +41,10 @@ public class AtomicAction {
         }
         ret += ")";        
         return ret;
-    }   
+    }
+
+    @Override
+    public String toString() {
+        return GetDescription();
+    }
 }

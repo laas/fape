@@ -190,11 +190,10 @@ public class State {
                     if (ct + 1 < theDatabase.chain.size()) {
                         //this was not the last element, we need to create another database and make split
                         TemporalDatabase newDB = tdb.GetNewDatabase(conNet);
-                        /** TODO : properly split the databases
-                        for (StateVariable var : theDatabase.domain) {
-                            newDB.domain.add(var);
-                        }
-                         */
+
+                        // the two databases share the same state variable
+                        newDB.stateVariable = theDatabase.stateVariable;
+
                         //add all extra chain components to the new database
                         List<TemporalDatabase.ChainComponent> remove = new LinkedList<>();
                         for (int i = ct + 1; i < theDatabase.chain.size(); i++) {

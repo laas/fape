@@ -614,9 +614,7 @@ public class Planner {
             aa.mID = a.mID;
             aa.duration = (int) a.maxDuration;
             aa.name = a.name;
-            /** TODO FIXME
             aa.params = a.ProduceParameters(myState);
-             */
             ret.add(aa);
         }
 
@@ -644,6 +642,14 @@ public class Planner {
         }
 
         return ret;
+    }
+
+    public boolean pendingActions() {
+        for(Action a : best.taskNet.GetAllActions()) {
+            if(a.status == Action.Status.PENDING)
+                return false;
+        }
+        return true;
     }
 
     /**
