@@ -48,7 +48,8 @@ public class Action {
     public Status status = Status.PENDING;
 
     public TreeMap<String, VariableRef> localVariables = new TreeMap<>();
-    private HashMap<TemporalEvent, TemporalInterval> events = new HashMap<>();
+    private LinkedList<TemporalEvent> events = new LinkedList<>();
+    private LinkedList<TemporalInterval> eventsIntervals = new LinkedList<>();
 
     public Action() {}
 
@@ -153,20 +154,21 @@ public class Action {
     }
 
     public Collection<TemporalEvent> events() {
-        return events.keySet();
+        return events;
     }
 
     public TemporalInterval intervalOf(TemporalEvent e) {
-        return events.get(e);
+        return eventsIntervals.get(events.indexOf(e));
     }
 
     private void addEvent(TemporalEvent e, TemporalInterval interval) {
-        events.put(e, interval);
+        events.add(e);
+        eventsIntervals.add(interval);
     }
 
     @Deprecated
     public void clearEvents() {
-        events = new HashMap<>();
+        events = new LinkedList<>();
     }
 
 
