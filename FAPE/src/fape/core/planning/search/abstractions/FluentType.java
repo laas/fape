@@ -1,6 +1,9 @@
 package fape.core.planning.search.abstractions;
 
 
+import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.VariableRef;
+
 /**
  * Encodes the type of "fluent".
  *  - name of the predicate (part of the state variable)
@@ -11,6 +14,12 @@ class FluentType {
     public final String predicateName;
     public final String argType;
     public final String valueType;
+
+    public FluentType(ParameterizedStateVariable sv, VariableRef value) {
+        this.predicateName = sv.predicateName;
+        this.argType = sv.variable.type;
+        this.valueType = value.type;
+    }
 
     public FluentType(String predicate, String argType, String valueType) {
         this.predicateName = predicate;

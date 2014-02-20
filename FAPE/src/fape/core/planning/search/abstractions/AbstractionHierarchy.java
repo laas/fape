@@ -1,13 +1,12 @@
 package fape.core.planning.search.abstractions;
 
 import fape.core.planning.Planner;
-import fape.core.planning.model.AbstractAction;
-import fape.core.planning.model.AbstractTemporalEvent;
-import fape.core.planning.model.Problem;
-import fape.core.planning.model.Type;
+import fape.core.planning.model.*;
+import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
+import gov.nasa.anml.pddl.abstractsyntax.Variable;
 import planstack.graph.core.DirectedGraph;
 import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.core.UnlabeledDigraph;
@@ -90,29 +89,12 @@ public class AbstractionHierarchy {
             return fluentsGroup.get(ft);
     }
 
-
-    /**
-     * Returns the type of a literal (parameter or object constant) appearing in
-     * an abstract action.
-     * @param a
-     * @param var
-     * @return
-     */
-    public String typeOf(AbstractAction a, String var) {
-        String ret;
-        try {
-            ret = a.typeOfParameter(var);
-        } catch (Exception e) {
-            ret = problem.types.getObjectType(var);
-        }
-        return ret;
-    }
-
     public Set<FluentType> getEffects(AbstractAction a) {
         Set<FluentType> allEffects = new HashSet<>();
         for(AbstractTemporalEvent e : a.events) {
             if(e.isTransitionEvent()) {
-                allEffects.addAll(getEffects(a, e));
+                FluentType fluent = new FluentType(e.event.stateVariable, e.event.endValue());
+                allEffects.addAll(derivedSubTypes(fluent));
             }
         }
         return allEffects;
@@ -121,34 +103,12 @@ public class AbstractionHierarchy {
     public Set<FluentType> getPreconditions(AbstractAction a) {
         Set<FluentType> allPrecond = new HashSet<>();
         for(AbstractTemporalEvent e : a.events) {
-            allPrecond.addAll(getPreconditions(a, e));
+            if(e.event.needsEnabling()) {
+                FluentType fluent = new FluentType(e.event.stateVariable, e.event.startValue());
+                allPrecond.addAll(derivedSubTypes(fluent));
+            }
         }
         return allPrecond;
-    }
-
-    public Set<FluentType> getPreconditions(AbstractAction a, AbstractTemporalEvent e) {
-        FluentType fluent = null;
-        if(e.isTransitionEvent()) {
-            TransitionEvent te = (TransitionEvent) e.event;
-            if(!te.from.isNull()) {
-                String predicateName = e.stateVariableReference.refs.get(1);
-                String argType = typeOf(a, e.stateVariableReference.GetConstantReference());
-                String valueType = typeOf(a, te.from.var);
-                fluent = new FluentType(predicateName, argType, valueType);
-            }
-        } else if(e.isPersistenceEvent()) {
-            PersistenceEvent te = (PersistenceEvent) e.event;
-            if(!te.value.isNull()) {
-                String predicateName = e.stateVariableReference.refs.get(1);
-                String argType = typeOf(a, e.stateVariableReference.GetConstantReference());
-                String valueType = typeOf(a, te.value.var);
-                fluent = new FluentType(predicateName, argType, valueType);
-            }
-        } else {
-            throw new FAPEException("Unsupported event type: "+e);
-        }
-
-        return derivedSubTypes(fluent);
     }
 
     /**
@@ -171,14 +131,5 @@ public class AbstractionHierarchy {
             }
         }
         return allFluents;
-    }
-
-    public Set<FluentType> getEffects(AbstractAction a, AbstractTemporalEvent e) {
-        TransitionEvent te = (TransitionEvent) e.event;
-        String predicateName = e.stateVariableReference.refs.get(1);
-        String argType = typeOf(a, e.stateVariableReference.GetConstantReference());
-        String valueType = typeOf(a, te.to.var);
-
-        return derivedSubTypes(new FluentType(predicateName, argType, valueType));
     }
 }

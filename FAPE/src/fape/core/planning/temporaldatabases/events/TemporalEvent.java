@@ -41,6 +41,10 @@ public abstract class TemporalEvent {
     public abstract VariableRef endValue();
     public abstract VariableRef startValue();
 
+    public boolean needsEnabling() {
+        return !startValue().isNull();
+    }
+
     public abstract TemporalEvent DeepCopy(boolean assignNewID);
 
     /**
