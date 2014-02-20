@@ -49,12 +49,12 @@ public class Planner {
 
     public Problem pb = new Problem();
 
-    private int nextVarID = 0;
+    private static int nextVarID = 0;
 
     /**
      * @return a new unused for an unbinded variable.
      */
-    public String NewUnbindedVarName() {
+    public static String NewUnbindedVarName() {
         return "a" + nextVarID++ + "_";
     }
 
@@ -72,6 +72,7 @@ public class Planner {
                 precedingComponent = supporter.GetChainComponent(o.precedingChainComponent);
             }
         }
+
         //now we can happily apply all the options
         if (supporter != null && precedingComponent != null) {
             assert consumer != null : "Consumer was not passed as an argument";
@@ -80,19 +81,22 @@ public class Planner {
                     : "This is restricted to databases containing single persistence only";
 
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
+
         } else if (supporter != null) {
+
             assert consumer != null : "Consumer was not passed as an argument";
             // database concatenation
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
+
         } else if (o.supportingAction != null) {
+
             assert consumer != null : "Consumer was not passed as an argument";
             //this is a simple applciation of an action
             ActionRef ref = new ActionRef();
             ref.name = o.supportingAction.name;
             int ct = 0;
             for (Instance i : o.supportingAction.params) {
-                Reference rf = new Reference();
-                rf.refs.add(NewUnbindedVarName()); //random unbinded parameters
+                Reference rf = new Reference(NewUnbindedVarName());
                 ref.args.add(rf);
             }
             boolean enforceDuration = true;
@@ -102,13 +106,9 @@ public class Planner {
             Action addedAction = AddAction(ref, next, null, enforceDuration);
             // create the binding between consumer and the new statement in the action that supports it
             int supportingDatabase = -1;
-            for (TemporalEvent e : addedAction.events) {
-                if (e instanceof TransitionEvent) {
-                    TransitionEvent ev = (TransitionEvent) e;
-                    TemporalDatabase potSupporter = next.GetDatabase(ev.tdbID);
-                    if(next.Unifiable(ev.to, consumer.GetGlobalConsumeValue()) && next.Unifiable(potSupporter.stateVariable, consumer.stateVariable)) {
-                        supportingDatabase = ev.tdbID;
-                    }
+            for (TemporalEvent e : addedAction.events()) {
+                if(next.canBeEnabler(e, consumer)) {
+                    supportingDatabase = e.tdbID;
                 }
             }
             if (supportingDatabase == -1) {
@@ -173,10 +173,10 @@ public class Planner {
                 throw new FAPEException("Unknown action.");
             }
             //
-            for (TemporalEvent t : remove.events) {
+            for (TemporalEvent t : remove.events()) {
                 bestState.SplitDatabase(t);
             }
-            remove.events = new LinkedList<>();
+            remove.clearEvents();
             bestState.FailAction(pop);
         }
     }
@@ -729,132 +729,39 @@ public class Planner {
      */
     public Action AddAction(ActionRef ref, State st, Action parent, boolean enforceDuration) {
 
-        AbstractAction abs = pb.actions.get(ref.name);
-        if (abs == null) {
-            throw new FAPEException("Seeding unknown action: " + ref.name);
-        }
+        Action act = new Action(st.pb, ref, parent);
 
-        Action act = new Action();
-        act.params = abs.params;
-        act.constantParams = ref.args;
-
-        List<Pair<Reference,Reference>> hardBindings = new LinkedList<>();
-
-        if (parent != null) {
-            //we need to pair arguments of the method with the parameters of the added action
-            int refCt = 0;
-            for (Reference r : act.constantParams) {
-                String firstObject = r.GetConstantReference();
-                int ct = 0;
-                for (Instance rr : parent.params) {
-                    if (firstObject.equals(rr.name)) {
-                        act.constantParams.get(refCt).ReplaceFirstReference(parent.constantParams.get(ct));
-                    }
-                    ct++;
-                }
-                refCt++;
-            }
-
-            // this look for parameters that where given a stateVariable value from the parent action
-            // (typically r.right), add a pair of references with the stateVariable and the parameter name
-            for(refCt=0 ; refCt<act.constantParams.size() ; refCt++) {
-                Reference r = act.constantParams.get(refCt);
-                if(r.refs.size() > 1) {
-                    String var = NewUnbindedVarName();
-                    Reference varRef = new Reference(var);
-                    hardBindings.add(new Pair(r, varRef));
-                    act.constantParams.remove(refCt);
-                    act.constantParams.add(refCt, varRef);
-                }
+        // creates in state all unknown variables
+        for(VariableRef localVar : act.localVariables.values()) {
+            if(!st.parameterBindings.containsKey(localVar.var)) {
+                List<String> values = pb.types.instances(localVar.type);
+                ObjectVariableValues binding = new ObjectVariableValues(values, localVar.type);
+                st.parameterBindings.put(localVar.var, binding);
             }
         }
-
-        // for all parameters, create a new variable and add it to the state
-        for(int i=0 ; i<act.params.size() ; i++) {
-            Instance param = act.params.get(i);
-            Reference paramRef = act.constantParams.get(i);
-            String varName = paramRef.GetConstantReference();
-
-            assert pb.types.containsType(param.type) : "Unknown type";
-
-            if(!st.parameterBindings.containsKey(varName)) {
-                // variable does not exists yet, create one
-                if(varName.endsWith("_")) {
-                    List<String> values = pb.types.instances(param.type);
-                    ObjectVariableValues binding = new ObjectVariableValues(values, param.type);
-                    st.parameterBindings.put(varName, binding);
-                } else {
-                    throw new FAPEException("This is a literal, should be already in variables: " + paramRef);
-                }
-            }
-        }
-
-        // set the same name
-        act.name = abs.name;
-
-        //add the refinements 
-        act.refinementOptions = abs.strongDecompositions;
 
         act.start = st.tempoNet.getNewTemporalVariable();
         act.end = st.tempoNet.getNewTemporalVariable();
+
         if (enforceDuration) {
-            act.maxDuration = abs.GetDuration();
-            boolean success = st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.maxDuration, (int) act.maxDuration);
-            if (!success) {
-                throw new FAPEException("The temporal network is inconsistent.");
-            }
+            st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.maxDuration, (int) act.maxDuration);
         } else {
             st.tempoNet.EnforceBefore(act.start, act.end);
         }
         // enforce that the current action must be executed after a known time in the future
         st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
 
-        // This creates persistence event for every parameter of the form "r.right -> g"
-        for(Pair<Reference,Reference> binding : hardBindings) {
-            Reference svRef = act.BindedReference(binding.value1);
+        // create one database per event
+        for(TemporalEvent ev : act.events()) {
+            // assign event to its interval
+            TemporalInterval interval = act.intervalOf(ev);
+            interval.AssignTemporalContext(ev, act.start, act.end);
 
-            // state variable is the reference passed (ex: r.right)
-            String predType = st.GetType(svRef);
-            VariableRef svParam = act.GetBindedVariableRef(svRef.variable(), act.GetType(st, svRef.variable()));
-            ParameterizedStateVariable sv = new ParameterizedStateVariable(svRef.predicate(), svParam, predType);
-
-            // create persistence on the value (ex: g)
-            PersistenceEvent ev = new PersistenceEvent(sv, new VariableRef(binding.value2, st.GetType(binding.value2)));
-            TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-            ev.tdbID = db.mID;
-            db.stateVariable = sv;
-
-            // Event is forced during the whole action
-            TemporalInterval all = new TemporalInterval("TStart", "TEnd");
-            all.AssignTemporalContext(ev, act.start, act.end);
-
-            act.events.add(ev);
-            db.AddEvent(ev);
-            if(db.isConsumer())
+            TemporalDatabase db = st.tdb.GetNewDatabase(ev);
+            if(db.isConsumer()) {
                 st.consumers.add(db);
+            }
         }
-
-        //set up the events
-        for (AbstractTemporalEvent ev : abs.events) {
-            // get the event binded into the current action
-            TemporalEvent event = ev.GetEventInAction(st, act);
-
-            // create new databse and
-            TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-            event.tdbID = db.mID;
-
-            // Create a stateVariable for the database
-            Reference finalRef = act.BindedReference(ev.stateVariableReference);
-            String type = st.GetType(finalRef);
-            db.stateVariable = event.stateVariable;
-
-            //we add the event into the database and the action and the consumers
-            act.events.add(event);
-            db.AddEvent(event);
-            if(db.isConsumer())
-                st.consumers.add(db);
-
-        }//event transformation end
 
         //lets add the action into the task network
         if (parent == null) {

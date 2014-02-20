@@ -96,13 +96,13 @@ public class TemporalDatabase {
      * @param m
      * @return
      */
-    public TemporalDatabase DeepCopy(ConstraintNetworkManager m) {
+    public TemporalDatabase DeepCopy() {
         TemporalDatabase newDB = new TemporalDatabase(false);
         newDB.actionAssociations = new HashMap<>(this.actionAssociations);
         newDB.mID = mID;
         newDB.stateVariable = stateVariable;
         for (ChainComponent c : this.chain) {
-            newDB.chain.add(c.DeepCopy(m));
+            newDB.chain.add(c.DeepCopy());
         }
 
         // set the mDatabase variables in the events
@@ -220,7 +220,7 @@ public class TemporalDatabase {
             return this.contents.getLast().end;
         }
 
-        public ChainComponent DeepCopy(ConstraintNetworkManager m) {
+        public ChainComponent DeepCopy() {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
             cp.contents = new LinkedList<>();

@@ -189,13 +189,7 @@ public class TransitionIO2Planning {
         if (v == null) {
             throw new FAPEException("Unknown state variable: " + s.GetVariableName());
         }
-        //switch here based on the statement type
 
-        // create a new object variable
-        //ObjectVariable var = st.bindings.getNewObjectVariable();
-        //var.domain.add(v);
-        // create a temporal database for this variable
-        TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
         ParameterizedStateVariable stateVar = new ParameterizedStateVariable(s.leftRef.predicate(), st.getVariableRef(s.leftRef.variable()), st.GetType(s.leftRef));
 
         // create a new event for the termporal database that corresponds to the
@@ -240,11 +234,8 @@ public class TransitionIO2Planning {
                 break;
         }
 
-        //add the event to the database
-        db.stateVariable = stateVar;
-        db.AddEvent(ev);
-
-        //add the event into the consumers, unless it is a statement event
+        // create a database containing the event
+        TemporalDatabase db = st.tdb.GetNewDatabase(ev);
         if (db.isConsumer()) {
             st.consumers.add(db);
         }

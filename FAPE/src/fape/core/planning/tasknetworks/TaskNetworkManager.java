@@ -233,7 +233,7 @@ public class TaskNetworkManager {
     public void CheckEventDBBindings(State st) {
         System.err.println(Report());
         for(Action a : GetAllActions()) {
-            for(TemporalEvent e : a.events) {
+            for(TemporalEvent e : a.events()) {
                 if(!st.tdb.vars.contains(st.tdb.GetDB(e.tdbID)))
                     throw new FAPEException("Database "+e.tdbID+" from event "+e+" is not contained in the tdb listing. Action containing the event: "+a);
             }

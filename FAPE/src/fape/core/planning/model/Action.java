@@ -10,14 +10,14 @@
  */
 package fape.core.planning.model;
 
-import fape.core.execution.model.ActionRef;
-import fape.core.execution.model.Instance;
-import fape.core.execution.model.Reference;
-import fape.core.execution.model.TemporalConstraint;
+import fape.core.execution.model.*;
 
+import fape.core.planning.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.stn.TemporalVariable;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
+import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 
@@ -35,40 +35,141 @@ public class Action {
     public static int idCounter = 0;
     public int mID = idCounter++;
 
-    /**
-     *
-     */
     public float minDuration = -1.0f;
     public float maxDuration = -1.0f;
 
-    /**
-     *
-     */
-    public TemporalVariable start,
-            /**
-             *
-             */
-            end;
+    public TemporalVariable start, end;
 
-    /**
-     *
-     */
     public String name;
-    //public List<ObjectVariable> parameters = new LinkedList<>(); // we should have all the parameters here
 
-    /**
-     *
-     */
-    public List<TemporalEvent> events = new LinkedList<>(); //all variables from the events map to parameters
-
-    /**
-     *
-     */
     public List<Pair<List<ActionRef>, List<TemporalConstraint>>> refinementOptions; //those are the options how to decompose
     public List<Instance> params;
     public List<Reference> constantParams;
-    public HashMap<Instance, ObjectVariableValues> parameterBindings = new HashMap<>();
     public Status status = Status.PENDING;
+
+    public TreeMap<String, VariableRef> localVariables = new TreeMap<>();
+    private HashMap<TemporalEvent, TemporalInterval> events = new HashMap<>();
+
+    public Action() {}
+
+    public Action(Problem pb, ActionRef ref, Action parent) {
+        AbstractAction abs = pb.actions.get(ref.name);
+        if (abs == null) {
+            throw new FAPEException("Seeding unknown action: " + ref.name);
+        }
+
+        params = abs.params;
+        constantParams = ref.args;
+
+        // contains bindings between state variables and variables
+        List<Pair<Reference,String>> hardBindings = new LinkedList<>();
+
+        if (parent != null) {
+            // this look for parameters that where given a stateVariable value from the parent action
+            // (typically r.right), add a pair of references with the stateVariable and the parameter name
+            for(int refCt=0 ; refCt<constantParams.size() ; refCt++) {
+                Reference r = constantParams.get(refCt);
+                if(r.refs.size() > 1) {
+                    String var = Planner.NewUnbindedVarName();
+                    String param = params.get(refCt).name;
+                    hardBindings.add(new Pair(r, param));
+                    constantParams.remove(refCt);
+                    constantParams.add(refCt, new Reference(var));
+                }
+            }
+        }
+
+        // for all parameters, register a new variable
+        for(int i=0 ; i<params.size() ; i++) {
+            Instance param = params.get(i);
+            String varName = constantParams.get(i).variable();
+
+            assert pb.types.containsType(param.type) : "Unknown type";
+
+            if(pb.types.containsObject(varName)) {
+                // variable is a domain constant
+                localVariables.put(param.name, new VariableRef(varName, param.type));
+            } else if(parent != null && parent.localVariables.containsKey(varName)) {
+                // variable is defined in the parent action
+                localVariables.put(param.name, parent.localVariables.get(varName));
+            } else {
+                // variable is undefined
+                localVariables.put(param.name, new VariableRef(varName, param.type));
+            }
+        }
+
+        // set the same name
+        name = abs.name;
+
+        //add the refinements
+        refinementOptions = abs.strongDecompositions;
+
+        // look for all parameters of decomposed actions and creates new variables from the unknown ones
+        Map<String, String> unknownVars = new TreeMap<>();
+        for(Pair<List<ActionRef>, List<TemporalConstraint>> dec : refinementOptions) {
+            for(ActionRef act : dec.value1) {
+                for(int argNum=0 ; argNum < act.args.size() ; argNum++) {
+                    String argVar = act.args.get(argNum).variable();
+                    if(!localVariables.containsKey(argVar) && !pb.types.containsObject(argVar)) {
+                        String type = pb.actions.get(act.name).params.get(argNum).type;
+                        if(unknownVars.containsKey(argVar) && !unknownVars.get(argVar).equals(type))
+                            throw new FAPEException("Unsupported: variable has two different types (need to look for common descendant");
+                        unknownVars.put(argVar, type);
+                    }
+                }
+            }
+        }
+
+        for(String varName : unknownVars.keySet()) {
+            localVariables.put(varName, new VariableRef(Planner.NewUnbindedVarName(), unknownVars.get(varName)));
+        }
+
+        maxDuration = abs.GetDuration();
+
+        // This creates persistence event for every parameter of the form "r.right -> g"
+        for(Pair<Reference,String> binding : hardBindings) {
+            Reference svRef = binding.value1;
+
+            // state variable is the reference passed (ex: r.right)
+            VariableRef svParam = parent.localVariables.get(svRef.variable());
+            String predType = pb.types.getContentType(svParam.type, svRef.predicate());//st.GetType(svRef);
+
+            ParameterizedStateVariable sv = new ParameterizedStateVariable(svRef.predicate(), svParam, predType);
+
+            // create persistence on the value (ex: g)
+            PersistenceEvent ev = new PersistenceEvent(sv, localVariables.get(binding.value2));
+
+            // Event is forced during the whole action
+            TemporalInterval all = new TemporalInterval("TStart", "TEnd");
+            addEvent(ev, all);
+        }
+
+        // bind all events and add them to the action
+        for (AbstractTemporalEvent ev : abs.events) {
+            // get the event binded into the current action
+            TemporalEvent event = ev.event.bindedCopy(this);
+            addEvent(event, ev.interval);
+        }//event transformation end
+    }
+
+    public Collection<TemporalEvent> events() {
+        return events.keySet();
+    }
+
+    public TemporalInterval intervalOf(TemporalEvent e) {
+        return events.get(e);
+    }
+
+    private void addEvent(TemporalEvent e, TemporalInterval interval) {
+        events.put(e, interval);
+    }
+
+    @Deprecated
+    public void clearEvents() {
+        events = new HashMap<>();
+    }
+
+
 
     /**
      *
@@ -104,11 +205,11 @@ public class Action {
         a.name = this.name;
         a.refinementOptions = this.refinementOptions;
         a.start = this.start;
+        a.localVariables = this.localVariables;
 
         // events are mutable and hence need to be mapped to the events
         // cloned by the temporal database manager
-        a.events = new LinkedList<>();
-        for(TemporalEvent ev : this.events) {
+        for(TemporalEvent ev : this.events()) {
             TemporalEvent updatedEv = null;
             for(TemporalEvent newEv : updatedEvents) {
                 if(newEv.mID == ev.mID)
@@ -117,10 +218,19 @@ public class Action {
             if(updatedEv == null) {
                 throw new FAPEException("Unable to find the updated event for " + ev);
             }
-            a.events.add(updatedEv);
+            a.addEvent(updatedEv, this.intervalOf(ev));
         }
 
         return a;
+    }
+
+    public ActionRef BindedActionRef(ActionRef actionRef) {
+        ActionRef binded = new ActionRef();
+        binded.name = actionRef.name;
+        for(Reference arg : actionRef.args) {
+            binded.args.add(BindedReference(arg));
+        }
+        return binded;
     }
 
     /**
@@ -131,10 +241,8 @@ public class Action {
     public Reference BindedReference(Reference ref) {
         Reference ret = new Reference(ref);
         String first = ret.GetConstantReference();
-        for(int i=0 ; i<params.size() ; i++) {
-            if(params.get(i).name.equals(first)) {
-                ret.ReplaceFirstReference(constantParams.get(i));
-            }
+        if(localVariables.containsKey(first)) {
+            ret.ReplaceFirstReference(localVariables.get(first).var);
         }
         return ret;
 

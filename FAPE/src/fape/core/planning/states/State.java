@@ -103,7 +103,7 @@ public class State {
         problemRevision = st.problemRevision;
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
-        tdb = st.tdb.DeepCopy(conNet); //we send the new conNet, so we can create a new mapping of unifiables
+        tdb = st.tdb.DeepCopy();
         parameterBindings = new HashMap<String, ObjectVariableValues>();
         for(String key : st.parameterBindings.keySet()) {
             ObjectVariableValues newBinding = st.parameterBindings.get(key).DeepCopy();
@@ -185,7 +185,7 @@ public class State {
                     TemporalDatabase one = theDatabase;
                     if (ct + 1 < theDatabase.chain.size()) {
                         //this was not the last element, we need to create another database and make split
-                        TemporalDatabase newDB = tdb.GetNewDatabase(conNet);
+                        TemporalDatabase newDB = tdb.GetNewDatabase();
 
                         // the two databases share the same state variable
                         newDB.stateVariable = theDatabase.stateVariable;
@@ -195,7 +195,7 @@ public class State {
                         for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
                             TemporalDatabase.ChainComponent origComp = theDatabase.chain.get(i);
                             remove.add(origComp);
-                            TemporalDatabase.ChainComponent pc = origComp.DeepCopy(conNet);
+                            TemporalDatabase.ChainComponent pc = origComp.DeepCopy();
                             newDB.chain.add(pc);
                             for (TemporalEvent eve : pc.contents) {
                                 eve.tdbID = newDB.mID;

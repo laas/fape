@@ -24,20 +24,30 @@ import java.util.*;
  */
 public class TemporalDatabaseManager {
 
+
     /**
-     *
+     * All temporal databases.
      */
     public List<TemporalDatabase> vars = new LinkedList<>();
 
-
-    /**
-     *
-     * @param m
-     * @return
-     */
-    public TemporalDatabase GetNewDatabase(ConstraintNetworkManager m) {
+    public TemporalDatabase GetNewDatabase() {
         TemporalDatabase db = new TemporalDatabase(true);
         vars.add(db);
+        return db;
+    }
+
+    /**
+     * Creates a new database containing the event ev.
+     *
+     * @param ev
+     * @return
+     */
+    public TemporalDatabase GetNewDatabase(TemporalEvent ev) {
+        TemporalDatabase db = new TemporalDatabase(true);
+        db.AddEvent(ev);
+        db.stateVariable = ev.stateVariable;
+        vars.add(db);
+        ev.tdbID = db.mID;
         return db;
     }
 
@@ -49,16 +59,11 @@ public class TemporalDatabaseManager {
         throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+Report());
     }
 
-    /**
-     *
-     * @param m
-     * @return
-     */
-    public TemporalDatabaseManager DeepCopy(ConstraintNetworkManager m) {
+    public TemporalDatabaseManager DeepCopy() {
         TemporalDatabaseManager mng = new TemporalDatabaseManager();
         mng.vars = new LinkedList<>();
         for (TemporalDatabase b : this.vars) {
-            TemporalDatabase db = b.DeepCopy(m);
+            TemporalDatabase db = b.DeepCopy();
             mng.vars.add(db);
         }
         return mng;

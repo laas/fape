@@ -74,11 +74,10 @@ public class AbstractTemporalEvent {
     /**
      * Produces a temporal event whose parameter and time points are
      * binded to those of the action act.
-     * @param st
      * @param act
      * @return
      */
-    public TemporalEvent GetEventInAction(State st, Action act) {
+    public TemporalEvent GetEventInAction(Action act) {
         TemporalEvent e = this.event.bindedCopy(act);
         interval.AssignTemporalContext(e, act.start, act.end);
         return e;

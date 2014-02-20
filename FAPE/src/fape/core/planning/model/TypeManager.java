@@ -80,6 +80,10 @@ public class TypeManager {
         objectTypes.put(i.name, i.type);
     }
 
+    public boolean containsObject(String objectName) {
+        return objectTypes.containsKey(objectName);
+    }
+
     public void addContent(String type, Instance i) {
         if(!map.containsKey(i.type)) {
             throw new FAPEException("Error: unknown type: "+i.type);
