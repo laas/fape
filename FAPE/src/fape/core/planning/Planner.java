@@ -811,14 +811,15 @@ public class Planner {
 
         // This creates persistence event for every parameter of the form "r.right -> g"
         for(Pair<Reference,Reference> binding : hardBindings) {
-            Reference finalRef = act.BindedReference(binding.value1);
+            Reference svRef = act.BindedReference(binding.value1);
 
             // state variable is the reference passed (ex: r.right)
-            String type = st.GetType(finalRef);
-            ParameterizedStateVariable sv = new ParameterizedStateVariable(finalRef, type);
+            String predType = st.GetType(svRef);
+            VariableRef svParam = act.GetBindedVariableRef(svRef.variable(), act.GetType(st, svRef.variable()));
+            ParameterizedStateVariable sv = new ParameterizedStateVariable(svRef.predicate(), svParam, predType);
 
             // create persistence on the value (ex: g)
-            PersistenceEvent ev = new PersistenceEvent(sv, new VariableRef(binding.value2));
+            PersistenceEvent ev = new PersistenceEvent(sv, new VariableRef(binding.value2, st.GetType(binding.value2)));
             TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
             ev.tdbID = db.mID;
             db.stateVariable = sv;
@@ -826,10 +827,6 @@ public class Planner {
             // Event is forced during the whole action
             TemporalInterval all = new TemporalInterval("TStart", "TEnd");
             all.AssignTemporalContext(ev, act.start, act.end);
-
-            // create a stateVariable for the database
-
-
 
             act.events.add(ev);
             db.AddEvent(ev);
@@ -849,7 +846,7 @@ public class Planner {
             // Create a stateVariable for the database
             Reference finalRef = act.BindedReference(ev.stateVariableReference);
             String type = st.GetType(finalRef);
-            db.stateVariable = new ParameterizedStateVariable(finalRef, type);
+            db.stateVariable = event.stateVariable;
 
             //we add the event into the database and the action and the consumers
             act.events.add(event);

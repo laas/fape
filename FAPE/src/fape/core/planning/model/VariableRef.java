@@ -10,21 +10,22 @@ import fape.exceptions.FAPEException;
  * are to be stored elsewhere (typically in the constraint manager.
  *
  * The null variable is defined to be anything and is represented by a variable whose name is "null".
- *
- * TODO: handle tye of the variable
  */
 public class VariableRef {
 
     public final String var;
+    public final String type;
 
-    public VariableRef(String var) {
+    public VariableRef(String var, String type) {
         this.var = var;
+        this.type = type;
     }
 
-    public VariableRef(Reference ref) {
+    public VariableRef(Reference ref, String type) {
         if(ref.refs.size() != 1)
             throw new FAPEException("Cannot create variable from reference: " + ref);
         this.var = ref.GetConstantReference();
+        this.type = type;
     }
 
     public Reference GetReference() {

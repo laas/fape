@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases.events;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.Action;
+import fape.core.planning.model.ParameterizedStateVariable;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
@@ -24,6 +25,7 @@ public abstract class TemporalEvent {
 
     public static int counter = 0;
     public int mID = -1;
+    public ParameterizedStateVariable stateVariable = null;
 
     public abstract String Report();
 

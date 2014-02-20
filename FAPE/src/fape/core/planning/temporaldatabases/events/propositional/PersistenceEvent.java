@@ -27,8 +27,6 @@ public class PersistenceEvent extends TemporalEvent {
      */
     public final VariableRef value;
 
-    public final ParameterizedStateVariable stateVariable;
-
     public PersistenceEvent(ParameterizedStateVariable sv, VariableRef value) {
         this.stateVariable = sv;
         this.value = value;
@@ -38,7 +36,7 @@ public class PersistenceEvent extends TemporalEvent {
     public PersistenceEvent bindedCopy(Action a) {
         PersistenceEvent pe = new PersistenceEvent(
                 a.getBindedStateVariable(stateVariable),
-                a.GetBindedVariableRef(value.GetReference()));
+                a.GetBindedVariableRef(value));
         pe.start = start;
         pe.end = end;
         pe.mID = counter++;

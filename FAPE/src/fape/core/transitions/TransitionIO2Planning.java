@@ -94,9 +94,9 @@ public class TransitionIO2Planning {
     }
 
 
-    public static TemporalEvent ProduceTemporalEvent(Statement s, String varType, VariableRef from, VariableRef to) {
+    public static TemporalEvent ProduceTemporalEvent(Statement s, ParameterizedStateVariable stateVariable, VariableRef from, VariableRef to) {
         TemporalEvent ev = null;
-        ParameterizedStateVariable stateVariable = new ParameterizedStateVariable(s.leftRef, varType);
+
         if (s.operator == null) {
             throw new FAPEException(null);
         }
@@ -117,7 +117,7 @@ public class TransitionIO2Planning {
                     eve3.howMuch = s.GetResourceValue();
                     ev = eve3;
                 } else {
-                    TransitionEvent eve4 = new TransitionEvent(stateVariable, new VariableRef("null"), from);
+                    TransitionEvent eve4 = new TransitionEvent(stateVariable, new VariableRef("null", "null"), from);
                     ev = eve4;
                 }
                 break;
@@ -170,22 +170,8 @@ public class TransitionIO2Planning {
         return ev;
     }
 
-    /**
-     *
-     * @param ev
-     * @param s
-     * @param state
-     */
-    /*public static void AddTimePoints(TemporalEvent ev, Statement s, State state) {
-     TemporalVariable vs = state.tempoNet.getNewTemporalVariable();
-     TemporalVariable ve = state.tempoNet.getNewTemporalVariable();
 
-     //TODO: include some other constraints on those two ...
-     ev.start = vs;
-     ev.end = ve;
 
-     state.tempoNet.EnforceBefore(vs, ve);
-     }*/
     /**
      * we take the statement on input and add it into the corresponding state
      * variable
@@ -206,19 +192,19 @@ public class TransitionIO2Planning {
         //var.domain.add(v);
         // create a temporal database for this variable
         TemporalDatabase db = st.tdb.GetNewDatabase(st.conNet);
-        db.stateVariable = new ParameterizedStateVariable(s.leftRef, st.GetType(s.leftRef));
+        ParameterizedStateVariable stateVar = new ParameterizedStateVariable(s.leftRef.predicate(), st.getVariableRef(s.leftRef.variable()), st.GetType(s.leftRef));
 
         // create a new event for the termporal database that corresponds to the
         // statement
         VariableRef from = null;
         VariableRef to = null;
         if (s.from != null) {
-            from = new VariableRef(s.from.GetConstantReference());
+            from = st.getVariableRef(s.from.GetConstantReference());
         }
         if (s.to != null) {
-            to = new VariableRef(s.to.GetConstantReference());
+            to = st.getVariableRef(s.to.GetConstantReference());
         }
-        TemporalEvent ev = ProduceTemporalEvent(s, st.GetType(s.leftRef), from, to);
+        TemporalEvent ev = ProduceTemporalEvent(s, stateVar, from, to);
         // statements at the start of the of the world
         TemporalVariable tvs = st.tempoNet.getNewTemporalVariable();
         ev.start = tvs;
@@ -251,6 +237,7 @@ public class TransitionIO2Planning {
         }
 
         //add the event to the database
+        db.stateVariable = stateVar;
         db.AddEvent(ev);
 
         //add the event into the consumers, unless it is a statement event
@@ -262,11 +249,10 @@ public class TransitionIO2Planning {
     /**
      *
      * @param a
-     * @param vars
-     * @param types
+     * @param pb Problem in which the action is defined
      * @return
      */
-    public static AbstractAction TransformAction(Action a, HashMap<String, StateVariable> vars, TypeManager types) {
+    public static AbstractAction TransformAction(Action a, Problem pb) {
         AbstractAction act = new AbstractAction();
         act.name = a.name;
         act.params = a.params;
@@ -275,7 +261,7 @@ public class TransitionIO2Planning {
             String varName = s.GetVariableName();
             String varType = "";
             varName = varName.substring(varName.indexOf("."));
-            for (StateVariable sv : vars.values()) {
+            for (StateVariable sv : pb.vars.values()) {
                 String smallDeriv = sv.typeDerivationName.substring(sv.typeDerivationName.indexOf("."));
                 if (smallDeriv.equals(varName)) {
                     varType = sv.type;
@@ -285,16 +271,19 @@ public class TransitionIO2Planning {
                 throw new FAPEException("Error: did not find type for state variable of statement "+s);
             }
 
-            Reference from = new Reference("null");
-            Reference to = new Reference("null");
+            VariableRef from = new VariableRef("null", "");
+            VariableRef to = new VariableRef("null", "");
             if (s.from != null) {
-                from = s.from;
+                from = new VariableRef(s.from.variable(), act.typeOf(pb, s.from.variable()));
             }
             if (s.to != null) {
-                to = s.to;
+                to = new VariableRef(s.to.variable(), act.typeOf(pb, s.to.variable()));
             }
 
-            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, varType, new VariableRef(from), new VariableRef(to));
+            VariableRef paramVar = new VariableRef(s.leftRef.variable(), act.typeOf(pb, s.leftRef.variable()));
+            ParameterizedStateVariable sv = new ParameterizedStateVariable(s.leftRef.predicate(), paramVar, varType);
+
+            TemporalEvent tEvent = TransitionIO2Planning.ProduceTemporalEvent(s, sv, from, to);
 
             AbstractTemporalEvent ev = new AbstractTemporalEvent(tEvent, s.interval, s.leftRef, varType);
             act.events.add(ev);

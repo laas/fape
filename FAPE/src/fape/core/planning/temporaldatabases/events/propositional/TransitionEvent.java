@@ -25,7 +25,6 @@ public class TransitionEvent extends TemporalEvent {
      *
      */
     public final VariableRef from, to;
-    public final ParameterizedStateVariable stateVariable;
 
     public TransitionEvent(ParameterizedStateVariable sv, VariableRef from, VariableRef to) {
         this.stateVariable = sv;
@@ -37,8 +36,8 @@ public class TransitionEvent extends TemporalEvent {
     public TransitionEvent bindedCopy(Action a) {
         TransitionEvent te = new TransitionEvent(
                 a.getBindedStateVariable(stateVariable),
-                a.GetBindedVariableRef(from.GetReference()),
-                a.GetBindedVariableRef(to.GetReference()));
+                a.GetBindedVariableRef(from),
+                a.GetBindedVariableRef(to));
         te.start = start;
         te.end = end;
         te.mID = counter++;

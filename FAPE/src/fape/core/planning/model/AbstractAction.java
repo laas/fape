@@ -76,4 +76,21 @@ public class AbstractAction {
     public String toString() {
         return name;
     }
+
+    /**
+     * Returns the type of a variable that appears in an abstract action.
+     * The var is expected to be either a parameter of the action or a problem constant.
+     * @param pb Problem where the constants are defined
+     * @param varName Name of the variable of unknown type
+     * @return
+     */
+    public String typeOf(Problem pb, String varName) {
+        String type;
+        try {
+            type = typeOfParameter(varName);
+        } catch (Exception e) {
+            type = pb.types.getObjectType(varName);
+        }
+        return type;
+    }
 }

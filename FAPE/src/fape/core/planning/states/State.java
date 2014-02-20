@@ -75,11 +75,6 @@ public class State {
     public HashMap<String, ObjectVariableValues> parameterBindings = new HashMap<>();
 
     /**
-     *
-     */
-    public boolean isInitState = false;
-
-    /**
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
      */
@@ -259,6 +254,12 @@ public class State {
         } else {
             throw new FAPEException("Error: can't look up type for " + ref);
         }
+    }
+
+    public VariableRef getVariableRef(String varName) {
+        assert parameterBindings.containsKey(varName);
+        String varType = parameterBindings.get(varName).type;
+        return new VariableRef(varName, varType);
     }
 
     public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {

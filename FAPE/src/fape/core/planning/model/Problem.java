@@ -147,7 +147,7 @@ public class Problem {
             if (actions.containsKey(a.name)) {
                 throw new FAPEException("Overriding action abstraction: " + a.name);
             }
-            AbstractAction act = TransitionIO2Planning.TransformAction(a, vars, types);
+            AbstractAction act = TransitionIO2Planning.TransformAction(a, this);
             actions.put(act.name, act);
         }
 

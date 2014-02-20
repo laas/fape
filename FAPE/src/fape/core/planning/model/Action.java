@@ -141,15 +141,33 @@ public class Action {
     }
 
     public VariableRef GetBindedVariableRef(VariableRef var) {
-        return GetBindedVariableRef(var.GetReference());
+        return GetBindedVariableRef(var.GetReference(), var.type);
     }
 
-    public VariableRef GetBindedVariableRef(Reference ref) {
-        return new VariableRef(BindedReference(ref));
+    public VariableRef GetBindedVariableRef(Reference ref, String type) {
+        return new VariableRef(BindedReference(ref), type);
+    }
+
+    public VariableRef GetBindedVariableRef(String varName, String type) {
+        return GetBindedVariableRef(new Reference(varName), type);
     }
 
     public ParameterizedStateVariable getBindedStateVariable(ParameterizedStateVariable sv) {
-        return new ParameterizedStateVariable(sv.predicateName, GetBindedVariableRef(sv.variable.GetReference()), sv.type);
+        return new ParameterizedStateVariable(sv.predicateName, GetBindedVariableRef(sv.variable), sv.type);
+    }
+
+    public String GetType(State st, Reference ref) {
+        assert ref.refs.size() == 1;
+        return GetType(st, ref.GetConstantReference());
+    }
+
+    public String GetType(State st, String variable) {
+        for(int i=0 ; i<params.size() ; i++) {
+            if(params.get(i).name.equals(variable)) {
+                return params.get(i).type;
+            }
+        }
+        return st.parameterBindings.get(variable).type;
     }
 
     @Override

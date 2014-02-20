@@ -29,6 +29,16 @@ public class Reference {
         this.refs.addAll(ref.refs);
     }
 
+    public String variable() {
+        assert refs.size() >= 1;
+        return refs.getFirst();
+    }
+
+    public String predicate() {
+        assert refs.size() == 2;
+        return refs.get(1);
+    }
+
     /**
      *
      */
