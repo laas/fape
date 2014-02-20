@@ -62,4 +62,14 @@ public class TransitionEvent extends TemporalEvent {
     public String Report() {
         return "[" + start + "," + end + "] transition "+((from==null)?"null":from)+" -> "+((to==null)?"null":to);
     }
+
+    @Override
+    public VariableRef endValue() {
+        return to;
+    }
+
+    @Override
+    public VariableRef startValue() {
+        return from;
+    }
 }

@@ -62,4 +62,14 @@ public class PersistenceEvent extends TemporalEvent {
     public String Report() {
         return "[" + start + "," + end + "] persistence "+value;
     }
+
+    @Override
+    public VariableRef endValue() {
+        return value;
+    }
+
+    @Override
+    public VariableRef startValue() {
+        return value;
+    }
 }

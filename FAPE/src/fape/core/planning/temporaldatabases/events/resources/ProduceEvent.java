@@ -18,7 +18,7 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  *
  * @author FD
  */
-public class ProduceEvent extends TemporalEvent {
+public abstract class ProduceEvent extends TemporalEvent {
 
     /**
      *

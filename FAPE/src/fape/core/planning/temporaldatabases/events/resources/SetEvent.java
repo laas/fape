@@ -19,7 +19,7 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
  *
  * @author FD
  */
-public class SetEvent extends TemporalEvent{
+public abstract class SetEvent extends TemporalEvent{
 
     /**
      *

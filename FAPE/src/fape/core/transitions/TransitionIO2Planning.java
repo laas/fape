@@ -101,6 +101,7 @@ public class TransitionIO2Planning {
             throw new FAPEException(null);
         }
         switch (s.operator) {
+            /* TODO: We don't support resources for now
             case ":produce":
                 ProduceEvent eve = new ProduceEvent();
                 eve.howMuch = s.GetResourceValue();
@@ -111,11 +112,13 @@ public class TransitionIO2Planning {
                 eve2.howMuch = s.GetResourceValue();
                 ev = eve2;
                 break;
+                */
             case ":=":
                 if (s.IsResourceRelated()) {
+                    throw new FAPEException("Resources are not supported"); /* TODO
                     SetEvent eve3 = new SetEvent();
                     eve3.howMuch = s.GetResourceValue();
-                    ev = eve3;
+                    ev = eve3; */
                 } else {
                     TransitionEvent eve4 = new TransitionEvent(stateVariable, new VariableRef("null", "null"), from);
                     ev = eve4;
@@ -136,6 +139,7 @@ public class TransitionIO2Planning {
                     }
                 }
                 break;
+            /** TODO: we don't support resources for now
             case ">=": {
                 ConditionEvent eve6 = new ConditionEvent();
                 eve6.operator = s.operator;
@@ -163,7 +167,7 @@ public class TransitionIO2Planning {
                 eve6.value = s.value;
                 ev = eve6;
                 break;
-            }
+            } */
             default:
                 throw new UnsupportedOperationException("Unknown operator.");
         }

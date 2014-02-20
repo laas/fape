@@ -13,6 +13,7 @@ package fape.core.planning.temporaldatabases.events;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.Action;
 import fape.core.planning.model.ParameterizedStateVariable;
+import fape.core.planning.model.VariableRef;
 import fape.core.planning.stn.TemporalVariable;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
@@ -36,6 +37,9 @@ public abstract class TemporalEvent {
      * TODO: only thing preventing us from immutable events
      */
     public int tdbID = -1;
+
+    public abstract VariableRef endValue();
+    public abstract VariableRef startValue();
 
     public abstract TemporalEvent DeepCopy(boolean assignNewID);
 

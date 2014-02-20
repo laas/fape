@@ -316,18 +316,7 @@ public class ADTG {
         // for all actions, check if there is a transition event supporting the database
         for(AbstractAction a : potentialSupporterActions) {
             for (AbstractTemporalEvent eve : a.events) {
-                /*
-                List<StateVariable> list = new LinkedList<>(eve.stateVariableDomain);
-                list.retainAll(db.domain);
-                if (!list.isEmpty() && eve.event instanceof TransitionEvent) {
-                    if (((TransitionEvent) eve.event).to.Unifiable(db.GetGlobalConsumeValue())) {
-                        //this action is a supporter, add it to the list and go to the next one
-                        supporterActionNames.add(a.name);
-                        break;
-                    }
-                }
-                */
-                if(CanBeSupporter(pl, st, a, eve, db)) {
+                if(st.canBeEnabler(eve.event, db)) {
                     supporterActionNames.add(a.name);
                     break;
                 }
@@ -336,84 +325,5 @@ public class ADTG {
 
         
         return supporterActionNames;
-    }
-
-
-    /**
-     * Returns true if the TemporalEvent abs of action a can be supporter
-     * of Temporal database db.
-     * @param pl
-     * @param st
-     * @param a
-     * @param abs
-     * @param db
-     * @return
-     */
-    private boolean CanBeSupporter(Planner pl, State st, AbstractAction a, AbstractTemporalEvent abs, TemporalDatabase db) {
-        if(abs.isPersistenceEvent()) {
-            return false;
-        }
-
-        if(!abs.varType.equals(db.stateVariable.type)) {
-            return false;
-        }
-        Reference svRef = new Reference(abs.stateVariableReference);
-        if(svRef.refs.size() != 2)
-            throw new FAPEException("event on something that is not a state variable: "+svRef);
-        if(!svRef.refs.get(1).equals(db.stateVariable.predicateName))
-            return false;
-
-
-        String predVar = svRef.GetConstantReference();
-        Set<String> possiblePredVarValues;
-        if(st.parameterBindings.containsKey(predVar)) {
-            possiblePredVarValues = new TreeSet(st.parameterBindings.get(predVar).domain);
-        } else {
-            String type = null;
-            for(Instance i : a.params) {
-                if(predVar.equals(i.name)) {
-                    type = i.type;
-                }
-            }
-            if(type == null) {
-                throw new FAPEException("Unable to find variable: "+predVar);
-            }
-            possiblePredVarValues = new TreeSet(pb.types.instances(type));
-        }
-
-        Set possibleRightPredVarValues = new TreeSet(st.parameterBindings.get(db.stateVariable.variable).domain);
-        possiblePredVarValues.retainAll(possibleRightPredVarValues);
-        if(possiblePredVarValues.isEmpty())
-            return false;
-
-
-
-
-
-        String supportVar = ((TransitionEvent) abs.event).to.var;
-        Set<String> possibleLeftValues;
-        if(st.parameterBindings.containsKey(supportVar)) {
-            possibleLeftValues = new TreeSet(st.parameterBindings.get(supportVar).domain);
-        } else {
-            String type = null;
-            for(Instance i : a.params) {
-                if(supportVar.equals(i.name)) {
-                    type = i.type;
-                }
-            }
-            if(type == null) {
-                throw new FAPEException("Unable to find variable: "+supportVar);
-            }
-            possibleLeftValues = new TreeSet(pb.types.instances(type));
-        }
-
-        Set possibleRightValues = new TreeSet(st.parameterBindings.get(db.GetGlobalConsumeValue()).domain);
-        possibleLeftValues.retainAll(possibleRightValues);
-        if(possibleLeftValues.isEmpty()) {
-            return false;
-        }
-
-
-        return true;
     }
 }

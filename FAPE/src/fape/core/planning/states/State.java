@@ -26,6 +26,7 @@ import fape.core.planning.temporaldatabases.events.propositional.PersistenceEven
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -262,6 +263,21 @@ public class State {
         return new VariableRef(varName, varType);
     }
 
+    /**
+     * Return all possible values of an object variable.
+     * @param var
+     * @return
+     */
+    public Collection<String> possibleValues(VariableRef var) {
+        if(parameterBindings.containsKey(var.var)) {
+            // variable is binded, return domain
+            return parameterBindings.get(var.var).domain;
+        } else {
+            // variable is unkonwn, return all instances of its type
+            return pb.types.instances(var.type);
+        }
+    }
+
     public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
         return Unifiable(a.stateVariable, b.stateVariable);
     }
@@ -288,10 +304,26 @@ public class State {
      * @return
      */
     public boolean Unifiable(VariableRef a, VariableRef b) {
-        LinkedList<String> inter = new LinkedList<>(parameterBindings.get(a).domain);
+        LinkedList<String> inter = new LinkedList<>(possibleValues(a));
 
-        inter.retainAll(parameterBindings.get(b).domain);
+        inter.retainAll(possibleValues(b));
         return inter.size() > 0;
+    }
+
+    /**
+     * Returns true if the temporal event e can be an enabler for the database db.
+     *
+     * Its means e has to be a transition event and that both state variables and the
+     * consume/produce values must be unifiable.
+     * @param e
+     * @param db
+     * @return
+     */
+    public boolean canBeEnabler(TemporalEvent e, TemporalDatabase db) {
+        boolean canSupport = e instanceof TransitionEvent;
+        canSupport = canSupport && Unifiable(e.stateVariable, db.stateVariable);
+        canSupport = canSupport && Unifiable(e.endValue(), db.GetGlobalConsumeValue());
+        return canSupport;
     }
 
     /**
