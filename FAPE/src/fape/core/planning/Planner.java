@@ -32,6 +32,8 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
+import planstack.graph.printers.GraphDotPrinter;
+
 import java.util.*;
 
 /**
@@ -211,7 +213,6 @@ public class Planner {
         KeepBestStateOnly();
         State s = GetCurrentState();
         s.tempoNet.EnforceDelay(s.tempoNet.GetGlobalStart(), s.tempoNet.GetEarliestExecution(), earliestExecution);
-
         // If the STN is not consistent after this addition, the the current plan is not feasible.
         // Full replan is necessary
         if(!s.tempoNet.IsConsistent()) {
@@ -274,11 +275,14 @@ public class Planner {
      * don't keep any outdated states.
      */
     public void KeepBestStateOnly() {
-        if (best == null) {
-            throw new FAPEException("No known best state.");
-        }
         queue.clear();
-        queue.add(best);
+
+        if (best == null) {
+            TinyLogger.LogInfo("No known best state.");
+        } else {
+            queue.add(best);
+        }
+
     }
     /*
      private boolean dfsRec(State st) {
@@ -598,10 +602,10 @@ public class Planner {
      */
     public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
         State myState = best;
+        Plan plan = new Plan(myState);
 
         List<AtomicAction> ret = new LinkedList<>();
-        List<Action> l = myState.taskNet.GetAllActions();
-        for (Action a : l) {
+        for (Action a : plan.GetNextActions()) {
             long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
             if (startTime > howFarToProgress.val) {
                 continue;
@@ -624,12 +628,6 @@ public class Planner {
                 return (int) (o1.mStartTime - o2.mStartTime);
             }
         });
-
-        //TODO awful hack to only return the first task, we need to keep track of causal links to make it cleaner
-        if(ret.size() > 0)
-            ret = ret.subList(0,1);
-        else
-            ret = ret.subList(0,0);
 
         // for all selecting actions, we set them as being executed and we bind their start time point
         // to the one we requested.
@@ -748,8 +746,9 @@ public class Planner {
         } else {
             st.tempoNet.EnforceBefore(act.start, act.end);
         }
-        // enforce that the current action must be executed after a known time in the future
-        st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
+        // enforce that the current ground action must be executed after a known time in the future
+        if(!act.IsRefinable())
+            st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
 
         // create one database per event
         for(TemporalEvent ev : act.events()) {
@@ -833,7 +832,7 @@ public class Planner {
         p.ForceFact(Executor.ProcessANMLfromFile(anml));
         boolean timeOut = false;
         try {
-            timeOut = p.Repair(new TimeAmount(1000 * 6000));
+            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Planning finished for " + anml + " with failure.");

@@ -190,6 +190,17 @@ public class TaskNetworkManager {
         return null;
     }
 
+    public Action getActionContainingEvent(TemporalEvent e) {
+        for(Action a : GetAllActions()) {
+            for(TemporalEvent ae : a.events()) {
+                if(ae.mID == e.mID) {
+                    return a;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * flips the "removed" switch on an action, since the action failed we do
      * not consider it to ba a part of plan anymore
@@ -238,6 +249,5 @@ public class TaskNetworkManager {
                     throw new FAPEException("Database "+e.tdbID+" from event "+e+" is not contained in the tdb listing. Action containing the event: "+a);
             }
         }
-
     }
 }

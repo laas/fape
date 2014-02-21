@@ -292,12 +292,11 @@ public class Action {
     public List<String> ProduceParameters(State st) {
         List<String> ret = new LinkedList<>();
 
-        for(Reference param : this.constantParams) {
-            assert param.refs.size() == 1;
-            String varName = param.GetConstantReference();
-            assert st.parameterBindings.containsKey(varName);
-            assert st.parameterBindings.get(varName).domain.size() == 1;
-            ret.add(st.parameterBindings.get(varName).domain.getFirst());
+        for(Instance i : this.params) {
+            VariableRef var = this.localVariables.get(i.name);
+            assert st.parameterBindings.containsKey(var);
+            assert st.parameterBindings.get(var).domain.size() == 1;
+            ret.add(st.parameterBindings.get(var).domain.getFirst());
         }
 
         return ret;

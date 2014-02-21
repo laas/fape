@@ -5,6 +5,7 @@ import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
 import fape.util.TinyLogger;
 import fape.util.Pair;
+import planstack.graph.printers.GraphDotPrinter;
 
 public class STNManagerPlanStack extends STNManager {
 
@@ -174,5 +175,11 @@ public class STNManagerPlanStack extends STNManager {
         stn.removeConstraint(start.getID(), end.getID());
         stn.removeConstraint(end.getID(), start.getID());
         stn.addConstraint(start.getID(), end.getID(), realEndTime);
+    }
+
+    @Override
+    public void printToFile(String file) {
+        GraphDotPrinter printer = new GraphDotPrinter(stn.g());
+        printer.print2Dot(file);
     }
 }
