@@ -147,14 +147,18 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
 
     // O(n*e): recomputes check all edges n times. (necessary because the graph is cyclic with negative values
     var i = 0
-    while(i < g.numVertices) {
+    var updated = true
+    while(i < g.numVertices && updated) {
+      updated = false
       i += 1
       for(e <- g.edges()) {
         if(forwardDist(e.u) + e.l < forwardDist(e.v)) {
           forwardDist(e.v) = forwardDist(e.u) + e.l
+          updated = true
         }
         if(backwardDist(e.v) + e.l < backwardDist(e.u)) {
           backwardDist(e.u) = backwardDist(e.v) + e.l
+          updated = true
         }
       }
     }

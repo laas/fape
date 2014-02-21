@@ -82,7 +82,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
    */
   protected def addConstraintFast(u:Int, v:Int, w:Int) : Boolean = {
     if(!consistent) {
-      println("Warning: adding constraint to inconsistent STN")
       return false
     }
     val oldW = getWeight(u, v)
@@ -191,6 +190,17 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
 
 
   /**
+   * WARNING: Removes constraint from network but do _not_ update the distances. Make sure to always
+   * make a checkConsistencyFromScratch after that.
+   * @param u
+   * @param v
+   */
+  def removeConstraintUnsafe(u:Int,v:Int) {
+    g.deleteEdges(u, v)
+  }
+
+
+  /**
    * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
    * Performs a consistency check from scratch (expensive try to use removeCOnstraints if you are to remove
    * more than one constraint)
@@ -199,7 +209,7 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
    * @return True if the STN is consistent after removal
    */
   def removeConstraint(u:Int, v:Int) : Boolean = {
-    g.deleteEdges(u, v)
+    removeConstraintUnsafe(u, v)
     checkConsistencyFromScratch()
   }
 
@@ -210,7 +220,7 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
    * @return true if the STN is consistent after removal
    */
   def removeConstraints(edges:Pair[Int,Int]*) = {
-    edges.foreach(e => g.deleteEdges(e._1, e._2))
+    edges.foreach(e => removeConstraintUnsafe(e._1, e._2))
     checkConsistencyFromScratch()
   }
 
