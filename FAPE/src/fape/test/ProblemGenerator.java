@@ -10,6 +10,9 @@
  */
 package fape.test;
 
+import fape.util.FileHandling;
+
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -21,82 +24,7 @@ import java.util.Random;
 public class ProblemGenerator {
 
     public static Random rg = new Random(0);//System.currentTimeMillis());
-    public static String domain = "/**\n"
-            + " * Dream World domain in ANML\n"
-            + " * \n"
-            + " * so far adapted for the clean table example\n"
-            + " *   \n"
-            + " * Filip Dvořák <filip.dvorak@runbox.com>\n"
-            + " * LAAS-CNRS\n"
-            + " *  \n"
-            + " * version 0.1 [draft]    \n"
-            + " * version 0.2 [prepared for parsing]    \n"
-            + " * version 0.3 [getting ready for execution]    \n"
-            + " * version 0.4 [realistic example]     \n"
-            + " * version 0.5 [action-addition example]\n"
-            + " * version 0.6 [running addition example]       \n"
-            + " * version 0.7 [this is a generated problem]       \n"
-            + " * \n"
-            + " * TODO:\n"
-            + " *  - sanity checks\n"
-            + " *     \n"
-            + " */ \n"
-            + "\n"
-            + "\n"
-            + "type Location < object;\n"
-            + "\n"
-            + "type Gripper < Location with {\n"
-            + "  variable boolean empty;\n" 
-            + "};\n"
-            + "\n"
-            + "type Robot < object with {\n"
-            + "  variable Location mLocation;\n"
-            + "  variable Gripper left;\n"
-            + "  variable Gripper right;\n"
-            + "};\n"
-            + "\n"
-            + "type Item < object with {\n"
-            + "  variable Location mLocation;\n"
-            + "  variable boolean onTable;\n"
-            + "};\n"
-            + "\n"
-            + "/**\n"
-            + " * defining actions\n"
-            + " */\n"
-            + " \n"
-            + " \n"
-            + "/**\n"
-            + " * pick some item s with robor r, at location l \n"
-            + " */  \n"
-            + "\n"
-            + "action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){\n"
-            + "        \n"
-            + "  [all]{\n"
-            + "    r.right == g;\n"
-            + "    g.empty == true :-> false;\n"
-            + "    r.mLocation == l;\n"
-            + "    s.mLocation == l :-> g; \n"
-            + "  }\n"
-            + "};\n"
-            + "\n"
-            + "action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){\n"
-            + "  \n"
-            + "  [all]{\n"
-            + "    r.right == g;\n"
-            + "    g.empty == false :-> true;\n"
-            + "    r.mLocation == l;\n"
-            + "    s.mLocation == g :-> l; \n"
-            + "  };\n"
-            + "   \n"
-            + "}; \n"
-            + "\n"
-            + "action Move(Robot r, Location a, Location b){\n"
-            + "  \n"
-            + "  [all]{\n"
-            + "    r.mLocation == a :-> b;\n"
-            + "  };\n"
-            + "  \n"
-            + "}; \n\n";
+    public static String domain = FileHandling.getFileContents(new File("problems/BaseDomain.anml"));
 
     public static class Problem {
 
@@ -112,7 +40,9 @@ public class ProblemGenerator {
             String path = "problems/generated/"+name;
 
             String instanceRobot = "instance Robot ", instanceGripper = "instance Gripper ", instanceItem = "instance Item ", instanceLocation = "instance Location ",
-                    startContent = "", allContent = "", goalContent = "";
+                    startContent = "", allContent = "", goalContent = "", seedContent = "";
+
+            int nextUnbindedVar = 0;
 
             for (int i = 0; i < numberOfLocations; i++) {
                 instanceLocation += "L" + i + ((i < numberOfLocations - 1) ? ", " : "");
@@ -143,7 +73,9 @@ public class ProblemGenerator {
             
             //adding goals
             for (int i = 0; i < numberOfTransports; i++) {
-                goalContent += "I" + i + ".mLocation == " + "L" + rg.nextInt(numberOfLocations) + ";\n";
+                int destLocation = rg.nextInt(numberOfLocations);
+                goalContent += "I" + i + ".mLocation == " + "L" + destLocation + ";\n";
+                seedContent += "Transport(r" + nextUnbindedVar++ + "_, I" + i + ", loc" + nextUnbindedVar++ + "_, L" + destLocation +");\n";
             }
             goalContent += "\n";
             
@@ -164,7 +96,11 @@ public class ProblemGenerator {
                     + goalContent
                     + "}\n\n";
 
-            String out = domain + instances + start + all + goal;
+            String seed = "action Seed(){\n"
+                    + " :decomposition{\n"
+                    + seedContent + " };\n};\n\n";
+
+            String out = domain + instances + start + all + goal + seed;
 
             fape.util.FileHandling.writeFileOutput(path, out);
         }
@@ -197,7 +133,7 @@ public class ProblemGenerator {
             p.numberOfLocations = rg.nextInt(100)+1;
             p.numberOfItems = rg.nextInt(p.numberOfLocations)+1;
             p.numberOfRobots = rg.nextInt(20)+1;
-            p.numberOfTransports = 1;
+            p.numberOfTransports = rg.nextInt(p.numberOfItems > 15 ? 15 : p.numberOfItems);
             l.add(p);
         }
 
