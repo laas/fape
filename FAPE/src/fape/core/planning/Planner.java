@@ -773,14 +773,16 @@ public class Planner {
     }
 
     public static String DomainTableReportFormat() {
-        return String.format("%s\t%s\t",
+        return String.format("%s\t%s\t%s\t",
                 "Num state variables",
+                "Num objects",
                 "Num actions");
     }
 
     public String DomainTableReport() {
-        return String.format("%s\t%s\t",
+        return String.format("%s\t%s\t%s\t",
                 pb.vars.size(),
+                pb.types.instances().size(),
                 pb.actions.size());
     }
 
