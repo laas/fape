@@ -566,7 +566,7 @@ public class Planner {
 
 
         ADTG dtg = pb.dtgs.get(db.stateVariable.type);
-        HashSet<String> abs = dtg.GetActionSupporters(this, st, db);
+        HashSet<String> abs = dtg.GetActionSupporters(st, db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, pb.actions);
         ret.addAll(options);
