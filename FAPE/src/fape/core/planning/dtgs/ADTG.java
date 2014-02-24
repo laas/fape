@@ -173,7 +173,7 @@ public class ADTG {
 
     /**
      * Performs Floyd-Warshal for all weighted graphs.
-     */
+     *
     public void op_all_paths() { //fw - shortest paths
         float min;
         op_cost = new float[var_size][];
@@ -199,8 +199,6 @@ public class ADTG {
                         }
                     }
                     time_cost[i][j] = min;
-                    /*if(graph[i][j].act.getFirst().res_events != null && graph[i][j].act.getFirst().res_events.length > 0)
-                     res_cost[i][j] = graph[i][j].act.getFirst().res_events[0].value;*/
                 }
             }
         }
@@ -227,6 +225,7 @@ public class ADTG {
         }
 
     }
+     */
 
     /**
      * Resource demand of the path (from,to).
@@ -238,6 +237,9 @@ public class ADTG {
     /*public int resource_demand(int from, int to){
      return res_cost[from][to];
      }*/
+
+    HashSet<AbstractAction> potentialSupporterActions = new HashSet<>();
+
     /**
      * Abstract Domain Transition Graphs
      *
@@ -259,23 +261,14 @@ public class ADTG {
             nextId++;
         }
 
-        // TODO: this is not really usefull, we just repeat the same thing n^2 times
-        // we might need to rethink the whole DTG thing
         for (AbstractAction a : actions) {
             for (j = 0; j < a.events.size(); j++) {
                 if (a.events.get(j).isTransitionEvent() && a.events.get(j).SupportsStateVariable(var_id)) {
-                    //TransitionEvent te = (TransitionEvent) a.events.get(j).event;
-                    for (int ii = 0; ii < graph.length; ii++) {
-                        for (int jj = ii; jj < graph.length; jj++) {
-                            if (graph[ii][jj] == null) {
-                                graph[ii][jj] = new DTGEdge();
-                            }
-                            graph[ii][jj].push(a);
-                        }
-                    }
+                    potentialSupporterActions.add(a);
                 }
             }
         }
+        int xx=0;
     }
 
 
@@ -284,31 +277,7 @@ public class ADTG {
      * @param db
      * @return
      */
-    public HashSet<String> GetActionSupporters(Planner pl, State st, TemporalDatabase db) { //TODO remove reference to planner
-        VariableRef var = db.GetGlobalConsumeValue();
-        List<Integer> mValues = new LinkedList<>();
-
-        for (String val : st.parameterBindings.get(var).domain) {
-            mValues.add(instances.get(val));
-        }
-
-        // All actions that may be enablers for this dtb
-        HashSet<AbstractAction> potentialSupporterActions = new HashSet<>();
-
-        // Get all actions that might be supporting this database according to the DTG
-        for (DTGEdge[] graph1 : graph) {
-            for (Integer i : mValues) {
-                DTGEdge e = null;
-                e = graph1[i];
-                if (e != null && e.act != null) {
-                    for (AbstractAction a : e.act) {
-                        potentialSupporterActions.add(a);
-                    }
-                }
-            }
-        }
-
-
+    public HashSet<String> GetActionSupporters(State st, TemporalDatabase db) { //TODO remove reference to planner
 
         // all actions that definitly support the database
         HashSet<String> supporterActionNames = new HashSet<>();

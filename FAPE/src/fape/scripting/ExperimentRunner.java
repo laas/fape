@@ -68,13 +68,16 @@ public class ExperimentRunner {
         
         for (File a : anmls) {
 
-            long start = System.currentTimeMillis();
+
 
             String anml = a.getAbsolutePath();
 
             Planner p = new Planner();
             p.Init();
             p.ForceFact(Executor.ProcessANMLfromFile(anml));
+
+            long start = System.currentTimeMillis();
+
             boolean timeOut = false;
             try {
                 timeOut = ! p.Repair(new TimeAmount(maxRuntime));

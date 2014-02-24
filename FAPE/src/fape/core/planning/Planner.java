@@ -566,7 +566,7 @@ public class Planner {
 
 
         ADTG dtg = pb.dtgs.get(db.stateVariable.type);
-        HashSet<String> abs = dtg.GetActionSupporters(this, st, db);
+        HashSet<String> abs = dtg.GetActionSupporters(st, db);
         //now we need to gather the decompositions that provide the intended actions
         List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, pb.actions);
         ret.addAll(options);
@@ -773,14 +773,16 @@ public class Planner {
     }
 
     public static String DomainTableReportFormat() {
-        return String.format("%s\t%s\t",
+        return String.format("%s\t%s\t%s\t",
                 "Num state variables",
+                "Num objects",
                 "Num actions");
     }
 
     public String DomainTableReport() {
-        return String.format("%s\t%s\t",
+        return String.format("%s\t%s\t%s\t",
                 pb.vars.size(),
+                pb.types.instances().size(),
                 pb.actions.size());
     }
 

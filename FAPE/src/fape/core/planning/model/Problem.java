@@ -163,7 +163,7 @@ public class Problem {
                 if (Character.isUpperCase(t.name.charAt(0)) || t.name.equals("boolean")) {//this is an enum type
                     ADTG dtg = new ADTG(this, t, actions.values());
 
-                    dtg.op_all_paths();
+                    //dtg.op_all_paths(); TODO clean up dtg
                     dtgs.put(t.name, dtg);
                 }
             }

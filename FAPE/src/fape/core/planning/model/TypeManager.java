@@ -72,6 +72,18 @@ public class TypeManager {
         return instances;
     }
 
+    /**
+     * Return all known isntances
+     * @return
+     */
+    public List<String> instances() {
+        List<String> instances = new LinkedList<>();
+        for(Type t : map.values()) {
+            instances.addAll(t.instances.keySet());
+        }
+        return instances;
+    }
+
     public void addInstance(Instance i) {
         if(!map.containsKey(i.type)) {
             throw new FAPEException("Error: unknown type: "+i.type);
