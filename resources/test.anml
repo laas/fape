@@ -1,0 +1,123 @@
+/**
+ * Dream World domain in ANML
+ * 
+ * so far adapted for the clean table example
+ *   
+ * Filip Dvořák <filip.dvorak@runbox.com>
+ * LAAS-CNRS
+ *  
+ * version 0.1 [draft]    
+ * version 0.2 [prepared for parsing]    
+ * version 0.3 [getting ready for execution]    
+ * version 0.4 [realistic example]     
+ * version 0.5 [action-addition example]
+ * version 0.6 [running addition example]       
+ * version 0.7 [this is a generated problem]       
+ * 
+ * TODO:
+ *  - sanity checks
+ *     
+ */ 
+
+
+type Location < object;
+
+type Gripper < Location with {
+  variable boolean empty;
+};
+
+type Robot < object with {
+  variable Location mLocation;
+  constant Gripper left;
+  constant Gripper right;
+  function boolean canGo(Location a, Location b);
+};
+
+type Item < object with {
+  variable Location mLocation;
+  variable boolean onTable;
+};
+
+predicate connected(Location a, Location b);
+
+/**
+ * defining actions
+ */
+ 
+ 
+/**
+ * pick some item s with robor r, at location l 
+ */  
+
+action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
+        
+  [all]{
+    r.right == g;
+    g.empty == true :-> false;
+    r.mLocation == l;
+    s.mLocation == l :-> g; 
+  };
+};
+
+action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
+  
+  [all]{
+    r.right == g;
+    g.empty == false :-> true;
+    r.mLocation == l;
+    s.mLocation == g :-> l; 
+  };
+   
+}; 
+
+action Move(Robot r, Location a, Location b){
+  
+  [all]{
+    r.mLocation == a :-> b;
+  };
+  
+};  
+
+action Transport(Robot r, Item i, Location a, Location b){
+
+  :decomposition{ordered(
+    PickWithRightGripper(r, r.right,i, a),
+    DropWithRightGripper(r, r.right,i, b)
+  )};
+
+};
+
+instance Robot R0, R1;
+instance Gripper G0, G1;
+instance Item I0, I1;
+instance Location L0, L1, L2, L3;
+
+[start] {
+G0.empty := true;
+G1.empty := true;
+R0.mLocation := L0;
+I0.mLocation := L1;
+I1.mLocation := L2;
+};
+
+[all]{ 
+R0.left := G0;
+R0.right := G1;
+R1.left := G0;
+R1.right := G1;
+
+};
+
+[end] {
+I0.mLocation == L3;
+I1.mLocation == L3;
+
+};
+
+action Seed(){
+  :decomposition{ unordered(
+   Transport(r0_, I0, loc1_, L3),
+   Transport(r2_, I1, loc3_, L3)
+  )};
+};
+
