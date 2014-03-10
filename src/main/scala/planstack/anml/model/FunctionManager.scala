@@ -33,7 +33,7 @@ class FunctionManager {
   val constFunction = mutable.Map[String, ConstFunction]()
 
   def addFunction(f:parser.Function) {
-    addFunction(f.name, f.tipe, f.args.map(_.tipe), f.const)
+    addFunction(f.name, f.tipe, f.args.map(_.tipe), f.isConstant)
   }
 
   /**
@@ -46,11 +46,11 @@ class FunctionManager {
    * @param f function definition
    */
   def addScopedFunction(scope:String, f:parser.Function) {
-    addFunction(scope+"."+f.name, f.tipe, scope :: f.args.map(_.tipe), f.const)
+    addFunction(scope+"."+f.name, f.tipe, scope :: f.args.map(_.tipe), f.isConstant)
   }
 
-  def addFunction(name:String, valueType:String, argTypes:List[String], const:Boolean) {
-    if(const) {
+  def addFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean) {
+    if(isConstant) {
       assert(!constFunction.contains(name))
       constFunction(name) = new ConstFunction(name, valueType, argTypes)
     } else {

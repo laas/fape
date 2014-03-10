@@ -27,6 +27,7 @@ type Gripper < Location with {
 };
 
 type Robot < object with {
+  variable boolean happy;
   variable Location mLocation;
   constant Gripper left;
   constant Gripper right;
@@ -60,7 +61,7 @@ action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
 };
 
 action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
-  
+  [end-10] Robot.happy(r) == true :-> false;
   [all]{
     r.right == g;
     g.empty == false :-> true;

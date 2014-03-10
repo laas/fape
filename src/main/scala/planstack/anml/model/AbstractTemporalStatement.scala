@@ -10,9 +10,9 @@ class AbstractTemporalStatement(val annotation:TemporalAnnotation, val statement
 
 object AbstractTemporalStatement {
 
-  def apply(pb:AnmlProblem, ts:parser.TemporalStatement) : AbstractTemporalStatement = {
+  def apply(pb:AnmlProblem, context:AbstractContext, ts:parser.TemporalStatement) : AbstractTemporalStatement = {
     new AbstractTemporalStatement(
-      TemporalAnnotation(ts.annotation), AbstractStatement(pb, ts.statement)
+      TemporalAnnotation(ts.annotation), AbstractStatement(pb, context, ts.statement)
     )
   }
 }

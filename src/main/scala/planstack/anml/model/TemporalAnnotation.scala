@@ -32,4 +32,10 @@ object TemporalAnnotation {
   def apply(annot:parser.TemporalAnnotation) : TemporalAnnotation = {
     new TemporalAnnotation(RelativeTimePoint(annot.start), RelativeTimePoint(annot.end))
   }
+
+  def apply(s:String, e:String) = {
+    assert(Set("", "start", "end").contains(s))
+    assert(Set("", "start", "end").contains(e))
+    new TemporalAnnotation(new RelativeTimePoint(s,0), new RelativeTimePoint(e,0))
+  }
 }

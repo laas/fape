@@ -8,6 +8,7 @@ import planstack.anml.parser.FuncExpr
 import planstack.anml.parser.TemporalStatement
 import planstack.anml.parser.VarExpr
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 
 class AnmlProblem {
@@ -17,7 +18,8 @@ class AnmlProblem {
   val functions = new FunctionManager
   val context = new Context(None)
 
-  var absStatements = List[AbstractTemporalStatement]()
+  val absStatements = ListBuffer[AbstractTemporalStatement]()
+  val actions = ListBuffer[AbstractAction]()
 
   def expressionToValue(expr:Expr) : String = {
     expr match {
@@ -58,17 +60,15 @@ class AnmlProblem {
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
-      val ts = AbstractTemporalStatement(this, tempStatement)
-      absStatements = ts :: absStatements
+      val ts = AbstractTemporalStatement(this, this.context, tempStatement)
+      absStatements += ts
 
       println(ts)
     })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
-      val action = AbstractAction(actionDecl, this)
-      println(action)
+      actions +=  AbstractAction(actionDecl, this)
     })
-
 
   }
 

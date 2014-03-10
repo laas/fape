@@ -2,6 +2,8 @@ package planstack.anml.model
 
 import planstack.anml.{ANMLException, parser}
 
+import planstack.anml.model.concrete.statements._
+
 
 trait TemporalInterval {
   val start = Timepoint()
@@ -18,15 +20,15 @@ class ParameterizedStateVariable(val func:Function, val args:List[String]) {
 
 object ParameterizedStateVariable {
 
-  def apply(pb:AnmlProblem, expr:parser.Expr) : ParameterizedStateVariable = {
+  def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : ParameterizedStateVariable = {
     val func:parser.FuncExpr = expr match {
       case parser.FuncExpr(nameParts, argList) => {
         if(pb.functions.isDefined(nameParts.mkString("."))) {
           parser.FuncExpr(nameParts, argList)
         } else {
-          assert(pb.instances.containsInstance(nameParts.head))
           assert(nameParts.tail.length == 1)
-          parser.FuncExpr(pb.instances.getQualifiedFunction(pb.instances.typeOf(nameParts.head),nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
+          val headType = context.getType(nameParts.head)
+          parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         }
       }
       case parser.VarExpr(x) => throw new ANMLException("Unauthorized conversion of VarExpr into a ParameterizedStateVariable: "+expr);
@@ -38,13 +40,19 @@ object ParameterizedStateVariable {
 
 
 abstract class AbstractStatement(val sv:ParameterizedStateVariable) {
+  /**
+   * Produces the corresponding concrete statement, by replacing all local variables
+   * by the global ones defined in Context
+   * @param context Context in which this statement appears.
+   * @return
+   */
   def bind(context:Context) : Statement
 }
 
 object AbstractStatement {
 
-  def apply(pb:AnmlProblem, statement:parser.Statement) : AbstractStatement = {
-    val sv = ParameterizedStateVariable(pb, statement.variable)
+  def apply(pb:AnmlProblem, context:AbstractContext, statement:parser.Statement) : AbstractStatement = {
+    val sv = ParameterizedStateVariable(pb, context, statement.variable)
 
     statement match {
       case a:parser.Assignment => new AbstractAssignment(sv, a.right.variable)
@@ -54,6 +62,11 @@ object AbstractStatement {
   }
 }
 
+/**
+ * Describes an assignment of a state variable to value `statevariable(x, y) := v`
+ * @param sv State variable getting the assignment
+ * @param value value of the state variable after the assignment
+ */
 class AbstractAssignment(sv:ParameterizedStateVariable, val value:String)
   extends AbstractStatement(sv)
 {
@@ -81,26 +94,3 @@ class AbstractPersistence(sv:ParameterizedStateVariable, val value:String)
 
 
 
-
-
-
-abstract class Statement(val context:Context, val sv:ParameterizedStateVariable) extends TemporalInterval {
-}
-
-class Assignment(context:Context, sv:ParameterizedStateVariable, val value:String)
-  extends Statement(context, sv)
-{
-  override def toString = "%s := %s".format(sv, value)
-}
-
-class Transition(context:Context, sv:ParameterizedStateVariable, val from:String, val to:String)
-  extends Statement(context, sv)
-{
-  override def toString = "%s == %s :-> %s".format(sv, from, to)
-}
-
-class Persistence(context:Context, sv:ParameterizedStateVariable, val value:String)
-  extends Statement(context, sv)
-{
-  override def toString = "%s == %s".format(sv, value)
-}

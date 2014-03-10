@@ -38,7 +38,7 @@ sealed trait PartiallyOrderedActionRef {
   def contained : Set[ActionRef]
 }
 
-case class ActionRef(name:String, args:List[Expr]) extends PartiallyOrderedActionRef {
+case class ActionRef(name:String, args:List[Expr], id:String) extends PartiallyOrderedActionRef {
   def contained = Set(this)
 }
 case class OrderedActionRef(list:List[PartiallyOrderedActionRef]) extends PartiallyOrderedActionRef {
@@ -60,7 +60,7 @@ case class FuncExpr(svExpr:List[String], args:List[VarExpr]) extends Expr {
 
 
 
-case class Function(name:String, args:List[Argument], tipe:String, const:Boolean) extends AnmlBlock with TypeContent
+case class Function(name:String, args:List[Argument], tipe:String, isConstant:Boolean) extends AnmlBlock with TypeContent
 
 case class Type(name:String, parent:String, content:List[TypeContent]) extends AnmlBlock
 
@@ -78,8 +78,12 @@ object AnmlParser extends JavaTokenParsers {
     })
 
   def timepoint : Parser[RelativeTimepoint] = (
-      ("start" | "end") ^^ (x => RelativeTimepoint(x, 0))
-    | failure("illegal timepoint, adding values is not supported yet")
+      ("start"|"end"|"")~("+"|"-")~decimalNumber ^^ {
+        case tp~"+"~delta => RelativeTimepoint(tp, delta.toInt)
+        case tp~"-"~delta => RelativeTimepoint(tp, - delta.toInt)
+      }
+    | ("start" | "end") ^^ (x => RelativeTimepoint(x, 0))
+    | failure("illegal timepoint")
     )
 
   def statement : Parser[Statement] = (
@@ -135,8 +139,9 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   def actionRef : Parser[ActionRef] =
-      ident~"("~repsep(expr, ",")<~")" ^^ {
-        case name~"("~args => ActionRef(name, args)
+      opt(ident<~":")~ident~"("~repsep(expr, ",")<~")" ^^ {
+        case Some(id)~name~"("~args => ActionRef(name, args, id)
+        case None~name~"("~args => ActionRef(name, args, "")
       }
 
   def argument : Parser[Argument] = (
