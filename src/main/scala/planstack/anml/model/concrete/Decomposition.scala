@@ -1,12 +1,13 @@
 package planstack.anml.model.concrete
 
 import planstack.anml.model.concrete.statements.TemporalStatement
-import planstack.anml.model.{AnmlProblem, VariableFactory, AbstractDecomposition, Context}
+import planstack.anml.model.{AnmlProblem, VariableFactory, Context}
 import planstack.anml.ANMLException
+import planstack.anml.model.abs.AbstractDecomposition
 
-class Decomposition(val context:Context, val statements:List[TemporalStatement], val actions:List[Action]) extends StateModifier{
+class Decomposition(val context:Context, val statements:List[TemporalStatement], val actions:List[Action], val container:Action)
+  extends StateModifier with TemporalInterval
 
-}
 
 object Decomposition {
 
@@ -15,8 +16,8 @@ object Decomposition {
 
     val statements = dec.temporalStatements.map(TemporalStatement(context, _))
 
-    val actions = dec.actions.map(Action(pb, _, factory, Some(parent)))
+    val actions = dec.actions.map(Action(pb, _, factory, Some(parent), Some(context)))
 
-    new Decomposition(context, statements.toList, actions.toList)
+    new Decomposition(context, statements.toList, actions.toList, parent)
   }
 }

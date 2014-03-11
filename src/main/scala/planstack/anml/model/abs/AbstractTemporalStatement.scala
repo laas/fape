@@ -1,6 +1,7 @@
-package planstack.anml.model
+package planstack.anml.model.abs
 
 import planstack.anml.parser
+import planstack.anml.model.{AbstractContext, AnmlProblem, TemporalAnnotation}
 
 class AbstractTemporalStatement(val annotation:TemporalAnnotation, val statement:AbstractStatement) {
 

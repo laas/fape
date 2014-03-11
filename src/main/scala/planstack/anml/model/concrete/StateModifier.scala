@@ -8,3 +8,11 @@ trait StateModifier {
   def actions : Iterable[Action]
 
 }
+
+class BaseStateModifier(val statements:Iterable[TemporalStatement], val actions:Iterable[Action])
+  extends StateModifier {
+
+  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(statements ++ addStatements, actions)
+
+  def withActions(addActions:Action*) = new BaseStateModifier(statements, actions ++ addActions)
+}

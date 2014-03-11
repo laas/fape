@@ -3,11 +3,14 @@ package planstack.anml.model
 import planstack.anml.{ANMLException, parser}
 import scala.collection.mutable
 
-class Function(val name:String, val valueType:String, val argTypes:List[String])
+class Function(val name:String, val valueType:String, val argTypes:List[String]) {
+  def isConstant = false
+}
 
 class ConstFunction(name:String, valueType:String, argTypes:List[String])
   extends Function(name, valueType, argTypes)
 {
+  override def isConstant = true
 
   var values = List[Pair[List[String], String]]()
 
@@ -24,13 +27,13 @@ class FunctionManager {
    * Maps function name to definition.
    * Those function have an implicit time parameter which is dealt with externally
    */
-  val functions = mutable.Map[String, Function]()
+  private val functions = mutable.Map[String, Function]()
 
   /**
    * Maps from function name to definition of functions that do
    * not vary over time
    */
-  val constFunction = mutable.Map[String, ConstFunction]()
+  private val constFunction = mutable.Map[String, ConstFunction]()
 
   def addFunction(f:parser.Function) {
     addFunction(f.name, f.tipe, f.args.map(_.tipe), f.isConstant)

@@ -3,25 +3,28 @@ package planstack.anml.model
 import planstack.anml.{ANMLException, parser}
 
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
-import planstack.anml.parser._
 import planstack.anml.parser.FuncExpr
-import planstack.anml.parser.TemporalStatement
 import planstack.anml.parser.VarExpr
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import planstack.anml.model.concrete.{Action, StateModifier, BaseStateModifier, TemporalInterval}
+import planstack.anml.model.concrete.statements.TemporalStatement
+import planstack.anml.model.abs.{AbstractTemporalStatement, AbstractActionRef, AbstractAction}
 
 
-class AnmlProblem {
+class AnmlProblem extends TemporalInterval {
+
 
 
   val instances = new InstanceManager
   val functions = new FunctionManager
   val context = new Context(None)
 
-  val absStatements = ListBuffer[AbstractTemporalStatement]()
-  val actions = ListBuffer[AbstractAction]()
+  val abstractActions = ListBuffer[AbstractAction]()
 
-  def expressionToValue(expr:Expr) : String = {
+  val modifiers = ArrayBuffer[StateModifier]()
+
+  def expressionToValue(expr:parser.Expr) : String = {
     expr match {
       case v:VarExpr => {
         if(instances.containsInstance(v.variable))
@@ -35,6 +38,8 @@ class AnmlProblem {
 
 
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
+
+    var modifier = new BaseStateModifier(Nil, Nil)
 
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
@@ -61,15 +66,20 @@ class AnmlProblem {
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
       val ts = AbstractTemporalStatement(this, this.context, tempStatement)
-      absStatements += ts
-
-      println(ts)
+      modifier = modifier.withStatements(TemporalStatement(context, ts))
     })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
-      actions +=  AbstractAction(actionDecl, this)
+      val abs = AbstractAction(actionDecl, this)
+      if(abs.name == "Seed" || abs.name == "seed") {
+        val act = Action(this, new AbstractActionRef(abs.name, null, ""),null)
+        modifier = modifier.withActions(act)
+      } else {
+        abstractActions += abs
+      }
     })
 
+    modifiers += modifier
   }
 
 }

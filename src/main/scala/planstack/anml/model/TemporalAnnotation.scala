@@ -3,7 +3,7 @@ package planstack.anml.model
 import planstack.anml.parser
 
 class RelativeTimePoint(val timepoint:String, val delta:Int) {
-  assert(Set("", "start", "end").contains(timepoint))
+  assert(RelativeTimePoint.possibleTimePointValues.contains(timepoint))
 
   override def toString =
     if(timepoint.isEmpty)
@@ -17,9 +17,11 @@ class RelativeTimePoint(val timepoint:String, val delta:Int) {
 }
 
 object RelativeTimePoint {
+  protected val possibleTimePointValues = Set("", "start", "end")
 
   def apply(rtp:parser.RelativeTimepoint) = new RelativeTimePoint(rtp.tp, rtp.delta)
 }
+
 
 class TemporalAnnotation(val start:RelativeTimePoint, val end:RelativeTimePoint) {
 
@@ -29,13 +31,12 @@ class TemporalAnnotation(val start:RelativeTimePoint, val end:RelativeTimePoint)
 
 object TemporalAnnotation {
 
+
   def apply(annot:parser.TemporalAnnotation) : TemporalAnnotation = {
     new TemporalAnnotation(RelativeTimePoint(annot.start), RelativeTimePoint(annot.end))
   }
 
   def apply(s:String, e:String) = {
-    assert(Set("", "start", "end").contains(s))
-    assert(Set("", "start", "end").contains(e))
     new TemporalAnnotation(new RelativeTimePoint(s,0), new RelativeTimePoint(e,0))
   }
 }

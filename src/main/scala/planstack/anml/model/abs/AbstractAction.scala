@@ -1,16 +1,11 @@
-package planstack.anml.model
+package planstack.anml.model.abs
 
 import planstack.anml.{ANMLException, parser}
 import scala.collection.mutable
 import planstack.anml.parser._
 import planstack.anml.parser.TemporalStatement
 import planstack.anml.parser.ActionRef
-
-trait TemporalContext {
-
-}
-
-
+import planstack.anml.model.{PartialContext, AnmlProblem}
 
 
 class AbstractAction(val name:String, val args:List[String], val context:PartialContext)  {

@@ -1,4 +1,4 @@
-package planstack.anml.model
+package planstack.anml.model.concrete
 
 object Timepoint {
 

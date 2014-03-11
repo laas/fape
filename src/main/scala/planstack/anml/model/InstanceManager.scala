@@ -7,10 +7,10 @@ import planstack.anml.{ANMLException, parser}
 
 class InstanceManager {
 
-  val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
-  val types = mutable.Map[String, Type]()
-  val instancesTypes = mutable.Map[String, String]()
-  val instancesByType = mutable.Map[String, List[String]]()
+  private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
+  private val types = mutable.Map[String, Type]()
+  private val instancesTypes = mutable.Map[String, String]()
+  private val instancesByType = mutable.Map[String, List[String]]()
 
   addType("boolean", "")
   addInstance("true", "boolean")
@@ -51,6 +51,11 @@ class InstanceManager {
     types(typeName).addMethod(methodName)
   }
 
+  /**
+   *
+   * @param instanceName Name of the instance to lookup
+   * @return True if an instance of name `instanceName` is known
+   */
   def containsInstance(instanceName:String) = instancesTypes.contains(instanceName)
 
   def containsType(typeName:String) = types.contains(typeName)

@@ -3,8 +3,9 @@ package planstack.anml
 import scala.util.parsing.combinator._
 import planstack.anml.parser.AnmlParser._
 import java.io.FileReader
-import planstack.anml.model.{DummyVariableFactory, AbstractActionRef, AnmlProblem}
+import planstack.anml.model.{DummyVariableFactory, AnmlProblem}
 import planstack.anml.model.concrete.{Decomposition, Action}
+import planstack.anml.model.abs.AbstractActionRef
 
 object Main extends App {
 
