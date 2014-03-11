@@ -17,6 +17,12 @@ class AbstractAction(val name:String, val args:List[String], val context:Partial
 
 object AbstractAction {
 
+  /** Factory method to build an abstract action
+    *
+    * @param act Action from the parser to be converted
+    * @param pb Problem in which the action is defined
+    * @return
+    */
   def apply(act:parser.Action, pb:AnmlProblem) : AbstractAction = {
     val action = new AbstractAction(act.name, act.args.map(_.name), new PartialContext(Some(pb.context)))
 

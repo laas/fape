@@ -1,6 +1,5 @@
 package planstack.anml.model
 
-import planstack.anml.model.{AbstractContext, VariableFactory}
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
 
@@ -32,20 +31,22 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    *  - adding all (local, global) variable pairs to the new context.
    *  - creating the missing global variables using `factory`
    * @param parent Concrete context to be added as the parent of the built context
-   * @param factory VariableFactory for creating new vars.
    * @param newVars map of (localVar -> globalVar) to be added to the context)
    * @return
    */
-  def buildContext(parent:Option[Context], factory:VariableFactory, newVars:Map[String, String] = Map()) = {
+  def buildContext(pb:AnmlProblem, parent:Option[Context], newVars:Map[String, String] = Map()) = {
     val context = new Context(parent)
 
     for((local, (tipe, global)) <- variables) {
-      if(global.isEmpty && newVars.contains(local))
+      if(global.isEmpty && newVars.contains(local)) {
         context.addVar(local, tipe, newVars(local))
-      else if(global.isEmpty)
-        context.addVar(local, tipe, factory.createVar(tipe))
-      else
+      } else if(global.isEmpty) {
+        val globalName = pb.newGlobalVar
+        context.addVar(local, tipe, globalName)
+        context.addVarToCreate(tipe, globalName)
+      } else {
         context.addVar(local, tipe, global)
+      }
     }
     context
   }

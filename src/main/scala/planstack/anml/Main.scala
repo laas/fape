@@ -3,7 +3,7 @@ package planstack.anml
 import scala.util.parsing.combinator._
 import planstack.anml.parser.AnmlParser._
 import java.io.FileReader
-import planstack.anml.model.{DummyVariableFactory, AnmlProblem}
+import planstack.anml.model.AnmlProblem
 import planstack.anml.model.concrete.{Decomposition, Action}
 import planstack.anml.model.abs.AbstractActionRef
 
@@ -38,10 +38,10 @@ object Main extends App {
 //  val ref = new AbstractActionRef("Move", List("R0", "L0", "L1"), "")
 //  val act = Action(pb, ref, DummyVariableFactory)
 
-  val ref = new AbstractActionRef("Transport", List("R0", "I0", "L1", "L0"), "")
-  val act = Action(pb, ref, DummyVariableFactory)
-
-  val decs = act.decompositions.map(Decomposition(pb, act, _, DummyVariableFactory))
+//  val ref = new AbstractActionRef("Transport", List("R0", "sdjqsdqsd_", "L1", "L0"), "")
+//  val act = Action(pb, ref)
+  val act = Action.getNewRootAction(pb, "Transport")
+  val decs = act.decompositions.map(Decomposition(pb, act, _))
   println(act)
 
 }

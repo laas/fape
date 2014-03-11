@@ -2,6 +2,7 @@ package planstack.anml.model
 
 import scala.collection.mutable
 import planstack.anml.ANMLException
+import scala.collection.mutable.ListBuffer
 
 
 abstract class AbstractContext {
@@ -69,8 +70,11 @@ abstract class AbstractContext {
 
 }
 
-class Context(val parentContext:Option[Context]) extends AbstractContext {
+class Context(
+    val parentContext:Option[Context],
+    val varsToCreate :ListBuffer[Pair[String,String]] = ListBuffer())
+  extends AbstractContext {
 
-
+  def addVarToCreate(tipe:String, globalName:String) = varsToCreate += ((tipe, globalName))
 }
 

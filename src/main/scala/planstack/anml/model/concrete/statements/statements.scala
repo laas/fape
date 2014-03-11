@@ -38,7 +38,7 @@ class Assignment(sv:ParameterizedStateVariable, val value:String)
   extends Statement(sv) {
 
   /** Throws ANMLException since an assignment has no startValue */
-  val startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
+  def startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
   val endValue = value
   val needsSupport = true
 

@@ -14,8 +14,6 @@ import planstack.anml.model.abs.{AbstractTemporalStatement, AbstractActionRef, A
 
 class AnmlProblem extends TemporalInterval {
 
-
-
   val instances = new InstanceManager
   val functions = new FunctionManager
   val context = new Context(None)
@@ -23,6 +21,11 @@ class AnmlProblem extends TemporalInterval {
   val abstractActions = ListBuffer[AbstractAction]()
 
   val modifiers = ArrayBuffer[StateModifier]()
+
+  private var nextGlobalVarID = 0
+
+  /** Returns a new, unused, identifier for a global variable */
+  def newGlobalVar : String = "globVar_" + {nextGlobalVarID+=1; nextGlobalVarID-1}
 
   def expressionToValue(expr:parser.Expr) : String = {
     expr match {
@@ -39,7 +42,7 @@ class AnmlProblem extends TemporalInterval {
 
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
-    var modifier = new BaseStateModifier(Nil, Nil)
+    var modifier = new BaseStateModifier(Nil, Nil, Nil)
 
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
@@ -71,11 +74,11 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
       val abs = AbstractAction(actionDecl, this)
+      abstractActions += abs
+
       if(abs.name == "Seed" || abs.name == "seed") {
         val act = Action(this, new AbstractActionRef(abs.name, null, ""),null)
         modifier = modifier.withActions(act)
-      } else {
-        abstractActions += abs
       }
     })
 
