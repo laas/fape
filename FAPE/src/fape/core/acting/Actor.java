@@ -14,9 +14,15 @@ import fape.core.execution.Executor;
 import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +36,8 @@ import java.util.List;
  * @author FD
  */
 public class Actor {
+
+    public String pbName = "default";
 
     /**
      *
@@ -49,7 +57,7 @@ public class Actor {
         mPlanner = p;
     }
     long sleepTime = 100;
-    long repairTime = 1000;
+    long repairTime = 10000;
     long progressTime = 10000;
     long progressStep = 5000;
     int currentDelay = 0;
@@ -127,10 +135,14 @@ public class Actor {
         /*int successReportOne = timeZero + 5;
         int firstFailureTime = timeZero + 6;
         int newStatementTime = timeZero + 7;*/
+        String report = "";
 
-        newEventBuffer.add(Executor.ProcessANMLfromFile("problems/DreamAddition.anml"));
+        boolean finished = false;
+        boolean isInitPlan = true;
+        int prevOpen = 0;
+        int prevGene = 0;
 
-        while (true) {
+        while (!finished) {
             switch (mState) {
                 case ACTING:
                     int now = (int) (System.currentTimeMillis() / 1000);
@@ -148,8 +160,22 @@ public class Actor {
                     }
                     if (planNeedsRepair) {
                         planNeedsRepair = false;
-                        mPlanner.SetEarliestExecution((int) (now - timeZero + repairTime/1000));
+                        mPlanner.SetEarliestExecution((int) (now - timeZero + 1));
                         mPlanner.Repair(new TimeAmount(repairTime));
+                        if(mPlanner.planState == Planner.EPlanState.CONSISTENT) {
+                            now = (int) (System.currentTimeMillis() / 1000);
+                            mPlanner.SetEarliestExecution((int) (now - timeZero));
+                            mPlanner.Repair(new TimeAmount(500));
+                        }
+
+                        if(isInitPlan && mPlanner.planState == Planner.EPlanState.CONSISTENT) {
+                            isInitPlan = false;
+                            report += pbName + ", PLAN, " + (mPlanner.OpenedStates - prevOpen) + ", " + (mPlanner.GeneratedStates - prevGene) + "\n";
+                        } else {
+                            report += pbName+", REPAIR, "+(mPlanner.OpenedStates-prevOpen)+", "+(mPlanner.GeneratedStates - prevGene) + "\n";
+                        }
+                        prevGene = mPlanner.GeneratedStates;
+                        prevOpen = mPlanner.OpenedStates;
                     }
                     if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
                         List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero + progressStep/1000));
@@ -167,17 +193,58 @@ public class Actor {
                     }
                     actionsToDispatch.removeAll(remove);
                     remove.clear();
-                    /*
-                    for (AtomicAction a : actionsBeingExecuted) {
-                        if (a.duration + a.mStartTime + timeZero < now) {
-                            ReportFailure(a.mID);
-                            remove.add(a);
+                    actionsBeingExecuted.removeAll(remove);
+
+                    if(mPlanner.planState != Planner.EPlanState.UNINITIALIZED) {
+                        if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.numUnfinishedActions() == 0) {
+                            mState = EActorState.ENDING;
+                            break;
+                        }
+                        if(mPlanner.planState == Planner.EPlanState.INCONSISTENT || mPlanner.planState == Planner.EPlanState.INFESSIBLE) {
+                            mState = EActorState.STOPPED;
+                            break;
                         }
                     }
-                    */
-                    actionsBeingExecuted.removeAll(remove);
+
                     Thread.sleep(sleepTime);
                     break;
+
+                case ENDING:
+                    System.err.println("Plan successfully carried out");
+                    finished = true;
+                    try {
+                        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("repair-states-count.csv", true)));
+                        out.println(report);
+                        out.close();
+                    } catch (Exception e) {
+                        throw new FAPEException("Cannot open file");
+                    }
+                    try {
+                        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("failures.csv", true)));
+                        out.println(pbName + ", OK");
+                        out.close();
+                    } catch (Exception e) {
+                        throw new FAPEException("Cannot open file");
+                    }
+                    System.exit(0);
+                    break;
+                case STOPPED:
+                    System.err.println("Problem while executing the plan.");
+                    try {
+                        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("failures.csv", true)));
+                        if(isInitPlan) {
+                            out.println(pbName + ", NOPLAN");
+                        } else {
+                            out.println(pbName + ", NOREPAIR");
+                        }
+                        out.close();
+                    } catch (Exception e) {
+                        throw new FAPEException("Cannot open file");
+                    }
+                    finished = true;
+                    System.exit(0);
+                    break;
+
             }
         }
     }

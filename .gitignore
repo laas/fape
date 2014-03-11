@@ -8,3 +8,6 @@ target/
 build.sbt
 /fape/problems/generated
 /fape/problems/testCases
+*.aux
+*~
+*.log

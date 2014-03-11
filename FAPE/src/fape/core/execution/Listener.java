@@ -129,6 +129,8 @@ public class Listener {
 
         /* And to end this initialisation, we will launch a thread that will listen for messages */
         lmp = new ListenMessagePasser();
+        // don't keep the VM awake if no other threads are running
+        lmp.setDaemon(true);
         lmp.start();
         System.out.println("Now listening to the Message Passer on socket : " + SOCKET_MP);
     }

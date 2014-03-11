@@ -650,6 +650,16 @@ public class Planner {
         return false;
     }
 
+    public int numUnfinishedActions() {
+        int cnt = 0;
+        for(Action a : best.taskNet.GetAllActions()) {
+            if(!a.IsRefinable() && (a.status == Action.Status.PENDING || a.status == Action.Status.EXECUTING)) {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
     /**
      * restarts the planning problem into its initial state
      */

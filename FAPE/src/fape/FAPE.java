@@ -40,8 +40,9 @@ public class FAPE {
         Planner p = null;
         Executor e = null;
         Listener l = null;
-
+        String problemFile = "";
         try {
+            problemFile = args[0];
             a = new Actor();
             p = new Planner();
             Planner.debugging = false;
@@ -70,6 +71,8 @@ public class FAPE {
         } else {
             int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
             p.Init();
+            a.PushEvent(Executor.ProcessANMLfromFile(problemFile));
+            a.pbName = problemFile;
             a.run();
         }
     }

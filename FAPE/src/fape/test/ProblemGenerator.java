@@ -36,11 +36,13 @@ public class ProblemGenerator {
         int numberOfTransports; // < numberofitems
 
         public void Output() {
-            String name = "Dream_" + (problemCounter++)+ "_" + numberOfRobots + "_" + numberOfItems + "_" + numberOfTransports + "_" + numberOfLocations + ".anml";
-            String path = "problems/generated/"+name;
+            String name = "Dream_" + (problemCounter++)+ "_" + numberOfRobots + "_" + numberOfItems + "_" + numberOfTransports + "_" + numberOfLocations;
+            String anmlPath = "problems/generated/"+name+".anml";
+            String dbPath = "problems/generated/"+name+".db";
 
             String instanceRobot = "instance Robot ", instanceGripper = "instance Gripper ", instanceItem = "instance Item ", instanceLocation = "instance Location ",
                     startContent = "", allContent = "", goalContent = "", seedContent = "";
+            String prsDB = "(\n";
 
             int nextUnbindedVar = 0;
 
@@ -56,8 +58,10 @@ public class ProblemGenerator {
                 allContent += "R" + i + ".left := " + "G" + (2 * i) + ";\n";
                 allContent += "R" + i + ".right := " + "G" + (2 * i + 1) + ";\n";
                 startContent += "G" + (2 * i) + ".empty := true;\n";
-                startContent += "G" + (2 * i+1) + ".empty := true;\n";                               
-                startContent += "R" + i + ".mLocation := " + "L" + rg.nextInt(numberOfLocations) + ";\n";
+                startContent += "G" + (2 * i+1) + ".empty := true;\n";
+                int robotLoc = rg.nextInt(numberOfLocations);
+                startContent += "R" + i + ".mLocation := " + "L" + robotLoc + ";\n";
+                prsDB += "  (Position R" + i + " L" + robotLoc + ")\n";
             }
             instanceRobot += ";\n";
             instanceGripper += ";\n";
@@ -102,7 +106,8 @@ public class ProblemGenerator {
 
             String out = domain + instances + start + all + goal + seed;
 
-            fape.util.FileHandling.writeFileOutput(path, out);
+            fape.util.FileHandling.writeFileOutput(anmlPath, out);
+            fape.util.FileHandling.writeFileOutput(dbPath, prsDB+"\n)");
         }
     }
 
