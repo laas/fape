@@ -32,6 +32,7 @@ class Action(
   extends StateModifier with TemporalInterval {
 
   def vars = context.varsToCreate
+  val temporalConstraints = Nil
 
   def name = abs.name
   val actions = Nil
@@ -43,10 +44,6 @@ class Action(
 
 
 object Action {
-
-  private var nextActionID = 0
-  protected def getActionID = "action_"+{nextActionID+=1 ; nextActionID-1}
-
 
   /**
    * Creates a new action from an action reference.
@@ -71,8 +68,8 @@ object Action {
     // creates pair (localVar, globalVar) as defined by the ActionRef
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), parentContext.getGlobalVar(ref.args(i)))
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
-    val id = getActionID
-    context.addActionID(ref.localId, id)
+
+    val id = context.getActionID(ref.localId)
 
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
@@ -89,8 +86,8 @@ object Action {
       }
 
     val context = abs.context.buildContext(pb, Some(parentContext))
-    val id = getActionID
-    context.addActionID("", id)
+    val id = pb.newActionID
+    context.addActionID(id, id)
 
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 

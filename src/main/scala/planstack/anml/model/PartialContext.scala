@@ -48,6 +48,13 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
         context.addVar(local, tipe, global)
       }
     }
+
+    for((localActionID, globalActionID) <- actions) {
+      if(globalActionID.isEmpty)
+        context.addActionID(localActionID, pb.newActionID)
+      else
+        context.addActionID(localActionID, globalActionID)
+    }
     context
   }
 

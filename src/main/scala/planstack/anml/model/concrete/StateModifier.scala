@@ -28,10 +28,14 @@ trait StateModifier {
   /** (Type, Name) of global variables to be declared */
   def vars : Iterable[Pair[String, String]]
 
+  def temporalConstraints : Iterable[TemporalConstraint]
+
 }
 
 class BaseStateModifier(val statements:Iterable[TemporalStatement], val actions:Iterable[Action], val vars:Iterable[Pair[String, String]])
   extends StateModifier {
+
+  val temporalConstraints = Nil
 
   def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(statements ++ addStatements, actions, vars)
 

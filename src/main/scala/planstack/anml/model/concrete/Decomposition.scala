@@ -5,7 +5,12 @@ import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.AbstractDecomposition
 
-class Decomposition(val context:Context, val statements:List[TemporalStatement], val actions:List[Action], val container:Action)
+class Decomposition(
+    val context:Context,
+    val statements:List[TemporalStatement],
+    val temporalConstraints:List[TemporalConstraint],
+    val actions:List[Action],
+    val container:Action)
   extends StateModifier with TemporalInterval {
 
   def vars = context.varsToCreate
@@ -21,6 +26,8 @@ object Decomposition {
 
     val actions = dec.actions.map(Action(pb, _, Some(parent), Some(context)))
 
-    new Decomposition(context, statements.toList, actions.toList, parent)
+    val tConst = dec.precedenceConstraints.map(TemporalConstraint(context, _))
+
+    new Decomposition(context, statements.toList, tConst.toList, actions.toList, parent)
   }
 }

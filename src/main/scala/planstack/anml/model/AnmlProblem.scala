@@ -23,9 +23,14 @@ class AnmlProblem extends TemporalInterval {
   val modifiers = ArrayBuffer[StateModifier]()
 
   private var nextGlobalVarID = 0
+  private var nextActionID = 0
 
   /** Returns a new, unused, identifier for a global variable */
   def newGlobalVar : String = "globVar_" + {nextGlobalVarID+=1; nextGlobalVarID-1}
+
+  /** Returns a new, unused, identifier for an action */
+  def newActionID : String = "action_" + {nextActionID+=1; nextActionID-1}
+
 
   def expressionToValue(expr:parser.Expr) : String = {
     expr match {
@@ -77,7 +82,9 @@ class AnmlProblem extends TemporalInterval {
       abstractActions += abs
 
       if(abs.name == "Seed" || abs.name == "seed") {
-        val act = Action(this, new AbstractActionRef(abs.name, null, ""),null)
+        val id = newActionID
+        context.addActionID(id, id)
+        val act = Action(this, new AbstractActionRef(abs.name, null, id),null)
         modifier = modifier.withActions(act)
       }
     })

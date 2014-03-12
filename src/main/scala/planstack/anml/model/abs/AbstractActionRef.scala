@@ -3,23 +3,27 @@ package planstack.anml.model.abs
 import planstack.anml.parser
 import planstack.anml.model._
 
-class AbstractActionRef(val name:String, val args:List[String], val localId:String)
+class AbstractActionRef(val name:String, val args:List[String], val localId:String) {
+  require(localId nonEmpty)
+  require(name nonEmpty)
+}
 
 object AbstractActionRef {
 
   private var nextID = 0
+  protected def newLocalActionRef = "lActionRef"+{nextID+=1; nextID-1}
 
-  /**
-   * Produces a and abs action ref and its associated TemporalStatements.
-   * The temporal statements derive from parameters given as functions and not variables
-   * @param pb
-   * @param context
-   * @param ar
-   * @return
-   */
+  /** Produces an abstract action ref and its associated TemporalStatements.
+    *
+    * The temporal statements derive from parameters given as functions and not variables
+    * @param pb
+    * @param context
+    * @param ar
+    * @return
+    */
   def apply(pb:AnmlProblem, context:PartialContext, ar:parser.ActionRef) : Pair[AbstractActionRef, List[AbstractTemporalStatement]] = {
 
-    // for every argument, get a variable name and, optionaly, a temporal persistence if
+    // for every argument, get a variable name and, optionally, a temporal persistence if
     // the argument was given in the form of a function
     val args : List[Pair[String, Option[AbstractTemporalStatement]]] = ar.args map(argExpr => {
       argExpr match {
@@ -45,10 +49,10 @@ object AbstractActionRef {
     val actionRefId =
       if(ar.id.nonEmpty)
         ar.id
-      else {
-        nextID += 1
-        "actionRef"+(nextID-1)
-      }
+      else
+        newLocalActionRef
+
+    context.addUndefinedAction(actionRefId)
 
     val statements = args.map(_._2).flatten
 

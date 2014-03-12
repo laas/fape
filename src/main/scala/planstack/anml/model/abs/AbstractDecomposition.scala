@@ -10,9 +10,8 @@ class AbstractDecomposition(parentContext:PartialContext) {
   val context = new PartialContext(Some(parentContext))
 
   val actions = ListBuffer[AbstractActionRef]()
-  val precedenceConstraints = ListBuffer[Pair[Int,Int]]()
+  val precedenceConstraints = ListBuffer[AbstractTemporalConstraint]()
   val temporalStatements = ListBuffer[AbstractTemporalStatement]()
-
 }
 
 
@@ -40,7 +39,7 @@ object AbstractDecomposition {
       case head :: Nil => addPrecedenceConstraints(dec, head)
       case head :: tail => {
         for(i <- extractAllInt(head) ; j <- extractAllInt(tail.head)) {
-          dec.precedenceConstraints += ((i, j))
+          dec.precedenceConstraints += AbstractTemporalConstraint.before(dec.actions(i).localId, dec.actions(j).localId)
         }
         addPrecedenceConstraints(dec, head)
         addPrecedenceConstraints(dec, tail)

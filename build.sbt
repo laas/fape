@@ -2,11 +2,13 @@ name := "planstack-anml"
 
 organization := "planstack"
 
-version := "0.1"
+version := "0.2-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
+
+resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
 crossPaths := false
 
@@ -14,7 +16,7 @@ lazy val graph = RootProject(file("../graph"))
 
 lazy val root = Project(id = "anml", base = file(".")) dependsOn(graph)
 
-
+javacOption := 1.7
 
 val JavaDoc = config("genjavadoc") extend Compile
 
@@ -33,3 +35,7 @@ val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
 )
 
 seq(javadocSettings: _*)
+
+publishTo := Some(Resolver.file("file", new File("../repository/maven")))
+
+publishMavenStyle := true
