@@ -6,7 +6,6 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
-import gov.nasa.anml.pddl.abstractsyntax.Variable;
 import planstack.graph.core.DirectedGraph;
 import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.core.UnlabeledDigraph;
