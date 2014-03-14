@@ -12,15 +12,14 @@ package fape.core.execution;
 
 import fape.util.FileHandling;
 import fape.core.acting.Actor;
-import fape.core.execution.model.ANMLBlock;
-import fape.core.execution.model.ANMLFactory;
 import fape.core.execution.model.AtomicAction;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimePoint;
 import fape.util.TinyLogger;
-import org.antlr.runtime.RecognitionException;
-import org.antlr.runtime.tree.Tree;
+import planstack.anml.parser.ANMLFactory;
+import planstack.anml.parser.ParseResult;
+import scala.util.parsing.combinator.Parsers;
 
 import java.io.IOException;
 
@@ -54,15 +53,9 @@ public class Executor {
      * @param path
      * @return
      */
-    public static ANMLBlock ProcessANMLfromFile(String path) {
-        ANMLBlock b;
-        try {
-            Tree t = Main.getTree(path);
-            b = ANMLFactory.Parse(t);
-        } catch (RecognitionException | IOException e) {
-            throw new FAPEException("System failed to read path: " + path);
-        }
-        return b;
+    public static ParseResult ProcessANMLfromFile(String path) {
+        ParseResult anml = ANMLFactory.parseAnmlFromFile(path);
+        return anml;
     }
 
     /**
@@ -87,10 +80,7 @@ public class Executor {
                         if(message.split("\"").length == 5) {
                             // this message contains an ANML block
                             String anmlBlock = message.split("\"")[3];
-                            System.out.println(anmlBlock);
-                            String logFileName = "msg_" + (eventCounter++) + ".log";
-                            FileHandling.writeFileOutput(logFileName, anmlBlock);
-                            ANMLBlock block = this.ProcessANMLfromFile(logFileName);
+                            ParseResult block = ANMLFactory.parseAnmlString(anmlBlock);
                             mActor.PushEvent(block);
                         } else {
                             TinyLogger.LogInfo("No ANML block attached to this failure message");
@@ -105,7 +95,7 @@ public class Executor {
                 String anmlBlock = message.split("\"")[1];
                 String logFileName = "msg_" + (eventCounter++) + ".log";
                 FileHandling.writeFileOutput(logFileName, anmlBlock);
-                ANMLBlock block = this.ProcessANMLfromFile(logFileName);
+                ParseResult block = ANMLFactory.parseAnmlString(anmlBlock);
                 mActor.PushEvent(block);
                 break;
             default:

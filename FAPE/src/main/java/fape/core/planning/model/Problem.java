@@ -1,6 +1,5 @@
 package fape.core.planning.model;
 
-import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.ActionRef;
 import fape.core.execution.model.Instance;
 import fape.core.execution.model.statements.Statement;
@@ -94,7 +93,7 @@ public class Problem {
      * Add the new types/instances/actions to Problem and creates a new revision
      * containing all updates to be made to a state
      * @param pl
-     */
+     *
     public void ForceFact(ANMLBlock pl) {
         List<ProblemRevision> problemUpdates = new LinkedList<>();
         //read everything that is contained in the ANML block
@@ -174,5 +173,5 @@ public class Problem {
 
         revisions.add(problemUpdates);
         currentRevision++;
-    }
+    }*/
 }

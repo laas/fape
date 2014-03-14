@@ -11,12 +11,13 @@
 package fape.core.acting;
 
 import fape.core.execution.Executor;
-import fape.core.execution.model.ANMLBlock;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TimePoint;
+import planstack.anml.parser.ParseResult;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class Actor {
      *
      * @param b
      */
-    public void PushEvent(ANMLBlock b) {
+    public void PushEvent(ParseResult b) {
         newEventBuffer.add(b);
     }
 
@@ -65,7 +66,7 @@ public class Actor {
     /**
      *
      */
-    public LinkedList<ANMLBlock> newEventBuffer = new LinkedList<>();
+    public LinkedList<ParseResult> newEventBuffer = new LinkedList<>();
     public HashMap<Integer, String> idToSignature = new HashMap<>();
     HashSet<String> successfulActions = new HashSet<>();
     HashSet<Integer> dispatchedActions = new HashSet<>();

@@ -32,6 +32,8 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
+import planstack.anml.model.AnmlProblem;
+import planstack.anml.parser.ParseResult;
 import planstack.graph.printers.GraphDotPrinter;
 
 import java.util.*;
@@ -50,6 +52,7 @@ public class Planner {
     public int OpenedStates = 0;
 
     public Problem pb = new Problem();
+    public AnmlProblem problem = new AnmlProblem();
 
     private static int nextVarID = 0;
 
@@ -696,7 +699,7 @@ public class Planner {
      *
      * @param anml
      */
-    public void ForceFact(ANMLBlock anml) {
+    public void ForceFact(ParseResult anml) {
         //read everything that is contained in the ANML block
         if (logging) {
             TinyLogger.LogInfo("Forcing new fact into best state.");
@@ -705,9 +708,7 @@ public class Planner {
         KeepBestStateOnly();
 
         //TODO: apply ANML to more states and choose the best after the applciation
-
-
-        pb.ForceFact(anml);
+        problem.addAnml(anml);
 
         // apply revisions to best state and check if it is consistent
         State st = GetCurrentState();
