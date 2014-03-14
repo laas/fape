@@ -1,6 +1,6 @@
 package fape.core.planning.search;
 
-import fape.core.planning.model.Action;
+import planstack.anml.model.concrete.Action;
 
 public class UndecomposedAction extends Flaw {
 

@@ -13,7 +13,6 @@ package fape.core.planning;
 import fape.core.execution.Executor;
 import fape.core.execution.model.*;
 import fape.core.planning.constraints.UnificationConstraintSchema;
-import fape.core.planning.model.*;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
