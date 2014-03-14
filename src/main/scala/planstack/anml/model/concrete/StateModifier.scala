@@ -1,7 +1,7 @@
 package planstack.anml.model.concrete
 
 import planstack.anml.model.concrete.statements.TemporalStatement
-
+import collection.JavaConversions._
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -20,19 +20,20 @@ import planstack.anml.model.concrete.statements.TemporalStatement
 trait StateModifier {
 
   /** Temporally annotated statements to be inserted in the plan */
-  def statements : Iterable[TemporalStatement]
+  def statements : Seq[TemporalStatement]
+  def jStatements = seqAsJavaList(statements)
 
   /** Actions to be inserted in the plan */
-  def actions : Iterable[Action]
+  def actions : Seq[Action]
 
   /** (Type, Name) of global variables to be declared */
-  def vars : Iterable[Pair[String, String]]
+  def vars : Seq[Pair[String, String]]
 
-  def temporalConstraints : Iterable[TemporalConstraint]
+  def temporalConstraints : Seq[TemporalConstraint]
 
 }
 
-class BaseStateModifier(val statements:Iterable[TemporalStatement], val actions:Iterable[Action], val vars:Iterable[Pair[String, String]])
+class BaseStateModifier(val statements:Seq[TemporalStatement], val actions:Seq[Action], val vars:Seq[Pair[String, String]])
   extends StateModifier {
 
   val temporalConstraints = Nil

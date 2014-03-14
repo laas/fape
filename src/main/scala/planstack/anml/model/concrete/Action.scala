@@ -39,6 +39,11 @@ class Action(
 
   def decompositions = abs.decompositions
 
+  /** Returns True if this action as possible decompositions */
+  def decomposable = !decompositions.isEmpty
+
+  def cost = 10
+
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }
 
