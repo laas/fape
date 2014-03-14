@@ -8,7 +8,7 @@ object Predef {
 
   def Ex(m:String) = throw new Exception(m)
 
-  def newDirectedSimpleLabeledGraph[V, EL] : SimpleLabeledDigraph[V,EL] = new SimpleLabeledDirectedAdjacencyList[V, EL]()
+  def newSimpleLabeledDigraph[V, EL] : SimpleLabeledDigraph[V,EL] = new SimpleLabeledDirectedAdjacencyList[V, EL]()
 
 
 }

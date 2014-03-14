@@ -44,7 +44,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g:Graph[V,EL,E]) {
    */
   def graph2DotString : String = {
     var out = header
-    g.edges.foreach(e => out += edge2Str(e))
+    out += g.edges().map(edge2Str(_)).mkString("\n")
     out += footer
     out
   }

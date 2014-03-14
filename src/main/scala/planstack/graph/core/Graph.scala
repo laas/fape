@@ -1,11 +1,15 @@
 package planstack.graph.core
 
+import scala.collection.JavaConversions._
 
 trait Graph[V, +EL, E <: Edge[V]] {
 
   def addVertex(v:V) : Int
 
-  def vertices() : Seq[V]
+  def vertices : Seq[V]
+
+  /** Returns all nodes/vertices in the graph */
+  def jVertices = seqAsJavaList(vertices)
 
   def addEdge(e:E)
 
@@ -26,7 +30,7 @@ trait Graph[V, +EL, E <: Edge[V]] {
    */
   def deleteEdges(u:V, v:V)
 
-  def cc() : Graph[V, EL, E]
+  def cc : Graph[V, EL, E]
 }
 
 
