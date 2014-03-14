@@ -3,8 +3,7 @@ package planstack.anml.model
 import planstack.anml.{ANMLException, parser}
 
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
-import planstack.anml.parser.FuncExpr
-import planstack.anml.parser.VarExpr
+import planstack.anml.parser.{ParseResult, FuncExpr, VarExpr}
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import planstack.anml.model.concrete.{Action, StateModifier, BaseStateModifier, TemporalInterval}
@@ -44,6 +43,7 @@ class AnmlProblem extends TemporalInterval {
     }
   }
 
+  def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
 
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 

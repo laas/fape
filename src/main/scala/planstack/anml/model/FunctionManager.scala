@@ -16,7 +16,7 @@ class ConstFunction(name:String, valueType:String, argTypes:List[String])
 
   def addValue(args:List[String], value:String) {
     val valuePair = (args, value)
-    assert(values.forall(_._1 != args), "Function %s already contains a value for arguments %".format(name, args))
+    assert(values.forall(_._1 != args), "Function %s already contains a value for arguments %s".format(name, args))
     values = valuePair :: values
   }
 }
@@ -62,6 +62,7 @@ class FunctionManager {
     }
   }
 
+  @deprecated
   def addConstFuncValue(funcName:String, args:List[String], value:String) {
     assert(constFunction.contains(funcName))
     constFunction(funcName).addValue(args, value)

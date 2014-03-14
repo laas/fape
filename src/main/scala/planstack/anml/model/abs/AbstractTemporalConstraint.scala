@@ -1,16 +1,18 @@
 package planstack.anml.model.abs
 
+import planstack.anml.model.AbstractTimepointRef
+
 
 class AbstractTimePointExtractor(val extractor:String, val id:String) {
-  assert(Set("startOf", "endOf").contains(extractor))
+  require(Set("start", "end").contains(extractor))
 
   override def toString = "%s(%s)".format(extractor, id)
 }
 
 class AbstractTemporalConstraint(
-    val tp1:AbstractTimePointExtractor,
+    val tp1:AbstractTimepointRef,
     val op:String,
-    val tp2:AbstractTimePointExtractor,
+    val tp2:AbstractTimepointRef,
     val plus:Integer) {
 
   override def toString = "%s %s %s + %s".format(tp1, op, tp2, plus)
@@ -26,8 +28,8 @@ object AbstractTemporalConstraint {
     */
   def before(action1:String, action2:String) =
     new AbstractTemporalConstraint(
-      new AbstractTimePointExtractor("endOf", action1),
+      new AbstractTimepointRef("end", action1),
       "<",
-      new AbstractTimePointExtractor("startOf", action2),
+      new AbstractTimepointRef("start", action2),
       0)
 }

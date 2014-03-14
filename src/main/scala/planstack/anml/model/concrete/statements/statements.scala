@@ -16,7 +16,9 @@ import planstack.anml.ANMLException
   * @param sv State variable on which the statement applies.
   */
 abstract class Statement(val sv:ParameterizedStateVariable)
-  extends TemporalInterval {
+  extends TemporalInterval
+
+abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv) {
 
   /** Value just before the statement. Throws ANMLException if the statement have none, check with needsSupport */
   def startValue : String
@@ -35,7 +37,7 @@ abstract class Statement(val sv:ParameterizedStateVariable)
   * @param value
   */
 class Assignment(sv:ParameterizedStateVariable, val value:String)
-  extends Statement(sv) {
+  extends LogStatement(sv) {
 
   /** Throws ANMLException since an assignment has no startValue */
   def startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
@@ -46,7 +48,7 @@ class Assignment(sv:ParameterizedStateVariable, val value:String)
 }
 
 class Transition(sv:ParameterizedStateVariable, val from:String, val to:String)
-  extends Statement(sv) {
+  extends LogStatement(sv) {
 
   val startValue = from
   val endValue = to
@@ -55,7 +57,7 @@ class Transition(sv:ParameterizedStateVariable, val from:String, val to:String)
 }
 
 class Persistence(sv:ParameterizedStateVariable, val value:String)
-  extends Statement(sv) {
+  extends LogStatement(sv) {
 
   val startValue = value
   val endValue = value

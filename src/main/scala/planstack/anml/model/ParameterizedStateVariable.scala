@@ -1,6 +1,7 @@
 package planstack.anml.model
 
 import planstack.anml.{ANMLException, parser}
+import scala.collection.JavaConversions._
 
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.abs.AbstractStatement
@@ -8,8 +9,11 @@ import planstack.anml.model.abs.AbstractStatement
 
 class ParameterizedStateVariable(val func:Function, val args:List[String]) {
 
+  /** Produces a new ParameterizedStateVariable whose parameters refer to global variables (as defined in `context` */
   def bind(context:Context) : ParameterizedStateVariable =
     new ParameterizedStateVariable(func, args.map(context.getGlobalVar(_)))
+
+  def jArgs = seqAsJavaList(args)
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
 }

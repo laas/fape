@@ -15,7 +15,15 @@ case class TemporalStatement(annotation:TemporalAnnotation, statement:Statement)
 
 case class TemporalAnnotation(start:RelativeTimepoint, end:RelativeTimepoint)
 
-case class RelativeTimepoint(tp:String, delta:Int)
+case class RelativeTimepoint(tp:Option[TimepointRef], delta:Int) {
+  def this(str:String) = this(Some(new TimepointRef(str)), 0)
+  def this(abs:Int) = this(None, abs)
+}
+
+
+case class TimepointRef(extractor:String, id:String) {
+  def this(extractor:String) = this(extractor, "")
+}
 
 
 sealed abstract class Statement(val variable:Expr)
@@ -71,19 +79,26 @@ object Comment extends AnmlBlock
 object AnmlParser extends JavaTokenParsers {
   def annotation : Parser[TemporalAnnotation] = (
       "["~"all"~"]" ^^
-        (x => TemporalAnnotation(RelativeTimepoint("start",0), RelativeTimepoint("end",0)))
+        (x => TemporalAnnotation(new RelativeTimepoint("start"), new RelativeTimepoint("end")))
       | "["~> repsep(timepoint,",") <~"]" ^^ {
         case List(tp) => TemporalAnnotation(tp, tp)
         case List(tp1, tp2) => TemporalAnnotation(tp1, tp2)
     })
 
   def timepoint : Parser[RelativeTimepoint] = (
-      ("start"|"end"|"")~("+"|"-")~decimalNumber ^^ {
+      opt(timepointRef)~("+"|"-")~decimalNumber ^^ {
         case tp~"+"~delta => RelativeTimepoint(tp, delta.toInt)
         case tp~"-"~delta => RelativeTimepoint(tp, - delta.toInt)
       }
-    | ("start" | "end") ^^ (x => RelativeTimepoint(x, 0))
+    | timepointRef ^^ (x => RelativeTimepoint(Some(x), 0))
     | failure("illegal timepoint")
+    )
+
+  def timepointRef : Parser[TimepointRef] = (
+      kwTempAnnot~"("~word<~")" ^^ {
+        case kw~"("~id => TimepointRef(kw, id) }
+    | kwTempAnnot ^^
+        (kw => TimepointRef(kw, ""))
     )
 
   def statement : Parser[Statement] = (
@@ -95,22 +110,33 @@ object AnmlParser extends JavaTokenParsers {
         {case sv~"=="~from~":->"~to => Transition(sv, from, to)}
     )
 
+  def tempConstraint : Parser[Any] =
+      timepointRef~("<"|"=")~tempConstraintExpr
+
+  def tempConstraintExpr : Parser[Any] =
+    tempConstraintTerm~opt(("+"|"-")~tempConstraintTerm)
+
+  def tempConstraintTerm : Parser[Any] = (
+      timepointRef
+    | decimalNumber
+    )
+
   def expr : Parser[Expr] =
-      repsep(ident,".")~opt(refArgs) ^^ {
+      repsep(word,".")~opt(refArgs) ^^ {
         case List(variable) ~ None => VarExpr(variable)
         case svExpr~None => FuncExpr(svExpr, Nil)
         case svExpr~Some(args) => FuncExpr(svExpr, args)
       }
 
   def varExpr : Parser[VarExpr] =
-      ident ^^ (x => VarExpr(x))
+      word ^^ (x => VarExpr(x))
 
   def refArgs : Parser[List[VarExpr]] = (
       "("~>repsep(varExpr, ",")<~")"
     )
 
   def action : Parser[Action] =
-      "action"~>ident~"("~repsep(argument, ",")~")"~actionBody ^^
+      "action"~>word~"("~repsep(argument, ",")~")"~actionBody ^^
         { case name~"("~args~")"~body => new Action(name, args, body)}
 
   def actionBody : Parser[List[ActionContent]] = (
@@ -139,13 +165,13 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   def actionRef : Parser[ActionRef] =
-      opt(ident<~":")~ident~"("~repsep(expr, ",")<~")" ^^ {
+      opt(word<~":")~word~"("~repsep(expr, ",")<~")" ^^ {
         case Some(id)~name~"("~args => ActionRef(name, args, id)
         case None~name~"("~args => ActionRef(name, args, "")
       }
 
   def argument : Parser[Argument] = (
-      tipe~ident ^^ { case tipe~name => new Argument(tipe, name)}
+      tipe~word ^^ { case tipe~name => new Argument(tipe, name)}
     | failure("Argument malformed.")
     )
 
@@ -172,17 +198,17 @@ object AnmlParser extends JavaTokenParsers {
   )
 
   def functionDecl : Parser[Function] = (
-      "constant"~>tipe~ident~opt(argList)<~";" ^^ {
-        case t~name~Some(args) => Function(name, args, t, true)
-        case t~name~None => Function(name, Nil, t, true)
+      "constant"~>tipe~word~opt(argList)<~";" ^^ {
+        case t~name~Some(args) => Function(name, args, t, isConstant=true)
+        case t~name~None => Function(name, Nil, t, isConstant=true)
       }
-    | "variable"~>tipe~ident<~";" ^^ {case t~name => Function(name, List(), t, false)}
-    | "function"~>tipe~ident~argList<~";" ^^ {case t~name~args => Function(name, args, t, false)}
-    | "predicate"~>ident~argList<~";" ^^ {case name~args => Function(name, args, "boolean", false)}
+    | "variable"~>tipe~word<~";" ^^ {case t~name => Function(name, List(), t, isConstant=false)}
+    | "function"~>tipe~word~argList<~";" ^^ {case t~name~args => Function(name, args, t, isConstant=false)}
+    | "predicate"~>word~argList<~";" ^^ {case name~args => Function(name, args, "boolean", isConstant=false)}
     )
 
   def tipe : Parser[String] =
-      "float" | ident | failure("Unable to parse type")
+      kwTypes | word | failure("Unable to parse type")
 
   def typeDecl : Parser[Type] = (
       "type"~>tipe~"<"~tipe~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => Type(name, parent, content)}
@@ -197,10 +223,17 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   def instanceDecl : Parser[List[Instance]] =
-      "instance"~>tipe~repsep(ident,",")<~";" ^^ {
+      "instance"~>tipe~repsep(word,",")<~";" ^^ {
         case tipe~names => names.map(Instance(tipe, _))
       }
 
   def comment : Parser[AnmlBlock] = """/\\*(?:.|[\n\r])*?\\*/""".r ^^^ Comment
+
+  def kwTypes : Parser[String] = "float" | "boolean" | "object"
+  def kwTempAnnot : Parser[String] = "start" | "end"
+
+  def keywords = kwTypes | kwTempAnnot
+
+  def word = not(keywords) ~> ident
 }
 
