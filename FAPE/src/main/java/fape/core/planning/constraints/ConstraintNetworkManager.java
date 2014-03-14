@@ -10,22 +10,21 @@
  */
 package fape.core.planning.constraints;
 
-import fape.core.planning.model.ParameterizedStateVariable;
-import fape.core.planning.model.VariableRef;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import planstack.anml.model.ParameterizedStateVariable;
+
+import java.util.*;
 
 /**
  *
  * @author FD
  */
 public class ConstraintNetworkManager {
+
+    /** TODO: Add parameters bindings */
 
     HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // (database id|state variable value id) -> constraint
     public HashMap<Integer, IUnifiable> objectMapper = new HashMap<>();
@@ -94,9 +93,9 @@ public class ConstraintNetworkManager {
         objectMapper.put(a.GetUniqueID(), a);
     }
 
-    public void AddUnificationConstraint(State st, VariableRef a, VariableRef b) {
-        IUnifiable aObj = st.parameterBindings.get(a);
-        IUnifiable bObj = st.parameterBindings.get(b);
+    public void AddUnificationConstraint(State st, String a, String b) {
+        IUnifiable aObj = null;//st.parameterBindings.get(a);
+        IUnifiable bObj = null;//st.parameterBindings.get(b);TODO
         if(!objectMapper.containsKey(aObj.GetUniqueID())) {
             AddUnifiable(aObj);
         }
@@ -106,10 +105,17 @@ public class ConstraintNetworkManager {
         AddUnificationConstraint(aObj, bObj);
     }
 
+    public void AddUnificationConstraints(State st, List<String> as, List<String> bs) {
+        assert as.size() == bs.size();
+        for(int i=0 ; i < as.size() ; i++) {
+            AddUnificationConstraint(st, as.get(i), bs.get(i));
+        }
+    }
+
     public void AddUnificationConstraint(State st, ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        if(!a.predicateName.equals(b.predicateName))
+        if(!a.func().equals(b.func()))
             throw new FAPEException("Error: adding unification constraint between two different predicates: "+ a +"  --  "+ b);
-        AddUnificationConstraint(st, a.variable, b.variable);
+        AddUnificationConstraints(st, a.jArgs(), b.jArgs());
     }
 
     /**

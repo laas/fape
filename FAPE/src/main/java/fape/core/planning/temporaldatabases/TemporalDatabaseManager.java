@@ -10,11 +10,8 @@
  */
 package fape.core.planning.temporaldatabases;
 
-import fape.core.planning.Planner;
-import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.exceptions.FAPEException;
+import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
 
@@ -30,6 +27,7 @@ public class TemporalDatabaseManager {
      */
     public List<TemporalDatabase> vars = new LinkedList<>();
 
+    @Deprecated /* No databases should be created without statements */
     public TemporalDatabase GetNewDatabase() {
         TemporalDatabase db = new TemporalDatabase(true);
         vars.add(db);
@@ -39,15 +37,14 @@ public class TemporalDatabaseManager {
     /**
      * Creates a new database containing the event ev.
      *
-     * @param ev
+     * @param s
      * @return
      */
-    public TemporalDatabase GetNewDatabase(TemporalEvent ev) {
+    public TemporalDatabase GetNewDatabase(LogStatement s) {
         TemporalDatabase db = new TemporalDatabase(true);
-        db.AddEvent(ev);
-        db.stateVariable = ev.stateVariable;
+        db.AddEvent(s);
+        db.stateVariable = s.sv();
         vars.add(db);
-        ev.tdbID = db.mID;
         return db;
     }
 
@@ -82,7 +79,8 @@ public class TemporalDatabaseManager {
      * @param tdb Temporal database in which the events will we included
      * @param included database that will disappear, all of its components being included in tdb
      * @param after a chain component of tdb after which the chain of included will be added
-     */
+     *
+     *              TODO: recreate
     public void InsertDatabaseAfter(State st, TemporalDatabase tdb, TemporalDatabase included, TemporalDatabase.ChainComponent after) {
         assert tdb.chain.size() != 0;
         assert tdb.chain.contains(after);
@@ -147,7 +145,7 @@ public class TemporalDatabaseManager {
         if(Planner.debugging) {
             st.ExtensiveCheck();
         }
-    }
+    }*/
 
     /**
      * Given a database tdb, enforces the unification and temporal constraints between
@@ -155,7 +153,7 @@ public class TemporalDatabaseManager {
      * @param st
      * @param tdb
      * @param chainCompIndex
-     */
+     * TODO: Recreate
     public void EnforceChainConstraints(State st, TemporalDatabase tdb, int chainCompIndex) {
         assert chainCompIndex < tdb.chain.size();
 
@@ -170,7 +168,7 @@ public class TemporalDatabaseManager {
             st.conNet.AddUnificationConstraint(st, first.GetSupportValue(), second.GetConsumeValue());
             TemporalDatabase.PropagatePrecedence(first, second, st);
         }
-    }
+    }*/
 
     public String Report() {
         String ret = "";
@@ -189,18 +187,16 @@ public class TemporalDatabaseManager {
      * Returns all temporal events contained in all temporal databases.
      * @return
      */
-    public List<TemporalEvent> AllEvents() {
-        LinkedList<TemporalEvent> events = new LinkedList<>();
+    public List<LogStatement> AllEvents() {
+        LinkedList<LogStatement> events = new LinkedList<>();
         for(TemporalDatabase db : vars) {
             for(TemporalDatabase.ChainComponent comp : db.chain) {
-                for(TemporalEvent ev : comp.contents) {
-                    events.add(ev);
-                }
+                events.addAll(comp.contents);
             }
         }
         return events;
     }
-/*
+/* TODO: Recreate
     public void SplitDatabase(TemporalEvent t) {
         TemporalDatabase theDatabase = t.mDatabase;
         if (t instanceof TransitionEvent) {

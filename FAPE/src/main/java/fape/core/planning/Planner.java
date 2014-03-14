@@ -12,21 +12,11 @@ package fape.core.planning;
 
 import fape.core.execution.Executor;
 import fape.core.execution.model.*;
-import fape.core.planning.model.TypeManager;
-import fape.core.planning.dtgs.ADTG;
-import fape.core.execution.model.statements.Statement;
-//import fape.core.execution.model.types.Type;
-
 import fape.core.planning.constraints.UnificationConstraintSchema;
 import fape.core.planning.model.*;
-import fape.core.planning.model.Action;
 import fape.core.planning.search.*;
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.events.TemporalEvent;
-import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
-import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.core.transitions.TransitionIO2Planning;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
@@ -34,7 +24,6 @@ import fape.util.TimeAmount;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.parser.ParseResult;
-import planstack.graph.printers.GraphDotPrinter;
 
 import java.util.*;
 
@@ -51,8 +40,7 @@ public class Planner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
-    public Problem pb = new Problem();
-    public AnmlProblem problem = new AnmlProblem();
+    public AnmlProblem pb = new AnmlProblem();
 
     private static int nextVarID = 0;
 
@@ -667,25 +655,9 @@ public class Planner {
      */
     public boolean updateState(State st) {
         // apply all pending revisions
-        while(st.problemRevision < pb.currentRevision) {
+        while(st.problemRevision < pb.m) {
             st.problemRevision++;
 
-            // for every update in this revision, apply it to state.
-            for(Problem.ProblemRevision update : pb.revisions.get(st.problemRevision)) {
-                if(update.isActionAddition()) {
-                    AddAction(update.addAction, st, null, false);
-                } else if(update.isStatementAddition()) {
-                    Statement s = update.statement;
-                    TransitionIO2Planning.InsertStatementIntoState(st, s, pb.vars.get(s.GetVariableName()));
-                } else if(update.isObjectAddition()) {
-                    Instance i = update.object;
-                    ObjectVariableValues binding = new ObjectVariableValues(i.name, i.type);
-                    assert !st.parameterBindings.containsKey(i.name);
-                    st.parameterBindings.put(i.name, binding);
-                } else {
-                    throw new FAPEException("Unrecognized problem revision: " + update);
-                }
-            }
         }
 
         // true if state is consistent

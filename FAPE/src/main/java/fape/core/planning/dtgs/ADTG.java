@@ -17,6 +17,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
+import planstack.anml.model.AnmlProblem;
 
 import java.util.*;
 
@@ -29,7 +30,7 @@ import java.util.*;
  *
  * @author Filip Dvořák
  */
-public class ADTG {
+class ADTG {
 
     /**
      * array of names of values, parsed from original representation
@@ -63,7 +64,7 @@ public class ADTG {
     private HashMap<String, Integer> instances = new HashMap<>();
     private int nextId = 0;
 
-    private final Problem pb;
+    private final AnmlProblem pb;
 
     /**
      *
@@ -246,10 +247,10 @@ public class ADTG {
      * @param t
      * @param actions
      */
-    public ADTG(Problem pb, Type t, Collection<AbstractAction> actions) {
+    public ADTG(AnmlProblem pb, Type t, Collection<AbstractAction> actions) {
         this.pb = pb;
         var_id = t.name;
-        List<String> vars = pb.types.instances(t.name);
+        List<String> vars = null; //pb.types.instances(t.name); TODO
         var_size = vars.size();
         mType = t;
 

@@ -11,19 +11,10 @@
 package fape.core.planning.temporaldatabases;
 
 import fape.core.execution.model.Instance;
-import fape.core.planning.constraints.ConstraintNetworkManager;
-import fape.core.planning.model.ParameterizedStateVariable;
-import fape.core.planning.model.VariableRef;
-import fape.core.planning.states.State;
-import fape.core.planning.stn.TemporalVariable;
-import fape.core.planning.temporaldatabases.events.TemporalEvent;
-import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
-import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
-import fape.core.planning.temporaldatabases.events.resources.ConditionEvent;
-import fape.core.planning.temporaldatabases.events.resources.ConsumeEvent;
-import fape.core.planning.temporaldatabases.events.resources.ProduceEvent;
-import fape.core.planning.temporaldatabases.events.resources.SetEvent;
 import fape.exceptions.FAPEException;
+import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -45,8 +36,8 @@ public class TemporalDatabase {
 
         ret += "    " + this.stateVariable + "  :  id="+mID+"\n";
         for (ChainComponent c : chain) {
-            for (TemporalEvent e : c.contents) {
-                ret += "    " + e.Report();
+            for (LogStatement e : c.contents) {
+                ret += "    " + e;
             }
             ret += "\n";
         }
@@ -65,66 +56,47 @@ public class TemporalDatabase {
         }
     }
 
+    /**
+     * @return True if the first statement of this TDB requires support (ie not an assignment)
+     */
     public boolean isConsumer() {
-        return !chain.getFirst().GetConsumeValue().isNull();
+        return chain.getFirst().contents.getFirst().needsSupport();
     }
 
     /**
      *
      * @param event
      */
-    public void AddEvent(TemporalEvent event) {
-        //events.add(event);
-
-        if (event instanceof SetEvent) {
-
-        } else if (event instanceof ProduceEvent) {
-
-        } else if (event instanceof ConsumeEvent) {
-
-        } else if (event instanceof ConditionEvent) {
-
-        } else if (event instanceof PersistenceEvent) {
-            chain.add(new ChainComponent(event));
-        } else if (event instanceof TransitionEvent) {
-            chain.add(new ChainComponent(event));
-        }
+    public void AddEvent(LogStatement event) {
+        chain.add(new ChainComponent(event));
     }
 
     /**
-     *
-     * @param m
      * @return
      */
     public TemporalDatabase DeepCopy() {
         TemporalDatabase newDB = new TemporalDatabase(false);
-        newDB.actionAssociations = new HashMap<>(this.actionAssociations);
         newDB.mID = mID;
         newDB.stateVariable = stateVariable;
         for (ChainComponent c : this.chain) {
             newDB.chain.add(c.DeepCopy());
         }
-
-        // set the mDatabase variables in the events
-        for (ChainComponent c : newDB.chain) {
-            c.SetDatabase(newDB);
-        }
         return newDB;
     }
 
-    /**
+    /** TODO: Recreate
      *
      * @param first
      * @param second
      * @param st
-     */
+     *
     public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
-        for (TemporalEvent f : first.contents) {
-            for(TemporalEvent s : second.contents){
-                st.tempoNet.EnforceBefore(f.end, s.start);
+        for (LogStatement f : first.contents) {
+            for(LogStatement s : second.contents){
+                st.tempoNet.EnforceBefore(f.end(), s.start());
             }
         }
-    }
+    }*/
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
@@ -154,7 +126,7 @@ public class TemporalDatabase {
         /**
          *
          */
-        public LinkedList<TemporalEvent> contents = new LinkedList<>();
+        public LinkedList<LogStatement> contents = new LinkedList<>();
 
         /**
          * Add all events of the parameterized chain component to the current chain component.
@@ -169,9 +141,9 @@ public class TemporalDatabase {
          *
          * @param ev
          */
-        public ChainComponent(TemporalEvent ev) {
+        public ChainComponent(LogStatement ev) {
             contents.add(ev);
-            if (ev instanceof PersistenceEvent) {
+            if (ev instanceof Persistence) {
                 change = false;
             }
         }
@@ -184,72 +156,37 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public VariableRef GetSupportValue() {
-            if (change) {
-                return ((TransitionEvent) contents.get(0)).to;
-            } else {
-                return ((PersistenceEvent) contents.get(0)).value;
-            }
+        public String GetSupportValue() {
+            return contents.getFirst().endValue();
         }
 
         /**
          *
          * @return
          */
-        public VariableRef GetConsumeValue() {
-            if (change) {
-                return ((TransitionEvent) contents.get(0)).from;
-            } else {
-                return ((PersistenceEvent) contents.get(0)).value;
-            }
-        }
-
-        /**
-         *
-         * @return
-         */
-        public TemporalVariable GetConsumeTimePoint() {
-            return this.contents.getFirst().start;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public TemporalVariable GetSupportTimePoint() {
-            return this.contents.getLast().end;
+        public String GetConsumeValue() {
+            return contents.getFirst().startValue();
         }
 
         public ChainComponent DeepCopy() {
             ChainComponent cp = new ChainComponent();
             cp.change = this.change;
-            cp.contents = new LinkedList<>();
-            for (TemporalEvent e : this.contents) {
-                cp.contents.add(e.DeepCopy(false));
-            }
+            cp.contents = new LinkedList<>(this.contents);
             return cp;
-        }
-
-        private void SetDatabase(TemporalDatabase db) {
-            for (TemporalEvent e : contents) {
-                e.tdbID = db.mID;
-            }
         }
     }
 
     /**
-     *
-     * @return
+     * @return A global variable representing the value at the end of the temporal database
      */
     public boolean HasSinglePersistence() {
         return chain.size() == 1 && !chain.get(0).change;
     }
 
     /**
-     *
-     * @return
+     * @return A global variable representing the value at the end of the temporal database
      */
-    public VariableRef GetGlobalSupportValue() {
+    public String GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
@@ -257,24 +194,8 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public VariableRef GetGlobalConsumeValue() {
+    public String GetGlobalConsumeValue() {
         return chain.getFirst().GetConsumeValue();
-    }
-
-    /**
-     *
-     * @return
-     */
-    public TemporalVariable GetConsumeTimePoint() {
-        return chain.getFirst().GetConsumeTimePoint();
-    }
-
-    /**
-     *
-     * @return
-     */
-    public TemporalVariable GetSupportTimePoint() {
-        return chain.getLast().GetSupportTimePoint();
     }
 
     @Override
@@ -282,7 +203,7 @@ public class TemporalDatabase {
         String res = "(tdb:" + mID + " dom=[" + this.stateVariable + "] chains=[";
 
         for (ChainComponent comp : this.chain) {
-            for (TemporalEvent ev : comp.contents) {
+            for (LogStatement ev : comp.contents) {
                 res += ev.toString() + ", ";
             }
         }

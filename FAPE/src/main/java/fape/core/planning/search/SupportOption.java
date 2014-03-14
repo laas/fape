@@ -11,9 +11,8 @@
 
 package fape.core.planning.search;
 
-import fape.core.planning.model.AbstractAction;
-import fape.core.planning.model.Action;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import planstack.anml.model.abs.AbstractAction;
 
 /**
  * non-null values represent the option

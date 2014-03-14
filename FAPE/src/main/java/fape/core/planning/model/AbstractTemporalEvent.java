@@ -26,68 +26,68 @@ import java.util.List;
  *
  * @author FD
  */
-public class AbstractTemporalEvent {
-    //this event works as an abstraction for further carbon-copying
-
-    /**
-     *
-     */
-    public TemporalEvent event;
-
-    /**
-     *
-     */
-    public TemporalInterval interval;
-
-    /**
-     *
-     */
-    public Reference stateVariableReference;
-
-    /**
-     *
-     */
-    public String varType;
-
-    /**
-     *
-     * @param event
-     * @param interval_
-     * @param leftRef
-     * @param varType_
-     */
-    public AbstractTemporalEvent(TemporalEvent event, TemporalInterval interval_, Reference leftRef, String varType_) {
-        this.event = event;
-        interval = interval_;
-        stateVariableReference = leftRef;
-        varType = varType_;
-    }
-
-    public boolean isTransitionEvent() {
-        return this.event instanceof TransitionEvent;
-    }
-
-    public boolean isPersistenceEvent() {
-        return this.event instanceof PersistenceEvent;
-    }
-
-    /**
-     * Produces a temporal event whose parameter and time points are
-     * binded to those of the action act.
-     * @param act
-     * @return
-     */
-    public TemporalEvent GetEventInAction(Action act) {
-        TemporalEvent e = this.event.bindedCopy(act);
-        interval.AssignTemporalContext(e, act.start, act.end);
-        return e;
-    }
-
-    @Deprecated
-    public boolean SupportsStateVariable(String var_type) {
-        //TODO: this is probably wrong, we might have a type that is a
-        // descendent, of simply a differenct predicate
-        return varType.equals(var_type);
-    }
-
-}
+//public class AbstractTemporalEvent {
+//    //this event works as an abstraction for further carbon-copying
+//
+//    /**
+//     *
+//     */
+//    public TemporalEvent event;
+//
+//    /**
+//     *
+//     */
+//    public TemporalInterval interval;
+//
+//    /**
+//     *
+//     */
+//    public Reference stateVariableReference;
+//
+//    /**
+//     *
+//     */
+//    public String varType;
+//
+//    /**
+//     *
+//     * @param event
+//     * @param interval_
+//     * @param leftRef
+//     * @param varType_
+//     */
+//    public AbstractTemporalEvent(TemporalEvent event, TemporalInterval interval_, Reference leftRef, String varType_) {
+//        this.event = event;
+//        interval = interval_;
+//        stateVariableReference = leftRef;
+//        varType = varType_;
+//    }
+//
+//    public boolean isTransitionEvent() {
+//        return this.event instanceof TransitionEvent;
+//    }
+//
+//    public boolean isPersistenceEvent() {
+//        return this.event instanceof PersistenceEvent;
+//    }
+//
+//    /**
+//     * Produces a temporal event whose parameter and time points are
+//     * binded to those of the action act.
+//     * @param act
+//     * @return
+//     */
+//    public TemporalEvent GetEventInAction(Action act) {
+//        TemporalEvent e = this.event.bindedCopy(act);
+//        interval.AssignTemporalContext(e, act.start, act.end);
+//        return e;
+//    }
+//
+//    @Deprecated
+//    public boolean SupportsStateVariable(String var_type) {
+//        //TODO: this is probably wrong, we might have a type that is a
+//        // descendent, of simply a differenct predicate
+//        return varType.equals(var_type);
+//    }
+//
+//}

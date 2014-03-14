@@ -14,14 +14,14 @@ package fape.core.planning.model;
  *
  * @author FD
  */
-public class StateVariableFloat extends StateVariable {
-
-    float value;
-
-    /**
-     *
-     */
-    public StateVariableFloat() {
-        mType = EStateVariableType.FLOAT;
-    }
-}
+//public class StateVariableFloat extends StateVariable {
+//
+//    float value;
+//
+//    /**
+//     *
+//     */
+//    public StateVariableFloat() {
+//        mType = EStateVariableType.FLOAT;
+//    }
+//}

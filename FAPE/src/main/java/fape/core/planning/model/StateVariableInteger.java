@@ -14,14 +14,14 @@ package fape.core.planning.model;
  *
  * @author FD
  */
-public class StateVariableInteger extends StateVariable {
-
-    int value;
-
-    /**
-     *
-     */
-    public StateVariableInteger() {
-        mType = EStateVariableType.INTEGER;
-    }
-}
+//public class StateVariableInteger extends StateVariable {
+//
+//    int value;
+//
+//    /**
+//     *
+//     */
+//    public StateVariableInteger() {
+//        mType = EStateVariableType.INTEGER;
+//    }
+//}

@@ -17,48 +17,48 @@ import java.util.HashMap;
  *
  * @author FD
  */
-public class Type {
-    /**
-     * the variables that are nested in this type, the first string is the name,
-     * the second one is the name of its type
-     */
-    public String name;
-
-    /**
-     *
-     */
-    public HashMap<String, String> contents;
-
-    public String parentTypeName;
-
-    public Type(String name, String parent) {
-        this.name = name;
-        this.parentTypeName = parent;
-        contents = new HashMap<>();
-    }
-
-    /**
-     *
-     */
-    protected HashMap<String, Integer> instances = new HashMap<>();
-    int instanceCounter = 0;
-    
-    /**
-     *
-     * @param nm
-     */
-    public Type(String nm){
-        name = nm;
-        parentTypeName = "";
-        contents = new HashMap<>();
-    }
-
-    /**
-     *
-     * @param name
-     */
-    public void AddInstance(String name) {
-        instances.put(name, instanceCounter);
-        instanceCounter++;
-    }
-}
+//public class Type {
+//    /**
+//     * the variables that are nested in this type, the first string is the name,
+//     * the second one is the name of its type
+//     */
+//    public String name;
+//
+//    /**
+//     *
+//     */
+//    public HashMap<String, String> contents;
+//
+//    public String parentTypeName;
+//
+//    public Type(String name, String parent) {
+//        this.name = name;
+//        this.parentTypeName = parent;
+//        contents = new HashMap<>();
+//    }
+//
+//    /**
+//     *
+//     */
+//    protected HashMap<String, Integer> instances = new HashMap<>();
+//    int instanceCounter = 0;
+//
+//    /**
+//     *
+//     * @param nm
+//     */
+//    public Type(String nm){
+//        name = nm;
+//        parentTypeName = "";
+//        contents = new HashMap<>();
+//    }
+//
+//    /**
+//     *
+//     * @param name
+//     */
+//    public void AddInstance(String name) {
+//        instances.put(name, instanceCounter);
+//        instanceCounter++;
+//    }
+//}

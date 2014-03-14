@@ -15,7 +15,6 @@ import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.model.ObjectVariableValues;
 import fape.core.planning.model.ParameterizedStateVariable;
-import fape.core.planning.model.Problem;
 import fape.core.planning.model.VariableRef;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
@@ -25,6 +24,7 @@ import fape.core.planning.temporaldatabases.events.TemporalEvent;
 import fape.core.planning.temporaldatabases.events.propositional.PersistenceEvent;
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
+import planstack.anml.model.AnmlProblem;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ public class State {
     public List<TemporalDatabase> consumers;
     public ConstraintNetworkManager conNet;
 
-    public final Problem pb;
+    public final AnmlProblem pb;
     public int problemRevision = -1;
 
 
@@ -79,7 +79,7 @@ public class State {
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
      */
-    public State(Problem pb) {
+    public State(AnmlProblem pb) {
         this.pb = pb;
         tdb = new TemporalDatabaseManager();
         tempoNet = STNManager.newInstance();
@@ -104,12 +104,7 @@ public class State {
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
-        parameterBindings = new HashMap<String, ObjectVariableValues>();
-        for(String key : st.parameterBindings.keySet()) {
-            ObjectVariableValues newBinding = st.parameterBindings.get(key).DeepCopy();
-            parameterBindings.put(key, newBinding);
-            conNet.AddUnifiable(newBinding);
-        }
+
         // copy the task network and updates the events pointers of actions to the newly cloned ones.
         taskNet = st.taskNet.DeepCopy(tdb.AllEvents());
 
@@ -237,26 +232,6 @@ public class State {
         }
     }
 
-    /**
-     * Return the type of the paramererized state varaible ref.
-     * ref must be of the form x.predicate
-     * @param ref
-     * @return
-     */
-    public String GetType(Reference ref) {
-        assert parameterBindings.containsKey(ref.GetConstantReference());
-        if(ref.refs.size() == 2) {
-            String baseType = parameterBindings.get(ref.GetConstantReference()).type;
-            String expressionType = pb.types.getContentType(baseType, ref.refs.get(1));
-            return expressionType;
-        } else if(ref.refs.size() == 1){
-            String varType = parameterBindings.get(ref.GetConstantReference()).type;
-            return varType;
-        } else {
-            throw new FAPEException("Error: can't look up type for " + ref);
-        }
-    }
-
     public VariableRef getVariableRef(String varName) {
         assert parameterBindings.containsKey(varName);
         String varType = parameterBindings.get(varName).type;
@@ -268,19 +243,19 @@ public class State {
      * @param var
      * @return
      */
-    public Collection<String> possibleValues(VariableRef var) {
-        if(parameterBindings.containsKey(var.var)) {
-            // variable is binded, return domain
-            return parameterBindings.get(var.var).domain;
-        } else {
-            // variable is unkonwn, return all instances of its type
-            return pb.types.instances(var.type);
-        }
-    }
+//    public Collection<String> possibleValues(VariableRef var) {
+//        if(parameterBindings.containsKey(var.var)) {
+//            // variable is binded, return domain
+//            return parameterBindings.get(var.var).domain;
+//        } else {
+//            // variable is unkonwn, return all instances of its type
+//            return pb.types.instances(var.type);
+//        }
+//    }
 
-    public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
-        return Unifiable(a.stateVariable, b.stateVariable);
-    }
+//    public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
+//        return Unifiable(a.stateVariable, b.stateVariable);
+//    }
 
     /**
      * Returns true if two state variables are unifiable (ie: they are on the same predicate
@@ -289,13 +264,13 @@ public class State {
      * @param b
      * @return
      */
-    public boolean Unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        if(a.predicateName.equals(b.predicateName)) {
-            return Unifiable(a.variable, b.variable);
-        } else {
-            return false;
-        }
-    }
+//    public boolean Unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+//        if(a.predicateName.equals(b.predicateName)) {
+//            return Unifiable(a.variable, b.variable);
+//        } else {
+//            return false;
+//        }
+//    }
 
     /**
      * Return true if the two variables are unifiable (ie: share at least one value)
@@ -303,12 +278,12 @@ public class State {
      * @param b
      * @return
      */
-    public boolean Unifiable(VariableRef a, VariableRef b) {
-        LinkedList<String> inter = new LinkedList<>(possibleValues(a));
-
-        inter.retainAll(possibleValues(b));
-        return inter.size() > 0;
-    }
+//    public boolean Unifiable(VariableRef a, VariableRef b) {
+//        LinkedList<String> inter = new LinkedList<>(possibleValues(a));
+//
+//        inter.retainAll(possibleValues(b));
+//        return inter.size() > 0;
+//    }
 
     /**
      * Returns true if the temporal event e can be an enabler for the database db.
@@ -319,12 +294,12 @@ public class State {
      * @param db
      * @return
      */
-    public boolean canBeEnabler(TemporalEvent e, TemporalDatabase db) {
-        boolean canSupport = e instanceof TransitionEvent;
-        canSupport = canSupport && Unifiable(e.stateVariable, db.stateVariable);
-        canSupport = canSupport && Unifiable(e.endValue(), db.GetGlobalConsumeValue());
-        return canSupport;
-    }
+//    public boolean canBeEnabler(TemporalEvent e, TemporalDatabase db) {
+//        boolean canSupport = e instanceof TransitionEvent;
+//        canSupport = canSupport && Unifiable(e.stateVariable, db.stateVariable);
+//        canSupport = canSupport && Unifiable(e.endValue(), db.GetGlobalConsumeValue());
+//        return canSupport;
+//    }
 
     /**
      * This method is to be used while debugging to make sure the state is consistent
