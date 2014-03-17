@@ -18,6 +18,7 @@ import fape.core.planning.model.ParameterizedStateVariable;
 import fape.core.planning.model.VariableRef;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
+import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.core.planning.temporaldatabases.events.TemporalEvent;
@@ -25,6 +26,9 @@ import fape.core.planning.temporaldatabases.events.propositional.PersistenceEven
 import fape.core.planning.temporaldatabases.events.propositional.TransitionEvent;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
+import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -73,8 +77,6 @@ public class State {
     public int problemRevision = -1;
 
 
-    public HashMap<String, ObjectVariableValues> parameterBindings = new HashMap<>();
-
     /**
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
@@ -82,8 +84,7 @@ public class State {
     public State(AnmlProblem pb) {
         this.pb = pb;
         tdb = new TemporalDatabaseManager();
-        tempoNet = STNManager.newInstance();
-        tempoNet.Init();
+        tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         conNet = new ConstraintNetworkManager();
@@ -104,12 +105,7 @@ public class State {
         conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
-
-        // copy the task network and updates the events pointers of actions to the newly cloned ones.
-        taskNet = st.taskNet.DeepCopy(tdb.AllEvents());
-
-        // remove constraints on objects that don't exist anymore
-        conNet.RemoveOutdatedConstraints();
+        taskNet = st.taskNet.DeepCopy();
 
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
@@ -171,71 +167,57 @@ public class State {
         taskNet.FailAction(pop);
     }
 
-    public void SplitDatabase(TemporalEvent t) {
-        TemporalDatabase theDatabase = tdb.GetDB(t.tdbID);
-        if (t instanceof TransitionEvent) {
-            int ct = 0;
-            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
-                if (comp.contents.getFirst().mID == t.mID) {
-                    TemporalDatabase one = theDatabase;
-                    if (ct + 1 < theDatabase.chain.size()) {
-                        //this was not the last element, we need to create another database and make split
-                        TemporalDatabase newDB = tdb.GetNewDatabase();
+    public void SplitDatabase(LogStatement s) {
+        TemporalDatabase theDatabase = tdb.getDBContaining(s);
 
-                        // the two databases share the same state variable
-                        newDB.stateVariable = theDatabase.stateVariable;
+        // First find which component contains s
+        ChainComponent comp = null; // component containing the statement
+        int ct = 0; // index of the component in the chain
+        for(ct=0 ; ct<theDatabase.chain.size() ; ct++) {
+            if(theDatabase.chain.get(ct).contains(s)) {
+                comp = theDatabase.chain.get(ct);
+                break;
+            }
+        }
 
-                        //add all extra chain components to the new database
-                        List<TemporalDatabase.ChainComponent> remove = new LinkedList<>();
-                        for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
-                            TemporalDatabase.ChainComponent origComp = theDatabase.chain.get(i);
-                            remove.add(origComp);
-                            TemporalDatabase.ChainComponent pc = origComp.DeepCopy();
-                            newDB.chain.add(pc);
-                            for (TemporalEvent eve : pc.contents) {
-                                eve.tdbID = newDB.mID;
-                            }
-                        }
-                        this.consumers.add(newDB);
-                        this.tdb.vars.add(newDB);                        
-                        theDatabase.chain.remove(comp);
-                        theDatabase.chain.removeAll(remove);
-                        break;
-                    } else {
-                        //this was the last element so we can just remove it and we are done
-                        theDatabase.chain.remove(comp);
-                        break;
-                    }
+        assert comp != null && theDatabase.chain.get(ct) == comp;
+
+        if (s instanceof Transition) {
+            if (ct + 1 < theDatabase.chain.size()) {
+                //this was not the last element, we need to create another database and make split
+                
+                // the two databases share the same state variable
+                TemporalDatabase newDB = new TemporalDatabase(theDatabase.stateVariable);
+
+                //add all extra chain components to the new database
+                List<ChainComponent> remove = new LinkedList<>();
+                for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
+                    ChainComponent origComp = theDatabase.chain.get(i);
+                    remove.add(origComp);
+                    ChainComponent pc = origComp.DeepCopy();
+                    newDB.chain.add(pc);
                 }
-                ct++;
-            }
-        } else if (t instanceof PersistenceEvent) {
-            TemporalDatabase.ChainComponent theComponent = null;
-            TemporalEvent theEvent = null;
-            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
-                for (TemporalEvent e : comp.contents) {
-                    if (e.mID == t.mID) {
-                        theComponent = comp;
-                        theEvent = e;
-                    }
-                }
-            }
-            if (theComponent == null) {
-                throw new FAPEException("Unknown event.");
-            } else if (theComponent.contents.size() == 1) {
-                theDatabase.chain.remove(theComponent);
+                this.consumers.add(newDB);
+                this.tdb.vars.add(newDB);
+                theDatabase.chain.remove(comp);
+                theDatabase.chain.removeAll(remove);
             } else {
-                theComponent.contents.remove(theEvent);
+                assert comp.contents.size() == 1;
+                //this was the last element so we can just remove it and we are done
+                theDatabase.chain.remove(comp);
+            }
+
+        } else if (s instanceof Persistence) {
+            if (comp.contents.size() == 1) {
+                // only one statement, remove the whole component
+                theDatabase.chain.remove(comp);
+            } else {
+                // more than one statement, remove only this statement
+                comp.contents.remove(s);
             }
         } else {
             throw new FAPEException("Unknown event type.");
         }
-    }
-
-    public VariableRef getVariableRef(String varName) {
-        assert parameterBindings.containsKey(varName);
-        String varType = parameterBindings.get(varName).type;
-        return new VariableRef(varName, varType);
     }
 
     /**
@@ -308,11 +290,6 @@ public class State {
         if(!Planner.debugging) {
             throw new FAPEException("Those checks are very expensive and shouldn't be done while not in debugging mode");
         }
-        // TODO: mind where we use that, there might be places where the stn or constraints network are not consistent
-        // but programatically correct
-        //this.conNet.CheckConsistency();
-        //this.tempoNet.TestConsistent();
-        this.taskNet.CheckEventDBBindings(this);
         for(TemporalDatabase db : this.tdb.vars) {
             db.CheckChainComposition();
         }

@@ -27,13 +27,6 @@ public class TemporalDatabaseManager {
      */
     public List<TemporalDatabase> vars = new LinkedList<>();
 
-    @Deprecated /* No databases should be created without statements */
-    public TemporalDatabase GetNewDatabase() {
-        TemporalDatabase db = new TemporalDatabase(true);
-        vars.add(db);
-        return db;
-    }
-
     /**
      * Creates a new database containing the Statement s.
      *
@@ -41,9 +34,7 @@ public class TemporalDatabaseManager {
      * @return
      */
     public TemporalDatabase GetNewDatabase(LogStatement s) {
-        TemporalDatabase db = new TemporalDatabase(true);
-        db.AddEvent(s);
-        db.stateVariable = s.sv();
+        TemporalDatabase db = new TemporalDatabase(s);
         vars.add(db);
         return db;
     }
@@ -54,6 +45,15 @@ public class TemporalDatabaseManager {
                 return db;
         }
         throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+Report());
+    }
+
+    public TemporalDatabase getDBContaining(LogStatement s) {
+        for(TemporalDatabase db : vars) {
+            if(db.contains(s)) {
+                return db;
+            }
+        }
+        throw new FAPEException("Unable to find a temporal database containing the statement "+s);
     }
 
     public TemporalDatabaseManager DeepCopy() {
@@ -182,55 +182,4 @@ public class TemporalDatabaseManager {
         return ret;
 
     }
-
-    /**
-     * Returns all temporal events contained in all temporal databases.
-     * @return
-     */
-    public List<LogStatement> AllEvents() {
-        LinkedList<LogStatement> events = new LinkedList<>();
-        for(TemporalDatabase db : vars) {
-            for(TemporalDatabase.ChainComponent comp : db.chain) {
-                events.addAll(comp.contents);
-            }
-        }
-        return events;
-    }
-/* TODO: Recreate
-    public void SplitDatabase(TemporalEvent t) {
-        TemporalDatabase theDatabase = t.mDatabase;
-        if (t instanceof TransitionEvent) {
-            int ct = 0;
-            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
-                if (comp.contents.getFirst().mID == t.mID) {
-                    TemporalDatabase one = theDatabase;
-                    if (ct + 1 < theDatabase.chain.size()) {
-                        //this was not the last element, we need to create another database and make split
-                        GetNewDatabase()
-                                
-                    }
-                }
-                ct++;
-            }
-        } else if (t instanceof PersistenceEvent) {
-            TemporalDatabase.ChainComponent theComponent = null;
-            TemporalEvent theEvent = null;
-            for (TemporalDatabase.ChainComponent comp : theDatabase.chain) {
-                for (TemporalEvent e : comp.contents) {
-                    if (e.mID == t.mID) {
-                        theComponent = comp;
-                        theEvent = e;
-                    }
-                }
-            }
-            if (theComponent.contents.size() == 1) {
-                theDatabase.chain.remove(theComponent);
-            } else {
-                theComponent.contents.remove(theEvent);
-            }
-        } else {
-            throw new FAPEException("Unknown event type.");
-        }
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }*/
 }

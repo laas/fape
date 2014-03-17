@@ -19,6 +19,7 @@ import planstack.anml.model.concrete.statements.Persistence;
 import java.lang.Deprecated;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * records the events for one state variable
@@ -27,10 +28,40 @@ import java.util.LinkedList;
  */
 public class TemporalDatabase {
 
-    @Deprecated
-    public int mID;
+    private static int nextID = 0;
+    public final int mID;
 
-    public ParameterizedStateVariable stateVariable;
+    public final ParameterizedStateVariable stateVariable;
+
+    public final LinkedList<ChainComponent> chain = new LinkedList<>();
+
+    public TemporalDatabase(LogStatement s) {
+        chain.add(new ChainComponent(s));
+        mID = nextID++;
+        stateVariable = s.sv();
+    }
+
+    public TemporalDatabase(ParameterizedStateVariable sv) {
+        mID = nextID++;
+        stateVariable = sv;
+    }
+
+    public TemporalDatabase(TemporalDatabase toCopy) {
+        mID = toCopy.mID;
+        for(ChainComponent cc : toCopy.chain) {
+            chain.add(cc.DeepCopy());
+        }
+        stateVariable = toCopy.stateVariable;
+    }
+
+    public boolean contains(LogStatement s) {
+        for(ChainComponent cc : chain) {
+            if(cc.contains(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public String Report() {
         String ret = "";
@@ -46,16 +77,6 @@ public class TemporalDatabase {
 
         //ret += "}\n";
         return ret;
-    }
-
-    /**
-     *
-     * @param assignNewUniqueID
-     */
-    public TemporalDatabase(boolean assignNewUniqueID) {
-        if (assignNewUniqueID) {
-            throw new FAPEException("No way to create a new unique ID");
-        }
     }
 
     /**
@@ -77,13 +98,7 @@ public class TemporalDatabase {
      * @return
      */
     public TemporalDatabase DeepCopy() {
-        TemporalDatabase newDB = new TemporalDatabase(false);
-        newDB.mID = mID;
-        newDB.stateVariable = stateVariable;
-        for (ChainComponent c : this.chain) {
-            newDB.chain.add(c.DeepCopy());
-        }
-        return newDB;
+        return new TemporalDatabase(this);
     }
 
     /** TODO: Recreate
@@ -104,73 +119,7 @@ public class TemporalDatabase {
         return chain.get(precedingChainComponent);
     }
 
-    /**
-     *
-     */
-    public class ChainComponent {
 
-        @Override
-        public String toString() {
-            return contents.toString();
-        }
-
-        /**
-         *
-         */
-        public boolean change = true;
-
-        /**
-         *
-         */
-        public LinkedList<LogStatement> contents = new LinkedList<>();
-
-        /**
-         * Add all events of the parameterized chain component to the current chain component.
-         * @param cc
-         */
-        public void Add(ChainComponent cc) {
-            assert cc.change == this.change : "Error: merging transition and persistence events in the same chain component.";
-            contents.addAll(cc.contents);
-        }
-
-        /**
-         *
-         * @param ev
-         */
-        public ChainComponent(LogStatement ev) {
-            contents.add(ev);
-            if (ev instanceof Persistence) {
-                change = false;
-            }
-        }
-
-        private ChainComponent() {
-
-        }
-
-        /**
-         *
-         * @return
-         */
-        public VarRef GetSupportValue() {
-            return contents.getFirst().endValue();
-        }
-
-        /**
-         *
-         * @return
-         */
-        public VarRef GetConsumeValue() {
-            return contents.getFirst().startValue();
-        }
-
-        public ChainComponent DeepCopy() {
-            ChainComponent cp = new ChainComponent();
-            cp.change = this.change;
-            cp.contents = new LinkedList<>(this.contents);
-            return cp;
-        }
-    }
 
     /**
      * @return A global variable representing the value at the end of the temporal database
@@ -208,15 +157,8 @@ public class TemporalDatabase {
         return res;
     }
 
-    //public void ReduceDomainByObjectConstants
-    //List<TemporalEvent> events = new LinkedList<>();
     /**
-     *
-     */
-    public LinkedList<ChainComponent> chain = new LinkedList<>();
-
-    /**
-     * Check if there is not two persistence events following each other in the chain.
+     * Checks if there is not two persistence events following each other in the chain.
      */
     public void CheckChainComposition() {
         boolean wasPreviousTransition = true;
