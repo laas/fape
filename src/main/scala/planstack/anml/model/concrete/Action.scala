@@ -27,7 +27,7 @@ class Action(
     val abs:AbstractAction,
     val context:Context,
     val statements:List[TemporalStatement],
-    val id:String,
+    val id:ActRef,
     val parentAction:Option[Action])
   extends StateModifier with TemporalInterval {
 
@@ -92,11 +92,11 @@ object Action {
 
     val context = abs.context.buildContext(pb, Some(parentContext))
     val id = pb.newActionID
-    context.addActionID(id, id)
+    context.addActionID(new LActRef(id), new ActRef(id))
 
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
-    new Action(abs, context, statements, id, None)
+    new Action(abs, context, statements, new ActRef(id), None)
 
   }
 }

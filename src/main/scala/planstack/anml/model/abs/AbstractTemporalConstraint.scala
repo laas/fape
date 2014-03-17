@@ -1,6 +1,6 @@
 package planstack.anml.model.abs
 
-import planstack.anml.model.AbstractTimepointRef
+import planstack.anml.model.{LActRef, AbstractTimepointRef}
 
 
 class AbstractTimePointExtractor(val extractor:String, val id:String) {
@@ -26,7 +26,7 @@ object AbstractTemporalConstraint {
     * @param action2 local id of an action
     * @return
     */
-  def before(action1:String, action2:String) =
+  def before(action1:LActRef, action2:LActRef) =
     new AbstractTemporalConstraint(
       new AbstractTimepointRef("end", action1),
       "<",

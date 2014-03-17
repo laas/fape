@@ -2,6 +2,7 @@ package planstack.anml.model.concrete
 
 import planstack.anml.model.concrete.statements.TemporalStatement
 import collection.JavaConversions._
+import planstack.anml.model.VarRef
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -27,13 +28,13 @@ trait StateModifier {
   def actions : Seq[Action]
 
   /** (Type, Name) of global variables to be declared */
-  def vars : Seq[Pair[String, String]]
+  def vars : Seq[Pair[String, VarRef]]
 
   def temporalConstraints : Seq[TemporalConstraint]
 
 }
 
-class BaseStateModifier(val statements:Seq[TemporalStatement], val actions:Seq[Action], val vars:Seq[Pair[String, String]])
+class BaseStateModifier(val statements:Seq[TemporalStatement], val actions:Seq[Action], val vars:Seq[Pair[String, VarRef]])
   extends StateModifier {
 
   val temporalConstraints = Nil
@@ -42,5 +43,5 @@ class BaseStateModifier(val statements:Seq[TemporalStatement], val actions:Seq[A
 
   def withActions(addActions:Action*) = new BaseStateModifier(statements, actions ++ addActions, vars)
 
-  def withVariables(addVars:Pair[String, String]*) = new BaseStateModifier(statements, actions, vars ++ addVars)
+  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(statements, actions, vars ++ addVars)
 }

@@ -25,10 +25,10 @@ class AnmlProblem extends TemporalInterval {
   private var nextActionID = 0
 
   /** Returns a new, unused, identifier for a global variable */
-  def newGlobalVar : String = "globVar_" + {nextGlobalVarID+=1; nextGlobalVarID-1}
+  def newGlobalVar : VarRef = new VarRef("globVar_" + {nextGlobalVarID+=1; nextGlobalVarID-1})
 
   /** Returns a new, unused, identifier for an action */
-  def newActionID : String = "action_" + {nextActionID+=1; nextActionID-1}
+  def newActionID = "action_" + {nextActionID+=1; nextActionID-1}
 
 
   def expressionToValue(expr:parser.Expr) : String = {
@@ -58,7 +58,7 @@ class AnmlProblem extends TemporalInterval {
     })
 
     for((name, tipe) <- instances.instances) {
-      context.addVar(name, tipe, name)
+      context.addVar(new LVarRef(name), tipe, new VarRef(name))
     }
 
     blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {
@@ -83,8 +83,8 @@ class AnmlProblem extends TemporalInterval {
 
       if(abs.name == "Seed" || abs.name == "seed") {
         val id = newActionID
-        context.addActionID(id, id)
-        val act = Action(this, new AbstractActionRef(abs.name, null, id),null)
+        context.addActionID(new LActRef(id), new ActRef(id))
+        val act = Action(this, new AbstractActionRef(abs.name, null, new LActRef(id)),null)
         modifier = modifier.withActions(act)
       }
     })

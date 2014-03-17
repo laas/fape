@@ -8,15 +8,15 @@ import scala.collection.mutable.ListBuffer
 abstract class AbstractContext {
 
   def parentContext : Option[AbstractContext]
-  protected val variables = mutable.Map[String, Pair[String, String]]()
+  protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
-  protected val actions = mutable.Map[String, String]()
+  protected val actions = mutable.Map[LActRef, ActRef]()
 
   /**
    * @param localName Name of the local variable to look up
    * @return a pair (type, globalName) of the local variable
    */
-  protected def getDefinition(localName:String) : Pair[String, String] = {
+  protected def getDefinition(localName:LVarRef) : Pair[String, VarRef] = {
     if(variables.contains(localName)) {
       variables(localName)
     } else {
@@ -27,7 +27,7 @@ abstract class AbstractContext {
     }
   }
 
-  def contains(localName:String) = {
+  def contains(localName:LVarRef) = {
     try {
       getDefinition(localName)
       true
@@ -36,9 +36,9 @@ abstract class AbstractContext {
     }
   }
 
-  def getType(localName:String) : String = getDefinition(localName)._1
+  def getType(localName:LVarRef) : String = getDefinition(localName)._1
 
-  def getGlobalVar(localName:String) : String = {
+  def getGlobalVar(localName:LVarRef) : VarRef = {
     val (tipe, globalName) = getDefinition(localName)
     if(globalName.isEmpty)
       throw new ANMLException("Variable %s has no global definition".format(localName))
@@ -46,12 +46,12 @@ abstract class AbstractContext {
       globalName
   }
 
-  def addVar(localName:String, typeName:String, globalName:String) {
+  def addVar(localName:LVarRef, typeName:String, globalName:VarRef) {
     assert(!variables.contains(localName))
     variables.put(localName, (typeName, globalName))
   }
 
-  def getActionID(localID:String) : String = {
+  def getActionID(localID:LActRef) : ActRef = {
     if(actions.contains(localID)) {
       actions(localID)
     } else {
@@ -62,7 +62,7 @@ abstract class AbstractContext {
     }
   }
 
-  def addActionID(localID:String, globalID:String) {
+  def addActionID(localID:LActRef, globalID:ActRef) {
     assert(!actions.contains(localID) || actions(localID).isEmpty)
     actions(localID) = globalID
   }
@@ -72,9 +72,9 @@ abstract class AbstractContext {
 
 class Context(
     val parentContext:Option[Context],
-    val varsToCreate :ListBuffer[Pair[String,String]] = ListBuffer())
+    val varsToCreate :ListBuffer[Pair[String,VarRef]] = ListBuffer())
   extends AbstractContext {
 
-  def addVarToCreate(tipe:String, globalName:String) = varsToCreate += ((tipe, globalName))
+  def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
 }
 

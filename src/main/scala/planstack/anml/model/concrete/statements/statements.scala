@@ -21,10 +21,10 @@ abstract class Statement(val sv:ParameterizedStateVariable)
 abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv) {
 
   /** Value just before the statement. Throws ANMLException if the statement have none, check with needsSupport */
-  def startValue : String
+  def startValue : VarRef
 
   /** Value just after the statement */
-  def endValue : String
+  def endValue : VarRef
 
   /** Returns true if the statement requires an enabler for its `startValue` */
   def needsSupport : Boolean
@@ -36,7 +36,7 @@ abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv)
   * @param sv State variable on which the statement applies.
   * @param value
   */
-class Assignment(sv:ParameterizedStateVariable, val value:String)
+class Assignment(sv:ParameterizedStateVariable, val value:VarRef)
   extends LogStatement(sv) {
 
   /** Throws ANMLException since an assignment has no startValue */
@@ -47,7 +47,7 @@ class Assignment(sv:ParameterizedStateVariable, val value:String)
   override def toString = "%s := %s".format(sv, value)
 }
 
-class Transition(sv:ParameterizedStateVariable, val from:String, val to:String)
+class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef)
   extends LogStatement(sv) {
 
   val startValue = from
@@ -56,7 +56,7 @@ class Transition(sv:ParameterizedStateVariable, val from:String, val to:String)
   override def toString = "%s == %s :-> %s".format(sv, from, to)
 }
 
-class Persistence(sv:ParameterizedStateVariable, val value:String)
+class Persistence(sv:ParameterizedStateVariable, val value:VarRef)
   extends LogStatement(sv) {
 
   val startValue = value

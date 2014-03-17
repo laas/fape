@@ -3,14 +3,14 @@ package planstack.anml.model
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
 
-  def addUndefinedVar(name:String, typeName:String) {
+  def addUndefinedVar(name:LVarRef, typeName:String) {
     assert(!variables.contains(name))
-    variables.put(name, (typeName, ""))
+    variables.put(name, (typeName, new VarRef("")))
   }
 
-  def addUndefinedAction(localID:String) {
+  def addUndefinedAction(localID:LActRef) {
     assert(!actions.contains(localID))
-    actions.put(localID, "")
+    actions.put(localID, new ActRef(""))
   }
 
   /**
@@ -18,12 +18,15 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    * @param tipe Type of the variable to create
    * @return Name of the new local variable
    */
-  def getNewLocalVar(tipe:String) : String = {
+  def getNewLocalVar(tipe:String) : LVarRef = {
     var i = 0
-    while(contains("locVar"+i+"__"))
+    var lVarRef = new LVarRef("locVar_"+i)
+    while(contains(lVarRef)) {
       i += 1
-    addUndefinedVar("locVar"+i+"__", tipe)
-    "locVar"+i+"__"
+      lVarRef = new LVarRef("locVar_"+i)
+    }
+    addUndefinedVar(lVarRef, tipe)
+    lVarRef
   }
 
   /**
@@ -34,7 +37,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    * @param newVars map of (localVar -> globalVar) to be added to the context)
    * @return
    */
-  def buildContext(pb:AnmlProblem, parent:Option[Context], newVars:Map[String, String] = Map()) = {
+  def buildContext(pb:AnmlProblem, parent:Option[Context], newVars:Map[LVarRef, VarRef] = Map()) = {
     val context = new Context(parent)
 
     for((local, (tipe, global)) <- variables) {
@@ -51,7 +54,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
     for((localActionID, globalActionID) <- actions) {
       if(globalActionID.isEmpty)
-        context.addActionID(localActionID, pb.newActionID)
+        context.addActionID(localActionID, new ActRef(pb.newActionID))
       else
         context.addActionID(localActionID, globalActionID)
     }

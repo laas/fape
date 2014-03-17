@@ -3,7 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.parser
 import planstack.anml.model._
 
-class AbstractActionRef(val name:String, val args:List[String], val localId:String) {
+class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) {
   require(localId nonEmpty)
   require(name nonEmpty)
 }
@@ -25,22 +25,23 @@ object AbstractActionRef {
 
     // for every argument, get a variable name and, optionally, a temporal persistence if
     // the argument was given in the form of a function
-    val args : List[Pair[String, Option[AbstractTemporalStatement]]] = ar.args map(argExpr => {
+    val args : List[Pair[LVarRef, Option[AbstractTemporalStatement]]] = ar.args map(argExpr => {
       argExpr match {
-        case v:parser.VarExpr => {
+        case vExpr:parser.VarExpr => {
           // argument is a variable
-          if(!context.contains(v.variable)) {
+          val v = new LVarRef(vExpr.variable)
+          if(!context.contains(v)) {
             // var doesn't exists, add it to context
-            context.addUndefinedVar(v.variable, "object")
+            context.addUndefinedVar(v, "object")
           }
-          (v.variable, None)
+          (v, None)
         }
         case f:parser.FuncExpr => {
           // this is a function f, create a new var v and add a persistence [all] f == v;
           val varName = context.getNewLocalVar("object")
           val ts = new AbstractTemporalStatement(
             TemporalAnnotation("start","end"),
-            new AbstractPersistence(ParameterizedStateVariable(pb, context, f), varName))
+            new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName))
           (varName, Some(ts))
         }
       }
@@ -48,9 +49,9 @@ object AbstractActionRef {
 
     val actionRefId =
       if(ar.id.nonEmpty)
-        ar.id
+        new LActRef(ar.id)
       else
-        newLocalActionRef
+        new LActRef(newLocalActionRef)
 
     context.addUndefinedAction(actionRefId)
 
