@@ -8,9 +8,9 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.core.planning.temporaldatabases;
+package fape.core.planning.constraints;
 
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -18,9 +18,6 @@ import java.util.List;
  * @author FD
  */
 public abstract class IUnifiable {
-
-    public static int idCounter = 0;
-    public int mID = -1;
 
     public abstract List<String> GetDomainObjectConstants();
 
@@ -30,13 +27,13 @@ public abstract class IUnifiable {
      * @param supported
      * @return
      */
-    public abstract boolean ReduceDomain(HashSet<String> supported);
-
-    public abstract int GetUniqueID();
+    public abstract boolean ReduceDomain(Collection<String> supported);
 
     public abstract boolean EmptyDomain();
 
     public abstract String Explain();
+
+    public abstract IUnifiable DeepCopy();
     
     @Override
     public String toString(){

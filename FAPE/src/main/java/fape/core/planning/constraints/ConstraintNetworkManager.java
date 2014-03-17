@@ -11,10 +11,10 @@
 package fape.core.planning.constraints;
 
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.IUnifiable;
 import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.VarRef;
 
 import java.util.*;
 
@@ -24,24 +24,42 @@ import java.util.*;
  */
 public class ConstraintNetworkManager {
 
-    /** TODO: Add parameters bindings */
+    /**
+     * Contains all constraints of the CSP (now limited to equality constraints)
+     */
+    final HashSet<UnificationConstraint> unificationConstraints;
 
-    HashSet<UnificationConstraint> unificationConstraints = new HashSet<>(); // (database id|state variable value id) -> constraint
-    public HashMap<Integer, IUnifiable> objectMapper = new HashMap<>();
+    /**
+     * Maps every variable to its domain
+     */
+    final HashMap<VarRef, IUnifiable> domains;
+
+    public ConstraintNetworkManager() {
+        unificationConstraints = new HashSet<>();
+        domains = new HashMap<>();
+    }
+
+    public ConstraintNetworkManager(ConstraintNetworkManager toCopy) {
+        unificationConstraints = new HashSet<>(toCopy.unificationConstraints);
+        domains = new HashMap<>();
+        for(Map.Entry<VarRef, IUnifiable> entry : toCopy.domains.entrySet()) {
+            domains.put(entry.getKey(), entry.getValue().DeepCopy());
+        }
+    }
 
     public void CheckConsistency() {
         for (UnificationConstraint c : unificationConstraints) {
-            if (!objectMapper.containsKey(c.one)) {
+            if (!domains.containsKey(c.one)) {
                 throw new FAPEException("Unknown IUnifiable reference: " + c.one);
             }
-            if (!objectMapper.containsKey(c.two)) {
+            if (!domains.containsKey(c.two)) {
                 throw new FAPEException("Unknown IUnifiable reference: " + c.two);
             }
         }
     }
 
     boolean AC3(HashSet<UnificationConstraint> set) {
-        HashMap<Integer, List<UnificationConstraint>> smartList = new HashMap<>();
+        HashMap<VarRef, List<UnificationConstraint>> smartList = new HashMap<>();
         for (UnificationConstraint u : set) {
             if (!smartList.containsKey(u.one)) {
                 smartList.put(u.one, new LinkedList<UnificationConstraint>());
@@ -56,7 +74,7 @@ public class ConstraintNetworkManager {
         while (!queue.isEmpty()) {
             UnificationConstraint u = queue.pop();
             if (AC3_Revise(u)) {
-                if (objectMapper.get(u.one).EmptyDomain() || objectMapper.get(u.two).EmptyDomain()) {
+                if (domains.get(u.one).EmptyDomain() || domains.get(u.two).EmptyDomain()) {
                     return false;
                 }
                 queue.addAll(smartList.get(u.one));
@@ -66,75 +84,54 @@ public class ConstraintNetworkManager {
         return true;
     }
 
+    /** Reduces the domains of both variables in the unification constraint */
     boolean AC3_Revise(UnificationConstraint u) {
         boolean reduced = false;
-        reduced = reduced || objectMapper.get(u.one).ReduceDomain(new HashSet<>(objectMapper.get(u.two).GetDomainObjectConstants()));
-        // TODO: this second reduction wight no be executed if reduced == true
-        reduced = reduced || objectMapper.get(u.two).ReduceDomain(new HashSet<>(objectMapper.get(u.one).GetDomainObjectConstants()));
+        reduced = reduced || domains.get(u.one).ReduceDomain(domains.get(u.two).GetDomainObjectConstants());
+        reduced = domains.get(u.two).ReduceDomain(domains.get(u.one).GetDomainObjectConstants()) || reduced;
         return reduced;
     }
 
     /**
-     * propagates the necessary unification constraints
+     * Propagates all unification constraints
      *
-     * @param st
-     * @return
+     * @return True if the CSP is consistent, False otherwise
      */
-    public boolean PropagateAndCheckConsistency(State st) {
+    public boolean PropagateAndCheckConsistency() {
         return AC3(unificationConstraints);
     }
 
     /**
-     * we maintain an index of unifiables across states
-     *
-     * @param a
+     * Records a new variable in the CSP
+     * @param var Reference of the variable
+     * @param domain All elements in the domain of the variable
      */
-    public void AddUnifiable(IUnifiable a) {
-        objectMapper.put(a.GetUniqueID(), a);
+    public void AddVariable(VarRef var, Collection<String> domain) {
+        domains.put(var, new VariableValues(domain));
     }
 
-    public void AddUnificationConstraint(State st, String a, String b) {
-        IUnifiable aObj = null;//st.parameterBindings.get(a);
-        IUnifiable bObj = null;//st.parameterBindings.get(b);TODO
-        if(!objectMapper.containsKey(aObj.GetUniqueID())) {
-            AddUnifiable(aObj);
-        }
-        if(!objectMapper.containsKey(bObj.GetUniqueID())) {
-            AddUnifiable(bObj);
-        }
-        AddUnificationConstraint(aObj, bObj);
-    }
-
-    public void AddUnificationConstraints(State st, List<String> as, List<String> bs) {
-        assert as.size() == bs.size();
-        for(int i=0 ; i < as.size() ; i++) {
-            AddUnificationConstraint(st, as.get(i), bs.get(i));
-        }
-    }
-
-    public void AddUnificationConstraint(State st, ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        if(!a.func().equals(b.func()))
-            throw new FAPEException("Error: adding unification constraint between two different predicates: "+ a +"  --  "+ b);
-        AddUnificationConstraints(st, a.jArgs(), b.jArgs());
-    }
-
-    /**
-     *
-     * @param a
-     * @param b
-     */
-    public void AddUnificationConstraint(IUnifiable a, IUnifiable b) {
-        if (!objectMapper.containsKey(a.mID) || !objectMapper.containsKey(b.mID)) {
-            throw new FAPEException("Unknown IUnifiable reference.");
-        }
-        TinyLogger.LogInfo("Adding new constraint between: " + a.mID + a.Explain() + " : " + a.GetDomainObjectConstants() + ", " + b.mID + b.Explain() + " : " + b.GetDomainObjectConstants());
+    public void AddUnificationConstraint(VarRef a, VarRef b) {
+        assert domains.containsKey(a);
+        assert domains.containsKey(b);
         unificationConstraints.add(new UnificationConstraint(a, b));
     }
 
+    public void AddUnificationConstraints(List<VarRef> as, List<VarRef> bs) {
+        assert as.size() == bs.size();
+        for(int i=0 ; i < as.size() ; i++) {
+            AddUnificationConstraint(as.get(i), bs.get(i));
+        }
+    }
+
+    public void AddUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        if(!a.func().equals(b.func()))
+            throw new FAPEException("Error: adding unification constraint between two different predicates: "+ a +"  --  "+ b);
+        AddUnificationConstraints(a.jArgs(), b.jArgs());
+    }
+
+    /* Was not used and is probably a bit outdated
     public void Merge(IUnifiable mergeInto, IUnifiable mergeFrom) {
-        /**
-         * TODO: careful here, we need to rehash the parts we change ....
-         */
+        // careful here, we need to rehash the parts we change ....
         List<UnificationConstraint> remove = new LinkedList<>(), add = new LinkedList<>();
         for (UnificationConstraint p : unificationConstraints) {
             if (p.one == mergeFrom.mID) {
@@ -156,12 +153,10 @@ public class ConstraintNetworkManager {
             }
         }
         unificationConstraints.addAll(add);
-    }
+    } */
 
     public ConstraintNetworkManager DeepCopy() {
-        ConstraintNetworkManager nm = new ConstraintNetworkManager();
-        nm.unificationConstraints = new HashSet<>(this.unificationConstraints);
-        return nm;
+        return new ConstraintNetworkManager(this);
     }
 
     /**
@@ -169,10 +164,11 @@ public class ConstraintNetworkManager {
      * This step is necessary on plan repair where some events can be removed (for
      * instance on action failure).
      */
+    @Deprecated
     public void RemoveOutdatedConstraints() {
         List<UnificationConstraint> toRemove = new LinkedList<>();
         for(UnificationConstraint uc : this.unificationConstraints) {
-            if(!objectMapper.containsKey(uc.one) || !objectMapper.containsKey(uc.two)) {
+            if(!domains.containsKey(uc.one) || !domains.containsKey(uc.two)) {
                 toRemove.add(uc);
             }
         }
@@ -182,7 +178,7 @@ public class ConstraintNetworkManager {
     public String Report() {
         String ret = "";
 
-        ret += "{" + "constraints: " + this.unificationConstraints.size() + ", mapper:" + this.objectMapper.size() + "}";
+        ret += "{" + "constraints: " + this.unificationConstraints.size() + ", mapper:" + this.domains.size() + "}";
 
         return ret;
     }

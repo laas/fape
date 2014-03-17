@@ -11,31 +11,37 @@
 
 package fape.core.planning.constraints;
 
-import fape.core.planning.temporaldatabases.IUnifiable;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import planstack.anml.model.VarRef;
 
 /**
  *
  * @author FD
  */
 public class UnificationConstraint {
-    int one, two;
+    public final VarRef one, two;
 
-        @Override
-        public boolean equals(Object obj) {
+    /**
+     * Creates a new Unification constraint stating that a == b
+     */
+    public UnificationConstraint(VarRef a, VarRef b) {
+        one = a;
+        two = b;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof UnificationConstraint) {
             UnificationConstraint u = (UnificationConstraint) obj;
-            return (u.one == one && u.two == two) || (u.one == two && u.two == one);
+            return (u.one.equals(one) && u.two.equals(two)) || (u.one.equals(two) && u.two.equals(one));
+        } else {
+            return false;
         }
+    }
 
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 67 * hash + one + two;
-            return hash;
-        }
-
-        public UnificationConstraint(IUnifiable f, IUnifiable s) {
-            one = f.GetUniqueID();
-            two = s.GetUniqueID();
-        }
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 67 * hash + one.hashCode() + two.hashCode();
+        return hash;
+    }
 }
