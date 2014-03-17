@@ -16,6 +16,7 @@ import planstack.anml.model.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 
+import java.lang.Deprecated;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -26,6 +27,7 @@ import java.util.LinkedList;
  */
 public class TemporalDatabase {
 
+    @Deprecated
     public int mID;
 
     public ParameterizedStateVariable stateVariable;

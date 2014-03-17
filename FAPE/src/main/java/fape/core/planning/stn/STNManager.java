@@ -1,45 +1,59 @@
-/*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
 package fape.core.planning.stn;
 
-import fape.exceptions.FAPEException;
-import fape.util.Pair;
+
+import planstack.anml.model.TPRef;
+import planstack.anml.model.VarRef;
+import planstack.constraints.stn.STN;
+import planstack.constraints.stn.STNIncBellmanFord;
 import fape.util.TinyLogger;
+import fape.util.Pair;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
 
-/**
- *
- * @author FD
- */
-public abstract class STNManager {
+public class STNManager {
 
-    public static STNManager newInstance() {
-        return new STNManagerPlanStack();
-    }
-    TemporalVariable start, end, earliestExecution; //global start and end of the world
-    //List<TemporalVariable> variables = new LinkedList<>();
+    final STN stn;
+    final HashMap<TPRef, Integer> ids;
 
     /**
-     *
+     * Creates a new empty STN
      */
-    abstract public void Init();
+    public STNManager() {
+        stn =  new STNIncBellmanFord();
+        ids = new HashMap<>();
+    }
+
+    public STNManager(STNManager toCopy) {
+        stn = toCopy.stn.cc();
+        ids = new HashMap<>(toCopy.ids);
+    }
+
+    /** Creates and records a new ID for a timepoint
+     *
+     * @param tp Reference of the timepoint.
+     * @return ID of the timepoint in the STN.
+     */
+    public int recordTimePoint(TPRef tp) {
+        assert !ids.containsKey(tp) : "TimePoint "+tp+" is already recorded.";
+        int id = stn.addVar();
+        ids.put(tp, id);
+        return id;
+    }
+
+    /** Returns the id of a timepoint int the stn */
+    private int id(TPRef tp) {
+        return ids.get(tp);
+    }
 
     /**
      *
      * @param a
      * @param b
      */
-    abstract public void EnforceBefore(TemporalVariable a, TemporalVariable b) ;
+    public final void EnforceBefore(TPRef a, TPRef b) {
+        TinyLogger.LogInfo("Adding temporal constraint: "+a+" < "+b);
+        stn.enforceBefore(id(a), id(b));
+    }
 
     /**
      * Enforces that b must happens at least minDelay after a
@@ -47,7 +61,9 @@ public abstract class STNManager {
      * @param b
      * @param minDelay
      */
-    abstract public void EnforceDelay(TemporalVariable a, TemporalVariable b, int minDelay);
+    public final void EnforceDelay(TPRef a, TPRef b, int minDelay) {
+        stn.addConstraint(id(b), id(a), -minDelay);
+    }
 
     /**
      *
@@ -57,56 +73,80 @@ public abstract class STNManager {
      * @param max
      * @return
      */
-    abstract public boolean EnforceConstraint(TemporalVariable a, TemporalVariable b, int min, int max) ;
+    public final boolean EnforceConstraint(TPRef a, TPRef b, int min, int max) {
+        STN backup = stn.cc();
+        TinyLogger.LogInfo("Adding temporal constraint: "+a+" ["+min+","+max+"] "+b);
+        stn.enforceInterval(id(a), id(b), min, max);
+        if(stn.consistent()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
+    /**
+     * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
+     * Performs a consistency check from scratch (expensive, try to use removeConstraints if you are to remove
+     * more than one constraint)
+     * @param u
+     * @param v
+     * @return true if the STN is consistent after removal
+     */
     public boolean RemoveConstraint(int u, int v) {
-        throw new RuntimeException("Not Implemented");
+        return stn.removeConstraint(u, v);
     }
 
-    public boolean RemoveConstraints(Pair<TemporalVariable, TemporalVariable>... ps) {
-        throw new RuntimeException("Not Implemented");
+    /**
+     * For all pairs, remove the corresponding directed edge in the constraint graph. After every pair is removed,
+     * a consistency check is performed from scratch.
+     * @param ps
+     * @return true if the STN is consistent after removal
+     */
+    public boolean RemoveConstraints(Pair<TPRef, TPRef>... ps) {
+        for(Pair<TPRef, TPRef> p : ps) {
+            stn.removeConstraintUnsafe(id(p.value1), id(p.value2));
+        }
+        return stn.checkConsistencyFromScratch();
     }
+
     /**
      *
      * @param first
      * @param second
      * @return
      */
-    abstract public boolean CanBeBefore(TemporalVariable first, TemporalVariable second) ;
+    public final boolean CanBeBefore(TPRef first, TPRef second) {
+        boolean ret = stn.canBeBefore(id(first), id(second));
+        TinyLogger.LogInfo("STN: "+first+" can occur before "+second);
+        return ret;
+    }
 
     /**
      *
      * @return
      */
-    abstract public TemporalVariable getNewTemporalVariable() ;
-
-    /**
-     *
-     * @return
-     */
-    abstract public STNManager DeepCopy();
-
-    abstract public String Report();
-
-    abstract public void TestConsistent();
-
-    abstract public long GetEarliestStartTime(TemporalVariable start);
-
-    public TemporalVariable GetGlobalStart() {
-        return start;
+    public STNManager DeepCopy() {
+        return new STNManager(this);
     }
 
-    public TemporalVariable GetGlobalEnd() {
-        return end;
+    public String Report() {
+        String ret = "size: "+this.stn.size()+"\n";
+        ret += stn.g().edges().mkString("\n");
+        return ret;
     }
 
-    public TemporalVariable GetEarliestExecution() {
-        return earliestExecution;
+    public void AssertConsistent(){
+        if(!stn.consistent()) {
+            throw new RuntimeException("Inconsistent STN:");
+        }
     }
 
-    abstract public boolean IsConsistent();
 
-    public abstract void OverrideConstraint(TemporalVariable GetGlobalStart, TemporalVariable end, int realEndTime, int realEndTime0);
+    public long GetEarliestStartTime(TPRef start) {
+        return stn.earliestStart(id(start));
+    }
 
-    public abstract void printToFile(String file);
+    public boolean IsConsistent() {
+        return stn.consistent();
+    }
 }
