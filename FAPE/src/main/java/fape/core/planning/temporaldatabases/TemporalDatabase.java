@@ -13,6 +13,7 @@ package fape.core.planning.temporaldatabases;
 import fape.core.execution.model.Instance;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 
@@ -156,7 +157,7 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetSupportValue() {
+        public VarRef GetSupportValue() {
             return contents.getFirst().endValue();
         }
 
@@ -164,7 +165,7 @@ public class TemporalDatabase {
          *
          * @return
          */
-        public String GetConsumeValue() {
+        public VarRef GetConsumeValue() {
             return contents.getFirst().startValue();
         }
 
@@ -186,7 +187,7 @@ public class TemporalDatabase {
     /**
      * @return A global variable representing the value at the end of the temporal database
      */
-    public String GetGlobalSupportValue() {
+    public VarRef GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
     }
 
@@ -194,7 +195,7 @@ public class TemporalDatabase {
      *
      * @return
      */
-    public String GetGlobalConsumeValue() {
+    public VarRef GetGlobalConsumeValue() {
         return chain.getFirst().GetConsumeValue();
     }
 
