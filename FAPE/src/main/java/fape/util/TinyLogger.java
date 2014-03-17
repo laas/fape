@@ -10,7 +10,7 @@
  */
 package fape.util;
 
-import fape.core.planning.Planner;
+//import fape.core.planning.Planner;
 
 /**
  *
@@ -19,9 +19,9 @@ import fape.core.planning.Planner;
 public class TinyLogger {
     //public static boolean logging = false;
     public static void LogInfo(String st) {
-        if (Planner.logging) {
+        //if (Planner.logging) { TODO: recreate
             System.out.println("Logger:" + st);
-        }
+        //}
     }
 
 }

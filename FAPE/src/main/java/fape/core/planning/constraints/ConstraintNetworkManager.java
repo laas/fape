@@ -10,9 +10,7 @@
  */
 package fape.core.planning.constraints;
 
-import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-import fape.util.TinyLogger;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.VarRef;
 
