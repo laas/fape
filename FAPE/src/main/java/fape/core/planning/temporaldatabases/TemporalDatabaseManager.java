@@ -35,9 +35,9 @@ public class TemporalDatabaseManager {
     }
 
     /**
-     * Creates a new database containing the event ev.
+     * Creates a new database containing the Statement s.
      *
-     * @param s
+     * @param s Statement that will appear in the the Database
      * @return
      */
     public TemporalDatabase GetNewDatabase(LogStatement s) {

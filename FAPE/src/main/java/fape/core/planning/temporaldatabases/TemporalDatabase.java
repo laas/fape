@@ -10,7 +10,6 @@
  */
 package fape.core.planning.temporaldatabases;
 
-import fape.core.execution.model.Instance;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.VarRef;
@@ -53,7 +52,7 @@ public class TemporalDatabase {
      */
     public TemporalDatabase(boolean assignNewUniqueID) {
         if (assignNewUniqueID) {
-            mID = IUnifiable.idCounter++;
+            throw new FAPEException("No way to create a new unique ID");
         }
     }
 
@@ -101,12 +100,6 @@ public class TemporalDatabase {
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
-    }
-
-    public HashMap<Integer, String> actionAssociations = new HashMap<>();
-    
-    public void AddActionParam(int mID, Instance instanceOfTheParameter) {
-        actionAssociations.put(mID, instanceOfTheParameter.name);
     }
 
     /**

@@ -11,6 +11,7 @@
 package fape.core.planning.tasknetworks;
 
 import fape.exceptions.FAPEException;
+import planstack.anml.model.ActRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.TemporalStatement;
@@ -57,7 +58,7 @@ public class TaskNetworkManager {
     public List<Action> GetOpenLeaves() {
         LinkedList<Action> l = new LinkedList<>();
         for (Action a : network.jVertices()) {
-            if(a.decomposable() && isDecomposed(a)) {
+            if(a.decomposable() && !isDecomposed(a)) {
                 l.add(a);
             }
         }
@@ -157,7 +158,7 @@ public class TaskNetworkManager {
      * @param id Id of the action
      * @return
      */
-    public Action GetAction(String id) {
+    public Action GetAction(ActRef id) {
         for(Action a : GetAllActions()) {
             if(id.equals(a.id())) {
                 return a;
