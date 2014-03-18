@@ -1,6 +1,7 @@
 package planstack.anml.model.abs
 
-import planstack.anml.model.{LActRef, AbstractTimepointRef}
+import planstack.anml.model.{LActRef}
+import planstack.anml.model.abs.time.AbstractTimepointRef
 
 
 class AbstractTimePointExtractor(val extractor:String, val id:String) {

@@ -2,6 +2,7 @@ package planstack.anml.model.abs
 
 import planstack.anml.parser
 import planstack.anml.model._
+import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 
 class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) {
   require(localId nonEmpty)
@@ -40,7 +41,7 @@ object AbstractActionRef {
           // this is a function f, create a new var v and add a persistence [all] f == v;
           val varName = context.getNewLocalVar("object")
           val ts = new AbstractTemporalStatement(
-            TemporalAnnotation("start","end"),
+            AbstractTemporalAnnotation("start","end"),
             new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName))
           (varName, Some(ts))
         }

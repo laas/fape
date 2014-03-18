@@ -14,10 +14,14 @@ abstract class AbstractStatement(val sv:AbstractParameterizedStateVariable) {
   def bind(context:Context) : Statement
 }
 
+abstract class AbstractLogStatement(sv:AbstractParameterizedStateVariable) extends AbstractStatement(sv) {
+  def bind(context:Context) : LogStatement
+}
 
-object AbstractStatement {
 
-  def apply(pb:AnmlProblem, context:AbstractContext, statement:parser.Statement) : AbstractStatement = {
+object AbstractLogStatement {
+
+  def apply(pb:AnmlProblem, context:AbstractContext, statement:parser.Statement) : AbstractLogStatement = {
     val sv = AbstractParameterizedStateVariable(pb, context, statement.variable)
 
     statement match {
@@ -34,7 +38,7 @@ object AbstractStatement {
  * @param value value of the state variable after the assignment
  */
 class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRef)
-  extends AbstractStatement(sv)
+  extends AbstractLogStatement(sv)
 {
   override def bind(context:Context) = new Assignment(sv.bind(context), context.getGlobalVar(value))
 
@@ -42,7 +46,7 @@ class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRe
 }
 
 class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef, val to:LVarRef)
-  extends AbstractStatement(sv)
+  extends AbstractLogStatement(sv)
 {
   override def bind(context:Context) = new Transition(sv.bind(context), context.getGlobalVar(from), context.getGlobalVar(to))
 
@@ -50,7 +54,7 @@ class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef
 }
 
 class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarRef)
-  extends AbstractStatement(sv)
+  extends AbstractLogStatement(sv)
 {
   override def bind(context:Context) = new Persistence(sv.bind(context), context.getGlobalVar(value))
 

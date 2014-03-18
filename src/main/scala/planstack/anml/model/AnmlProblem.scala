@@ -47,7 +47,7 @@ class AnmlProblem extends TemporalInterval {
 
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
-    var modifier = new BaseStateModifier(Nil, Nil, Nil)
+    var modifier = new BaseStateModifier(this, Nil, Nil, Nil)
 
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)

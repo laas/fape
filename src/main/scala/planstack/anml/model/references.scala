@@ -29,12 +29,14 @@ abstract class Ref(val id:T) {
 
 }
 
-abstract class LocalRef(id:T) extends Ref(id)
+class LocalRef(id:T) extends Ref(id)
 
-class LActRef(id:T) extends LocalRef(id)
+class LActRef(id:T) extends LocalRef(id) {
+  require(id.nonEmpty)
+}
 class LVarRef(id:T) extends LocalRef(id)
 
-abstract class GlobalRef(id:T) extends Ref(id)
+class GlobalRef(id:T) extends Ref(id)
 
 class ActRef(id:T) extends GlobalRef(id)
 class VarRef(id:T) extends GlobalRef(id)

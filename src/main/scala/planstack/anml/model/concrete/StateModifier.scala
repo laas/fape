@@ -20,28 +20,45 @@ import planstack.anml.model.VarRef
   */
 trait StateModifier {
 
+  /** A temporal interval in which the modifier is applied. For instance, if this StateModifier refers to
+    * an action, the container would refer to the [start, end] interval of this action.
+    * ANML temporal annotations such as [start] refer to this temporal interval.
+    * Note that time points might appear outside this interval, for instance with the annotations
+    * [start-10], [end+10] or [7].
+    */
+  def container : TemporalInterval
+
   /** Temporally annotated statements to be inserted in the plan */
   def statements : Seq[TemporalStatement]
+
+  /** Java friendly version of: [[planstack.anml.model.concrete.StateModifier#statements]] */
   def jStatements = seqAsJavaList(statements)
 
   /** Actions to be inserted in the plan */
   def actions : Seq[Action]
+  def jActions = seqAsJavaList(actions)
 
   /** (Type, Name) of global variables to be declared */
   def vars : Seq[Pair[String, VarRef]]
+  def jVars = seqAsJavaList(vars)
 
   def temporalConstraints : Seq[TemporalConstraint]
+  def jTemporalConstraints = seqAsJavaList(temporalConstraints)
 
 }
 
-class BaseStateModifier(val statements:Seq[TemporalStatement], val actions:Seq[Action], val vars:Seq[Pair[String, VarRef]])
+class BaseStateModifier(
+     val container: TemporalInterval,
+     val statements: Seq[TemporalStatement],
+     val actions: Seq[Action],
+     val vars: Seq[Pair[String, VarRef]])
   extends StateModifier {
 
   val temporalConstraints = Nil
 
-  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(statements ++ addStatements, actions, vars)
+  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(container, statements ++ addStatements, actions, vars)
 
-  def withActions(addActions:Action*) = new BaseStateModifier(statements, actions ++ addActions, vars)
+  def withActions(addActions:Action*) = new BaseStateModifier(container, statements, actions ++ addActions, vars)
 
-  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(statements, actions, vars ++ addVars)
+  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(container, statements, actions, vars ++ addVars)
 }

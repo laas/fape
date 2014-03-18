@@ -1,25 +1,13 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.{GlobalRef, AbstractTimepointRef, Context}
+import planstack.anml.model.{LActRef, GlobalRef, Context}
 import planstack.anml.model.abs.{AbstractTemporalConstraint}
+import planstack.anml.model.abs.time.AbstractTimepointRef
+import planstack.anml.ANMLException
+import planstack.anml.model.concrete.time.TimepointRef
 
-class TimepointRef(extractor:String, id:GlobalRef) {
-  require(Set("GStart","GEnd","start","end").contains(extractor))
 
-  override def toString = (extractor, id) match {
-  case ("GStart", _) => "GStart"
-  case ("GEnd", _) => "GEnd"
-  case (ext, ident) =>
-  if(ident.isEmpty) ext
-  else "%s(%s)".format(ext, ident)
-  }
-}
 
-object TimepointRef {
-
-  def apply(context:Context, abs:AbstractTimepointRef) =
-    new TimepointRef(abs.extractor, context.getActionID(abs.id))
-}
 
 class TemporalConstraint(val tp1:TimepointRef, val op:String, val tp2:TimepointRef, val plus:Integer) {
   require(op == "<" || op == "=")

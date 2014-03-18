@@ -34,6 +34,8 @@ class Action(
   def vars = context.varsToCreate
   val temporalConstraints = Nil
 
+  val container = this
+
   def name = abs.name
   val actions = Nil
 

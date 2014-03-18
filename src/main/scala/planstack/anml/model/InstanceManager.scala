@@ -1,5 +1,6 @@
 package planstack.anml.model
 
+import collection.JavaConversions._
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 import scala.collection.mutable
 import planstack.anml.{ANMLException, parser}
@@ -27,6 +28,11 @@ class InstanceManager {
     instancesByType(t) = name :: instancesByType(t)
   }
 
+  /** Records a new type.
+    *
+    * @param name Name of the type
+    * @param parent Name of the parent type. If empty (""), no parent is set for this type.
+    */
   def addType(name:String, parent:String) {
     assert(!types.contains(name))
 
@@ -34,7 +40,7 @@ class InstanceManager {
     typeHierarchy.addVertex(name)
     instancesByType(name) = Nil
 
-    if(parent nonEmpty) {
+    if(parent.nonEmpty) {
       assert(types.contains(parent), "Unknown parent type %s for type %s. Did you declare them in order?".format(parent, name))
 
       typeHierarchy.addEdge(parent, name)
@@ -66,6 +72,14 @@ class InstanceManager {
    * @return All instances as a list of (name, type) pairs
    */
   def instances : List[Pair[String, String]]= instancesTypes.toList
+
+  /** Returns all instances of the given type */
+  def instancesOfType(tipe:String) : List[String] = {
+    instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfType(_)).flatten
+  }
+
+  /** Returns all instances of the given type */
+  def jInstancesOfType(tipe:String) = seqAsJavaList(instancesOfType(tipe))
 
   /**
    * Return a fully qualified function definition in the form
