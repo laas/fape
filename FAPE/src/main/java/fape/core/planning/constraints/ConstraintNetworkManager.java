@@ -127,7 +127,19 @@ public class ConstraintNetworkManager {
         AddUnificationConstraints(a.jArgs(), b.jArgs());
     }
 
-    /* Was not used and is probably a bit outdated
+    /**
+     * @param v Variable to look up
+     * @return True if variable v is declared in the CSP.
+     */
+    public boolean contains(VarRef v) {
+        return domains.containsKey(v);
+    }
+
+    public Collection<String> domainOf(VarRef v) {
+        return domains.get(v).GetDomainObjectConstants();
+    }
+
+    /* TODO: Was not used and is probably a bit outdated
     public void Merge(IUnifiable mergeInto, IUnifiable mergeFrom) {
         // careful here, we need to rehash the parts we change ....
         List<UnificationConstraint> remove = new LinkedList<>(), add = new LinkedList<>();
