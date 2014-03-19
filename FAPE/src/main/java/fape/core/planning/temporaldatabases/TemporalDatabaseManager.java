@@ -10,6 +10,7 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.statements.LogStatement;
 
@@ -79,24 +80,16 @@ public class TemporalDatabaseManager {
      * @param tdb Temporal database in which the events will we included
      * @param included database that will disappear, all of its components being included in tdb
      * @param after a chain component of tdb after which the chain of included will be added
-     *
-     *              TODO: recreate
-    public void InsertDatabaseAfter(State st, TemporalDatabase tdb, TemporalDatabase included, TemporalDatabase.ChainComponent after) {
+     */
+    public void InsertDatabaseAfter(State st, TemporalDatabase tdb, TemporalDatabase included, ChainComponent after) {
         assert tdb.chain.size() != 0;
         assert tdb.chain.contains(after);
 
         int afterIndex = tdb.chain.indexOf(after);
 
-        // bind all events in included to their new database
-        for (TemporalDatabase.ChainComponent comp : included.chain) {
-            for (TemporalEvent e : comp.contents) {
-                e.tdbID = tdb.mID;
-            }
-        }
-
         if(afterIndex+1 < tdb.chain.size() && !tdb.chain.get(afterIndex+1).change) {
             // we were about to perform the insertion just before a persistence event.
-            // instead, we make the insertion after the persitence
+            // instead, we make the insertion after the persistence
             afterIndex = afterIndex + 1;
             after = tdb.chain.get(afterIndex);
         }
@@ -104,7 +97,7 @@ public class TemporalDatabaseManager {
         if(!included.chain.getFirst().change && !after.change) {
             //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
             // into 'after' before going any further.
-            st.conNet.AddUnificationConstraint(st, after.GetSupportValue(), included.GetGlobalConsumeValue());
+            st.conNet.AddUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
 
             // add persitence events to after, and removing them from the included database
             after.Add(included.chain.getFirst());
@@ -122,7 +115,7 @@ public class TemporalDatabaseManager {
                     "because of unexpected unification constraints between two non adjacent chain components.";
 
             int nextInclusion = afterIndex + 1;
-            for (TemporalDatabase.ChainComponent c : included.chain) {
+            for (ChainComponent c : included.chain) {
                 tdb.chain.add(nextInclusion, c);
                 nextInclusion += 1;
             }
@@ -133,19 +126,12 @@ public class TemporalDatabaseManager {
         }
 
         // the new domain is the intersection of both domains
-        st.conNet.AddUnificationConstraint(st, tdb.stateVariable, included.stateVariable);
-
-        // all actions that pointed to events in included should now point to the containing tdb
-        tdb.actionAssociations.putAll(included.actionAssociations);
+        st.conNet.AddUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
         // Remove the included database from the system
         st.tdb.vars.remove(included);
         st.consumers.remove(included);
-
-        if(Planner.debugging) {
-            st.ExtensiveCheck();
-        }
-    }*/
+    }
 
     /**
      * Given a database tdb, enforces the unification and temporal constraints between
@@ -153,22 +139,28 @@ public class TemporalDatabaseManager {
      * @param st
      * @param tdb
      * @param chainCompIndex
-     * TODO: Recreate
+     */
     public void EnforceChainConstraints(State st, TemporalDatabase tdb, int chainCompIndex) {
         assert chainCompIndex < tdb.chain.size();
 
         if(chainCompIndex < tdb.chain.size()-1 && chainCompIndex >= 0) {
             // if we are not already the last element of the chain, we add constraints between
             // the component and its direct follower.
-            TemporalDatabase.ChainComponent first = tdb.chain.get(chainCompIndex);
-            TemporalDatabase.ChainComponent second = tdb.chain.get(chainCompIndex + 1);
+            ChainComponent first = tdb.chain.get(chainCompIndex);
+            ChainComponent second = tdb.chain.get(chainCompIndex + 1);
 
             assert first.change || second.change : "There should not be two persistence following each other";
 
-            st.conNet.AddUnificationConstraint(st, first.GetSupportValue(), second.GetConsumeValue());
-            TemporalDatabase.PropagatePrecedence(first, second, st);
+            st.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
+
+            // Enforce all statements of first to be before all statements of second
+            for(LogStatement sa : first.contents) {
+                for(LogStatement sb : second.contents) {
+                    st.tempoNet.EnforceBefore(sa.end(), sb.start());
+                }
+            }
         }
-    }*/
+    }
 
     public String Report() {
         String ret = "";
