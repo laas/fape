@@ -7,11 +7,15 @@ import planstack.anml.parser.TemporalStatement
 import planstack.anml.parser.ActionRef
 import planstack.anml.model.{LVarRef, PartialContext, AnmlProblem}
 
+import collection.JavaConversions._
 
 class AbstractAction(val name:String, val args:List[LVarRef], val context:PartialContext)  {
 
   val decompositions = mutable.ArrayBuffer[AbstractDecomposition]()
+  def jDecompositions = seqAsJavaList(decompositions)
+
   val temporalStatements = mutable.ArrayBuffer[AbstractTemporalStatement]()
+  def jTemporalStatements = seqAsJavaList(temporalStatements)
 
 }
 

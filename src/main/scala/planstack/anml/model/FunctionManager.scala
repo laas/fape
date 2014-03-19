@@ -1,7 +1,9 @@
 package planstack.anml.model
 
 import planstack.anml.{ANMLException, parser}
+
 import scala.collection.mutable
+import collection.JavaConversions._
 
 class Function(val name:String, val valueType:String, val argTypes:List[String]) {
   def isConstant = false
@@ -71,6 +73,12 @@ class FunctionManager {
   def isDefined(funcName:String) = constFunction.contains(funcName) || functions.contains(funcName)
 
   def isConstantFunc(funcName:String) = constFunction.contains(funcName)
+
+  def getAll : Seq[Function] = {
+    (functions.values ++ constFunction.values).toList
+  }
+
+  def jGetAll = seqAsJavaList(getAll)
 
   def get(functionName:String) = {
     if(functions.contains(functionName))

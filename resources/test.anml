@@ -27,7 +27,6 @@ type Gripper < Location with {
 };
 
 type Robot < object with {
-  variable boolean happy;
   variable Location mLocation;
   constant Gripper left;
   constant Gripper right;
@@ -61,7 +60,6 @@ action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
 };
 
 action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
-  [end-10] Robot.happy(r) == true :-> false;
   [all]{
     r.right == g;
     g.empty == false :-> true;
@@ -88,37 +86,32 @@ action Transport(Robot r, Item i, Location a, Location b){
 
 };
 
-instance Robot R0, R1;
+instance Robot R0;
 instance Gripper G0, G1;
-instance Item I0, I1;
-instance Location L0, L1, L2, L3;
+instance Item I0;
+instance Location L0, L1, L2;
 
 [start] {
 G0.empty := true;
 G1.empty := true;
 R0.mLocation := L0;
 I0.mLocation := L1;
-I1.mLocation := L2;
 };
 
 [all]{ 
 R0.left := G0;
 R0.right := G1;
-R1.left := G0;
-R1.right := G1;
-
 };
 
 [end] {
-I0.mLocation == L3;
-I1.mLocation == L3;
-
+I0.mLocation == L2;
 };
 
+/*
 action Seed(){
   :decomposition{ unordered(
    Transport(r0_, I0, loc1_, L3),
    Transport(r2_, I1, loc3_, L3)
   )};
 };
-
+*/

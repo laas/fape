@@ -42,7 +42,7 @@ class Assignment(sv:ParameterizedStateVariable, val value:VarRef)
   /** Throws ANMLException since an assignment has no startValue */
   def startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
   val endValue = value
-  val needsSupport = true
+  val needsSupport = false
 
   override def toString = "%s := %s".format(sv, value)
 }

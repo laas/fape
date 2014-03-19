@@ -1,9 +1,14 @@
 package planstack.anml.model.concrete
 
+import collection.JavaConversions._
+
 import planstack.anml.model._
 import planstack.anml.model.concrete.statements.{TemporalStatement, Statement}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
+
+
+
 
 
 /** Represents a concrete action that is to be inserted into a plan. All parameters of the action refer to one global
@@ -31,6 +36,21 @@ class Action(
     val parentAction:Option[Action])
   extends StateModifier with TemporalInterval {
 
+  private var mStatus = ActionStatus.PENDING
+
+  def status = mStatus
+
+  def setStatus(newStatus: ActionStatus) {
+    import ActionStatus._
+    mStatus match {
+      case PENDING => assert(newStatus == EXECUTING)
+      case EXECUTING => assert(newStatus == FAILED || newStatus == EXECUTED)
+      case FAILED => throw new ANMLException("No valid status transition from FAILED.")
+      case EXECUTED => throw new ANMLException("No valid status transition from EXECUTED.")
+    }
+    mStatus = newStatus
+  }
+
   def vars = context.varsToCreate
   val temporalConstraints = Nil
 
@@ -40,6 +60,8 @@ class Action(
   val actions = Nil
 
   def decompositions = abs.decompositions
+
+  def jDecompositions = seqAsJavaList(decompositions)
 
   /** Returns True if this action as possible decompositions */
   def decomposable = !decompositions.isEmpty
@@ -93,14 +115,18 @@ object Action {
     new Action(abs, context, statements, id, parentAction)
   }
 
-  def getNewRootAction(pb:AnmlProblem, actionName:String) : Action = {
-    val parentContext = pb.context
-
+  def getNewStandaloneAction(pb:AnmlProblem, actionName:String) : Action = {
     val abs =
       pb.abstractActions.find(_.name == actionName) match {
         case Some(act) => act
         case None => throw new ANMLException("Unable to find action "+actionName)
       }
+
+    getNewStandaloneAction(pb, abs)
+  }
+
+  def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction) : Action = {
+    val parentContext = pb.context
 
     val context = abs.context.buildContext(pb, Some(parentContext))
     val id = pb.newActionID
@@ -109,6 +135,5 @@ object Action {
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
     new Action(abs, context, statements, new ActRef(id), None)
-
   }
 }

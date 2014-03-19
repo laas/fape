@@ -19,12 +19,16 @@ class AnmlProblem extends TemporalInterval {
   val context = new Context(None)
 
   val abstractActions = ListBuffer[AbstractAction]()
+  def jAbstractActions = seqAsJavaList(abstractActions)
 
   val modifiers = ArrayBuffer[StateModifier]()
   def jModifiers = seqAsJavaList(modifiers)
 
   private var nextGlobalVarID = 0
   private var nextActionID = 0
+
+  // create an initial modifier containing the predifined instances (true and false)
+  modifiers += new BaseStateModifier(this, Nil, Nil, Nil, instances.instances.map(_._1))
 
   /** Returns a new, unused, identifier for a global variable */
   def newGlobalVar : VarRef = new VarRef("globVar_" + {nextGlobalVarID+=1; nextGlobalVarID-1})
@@ -33,7 +37,7 @@ class AnmlProblem extends TemporalInterval {
   def newActionID = "action_" + {nextActionID+=1; nextActionID-1}
 
 
-  def expressionToValue(expr:parser.Expr) : String = {
+  protected def expressionToValue(expr:parser.Expr) : String = {
     expr match {
       case v:VarExpr => {
         if(instances.containsInstance(v.variable))
@@ -43,6 +47,11 @@ class AnmlProblem extends TemporalInterval {
       }
       case x => throw new ANMLException("Cannot find value for expression "+expr)
     }
+  }
+
+  def getAction(name:String) = abstractActions.find(_.name == name) match {
+    case Some(act) => act
+    case None => throw new ANMLException("No action named "+name)
   }
 
   def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)

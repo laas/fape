@@ -4,12 +4,14 @@ import planstack.anml.ANMLException
 import planstack.anml.parser
 import scala.collection.mutable.ListBuffer
 import planstack.anml.model.{AnmlProblem, PartialContext}
-
+import collection.JavaConversions._
 
 class AbstractDecomposition(parentContext:PartialContext) {
   val context = new PartialContext(Some(parentContext))
 
   val actions = ListBuffer[AbstractActionRef]()
+  def jActions = seqAsJavaList(actions)
+
   val precedenceConstraints = ListBuffer[AbstractTemporalConstraint]()
   val temporalStatements = ListBuffer[AbstractTemporalStatement]()
 }
