@@ -1,35 +1,42 @@
 /*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
+* Author:  Filip Dvořák <filip.dvorak@runbox.com>
+*
+* Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
+*
+* Publishing, providing further or using this program is prohibited
+* without previous written permission of the author. Publishing or providing
+* further the contents of this file is prohibited without previous written
+* permission of the author.
+*/
 package fape.core.planning;
 
-import fape.core.execution.Executor;
-import fape.core.execution.model.*;
-import fape.core.planning.constraints.UnificationConstraintSchema;
+
+import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.transitions.TransitionIO2Planning;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.abs.AbstractDecomposition;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.Decomposition;
+import planstack.anml.model.concrete.Decomposition$;
+import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.anml.parser.ParseResult;
 
 import java.util.*;
 
 /**
- *
- * @author FD
- */
+*
+* @author FD
+*/
 public class Planner {
 
     public static boolean debugging = true;
@@ -39,16 +46,7 @@ public class Planner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
-    public AnmlProblem pb = new AnmlProblem();
-
-    private static int nextVarID = 0;
-
-    /**
-     * @return a new unused for an unbinded variable.
-     */
-    public static String NewUnbindedVarName() {
-        return "a" + nextVarID++ + "_";
-    }
+    public final AnmlProblem pb = new AnmlProblem();
 
     /**
      *
@@ -57,7 +55,7 @@ public class Planner {
 
     private boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
-        TemporalDatabase.ChainComponent precedingComponent = null;
+        ChainComponent precedingComponent = null;
         if (o.temporalDatabase != -1) {
             supporter = next.GetDatabase(o.temporalDatabase);
             if (o.precedingChainComponent != -1) {
@@ -83,77 +81,51 @@ public class Planner {
         } else if (o.supportingAction != null) {
 
             assert consumer != null : "Consumer was not passed as an argument";
-            //this is a simple applciation of an action
-            ActionRef ref = new ActionRef();
-            ref.name = o.supportingAction.name;
-            int ct = 0;
-            for (Instance i : o.supportingAction.params) {
-                Reference rf = new Reference(NewUnbindedVarName());
-                ref.args.add(rf);
-            }
-            boolean enforceDuration = true;
-            if (!pb.actions.get(ref.name).strongDecompositions.isEmpty()) {
-                enforceDuration = false;
-            }
-            Action addedAction = AddAction(ref, next, null, enforceDuration);
+
+            Action action = Factory.getStandaloneAction(pb, o.supportingAction);
+            next.insert(action);
+
             // create the binding between consumer and the new statement in the action that supports it
-            int supportingDatabase = -1;
-            for (TemporalEvent e : addedAction.events()) {
-                if(next.canBeEnabler(e, consumer)) {
-                    supportingDatabase = e.tdbID;
+            TemporalDatabase supportingDatabase = null;
+            for (TemporalStatement ts : action.jStatements()) {
+                if(next.canBeEnabler(ts.statement(), consumer)) {
+                    assert supportingDatabase == null : "Error: several statements might support the database";
+                    supportingDatabase = next.tdb.getDBContaining(ts.statement());
                 }
             }
-            if (supportingDatabase == -1) {
+            if (supportingDatabase == null) {
                 return false;
             } else {
                 SupportOption opt = new SupportOption();
-                opt.temporalDatabase = supportingDatabase;
+                opt.temporalDatabase = supportingDatabase.mID;
                 return ApplyOption(next, opt, consumer);
             }
-        } else if (o.actionToDecompose != -1) {
-            Action decomposedAction = next.taskNet.GetAction(o.actionToDecompose);
-            // this is a task decomposition
-            // we need to decompose all the actions of the chosen decomposition
-            // which represents adding all of them into the plan through AddAction and
-            // setting up precedence constraints for them
-            List<ActionRef> actionsForDecomposition = null;
-            List<TemporalConstraint> tempCons = null;
-            int ct = 0;
-            for (Pair<List<ActionRef>, List<TemporalConstraint>> p : decomposedAction.refinementOptions) {
-                if (ct++ == o.decompositionID) {
-                    actionsForDecomposition = p.value1;
-                    tempCons = p.value2;
-                }
-            }
-            //put the actions into the plan
-            decomposedAction.decomposition = new LinkedList<>();
-            ArrayList<Action> l = new ArrayList<>();
-            for (ActionRef ref : actionsForDecomposition) {
-                l.add(AddAction(ref.cc(), next, decomposedAction, true));
-            }
+        } else if (o.actionToDecompose != null) {
+            // Apply the i^th decomposition of o.actionToDecompose, where i is given by
+            // o.decompositionID
 
-            //add the constraints parent-child temporal constraints
-            for (Action a : l) {
-                next.tempoNet.EnforceBefore(decomposedAction.start, a.start);
-                next.tempoNet.EnforceBefore(a.end, decomposedAction.end);
-            }
-            //add temporal constraints between actions
-            for (TemporalConstraint c : tempCons) {
-                next.tempoNet.EnforceBefore(l.get(c.earlier).end, l.get(c.later).start);
-            }
+            // Action to decomposed
+            Action decomposedAction = o.actionToDecompose;
+
+            // Abstract version of the decomposition
+            AbstractDecomposition absDec = decomposedAction.jDecompositions().get(o.decompositionID);
+
+            // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+            next.apply(dec);
         } else {
             throw new FAPEException("Unknown option.");
         }
 
         // if the propagation failed and we have achieved an inconsistent state
-        return next.tempoNet.IsConsistent() && next.conNet.PropagateAndCheckConsistency(next);
+        return next.isConsistent();
     }
 
     /**
      * we remove the action results from the system
      *
      * @param pop
-     */
+     * TODO:Recreate
     public void FailAction(Integer pop) {
         KeepBestStateOnly();
         if (best == null) {
@@ -171,7 +143,7 @@ public class Planner {
             remove.clearEvents();
             bestState.FailAction(pop);
         }
-    }
+    }*/
 
     /**
      * Set the action ending to the its real end time. It removes the duration
@@ -181,7 +153,7 @@ public class Planner {
      *
      * @param actionID
      * @param realEndTime
-     */
+     *
     public void AddActionEnding(int actionID, int realEndTime) {
         KeepBestStateOnly();
         State bestState = GetCurrentState();
@@ -192,13 +164,13 @@ public class Planner {
         // insert new constraint specifying the end time of the action
         bestState.tempoNet.EnforceConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
-    }
+    }*/
 
     /**
      * Pushes the earliest execution time point forward.
      * Causes all pending actions to be delayed
      * @param earliestExecution
-     */
+     *
     public void SetEarliestExecution(int earliestExecution) {
         KeepBestStateOnly();
         State s = GetCurrentState();
@@ -209,7 +181,7 @@ public class Planner {
             this.best = null;
             this.queue.clear();
         }
-    }
+    }*/
 
     /**
      *
@@ -316,41 +288,6 @@ public class Planner {
         }
     };
 
-    public class FlawSelector implements Comparator<Pair<Flaw, List<SupportOption>>> {
-
-        private final State state;
-
-        public FlawSelector(State st) {
-            this.state = st;
-        }
-
-        private int priority(Pair<Flaw, List<SupportOption>> flawAndResolvers) {
-            Flaw flaw = flawAndResolvers.value1;
-            List<SupportOption> options = flawAndResolvers.value2;
-            int base;
-            if(options.size() <= 1) {
-                base = 0;
-            } else if(flaw instanceof UnsupportedDatabase) {
-                TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
-                String predicate = consumer.stateVariable.predicateName;
-                String argType = state.GetType(consumer.stateVariable.variable.GetReference());
-                String valueType = state.GetType(consumer.GetGlobalConsumeValue().GetReference());
-                int level = state.pb.hierarchy.getLevel(predicate, argType, valueType);
-                base = (level +1) * 500;
-            } else {
-                base = 99999;
-            }
-
-            return base + options.size();
-        }
-
-
-        @Override
-        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
-            return priority(o1) - priority(o2);
-        }
-    };
-
     Comparator<Pair<TemporalDatabase, List<SupportOption>>> optionsActionsPreffered = new Comparator<Pair<TemporalDatabase, List<SupportOption>>>() {
         @Override
         public int compare(Pair<TemporalDatabase, List<SupportOption>> o1, Pair<TemporalDatabase, List<SupportOption>> o2) {
@@ -379,9 +316,9 @@ public class Planner {
         } else if(f instanceof UndecomposedAction) {
             UndecomposedAction ua = (UndecomposedAction) f;
             List<SupportOption> resolvers = new LinkedList<>();
-            for(int decompositionID=0 ; decompositionID < ua.action.refinementOptions.size() ; decompositionID++) {
+            for(int decompositionID=0 ; decompositionID < ua.action.jDecompositions().size() ; decompositionID++) {
                 SupportOption res = new SupportOption();
-                res.actionToDecompose = ua.action.mID;
+                res.actionToDecompose = ua.action;
                 res.decompositionID = decompositionID;
                 resolvers.add(res);
             }
@@ -446,8 +383,8 @@ public class Planner {
             }
 
             //do some sorting here - min domain
-            //Collections.sort(opts, optionsComparatorMinDomain);
-            Collections.sort(opts, new FlawSelector(st));
+            Collections.sort(opts, optionsComparatorMinDomain);
+            //Collections.sort(opts, new FlawSelector(st));
 
             if (opts.isEmpty()) {
                 TinyLogger.LogInfo("Dead-end, no options: " + st.mID);
@@ -526,9 +463,9 @@ public class Planner {
             if (db.HasSinglePersistence()) {
                 //we are looking for chain integration too
                 int ct = 0;
-                for (TemporalDatabase.ChainComponent comp : b.chain) {
-                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
-                            && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
+                for (ChainComponent comp : b.chain) {
+                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())) {
+//                            && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) { TODO
                         SupportOption o = new SupportOption();
                         o.precedingChainComponent = ct;
                         o.temporalDatabase = b.mID;
@@ -537,8 +474,8 @@ public class Planner {
                     ct++;
                 }
             } else {
-                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
-                        && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) {
+                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())) {
+//                        && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) { TODO
                     SupportOption o = new SupportOption();
                     o.temporalDatabase = b.mID;
                     ret.add(o);
@@ -554,18 +491,25 @@ public class Planner {
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
 
+        ActionSupporters supporters = new ActionSupporters(pb);
+        ActionDecompositions decompositions = new ActionDecompositions(pb);
+        Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(db);
 
-        ADTG dtg = pb.dtgs.get(db.stateVariable.type);
-        HashSet<String> abs = dtg.GetActionSupporters(st, db);
-        //now we need to gather the decompositions that provide the intended actions
-        List<SupportOption> options = st.taskNet.GetDecompositionCandidates(abs, pb.actions);
-        ret.addAll(options);
+        for(Action leaf : st.taskNet.GetOpenLeaves()) {
+            for(Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
+                SupportOption opt = new SupportOption();
+                opt.actionToDecompose = leaf;
+                opt.decompositionID = decID;
+                ret.add(opt);
+            }
+        }
+
 
         //now we can look for adding the actions ad-hoc ...
         if (Planner.actionResolvers) {
-            for (String s : abs) {
+            for (AbstractAction aa : potentialSupporters) {
                 SupportOption o = new SupportOption();
-                o.supportingAction = pb.actions.get(s);
+                o.supportingAction = aa;
                 ret.add(o);
             }
         }
@@ -589,7 +533,7 @@ public class Planner {
      * @param howFarToProgress
      * @param forHowLong
      * @return
-     */
+     *
     public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
         State myState = best;
         Plan plan = new Plan(myState);
@@ -630,37 +574,22 @@ public class Planner {
         }
 
         return ret;
-    }
+    }*/
 
+    /*
     public boolean hasPendingActions() {
         for(Action a : best.taskNet.GetAllActions()) {
             if(a.status == Action.Status.PENDING)
                 return true;
         }
         return false;
-    }
+    }*/
 
     /**
      * restarts the planning problem into its initial state
      */
     public void Restart() {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    /**
-     * Catch up with all problem updates that were not forced into the state.
-     * @param st
-     * @return
-     */
-    public boolean updateState(State st) {
-        // apply all pending revisions
-        while(st.problemRevision < pb.m) {
-            st.problemRevision++;
-
-        }
-
-        // true if state is consistent
-        return st.tempoNet.IsConsistent() && st.conNet.PropagateAndCheckConsistency(st);
     }
 
     /**
@@ -679,145 +608,91 @@ public class Planner {
         KeepBestStateOnly();
 
         //TODO: apply ANML to more states and choose the best after the applciation
-        problem.addAnml(anml);
+        pb.addAnml(anml);
 
         // apply revisions to best state and check if it is consistent
         State st = GetCurrentState();
 
-        boolean consistent = updateState(st);
+        boolean consistent = st.update();
         if(!consistent) {
             this.planState = EPlanState.INFESSIBLE;
         }
     }
 
-    /**
-     *
-     * @param ref
-     * @param st
-     * @param parent
-     * @return
-     */
-    public Action AddAction(ActionRef ref, State st, Action parent, boolean enforceDuration) {
+//    public static String DomainTableReportFormat() {
+//        return String.format("%s\t%s\t%s\t",
+//                "Num state variables",
+//                "Num objects",
+//                "Num actions");
+//    }
+//
+//    public String DomainTableReport() {
+//        return String.format("%s\t%s\t%s\t",
+//                pb.vars.size(),
+//                pb.types.instances().size(),
+//                pb.actions.size());
+//    }
+//
+//    public static String PlanTableReportFormat() {
+//        return String.format("%s\t%s\t%s\t%s\t",
+//                "Status",
+//                "Plan length",
+//                "Opened States",
+//                "Generated States");
+//    }
+//
+//    public String PlanTableReport() {
+//        String status = "INCONS";
+//        String planLength = "--";
+//
+//        if(planState == EPlanState.INFESSIBLE) {
+//           status = "INFESS";
+//        }
+//        else if(planState == EPlanState.INCONSISTENT) {
+//            status = "INCONS";
+//            planLength = "--";
+//        } else {
+//            assert best != null;
+//            status = "SOLVED";
+//            planLength = ""+ best.taskNet.GetAllActions().size();
+//        }
+//        return String.format("%s\t%s\t%s\t%s\t",
+//                status,
+//                planLength,
+//                OpenedStates,
+//                GeneratedStates);
+//    }
 
-        Action act = new Action(st.pb, ref, parent);
-
-        // creates in state all unknown variables
-        for(VariableRef localVar : act.localVariables.values()) {
-            if(!st.parameterBindings.containsKey(localVar.var)) {
-                List<String> values = pb.types.instances(localVar.type);
-                ObjectVariableValues binding = new ObjectVariableValues(values, localVar.type);
-                st.parameterBindings.put(localVar.var, binding);
-            }
-        }
-
-        act.start = st.tempoNet.getNewTemporalVariable();
-        act.end = st.tempoNet.getNewTemporalVariable();
-
-        if (enforceDuration) {
-            st.tempoNet.EnforceConstraint(act.start, act.end, (int) act.maxDuration, (int) act.maxDuration);
-        } else {
-            st.tempoNet.EnforceBefore(act.start, act.end);
-        }
-        // enforce that the current ground action must be executed after a known time in the future
-        if(!act.IsRefinable())
-            st.tempoNet.EnforceBefore(st.tempoNet.GetEarliestExecution(), act.start);
-
-        // create one database per event
-        for(TemporalEvent ev : act.events()) {
-            // assign event to its interval
-            TemporalInterval interval = act.intervalOf(ev);
-            interval.AssignTemporalContext(ev, act.start, act.end);
-
-            TemporalDatabase db = st.tdb.GetNewDatabase(ev);
-            if(db.isConsumer()) {
-                st.consumers.add(db);
-            }
-        }
-
-        //lets add the action into the task network
-        if (parent == null) {
-            st.taskNet.AddSeed(act);
-        } else {
-            parent.decomposition.add(act);
-        }
-
-        return act;
-    }
-
-    public static String DomainTableReportFormat() {
-        return String.format("%s\t%s\t%s\t",
-                "Num state variables",
-                "Num objects",
-                "Num actions");
-    }
-
-    public String DomainTableReport() {
-        return String.format("%s\t%s\t%s\t",
-                pb.vars.size(),
-                pb.types.instances().size(),
-                pb.actions.size());
-    }
-
-    public static String PlanTableReportFormat() {
-        return String.format("%s\t%s\t%s\t%s\t",
-                "Status",
-                "Plan length",
-                "Opened States",
-                "Generated States");
-    }
-
-    public String PlanTableReport() {
-        String status = "INCONS";
-        String planLength = "--";
-
-        if(planState == EPlanState.INFESSIBLE) {
-           status = "INFESS";
-        }
-        else if(planState == EPlanState.INCONSISTENT) {
-            status = "INCONS";
-            planLength = "--";
-        } else {
-            assert best != null;
-            status = "SOLVED";
-            planLength = ""+ best.taskNet.GetAllActions().size();
-        }
-        return String.format("%s\t%s\t%s\t%s\t",
-                status,
-                planLength,
-                OpenedStates,
-                GeneratedStates);
-    }
-
-    /**
-     * the goal is to solve a single problem for the given anml input and
-     * produce the plan on the standard output
-     *
-     * @param args
-     * @throws InterruptedException
-     */
-    public static void main(String[] args) throws InterruptedException {
-        long start = System.currentTimeMillis();
-        String anml = "problems/DreamDecomposition.anml";
-        if(args.length > 0)
-            anml = args[0];
-        Planner p = new Planner();
-        Planner.actionResolvers = true;
-        p.Init();
-        p.ForceFact(Executor.ProcessANMLfromFile(anml));
-        boolean timeOut = false;
-        try {
-            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Planning finished for " + anml + " with failure.");
-            //throw new FAPEException("Repair failure.");
-        }
-        long end = System.currentTimeMillis();
-        float total = (end - start) / 1000f;
-        if (!timeOut) {
-            System.out.println("Planning finished for " + anml + " timed out.");
-        } else {
-            System.out.println("Planning finished for " + anml + " in " + total + "s");
-        }
-    }
+//    /**
+//     * the goal is to solve a single problem for the given anml input and
+//     * produce the plan on the standard output
+//     *
+//     * @param args
+//     * @throws InterruptedException
+//     */
+//    public static void main(String[] args) throws InterruptedException {
+//        long start = System.currentTimeMillis();
+//        String anml = "problems/DreamDecomposition.anml";
+//        if(args.length > 0)
+//            anml = args[0];
+//        Planner p = new Planner();
+//        Planner.actionResolvers = true;
+//        p.Init();
+//        p.ForceFact(Executor.ProcessANMLfromFile(anml));
+//        boolean timeOut = false;
+//        try {
+//            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.out.println("Planning finished for " + anml + " with failure.");
+//            //throw new FAPEException("Repair failure.");
+//        }
+//        long end = System.currentTimeMillis();
+//        float total = (end - start) / 1000f;
+//        if (!timeOut) {
+//            System.out.println("Planning finished for " + anml + " timed out.");
+//        } else {
+//            System.out.println("Planning finished for " + anml + " in " + total + "s");
+//        }
+//    }
 }

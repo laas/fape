@@ -29,7 +29,7 @@ public class TemporalDatabaseManager {
     public List<TemporalDatabase> vars = new LinkedList<>();
 
     /**
-     * Creates a new database containing the Statement s.
+     * Creates a new database containing the Statement s and adds it to this Manager
      *
      * @param s Statement that will appear in the the Database
      * @return

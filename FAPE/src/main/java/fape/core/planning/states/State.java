@@ -64,7 +64,7 @@ public class State {
     public final ConstraintNetworkManager conNet;
 
     public final AnmlProblem pb;
-    public int problemRevision = -1;
+    private int problemRevision;
 
 
     /**
@@ -78,7 +78,11 @@ public class State {
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         conNet = new ConstraintNetworkManager();
-        apply(pb);
+
+        // Insert all problem-defined modifications into the state
+        recordTimePoints(pb);
+        problemRevision = -1;
+        update();
     }
 
     /**
@@ -88,7 +92,7 @@ public class State {
     public State(State st) {
         pb = st.pb;
         problemRevision = st.problemRevision;
-        conNet = st.conNet.DeepCopy(); //goes first, since we need to keep track of unifiables
+        conNet = st.conNet.DeepCopy();
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
@@ -99,6 +103,9 @@ public class State {
         }
     }
 
+    /**
+     * @return True if the state is consistent (ie. stn and bindings consistent), False otherwise.
+     */
     public boolean isConsistent() {
         return tempoNet.IsConsistent() && conNet.isConsistent();
     }
@@ -213,7 +220,7 @@ public class State {
      * @return
      */
     public Collection<String> possibleValues(VarRef var) {
-        assert conNet.contains(var);
+        assert conNet.contains(var) : "Contraint Network doesn't contains "+var;
         return conNet.domainOf(var);
     }
 
@@ -327,12 +334,20 @@ public class State {
         tempoNet.recordTimePoint(interval.end());
     }
 
-    public void apply(AnmlProblem pb) {
-        recordTimePoints(pb);
-
-        for(StateModifier mod : pb.jModifiers()) {
-            apply(mod);
+    /**
+     * Applies all pending modifications of the problem.
+     * A problem comes with a sequence of StateModifiers that depict the
+     * current status of the problem.
+     * This method simply applies all modifiers that were not previously applied.
+     * @return True if the resulting state is consistent, False otherwise.
+     */
+    public boolean update() {
+        for(int i=problemRevision+1 ; i<pb.jModifiers().size() ; i++) {
+            apply(pb.jModifiers().get(i));
+            problemRevision = i;
         }
+
+        return isConsistent();
     }
 
     /**
@@ -343,7 +358,7 @@ public class State {
     public boolean apply(StateModifier mod, TemporalStatement ts) {
         recordTimePoints(ts.statement());
 
-        TemporalDatabase db = tdb.GetNewDatabase(ts.statement());
+        TemporalDatabase db = new TemporalDatabase(ts.statement());
 
         TPRef containerStart = getTimePoint(mod, ts.interval().start().timepoint());
         TPRef containerEnd = getTimePoint(mod, ts.interval().end().timepoint());

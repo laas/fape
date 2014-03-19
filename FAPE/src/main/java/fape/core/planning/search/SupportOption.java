@@ -13,6 +13,7 @@ package fape.core.planning.search;
 
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.Action;
 
 /**
  * non-null values represent the option
@@ -40,7 +41,7 @@ public class SupportOption {
     /**
      *
      */
-    public int actionToDecompose = -1;
+    public Action actionToDecompose = null;
 
     /**
      *
@@ -59,9 +60,9 @@ public class SupportOption {
         } else if (supportingAction != null) {
             //this is a simple applciation of an action
             return "{ActionApplication "+supportingAction+"}";
-        } else if (actionToDecompose != -1) {
+        } else if (actionToDecompose != null) {
             // this is a task decomposition
-            return "{ActionDecomposition "+actionToDecompose+"}";
+            return "{ActionDecomposition "+actionToDecompose+", dec="+decompositionID+"}";
         } else {
             return "Unknown option.";
         }

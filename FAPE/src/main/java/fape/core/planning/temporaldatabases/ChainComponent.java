@@ -31,7 +31,7 @@ public class ChainComponent {
         if (s instanceof Persistence) {
             change = false;
         } else {
-            change = false;
+            change = true;
         }
     }
 

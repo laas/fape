@@ -41,6 +41,10 @@ public class TaskNetworkManager {
         return network.inDegree(a) == 0;
     }
 
+    /**
+     * @return All actions of the task network that are not issued from a decomposition
+     *         (ie. roots of the task network).
+     */
     public List<Action> roots() {
         List<Action> roots = new LinkedList<>();
         for(Action a : network.jVertices()) {
@@ -51,10 +55,17 @@ public class TaskNetworkManager {
         return roots;
     }
 
+    /**
+     * @param a Action to lookup
+     * @return True if the action is decomposed
+     */
     public boolean isDecomposed(Action a) {
         return network.outDegree(a) != 0;
     }
 
+    /**
+     * @return All decomposable actions that are not decomposed yet.
+     */
     public List<Action> GetOpenLeaves() {
         LinkedList<Action> l = new LinkedList<>();
         for (Action a : network.jVertices()) {
