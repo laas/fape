@@ -1,11 +1,16 @@
 package planstack.graph.printers
 
-import planstack.graph._
 import scala.collection.mutable
 import planstack.graph.core._
 
-
-class GraphDotPrinter[V,EL,E <: Edge[V]](val g:Graph[V,EL,E]) {
+/** Simple translator from [[planstack.graph.core.Graph]] to the DOT syntax of graphviz
+  *
+  * @param g Graph to export.
+  * @tparam V
+  * @tparam EL
+  * @tparam E
+  */
+class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E]) {
 
   def writeToFile(filename: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new java.io.File(filename))

@@ -18,7 +18,7 @@ class ReverseDirectedGraph[V, EL](val dg : DirectedGraph[V, Nothing, Edge[V]]) e
 
   def addVertex(v: V): Int = ???
 
-  def vertices(): Seq[V] = dg.vertices
+  def vertices: Seq[V] = dg.vertices
 
   def addEdge(e: E): Unit = ???
 
@@ -26,7 +26,7 @@ class ReverseDirectedGraph[V, EL](val dg : DirectedGraph[V, Nothing, Edge[V]]) e
 
   def contains(v: V): Boolean = dg.contains(v)
 
-  def edges(): Seq[E] = dg.edges().map(edgeInverser(_))
+  def edges: Seq[E] = dg.edges().map(edgeInverser(_))
 
   def numVertices: Int = dg.numVertices
 
@@ -37,5 +37,5 @@ class ReverseDirectedGraph[V, EL](val dg : DirectedGraph[V, Nothing, Edge[V]]) e
    */
   def deleteEdges(u: V, v: V): Unit = ???
 
-  def cc(): Graph[V, Nothing, E] = ???
+  def cc: Graph[V, Nothing, E] = ???
 }
