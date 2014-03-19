@@ -65,7 +65,6 @@ object Algos {
 
   //TODO clean up
   def getNegativeCycle[V](g : LabeledDigraph[V, Int]) {
-    println("COUCOUC")
     val distances = mutable.Map[V, Int]()
     val predecessors = mutable.Map[V,V]()
     //val cycles = Set(Seq[LabeledEdge[V,Int]])
@@ -105,7 +104,7 @@ object Algos {
           //already visited that
           label(v) = 2
 
-          //appent v to the cycle and keep searching
+          //append v to the cycle and keep searching
           if(predecessors.contains(v))
             dfs(predecessors(v), v :: cycle)
           else
