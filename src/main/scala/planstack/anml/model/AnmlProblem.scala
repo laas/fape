@@ -1,5 +1,6 @@
 package planstack.anml.model
 
+import collection.JavaConversions._
 import planstack.anml.{ANMLException, parser}
 
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
@@ -20,6 +21,7 @@ class AnmlProblem extends TemporalInterval {
   val abstractActions = ListBuffer[AbstractAction]()
 
   val modifiers = ArrayBuffer[StateModifier]()
+  def jModifiers = seqAsJavaList(modifiers)
 
   private var nextGlobalVarID = 0
   private var nextActionID = 0
@@ -47,7 +49,7 @@ class AnmlProblem extends TemporalInterval {
 
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
-    var modifier = new BaseStateModifier(this, Nil, Nil, Nil)
+    var modifier = new BaseStateModifier(this, Nil, Nil, Nil, Nil)
 
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
@@ -55,6 +57,7 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe)
+      modifier = modifier.withInstances(instanceDecl.name)
     })
 
     for((name, tipe) <- instances.instances) {

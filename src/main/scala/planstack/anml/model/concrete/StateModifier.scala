@@ -42,6 +42,10 @@ trait StateModifier {
   def vars : Seq[Pair[String, VarRef]]
   def jVars = seqAsJavaList(vars)
 
+  /** All problem instances to be declared */
+  def instances : Seq[String] = Nil
+  def jInstances = seqAsJavaList(instances)
+
   def temporalConstraints : Seq[TemporalConstraint]
   def jTemporalConstraints = seqAsJavaList(temporalConstraints)
 
@@ -51,14 +55,17 @@ class BaseStateModifier(
      val container: TemporalInterval,
      val statements: Seq[TemporalStatement],
      val actions: Seq[Action],
-     val vars: Seq[Pair[String, VarRef]])
+     val vars: Seq[Pair[String, VarRef]],
+     override val instances: Seq[String])
   extends StateModifier {
 
   val temporalConstraints = Nil
 
-  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(container, statements ++ addStatements, actions, vars)
+  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(container, statements ++ addStatements, actions, vars, instances)
 
-  def withActions(addActions:Action*) = new BaseStateModifier(container, statements, actions ++ addActions, vars)
+  def withActions(addActions:Action*) = new BaseStateModifier(container, statements, actions ++ addActions, vars, instances)
 
-  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(container, statements, actions, vars ++ addVars)
+  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(container, statements, actions, vars ++ addVars, instances)
+
+  def withInstances(addInstances:String*) = new BaseStateModifier(container, statements, actions, vars, instances ++ addInstances)
 }

@@ -46,6 +46,16 @@ class Action(
 
   def cost = 10
 
+  def hasParent = parentAction match {
+    case Some(_) => true
+    case None => false
+  }
+
+  def parent : Action = parentAction match {
+    case Some(x) => x
+    case None => throw new ANMLException("Action has no parent.")
+  }
+
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }
 
