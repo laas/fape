@@ -41,7 +41,12 @@ import java.util.List;
 public class State {
 
     private static int idCounter = 0;
+
+    /**
+     * Unique identifier of the database.
+     */
     public final int mID = idCounter++;
+
     /**
      *
      */
@@ -58,12 +63,16 @@ public class State {
     public final TaskNetworkManager taskNet;
 
     /**
-     *
+     * All databases that require an enabling event (ie. whose first value is not an assignment).
      */
     public final List<TemporalDatabase> consumers;
     public final ConstraintNetworkManager conNet;
 
     public final AnmlProblem pb;
+
+    /**
+     * Index of the latest applied StateModifier in pb.jModifiers()
+     */
     private int problemRevision;
 
 
@@ -86,8 +95,8 @@ public class State {
     }
 
     /**
-     *
-     * @param st
+     * Produces a new State with the same content as state in parameter.
+     * @param st State to copy
      */
     public State(State st) {
         pb = st.pb;
@@ -111,8 +120,7 @@ public class State {
     }
 
     /**
-     *
-     * @return
+     * @return the sum of all actions cost.
      */
     public float GetCurrentCost() {
         float costs = this.taskNet.GetActionCosts();
@@ -120,8 +128,7 @@ public class State {
     }
 
     /**
-     *
-     * @return
+     * @return A rough estimation of the search distance to a state with no consumer
      */
     public float GetGoalDistance() {
         float distance = this.consumers.size();
@@ -147,9 +154,14 @@ public class State {
         return ret;
     }
 
-    public TemporalDatabase GetDatabase(int temporalDatabase) {
+    /**
+     * Retrieve the Database with the same ID.
+     * @param dbID ID of the database to lookup
+     * @return The database with the same ID.
+     */
+    public TemporalDatabase GetDatabase(int dbID) {
         for (TemporalDatabase db : tdb.vars) {
-            if (db.mID == temporalDatabase) {
+            if (db.mID == dbID) {
                 return db;
             }
         }
@@ -216,8 +228,8 @@ public class State {
 
     /**
      * Return all possible values of a global variable.
-     * @param var
-     * @return
+     * @param var Reference to a global variable
+     * @return All possible values for this variable.
      */
     public Collection<String> possibleValues(VarRef var) {
         assert conNet.contains(var) : "Contraint Network doesn't contains "+var;
@@ -241,10 +253,7 @@ public class State {
     }
 
     /**
-     *
-     * @param a
-     * @param b
-     * @return
+     * @return True if both TemporalDatabases might be unifiable (ie. the refer to two unifiable state variables).
      */
     public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
         return Unifiable(a.stateVariable, b.stateVariable);
@@ -265,8 +274,14 @@ public class State {
         }
     }
 
+    /**
+     * Tests Unifiability of a sequence of global variables.
+     * The two lists must be of the same size.
+     *
+     * @return True if, for all i in 0..size(as), as[i] and bs[i] are unifiable.
+     */
     public boolean Unifiable(List<VarRef> as, List<VarRef> bs) {
-        assert as.size() == bs.size() : "The two collections have different size.";
+        assert as.size() == bs.size() : "The two lists have different size.";
         for(int i=0 ; i<as.size() ; i++) {
             if(!Unifiable(as.get(i), bs.get(i)))
                 return false;
@@ -299,9 +314,17 @@ public class State {
         return canSupport;
     }
 
+    /**
+     * Extracts a timepoint that was described by a TimepointRef
+     * @param mod StateModifier in which the TimepointRef appears
+     * @param ref The timepoint reference to extract.
+     * @return The timepoint referenced by ref
+     */
     public TPRef getTimePoint(StateModifier mod, TimepointRef ref) {
+        // First find the interval to which the TimePoint reference applies.
         TemporalInterval interval = null;
         if(ref.id() instanceof ActRef) {
+            assert !ref.id().isEmpty() : "Empty action reference.";
             interval = taskNet.GetAction((ActRef) ref.id());
         } else if(ref.id().isEmpty()) {
             interval = mod.container();
@@ -323,12 +346,20 @@ public class State {
         }
     }
 
+    /**
+     * Insert an action into the state, applying all needed modifications.
+     * @param act Action to insert.
+     * @return True if the resulting state is consistent, false otherwise.
+     */
     public boolean insert(Action act) {
         recordTimePoints(act);
         taskNet.insert(act);
         return apply(act);
     }
 
+    /**
+     * Records the start and end timepoint of the given interval in the temporal network manager.
+     */
     public void recordTimePoints(TemporalInterval interval) {
         tempoNet.recordTimePoint(interval.start());
         tempoNet.recordTimePoint(interval.end());
@@ -372,6 +403,14 @@ public class State {
         return tdb.vars.add(db);
     }
 
+    /**
+     * Applies the modification implied by a temporal constraint.
+     * All time points referenced in the constraint must have been previously recorded in the STN.
+     *
+     * @param mod StateModifier in which the constraint appears.
+     * @param tc The TemporalConstraint to insert.
+     * @return True if the resulting state is consistent, False otherwise.
+     */
     public boolean apply(StateModifier mod, TemporalConstraint tc) {
         TPRef tp1 = getTimePoint(mod, tc.tp1());
         TPRef tp2 = getTimePoint(mod, tc.tp2());
@@ -387,6 +426,11 @@ public class State {
         return tempoNet.IsConsistent();
     }
 
+    /**
+     * Applies all modifications stated in a StateModifier in this this State
+     * @param mod StateModifier to apply
+     * @return True if the resulting State is consistent, False otherwise.
+     */
     public boolean apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for(String instance : mod.jInstances()) {
