@@ -42,6 +42,7 @@ public class STNManager {
 
     /** Returns the id of a timepoint int the stn */
     private int id(TPRef tp) {
+        assert ids.containsKey(tp) : "TimePoint not declared: "+tp;
         return ids.get(tp);
     }
 
@@ -66,7 +67,7 @@ public class STNManager {
     }
 
     /**
-     *
+     * Adds a temporal constraint a --[min, max]--> b
      * @param a
      * @param b
      * @param min

@@ -45,6 +45,14 @@ public class ConstraintNetworkManager {
         }
     }
 
+    /**
+     * @return True if the network is consistent (no vars with empty domain),
+     *         False otherwise
+     */
+    public boolean isConsistent() {
+        return PropagateAndCheckConsistency(); //TODO: smarter update
+    }
+
     public void CheckConsistency() {
         for (UnificationConstraint c : unificationConstraints) {
             if (!domains.containsKey(c.one)) {

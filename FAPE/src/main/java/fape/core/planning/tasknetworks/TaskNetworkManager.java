@@ -64,6 +64,17 @@ public class TaskNetworkManager {
         }
         return l;
     }
+
+    /**
+     * Inserts an action in the task network. If the action a has
+     * a parent p, an edge from p to a is also added.
+     */
+    public void insert(Action a) {
+        network.addVertex(a);
+        if(a.hasParent()) {
+            network.addEdge(a.parent(), a);
+        }
+    }
 //
 //    /**
 //     *

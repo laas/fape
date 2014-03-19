@@ -19,10 +19,15 @@ import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
-import planstack.anml.model.concrete.statements.Assignment;
-import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
-import planstack.anml.model.concrete.statements.Transition;
+import planstack.anml.model.ActRef;
+import planstack.anml.model.TPRef;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.time.TemporalAnnotation;
+import planstack.anml.model.concrete.StateModifier;
+import planstack.anml.model.concrete.TemporalConstraint;
+import planstack.anml.model.concrete.TemporalInterval;
+import planstack.anml.model.concrete.statements.*;
+import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -73,6 +78,7 @@ public class State {
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         conNet = new ConstraintNetworkManager();
+        apply(pb);
     }
 
     /**
@@ -91,6 +97,10 @@ public class State {
         for (TemporalDatabase sb : st.consumers) {
             consumers.add(this.GetDatabase(sb.mID));
         }
+    }
+
+    public boolean isConsistent() {
+        return tempoNet.IsConsistent() && conNet.isConsistent();
     }
 
     /**
@@ -280,5 +290,110 @@ public class State {
         canSupport = canSupport && Unifiable(s.sv(), db.stateVariable);
         canSupport = canSupport && Unifiable(s.endValue(), db.GetGlobalConsumeValue());
         return canSupport;
+    }
+
+    public TPRef getTimePoint(StateModifier mod, TimepointRef ref) {
+        TemporalInterval interval = null;
+        if(ref.id() instanceof ActRef) {
+            interval = taskNet.GetAction((ActRef) ref.id());
+        } else if(ref.id().isEmpty()) {
+            interval = mod.container();
+        } else {
+            throw new FAPEException("Unsupported: time point extraction on something other than action.");
+        }
+
+        switch (ref.extractor()) {
+            case "GStart":
+                return pb.start();
+            case "GEnd":
+                return pb.end();
+            case "start":
+                return interval.start();
+            case "end":
+                return interval.end();
+            default:
+                throw new FAPEException("Unknown extractor: "+ref);
+        }
+    }
+
+    public boolean insert(Action act) {
+        recordTimePoints(act);
+        taskNet.insert(act);
+        return apply(act);
+    }
+
+    public void recordTimePoints(TemporalInterval interval) {
+        tempoNet.recordTimePoint(interval.start());
+        tempoNet.recordTimePoint(interval.end());
+    }
+
+    public void apply(AnmlProblem pb) {
+        recordTimePoints(pb);
+
+        for(StateModifier mod : pb.jModifiers()) {
+            apply(mod);
+        }
+    }
+
+    /**
+     * Inserts a new temporal statement in the State.
+     * @param ts
+     * @return
+     */
+    public boolean apply(StateModifier mod, TemporalStatement ts) {
+        recordTimePoints(ts.statement());
+
+        TemporalDatabase db = tdb.GetNewDatabase(ts.statement());
+
+        TPRef containerStart = getTimePoint(mod, ts.interval().start().timepoint());
+        TPRef containerEnd = getTimePoint(mod, ts.interval().end().timepoint());
+
+        tempoNet.EnforceConstraint(containerStart, ts.statement().start(), ts.interval().start().delta(), ts.interval().start().delta());
+        tempoNet.EnforceConstraint(containerEnd, ts.statement().end(), ts.interval().end().delta(), ts.interval().end().delta());
+
+        if(db.isConsumer()) {
+            consumers.add(db);
+        }
+        return tdb.vars.add(db);
+    }
+
+    public boolean apply(StateModifier mod, TemporalConstraint tc) {
+        TPRef tp1 = getTimePoint(mod, tc.tp1());
+        TPRef tp2 = getTimePoint(mod, tc.tp2());
+
+        switch (tc.op()) {
+            case "<":
+                tempoNet.EnforceDelay(tp1, tp2, tc.plus());
+                break;
+            case "=":
+                tempoNet.EnforceConstraint(tp1, tp2, tc.plus(), tc.plus());
+        }
+
+        return tempoNet.IsConsistent();
+    }
+
+    public boolean apply(StateModifier mod) {
+        // for every instance declaration, create a new CSP Var with itself as domain
+        for(String instance : mod.jInstances()) {
+            List<String> domain = new LinkedList<>();
+            domain.add(instance);
+            conNet.AddVariable(new VarRef(instance), domain);
+        }
+
+        // Declare new variables to the constraint network.
+        for(Tuple2<String, VarRef> declaration : mod.jVars()) {
+            Collection<String> domain = pb.instances().jInstancesOfType(declaration._1());
+            conNet.AddVariable(declaration._2(), domain);
+        }
+
+        for(TemporalStatement ts : mod.jStatements()) {
+            apply(mod, ts);
+        }
+
+        for(TemporalConstraint tc : mod.jTemporalConstraints()) {
+            apply(mod, tc);
+        }
+
+        return this.isConsistent();
     }
 }
