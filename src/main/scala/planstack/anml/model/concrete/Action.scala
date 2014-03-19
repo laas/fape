@@ -3,11 +3,9 @@ package planstack.anml.model.concrete
 import collection.JavaConversions._
 
 import planstack.anml.model._
-import planstack.anml.model.concrete.statements.{TemporalStatement, Statement}
+import planstack.anml.model.concrete.statements.{LogStatement, TemporalStatement, Statement}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
-
-
 
 
 
@@ -38,8 +36,18 @@ class Action(
 
   private var mStatus = ActionStatus.PENDING
 
+  /** Depicts the current status of the action. It is first
+    * initialized to PENDING and might be changed with `setStatus()`
+    * @return
+    */
   def status = mStatus
 
+  /** Assigns a new status to the action.
+    * Allowed transitions are
+    *  - PENDING -> EXECUTING
+    *  - EXECUTING -> (FAILED || EXECUTED)
+    * @param newStatus New status of the action.
+    */
   def setStatus(newStatus: ActionStatus) {
     import ActionStatus._
     mStatus match {
@@ -66,13 +74,24 @@ class Action(
   /** Returns True if this action as possible decompositions */
   def decomposable = !decompositions.isEmpty
 
+  /** Returns true if the statement `s` is contained in this action */
+  def contains(s: LogStatement) = statements.map(_.statement).contains(s)
+
+  /**
+   * Retrieves the cost of this action.
+   * Right now, it is set to 10 in all cases.
+   * @return the cost of the action.
+   */
   def cost = 10
 
+  /** Returns true if this action has a parent (ie. it is issued from a decomposition). */
   def hasParent = parentAction match {
     case Some(_) => true
     case None => false
   }
 
+  /** Returns the parent action. Throws [[planstack.anml.ANMLException]] if this action has no parent.
+    * Invocation of this method should be preceded by a call to `hasParent()` */
   def parent : Action = parentAction match {
     case Some(x) => x
     case None => throw new ANMLException("Action has no parent.")
