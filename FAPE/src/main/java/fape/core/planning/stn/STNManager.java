@@ -12,8 +12,8 @@ import java.util.HashMap;
 
 public class STNManager {
 
-    final STN stn;
-    final HashMap<TPRef, Integer> ids;
+    public final STN stn;
+    public final HashMap<TPRef, Integer> ids;
 
     /**
      * Creates a new empty STN

@@ -10,8 +10,10 @@
  */
 package fape.core.planning.states;
 
+import fape.Tester$;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.STNManager;
+import fape.core.planning.stn.Utils$;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -29,6 +31,7 @@ import planstack.anml.model.concrete.TemporalInterval;
 import planstack.anml.model.concrete.statements.*;
 import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
+import scala.util.parsing.combinator.testing.Tester;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -168,6 +171,19 @@ public class State {
         throw new FAPEException("Reference to unknown database.");
     }
 
+    /**
+     * @param s a logical statement to look for.
+     * @return the Action containing s. Returns null if no action containing s was found.
+     */
+    public Action getActionContaining(LogStatement s) {
+        for(Action a : taskNet.GetAllActions()) {
+            if(a.contains(s)) {
+                return a;
+            }
+        }
+        return null;
+    }
+
     /* TODO: Recreate
     public void FailAction(Integer pop) {
             taskNet.FailAction(pop);
@@ -232,7 +248,7 @@ public class State {
      * @return All possible values for this variable.
      */
     public Collection<String> possibleValues(VarRef var) {
-        assert conNet.contains(var) : "Contraint Network doesn't contains "+var;
+        assert conNet.contains(var) : "Constraint Network doesn't contains "+var;
         return conNet.domainOf(var);
     }
 
@@ -353,6 +369,7 @@ public class State {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
+        tempoNet.EnforceConstraint(act.start(), act.end(), act.minDuration(), act.maxDuration());
         taskNet.insert(act);
         return apply(act);
     }
@@ -400,7 +417,9 @@ public class State {
         if(db.isConsumer()) {
             consumers.add(db);
         }
-        return tdb.vars.add(db);
+        tdb.vars.add(db);
+
+        return isConsistent();
     }
 
     /**
@@ -423,7 +442,7 @@ public class State {
                 tempoNet.EnforceConstraint(tp1, tp2, tc.plus(), tc.plus());
         }
 
-        return tempoNet.IsConsistent();
+        return isConsistent();
     }
 
     /**
@@ -453,6 +472,6 @@ public class State {
             apply(mod, tc);
         }
 
-        return this.isConsistent();
+        return isConsistent();
     }
 }
