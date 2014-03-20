@@ -4,7 +4,7 @@ package planstack.anml.model
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
 
   def addUndefinedVar(name:LVarRef, typeName:String) {
-    assert(!variables.contains(name))
+    assert(!variables.contains(name), "Local variable already defined: "+name)
     variables.put(name, (typeName, new VarRef("")))
   }
 

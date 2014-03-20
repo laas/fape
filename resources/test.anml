@@ -30,7 +30,6 @@ type Robot < object with {
   variable Location mLocation;
   constant Gripper left;
   constant Gripper right;
-  function boolean canGo(Location a, Location b);
 };
 
 type Item < object with {
@@ -96,9 +95,6 @@ G0.empty := true;
 G1.empty := true;
 R0.mLocation := L0;
 I0.mLocation := L1;
-};
-
-[all]{ 
 R0.left := G0;
 R0.right := G1;
 };

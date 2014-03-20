@@ -36,14 +36,19 @@ trait StateModifier {
 
   /** Actions to be inserted in the plan */
   def actions : Seq[Action]
+  /** Actions to be inserted in the plan */
   def jActions = seqAsJavaList(actions)
 
-  /** (Type, Name) of global variables to be declared */
+  /** (Type, Reference) of global variables to be declared */
   def vars : Seq[Pair[String, VarRef]]
+  /** (Type, Reference) of global variables to be declared */
   def jVars = seqAsJavaList(vars)
 
-  /** All problem instances to be declared */
+  /** All problem instances to be declared
+    * Problem instances are typically a global variable with a domain containing only one value (itself).
+    */
   def instances : Seq[String] = Nil
+  /** All problem instances to be declared */
   def jInstances = seqAsJavaList(instances)
 
   def temporalConstraints : Seq[TemporalConstraint]

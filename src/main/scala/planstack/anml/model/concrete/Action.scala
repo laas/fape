@@ -84,6 +84,10 @@ class Action(
    */
   def cost = 10
 
+  def minDuration = 5
+
+  def maxDuration = 150
+
   /** Returns true if this action has a parent (ie. it is issued from a decomposition). */
   def hasParent = parentAction match {
     case Some(_) => true
