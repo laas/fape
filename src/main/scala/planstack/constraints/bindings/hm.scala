@@ -45,14 +45,43 @@ class Different(x:Int, y:Int) extends BinaryConstraint(x, y) {
 }
 
 
+class ExtendedConstraint(x:Int, y:Int, pairs:Set[Pair[Int,Int]])extends BinaryConstraint(x,y) {
+  def isSatisfying(xVal: Int, yVal: Int): Boolean =
+    !pairs.forall(p => p._1 != xVal || p._2 != yVal)
+}
 
-
+class GenExtConstraint[VarT,ValT](val x:VarT, val y:VarT, val pairs:Set[Pair[ValT,ValT]])
 
 
 
 object Main extends App {
 
-  val cn = new ConstraintNetwork
+  val cn = new ConstraintManager[String, String]
+
+  cn.addVar("Rb", Set("Rb"))
+  cn.addVar("Rb.left", Set("G1"))
+  cn.addVar("Rb2", Set("Rb2"))
+  cn.addVar("Rb2.left", Set("G3"))
+
+
+
+  cn.addVar("G1", Set("G1"))
+  cn.addVar("G2", Set("G2"))
+  cn.addVar("G3", Set("G3"))
+  cn.addVar("G4", Set("G4"))
+
+  cn.addVar("r", Set("Rb", "Rb2"))
+  cn.addVar("g", Set("G1", "G2", "G3"))
+
+  cn.addVar("r.left", Set("Rb.left", "Rb2.left"))
+
+  val ext = new GenExtConstraint("r", "r.left", Set(("Rb","Rb.left"), ("Rb2","Rb2.left")))
+  cn.addExtensionConstraint(ext)
+
+  cn.print()
+
+
+
 
 
   //cn.dotPrinter().print2Dot("/home/abitmonn/tmp/g.dot")

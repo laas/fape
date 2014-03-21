@@ -124,6 +124,13 @@ class ConstraintManager[VarT, ValT] {
    */
   def diffVarToVar(v1:VarT, v2:VarT) { cn.addConstraint(new Different(varId(v1), varId(v2))) }
 
+  def addExtensionConstraint(ext:GenExtConstraint[VarT,ValT]) {
+    cn.addConstraint(new ExtendedConstraint(varId(ext.x), varId(ext.y), ext.pairs.map(p => (valId(p._1),valId(p._2)))))
+  }
 
   def propagate() = cn.AC3()
+
+  def varToString(v:CSPVar) = "%s = {%s}".format(idVar(v.id), v.dom.map(idVal(_)).mkString(", "))
+
+  def print() { cn.cn.mVertices.map(cn.node(_)).foreach(variable => println(varToString(variable))) }
 }

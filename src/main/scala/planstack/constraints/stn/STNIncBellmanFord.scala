@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import StnPredef._
 import planstack.graph.core.LabeledDigraph
+import planstack.graph.algorithms.Algos
 
 class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
                         val forwardDist:ArrayBuffer[Weight],
@@ -105,22 +106,6 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
       }
     }
 
-    /*
-    for(e <- g.edges()) {
-      println("%d -> %d : %d".format(e.u, e.v, e.l))
-    }
-
-    var str = "IBF : " + consistent.toString + " -> "
-    for(i <- 0 to forwardDist.length-1) {
-      str += "(%d %s)".format(i, forwardDist(i))
-    }
-    str += "\n           <- "
-    for(i <- 0 to backwardDist.length-1) {
-      str += "(%d %s)".format(i, backwardDist(i))
-    }
-    println(str)
-    */
-
     return consistent
   }
 
@@ -137,7 +122,7 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
    */
   def recomputeAllDistances() : Boolean = {
     // set all distances to inf except for the origin
-    for(v <- g.vertices()) {
+    for(v <- g.vertices) {
       val initialDist =
         if(v == start) new Weight(0)
         else Weight.InfWeight
@@ -172,7 +157,7 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
   }
 
   def cc() : STNIncBellmanFord = {
-    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc().asInstanceOf[LabeledDigraph[Int,Int]], consistent)
+    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc.asInstanceOf[LabeledDigraph[Int,Int]], consistent)
   }
 
   def distancesToString = {
