@@ -101,6 +101,12 @@ class Action(
     case None => throw new ANMLException("Action has no parent.")
   }
 
+  /** Arguments (as global variables) of the action */
+  def args = abs.args.map(context.getGlobalVar(_))
+
+  /** Arguments (as global variables) of the action */
+  def jArgs = seqAsJavaList(args)
+
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }
 
@@ -152,11 +158,12 @@ object Action {
     val parentContext = pb.context
 
     val context = abs.context.buildContext(pb, Some(parentContext))
-    val id = pb.newActionID
-    context.addActionID(new LActRef(id), new ActRef(id))
+    val globalRef = new ActRef()
+
+    context.addActionID(new LActRef(), globalRef)
 
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
-    new Action(abs, context, statements, new ActRef(id), None)
+    new Action(abs, context, statements, globalRef, None)
   }
 }

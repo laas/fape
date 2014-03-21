@@ -3,6 +3,7 @@ package planstack.anml.model
 import scala.collection.mutable
 import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
+import planstack.anml.model.concrete.{ActRef, VarRef}
 
 
 abstract class AbstractContext {

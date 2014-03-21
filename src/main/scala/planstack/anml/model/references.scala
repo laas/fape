@@ -1,16 +1,18 @@
 package planstack.anml.model
 
-
-
-object Ref {
+object LocalRef {
   type T = String
+  val NullID : T = ""
+  private var next = 0
+  def getNext = {next+=1; "locRef$"+(next-1)}
 }
 
-import Ref._
+import LocalRef._
 
-abstract class Ref(val id:T) {
+class LocalRef(val id:T) {
+  def this() = this(getNext)
 
-  def isEmpty = id.isEmpty
+  def isEmpty = id == NullID
   def nonEmpty = !isEmpty
 
   override def toString = id.toString
@@ -23,24 +25,19 @@ abstract class Ref(val id:T) {
     } else if(this.getClass != o.getClass) {
       false
     } else {
-      this.id == o.asInstanceOf[Ref].id
+      this.id == o.asInstanceOf[LocalRef].id
     }
   }
-
 }
 
-class LocalRef(id:T) extends Ref(id)
 
 class LActRef(id:T) extends LocalRef(id) {
-  require(id.nonEmpty)
+  require(id != NullID)
+
+  def this() = this(getNext)
 }
-class LVarRef(id:T) extends LocalRef(id)
-
-class GlobalRef(id:T) extends Ref(id)
-
-class ActRef(id:T) extends GlobalRef(id)
-class VarRef(id:T) extends GlobalRef(id)
-class TPRef(id:T) extends GlobalRef(id)
+class LVarRef(id:T) extends LocalRef(id) {
+  def this() = this(getNext)
+}
 
 
-object EmptyGlobalRef extends GlobalRef("")

@@ -1,16 +1,18 @@
 package planstack.anml.model
 
+import planstack.anml.model.concrete.{EmptyActRef, EmptyVarRef, ActRef, VarRef}
+
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
 
   def addUndefinedVar(name:LVarRef, typeName:String) {
     assert(!variables.contains(name), "Local variable already defined: "+name)
-    variables.put(name, (typeName, new VarRef("")))
+    variables.put(name, (typeName, EmptyVarRef))
   }
 
   def addUndefinedAction(localID:LActRef) {
     assert(!actions.contains(localID))
-    actions.put(localID, new ActRef(""))
+    actions.put(localID, EmptyActRef)
   }
 
   /**
@@ -44,9 +46,9 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
       if(global.isEmpty && newVars.contains(local)) {
         context.addVar(local, tipe, newVars(local))
       } else if(global.isEmpty) {
-        val globalName = pb.newGlobalVar
-        context.addVar(local, tipe, globalName)
-        context.addVarToCreate(tipe, globalName)
+        val globalVar = new VarRef()
+        context.addVar(local, tipe, globalVar)
+        context.addVarToCreate(tipe, globalVar)
       } else {
         context.addVar(local, tipe, global)
       }
@@ -54,7 +56,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
     for((localActionID, globalActionID) <- actions) {
       if(globalActionID.isEmpty)
-        context.addActionID(localActionID, new ActRef(pb.newActionID))
+        context.addActionID(localActionID, new ActRef())
       else
         context.addActionID(localActionID, globalActionID)
     }

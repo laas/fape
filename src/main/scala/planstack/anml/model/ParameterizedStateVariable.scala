@@ -3,8 +3,7 @@ package planstack.anml.model
 import planstack.anml.{ANMLException, parser}
 import scala.collection.JavaConversions._
 
-import planstack.anml.model.concrete.statements._
-import planstack.anml.model.abs.AbstractStatement
+import planstack.anml.model.concrete.VarRef
 
 
 class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRef]) {

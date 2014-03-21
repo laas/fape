@@ -4,13 +4,17 @@ import collection.JavaConversions._
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 import scala.collection.mutable
 import planstack.anml.{ANMLException, parser}
+import planstack.anml.model.concrete.VarRef
 
 
 class InstanceManager {
 
   private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
   private val types = mutable.Map[String, Type]()
-  private val instancesTypes = mutable.Map[String, String]()
+  /**
+   * Maps an instance name to a (type, GlobalReference) pair
+   */
+  private val instancesDef = mutable.Map[String, Pair[String, VarRef]]()
   private val instancesByType = mutable.Map[String, List[String]]()
 
   addType("boolean", "")
@@ -21,10 +25,10 @@ class InstanceManager {
 
 
   def addInstance(name:String, t:String) {
-    assert(!instancesTypes.contains(name), "Instance already declared: " + name)
+    assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
 
-    instancesTypes(name) = t
+    instancesDef(name) = (t, new VarRef())
     instancesByType(t) = name :: instancesByType(t)
   }
 
@@ -62,16 +66,22 @@ class InstanceManager {
    * @param instanceName Name of the instance to lookup
    * @return True if an instance of name `instanceName` is known
    */
-  def containsInstance(instanceName:String) = instancesTypes.contains(instanceName)
+  def containsInstance(instanceName:String) = instancesDef.contains(instanceName)
 
   def containsType(typeName:String) = types.contains(typeName)
 
-  def typeOf(instanceName:String) = instancesTypes(instanceName)
+  def typeOf(instanceName:String) = instancesDef(instanceName)
 
   /**
    * @return All instances as a list of (name, type) pairs
    */
-  def instances : List[Pair[String, String]]= instancesTypes.toList
+  def instances : List[Pair[String, String]]= instancesDef.toList.map(x => (x._1, x._2._1))
+
+  /** Retrieves the variable reference linked to this instance
+    * @param name Name of the instance to lookup
+    * @return The global variable reference linked to this instance
+    */
+  def referenceOf(name: String) : VarRef = instancesDef(name)._2
 
   /** Returns all instances of the given type */
   def instancesOfType(tipe:String) : List[String] = {

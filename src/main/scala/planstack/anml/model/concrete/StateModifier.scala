@@ -2,7 +2,6 @@ package planstack.anml.model.concrete
 
 import planstack.anml.model.concrete.statements.TemporalStatement
 import collection.JavaConversions._
-import planstack.anml.model.VarRef
 
 /** A state modifier decribes modifications to be made to plan.
   *

@@ -1,7 +1,7 @@
 package planstack.anml.model.concrete.statements
 
 import planstack.anml.model._
-import planstack.anml.model.concrete.TemporalInterval
+import planstack.anml.model.concrete.{VarRef, TemporalInterval}
 import planstack.anml.ANMLException
 
 
