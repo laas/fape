@@ -1,13 +1,13 @@
 /*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
+* Author:  Filip Dvořák <filip.dvorak@runbox.com>
+*
+* Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
+*
+* Publishing, providing further or using this program is prohibited
+* without previous written permission of the author. Publishing or providing
+* further the contents of this file is prohibited without previous written
+* permission of the author.
+*/
 package fape.core.execution;
 
 import fape.util.FileHandling;
@@ -17,6 +17,8 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimePoint;
 import fape.util.TinyLogger;
+import planstack.anml.model.concrete.ActRef;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.parser.ANMLFactory;
 import planstack.anml.parser.ParseResult;
 import scala.util.parsing.combinator.Parsers;
@@ -25,9 +27,9 @@ import java.io.IOException;
 
 
 /**
- *
- * @author FD
- */
+*
+* @author FD
+*/
 public class Executor {
 
     public static int eventCounter = 0;
@@ -49,13 +51,15 @@ public class Executor {
     }
 
     /**
-     *
-     * @param path
-     * @return
-     */
+     * Parses an ANML input from a file.
+     * @param path Path to the file containing ANML.
+    */
     public static ParseResult ProcessANMLfromFile(String path) {
-        ParseResult anml = ANMLFactory.parseAnmlFromFile(path);
-        return anml;
+        return ANMLFactory.parseAnmlFromFile(path);
+    }
+
+    public static ParseResult ProcessANMLString(String anml) {
+        return ANMLFactory.parseAnmlString(anml);
     }
 
     /**
@@ -69,7 +73,7 @@ public class Executor {
         String msgType = tokens[0].split("\\(")[1];
         switch (msgType) {
             case "PRS-Action-Report":
-                int actionID = Integer.parseInt(tokens[1]);
+                ActRef actionID = new ActRef(Integer.parseInt(tokens[1]));
                 AtomicAction.EResult result = AtomicAction.EResult.valueOf((tokens[2]));
                 int realEndTime = Integer.parseInt(tokens[3]);
                 switch (result) {
@@ -112,7 +116,7 @@ public class Executor {
 
 
             String msg = "(FAPE-action "
-                    + acts.mID + " "
+                    + acts.id + " "
                     + acts.mStartTime + " "
                     + (acts.mStartTime + acts.duration)
                     + " "

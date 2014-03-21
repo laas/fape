@@ -1,21 +1,20 @@
 /*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
+* Author:  Filip Dvořák <filip.dvorak@runbox.com>
+*
+* Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
+*
+* Publishing, providing further or using this program is prohibited
+* without previous written permission of the author. Publishing or providing
+* further the contents of this file is prohibited without previous written
+* permission of the author.
+*/
 package fape.core.acting;
 
 import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
-import fape.util.Pair;
 import fape.util.TimeAmount;
-import fape.util.TimePoint;
+import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ParseResult;
 
 import java.util.Collections;
@@ -27,9 +26,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- *
- * @author FD
- */
+*
+* @author FD
+*/
 public class Actor {
 
     /**
@@ -60,24 +59,24 @@ public class Actor {
     boolean planNeedsRepair = false;
 
     List<AtomicAction> actionsToDispatch = new LinkedList<>();
-    LinkedList<Integer> failures = new LinkedList<>();
+    LinkedList<ActRef> failures = new LinkedList<>();
     boolean planReady = false;
 
     /**
      *
      */
     public LinkedList<ParseResult> newEventBuffer = new LinkedList<>();
-    public HashMap<Integer, String> idToSignature = new HashMap<>();
+    public HashMap<ActRef, String> idToSignature = new HashMap<>();
     HashSet<String> successfulActions = new HashSet<>();
-    HashSet<Integer> dispatchedActions = new HashSet<>();
+    HashSet<ActRef> dispatchedActions = new HashSet<>();
     List<AtomicAction> actionsBeingExecuted = new LinkedList<>();
 
-    public void ReportSuccess(int actionID, int realEndTime) {
+    public void ReportSuccess(ActRef actionID, int realEndTime) {
         planNeedsRepair = true;
         successfulActions.add(idToSignature.get(actionID));
         AtomicAction act = null;
         for (AtomicAction a : actionsBeingExecuted) {
-            if (a.mID == actionID) {
+            if (a.id == actionID) {
                 act = a;
             }
         }
@@ -85,12 +84,12 @@ public class Actor {
         mPlanner.AddActionEnding(actionID, realEndTime);
     }
 
-    public void ReportFailure(int actionID) {
+    public void ReportFailure(ActRef actionID) {
         planNeedsRepair = true;
         failures.add(actionID);
         AtomicAction act = null;
         for (AtomicAction a : actionsBeingExecuted) {
-            if (a.mID == actionID) {
+            if (a.id == actionID) {
                 act = a;
             }
         }
@@ -158,10 +157,10 @@ public class Actor {
                     }
                     List<AtomicAction> remove = new LinkedList<>();
                     for (AtomicAction a : actionsToDispatch) {
-                        if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.mID)) && !dispatchedActions.contains(a.mID)) {
-                            idToSignature.put(a.mID, a.GetDescription());
+                        if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.id)) && !dispatchedActions.contains(a.id)) {
+                            idToSignature.put(a.id, a.GetDescription());
                             mExecutor.executeAtomicActions(a);
-                            dispatchedActions.add(a.mID);
+                            dispatchedActions.add(a.id);
                             actionsBeingExecuted.add(a);
                             remove.add(a);
                         }

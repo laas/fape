@@ -1,8 +1,7 @@
 package fape.core.planning.stn;
 
 
-import planstack.anml.model.TPRef;
-import planstack.anml.model.VarRef;
+import planstack.anml.model.concrete.*;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
 import fape.util.TinyLogger;

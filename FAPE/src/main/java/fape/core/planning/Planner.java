@@ -11,6 +11,7 @@
 package fape.core.planning;
 
 
+import fape.core.execution.model.AtomicAction;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.*;
@@ -21,13 +22,11 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
+import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.Decomposition;
-import planstack.anml.model.concrete.Decomposition$;
-import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.anml.parser.ParseResult;
 
@@ -124,26 +123,18 @@ public class Planner {
     /**
      * we remove the action results from the system
      *
-     * @param pop
-     * TODO:Recreate
-    public void FailAction(Integer pop) {
+     * @param
+     */
+    public void FailAction(ActRef actionRef) {
         KeepBestStateOnly();
         if (best == null) {
             throw new FAPEException("No current state.");
         } else {
             State bestState = GetCurrentState();
-            Action remove = bestState.taskNet.GetAction(pop);
-            if (remove == null) {
-                throw new FAPEException("Unknown action.");
-            }
-            //
-            for (TemporalEvent t : remove.events()) {
-                bestState.SplitDatabase(t);
-            }
-            remove.clearEvents();
-            bestState.FailAction(pop);
+
+            bestState.setActionFailed(actionRef);
         }
-    }*/
+    }
 
     /**
      * Set the action ending to the its real end time. It removes the duration
@@ -153,35 +144,35 @@ public class Planner {
      *
      * @param actionID
      * @param realEndTime
-     *
-    public void AddActionEnding(int actionID, int realEndTime) {
+     */
+    public void AddActionEnding(ActRef actionID, int realEndTime) {
         KeepBestStateOnly();
         State bestState = GetCurrentState();
-        bestState.taskNet.SetActionSuccess(actionID);
+        bestState.setActionSuccess(actionID);
         Action a = bestState.taskNet.GetAction(actionID);
         // remove the duration constraints of the action
-        bestState.tempoNet.RemoveConstraints(new Pair(a.start, a.end), new Pair(a.end, a.start));
+        bestState.tempoNet.RemoveConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
         // insert new constraint specifying the end time of the action
-        bestState.tempoNet.EnforceConstraint(bestState.tempoNet.GetGlobalStart(), a.end, realEndTime, realEndTime);
+        bestState.tempoNet.EnforceConstraint(pb.start(), a.end(), realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
-    }*/
+    }
 
     /**
      * Pushes the earliest execution time point forward.
      * Causes all pending actions to be delayed
      * @param earliestExecution
-     *
+     */
     public void SetEarliestExecution(int earliestExecution) {
         KeepBestStateOnly();
         State s = GetCurrentState();
-        s.tempoNet.EnforceDelay(s.tempoNet.GetGlobalStart(), s.tempoNet.GetEarliestExecution(), earliestExecution);
+        s.tempoNet.EnforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
         // If the STN is not consistent after this addition, the the current plan is not feasible.
         // Full replan is necessary
         if(!s.tempoNet.IsConsistent()) {
             this.best = null;
             this.queue.clear();
         }
-    }*/
+    }
 
     /**
      *
@@ -517,42 +508,28 @@ public class Planner {
         return ret;
     }
 
-    /*public void DFS(State st) {
-     st.tdb.Propagate(st);
-     for (TemporalDatabase db : st.consumers) {
-     List<TemporalDatabase> supporters = st.tdb.GetSupporters(db);
-
-     }
-     }*/
     /**
-     * TODO: This is wrong we should only send actions whose dependencies are met (all provider tasks already executed)
      * progresses in the plan up for howFarToProgress, returns either
      * AtomicActions that were instantiated with corresponding start times, or
      * null, if not solution was found in the given time
      *
      * @param howFarToProgress
-     * @param forHowLong
      * @return
-     *
+     */
     public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
         State myState = best;
         Plan plan = new Plan(myState);
 
         List<AtomicAction> ret = new LinkedList<>();
         for (Action a : plan.GetNextActions()) {
-            long startTime = myState.tempoNet.GetEarliestStartTime(a.start);
+            long startTime = myState.tempoNet.GetEarliestStartTime(a.start());
             if (startTime > howFarToProgress.val) {
                 continue;
             }
-            if(a.status != Action.Status.PENDING) {
+            if(a.status() != ActionStatus.PENDING) {
                 continue;
             }
-            AtomicAction aa = new AtomicAction();
-            aa.mStartTime = (int) startTime;
-            aa.mID = a.mID;
-            aa.duration = (int) a.maxDuration;
-            aa.name = a.name;
-            aa.params = a.ProduceParameters(myState);
+            AtomicAction aa = new AtomicAction(a, startTime, a.maxDuration(), best);
             ret.add(aa);
         }
 
@@ -566,24 +543,23 @@ public class Planner {
         // for all selecting actions, we set them as being executed and we bind their start time point
         // to the one we requested.
         for(AtomicAction aa : ret) {
-            Action a = myState.taskNet.GetAction(aa.mID);
-            myState.taskNet.SetActionExecuting(a.mID);
-            myState.tempoNet.RemoveConstraints(new Pair(myState.tempoNet.GetEarliestExecution(), a.start),
-                    new Pair(a.start, myState.tempoNet.GetEarliestExecution()));
-            myState.tempoNet.EnforceConstraint(myState.tempoNet.GetGlobalStart(), a.start, aa.mStartTime, aa.mStartTime);
+            Action a = myState.taskNet.GetAction(aa.id);
+            myState.setActionExecuting(a.id());
+            myState.tempoNet.RemoveConstraints(new Pair(pb.earliestExecution(), a.start()),
+                    new Pair(a.start(), pb.earliestExecution()));
+            myState.tempoNet.EnforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
         }
 
         return ret;
-    }*/
+    }
 
-    /*
     public boolean hasPendingActions() {
         for(Action a : best.taskNet.GetAllActions()) {
-            if(a.status == Action.Status.PENDING)
+            if(a.status() == ActionStatus.PENDING)
                 return true;
         }
         return false;
-    }*/
+    }
 
     /**
      * restarts the planning problem into its initial state

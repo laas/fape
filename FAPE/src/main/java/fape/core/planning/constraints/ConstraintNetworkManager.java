@@ -12,7 +12,7 @@ package fape.core.planning.constraints;
 
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
-import planstack.anml.model.VarRef;
+import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 

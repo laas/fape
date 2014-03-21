@@ -1,6 +1,6 @@
 package fape.core.planning.temporaldatabases;
 
-import planstack.anml.model.VarRef;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 

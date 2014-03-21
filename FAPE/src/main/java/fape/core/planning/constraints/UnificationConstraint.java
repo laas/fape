@@ -11,7 +11,7 @@
 
 package fape.core.planning.constraints;
 
-import planstack.anml.model.VarRef;
+import planstack.anml.model.concrete.VarRef;
 
 /**
  *

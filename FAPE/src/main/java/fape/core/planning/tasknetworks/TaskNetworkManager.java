@@ -11,8 +11,7 @@
 package fape.core.planning.tasknetworks;
 
 import fape.exceptions.FAPEException;
-import planstack.anml.model.ActRef;
-import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.graph.core.SimpleUnlabeledDigraph;
@@ -30,7 +29,7 @@ public class TaskNetworkManager {
     final UnlabeledDigraph<Action> network;
 
     public TaskNetworkManager() {
-        network = SimpleUnlabeledDigraph$.MODULE$.apply();
+        network = SimpleUnlabeledDigraph$.MODULE$.apply(); //TODO: More java-friendly factory in graphs
     }
 
     public TaskNetworkManager(UnlabeledDigraph<Action> network) {

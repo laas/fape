@@ -1,13 +1,13 @@
 /*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
+* Author:  Filip Dvořák <filip.dvorak@runbox.com>
+*
+* Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
+*
+* Publishing, providing further or using this program is prohibited
+* without previous written permission of the author. Publishing or providing
+* further the contents of this file is prohibited without previous written
+* permission of the author.
+*/
 package fape.core.execution;
 
 import fape.util.TinyLogger;
@@ -15,9 +15,9 @@ import java.io.*;
 import java.net.Socket;
 
 /**
- *
- * @author FD
- */
+*
+* @author FD
+*/
 public class Listener {
 
     /**
@@ -210,7 +210,7 @@ public class Listener {
     public void SimulateMessageReceived(String msg){
         receivedMessage("", msg);
     }
-    
+
     private void receivedMessage(String from, String message) {
         message = message.replaceAll("\\\\n", "\n");
         TinyLogger.LogInfo("Message received: " + message);

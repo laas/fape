@@ -14,6 +14,8 @@ import java.util.*;
  * particular TemporalDatabase.
  *
  * In the current state, analyse is repeated on every method invocation.
+ * An action is considered relevant iff it produce a change on the same function (which might be greatly
+ * improved by looking at the parameters types).
  */
 public class ActionSupporters {
 

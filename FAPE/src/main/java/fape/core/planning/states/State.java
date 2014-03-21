@@ -10,10 +10,8 @@
  */
 package fape.core.planning.states;
 
-import fape.Tester$;
 import fape.core.planning.constraints.ConstraintNetworkManager;
 import fape.core.planning.stn.STNManager;
-import fape.core.planning.stn.Utils$;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -21,17 +19,11 @@ import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
-import planstack.anml.model.ActRef;
-import planstack.anml.model.TPRef;
-import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.time.TemporalAnnotation;
-import planstack.anml.model.concrete.StateModifier;
-import planstack.anml.model.concrete.TemporalConstraint;
-import planstack.anml.model.concrete.TemporalInterval;
 import planstack.anml.model.concrete.statements.*;
 import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
-import scala.util.parsing.combinator.testing.Tester;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -184,12 +176,42 @@ public class State {
         return null;
     }
 
-    /* TODO: Recreate
-    public void FailAction(Integer pop) {
-            taskNet.FailAction(pop);
-    }*/
+    /**
+     * Marks an action as being currently executed.
+     * @param actRef Reference of the action to update.
+     */
+    public void setActionExecuting(ActRef actRef) {
+        taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTING);
+    }
 
-    public void SplitDatabase(LogStatement s) {
+    /**
+     * Marks an action as executed (ie. was carried out with success).
+     * @param actRef Reference to the action to update.
+     */
+    public void setActionSuccess(ActRef actRef) {
+        taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTED);
+    }
+
+    /**
+     * Marks an action as failed. All statement of the action are removed from this state.
+     * @param actRef Reference of the action to update.
+     */
+    public void setActionFailed(ActRef actRef) {
+        Action toRemove = taskNet.GetAction(actRef);
+        toRemove.setStatus(ActionStatus.FAILED);
+
+        for (TemporalStatement ts : toRemove.jStatements()) {
+            removeStatement(ts.statement());
+        }
+    }
+
+    /**
+     * Remove a statement from the state.
+     * It does so by identifying the temporal database in which the statement appears and removing
+     * it from the database. If necessary, the database is split in two.
+     * @param s Statement to remove.
+     */
+    public void removeStatement(LogStatement s) {
         TemporalDatabase theDatabase = tdb.getDBContaining(s);
 
         // First find which component contains s
@@ -455,7 +477,7 @@ public class State {
         for(String instance : mod.jInstances()) {
             List<String> domain = new LinkedList<>();
             domain.add(instance);
-            conNet.AddVariable(new VarRef(instance), domain);
+            conNet.AddVariable(pb.instances().referenceOf(instance), domain);
         }
 
         // Declare new variables to the constraint network.

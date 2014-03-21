@@ -12,7 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
-import planstack.anml.model.VarRef;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 
