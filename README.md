@@ -2,10 +2,50 @@
 
 Implementation of an ANML parser using scala combinator parsers.
 
+It provides a full model of an ANML problem that should be readily usable from
+any JVM planner.
+The library itself is written in Scala and uses scala collections. 
+Methods are provided for easy integration into a Java planner: methods
+prepended with `j` returns java collections instead of scala ones.
+
+Documentation for this project can be accessed through
+[Javadoc](http://planstack.github.io/repository/api/java/anml/) or
+[Scaladoc](http://planstack.github.io/repository/api/scala/anml/).
+
+## Usage 
+
+Build is done with [SBT](http://www.scala-sbt.org/).
+
+To use it as a dependency on your project, add the following to your `pom.xml`
+
+```
+<dependencies>
+    ...
+    <dependency>
+        <groupId>planstack</groupId>
+        <artifactId>planstack-constraints</artifactId>
+        <version>0.2-SNAPSHOT</version>
+    </dependency>
+</dependencies>
+<repositories>
+    ...
+    <repository>
+        <id>planstackmaven</id>
+        <name>planstack-maven</name>
+        <url>http://planstack.github.io/repository/maven/</url>
+        <layout>default</layout>
+    </repository>
+</repositories>
+```
+
+You can also find jars [here](http://planstack.github.io/repository/maven/)
+but we recommend you to use maven to keep track of updates.
+
 ## ANML
 
-This gives a quick introduction to supported subset of ANML that is supported
-by this parser. For a more complete definition, please look at the ANML manual.
+This gives a quick introduction to the subset of ANML that is supported
+by this parser. 
+If you are not familiar with ANML, you should first have a look a the ANML manual.
 
 ### Types
 
@@ -128,7 +168,7 @@ It is possible to give the same annotation to several statements:
 
 ### Actions
 
-Action are operators having typed operators and that might contain any number
+Action are operators having typed parameters and that might contain any number
 of statements. In the following example, the transition statement's start and
 end timepoints are equals to those of the action.
 
