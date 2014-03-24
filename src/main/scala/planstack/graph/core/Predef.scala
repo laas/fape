@@ -1,11 +1,15 @@
 package planstack.graph.core
 
-import planstack.graph.core.impl.{SimpleUnlabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList}
+import planstack.graph.core.impl.{MultiLabeledDirectedAdjacencyList, SimpleUnlabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList}
 
 
 /** A directed graph with labeled edges */
 trait LabeledDigraph[V,EL] extends Graph[V,EL, LabeledEdge[V,EL]] with LabeledGraph[V,EL] with DirectedGraph[V, EL, LabeledEdge[V,EL]] {
   def cc : LabeledDigraph[V,EL]
+}
+
+object LabeledDigraph {
+  def apply[V,EL]() : LabeledDigraph[V,EL] = new MultiLabeledDirectedAdjacencyList[V,EL]()
 }
 
 /** A directed graph with no label on its edges */
@@ -14,7 +18,7 @@ trait UnlabeledDigraph[V] extends Graph[V, Nothing, Edge[V]] with UnlabeledGraph
 }
 
 object UnlabeledDigraph {
-  def apply[V] = new MultiUnlabeledDirectedAdjacencyList[V]()
+  def apply[V]() = new MultiUnlabeledDirectedAdjacencyList[V]()
 }
 
 /** A simple directed graph with labeled edges */

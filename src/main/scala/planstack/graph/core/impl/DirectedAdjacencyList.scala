@@ -17,7 +17,7 @@ abstract class DirectedAdjacencyList[V, EL, E <: Edge[V]](val mOutEdges : mutabl
 
 
   def addVertex(v:V) : Int = {
-    assert(!contains(v))
+    assert(!contains(v), "Graph already contains vertex: "+v)
 
     val vertId = this.numVertices
     mInEdges.append(List[E]())
