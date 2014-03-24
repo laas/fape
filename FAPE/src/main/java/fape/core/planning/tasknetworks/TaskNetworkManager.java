@@ -85,67 +85,7 @@ public class TaskNetworkManager {
             network.addEdge(a.parent(), a);
         }
     }
-//
-//    /**
-//     *
-//     * @param act
-//     */
-//    public void AddSeed(Action act) {
-//        roots.add(act);
-//    }
-//
-//    /**
-//     *
-//     * @param a
-//     * @param abs
-//     * @param actions
-//     * @return which decompositions (numbers in the sequence) provides the
-//     * needed action
-//     */
-//    public List<Integer> DecomposesIntoDesiredAction(AbstractAction a, HashSet<String> abs, HashMap<String, AbstractAction> actions) {
-//        List<Integer> ret = new LinkedList<>();
-//        if (abs.contains(a.name)) {
-//            ret.add(0);
-//        } else {
-//            int ct = 0; //relative number of the decomposition
-//            for (Pair<List<ActionRef>, List<TemporalConstraint>> p : a.strongDecompositions) {
-//                for (ActionRef ref : p.value1) {
-//                    List<Integer> res = DecomposesIntoDesiredAction(actions.get(ref.name), abs, actions);
-//                    if (!res.isEmpty()) {
-//                        ret.add(ct);
-//                    }
-//                }
-//                ct++;
-//            }
-//        }
-//        return ret;
-//    }
-//
-//    /**
-//     *
-//     * @param abs
-//     * @param actions
-//     * @return
-//     */
-//    public List<SupportOption> GetDecompositionCandidates(HashSet<String> abs, HashMap<String, AbstractAction> actions) {
-//        List<SupportOption> ret = new LinkedList<>();
-//        //lets run dfs to find the action names we like
-//        List<Action> openLeaves = GetOpenLeaves();
-//        for (Action a : openLeaves) {
-//            List<Integer> res = DecomposesIntoDesiredAction(actions.get(a.name), abs, actions);
-//            if (!res.isEmpty()) {
-//                for (Integer i : res) {
-//                    SupportOption o = new SupportOption();
-//                    o.actionToDecompose = a.mID;
-//                    o.decompositionID = i;
-//                    ret.add(o);
-//                }
-//            }
-//        }
-//        return ret;
-//    }
-//
-//
+
     /**
      * Performs recursively a deep copy on the task network manager and all its
      * actions.
@@ -198,40 +138,4 @@ public class TaskNetworkManager {
         }
         return null;
     }
-
-//    /**
-//     * flips the "removed" switch on an action, since the action failed we do
-//     * not consider it to ba a part of plan anymore
-//     *
-//     * @param id the id of the action
-//     */
-//    public void FailAction(Integer id) {
-//        Action a = GetAction(id);
-//        if(a != null)
-//            a.status = Action.Status.FAILED;
-//        else
-//            throw new FAPEException("Unable to fail action: id "+id+" does not exist.");
-//    }
-//
-//    public void SetActionSuccess(Integer id) {
-//        Action a = GetAction(id);
-//        if(a != null) {
-//            if(a.status != Action.Status.EXECUTING)
-//                TinyLogger.LogInfo("WARNING: setting action' status to EXECUTED while its current status is not EXECUTING");
-//            a.status = Action.Status.EXECUTED;
-//        } else
-//            throw new FAPEException("Unable to report success of action: id "+id+" does not exist.");
-//
-//    }
-//
-//    public void SetActionExecuting(Integer id) {
-//        Action a = GetAction(id);
-//        if(a != null) {
-//            if(a.status != Action.Status.PENDING)
-//                TinyLogger.LogInfo("WARNING: setting action' status to EXECUTING while its current status is not PENDING");
-//            a.status = Action.Status.EXECUTING;
-//        } else
-//            throw new FAPEException("Unable to report execution of action: id "+id+" does not exist.");
-//
-//    }
 }

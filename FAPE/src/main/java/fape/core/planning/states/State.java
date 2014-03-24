@@ -490,6 +490,10 @@ public class State {
             apply(mod, ts);
         }
 
+        for(Action act : mod.jActions()) {
+            insert(act);
+        }
+
         for(TemporalConstraint tc : mod.jTemporalConstraints()) {
             apply(mod, tc);
         }
