@@ -99,15 +99,16 @@ R0.left := G0;
 R0.right := G1;
 };
 
+/*
 [end] {
 I0.mLocation == L2;
 };
+*/
 
-/*
 action Seed(){
   :decomposition{ unordered(
-   Transport(r0_, I0, loc1_, L3),
-   Transport(r2_, I1, loc3_, L3)
+   Transport(r0_, I0, loc1_, L2),
+   Transport(r2_, I0, loc3_, L1)
   )};
 };
-*/
+

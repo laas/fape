@@ -114,8 +114,9 @@ class AnmlProblem extends TemporalInterval {
 
       if(abs.name == "Seed" || abs.name == "seed") {
         val localRef = new LActRef()
-        context.addActionID(localRef, new ActRef())
-        val act = Action(this, new AbstractActionRef(abs.name, null, localRef),null)
+        val globalRef = new ActRef()
+        context.addActionID(localRef, globalRef)
+        val act = Action.getNewStandaloneAction(this, abs)
         modifier = modifier.withActions(act)
       }
     })
