@@ -9,6 +9,16 @@ import planstack.anml.model.{LVarRef, PartialContext, AnmlProblem}
 
 import collection.JavaConversions._
 
+/** An abstract action is an representation for an action as it is defined in an ANML problem.
+  * It gives, for an action, an abstract view of what it does, regardless of the parameters it will be given when instantiated.
+  *
+  * Hence all components of an action refer either to local references (such as an argument of the action) or problem
+  * instances (defined in the ANML problem).
+  *
+  * @param name
+  * @param args
+  * @param context
+  */
 class AbstractAction(val name:String, val args:List[LVarRef], val context:PartialContext)  {
 
   /** All abstract decompositions appearing in this action */

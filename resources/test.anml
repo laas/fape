@@ -1,24 +1,3 @@
-/**
- * Dream World domain in ANML
- * 
- * so far adapted for the clean table example
- *   
- * Filip Dvořák <filip.dvorak@runbox.com>
- * LAAS-CNRS
- *  
- * version 0.1 [draft]    
- * version 0.2 [prepared for parsing]    
- * version 0.3 [getting ready for execution]    
- * version 0.4 [realistic example]     
- * version 0.5 [action-addition example]
- * version 0.6 [running addition example]       
- * version 0.7 [this is a generated problem]       
- * 
- * TODO:
- *  - sanity checks
- *     
- */ 
-
 
 type Location < object;
 
@@ -78,9 +57,10 @@ action Move(Robot r, Location a, Location b){
 
 action Transport(Robot r, Item i, Location a, Location b){
 
-  :decomposition{ordered(
-    PickWithRightGripper(r, r.right,i, a),
-    DropWithRightGripper(r, r.right,i, b)
+  :decomposition{ 
+    ordered(
+      PickWithRightGripper(r, r.right,i, a),
+      DropWithRightGripper(r, r.right,i, b)
   )};
 
 };
@@ -99,11 +79,11 @@ R0.left := G0;
 R0.right := G1;
 };
 
-/*
+
 [end] {
 I0.mLocation == L2;
 };
-*/
+
 
 action Seed(){
   :decomposition{ unordered(
