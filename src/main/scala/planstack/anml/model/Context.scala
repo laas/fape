@@ -5,7 +5,15 @@ import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
 import planstack.anml.model.concrete.{ActRef, VarRef}
 
-
+/**
+ * A context defines mapping between local references appearing in abstract objects and
+ * global references appearing in concrete objects. Those context are defined for the problem,
+ * actions and decompositions.
+ *
+ * It optionally refers to a parent context where more mappings might be defined.
+ *
+ *
+ */
 abstract class AbstractContext {
 
   def parentContext : Option[AbstractContext]
@@ -28,6 +36,7 @@ abstract class AbstractContext {
     }
   }
 
+  /** Checks if the local variable is defined in this context or its parent context. */
   def contains(localName:LVarRef) = {
     try {
       getDefinition(localName)
@@ -37,12 +46,24 @@ abstract class AbstractContext {
     }
   }
 
-  def getType(localName:LVarRef) : String = getDefinition(localName)._1
+  /** Looks up for the type of the local variable.
+    * 
+    * @param localRef Reference to the local variable to look up.
+    * @return The type of this local variable. Trows an ANMLException if this variable is
+    *         not defined.
+    */
+  def getType(localRef:LVarRef) : String = getDefinition(localRef)._1
 
-  def getGlobalVar(localName:LVarRef) : VarRef = {
-    val (tipe, globalName) = getDefinition(localName)
+  /** Looks up the global reference associated to this local variable.
+    * 
+    * @param localRef Reference to the local variable to look up.
+    * @return The global variable reference associated with this local variable. Throws an ANMLException if this
+    *         local variable is not defined.
+    */
+  def getGlobalVar(localRef:LVarRef) : VarRef = {
+    val (tipe, globalName) = getDefinition(localRef)
     if(globalName.isEmpty)
-      throw new ANMLException("Variable %s has no global definition".format(localName))
+      throw new ANMLException("Variable %s has no global definition".format(localRef))
     else
       globalName
   }
@@ -63,6 +84,11 @@ abstract class AbstractContext {
     }
   }
 
+  /** Adds both the local and global reference to an AbstractAction/Action
+    *
+    * @param localID Local reference of the AbstractAction
+    * @param globalID Global reference of the Action
+    */
   def addActionID(localID:LActRef, globalID:ActRef) {
     assert(!actions.contains(localID) || actions(localID).isEmpty)
     actions(localID) = globalID
@@ -71,6 +97,32 @@ abstract class AbstractContext {
 
 }
 
+/** A context where all references are fully defined (i.e. every local reference has a corresponding global reference).
+  *
+  * {{{
+  *   // Definition of the action
+  *   action Move(Location a, Location b) {
+  *     ...
+  *   };
+  *
+  *   // Reference of the action, where LA is an instance of type Location
+  *   Move(LA, any_)
+  * }}}
+  *
+  * The previous example would give an [[planstack.anml.model.concrete.Action]] with the following Context:
+  *
+  *  - parentContext: `Some(anmlProblem)`
+  *
+  *  - variables : `{ a -> (Location, LA, b -> (Location, any_ }`
+  *
+  *  - actions: {}
+  *
+  *  - varsToCreate: `{(Location, any_)}`
+  *
+  * @param parentContext An optional parent context. If given it has to be a [[planstack.anml.model.Context]] (ie fully defined).
+  * @param varsToCreate All (Type, VarRef) pair that need to be created such that every global variable mentionned in this context
+  *                     exists in the state.
+  */
 class Context(
     val parentContext:Option[Context],
     val varsToCreate :ListBuffer[Pair[String,VarRef]] = ListBuffer())

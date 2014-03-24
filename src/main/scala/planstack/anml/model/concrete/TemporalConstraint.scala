@@ -2,8 +2,6 @@ package planstack.anml.model.concrete
 
 import planstack.anml.model.{LActRef, Context}
 import planstack.anml.model.abs.{AbstractTemporalConstraint}
-import planstack.anml.model.abs.time.AbstractTimepointRef
-import planstack.anml.ANMLException
 import planstack.anml.model.concrete.time.TimepointRef
 
 

@@ -35,7 +35,7 @@ trait StateModifier {
 
   /** Actions to be inserted in the plan */
   def actions : Seq[Action]
-  /** Actions to be inserted in the plan */
+  /** Java friendly version of: [[planstack.anml.model.concrete.StateModifier#actions]] */
   def jActions = seqAsJavaList(actions)
 
   /** (Type, Reference) of global variables to be declared */

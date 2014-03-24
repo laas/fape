@@ -11,10 +11,16 @@ import collection.JavaConversions._
 
 class AbstractAction(val name:String, val args:List[LVarRef], val context:PartialContext)  {
 
+  /** All abstract decompositions appearing in this action */
   val decompositions = mutable.ArrayBuffer[AbstractDecomposition]()
+
+  /** Java-friendly version of [[planstack.anml.model.abs.AbstractAction#decompositions]]. */
   def jDecompositions = seqAsJavaList(decompositions)
 
+  /** All abstract temporal statements appearing in this action */
   val temporalStatements = mutable.ArrayBuffer[AbstractTemporalStatement]()
+
+  /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jTemporalStatements = seqAsJavaList(temporalStatements)
 
 }

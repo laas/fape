@@ -11,6 +11,10 @@ object GlobalRef {
 
 import GlobalRef._
 
+/** Global reference to an anml object.
+  *
+  * @param id Unique id of the reference.
+  */
 class GlobalRef(val id:T) {
   def this() = this(getNext)
 
@@ -32,19 +36,29 @@ class GlobalRef(val id:T) {
   }
 }
 
-
+/** Reference to a concrete [[planstack.anml.model.concrete.Action]]. */
 class ActRef(id:T) extends GlobalRef(id) {
+
+  /** Builds a new ActRef with a new unique ID */
   def this() = this(getNext)
 }
 
 object EmptyActRef extends ActRef(NullID)
 
+/** Reference to a concrete variable (those typically appear as parameters of state variables and in
+  * binding constraints).
+  * @param id Unique id of the reference.
+  */
 class VarRef(id:T) extends GlobalRef(id) {
   def this() = this(getNext)
 }
 
 object EmptyVarRef extends VarRef(NullID)
 
+/** Reference to a time-point: an temporal variable typically denoting the start or end time of an action
+  * and appear in Simple Temporal Problems.
+  * @param id Unique id of the reference.
+  */
 class TPRef(id:T) extends GlobalRef(id) {
   def this() = this(getNext)
 }

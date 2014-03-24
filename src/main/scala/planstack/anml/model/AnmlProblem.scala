@@ -49,7 +49,7 @@ class AnmlProblem extends TemporalInterval {
   private var nextGlobalVarID = 0
   private var nextActionID = 0
 
-  // create an initial modifier containing the predifined instances (true and false)
+  // create an initial modifier containing the predefined instances (true and false)
   modifiers += new BaseStateModifier(this, Nil, Nil, Nil, instances.instances.map(_._1))
 
 

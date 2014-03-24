@@ -16,7 +16,7 @@ lazy val graph = RootProject(file("../graph"))
 
 lazy val root = Project(id = "anml", base = file(".")) dependsOn(graph)
 
-javacOption := 1.7
+//javacOption := 1.7
 
 val JavaDoc = config("genjavadoc") extend Compile
 
