@@ -79,9 +79,11 @@ R0.right := G1;
 
 
 [all] contains {
-I0.mLocation == L2;
-I0.mLocation == L0;
+goal1 : I0.mLocation == L2;
+goal2 : I0.mLocation == L0;
 };
+
+end(goal1) < start(goal2);
 
 /*
 action Seed(){

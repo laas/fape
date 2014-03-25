@@ -154,7 +154,7 @@ object Action {
     act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
 
     contextOpt match {
-      case Some(parent) => parent.addActionID(ref.localId, act)
+      case Some(parent) => parent.addAction(ref.localId, act)
       case _ =>
     }
 

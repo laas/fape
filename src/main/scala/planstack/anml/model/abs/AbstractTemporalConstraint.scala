@@ -1,15 +1,9 @@
 package planstack.anml.model.abs
 
 import planstack.anml.parser
-import planstack.anml.model.{LActRef}
+import planstack.anml.model.{LocalRef, LActRef}
 import planstack.anml.model.abs.time.AbstractTimepointRef
 
-
-class AbstractTimePointExtractor(val extractor:String, val id:String) {
-  require(Set("start", "end").contains(extractor))
-
-  override def toString = "%s(%s)".format(extractor, id)
-}
 
 class AbstractTemporalConstraint(
     val tp1:AbstractTimepointRef,

@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.{AnmlProblem, LocalRef, LActRef, Context}
+import planstack.anml.model._
 import planstack.anml.model.abs.time.AbstractTimepointRef
 import planstack.anml.ANMLException
 import planstack.anml.model.concrete.{TemporalInterval, TPRef, EmptyGlobalRef, GlobalRef}
@@ -37,6 +37,8 @@ object TimepointRef {
         val interval :TemporalInterval = abs.id match {
           case empty :LocalRef if empty.isEmpty => context.interval
           case actID :LActRef => context.getAction(actID)
+          case statementID :LStatementRef => context.getStatement(statementID)
+          case ref :LocalRef => context.getIntervalWithID(ref)
           case _ => throw new ANMLException("Unable to extract interval from context:"+abs)
         }
         abs.extractor match {

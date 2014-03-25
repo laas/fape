@@ -4,6 +4,7 @@ import scala.collection.mutable
 import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
 import planstack.anml.model.concrete.{TemporalInterval, Action, VarRef}
+import planstack.anml.model.concrete.statements.Statement
 
 /**
  * A context defines mapping between local references appearing in abstract objects and
@@ -20,6 +21,18 @@ abstract class AbstractContext {
   protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
   protected val actions = mutable.Map[LActRef, Action]()
+
+  protected val statements = mutable.Map[LStatementRef, Statement]()
+
+  def getIntervalWithID(ref:LocalRef) : TemporalInterval = {
+    if(actions.contains(new LActRef(ref.id))) {
+      actions(new LActRef(ref.id))
+    } else if(statements.contains(new LStatementRef(ref.id))) {
+      statements(new LStatementRef(ref.id))
+    } else {
+      throw new ANMLException("Unable to find an interval with ID: "+ref)
+    }
+  }
 
   /**
    * @param localName Name of the local variable to look up
@@ -84,12 +97,22 @@ abstract class AbstractContext {
     }
   }
 
+  def addStatement(localRef:LStatementRef, statement:Statement) {
+    assert(!statements.contains(localRef) || statements(localRef) == null)
+    statements.put(localRef, statement)
+  }
+
+  def getStatement(localRef:LStatementRef) : Statement = {
+    assert(statements.contains(localRef) && statements(localRef) != null)
+    statements(localRef)
+  }
+
   /** Adds both the local and global reference to an AbstractAction/Action
     *
     * @param localID Local reference of the AbstractAction
     * @param globalID Global reference of the Action
     */
-  def addActionID(localID:LActRef, globalID:Action) {
+  def addAction(localID:LActRef, globalID:Action) {
     assert(!actions.contains(localID) || actions(localID) == null)
     actions(localID) = globalID
   }

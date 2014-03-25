@@ -9,7 +9,7 @@ import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.statements.TemporalStatement
-import planstack.anml.model.abs.{AbstractTemporalStatement, AbstractActionRef, AbstractAction}
+import planstack.anml.model.abs.{AbstractTemporalConstraint, AbstractTemporalStatement, AbstractActionRef, AbstractAction}
 import scala.Some
 
 
@@ -111,6 +111,7 @@ class AnmlProblem extends TemporalInterval {
       val ts = AbstractTemporalStatement(this, this.context, tempStatement)
       val annotatedStatement = TemporalStatement(this, context, ts)
       modifier.statements += annotatedStatement.statement
+      context.addStatement(ts.statement.id, annotatedStatement.statement)
       modifier.temporalConstraints ++= annotatedStatement.getTemporalConstraints
     })
 
@@ -121,9 +122,14 @@ class AnmlProblem extends TemporalInterval {
       if(abs.name == "Seed" || abs.name == "seed") {
         val localRef = new LActRef()
         val act = Action.getNewStandaloneAction(this, abs)
-        context.addActionID(localRef, act)
+        context.addAction(localRef, act)
         modifier.actions += act
       }
+    })
+
+    blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
+      val abs = AbstractTemporalConstraint(constraint)
+      modifier.temporalConstraints += TemporalConstraint(this, context, abs)
     })
 
     modifiers += modifier

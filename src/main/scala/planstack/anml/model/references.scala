@@ -30,13 +30,20 @@ class LocalRef(val id:T) {
   }
 }
 
-
+/** Local reference to an action */
 class LActRef(id:T) extends LocalRef(id) {
   require(id != NullID)
 
   def this() = this(getNext)
 }
+
+/** Local reference to a variable */
 class LVarRef(id:T) extends LocalRef(id) {
+  def this() = this(getNext)
+}
+
+/** Local reference to a statement */
+class LStatementRef(id:T) extends LocalRef(id) {
   def this() = this(getNext)
 }
 

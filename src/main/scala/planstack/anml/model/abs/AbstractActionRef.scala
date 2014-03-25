@@ -42,7 +42,7 @@ object AbstractActionRef {
           val varName = context.getNewLocalVar("object")
           val ts = new AbstractTemporalStatement(
             AbstractTemporalAnnotation("start","end"),
-            new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName))
+            new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName, new LStatementRef()))
           (varName, Some(ts))
         }
       }

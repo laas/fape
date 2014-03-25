@@ -55,7 +55,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
     }
 
     for((localActionID, action) <- actions) {
-      context.addActionID(localActionID, action)
+      context.addAction(localActionID, action)
     }
     context
   }

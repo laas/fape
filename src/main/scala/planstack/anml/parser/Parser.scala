@@ -219,6 +219,7 @@ object AnmlParser extends JavaTokenParsers {
   def block : Parser[List[AnmlBlock]] = (
       action ^^ (a => List(a))
     | temporalStatements
+    | tempConstraint<~";" ^^ (x => List(x))
     | functionDecl ^^ (func => List(func))
     | typeDecl ^^ (t => List(t))
     | instanceDecl

@@ -31,7 +31,7 @@ object AbstractTimepointRef {
       case parser.TimepointRef("", "") => new AbstractTimepointRef("GStart", new LocalRef(""))
       case parser.TimepointRef("", _) => throw new ANMLException("Invalid timepoint reference: "+parsed)
       case parser.TimepointRef(extractor, "") => new AbstractTimepointRef(extractor, new LocalRef(""))
-      case parser.TimepointRef(extractor, id) => new AbstractTimepointRef(extractor, new LActRef(id))
+      case parser.TimepointRef(extractor, id) => new AbstractTimepointRef(extractor, new LocalRef(id))
     }
   }
 
