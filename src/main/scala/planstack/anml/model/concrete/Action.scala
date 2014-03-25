@@ -6,7 +6,7 @@ import planstack.anml.model._
 import planstack.anml.model.concrete.statements.{LogStatement, TemporalStatement, Statement}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
-
+import scala.collection.mutable.ListBuffer
 
 
 /** Represents a concrete action that is to be inserted into a plan. All parameters of the action refer to one global
@@ -22,17 +22,20 @@ import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
   * @param context Context of the action, containing mapping from local to global variables. Most notably contains a
   *                mapping from parameters to actual global variables. It differs from
   *                the context in which the action is declared (that can be accessed in `context.parentContext`.
-  * @param statements Concrete statements to be inserted in the plan when this action is applied
   * @param id Global id of the action, used for future reference within anml statements.
   * @param parentAction The parent action if it is issued from a decomposition
   */
 class Action(
     val abs:AbstractAction,
     val context:Context,
-    val statements:List[TemporalStatement],
     val id:ActRef,
     val parentAction:Option[Action])
   extends StateModifier with TemporalInterval {
+
+  assert(context.interval == null)
+  context.setInterval(this)
+
+  val statements = ListBuffer[TemporalStatement]()
 
   private var mStatus = ActionStatus.PENDING
 
@@ -137,9 +140,9 @@ object Action {
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), parentContext.getGlobalVar(ref.args(i)))
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
 
-    val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
+    val act = new Action(abs, context, new ActRef(), parentAction)
+    act.statements ++= abs.temporalStatements.map(TemporalStatement(pb, context, _)).toList
 
-    val act = new Action(abs, context, statements, new ActRef(), parentAction)
     contextOpt match {
       case Some(parent) => parent.addActionID(ref.localId, act)
       case _ =>
@@ -163,8 +166,10 @@ object Action {
 
     val context = abs.context.buildContext(pb, Some(parentContext))
 
-    val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
+    val act = new Action(abs, context, new ActRef(), None)
 
-    new Action(abs, context, statements, new ActRef(), None)
+    act.statements ++= abs.temporalStatements.map(TemporalStatement(pb, context, _))
+
+    act
   }
 }

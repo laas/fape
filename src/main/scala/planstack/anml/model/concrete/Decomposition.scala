@@ -4,14 +4,20 @@ import planstack.anml.model.concrete.statements.TemporalStatement
 import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.AbstractDecomposition
+import scala.collection.mutable.ListBuffer
 
 class Decomposition(
     val context:Context,
-    val statements:List[TemporalStatement],
-    val temporalConstraints:List[TemporalConstraint],
-    val actions:List[Action],
     val container:Action)
   extends StateModifier with TemporalInterval {
+
+
+  val statements = ListBuffer[TemporalStatement]()
+  val temporalConstraints = ListBuffer[TemporalConstraint]()
+  val actions = ListBuffer[Action]()
+
+  assert(context.interval == null)
+  context.setInterval(this)
 
   def vars = context.varsToCreate
 }
@@ -22,12 +28,12 @@ object Decomposition {
   def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition) : Decomposition = {
     val context = dec.context.buildContext(pb, Some(parent.context))
 
-    val statements = dec.temporalStatements.map(TemporalStatement(context, _))
+    val decomposition = new Decomposition(context, parent)
 
-    val actions = dec.actions.map(Action(pb, _, Some(parent), Some(context)))
+    decomposition.statements ++= dec.temporalStatements.map(TemporalStatement(pb, context, _))
+    decomposition.actions ++= dec.actions.map(Action(pb, _, Some(parent), Some(context)))
+    decomposition.temporalConstraints ++= dec.precedenceConstraints.map(TemporalConstraint(pb, context, _))
 
-    val tConst = dec.precedenceConstraints.map(TemporalConstraint(context, _))
-
-    new Decomposition(context, statements.toList, tConst.toList, actions.toList, parent)
+    decomposition
   }
 }

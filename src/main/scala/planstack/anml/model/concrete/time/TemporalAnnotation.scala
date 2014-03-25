@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.Context
+import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 
 
@@ -16,9 +16,9 @@ class TemporalAnnotation(val start:RelativeTimePoint, val end:RelativeTimePoint)
 
 object TemporalAnnotation {
 
-  def apply(context:Context, abs:AbstractTemporalAnnotation) =
+  def apply(pb:AnmlProblem, context:Context, abs:AbstractTemporalAnnotation) =
     new TemporalAnnotation(
-      RelativeTimePoint(context, abs.start),
-      RelativeTimePoint(context, abs.end))
+      RelativeTimePoint(pb, context, abs.start),
+      RelativeTimePoint(pb, context, abs.end))
 
 }

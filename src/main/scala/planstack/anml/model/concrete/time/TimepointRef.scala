@@ -1,9 +1,9 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.{LocalRef, LActRef, Context}
+import planstack.anml.model.{AnmlProblem, LocalRef, LActRef, Context}
 import planstack.anml.model.abs.time.AbstractTimepointRef
 import planstack.anml.ANMLException
-import planstack.anml.model.concrete.{EmptyGlobalRef, GlobalRef}
+import planstack.anml.model.concrete.{TemporalInterval, TPRef, EmptyGlobalRef, GlobalRef}
 
 /** Reference to a time point, it is used to represent timepoints such as the beginning of an action
   * which would be written `start(a2)` in ANML.
@@ -29,11 +29,22 @@ class TimepointRef(val extractor:String, val id:GlobalRef) {
 
 object TimepointRef {
 
-  def apply(context:Context, abs:AbstractTimepointRef) = {
-    abs.id match {
-      case actID:LActRef => new TimepointRef(abs.extractor, context.getAction(actID).id)
-      case loc:LocalRef if loc.isEmpty => new TimepointRef(abs.extractor, EmptyGlobalRef)
-      case _ => throw new ANMLException("Unable to extract ID from context: "+abs.id)
+  def apply(pb:AnmlProblem, context:Context, abs:AbstractTimepointRef) : TPRef = {
+    abs.extractor match {
+      case "GStart" => pb.start
+      case "GEnd" => pb.end
+      case _ => {
+        val interval :TemporalInterval = abs.id match {
+          case empty :LocalRef if empty.isEmpty => context.interval
+          case actID :LActRef => context.getAction(actID)
+          case _ => throw new ANMLException("Unable to extract interval from context:"+abs)
+        }
+        abs.extractor match {
+          case "start" => interval.start
+          case "end" => interval.end
+          case _ => throw new ANMLException("Unsupported timepoint ref: "+abs)
+        }
+      }
     }
   }
 }

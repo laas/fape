@@ -16,6 +16,6 @@ class TemporalStatement(val interval:TemporalAnnotation, val statement:LogStatem
 
 object TemporalStatement {
 
-  def apply(context:Context, abs:AbstractTemporalStatement) =
-    new TemporalStatement(TemporalAnnotation(context, abs.annotation), abs.statement.bind(context))
+  def apply(pb:AnmlProblem, context:Context, abs:AbstractTemporalStatement) =
+    new TemporalStatement(TemporalAnnotation(pb, context, abs.annotation), abs.statement.bind(context))
 }

@@ -1,7 +1,8 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.Context
+import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.model.abs.time.AbstractRelativeTimePoint
+import planstack.anml.model.concrete.TPRef
 
 /** Refers to a virtual timepoint placed relatively to a concrete timepoint.
   *
@@ -14,7 +15,7 @@ import planstack.anml.model.abs.time.AbstractRelativeTimePoint
   * @param delta Number of time units between `timepoint` and this relative timepoint. If `delta` is negative, the relative
   *              time points occurs before `timepoint`
   */
-class RelativeTimePoint(val timepoint:TimepointRef, val delta:Int) {
+class RelativeTimePoint(val timepoint:TPRef, val delta:Int) {
 
   override def toString =
     if(delta == 0)
@@ -27,7 +28,7 @@ class RelativeTimePoint(val timepoint:TimepointRef, val delta:Int) {
 
 object RelativeTimePoint {
 
-  def apply(context:Context, abs:AbstractRelativeTimePoint) = {
-    new RelativeTimePoint(TimepointRef(context, abs.timepoint), abs.delta)
+  def apply(pb:AnmlProblem, context:Context, abs:AbstractRelativeTimePoint) = {
+    new RelativeTimePoint(TimepointRef(pb, context, abs.timepoint), abs.delta)
   }
 }

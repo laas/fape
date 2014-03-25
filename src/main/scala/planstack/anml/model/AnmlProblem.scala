@@ -34,6 +34,7 @@ class AnmlProblem extends TemporalInterval {
    */
   val functions = new FunctionManager
   val context = new Context(None)
+  context.setInterval(this)
 
   val abstractActions = ListBuffer[AbstractAction]()
   def jAbstractActions = seqAsJavaList(abstractActions)
@@ -105,7 +106,7 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
       val ts = AbstractTemporalStatement(this, this.context, tempStatement)
-      modifier = modifier.withStatements(TemporalStatement(context, ts))
+      modifier = modifier.withStatements(TemporalStatement(this, context, ts))
     })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {

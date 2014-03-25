@@ -3,7 +3,7 @@ package planstack.anml.model
 import scala.collection.mutable
 import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
-import planstack.anml.model.concrete.{Action, VarRef}
+import planstack.anml.model.concrete.{TemporalInterval, Action, VarRef}
 
 /**
  * A context defines mapping between local references appearing in abstract objects and
@@ -127,6 +127,10 @@ class Context(
     val parentContext:Option[Context],
     val varsToCreate :ListBuffer[Pair[String,VarRef]] = ListBuffer())
   extends AbstractContext {
+
+  var interval :TemporalInterval = null
+
+  def setInterval(interval : TemporalInterval) { this.interval = interval}
 
   def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
 }
