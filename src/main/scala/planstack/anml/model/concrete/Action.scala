@@ -150,6 +150,9 @@ object Action {
     act.statements ++= annotatedStatements.map(_.statement)
     act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
+
+    act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
+
     contextOpt match {
       case Some(parent) => parent.addActionID(ref.localId, act)
       case _ =>
@@ -179,6 +182,8 @@ object Action {
     val annotatedStatements = abs.temporalStatements.map(TemporalStatement(pb, context, _))
     act.statements ++= annotatedStatements.map(_.statement)
     act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
+
+    act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
 
     act
   }

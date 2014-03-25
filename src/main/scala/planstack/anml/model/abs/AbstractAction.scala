@@ -33,6 +33,8 @@ class AbstractAction(val name:String, val args:List[LVarRef], val context:Partia
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jTemporalStatements = seqAsJavaList(temporalStatements)
 
+  val temporalConstraints = mutable.ArrayBuffer[AbstractTemporalConstraint]()
+
 }
 
 object AbstractAction {
@@ -56,6 +58,9 @@ object AbstractAction {
       }
       case dec:parser.Decomposition => {
         action.decompositions += AbstractDecomposition(pb, action.context, dec)
+      }
+      case tempConstraint:parser.TemporalConstraint => {
+        action.temporalConstraints += AbstractTemporalConstraint(tempConstraint)
       }
     })
 

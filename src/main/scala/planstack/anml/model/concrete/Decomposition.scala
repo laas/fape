@@ -36,7 +36,7 @@ object Decomposition {
     decomposition.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
     decomposition.actions ++= dec.actions.map(Action(pb, _, Some(parent), Some(context)))
-    decomposition.temporalConstraints ++= dec.precedenceConstraints.map(TemporalConstraint(pb, context, _))
+    decomposition.temporalConstraints ++= dec.temporalConstraints.map(TemporalConstraint(pb, context, _))
 
     decomposition
   }

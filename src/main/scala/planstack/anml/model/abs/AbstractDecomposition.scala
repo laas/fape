@@ -5,6 +5,7 @@ import planstack.anml.parser
 import scala.collection.mutable.ListBuffer
 import planstack.anml.model.{AnmlProblem, PartialContext}
 import collection.JavaConversions._
+import planstack.anml.parser.PartiallyOrderedActionRef
 
 class AbstractDecomposition(parentContext:PartialContext) {
   val context = new PartialContext(Some(parentContext))
@@ -12,7 +13,7 @@ class AbstractDecomposition(parentContext:PartialContext) {
   val actions = ListBuffer[AbstractActionRef]()
   def jActions = seqAsJavaList(actions)
 
-  val precedenceConstraints = ListBuffer[AbstractTemporalConstraint]()
+  val temporalConstraints = ListBuffer[AbstractTemporalConstraint]()
   val temporalStatements = ListBuffer[AbstractTemporalStatement]()
 }
 
@@ -41,7 +42,7 @@ object AbstractDecomposition {
       case head :: Nil => addPrecedenceConstraints(dec, head)
       case head :: tail => {
         for(i <- extractAllInt(head) ; j <- extractAllInt(tail.head)) {
-          dec.precedenceConstraints += AbstractTemporalConstraint.before(dec.actions(i).localId, dec.actions(j).localId)
+          dec.temporalConstraints += AbstractTemporalConstraint.before(dec.actions(i).localId, dec.actions(j).localId)
         }
         addPrecedenceConstraints(dec, head)
         addPrecedenceConstraints(dec, tail)
@@ -67,8 +68,13 @@ object AbstractDecomposition {
   def apply(pb:AnmlProblem, context:PartialContext, pDec:parser.Decomposition) : AbstractDecomposition = {
     val dec = new AbstractDecomposition(context)
 
-    val precedenceStruct = addPOActions(pb, dec, pDec.actions)
-    addPrecedenceConstraints(dec, precedenceStruct)
+    pDec.content.foreach(_ match {
+      case actions:parser.PartiallyOrderedActionRef => {
+        val precedenceStruct = addPOActions(pb, dec, actions)
+        addPrecedenceConstraints(dec, precedenceStruct)
+      }
+      case constraint:parser.TemporalConstraint => dec.temporalConstraints += AbstractTemporalConstraint(constraint)
+    })
 
     dec
   }

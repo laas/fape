@@ -1,5 +1,6 @@
 package planstack.anml.model.abs
 
+import planstack.anml.parser
 import planstack.anml.model.{LActRef}
 import planstack.anml.model.abs.time.AbstractTimepointRef
 
@@ -20,6 +21,15 @@ class AbstractTemporalConstraint(
 }
 
 object AbstractTemporalConstraint {
+
+  def apply(parsed:parser.TemporalConstraint) : AbstractTemporalConstraint = {
+    new AbstractTemporalConstraint(
+      AbstractTimepointRef(parsed.tp1),
+      parsed.operator,
+      AbstractTimepointRef(parsed.tp2),
+      parsed.delta
+    )
+  }
 
   /** Returns a new Abstract temporal constraint enforcing action1 to be before action2
     *

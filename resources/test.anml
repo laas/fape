@@ -38,13 +38,12 @@ action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
 };
 
 action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
-  [start+1, end-1]{
+  [start+1, end-1] contains {
     r.right == g;
     g.empty == false :-> true;
     r.mLocation == l;
     s.mLocation == g :-> l; 
   };
-   
 }; 
 
 action Move(Robot r, Location a, Location b){
@@ -60,8 +59,7 @@ action Transport(Robot r, Item i, Location a, Location b){
   :decomposition{ 
     ordered(
       PickWithRightGripper(r, r.right,i, a),
-      DropWithRightGripper(r, r.right,i, b)
-  )};
+      DropWithRightGripper(r, r.right,i, b));};
 
 };
 
@@ -74,17 +72,18 @@ instance Location L0, L1, L2;
 G0.empty := true;
 G1.empty := true;
 R0.mLocation := L0;
-I0.mLocation := L1;
+myID : I0.mLocation := L1;
 R0.left := G0;
 R0.right := G1;
 };
 
 
-[end] {
+[all] contains {
 I0.mLocation == L2;
+I0.mLocation == L0;
 };
 
-
+/*
 action Seed(){
   :decomposition{ 
    unordered(
@@ -93,4 +92,4 @@ action Seed(){
    end(t1) = start(t2) +1;
   };
 };
-
+*/

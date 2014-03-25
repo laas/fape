@@ -6,6 +6,7 @@ import scala.util.parsing.combinator._
 
 sealed trait AnmlBlock
 sealed trait ActionContent
+sealed trait DecompositionContent
 sealed trait TypeContent
 
 
@@ -13,7 +14,9 @@ sealed trait TypeContent
 
 case class TemporalStatement(annotation:TemporalAnnotation, statement:Statement) extends AnmlBlock with ActionContent
 
-case class TemporalAnnotation(start:RelativeTimepoint, end:RelativeTimepoint)
+case class TemporalAnnotation(start:RelativeTimepoint, end:RelativeTimepoint, flag:String) {
+  require(flag == "is" || flag == "contains")
+}
 
 case class RelativeTimepoint(tp:Option[TimepointRef], delta:Int) {
   def this(str:String) = this(Some(new TimepointRef(str)), 0)
@@ -26,13 +29,13 @@ case class TimepointRef(extractor:String, id:String) {
 }
 
 
-sealed abstract class Statement(val variable:Expr)
+sealed abstract class Statement(val variable:Expr, val id:String)
 
-case class Assignment(left:Expr, right:VarExpr) extends Statement(left)
+case class Assignment(left:Expr, right:VarExpr, override val id:String) extends Statement(left, id)
 
-case class Transition(left:Expr, from:VarExpr, to:VarExpr) extends Statement(left)
+case class Transition(left:Expr, from:VarExpr, to:VarExpr, override val id:String) extends Statement(left, id)
 
-case class Persistence(left:Expr, value:VarExpr) extends Statement(left)
+case class Persistence(left:Expr, value:VarExpr, override val id:String) extends Statement(left, id)
 
 
 
@@ -40,9 +43,9 @@ case class Action(name:String, args:List[Argument], content:List[ActionContent])
 
 case class Argument(tipe:String, name:String)
 
-case class Decomposition(actions:PartiallyOrderedActionRef) extends ActionContent
+case class Decomposition(content:Seq[DecompositionContent]) extends ActionContent
 
-sealed trait PartiallyOrderedActionRef {
+sealed trait PartiallyOrderedActionRef extends DecompositionContent {
   def contained : Set[ActionRef]
 }
 
@@ -66,7 +69,10 @@ case class FuncExpr(svExpr:List[String], args:List[VarExpr]) extends Expr {
   override def functionName = svExpr.mkString(".")
 }
 
-
+case class TemporalConstraint(tp1:TimepointRef, operator:String, tp2:TimepointRef, delta:Int)
+  extends DecompositionContent with ActionContent with AnmlBlock {
+  require(operator == "=" || operator == "<")
+}
 
 case class Function(name:String, args:List[Argument], tipe:String, isConstant:Boolean) extends AnmlBlock with TypeContent
 
@@ -77,12 +83,22 @@ case class Instance(tipe:String, name:String) extends AnmlBlock
 object Comment extends AnmlBlock
 
 object AnmlParser extends JavaTokenParsers {
+
   def annotation : Parser[TemporalAnnotation] = (
+      annotationBase<~"contains" ^^ { case TemporalAnnotation(start, end, _) => TemporalAnnotation(start, end, "contains")}
+    | annotationBase
+    )
+
+  /** A temporal annotation like `[all]` `[start, end]`, `[10, end]`, ...
+    * The flag of this temporal annotation is set to "is" (it doesn't look for the "contains" keyword
+    * after the annotation
+    */
+  def annotationBase : Parser[TemporalAnnotation] = (
       "["~"all"~"]" ^^
-        (x => TemporalAnnotation(new RelativeTimepoint("start"), new RelativeTimepoint("end")))
+        (x => TemporalAnnotation(new RelativeTimepoint("start"), new RelativeTimepoint("end"), "is"))
       | "["~> repsep(timepoint,",") <~"]" ^^ {
-        case List(tp) => TemporalAnnotation(tp, tp)
-        case List(tp1, tp2) => TemporalAnnotation(tp1, tp2)
+        case List(tp) => TemporalAnnotation(tp, tp, "is")
+        case List(tp1, tp2) => TemporalAnnotation(tp1, tp2, "is")
     })
 
   def timepoint : Parser[RelativeTimepoint] = (
@@ -102,24 +118,37 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   def statement : Parser[Statement] = (
+      word~":"~statementWithoutId ^^ {
+        case id~":"~Persistence(sv, value, _) => Persistence(sv, value, id)
+        case id~":"~Assignment(sv, value, _) => Assignment(sv, value, id)
+        case id~":"~Transition(sv, from, to, _) => Transition(sv, from, to, id)
+      }
+    | statementWithoutId
+    )
+
+  def statementWithoutId : Parser[Statement] = (
       expr~"=="~varExpr<~";" ^^
-        {case sv~"=="~value => Persistence(sv, value)}
+        {case sv~"=="~value => Persistence(sv, value, "")}
     | expr~":="~varExpr<~";" ^^
-        {case sv~":="~value => Assignment(sv, value)}
+        {case sv~":="~value => Assignment(sv, value, "")}
     | expr~"=="~varExpr~":->"~varExpr<~";" ^^
-        {case sv~"=="~from~":->"~to => Transition(sv, from, to)}
+        {case sv~"=="~from~":->"~to => Transition(sv, from, to, "")}
     )
 
-  def tempConstraint : Parser[Any] =
-      timepointRef~("<"|"=")~tempConstraintExpr
+  /** Temporal constraint between two time points. It is of the form:
+    * `start(xx) < end + x`, `start = end -5`, ...
+    */
+  def tempConstraint : Parser[TemporalConstraint] =
+      timepointRef~("<"|"=")~timepointRef~opt(constantAddition) ^^ {
+        case tp1~op~tp2~None => TemporalConstraint(tp1, op, tp2, 0)
+        case tp1~op~tp2~Some(delta) => TemporalConstraint(tp1, op, tp2, delta)
+      }
 
-  def tempConstraintExpr : Parser[Any] =
-    tempConstraintTerm~opt(("+"|"-")~tempConstraintTerm)
-
-  def tempConstraintTerm : Parser[Any] = (
-      timepointRef
-    | decimalNumber
-    )
+  /** Any string of the form `+ 10`, `- 2`, ... Returns an integer*/
+  def constantAddition[Int] = ("+"|"-")~decimalNumber ^^ {
+    case "+"~num => num.toInt
+    case "-"~num => - num.toInt
+  }
 
   def expr : Parser[Expr] =
       repsep(word,".")~opt(refArgs) ^^ {
@@ -128,12 +157,13 @@ object AnmlParser extends JavaTokenParsers {
         case svExpr~Some(args) => FuncExpr(svExpr, args)
       }
 
+  /** a var expr is a single word such as x, prettyLongName, ... */
   def varExpr : Parser[VarExpr] =
       word ^^ (x => VarExpr(x))
 
-  def refArgs : Parser[List[VarExpr]] = (
+  /** List of variable expression such as (x, y, z) */
+  def refArgs : Parser[List[VarExpr]] =
       "("~>repsep(varExpr, ",")<~")"
-    )
 
   def action : Parser[Action] =
       "action"~>word~"("~repsep(argument, ",")~")"~actionBody ^^
@@ -147,12 +177,16 @@ object AnmlParser extends JavaTokenParsers {
   def actionContent : Parser[List[ActionContent]] = (
       temporalStatements
     | decomposition ^^ (x => List(x))
+    | tempConstraint ^^ (x => List(x))
   )
 
   def decomposition : Parser[Decomposition] =
-      ":decomposition"~"{"~>partiallyOrderedActionRef<~"}"~";" ^^ {
-        case poActions => Decomposition(poActions)
+      ":decomposition"~"{"~>rep(decompositionContent<~";")<~"}"~";" ^^ {
+        case content => Decomposition(content)
       }
+
+  def decompositionContent : Parser[DecompositionContent] =
+      tempConstraint | partiallyOrderedActionRef
 
   def partiallyOrderedActionRef : Parser[PartiallyOrderedActionRef] = (
       "ordered"~"("~>repsep(partiallyOrderedActionRef,",")<~")" ^^ {
