@@ -35,6 +35,11 @@
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>planstack</groupId>
+            <artifactId>planstack-anml</artifactId>
+            <version>0.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr-complete</artifactId>
             <version>3.5.1</version>
