@@ -20,9 +20,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.time.TemporalAnnotation;
 import planstack.anml.model.concrete.statements.*;
-import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
 
 import java.util.Collection;

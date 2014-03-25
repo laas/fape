@@ -1,5 +1,6 @@
 package fape.core.planning.temporaldatabases;
 
+import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
@@ -42,6 +43,14 @@ public class ChainComponent {
     public ChainComponent(ChainComponent toCopy) {
         contents.addAll(toCopy.contents);
         change = toCopy.change;
+    }
+
+    public TPRef getSupportTimePoint() {
+        return contents.getFirst().end();
+    }
+
+    public TPRef getConsumeTimePoint() {
+        return contents.getFirst().start();
     }
 
     /**

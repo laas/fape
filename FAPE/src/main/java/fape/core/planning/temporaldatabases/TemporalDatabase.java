@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
@@ -99,6 +100,14 @@ public class TemporalDatabase {
      */
     public TemporalDatabase DeepCopy() {
         return new TemporalDatabase(this);
+    }
+
+    public TPRef getSupportTimePoint() {
+        return chain.getLast().getSupportTimePoint();
+    }
+
+    public TPRef getConsumeTimePoint() {
+        return chain.getFirst().getConsumeTimePoint();
     }
 
     /** TODO: Recreate

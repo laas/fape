@@ -11,6 +11,7 @@
 package fape.core.planning;
 
 
+import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporters;
@@ -29,7 +30,6 @@ import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Statement;
-import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.anml.parser.ParseResult;
 
 import java.util.*;
@@ -457,8 +457,8 @@ public class Planner {
                 //we are looking for chain integration too
                 int ct = 0;
                 for (ChainComponent comp : b.chain) {
-                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())) {
-//                            && st.tempoNet.CanBeBefore(comp.GetSupportTimePoint(), db.GetConsumeTimePoint())) { TODO
+                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
+                            && st.tempoNet.CanBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
                         SupportOption o = new SupportOption();
                         o.precedingChainComponent = ct;
                         o.temporalDatabase = b.mID;
@@ -467,8 +467,8 @@ public class Planner {
                     ct++;
                 }
             } else {
-                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())) {
-//                        && st.tempoNet.CanBeBefore(b.GetSupportTimePoint(), db.GetConsumeTimePoint())) { TODO
+                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
+                        && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
                     SupportOption o = new SupportOption();
                     o.temporalDatabase = b.mID;
                     ret.add(o);
@@ -641,36 +641,36 @@ public class Planner {
 //                GeneratedStates);
 //    }
 
-//    /**
-//     * the goal is to solve a single problem for the given anml input and
-//     * produce the plan on the standard output
-//     *
-//     * @param args
-//     * @throws InterruptedException
-//     */
-//    public static void main(String[] args) throws InterruptedException {
-//        long start = System.currentTimeMillis();
-//        String anml = "problems/DreamDecomposition.anml";
-//        if(args.length > 0)
-//            anml = args[0];
-//        Planner p = new Planner();
-//        Planner.actionResolvers = true;
-//        p.Init();
-//        p.ForceFact(Executor.ProcessANMLfromFile(anml));
-//        boolean timeOut = false;
-//        try {
-//            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.out.println("Planning finished for " + anml + " with failure.");
-//            //throw new FAPEException("Repair failure.");
-//        }
-//        long end = System.currentTimeMillis();
-//        float total = (end - start) / 1000f;
-//        if (!timeOut) {
-//            System.out.println("Planning finished for " + anml + " timed out.");
-//        } else {
-//            System.out.println("Planning finished for " + anml + " in " + total + "s");
-//        }
-//    }
+    /**
+     * the goal is to solve a single problem for the given anml input and
+     * produce the plan on the standard output
+     *
+     * @param args
+     * @throws InterruptedException
+     */
+    public static void main(String[] args) throws InterruptedException {
+        long start = System.currentTimeMillis();
+        String anml = "problems/DreamComplex.anml";
+        if(args.length > 0)
+            anml = args[0];
+        Planner p = new Planner();
+        Planner.actionResolvers = true;
+        p.Init();
+        p.ForceFact(Executor.ProcessANMLfromFile(anml));
+        boolean timeOut = false;
+        try {
+            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Planning finished for " + anml + " with failure.");
+            //throw new FAPEException("Repair failure.");
+        }
+        long end = System.currentTimeMillis();
+        float total = (end - start) / 1000f;
+        if (timeOut) {
+            System.out.println("Planning finished for " + anml + " timed out.");
+        } else {
+            System.out.println("Planning finished for " + anml + " in " + total + "s");
+        }
+    }
 }

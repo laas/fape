@@ -1,14 +1,14 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>fape</groupId>
+    <groupId>default</groupId>
     <artifactId>fape</artifactId>
     <packaging>jar</packaging>
     <description>fape</description>
     <version>0.1</version>
     <name>fape</name>
     <organization>
-        <name>fape</name>
+        <name>default</name>
     </organization>
     <build>
         <plugins>
@@ -30,19 +30,24 @@
             <version>2.10.3</version>
         </dependency>
         <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr-complete</artifactId>
+            <version>3.5.1</version>
+        </dependency>
+        <dependency>
             <groupId>planstack</groupId>
             <artifactId>planstack-constraints</artifactId>
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>planstack</groupId>
-            <artifactId>planstack-anml</artifactId>
+            <artifactId>planstack-graph</artifactId>
             <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr-complete</artifactId>
-            <version>3.5.1</version>
+            <groupId>planstack</groupId>
+            <artifactId>planstack-anml</artifactId>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <repositories>

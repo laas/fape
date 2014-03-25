@@ -6,7 +6,11 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.*;
 
-
+/**
+ * Contains functions to produce human-readable string from planning objects.
+ * 
+ * Most methods are parameterized with the state from which the information can be extracted.
+ */
 public class Printer {
 
     public static String action(State st, Action act) {
