@@ -14,10 +14,7 @@ import fape.util.FileHandling;
 import static fape.scripting.ExperimentRunner.run;
 import java.io.File;
 
-/**
- *
- * @author FD
- */
+
 public class ParseResults {
 
     public static void main(String[] args) throws InterruptedException {

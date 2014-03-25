@@ -17,10 +17,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.PrintStream;
 
-/**
- *
- * @author FD
- */
+
 public class ExperimentRunner {
 
     public static void main(String[] args) {
@@ -64,8 +61,8 @@ public class ExperimentRunner {
         Planner.logging = false;
         //Planner.actionResolvers = true;
 
-        out.println("Problem\tTime\t" + Planner.DomainTableReportFormat() + Planner.PlanTableReportFormat());
-        
+        out.println("Problem\tTime\t");// + Planner.DomainTableReportFormat() + Planner.PlanTableReportFormat());
+
         for (File a : anmls) {
 
 
@@ -95,7 +92,7 @@ public class ExperimentRunner {
             else
                 report = a.getName() + "\t"+total+"\t";
 
-            report = report + p.DomainTableReport() + p.PlanTableReport();
+            //report = report + p.DomainTableReport() + p.PlanTableReport();
             out.println(report);
         }
     }

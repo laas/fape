@@ -10,14 +10,6 @@
  */
 package fape.scripting;
 
-import fape.core.planning.Planner;
-import java.io.File;
-import java.io.FileFilter;
-
-/**
- *
- * @author FD
- */
 public class Exp2 {
 
     public static void main(String[] args) throws InterruptedException {
