@@ -130,8 +130,8 @@ public class TaskNetworkManager {
 
     public Action getActionContainingStatement(LogStatement e) {
         for(Action a : GetAllActions()) {
-            for(TemporalStatement ts : a.jStatements()) {
-                if(ts.statement().equals(e)) {
+            for(LogStatement s : a.logStatements()) {
+                if(s.equals(e)) {
                     return a;
                 }
             }

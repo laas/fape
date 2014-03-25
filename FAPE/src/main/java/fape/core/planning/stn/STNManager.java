@@ -34,9 +34,9 @@ public class STNManager {
      */
     public int recordTimePoint(TPRef tp) {
         assert !ids.containsKey(tp) : "TimePoint "+tp+" is already recorded.";
-        int id = stn.addVar();
-        ids.put(tp, id);
-        return id;
+        ids.put(tp, stn.addVar());
+
+        return ids.get(tp);
     }
 
     /** Returns the id of a timepoint int the stn */
@@ -77,11 +77,8 @@ public class STNManager {
         STN backup = stn.cc();
         TinyLogger.LogInfo("Adding temporal constraint: "+a+" ["+min+","+max+"] "+b);
         stn.enforceInterval(id(a), id(b), min, max);
-        if(stn.consistent()) {
-            return true;
-        } else {
-            return false;
-        }
+
+        return stn.consistent();
     }
 
     /**

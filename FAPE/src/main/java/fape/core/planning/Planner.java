@@ -27,6 +27,8 @@ import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.anml.parser.ParseResult;
 
@@ -86,10 +88,10 @@ public class Planner {
 
             // create the binding between consumer and the new statement in the action that supports it
             TemporalDatabase supportingDatabase = null;
-            for (TemporalStatement ts : action.jStatements()) {
-                if(next.canBeEnabler(ts.statement(), consumer)) {
+            for (Statement s : action.jStatements()) {
+                if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
                     assert supportingDatabase == null : "Error: several statements might support the database";
-                    supportingDatabase = next.tdb.getDBContaining(ts.statement());
+                    supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
                 }
             }
             if (supportingDatabase == null) {

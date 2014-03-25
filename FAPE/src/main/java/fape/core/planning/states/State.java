@@ -200,8 +200,8 @@ public class State {
         Action toRemove = taskNet.GetAction(actRef);
         toRemove.setStatus(ActionStatus.FAILED);
 
-        for (TemporalStatement ts : toRemove.jStatements()) {
-            removeStatement(ts.statement());
+        for (LogStatement s : toRemove.logStatements()) {
+            removeStatement(s);
         }
     }
 
@@ -353,38 +353,6 @@ public class State {
     }
 
     /**
-     * Extracts a timepoint that was described by a TimepointRef
-     * @param mod StateModifier in which the TimepointRef appears
-     * @param ref The timepoint reference to extract.
-     * @return The timepoint referenced by ref
-     */
-    public TPRef getTimePoint(StateModifier mod, TimepointRef ref) {
-        // First find the interval to which the TimePoint reference applies.
-        TemporalInterval interval = null;
-        if(ref.id() instanceof ActRef) {
-            assert !ref.id().isEmpty() : "Empty action reference.";
-            interval = taskNet.GetAction((ActRef) ref.id());
-        } else if(ref.id().isEmpty()) {
-            interval = mod.container();
-        } else {
-            throw new FAPEException("Unsupported: time point extraction on something other than action.");
-        }
-
-        switch (ref.extractor()) {
-            case "GStart":
-                return pb.start();
-            case "GEnd":
-                return pb.end();
-            case "start":
-                return interval.start();
-            case "end":
-                return interval.end();
-            default:
-                throw new FAPEException("Unknown extractor: "+ref);
-        }
-    }
-
-    /**
      * Insert an action into the state, applying all needed modifications.
      * @param act Action to insert.
      * @return True if the resulting state is consistent, false otherwise.
@@ -425,16 +393,11 @@ public class State {
      * @param ts
      * @return
      */
-    public boolean apply(StateModifier mod, TemporalStatement ts) {
-        recordTimePoints(ts.statement());
+    public boolean apply(StateModifier mod, Statement s) {
+        LogStatement ls = (LogStatement) s;
+        recordTimePoints(ls);
 
-        TemporalDatabase db = new TemporalDatabase(ts.statement());
-
-        TPRef containerStart = getTimePoint(mod, ts.interval().start().timepoint());
-        TPRef containerEnd = getTimePoint(mod, ts.interval().end().timepoint());
-
-        tempoNet.EnforceConstraint(containerStart, ts.statement().start(), ts.interval().start().delta(), ts.interval().start().delta());
-        tempoNet.EnforceConstraint(containerEnd, ts.statement().end(), ts.interval().end().delta(), ts.interval().end().delta());
+        TemporalDatabase db = new TemporalDatabase(ls);
 
         if(db.isConsumer()) {
             consumers.add(db);
@@ -453,8 +416,8 @@ public class State {
      * @return True if the resulting state is consistent, False otherwise.
      */
     public boolean apply(StateModifier mod, TemporalConstraint tc) {
-        TPRef tp1 = getTimePoint(mod, tc.tp1());
-        TPRef tp2 = getTimePoint(mod, tc.tp2());
+        TPRef tp1 = tc.tp1();
+        TPRef tp2 = tc.tp2();
 
         switch (tc.op()) {
             case "<":
@@ -486,7 +449,7 @@ public class State {
             conNet.AddVariable(declaration._2(), domain);
         }
 
-        for(TemporalStatement ts : mod.jStatements()) {
+        for(Statement ts : mod.jStatements()) {
             apply(mod, ts);
         }
 

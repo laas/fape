@@ -125,6 +125,8 @@ public class TemporalDatabaseManager {
             EnforceChainConstraints(st, tdb, nextInclusion-1);
         }
 
+        enforceAllConstraints(st, tdb);
+
         // the new domain is the intersection of both domains
         st.conNet.AddUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
@@ -159,6 +161,21 @@ public class TemporalDatabaseManager {
                     st.tempoNet.EnforceBefore(sa.end(), sb.start());
                 }
             }
+        }
+    }
+
+    public void enforceAllConstraints(State st, TemporalDatabase tdb) {
+        for(int i=0 ; i<tdb.chain.size()-1 ; i++) {
+            //EnforceChainConstraints(st, tdb, i);
+            int j = i+1;
+            //for(int j=i+1 ; j<tdb.chain.size() ; j++) {
+                for(LogStatement a : tdb.chain.get(i).contents) {
+                    for(LogStatement b : tdb.chain.get(j).contents) {
+                        st.tempoNet.EnforceBefore(a.end(), b.start());
+                    }
+                }
+            //}
+
         }
     }
 
