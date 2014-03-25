@@ -23,7 +23,7 @@ To use it as a dependency on your project, add the following to your `pom.xml`
     ...
     <dependency>
         <groupId>planstack</groupId>
-        <artifactId>planstack-constraints</artifactId>
+        <artifactId>planstack-anml</artifactId>
         <version>0.2-SNAPSHOT</version>
     </dependency>
 </dependencies>

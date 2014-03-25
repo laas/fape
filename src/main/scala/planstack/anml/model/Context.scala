@@ -3,7 +3,7 @@ package planstack.anml.model
 import scala.collection.mutable
 import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
-import planstack.anml.model.concrete.{ActRef, VarRef}
+import planstack.anml.model.concrete.{Action, VarRef}
 
 /**
  * A context defines mapping between local references appearing in abstract objects and
@@ -19,7 +19,7 @@ abstract class AbstractContext {
   def parentContext : Option[AbstractContext]
   protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
-  protected val actions = mutable.Map[LActRef, ActRef]()
+  protected val actions = mutable.Map[LActRef, Action]()
 
   /**
    * @param localName Name of the local variable to look up
@@ -73,13 +73,13 @@ abstract class AbstractContext {
     variables.put(localName, (typeName, globalName))
   }
 
-  def getActionID(localID:LActRef) : ActRef = {
+  def getAction(localID:LActRef) : Action = {
     if(actions.contains(localID)) {
       actions(localID)
     } else {
       parentContext match {
         case None => throw new ANMLException("Unknown action local ID: "+localID)
-        case Some(parent) => parent.getActionID(localID)
+        case Some(parent) => parent.getAction(localID)
       }
     }
   }
@@ -89,8 +89,8 @@ abstract class AbstractContext {
     * @param localID Local reference of the AbstractAction
     * @param globalID Global reference of the Action
     */
-  def addActionID(localID:LActRef, globalID:ActRef) {
-    assert(!actions.contains(localID) || actions(localID).isEmpty)
+  def addActionID(localID:LActRef, globalID:Action) {
+    assert(!actions.contains(localID) || actions(localID) == null)
     actions(localID) = globalID
   }
 

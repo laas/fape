@@ -31,7 +31,7 @@ object TimepointRef {
 
   def apply(context:Context, abs:AbstractTimepointRef) = {
     abs.id match {
-      case actID:LActRef => new TimepointRef(abs.extractor, context.getActionID(actID))
+      case actID:LActRef => new TimepointRef(abs.extractor, context.getAction(actID).id)
       case loc:LocalRef if loc.isEmpty => new TimepointRef(abs.extractor, EmptyGlobalRef)
       case _ => throw new ANMLException("Unable to extract ID from context: "+abs.id)
     }

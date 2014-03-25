@@ -137,11 +137,15 @@ object Action {
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), parentContext.getGlobalVar(ref.args(i)))
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
 
-    val id = context.getActionID(ref.localId)
-
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
-    new Action(abs, context, statements, id, parentAction)
+    val act = new Action(abs, context, statements, new ActRef(), parentAction)
+    contextOpt match {
+      case Some(parent) => parent.addActionID(ref.localId, act)
+      case _ =>
+    }
+
+    act
   }
 
   def getNewStandaloneAction(pb:AnmlProblem, actionName:String) : Action = {
@@ -158,12 +162,9 @@ object Action {
     val parentContext = pb.context
 
     val context = abs.context.buildContext(pb, Some(parentContext))
-    val globalRef = new ActRef()
-
-    context.addActionID(new LActRef(), globalRef)
 
     val statements = abs.temporalStatements.map(TemporalStatement(context, _)).toList
 
-    new Action(abs, context, statements, globalRef, None)
+    new Action(abs, context, statements, new ActRef(), None)
   }
 }

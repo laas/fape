@@ -12,7 +12,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
   def addUndefinedAction(localID:LActRef) {
     assert(!actions.contains(localID))
-    actions.put(localID, EmptyActRef)
+    actions.put(localID, null)
   }
 
   /**
@@ -54,11 +54,8 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
       }
     }
 
-    for((localActionID, globalActionID) <- actions) {
-      if(globalActionID.isEmpty)
-        context.addActionID(localActionID, new ActRef())
-      else
-        context.addActionID(localActionID, globalActionID)
+    for((localActionID, action) <- actions) {
+      context.addActionID(localActionID, action)
     }
     context
   }
