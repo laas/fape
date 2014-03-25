@@ -1,7 +1,8 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.concrete.statements.TemporalStatement
+import planstack.anml.model.concrete.statements.{Statement, TemporalStatement}
 import collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -28,7 +29,7 @@ trait StateModifier {
   def container : TemporalInterval
 
   /** Temporally annotated statements to be inserted in the plan */
-  def statements : Seq[TemporalStatement]
+  def statements : Seq[Statement]
 
   /** Java friendly version of: [[planstack.anml.model.concrete.StateModifier#statements]] */
   def jStatements = seqAsJavaList(statements)
@@ -55,21 +56,11 @@ trait StateModifier {
 
 }
 
-class BaseStateModifier(
-     val container: TemporalInterval,
-     val statements: Seq[TemporalStatement],
-     val actions: Seq[Action],
-     val vars: Seq[Pair[String, VarRef]],
-     override val instances: Seq[String])
-  extends StateModifier {
+class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 
-  val temporalConstraints = Nil
-
-  def withStatements(addStatements:TemporalStatement*) = new BaseStateModifier(container, statements ++ addStatements, actions, vars, instances)
-
-  def withActions(addActions:Action*) = new BaseStateModifier(container, statements, actions ++ addActions, vars, instances)
-
-  def withVariables(addVars:Pair[String, VarRef]*) = new BaseStateModifier(container, statements, actions, vars ++ addVars, instances)
-
-  def withInstances(addInstances:String*) = new BaseStateModifier(container, statements, actions, vars, instances ++ addInstances)
+  val statements = ListBuffer[Statement]()
+  val actions = ListBuffer[Action]()
+  val vars = ListBuffer[Pair[String, VarRef]]()
+  override val instances = ListBuffer[String]()
+  val temporalConstraints = ListBuffer[TemporalConstraint]()
 }

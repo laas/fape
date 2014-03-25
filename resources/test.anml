@@ -38,7 +38,7 @@ action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
 };
 
 action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
-  [all]{
+  [start+1, end-1]{
     r.right == g;
     g.empty == false :-> true;
     r.mLocation == l;
@@ -86,9 +86,11 @@ I0.mLocation == L2;
 
 
 action Seed(){
-  :decomposition{ unordered(
-   Transport(r0_, I0, loc1_, L2),
-   Transport(r2_, I0, loc3_, L1)
-  )};
+  :decomposition{ 
+   unordered(
+     t1 : Transport(r0_, I0, loc1_, L2),
+     t2 : Transport(r2_, I0, loc3_, L1));
+   end(t1) = start(t2) +1;
+  };
 };
 

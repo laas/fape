@@ -51,8 +51,11 @@ class AnmlProblem extends TemporalInterval {
   private var nextActionID = 0
 
   // create an initial modifier containing the predefined instances (true and false)
-  modifiers += new BaseStateModifier(this, Nil, Nil, Nil, instances.instances.map(_._1))
-
+  {
+    val originalSM = new BaseStateModifier(this)
+    originalSM.instances ++= instances.instances.map(_._1)
+    modifiers += originalSM
+  }
 
   /**
    * Retrieves the abstract action with the given name.
@@ -78,7 +81,7 @@ class AnmlProblem extends TemporalInterval {
    */
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
-    var modifier = new BaseStateModifier(this, Nil, Nil, Nil, Nil)
+    val modifier = new BaseStateModifier(this)
 
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
@@ -86,7 +89,7 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe)
-      modifier = modifier.withInstances(instanceDecl.name)
+      modifier.instances += instanceDecl.name
     })
 
     for((name, tipe) <- instances.instances) {
@@ -106,7 +109,9 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
       val ts = AbstractTemporalStatement(this, this.context, tempStatement)
-      modifier = modifier.withStatements(TemporalStatement(this, context, ts))
+      val annotatedStatement = TemporalStatement(this, context, ts)
+      modifier.statements += annotatedStatement.statement
+      modifier.temporalConstraints ++= annotatedStatement.getTemporalConstraints
     })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
@@ -117,7 +122,7 @@ class AnmlProblem extends TemporalInterval {
         val localRef = new LActRef()
         val act = Action.getNewStandaloneAction(this, abs)
         context.addActionID(localRef, act)
-        modifier = modifier.withActions(act)
+        modifier.actions += act
       }
     })
 

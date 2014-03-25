@@ -35,7 +35,10 @@ class Action(
   assert(context.interval == null)
   context.setInterval(this)
 
-  val statements = ListBuffer[TemporalStatement]()
+  val statements = ListBuffer[Statement]()
+
+  /** Returns all logical statements */
+  def logStatements = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
 
   private var mStatus = ActionStatus.PENDING
 
@@ -63,7 +66,7 @@ class Action(
   }
 
   def vars = context.varsToCreate
-  val temporalConstraints = Nil
+  val temporalConstraints = ListBuffer[TemporalConstraint]()
 
   val container = this
 
@@ -78,7 +81,7 @@ class Action(
   def decomposable = !decompositions.isEmpty
 
   /** Returns true if the statement `s` is contained in this action */
-  def contains(s: LogStatement) = statements.map(_.statement).contains(s)
+  def contains(s: LogStatement) = statements.contains(s)
 
   /**
    * Retrieves the cost of this action.
@@ -141,7 +144,11 @@ object Action {
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
 
     val act = new Action(abs, context, new ActRef(), parentAction)
-    act.statements ++= abs.temporalStatements.map(TemporalStatement(pb, context, _)).toList
+
+    // annotated statements produce both statements and temporal constraints.
+    val annotatedStatements = abs.temporalStatements.map(TemporalStatement(pb, context, _))
+    act.statements ++= annotatedStatements.map(_.statement)
+    act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
     contextOpt match {
       case Some(parent) => parent.addActionID(ref.localId, act)
@@ -168,7 +175,10 @@ object Action {
 
     val act = new Action(abs, context, new ActRef(), None)
 
-    act.statements ++= abs.temporalStatements.map(TemporalStatement(pb, context, _))
+    // annotated statements produce both statements and temporal constraints.
+    val annotatedStatements = abs.temporalStatements.map(TemporalStatement(pb, context, _))
+    act.statements ++= annotatedStatements.map(_.statement)
+    act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
     act
   }

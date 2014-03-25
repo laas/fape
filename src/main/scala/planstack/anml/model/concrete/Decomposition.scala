@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.concrete.statements.TemporalStatement
+import planstack.anml.model.concrete.statements.{Statement, TemporalStatement}
 import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.AbstractDecomposition
@@ -12,7 +12,7 @@ class Decomposition(
   extends StateModifier with TemporalInterval {
 
 
-  val statements = ListBuffer[TemporalStatement]()
+  val statements = ListBuffer[Statement]()
   val temporalConstraints = ListBuffer[TemporalConstraint]()
   val actions = ListBuffer[Action]()
 
@@ -30,7 +30,11 @@ object Decomposition {
 
     val decomposition = new Decomposition(context, parent)
 
-    decomposition.statements ++= dec.temporalStatements.map(TemporalStatement(pb, context, _))
+    // the annotated statements produce both statements and temporal constraints
+    val annotatedStatements = dec.temporalStatements.map(TemporalStatement(pb, context, _))
+    decomposition.statements ++= annotatedStatements.map(_.statement)
+    decomposition.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
+
     decomposition.actions ++= dec.actions.map(Action(pb, _, Some(parent), Some(context)))
     decomposition.temporalConstraints ++= dec.precedenceConstraints.map(TemporalConstraint(pb, context, _))
 
