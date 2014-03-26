@@ -389,15 +389,14 @@ public class State {
     }
 
     /**
-     * Inserts a new temporal statement in the State.
-     * @param ts
-     * @return
+     * Inserts a logical statement into a state
+     * @param s Statement to insert
+     * @return True if the resulting state is consistent
      */
-    public boolean apply(StateModifier mod, Statement s) {
-        LogStatement ls = (LogStatement) s;
-        recordTimePoints(ls);
+    public boolean apply(LogStatement s) {
+        recordTimePoints(s);
 
-        TemporalDatabase db = new TemporalDatabase(ls);
+        TemporalDatabase db = new TemporalDatabase(s);
 
         if(db.isConsumer()) {
             consumers.add(db);
@@ -405,6 +404,32 @@ public class State {
         tdb.vars.add(db);
 
         return isConsistent();
+    }
+
+    /**
+     * Inserts a resource statement into a state.
+     * @param s Statement to insert
+     * @return True if the resulting state is consistent.
+     */
+    public boolean apply(ResourceStatement s) {
+        recordTimePoints(s);
+
+        throw new UnsupportedOperationException("Resource statements are not supported yet.");
+    }
+
+    /**
+     * Inserts a statement into a state
+     * @param mod StateModifier in which the statement appears
+     * @param s Statement to insert
+     * @return True if the resulting state is consistent
+     */
+    public boolean apply(StateModifier mod, Statement s) {
+        if(s instanceof LogStatement)
+            return apply((LogStatement) s);
+        else if(s instanceof ResourceStatement)
+            return apply((ResourceStatement) s);
+        else
+            throw new FAPEException("Unsupported statement: "+s);
     }
 
     /**

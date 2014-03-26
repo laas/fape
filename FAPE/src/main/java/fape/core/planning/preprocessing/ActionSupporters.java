@@ -4,7 +4,7 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractPersistence;
+import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.AbstractTemporalStatement;
 
 import java.util.*;
