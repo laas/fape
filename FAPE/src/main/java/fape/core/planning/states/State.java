@@ -20,7 +20,9 @@ import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.time.TemporalAnnotation;
 import planstack.anml.model.concrete.statements.*;
+import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -435,27 +437,27 @@ public class State {
      */
     public boolean apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
-        for(String instance : mod.jInstances()) {
+        for(String instance : mod.instances()) {
             List<String> domain = new LinkedList<>();
             domain.add(instance);
             conNet.AddVariable(pb.instances().referenceOf(instance), domain);
         }
 
         // Declare new variables to the constraint network.
-        for(Tuple2<String, VarRef> declaration : mod.jVars()) {
+        for(Tuple2<String, VarRef> declaration : mod.vars()) {
             Collection<String> domain = pb.instances().jInstancesOfType(declaration._1());
             conNet.AddVariable(declaration._2(), domain);
         }
 
-        for(Statement ts : mod.jStatements()) {
+        for(Statement ts : mod.statements()) {
             apply(mod, ts);
         }
 
-        for(Action act : mod.jActions()) {
+        for(Action act : mod.actions()) {
             insert(act);
         }
 
-        for(TemporalConstraint tc : mod.jTemporalConstraints()) {
+        for(TemporalConstraint tc : mod.temporalConstraints()) {
             apply(mod, tc);
         }
 

@@ -88,7 +88,7 @@ public class Planner {
 
             // create the binding between consumer and the new statement in the action that supports it
             TemporalDatabase supportingDatabase = null;
-            for (Statement s : action.jStatements()) {
+            for (Statement s : action.statements()) {
                 if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
                     assert supportingDatabase == null : "Error: several statements might support the database";
                     supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
@@ -109,7 +109,7 @@ public class Planner {
             Action decomposedAction = o.actionToDecompose;
 
             // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.jDecompositions().get(o.decompositionID);
+            AbstractDecomposition absDec = decomposedAction.decompositions().get(o.decompositionID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
@@ -309,7 +309,7 @@ public class Planner {
         } else if(f instanceof UndecomposedAction) {
             UndecomposedAction ua = (UndecomposedAction) f;
             List<SupportOption> resolvers = new LinkedList<>();
-            for(int decompositionID=0 ; decompositionID < ua.action.jDecompositions().size() ; decompositionID++) {
+            for(int decompositionID=0 ; decompositionID < ua.action.decompositions().size() ; decompositionID++) {
                 SupportOption res = new SupportOption();
                 res.actionToDecompose = ua.action;
                 res.decompositionID = decompositionID;
