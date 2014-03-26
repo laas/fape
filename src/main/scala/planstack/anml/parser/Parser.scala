@@ -2,6 +2,7 @@ package planstack.anml.parser
 
 import java.io.FileReader
 import scala.util.parsing.combinator._
+import planstack.anml.model.AnmlProblem
 
 
 sealed trait AnmlBlock
@@ -31,11 +32,32 @@ case class TimepointRef(extractor:String, id:String) {
 
 sealed abstract class Statement(val variable:Expr, val id:String)
 
-case class Assignment(left:Expr, right:VarExpr, override val id:String) extends Statement(left, id)
+/** Logical statement such as assignment, transition and persistence */
+sealed abstract class LogStatement(variable:Expr, id:String) extends Statement(variable, id)
 
-case class Transition(left:Expr, from:VarExpr, to:VarExpr, override val id:String) extends Statement(left, id)
+case class Assignment(left:Expr, right:VarExpr, override val id:String) extends LogStatement(left, id)
 
-case class Persistence(left:Expr, value:VarExpr, override val id:String) extends Statement(left, id)
+case class Transition(left:Expr, from:VarExpr, to:VarExpr, override val id:String) extends LogStatement(left, id)
+
+case class Persistence(left:Expr, value:VarExpr, override val id:String) extends LogStatement(left, id)
+
+
+sealed abstract class ResourceStatement(variable:Expr, id:String) extends Statement(variable, id)
+
+/** resourceFunction := 23; */
+case class SetResource(left :Expr, right:Int, override val id :String) extends ResourceStatement(left, id)
+
+case class ProduceResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+
+case class RequireResource(left :Expr, operator :String, right :Int, override val id :String) extends ResourceStatement(left, id)
+
+case class LendResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+
+case class UseResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+
+case class ConsumeResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+
+
 
 
 
@@ -122,11 +144,34 @@ object AnmlParser extends JavaTokenParsers {
         case id~":"~Persistence(sv, value, _) => Persistence(sv, value, id)
         case id~":"~Assignment(sv, value, _) => Assignment(sv, value, id)
         case id~":"~Transition(sv, from, to, _) => Transition(sv, from, to, id)
+        case id~":"~SetResource(sv, param, _) => SetResource(sv, param, id)
+        case id~":"~ConsumeResource(sv, param, _) => ConsumeResource(sv, param, id)
+        case id~":"~ProduceResource(sv, param, _) => ProduceResource(sv, param, id)
+        case id~":"~UseResource(sv, param, _) => UseResource(sv, param, id)
+        case id~":"~LendResource(sv, param, _) => LendResource(sv, param, id)
+        case id~":"~RequireResource(sv, op, param, _) => RequireResource(sv, op, param, id)
       }
     | statementWithoutId
     )
 
-  def statementWithoutId : Parser[Statement] = (
+  def statementWithoutId : Parser[Statement] = resourceStatementWithoutID | logStatementWithoutId
+
+  def resourceStatementWithoutID : Parser[ResourceStatement] = (
+      expr~":="~decimalNumber<~";" ^^ {
+        case left~":="~intVal => SetResource(left, intVal.toInt, "")}
+    | expr~("<="|">="|"<"|">")~decimalNumber<~";" ^^ {
+        case left~operator~intVal => RequireResource(left, operator, intVal.toInt, "")}
+    | expr~":consume"~decimalNumber<~";" ^^ {
+        case left~":consume"~intVal => ConsumeResource(left, intVal.toInt, "")}
+    | expr~":produce"~decimalNumber<~";" ^^ {
+        case left~":produce"~intVal => ProduceResource(left, intVal.toInt, "")}
+    | expr~":use"~decimalNumber<~";" ^^ {
+        case left~":use"~intVal => UseResource(left, intVal.toInt, "")}
+    | expr~":lend"~decimalNumber<~";" ^^ {
+        case left~":lend"~intVal => LendResource(left, intVal.toInt, "")}
+    )
+
+  def logStatementWithoutId : Parser[LogStatement] = (
       expr~"=="~varExpr<~";" ^^
         {case sv~"=="~value => Persistence(sv, value, "")}
     | expr~":="~varExpr<~";" ^^
@@ -272,3 +317,22 @@ object AnmlParser extends JavaTokenParsers {
   def word = not(keywords) ~> ident
 }
 
+
+
+object Test extends App {
+  import AnmlParser._
+  /*
+  parseAll(temporalStatements, new FileReader("resources/test-resources.anml")) match {
+    case Success(res, _) => {
+      val tmp = res
+      val x = 0
+    }
+    case x => println(x)
+  }
+*/
+  val pb = new AnmlProblem
+  pb.addAnml(ANMLFactory.parseAnmlFromFile("resources/test-resources.anml"))
+
+  val x = 0;
+
+}

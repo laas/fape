@@ -3,12 +3,13 @@ package planstack.anml.model.concrete.statements
 import planstack.anml.model._
 import planstack.anml.model.concrete.{VarRef, TemporalInterval}
 import planstack.anml.ANMLException
+import planstack.anml.model.abs.statements.AbstractStatement
 
 
 /** Describes a concrete ANML statement such as `location(Rb) == l`, ...
   *
   * All variables references in those statements are global variables.
-  * For the abstract version (with local variables), see [[planstack.anml.model.abs.AbstractStatement]].
+  * For the abstract version (with local variables), see [[planstack.anml.model.abs.statements.AbstractStatement]].
   *
   * All classes descending from Statement are immutable except for their `status` field.
   * An instance should be able to exist in diverging nodes of the search space.

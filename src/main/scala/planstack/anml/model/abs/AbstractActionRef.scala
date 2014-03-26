@@ -3,6 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.parser
 import planstack.anml.model._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
+import planstack.anml.model.abs.statements.AbstractPersistence
 
 class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) {
   require(localId nonEmpty)

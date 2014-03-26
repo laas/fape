@@ -10,7 +10,7 @@ import planstack.anml.model.concrete.TemporalConstraint
   * @param interval Temporal interval in which the statement applies
   * @param statement An ANML statement on global variables
  */
-class TemporalStatement(val interval:TemporalAnnotation, val statement:LogStatement) {
+class TemporalStatement(val interval:TemporalAnnotation, val statement:Statement) {
 
   def getTemporalConstraints : Seq[TemporalConstraint] = {
     val containerStart = interval.start.timepoint

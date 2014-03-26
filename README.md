@@ -244,6 +244,27 @@ action PickAndPlace(Robot r, Item i) {
 };
 ```
 
+### Resources
+
+Initial support for resources is introduced. 
+It is currently limited to integer: left term *must* be a function with integer 
+value and the right left *must* be an integer literal.
+
+Those are valid resource statements:
+
+```
+[start] {
+id : energy >= 50;
+energy() > 50;
+energy(robot) < 50;
+energy <= 50;
+robot.battery := 1;
+energy :use 10;      //start: -10 end: +10
+energy :consume 10;  // -10
+energy :lend 10      // start: +10 end: -10
+energy :produce 10;  // +10
+};
+```
 
 
 

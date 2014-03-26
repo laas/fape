@@ -37,7 +37,14 @@ object AbstractParameterizedStateVariable {
           parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         }
       }
-      case parser.VarExpr(x) => throw new ANMLException("Unauthorized conversion of VarExpr into a ParameterizedStateVariable: "+expr);
+      case parser.VarExpr(x) => {
+        if(pb.functions.isDefined(x)) {
+          // it is a function with no arguments
+          parser.FuncExpr(List(x), Nil)
+        } else {
+          throw new ANMLException("This VarExpr does not refer to any existing function: "+expr)
+        }
+      }
     }
     new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(e => new LVarRef(e.variable)))
   }
