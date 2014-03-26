@@ -162,8 +162,17 @@ It is possible to give the same annotation to several statements:
   r.canGo(a) := false;
 };
 // is equivalent to
-[start, end]  connected(a, b) == true;
+[start, end] connected(a, b) == true;
 [start, end] r.canGo(a) := false;
+```
+
+
+A temporal annotation with the `contains` keyword means that the given
+statement must be included in the interval:
+
+```
+[start, end] contains s;   
+  => start(s) > start && end(s) < end
 ```
 
 ### Actions
@@ -187,19 +196,53 @@ Furthermore, actions can contain decompositions with the following syntax:
 :decomposition{ 
   ordered( 
     Move(PR2, Kitchen, anywhere), 
-    Move(PR2, anywhere, LivingRoom) )
+    Move(PR2, anywhere, LivingRoom) );
 };
 :decomposition{
   unordered(
     doThat(...),
-    doThis(...) )
+    doThis(...) );
 };
 ```
 
 The `ordered` keyword in the second decomposition forces the first Move to be
 ended before the second can start.
 
-**TODO:** add action id and temporal constraints.
+
+### Temporal Constraints
+
+Temporal constraints can be specified between intervals (i.e. any ANML object
+with start and end time-points such as actions or statements).
+The interval must be given a local ID:
+
+```
+[all] contains {
+  idA : I.location == A;
+  idB : I.location == B;
+};
+
+// specifies that the second statement must start at least 10 times units
+// after the end of the first one
+end(idA) < start(idB) -10;
+
+// specifies that the second statement must end exactly 60 time units before
+// the end of the containing interval (i.e. the action if the statement is defined
+// in an action or the plan if the statement is defined in the problem).
+end(idB) = end -60;
+```
+
+It is also possible to give temporal constraints between actions appearing in
+a decomposition: 
+
+```
+action PickAndPlace(Robot r, Item i) {
+  :decomposition {
+    pickID : Pick(r, i);
+    placeID : Place(r, i);
+    end(pickID) < start(placeID);
+  };
+};
+```
 
 
 
