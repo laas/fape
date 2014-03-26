@@ -453,7 +453,9 @@ public class Planner {
             if (db == b || !st.Unifiable(db, b)) {
                 continue;
             }
-            if (db.HasSinglePersistence()) {
+            // if the database has a single persistence we try to integrate it with other persistences.
+            // except if the state variable is constant, in which case looking only for the assignments saves search effort.
+            if (db.HasSinglePersistence() && !db.stateVariable.func().isConstant()) {
                 //we are looking for chain integration too
                 int ct = 0;
                 for (ChainComponent comp : b.chain) {
