@@ -5,7 +5,7 @@ import planstack.anml.parser.AnmlParser._
 import java.io.FileReader
 import planstack.anml.model.AnmlProblem
 import planstack.anml.model.concrete.{Decomposition, Action}
-import planstack.anml.model.abs.AbstractActionRef
+import collection.JavaConversions._
 
 object Main extends App {
 

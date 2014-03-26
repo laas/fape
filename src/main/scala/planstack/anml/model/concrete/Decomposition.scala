@@ -5,6 +5,8 @@ import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.AbstractDecomposition
 import scala.collection.mutable.ListBuffer
+import java.util
+import scala.collection.JavaConversions._
 
 class Decomposition(
     val context:Context,
@@ -12,14 +14,14 @@ class Decomposition(
   extends StateModifier with TemporalInterval {
 
 
-  val statements = ListBuffer[Statement]()
-  val temporalConstraints = ListBuffer[TemporalConstraint]()
-  val actions = ListBuffer[Action]()
+  val statements = new util.LinkedList[Statement]()
+  val temporalConstraints = new util.LinkedList[TemporalConstraint]()
+  val actions = new util.LinkedList[Action]()
 
   assert(context.interval == null)
   context.setInterval(this)
 
-  def vars = context.varsToCreate
+  def vars = seqAsJavaList(context.varsToCreate)
 }
 
 

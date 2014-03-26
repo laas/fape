@@ -7,6 +7,8 @@ import planstack.anml.model.concrete.statements.{LogStatement, TemporalStatement
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
 import scala.collection.mutable.ListBuffer
+import java.util
+import scala.collection.JavaConversions._
 
 
 /** Represents a concrete action that is to be inserted into a plan. All parameters of the action refer to one global
@@ -35,7 +37,7 @@ class Action(
   assert(context.interval == null)
   context.setInterval(this)
 
-  val statements = ListBuffer[Statement]()
+  val statements = new util.LinkedList[Statement]()
 
   /** Returns all logical statements */
   def logStatements = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
@@ -66,18 +68,16 @@ class Action(
   }
 
   def vars = context.varsToCreate
-  val temporalConstraints = ListBuffer[TemporalConstraint]()
+  val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 
   val container = this
 
   def name = abs.name
-  val actions = Nil
+  val actions = new util.LinkedList[Action]()
 
-  def decompositions = abs.decompositions
+  def decompositions = seqAsJavaList(abs.decompositions)
 
-  def jDecompositions = seqAsJavaList(decompositions)
-
-  /** Returns True if this action as possible decompositions */
+    /** Returns True if this action as possible decompositions */
   def decomposable = !decompositions.isEmpty
 
   /** Returns true if the statement `s` is contained in this action */

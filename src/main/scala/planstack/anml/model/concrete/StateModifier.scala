@@ -3,6 +3,7 @@ package planstack.anml.model.concrete
 import planstack.anml.model.concrete.statements.{Statement, TemporalStatement}
 import collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
+import java.util
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -29,38 +30,27 @@ trait StateModifier {
   def container : TemporalInterval
 
   /** Temporally annotated statements to be inserted in the plan */
-  def statements : Seq[Statement]
-
-  /** Java friendly version of: [[planstack.anml.model.concrete.StateModifier#statements]] */
-  def jStatements = seqAsJavaList(statements)
+  def statements : java.util.List[Statement]
 
   /** Actions to be inserted in the plan */
-  def actions : Seq[Action]
-  /** Java friendly version of: [[planstack.anml.model.concrete.StateModifier#actions]] */
-  def jActions = seqAsJavaList(actions)
+  def actions : java.util.List[Action]
 
   /** (Type, Reference) of global variables to be declared */
-  def vars : Seq[Pair[String, VarRef]]
-  /** (Type, Reference) of global variables to be declared */
-  def jVars = seqAsJavaList(vars)
+  def vars : java.util.List[Pair[String, VarRef]]
 
   /** All problem instances to be declared
     * Problem instances are typically a global variable with a domain containing only one value (itself).
     */
-  def instances : Seq[String] = Nil
-  /** All problem instances to be declared */
-  def jInstances = seqAsJavaList(instances)
+  def instances : java.util.List[String] = Nil
 
-  def temporalConstraints : Seq[TemporalConstraint]
-  def jTemporalConstraints = seqAsJavaList(temporalConstraints)
-
-}
+  def temporalConstraints : java.util.List[TemporalConstraint]
+  }
 
 class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 
-  val statements = ListBuffer[Statement]()
-  val actions = ListBuffer[Action]()
-  val vars = ListBuffer[Pair[String, VarRef]]()
-  override val instances = ListBuffer[String]()
-  val temporalConstraints = ListBuffer[TemporalConstraint]()
+  val statements = new util.LinkedList[Statement]()
+  val actions = new util.LinkedList[Action]()
+  val vars = new util.LinkedList[Pair[String, VarRef]]()
+  override val instances = new util.LinkedList[String]()
+  val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 }

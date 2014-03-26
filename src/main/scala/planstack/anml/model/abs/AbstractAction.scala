@@ -35,6 +35,7 @@ class AbstractAction(val name:String, val args:List[LVarRef], val context:Partia
 
   val temporalConstraints = mutable.ArrayBuffer[AbstractTemporalConstraint]()
 
+  override def toString = name
 }
 
 object AbstractAction {
