@@ -15,6 +15,30 @@ Documentation for this project can be accessed through
 ## Usage 
 
 Build is done with [SBT](http://www.scala-sbt.org/).
+First follow the
+[installation instructions](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html).
+
+You should now be able to compile and run it with 
+
+    sbt compile    # should work, if not it's a bug
+    sbt run        # proposes several main classes for execution.
+
+### IDE support
+
+We limit ourselves to describing how to configure Intellij-IDEA to work on
+this project. However both Eclipse and Netbeans can work with Scala using
+plugins. 
+
+First, [install Intellij](http://www.jetbrains.com/idea/download/) and add the
+scala plugin (Settings / Plugins / Browse Repository / Scala).
+
+You can generate project configuration for Intellij-IDEA with
+
+    sbt gen-idea
+    
+Open the project from the IDE and you should be good!
+    
+### Using it as an external dependency
 
 To use it as a dependency on your project, add the following to your `pom.xml`
 
@@ -24,7 +48,7 @@ To use it as a dependency on your project, add the following to your `pom.xml`
     <dependency>
         <groupId>planstack</groupId>
         <artifactId>planstack-anml</artifactId>
-        <version>0.2-SNAPSHOT</version>
+        <version>0.3.1</version>
     </dependency>
 </dependencies>
 <repositories>
@@ -40,6 +64,8 @@ To use it as a dependency on your project, add the following to your `pom.xml`
 
 You can also find jars [here](http://planstack.github.io/repository/maven/)
 but we recommend you to use maven to keep track of updates.
+
+
 
 ## ANML
 
