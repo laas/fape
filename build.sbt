@@ -6,18 +6,14 @@ version := "0.3.1"
 
 scalaVersion := "2.10.3"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
-
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
+
+libraryDependencies += "planstack" % "planstack-graph" % "0.3"
 
 crossPaths := false
 
-lazy val graph = RootProject(file("../graph"))
 
-lazy val root = Project(id = "anml", base = file(".")) dependsOn(graph)
-
-//javacOption := 1.7
-
+// setup plugin for javadoc. Javadoc can be generated with task genjavadoc:doc
 val JavaDoc = config("genjavadoc") extend Compile
 
 val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
@@ -36,6 +32,8 @@ val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
 
 seq(javadocSettings: _*)
 
+
+// Publish to local repository which should map to the https://github.com/planstack/repository
 publishTo := Some(Resolver.file("file", new File("../repository/maven")))
 
 publishMavenStyle := true
