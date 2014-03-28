@@ -651,6 +651,7 @@ public class Planner {
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
         String anml = "problems/DreamComplex.anml";
+
         if(args.length > 0)
             anml = args[0];
         Planner p = new Planner();

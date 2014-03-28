@@ -444,10 +444,12 @@ public class State {
 
         switch (tc.op()) {
             case "<":
-                tempoNet.EnforceDelay(tp1, tp2, tc.plus());
+                // tp1 < tp2 + x => tp1 --[-x, inf] --> tp2
+                tempoNet.EnforceDelay(tp1, tp2, - tc.plus());
                 break;
             case "=":
-                tempoNet.EnforceConstraint(tp1, tp2, tc.plus(), tc.plus());
+                // tp2 --- [x, x] ---> tp1
+                tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
 
         return isConsistent();
