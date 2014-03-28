@@ -113,7 +113,7 @@ public class Planner {
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
-            next.apply(dec);
+            next.applyDecomposition(dec);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -380,9 +380,7 @@ public class Planner {
             //Collections.sort(opts, new FlawSelector(st));
 
             if (opts.isEmpty()) {
-                TinyLogger.LogInfo("Dead-end, no options: " + st.mID);
-                //dead end
-                continue;
+                throw new FAPEException("Error: no flaws but state was not found to be a solution.");
             }
 
             if (opts.getFirst().value2.isEmpty()) {

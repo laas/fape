@@ -20,9 +20,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.time.TemporalAnnotation;
 import planstack.anml.model.concrete.statements.*;
-import planstack.anml.model.concrete.time.TimepointRef;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -453,6 +451,23 @@ public class State {
         }
 
         return isConsistent();
+    }
+
+    /**
+     * Applies the given decomposition to the current state.
+     * It mainly consists in inserting the decomposition's timepoints and link them to the containing action.
+     * Then the state modifier is applied.
+     * @param dec Decomposition to insert
+     * @return True if the resulting state is consistent.
+     */
+    public boolean applyDecomposition(Decomposition dec) {
+        recordTimePoints(dec);
+
+        // interval of the decomposition is equal to the one of the containing action.
+        tempoNet.EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
+        tempoNet.EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
+
+        return apply(dec);
     }
 
     /**

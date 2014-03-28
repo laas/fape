@@ -18,7 +18,7 @@ javaOptions in run += "-Xmx3000m"
 
 javacOptions ++= Seq("-source", "1.7")
 
-mainClass in (Compile, run) := Some("fape.Planner")
+mainClass in (Compile, run) := Some("fape.core.planning.Planner")
 
 
 pomExtra :=
