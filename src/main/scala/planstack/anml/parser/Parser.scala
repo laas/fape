@@ -184,7 +184,7 @@ object AnmlParser extends JavaTokenParsers {
     * `start(xx) < end + x`, `start = end -5`, ...
     */
   def tempConstraint : Parser[TemporalConstraint] =
-      timepointRef~("<"|"=")~timepointRef~opt(constantAddition) ^^ {
+      timepointRef~("<"|"=")~timepointRef~opt(constantAddition)<~";" ^^ {
         case tp1~op~tp2~None => TemporalConstraint(tp1, op, tp2, 0)
         case tp1~op~tp2~Some(delta) => TemporalConstraint(tp1, op, tp2, delta)
       }
@@ -226,12 +226,12 @@ object AnmlParser extends JavaTokenParsers {
   )
 
   def decomposition : Parser[Decomposition] =
-      ":decomposition"~"{"~>rep(decompositionContent<~";")<~"}"~";" ^^ {
+      ":decomposition"~"{"~>rep(decompositionContent)<~"}"~";" ^^ {
         case content => Decomposition(content)
       }
 
   def decompositionContent : Parser[DecompositionContent] =
-      tempConstraint | partiallyOrderedActionRef
+      tempConstraint | partiallyOrderedActionRef<~";"
 
   def partiallyOrderedActionRef : Parser[PartiallyOrderedActionRef] = (
       "ordered"~"("~>repsep(partiallyOrderedActionRef,",")<~")" ^^ {
@@ -264,7 +264,7 @@ object AnmlParser extends JavaTokenParsers {
   def block : Parser[List[AnmlBlock]] = (
       action ^^ (a => List(a))
     | temporalStatements
-    | tempConstraint<~";" ^^ (x => List(x))
+    | tempConstraint ^^ (x => List(x))
     | functionDecl ^^ (func => List(func))
     | typeDecl ^^ (t => List(t))
     | instanceDecl

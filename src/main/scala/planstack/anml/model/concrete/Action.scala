@@ -146,7 +146,13 @@ object Action {
     val act = new Action(abs, context, new ActRef(), parentAction)
 
     // annotated statements produce both statements and temporal constraints.
-    val annotatedStatements = abs.temporalStatements.map(TemporalStatement(pb, context, _))
+    val annotatedStatements =
+      for(absStatement <- abs.temporalStatements) yield {
+        val concrete = TemporalStatement(pb, context, absStatement)
+        // update the context with a mapping from the local ID to the actual statement
+        context.addStatement(absStatement.statement.id, concrete.statement)
+        concrete
+      }
     act.statements ++= annotatedStatements.map(_.statement)
     act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
@@ -179,7 +185,13 @@ object Action {
     val act = new Action(abs, context, new ActRef(), None)
 
     // annotated statements produce both statements and temporal constraints.
-    val annotatedStatements = abs.temporalStatements.map(TemporalStatement(pb, context, _))
+    val annotatedStatements =
+      for(absStatement <- abs.temporalStatements) yield {
+        val concrete = TemporalStatement(pb, context, absStatement)
+        // update the context with a mapping from the local ID to the actual statement
+        context.addStatement(absStatement.statement.id, concrete.statement)
+        concrete
+      }
     act.statements ++= annotatedStatements.map(_.statement)
     act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 

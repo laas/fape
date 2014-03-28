@@ -32,8 +32,14 @@ object Decomposition {
 
     val decomposition = new Decomposition(context, parent)
 
-    // the annotated statements produce both statements and temporal constraints
-    val annotatedStatements = dec.temporalStatements.map(TemporalStatement(pb, context, _))
+    // annotated statements produce both statements and temporal constraints.
+    val annotatedStatements =
+      for(absStatement <- dec.temporalStatements) yield {
+        val concrete = TemporalStatement(pb, context, absStatement)
+        // update the context with a mapping from the local ID to the actual statement
+        context.addStatement(absStatement.statement.id, concrete.statement)
+        concrete
+      }
     decomposition.statements ++= annotatedStatements.map(_.statement)
     decomposition.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
