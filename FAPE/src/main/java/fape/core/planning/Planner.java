@@ -360,13 +360,13 @@ public class Planner {
             State st = queue.remove();
             OpenedStates++;
 
-            TinyLogger.LogInfo(st.Report());
+            TinyLogger.LogInfo(st);
             if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(st.taskNet.Report());
-                TinyLogger.LogInfo(st.tdb.Report());
-                TinyLogger.LogInfo(st.tempoNet.Report());
+                TinyLogger.LogInfo(st.taskNet);
+                TinyLogger.LogInfo(st.tdb);
+                TinyLogger.LogInfo(st.tempoNet);
                 return st;
             }
             //continue the search

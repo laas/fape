@@ -12,11 +12,14 @@ package fape.util;
 
 //import fape.core.planning.Planner;
 
+import fape.core.planning.Planner;
+
 /**
  *
  * @author Filip Dvořák
  */
 public class TinyLogger {
+
     //public static boolean logging = false;
     public static void LogInfo(String st) {
         //if (Planner.logging) { TODO: recreate
@@ -24,4 +27,9 @@ public class TinyLogger {
         //}
     }
 
+    public static void LogInfo(Reporter o) {
+        if(Planner.logging) {
+            System.out.println("Logger: "+o.Report());
+        }
+    }
 }

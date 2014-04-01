@@ -17,6 +17,7 @@ import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author FD
  */
-public class State {
+public class State implements Reporter {
 
     private static int idCounter = 0;
 
