@@ -12,6 +12,7 @@ package fape.core.planning.temporaldatabases;
 
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
@@ -20,7 +21,7 @@ import java.util.*;
  *
  * @author FD
  */
-public class TemporalDatabaseManager {
+public class TemporalDatabaseManager implements Reporter {
 
 
     /**
@@ -179,6 +180,7 @@ public class TemporalDatabaseManager {
         }
     }
 
+    @Override
     public String Report() {
         String ret = "";
 

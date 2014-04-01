@@ -11,6 +11,7 @@
 package fape.core.planning.tasknetworks;
 
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.TemporalStatement;
@@ -24,7 +25,7 @@ import java.util.*;
  *
  * @author FD
  */
-public class TaskNetworkManager {
+public class TaskNetworkManager implements Reporter {
 
     final UnlabeledDigraph<Action> network;
 
@@ -95,6 +96,7 @@ public class TaskNetworkManager {
         return new TaskNetworkManager(network.cc());
     }
 
+    @Override
     public String Report() {
         String str = "Num roots: " + roots().size() + ", roots: " + roots().toString();
         str += "\n\tLeaf actions" +  GetAllActions().toString();

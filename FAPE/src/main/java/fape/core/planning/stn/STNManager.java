@@ -1,6 +1,7 @@
 package fape.core.planning.stn;
 
 
+import fape.util.Reporter;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
@@ -9,7 +10,7 @@ import fape.util.Pair;
 
 import java.util.HashMap;
 
-public class STNManager {
+public class STNManager implements Reporter {
 
     public final STN stn;
     public final HashMap<TPRef, Integer> ids;
@@ -126,6 +127,7 @@ public class STNManager {
         return new STNManager(this);
     }
 
+    @Override
     public String Report() {
         String ret = "size: "+this.stn.size()+"\n";
         ret += stn.g().edges().mkString("\n");

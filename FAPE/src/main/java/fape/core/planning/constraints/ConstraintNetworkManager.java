@@ -11,6 +11,7 @@
 package fape.core.planning.constraints;
 
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.VarRef;
 
@@ -20,7 +21,7 @@ import java.util.*;
  *
  * @author FD
  */
-public class ConstraintNetworkManager {
+public class ConstraintNetworkManager implements Reporter {
 
     /**
      * Contains all constraints of the CSP (now limited to equality constraints)
@@ -198,6 +199,7 @@ public class ConstraintNetworkManager {
         this.unificationConstraints.removeAll(toRemove);
     }
 
+    @Override
     public String Report() {
         String ret = "";
 
