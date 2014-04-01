@@ -1,28 +1,29 @@
 package fape.core.planning.planninggraph;
 
 import planstack.anml.model.Function;
+import planstack.anml.model.concrete.VarRef;
 
 import java.util.LinkedList;
 import java.util.List;
 
-public class Fluent {
+public class Fluent implements PGNode {
     final Function f;
-    final List<String> params;
-    final String value;
+    final List<VarRef> params;
+    final VarRef value;
 
     int hashVal;
 
 
-    public Fluent(Function f, List<String> params, String value) {
+    public Fluent(Function f, List<VarRef> params, VarRef value) {
         this.f = f;
-        this.params = new LinkedList<String>(params);
+        this.params = new LinkedList<VarRef>(params);
         this.value = value;
 
         int i = 0;
         hashVal = 0;
         hashVal += f.hashCode() * 42*i++;
         hashVal += value.hashCode() * 42*i++;
-        for(String param : params) {
+        for(VarRef param : params) {
             hashVal += param.hashCode() * 42*i++;
         }
     }
