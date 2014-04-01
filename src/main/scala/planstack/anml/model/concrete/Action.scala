@@ -39,9 +39,6 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
-  /** Returns all logical statements */
-  def logStatements = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
-
   private var mStatus = ActionStatus.PENDING
 
   /** Depicts the current status of the action. It is first
@@ -67,7 +64,9 @@ class Action(
     mStatus = newStatus
   }
 
-  def vars = context.varsToCreate
+  def vars = mVars
+  private val mVars = context.varsToCreate.clone()
+
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 
   val container = this
@@ -108,10 +107,7 @@ class Action(
   }
 
   /** Arguments (as global variables) of the action */
-  def args = abs.args.map(context.getGlobalVar(_))
-
-  /** Arguments (as global variables) of the action */
-  def jArgs = seqAsJavaList(args)
+  def args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }
@@ -133,6 +129,7 @@ object Action {
       case Some(parentContext) => parentContext
       case None => pb.context
     }
+    // retrieve abstract action specified gy the action reference
     val abs =
       pb.abstractActions.find(_.name == ref.name) match {
         case Some(act) => act
@@ -140,7 +137,56 @@ object Action {
       }
 
     // creates pair (localVar, globalVar) as defined by the ActionRef
-    val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), parentContext.getGlobalVar(ref.args(i)))
+    val args = ref.args.map(parentContext.getGlobalVar(_))
+
+    newAction(pb, abs, args, ref.localId, parentAction, contextOpt)
+  }
+
+  def jNewAction(
+      pb :AnmlProblem,
+      abs :AbstractAction,
+      args :util.List[VarRef],
+      localID :LActRef,
+      parentAction :Action = null,
+      contextOpt :Context = null)
+  : Action = {
+    newAction(
+      pb,
+      abs,
+      args,
+      localID,
+      if(parentAction == null) None else Some(parentAction),
+      if(contextOpt == null) None else Some(contextOpt)
+    )
+  }
+
+  /** Builds new concrete action
+    *
+    * @param pb Problem in which the action appears
+    * @param abs Abstract version of the action
+    * @param args List of arguments (those are considered to be already existing VarRefs, if it not the case, add them to
+    *             the mVars field of the resulting action.
+    * @param localID Local reference to the action
+    * @param parentAction Optional action in which the action to be created appears (as part of decomposition.
+    * @param contextOpt Context in which the action appears, if set to None, it defaults to the problem's context.
+    * @return The resulting concrete Action.
+    */
+  def newAction(
+      pb :AnmlProblem,
+      abs :AbstractAction,
+      args :Seq[VarRef],
+      localID :LActRef,
+      parentAction :Option[Action] = None,
+      contextOpt :Option[Context] = None)
+  : Action = {
+    // containing context is the one passed, if it is empty, it defaults to the problem's
+    val parentContext = contextOpt match {
+      case Some(parentContext) => parentContext
+      case None => pb.context
+    }
+
+    // creates pair (localVar, globalVar) as defined by the ActionRef
+    val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), args(i))
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
 
     val act = new Action(abs, context, new ActRef(), parentAction)
@@ -159,8 +205,9 @@ object Action {
 
     act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
 
+    // if there is a parent action, add a mapping localId -> globalID to its context
     contextOpt match {
-      case Some(parent) => parent.addAction(ref.localId, act)
+      case Some(parent) => parent.addAction(localID, act)
       case _ =>
     }
 
@@ -178,24 +225,12 @@ object Action {
   }
 
   def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction) : Action = {
-    val parentContext = pb.context
+    val act = newAction(pb, abs, abs.args.map(x => new VarRef()), new LActRef(), None, Some(pb.context))
 
-    val context = abs.context.buildContext(pb, Some(parentContext))
-
-    val act = new Action(abs, context, new ActRef(), None)
-
-    // annotated statements produce both statements and temporal constraints.
-    val annotatedStatements =
-      for(absStatement <- abs.temporalStatements) yield {
-        val concrete = TemporalStatement(pb, context, absStatement)
-        // update the context with a mapping from the local ID to the actual statement
-        context.addStatement(absStatement.statement.id, concrete.statement)
-        concrete
-      }
-    act.statements ++= annotatedStatements.map(_.statement)
-    act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
-
-    act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
+    // for all created vars, make sure those are present in [[StateModifier#vars]]
+    for(localArg <- abs.args) {
+      act.mVars += ((act.context.getType(localArg), act.context.getGlobalVar(localArg)))
+    }
 
     act
   }

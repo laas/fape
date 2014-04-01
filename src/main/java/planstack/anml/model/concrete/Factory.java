@@ -1,9 +1,16 @@
 package planstack.anml.model.concrete;
 
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 
+import java.util.List;
+
+import scala.None;
+import scala.None$;
+import scala.collection.JavaConversions;
 
 /**
  * This class provides static factory method for creating concrete objects from abstract ones.
@@ -20,6 +27,17 @@ public class Factory {
      */
     public static Action getStandaloneAction(AnmlProblem pb, AbstractAction abs) {
         return Action$.MODULE$.getNewStandaloneAction(pb, abs);
+    }
+
+    /**
+     * Creates a new action with some predifined arguments.
+     * @param pb Problem in which the action appears.
+     * @param abs AbstractAction to make concrete.
+     * @param parameters List of parameters.
+     * @return A concrete action with the given parameters.
+     */
+    public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters) {
+        return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), null, null);
     }
 
     /**

@@ -75,7 +75,10 @@ class InstanceManager {
   /**
    * @return All instances as a list of (name, type) pairs
    */
-  def instances : List[Pair[String, String]]= instancesDef.toList.map(x => (x._1, x._2._1))
+  def instances : List[Pair[String, String]] = instancesDef.toList.map(x => (x._1, x._2._1))
+
+  /** Return a collection containing all instances. */
+  def allInstances : java.util.Collection[String] =  asJavaCollection(instancesDef.keys)
 
   /** Retrieves the variable reference linked to this instance
     * @param name Name of the instance to lookup
@@ -83,9 +86,11 @@ class InstanceManager {
     */
   def referenceOf(name: String) : VarRef = instancesDef(name)._2
 
+  def instancesOfType(tipe:String) : java.util.List[String] = seqAsJavaList(instancesOfTypeRec(tipe))
+
   /** Returns all instances of the given type */
-  def instancesOfType(tipe:String) : List[String] = {
-    instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfType(_)).flatten
+  private def instancesOfTypeRec(tipe:String) : List[String] = {
+    instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
   }
 
   /** Returns all instances of the given type */
