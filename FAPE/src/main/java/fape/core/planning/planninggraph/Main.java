@@ -64,6 +64,8 @@ public class Main {
             Plan plan = new Plan(planner.GetCurrentState());
         }
 
+        System.out.println("Opened: "+planner.OpenedStates+"   Generated: "+planner.GeneratedStates);
+
 
         int x = 0;
     }

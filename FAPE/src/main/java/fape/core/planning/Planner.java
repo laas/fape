@@ -23,6 +23,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.abs.AbstractAction;
@@ -115,15 +116,16 @@ public class Planner {
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
             next.applyDecomposition(dec);
         } else if(o.actionWithBindings != null) {
-            next.insert(o.actionWithBindings.act);
+            Action act = Factory.getStandaloneAction(pb, o.actionWithBindings.act);
+            next.insert(act);
 
             // restrict domain of given variables to the given set of variables.
-            for(VarRef var : o.actionWithBindings.values.keySet()) {
-                next.conNet.restrictDomain(var, o.actionWithBindings.values.get(var));
+            for(LVarRef lvar : o.actionWithBindings.values.keySet()) {
+                next.conNet.restrictDomain(act.context().getGlobalVar(lvar), o.actionWithBindings.values.get(lvar));
             }
             // create the binding between consumer and the new statement in the action that supports it
             TemporalDatabase supportingDatabase = null;
-            for (Statement s : o.actionWithBindings.act.statements()) {
+            for (Statement s : act.statements()) {
                 if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
                     assert supportingDatabase == null : "Error: several statements might support the database";
                     supportingDatabase = next.tdb.getDBContaining((LogStatement) s);

@@ -52,7 +52,7 @@ public class PGPlanner extends Planner {
 
         for(Pair<AbstractAction, List<Set<String>>> supporter : options) {
             ActionWithBindings opt = new ActionWithBindings();
-            opt.act = Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
+            opt.act = supporter.value1;//Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
 
             assert opt.act.args().size() == supporter.value2.size() : "Problem: different number of parameters";
 

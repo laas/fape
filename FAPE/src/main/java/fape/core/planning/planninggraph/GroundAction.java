@@ -30,7 +30,7 @@ public class GroundAction implements PGNode {
         this.params = new LinkedList<>(params);
         argMap = new HashMap<>(params.size());
         for(int i=0 ; i<params.size() ; i++) {
-            argMap.put(act.abs().args().apply(i), params.get(i));
+            argMap.put(act.abs().args().get(i), params.get(i));
         }
 
         for(LogStatement s : act.logStatements()) {

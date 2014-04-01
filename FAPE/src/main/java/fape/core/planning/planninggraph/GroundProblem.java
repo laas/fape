@@ -91,7 +91,7 @@ public class GroundProblem {
     public List<List<VarRef>> possibleParams(AbstractAction a) {
         // the ith list contains the possible values for the ith parameter
         List<List<VarRef>> possibleValues = new LinkedList<>();
-        for(LVarRef ref : JavaConversions.asJavaCollection(a.args())) {
+        for(LVarRef ref : a.args()) {
             // get type of the argument and add all possible values to the argument list.
             List<String> instanceSet = liftedPb.instances().instancesOfType(a.context().getType(ref));
             List<VarRef> varSet = new LinkedList<>();
