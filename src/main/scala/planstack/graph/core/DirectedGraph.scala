@@ -1,5 +1,6 @@
 package planstack.graph.core
 
+import scala.collection.JavaConversions._
 
 trait DirectedGraph[V, EL, E <: Edge[V]] extends Graph[V, EL, E] {
 
@@ -15,7 +16,11 @@ trait DirectedGraph[V, EL, E <: Edge[V]] extends Graph[V, EL, E] {
 
   def parents(v:V) : Set[V] = inEdges(v).map(_.u).toSet
 
+  def jParents(v:V) : java.util.Set[V] = setAsJavaSet(parents(v))
+
   def children(v:V) : Set[V] = outEdges(v).map(_.v).toSet
+
+  def jChildren(v:V) : java.util.Set[V] = setAsJavaSet(children(v))
 }
 
 

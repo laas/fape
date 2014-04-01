@@ -1,7 +1,7 @@
 package planstack.graph.core
 
 import scala.collection.JavaConversions._
-import planstack.graph.printers.GraphDotPrinter
+import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
 
 /** Base Trait defining a graph.
   *
@@ -59,6 +59,10 @@ trait Graph[V, +EL, E <: Edge[V]] {
     * @param fileName Path of the file to write it to. If a file is already present, it will be overwritten.
     */
   def exportToDotFile(fileName: String) { new GraphDotPrinter(this).print2Dot(fileName) }
+
+  def exportToDotFile[EdgeLabel >: EL](fileName :String, customPrinter :NodeEdgePrinter[V,EdgeLabel]) {
+    new GraphDotPrinter(this, customPrinter).print2Dot(fileName)
+  }
 }
 
 

@@ -10,7 +10,9 @@ import planstack.graph.core._
   * @tparam EL
   * @tparam E
   */
-class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E]) {
+class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdgePrinter[V,EL]) {
+
+  def this(g :Graph[V,EL,E]) = this(g, new NodeEdgePrinter[V,EL])
 
   def writeToFile(filename: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new java.io.File(filename))
@@ -29,7 +31,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E]) {
       case dg:DirectedGraph[V,EL,E] => "->"
     }
     val label = e match {
-      case e:LabeledEdge[V,EL] => "[label=\"%s\"]".format(e.l)
+      case e:LabeledEdge[V,EL] => "[label=\"%s\"]".format(nep.printEdge(e.l))
       case _ => ""
     }
     "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v) + label
@@ -40,7 +42,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E]) {
   def node2Str(v:V) = {
     if(!nodeId.contains(v))
       nodeId(v) = nodeId.size
-    "\"" + nodeId(v) +":"+ v.toString + "\""
+    "\"" + nodeId(v) +":"+ nep.printNode(v) + "\""
   }
 
   /**
