@@ -11,24 +11,19 @@ import java.util.List;
 class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel> {
 
     final GroundProblem pb;
+    final RelaxedPlanningGraph rpg;
 
-    public PGPrinter(GroundProblem pb) {
+    public PGPrinter(GroundProblem pb, RelaxedPlanningGraph rpg) {
         this.pb = pb;
+        this.rpg = rpg;
     }
 
-    String valueOf(VarRef var) {
-        for(String instance : pb.liftedPb.instances().allInstances()) {
-            if(pb.liftedPb.instances().referenceOf(instance).equals(var)) {
-                return instance;
-            }
-        }
-        throw new FAPEException("Unable to find the instance referred to by "+var);
-    }
+
 
     Collection<String> valuesOf(Collection<VarRef> vars) {
         List<String> ret = new LinkedList<>();
         for(VarRef var : vars) {
-            ret.add(valueOf(var));
+            ret.add(pb.valueOf(var));
         }
         return ret;
     }
@@ -37,9 +32,11 @@ class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel> {
     public String printNode(PGNode n) {
         if(n instanceof GroundAction) {
             GroundAction act = (GroundAction) n;
-            return act.act.name() + valuesOf(act.params);
+            return act.act.name() + valuesOf(act.params) + " ->"+rpg.distance(n);
         } else if(n instanceof Fluent) {
-            return ((Fluent) n).f.name() + valuesOf(((Fluent) n).params).toString() + valueOf(((Fluent) n).value);
+            return ((Fluent) n).f.name() + valuesOf(((Fluent) n).params).toString() + pb.valueOf(((Fluent) n).value) + " ->"+rpg.distance(n);
+        } else if(n instanceof GroundState) {
+            return "Init" + " ->"+rpg.distance(n);
         }
         throw new FAPEException("Unsupported PGNode: "+n);
     }

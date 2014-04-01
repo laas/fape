@@ -20,6 +20,7 @@ public class GroundProblem {
 
     final AnmlProblem liftedPb;
     final GroundState initState = new GroundState();
+    final GroundState goalState = new GroundState();
 
     final List<GroundAction> actions = new LinkedList<>();
 
@@ -44,14 +45,20 @@ public class GroundProblem {
         }
 
         for(StateModifier mod : liftedPb.jModifiers()) {
-            for(LogStatement s : mod.logStatements()) {
+            for(LogStatement s : mod.logStatements()) {/*
                 boolean isOnStart = false;
+                boolean isOnEnd = false;
                 for(TemporalConstraint constraint : mod.temporalConstraints()) {
                     if(constraint.op().equals("=") && constraint.plus() == 0) {
                         // this is an equality constraint
                         if(constraint.tp1() == s.end() && constraint.tp2() == liftedPb.start() ||
                                 constraint.tp2() == s.end() && constraint.tp1() == liftedPb.start()) {
                             isOnStart = true;
+                            break;
+                        }
+                        if(constraint.tp1() == s.start() && constraint.tp2() == liftedPb.end() ||
+                                constraint.tp2() == s.start() && constraint.tp1() == liftedPb.end()) {
+                            isOnEnd = true;
                             break;
                         }
                     }
@@ -62,6 +69,17 @@ public class GroundProblem {
                     if(addition != null)
                         initState.fluents.add(addition);
                 }
+                if(isOnEnd) {
+                    Fluent precondition = statementToPrecondition(s, null);
+                    if(precondition != null)
+                        goalState.fluents.add(precondition);
+                }*/
+                Fluent addition = statementToAddition(s, null);
+                if(addition != null)
+                    initState.fluents.add(addition);
+                Fluent precondition = statementToPrecondition(s, null);
+                if(precondition != null)
+                    goalState.fluents.add(precondition);
             }
         }
     }
@@ -83,32 +101,20 @@ public class GroundProblem {
             possibleValues.add(varSet);
         }
 
-        return allCombinations(possibleValues, 0, new LinkedList<VarRef>());
+        return PGUtils.allCombinations(possibleValues);
 
 
     }
 
-    /**
-     * [[a1, a2], [b], [c1, C2]]
-     *  => [ [a1, b, c1], [a1, b, c2], [a2, b, c1], [a2, b, c2]]
-     * @param valuesSets
-     * @param startWith
-     * @return
-     */
-    public List<List<VarRef>> allCombinations(List<List<VarRef>> valuesSets, int startWith, List<VarRef> baseValues) {
-        List<List<VarRef>> ret = new LinkedList<>();
 
-        if(startWith >= valuesSets.size()) {
-            ret.add(baseValues);
-            return ret;
-        }
-        for(VarRef val : valuesSets.get(startWith)) {
-            List<VarRef> newBaseValues = new LinkedList<>(baseValues);
-            newBaseValues.add(val);
-            ret.addAll(allCombinations(valuesSets, startWith+1, newBaseValues));
-        }
 
-        return ret;
+    String valueOf(VarRef var) {
+        for(String instance : liftedPb.instances().allInstances()) {
+            if(liftedPb.instances().referenceOf(instance).equals(var)) {
+                return instance;
+            }
+        }
+        throw new FAPEException("Unable to find the instance referred to by "+var);
     }
 
     /**

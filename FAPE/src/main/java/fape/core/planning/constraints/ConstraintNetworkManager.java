@@ -30,7 +30,7 @@ public class ConstraintNetworkManager {
     /**
      * Maps every variable to its domain
      */
-    final HashMap<VarRef, IUnifiable> domains;
+    public final HashMap<VarRef, IUnifiable> domains;
 
     public ConstraintNetworkManager() {
         unificationConstraints = new HashSet<>();

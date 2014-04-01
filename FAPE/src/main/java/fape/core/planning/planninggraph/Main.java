@@ -1,19 +1,22 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.Planner;
+import fape.util.TimeAmount;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.parser.ANMLFactory;
 
+import java.util.LinkedList;
+import java.util.List;
+
 
 public class Main {
-
-
 
     public static void main(String[] args) {
         String pbFile;
         if(args.length > 0)
             pbFile = args[0];
         else
-            pbFile = "../fape/FAPE/problems/Dream3.anml";
+            pbFile = "../fape/FAPE/problems/handover.anml";
 
         AnmlProblem pb = new AnmlProblem();
         pb.addAnml(ANMLFactory.parseAnmlFromFile(pbFile));
@@ -34,7 +37,26 @@ public class Main {
         }
 
         RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(gpb);
-        rpg.graph.exportToDotFile("graphplan.dot", new PGPrinter(gpb));
+        rpg.graph.exportToDotFile("graphplan.dot", new PGPrinter(gpb, rpg));
+
+
+
+        List<DisjunctiveAction> enablers = new LinkedList<>();
+        for(Fluent goal : gpb.goalState.fluents) {
+            enablers.add(rpg.enablers(goal));
+        }
+
+        List options = new LinkedList();
+        for(DisjunctiveAction da : enablers) {
+            options.add(da.actionsAndParams(gpb));
+        }
+
+        Planner planner = new Planner();
+        planner.Init();
+        planner.ForceFact(ANMLFactory.parseAnmlFromFile(pbFile));
+
+        planner.Repair(new TimeAmount(1000000));
+
 
         int x = 0;
     }
