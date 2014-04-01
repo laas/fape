@@ -13,6 +13,10 @@ public class DisjunctiveAction {
         this.actions = new HashSet<>(actions);
     }
 
+    public DisjunctiveAction() {
+        this.actions = new HashSet<>();
+    }
+
     public List<Pair<AbstractAction, List<Set<String>>>> actionsAndParams(GroundProblem pb) {
         List<Pair<AbstractAction, List<Set<String>>>> ret = new LinkedList<>();
 

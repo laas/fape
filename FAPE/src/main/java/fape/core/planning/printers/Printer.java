@@ -18,7 +18,7 @@ public class Printer {
             return "null";
 
         String ret = act.name()+"(";
-        for(VarRef arg : act.jArgs()) {
+        for(VarRef arg : act.args()) {
             ret += variable(st, arg);
         }
         return ret + ")";

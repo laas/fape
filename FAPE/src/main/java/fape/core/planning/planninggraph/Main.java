@@ -1,5 +1,6 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.util.TimeAmount;
 import planstack.anml.model.AnmlProblem;
@@ -18,6 +19,7 @@ public class Main {
         else
             pbFile = "../fape/FAPE/problems/handover.anml";
 
+        /*
         AnmlProblem pb = new AnmlProblem();
         pb.addAnml(ANMLFactory.parseAnmlFromFile(pbFile));
 
@@ -50,12 +52,17 @@ public class Main {
         for(DisjunctiveAction da : enablers) {
             options.add(da.actionsAndParams(gpb));
         }
+        */
 
-        Planner planner = new Planner();
+        PGPlanner planner = new PGPlanner();
+        Planner.logging = false;
+        Planner.debugging = false;
         planner.Init();
         planner.ForceFact(ANMLFactory.parseAnmlFromFile(pbFile));
 
-        planner.Repair(new TimeAmount(1000000));
+        if(planner.Repair(new TimeAmount(1000000))) {
+            Plan plan = new Plan(planner.GetCurrentState());
+        }
 
 
         int x = 0;

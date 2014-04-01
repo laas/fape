@@ -127,13 +127,26 @@ public class RelaxedPlanningGraph {
         }
     }
 
+    public DisjunctiveAction enablers(DisjunctiveFluent df) {
+        DisjunctiveAction supporters = new DisjunctiveAction();
+        for(Fluent f : df.fluents) {
+            supporters.actions.addAll(enablers(f).actions);
+        }
+        return supporters;
+    }
+
     public DisjunctiveAction enablers(Fluent f) {
         List<GroundAction> actions = new LinkedList<>();
+
+        // fluent f is not achievable, hence an empty disjunctive action
+        if(!graph.contains(f))
+            return new DisjunctiveAction(actions);
+
         for(PGNode n : graph.jParents(f)) {
             if(n instanceof GroundAction) {
                 actions.add((GroundAction) n);
             } else if(n instanceof GroundState) {
-                actions.add(null);
+                //actions.add(null);
             } else {
                 throw new FAPEException("There should be no fluent parent of another fluent.");
             }

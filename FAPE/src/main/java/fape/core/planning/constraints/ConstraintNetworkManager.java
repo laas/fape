@@ -107,6 +107,11 @@ public class ConstraintNetworkManager {
         return AC3(unificationConstraints);
     }
 
+    public boolean restrictDomain(VarRef var, Collection<String> toValues) {
+        domains.get(var).ReduceDomain(toValues);
+        return true;
+    }
+
     /**
      * Records a new variable in the CSP
      * @param var Reference of the variable

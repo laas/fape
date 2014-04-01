@@ -39,7 +39,7 @@ public class GroundProblem {
                 if(candidate.isValid()) {
                     actions.add(candidate);
                 } else {
-                    System.out.println("Ignored: " + candidate);
+                    //System.out.println("Ignored: " + candidate);
                 }
             }
         }

@@ -114,6 +114,29 @@ public class Planner {
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
             next.applyDecomposition(dec);
+        } else if(o.actionWithBindings != null) {
+            next.insert(o.actionWithBindings.act);
+
+            // restrict domain of given variables to the given set of variables.
+            for(VarRef var : o.actionWithBindings.values.keySet()) {
+                next.conNet.restrictDomain(var, o.actionWithBindings.values.get(var));
+            }
+            // create the binding between consumer and the new statement in the action that supports it
+            TemporalDatabase supportingDatabase = null;
+            for (Statement s : o.actionWithBindings.act.statements()) {
+                if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
+                    assert supportingDatabase == null : "Error: several statements might support the database";
+                    supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
+                }
+            }
+            if (supportingDatabase == null) {
+                return false;
+            } else {
+                SupportOption opt = new SupportOption();
+                opt.temporalDatabase = supportingDatabase.mID;
+                return ApplyOption(next, opt, consumer);
+            }
+
         } else {
             throw new FAPEException("Unknown option.");
         }
