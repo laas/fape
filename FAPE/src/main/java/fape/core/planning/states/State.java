@@ -358,7 +358,6 @@ public class State implements Reporter {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
-        tempoNet.EnforceConstraint(act.start(), act.end(), act.minDuration(), act.maxDuration());
         taskNet.insert(act);
         return apply(act);
     }
@@ -379,8 +378,8 @@ public class State implements Reporter {
      * @return True if the resulting state is consistent, False otherwise.
      */
     public boolean update() {
-        for(int i=problemRevision+1 ; i<pb.jModifiers().size() ; i++) {
-            apply(pb.jModifiers().get(i));
+        for(int i=problemRevision+1 ; i<pb.modifiers().size() ; i++) {
+            apply(pb.modifiers().get(i));
             problemRevision = i;
         }
 

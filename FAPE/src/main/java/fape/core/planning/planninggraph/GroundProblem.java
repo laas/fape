@@ -27,7 +27,7 @@ public class GroundProblem {
     public GroundProblem(AnmlProblem liftedPb) {
         this.liftedPb = liftedPb;
 
-        for(AbstractAction liftedAct : liftedPb.jAbstractActions()) {
+        for(AbstractAction liftedAct : liftedPb.abstractActions()) {
             // ignore methods with decompositions
             if(!liftedAct.jDecompositions().isEmpty())
                 continue;
@@ -44,7 +44,7 @@ public class GroundProblem {
             }
         }
 
-        for(StateModifier mod : liftedPb.jModifiers()) {
+        for(StateModifier mod : liftedPb.modifiers()) {
             for(LogStatement s : mod.logStatements()) {/*
                 boolean isOnStart = false;
                 boolean isOnEnd = false;
@@ -102,8 +102,6 @@ public class GroundProblem {
         }
 
         return PGUtils.allCombinations(possibleValues);
-
-
     }
 
 

@@ -675,7 +675,7 @@ public class Planner {
      */
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
-        String anml = "problems/DreamComplex.anml";
+        String anml = "../fape/FAPE/problems/handover.anml";
 
         if(args.length > 0)
             anml = args[0];

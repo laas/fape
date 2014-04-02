@@ -10,15 +10,19 @@ resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
 libraryDependencies += "planstack" % "planstack-constraints" % "0.3"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.1"
 
-libraryDependencies += "planstack" % "planstack-anml" % "0.3.1"
+libraryDependencies += "planstack" % "planstack-anml" % "0.3.2"
 
 javaOptions in run += "-Xmx3000m"
 
 javacOptions ++= Seq("-source", "1.7")
 
 mainClass in (Compile, run) := Some("fape.core.planning.Planner")
+
+fork in run := true
+
+javaOptions in run += "-Xmx4G"
 
 
 pomExtra :=
