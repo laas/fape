@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.concrete.statements.{LogStatement, Statement, TemporalStatement}
+import planstack.anml.model.concrete.statements.{ResourceStatement, LogStatement, Statement, TemporalStatement}
 import collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import java.util
@@ -33,7 +33,10 @@ trait StateModifier {
   def statements : java.util.List[Statement]
 
   /** Returns all logical statements */
-  def logStatements = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
+  def logStatements : java.util.List[LogStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
+
+  /** Returns all logical statements */
+  def resourceStatements : java.util.List[ResourceStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[ResourceStatement]).map(_.asInstanceOf[ResourceStatement]))
 
   /** Actions to be inserted in the plan */
   def actions : java.util.List[Action]

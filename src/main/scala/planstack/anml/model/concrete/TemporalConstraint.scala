@@ -7,7 +7,7 @@ import planstack.anml.model.concrete.time.TimepointRef
 
 
 
-class TemporalConstraint(val tp1:TPRef, val op:String, val tp2:TPRef, val plus:Integer) {
+case class TemporalConstraint(tp1:TPRef, op:String, tp2:TPRef, plus:Integer) {
   require(op == "<" || op == "=")
 
   override def toString = "%s %s %s + %s".format(tp1, op, tp2, plus)

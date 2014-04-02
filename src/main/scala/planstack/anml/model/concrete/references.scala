@@ -56,7 +56,7 @@ class VarRef(id:T) extends GlobalRef(id) {
 object EmptyVarRef extends VarRef(NullID)
 
 /** Reference to a time-point: an temporal variable typically denoting the start or end time of an action
-  * and appear in Simple Temporal Problems.
+  * and that appears in Simple Temporal Problems.
   * @param id Unique id of the reference.
   */
 class TPRef(id:T) extends GlobalRef(id) {

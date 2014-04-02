@@ -69,6 +69,8 @@ class Action(
 
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 
+  temporalConstraints += new TemporalConstraint(start, "<", end, 0)
+
   val container = this
 
   def name = abs.name
@@ -80,18 +82,37 @@ class Action(
   def decomposable = !decompositions.isEmpty
 
   /** Returns true if the statement `s` is contained in this action */
-  def contains(s: LogStatement) = statements.contains(s)
+  def contains(s: Statement) = statements.contains(s)
 
-  /**
-   * Retrieves the cost of this action.
-   * Right now, it is set to 10 in all cases.
-   * @return the cost of the action.
-   */
-  def cost = 10
+  /** Tries too find the minimal duration of this action by looking at explicit constraints between the
+    * start and the end time point of this action.
+    * It only provides an easy way to look up the duration of an action but it might (and will) miss some implicit constraints.
+    * Using this method should not prevent you from processing temporal constraints.
+    * @return A lower bound on the minimal duration of the action.
+    */
+  def minDuration : Int = temporalConstraints.foldLeft(Integer.MIN_VALUE)((minDur, constraint) => {
+    constraint match {
+      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == start && tp2 == end => Math.max(minDur, - plus)
+      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == end && tp2 == start => Math.max(minDur, plus)
+      case TemporalConstraint(tp1, "<", tp2, plus) if tp1 == start && tp2 == end => Math.max(minDur, - plus)
+      case _ => minDur
+    }
+  })
 
-  def minDuration = 5
-
-  def maxDuration = 150
+  /** Tries too find the maximal duration of this action by looking at explicit constraints between the
+    * start and the end time point of this action.
+    * It only provides an easy way to look up the duration of an action but it might (and will) miss some implicit constraints.
+    * Using this method should not prevent you from processing temporal constraints.
+    * @return An upper bound on the maximal duration of the action.
+    */
+  def maxDuration : Int = temporalConstraints.foldLeft(Integer.MAX_VALUE)((maxDur, constraint) => {
+    constraint match {
+      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == start && tp2 == end => Math.min(maxDur, - plus)
+      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == end && tp2 == start => Math.min(maxDur, plus)
+      case TemporalConstraint(tp1, "<", tp2, plus) if tp1 == end && tp2 == start => Math.min(maxDur, plus)
+      case _ => maxDur
+    }
+  })
 
   /** Returns true if this action has a parent (ie. it is issued from a decomposition). */
   def hasParent = parentAction match {
@@ -136,7 +157,7 @@ object Action {
         case None => throw new ANMLException("Unable to find action "+ref.name)
       }
 
-    // creates pair (localVar, globalVar) as defined by the ActionRef
+    // map every abstract variable to the global one defined in the parent context.
     val args = ref.args.map(parentContext.getGlobalVar(_))
 
     newAction(pb, abs, args, ref.localId, parentAction, contextOpt)
@@ -214,6 +235,12 @@ object Action {
     act
   }
 
+  /** Creates a new Action with new VarRef as parameters.
+    *
+    * @param pb Problem in which the action appears
+    * @param actionName Name of the action to create.
+    * @return The new concrete action.
+    */
   def getNewStandaloneAction(pb:AnmlProblem, actionName:String) : Action = {
     val abs =
       pb.abstractActions.find(_.name == actionName) match {
@@ -224,6 +251,12 @@ object Action {
     getNewStandaloneAction(pb, abs)
   }
 
+  /** Creates a new Action with new VarRef as parameters.
+    *
+    * @param pb Problem in which the action appears
+    * @param abs Abstract version of the action to create.
+    * @return The new concrete action.
+    */
   def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction) : Action = {
     val act = newAction(pb, abs, abs.args.map(x => new VarRef()), new LActRef(), None, Some(pb.context))
 

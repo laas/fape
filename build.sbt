@@ -8,7 +8,7 @@ scalaVersion := "2.10.3"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.1"
 
 crossPaths := false
 

@@ -16,10 +16,13 @@ import collection.JavaConversions._
   * instances (defined in the ANML problem).
   *
   * @param name
-  * @param args
+  * @param mArgs
   * @param context
   */
-class AbstractAction(val name:String, val args:List[LVarRef], val context:PartialContext)  {
+class AbstractAction(val name:String, private val mArgs:List[LVarRef], val context:PartialContext)  {
+
+  /** Arguments in the form of local references containing the name of the argument */
+  def args = seqAsJavaList(mArgs)
 
   /** All abstract decompositions appearing in this action */
   val decompositions = mutable.ArrayBuffer[AbstractDecomposition]()

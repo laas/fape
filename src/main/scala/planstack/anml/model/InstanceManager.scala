@@ -10,20 +10,28 @@ import planstack.anml.model.concrete.VarRef
 class InstanceManager {
 
   private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
+
+  /** Maps every type name to a full type definition */
   private val types = mutable.Map[String, Type]()
-  /**
-   * Maps an instance name to a (type, GlobalReference) pair
-   */
+
+  /** Maps an instance name to a (type, GlobalReference) pair */
   private val instancesDef = mutable.Map[String, Pair[String, VarRef]]()
+
+  /** Maps every type to a list of instance that are exactly of this type (doesn't contain instances of sub types */
   private val instancesByType = mutable.Map[String, List[String]]()
 
+  // predefined ANML types and instances
   addType("boolean", "")
   addInstance("true", "boolean")
   addInstance("false", "boolean")
   addType("object", "")
 
 
-
+  /** Creates a new instance of a certain type.
+    *
+    * @param name Name of the instance.
+    * @param t Type of the instance.
+    */
   def addInstance(name:String, t:String) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
@@ -51,11 +59,11 @@ class InstanceManager {
     }
   }
 
-  /**
-   *
-   * @param typeName Type to whom the method belong
-   * @param methodName name of the method
-   */
+  /** Adds a new scoped method to a type.
+    *
+    * @param typeName Type to whom the method belong
+    * @param methodName Name of the method
+    */
   def addMethodToType(typeName:String, methodName:String) {
     assert(types.contains(typeName))
     types(typeName).addMethod(methodName)
@@ -68,8 +76,10 @@ class InstanceManager {
    */
   def containsInstance(instanceName:String) = instancesDef.contains(instanceName)
 
+  /** Returns true if the type with the given name exists */
   def containsType(typeName:String) = types.contains(typeName)
 
+  /** Returns the type of a given instance */
   def typeOf(instanceName:String) = instancesDef(instanceName)
 
   /**
@@ -86,6 +96,7 @@ class InstanceManager {
     */
   def referenceOf(name: String) : VarRef = instancesDef(name)._2
 
+  /** Lookup for all instances of this types (including all instances of any of its subtypes). */
   def instancesOfType(tipe:String) : java.util.List[String] = seqAsJavaList(instancesOfTypeRec(tipe))
 
   /** Returns all instances of the given type */
@@ -96,18 +107,17 @@ class InstanceManager {
   /** Returns all instances of the given type */
   def jInstancesOfType(tipe:String) = seqAsJavaList(instancesOfType(tipe))
 
-  /**
-   * Return a fully qualified function definition in the form
-   * [Robot, location].
-   * @param typeName base type in which the method is used
-   * @param methodName name of the method
-   * @return
-   */
+  /** Return a fully qualified function definition in the form
+    * [Robot, location].
+    * @param typeName base type in which the method is used
+    * @param methodName name of the method
+    * @return
+    */
   def getQualifiedFunction(typeName:String, methodName:String) : List[String] = {
     assert(types.contains(typeName))
     if(types(typeName).methods.contains(methodName)) {
       typeName :: methodName :: Nil
-    } else if(types(typeName).parent nonEmpty) {
+    } else if(types(typeName).parent.nonEmpty) {
       getQualifiedFunction(types(typeName).parent, methodName)
     } else {
       throw new ANMLException("Unable to find a method %s for type %s.".format(methodName, typeName))

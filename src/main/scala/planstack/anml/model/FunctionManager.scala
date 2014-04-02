@@ -5,24 +5,32 @@ import planstack.anml.{ANMLException, parser}
 import scala.collection.mutable
 import collection.JavaConversions._
 
+/** Representation of an ANML function.
+  *
+  * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
+  *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
+  * @param valueType Type of the function's value.
+  * @param argTypes Types of the arguments of the function in order.
+  */
 class Function(val name:String, val valueType:String, val argTypes:List[String]) {
-  def isConstant = false
+  /** True if this function is defined as constant. False otherwise */
+  val isConstant = false
 }
 
+/** Representation of an ANML constant function.
+ *
+ * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
+ *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
+ * @param valueType Type of the function's value.
+ * @param argTypes Types of the arguments of the function in order.
+ */
 class ConstFunction(name:String, valueType:String, argTypes:List[String])
   extends Function(name, valueType, argTypes)
 {
-  override def isConstant = true
-
-  var values = List[Pair[List[String], String]]()
-
-  def addValue(args:List[String], value:String) {
-    val valuePair = (args, value)
-    assert(values.forall(_._1 != args), "Function %s already contains a value for arguments %s".format(name, args))
-    values = valuePair :: values
-  }
+  override val isConstant = true
 }
 
+/** Storage for functions found in an [[planstack.anml.model.AnmlProblem]] */
 class FunctionManager {
 
   /**
@@ -64,22 +72,28 @@ class FunctionManager {
     }
   }
 
-  @deprecated
-  def addConstFuncValue(funcName:String, args:List[String], value:String) {
-    assert(constFunction.contains(funcName))
-    constFunction(funcName).addValue(args, value)
-  }
-
+  /** Look up if there exists a function with this name.
+    *
+    * @param funcName Name of the function to look up.
+    * @return True if such a function exists, False otherwise.
+    */
   def isDefined(funcName:String) = constFunction.contains(funcName) || functions.contains(funcName)
 
+  /** Returns true if the given function name maps to a constant function
+    *
+    * @param funcName Name of the function to look up.
+    * @return True if the function is constant, False otherwise.
+    */
   def isConstantFunc(funcName:String) = constFunction.contains(funcName)
 
-  def getAll : Seq[Function] = {
-    (functions.values ++ constFunction.values).toList
-  }
+  /** Returns all functions stored in this function manager */
+  def getAll : java.util.List[Function] = seqAsJavaList((functions.values ++ constFunction.values).toList)
 
-  def jGetAll = seqAsJavaList(getAll)
-
+  /** Finds the definition of the function with the given name.
+    *
+    * @param functionName Name of the function to look up.
+    * @return The function definition. Throws an [[planstack.anml.ANMLException]] if no such function can be found.
+    */
   def get(functionName:String) = {
     if(functions.contains(functionName))
       functions(functionName)

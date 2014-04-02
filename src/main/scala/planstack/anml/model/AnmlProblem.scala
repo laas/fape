@@ -12,7 +12,32 @@ import planstack.anml.model.concrete.statements.TemporalStatement
 import planstack.anml.model.abs.{AbstractTemporalConstraint, AbstractTemporalStatement, AbstractActionRef, AbstractAction}
 import scala.Some
 
-
+/** Description of an ANML problem.
+  *
+  * An ANML problem comes with three time points: start (global start of the world the problem takes place in),
+  * end (global end of the world) and earliestExecution which represent the earliest time at which an action can be executed.
+  * Temporal intervals (such as actions, statements, ...) are placed relatively to the start and end time points using
+  * [[planstack.anml.model.concrete.TemporalConstraint]].
+  * The earliestExecution time point will not have any explicit constraints linked to it (we consider this choice is
+  * plannner-dependent and is not explicitly defined in ANML).
+  *
+  * Components include:
+  *
+  *  - an [[planstack.anml.model.InstanceManager]] that keeps track of all types and instances declared
+  * in the problem.
+  *
+  *  - a [[planstack.anml.model.FunctionManager]] that records of all functions declared in the ANML problem.
+  *
+  *  - a [[planstack.anml.model.Context]] that map local variables and references that appear in the problem
+  *  scope to global ones.
+  *
+  *
+  * Further more an ANML problem consists of a list of [[planstack.anml.model.concrete.StateModifier]]
+  * representing everything that must be added to plan solving this problem.
+  * A first one is added in the constructor containing predefined instances of the problem (such as true and false).
+  * Every time an `addAnml(...)` method it called, the problem's components are updated accordingly and a new
+  * [[planstack.anml.model.concrete.StateModifier]] is added to represent the changes in the problems.
+  */
 class AnmlProblem extends TemporalInterval {
 
   /**
@@ -33,22 +58,22 @@ class AnmlProblem extends TemporalInterval {
    * in the problem.
    */
   val functions = new FunctionManager
+
+  /** Context that all variables and and action that appear in the problem scope.
+    * Those typically contain instances of the problem and predefined ANML literals (such as true, false, ...)
+    */
   val context = new Context(None)
   context.setInterval(this)
 
-  val abstractActions = ListBuffer[AbstractAction]()
-  def jAbstractActions = seqAsJavaList(abstractActions)
+  /** All abstract actions appearing in the problem */
+  val abstractActions = new java.util.LinkedList[AbstractAction]()
 
   /**
    * All [[planstack.anml.model.concrete.StateModifier]] that need to be applied to a state for it to reprent this problem.
    * There is one modifier encoding the default definitions of an ANML problem (such as the instances true and false of type
    * boolean). One modifier is added by update of the problem (as a result of the invocation of `addAnml(...)`.
    */
-  val modifiers = ArrayBuffer[StateModifier]()
-  def jModifiers = seqAsJavaList(modifiers)
-
-  private var nextGlobalVarID = 0
-  private var nextActionID = 0
+  val modifiers = new java.util.LinkedList[StateModifier]()
 
   // create an initial modifier containing the predefined instances (true and false)
   {
@@ -81,25 +106,33 @@ class AnmlProblem extends TemporalInterval {
    */
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
+    // modifier that containing all alterations to be made to a plan as a consequence of this ANML block
     val modifier = new BaseStateModifier(this)
 
+    // add all type declarations to the instance manager.
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
     })
 
+    // add all instance declaration to the instance manager and to the modifier
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe)
       modifier.instances += instanceDecl.name
     })
 
+    // add all instances to the context.
     for((name, tipe) <- instances.instances) {
       context.addVar(new LVarRef(name), tipe, instances.referenceOf(name))
     }
 
+    // add all functions to the function manager
     blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {
+      assert(!funcDecl.name.contains("."), "Declaring function "+funcDecl+" is not supported. If you wanted to " +
+        "declared a function linked to type, you should do so in the type itself.") // TODO: should be easy to support
       functions.addFunction(funcDecl)
     })
 
+    // find all methods declared inside a type and them to functions and to the type.
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       typeDecl.content.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]).foreach(scopedFunction => {
         functions.addScopedFunction(typeDecl.name, scopedFunction)
@@ -119,6 +152,7 @@ class AnmlProblem extends TemporalInterval {
       val abs = AbstractAction(actionDecl, this)
       abstractActions += abs
 
+      // if the action is a seed, add it to the modifier to make sure it appears in the initial plan.
       if(abs.name == "Seed" || abs.name == "seed") {
         val localRef = new LActRef()
         val act = Action.getNewStandaloneAction(this, abs)

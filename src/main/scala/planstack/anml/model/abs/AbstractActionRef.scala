@@ -5,6 +5,12 @@ import planstack.anml.model._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 import planstack.anml.model.abs.statements.AbstractPersistence
 
+/** Reference to an action as it appears in a dcomposition
+  *
+  * @param name Name of the action
+  * @param args Parameters of the action as instances of local variables
+  * @param localId Local reference to the action.
+  */
 class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) {
   require(localId nonEmpty)
   require(name nonEmpty)
@@ -12,16 +18,14 @@ class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LAc
 
 object AbstractActionRef {
 
-  private var nextID = 0
-  protected def newLocalActionRef = "lActionRef"+{nextID+=1; nextID-1}
-
   /** Produces an abstract action ref and its associated TemporalStatements.
+    * If some parameters appear to be functions (and not variables) Persistence statements are produces
     *
     * The temporal statements derive from parameters given as functions and not variables
-    * @param pb
-    * @param context
-    * @param ar
-    * @return
+    * @param pb Problem in which the reference appears.
+    * @param context Partial context (such as the containing abstract action) in which the action reference appears.
+    * @param ar The parsed action reference from which to create the abstract action reference.
+    * @return The abstract action reference and a list of temporal statement to be enforced.
     */
   def apply(pb:AnmlProblem, context:PartialContext, ar:parser.ActionRef) : Pair[AbstractActionRef, List[AbstractTemporalStatement]] = {
 
@@ -40,7 +44,7 @@ object AbstractActionRef {
         }
         case f:parser.FuncExpr => {
           // this is a function f, create a new var v and add a persistence [all] f == v;
-          val varName = context.getNewLocalVar("object")
+          val varName = context.getNewLocalVar("object") // todo stricter type
           val ts = new AbstractTemporalStatement(
             AbstractTemporalAnnotation("start","end"),
             new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName, new LStatementRef()))
@@ -53,7 +57,7 @@ object AbstractActionRef {
       if(ar.id.nonEmpty)
         new LActRef(ar.id)
       else
-        new LActRef(newLocalActionRef)
+        new LActRef()
 
     context.addUndefinedAction(actionRefId)
 
