@@ -1,6 +1,6 @@
 package planstack.graph.core
 
-import planstack.graph.core.impl.{MultiLabeledDirectedAdjacencyList, SimpleUnlabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList}
+import planstack.graph.core.impl.{SimpleLabeledDirectedAdjacencyList, MultiLabeledDirectedAdjacencyList, SimpleUnlabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList}
 
 
 /** A directed graph with labeled edges */
@@ -18,7 +18,7 @@ trait UnlabeledDigraph[V] extends Graph[V, Nothing, Edge[V]] with UnlabeledGraph
 }
 
 object UnlabeledDigraph {
-  def apply[V]() = new MultiUnlabeledDirectedAdjacencyList[V]()
+  def apply[V]() : UnlabeledDigraph[V] = new MultiUnlabeledDirectedAdjacencyList[V]()
 }
 
 /** A simple directed graph with labeled edges */
@@ -26,9 +26,17 @@ trait SimpleLabeledDigraph[V,EL] extends LabeledDigraph[V,EL] with SimpleGraph[V
   def cc: SimpleLabeledDigraph[V,EL]
 }
 
+object SimpleLabeledDigraph {
+  def apply[V,EL]() : SimpleLabeledDigraph[V,EL] = new SimpleLabeledDirectedAdjacencyList[V,EL]()
+}
+
 /** A directed multi-graph with labeled edges */
 trait MultiLabeledDigraph[V,EL] extends LabeledDigraph[V,EL] with MultiGraph[V, EL, LabeledEdge[V,EL]] {
   def cc : MultiLabeledDigraph[V,EL]
+}
+
+object MultiLabeledDigraph {
+  def apply[V,EL]() : MultiLabeledDigraph[V,EL] = new MultiLabeledDirectedAdjacencyList[V,EL]()
 }
 
 /** A simple directed graph with no label on its edges */
@@ -37,10 +45,14 @@ trait SimpleUnlabeledDigraph[V] extends UnlabeledDigraph[V] with SimpleGraph[V, 
 }
 
 object SimpleUnlabeledDigraph {
-  def apply[V] : SimpleUnlabeledDigraph[V] = new SimpleUnlabeledDirectedAdjacencyList[V]()
+  def apply[V]() : SimpleUnlabeledDigraph[V] = new SimpleUnlabeledDirectedAdjacencyList[V]()
 }
 
 /** A directed multi graph with labeled edges */
 trait MultiUnlabeledDigraph[V] extends UnlabeledDigraph[V] with MultiGraph[V, Nothing, Edge[V]] {
   def cc : MultiUnlabeledDigraph[V]
+}
+
+object MultiUnlabeledDigraph {
+  def apply[V]() : MultiUnlabeledDigraph[V] = new MultiUnlabeledDirectedAdjacencyList[V]()
 }
