@@ -2,15 +2,16 @@ name := "planstack-constraints"
 
 organization := "planstack"
 
-version := "0.2-SNAPSHOT"
+version := "0.3"
 
 scalaVersion := "2.10.3"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
-lazy val graph = RootProject(file("../graph"))
+resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-lazy val root = Project(id = "constraints", base = file(".")) dependsOn (graph)
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.1"
+
 
 crossPaths := false
 
