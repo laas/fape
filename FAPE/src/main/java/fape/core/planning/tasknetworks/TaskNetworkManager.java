@@ -11,9 +11,11 @@
 package fape.core.planning.tasknetworks;
 
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.TemporalStatement;
+import planstack.graph.GraphFactory;
 import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.core.SimpleUnlabeledDigraph$;
 import planstack.graph.core.UnlabeledDigraph;
@@ -24,12 +26,12 @@ import java.util.*;
  *
  * @author FD
  */
-public class TaskNetworkManager {
+public class TaskNetworkManager implements Reporter {
 
     final UnlabeledDigraph<Action> network;
 
     public TaskNetworkManager() {
-        network = SimpleUnlabeledDigraph$.MODULE$.apply(); //TODO: More java-friendly factory in graphs
+        network = GraphFactory.getSimpleUnlabeledDigraph();
     }
 
     public TaskNetworkManager(UnlabeledDigraph<Action> network) {
@@ -59,6 +61,7 @@ public class TaskNetworkManager {
      * @return True if the action is decomposed
      */
     public boolean isDecomposed(Action a) {
+        // TODO: does not detect if an action has an empty decomposition.
         return network.outDegree(a) != 0;
     }
 
@@ -95,16 +98,17 @@ public class TaskNetworkManager {
         return new TaskNetworkManager(network.cc());
     }
 
+    @Override
     public String Report() {
         String str = "Num roots: " + roots().size() + ", roots: " + roots().toString();
         str += "\n\tLeaf actions" +  GetAllActions().toString();
         return str;
     }
 
-    public float GetActionCosts() {
+    public float GetActionCosts() { //TODO: ANML actions have no defined costs
         float sum = 0;
         for (Action a : network.jVertices()) {
-            sum += a.cost();
+            sum += 10;
         }
         return sum;
     }

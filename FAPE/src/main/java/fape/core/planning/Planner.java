@@ -23,6 +23,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.abs.AbstractAction;
@@ -114,6 +115,30 @@ public class Planner {
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
             next.applyDecomposition(dec);
+        } else if(o.actionWithBindings != null) {
+            Action act = Factory.getStandaloneAction(pb, o.actionWithBindings.act);
+            next.insert(act);
+
+            // restrict domain of given variables to the given set of variables.
+            for(LVarRef lvar : o.actionWithBindings.values.keySet()) {
+                next.conNet.restrictDomain(act.context().getGlobalVar(lvar), o.actionWithBindings.values.get(lvar));
+            }
+            // create the binding between consumer and the new statement in the action that supports it
+            TemporalDatabase supportingDatabase = null;
+            for (Statement s : act.statements()) {
+                if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
+                    assert supportingDatabase == null : "Error: several statements might support the database";
+                    supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
+                }
+            }
+            if (supportingDatabase == null) {
+                return false;
+            } else {
+                SupportOption opt = new SupportOption();
+                opt.temporalDatabase = supportingDatabase.mID;
+                return ApplyOption(next, opt, consumer);
+            }
+
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -360,13 +385,13 @@ public class Planner {
             State st = queue.remove();
             OpenedStates++;
 
-            TinyLogger.LogInfo(st.Report());
+            TinyLogger.LogInfo(st);
             if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(st.taskNet.Report());
-                TinyLogger.LogInfo(st.tdb.Report());
-                TinyLogger.LogInfo(st.tempoNet.Report());
+                TinyLogger.LogInfo(st.taskNet);
+                TinyLogger.LogInfo(st.tdb);
+                TinyLogger.LogInfo(st.tempoNet);
                 return st;
             }
             //continue the search
@@ -650,7 +675,7 @@ public class Planner {
      */
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();
-        String anml = "problems/DreamComplex.anml";
+        String anml = "../fape/FAPE/problems/handover.anml";
 
         if(args.length > 0)
             anml = args[0];

@@ -17,6 +17,7 @@ import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author FD
  */
-public class State {
+public class State implements Reporter {
 
     private static int idCounter = 0;
 
@@ -357,7 +358,6 @@ public class State {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
-        tempoNet.EnforceConstraint(act.start(), act.end(), act.minDuration(), act.maxDuration());
         taskNet.insert(act);
         return apply(act);
     }
@@ -378,8 +378,8 @@ public class State {
      * @return True if the resulting state is consistent, False otherwise.
      */
     public boolean update() {
-        for(int i=problemRevision+1 ; i<pb.jModifiers().size() ; i++) {
-            apply(pb.jModifiers().get(i));
+        for(int i=problemRevision+1 ; i<pb.modifiers().size() ; i++) {
+            apply(pb.modifiers().get(i));
             problemRevision = i;
         }
 

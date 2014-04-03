@@ -46,7 +46,7 @@ public class ActionSupporters {
     public Collection<AbstractAction> getActionsSupporting(Function f) {
         Set<AbstractAction> ret = new HashSet<>();
 
-        for(AbstractAction act : pb.jAbstractActions()) {
+        for(AbstractAction act : pb.abstractActions()) {
             for(AbstractTemporalStatement ts : act.jTemporalStatements()) {
                 if(ts.statement().sv().func() == f && !(ts.statement() instanceof AbstractPersistence)) {
                     assert !ret.contains(act) : "Action "+act+" has at least two statements supporting the database.";

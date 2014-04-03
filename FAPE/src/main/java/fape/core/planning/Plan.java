@@ -1,6 +1,7 @@
 package fape.core.planning;
 
 
+import fape.core.planning.printers.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -10,6 +11,7 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.core.Edge;
 import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList;
+import planstack.graph.printers.NodeEdgePrinter;
 import scala.collection.JavaConversions;
 
 import java.util.Collection;
@@ -18,10 +20,19 @@ import java.util.List;
 
 public class Plan {
 
+    class PlanPrinter extends NodeEdgePrinter<Action, Object> {
+        @Override
+        public String printNode(Action a) {
+            return Printer.action(st, a);
+        }
+    }
+    final State st;
     final UnlabeledDigraph<LogStatement> eventsDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
     final UnlabeledDigraph<Action> actionDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
 
     public Plan(State st) {
+        this.st = st;
+
         for(TemporalDatabase db : st.tdb.vars) {
             buildDependencies(db);
         }
@@ -38,7 +49,7 @@ public class Plan {
                 actionDependencies.addEdge(a1, a2);
             }
         }
-        actionDependencies.exportToDotFile("plan.dot");
+        actionDependencies.exportToDotFile("plan.dot", new PlanPrinter());
     }
 
     public void addDependency(LogStatement e1, LogStatement e2) {

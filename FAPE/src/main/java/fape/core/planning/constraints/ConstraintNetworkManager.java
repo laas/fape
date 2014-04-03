@@ -11,6 +11,7 @@
 package fape.core.planning.constraints;
 
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.VarRef;
 
@@ -20,7 +21,7 @@ import java.util.*;
  *
  * @author FD
  */
-public class ConstraintNetworkManager {
+public class ConstraintNetworkManager implements Reporter {
 
     /**
      * Contains all constraints of the CSP (now limited to equality constraints)
@@ -30,7 +31,7 @@ public class ConstraintNetworkManager {
     /**
      * Maps every variable to its domain
      */
-    final HashMap<VarRef, IUnifiable> domains;
+    public final HashMap<VarRef, IUnifiable> domains;
 
     public ConstraintNetworkManager() {
         unificationConstraints = new HashSet<>();
@@ -105,6 +106,11 @@ public class ConstraintNetworkManager {
      */
     public boolean PropagateAndCheckConsistency() {
         return AC3(unificationConstraints);
+    }
+
+    public boolean restrictDomain(VarRef var, Collection<String> toValues) {
+        domains.get(var).ReduceDomain(toValues);
+        return true;
     }
 
     /**
@@ -193,6 +199,7 @@ public class ConstraintNetworkManager {
         this.unificationConstraints.removeAll(toRemove);
     }
 
+    @Override
     public String Report() {
         String ret = "";
 
