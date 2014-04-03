@@ -358,16 +358,19 @@ public class State implements Reporter {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
+        tempoNet.EnforceDelay(act.start(), act.end(), 1);
         taskNet.insert(act);
         return apply(act);
     }
 
     /**
      * Records the start and end timepoint of the given interval in the temporal network manager.
+     * It also adds a constraint specifying that start must happen before end.
      */
     public void recordTimePoints(TemporalInterval interval) {
         tempoNet.recordTimePoint(interval.start());
         tempoNet.recordTimePoint(interval.end());
+        tempoNet.EnforceBefore(interval.start(), interval.end());
     }
 
     /**

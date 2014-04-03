@@ -15,6 +15,7 @@ import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporters;
+import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -697,6 +698,13 @@ public class Planner {
             System.out.println("Planning finished for " + anml + " timed out.");
         } else {
             System.out.println("Planning finished for " + anml + " in " + total + "s");
+            State sol = p.GetCurrentState();
+
+            System.out.println("=== Temporal databases === \n"+ Printer.temporalDatabaseManager(sol, sol.tdb));
+
+            Plan plan = new Plan(sol);
+            plan.exportToDot("plan.dot");
+            System.out.println("Look at plan.dot for a complete plan.");
         }
     }
 }

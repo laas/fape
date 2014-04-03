@@ -38,18 +38,38 @@ public class Plan {
         }
 
         for(Edge<LogStatement> e :eventsDependencies.jEdges()) {
-            Action a1 = st.getActionContaining(e.u());
-            Action a2 = st.getActionContaining(e.v());
+            addActionDependency(e.u(), e.v());
+        }
+    }
 
-            if(a1 != null && a2 != null) {
-                if(!actionDependencies.contains(a1))
-                    actionDependencies.addVertex(a1);
-                if(!actionDependencies.contains(a2))
-                    actionDependencies.addVertex(a2);
-                actionDependencies.addEdge(a1, a2);
+    /**
+     * Adds a constraint between the actions containing the given statements.
+     * The two statements have to appear in the event dependencies graph.
+     * @param s1 Statement in eventDependencies
+     * @param s2 Statement in eventDependencies
+     */
+    public void addActionDependency(LogStatement s1, LogStatement s2) {
+        Action a1 = st.getActionContaining(s1);
+        Action a2 = st.getActionContaining(s2);
+
+        if(a1 != null && a2 != null) {
+            if(!actionDependencies.contains(a1))
+                actionDependencies.addVertex(a1);
+            if(!actionDependencies.contains(a2))
+                actionDependencies.addVertex(a2);
+        }
+
+        if(a1 == null) {
+            //Do nothing
+        } else if(a2 != null) {
+            // add a dependency from a1 to a2
+            actionDependencies.addEdge(a1, a2);
+        } else { // a2 == null
+            // skip s2 and add constraints between s1 and every child of s2
+            for(LogStatement s2child : eventsDependencies.jChildren(s2)) {
+                addActionDependency(s1, s2child);
             }
         }
-        actionDependencies.exportToDotFile("plan.dot", new PlanPrinter());
     }
 
     public void addDependency(LogStatement e1, LogStatement e2) {
@@ -70,12 +90,11 @@ public class Plan {
     }
 
     public void buildDependencies(TemporalDatabase db) {
-        for(int i=0 ; i<db.chain.size() ; i++) {
-            for(int j=i+1 ; j<db.chain.size() ; j++) {
-                addDependency(db.GetChainComponent(i), db.GetChainComponent(j));
-            }
+        for(int i=0 ; i<db.chain.size()-1 ; i++) {
+            addDependency(db.GetChainComponent(i), db.GetChainComponent(i+1));
         }
     }
+
 
     public Collection<Action> GetNextActions() {
         List<Action> executableActions = new LinkedList<>();
@@ -103,4 +122,12 @@ public class Plan {
         return true;
     }
 
+    /**
+     * Write a representation of the plan to the dot format.
+     * To compile <code>dot plan.dot -Tps > plan.ps</code>
+     * @param fileName File to which the output will be written.
+     */
+    public void exportToDot(String fileName) {
+        actionDependencies.exportToDotFile(fileName, new PlanPrinter());
+    }
 }

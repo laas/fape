@@ -62,6 +62,7 @@ public class Main {
 
         if(planner.Repair(new TimeAmount(1000000))) {
             Plan plan = new Plan(planner.GetCurrentState());
+            plan.exportToDot("plan.dot");
         }
 
         System.out.println("Opened: "+planner.OpenedStates+"   Generated: "+planner.GeneratedStates);

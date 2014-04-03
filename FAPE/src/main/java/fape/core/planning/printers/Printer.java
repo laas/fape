@@ -1,6 +1,9 @@
 package fape.core.planning.printers;
 
 import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.ChainComponent;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.VarRef;
@@ -21,7 +24,7 @@ public class Printer {
         for(VarRef arg : act.args()) {
             ret += variable(st, arg);
         }
-        return ret + ")";
+        return ret + "):"+act.id();
     }
 
     public static String variable(State st, VarRef var) {
@@ -47,5 +50,35 @@ public class Printer {
             ret += variable(st, arg);
         }
         return ret + ")";
+    }
+
+    public static String temporalDatabaseManager(State st, TemporalDatabaseManager tdbm) {
+        StringBuilder sb = new StringBuilder();
+        for(TemporalDatabase tdb : tdbm.vars) {
+            sb.append(print(st, tdb));
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    public static String print(State st, TemporalDatabase db) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(stateVariable(st, db.stateVariable));
+        sb.append("  id:"+db.mID+"\n");
+        for(ChainComponent cc : db.chain) {
+            for(LogStatement s : cc.contents) {
+                sb.append(statement(st, s));
+                Action a  = st.taskNet.getActionContainingStatement(s);
+                if(a != null) {
+                    sb.append("    \tfrom: ");
+                    sb.append(action(st, a));
+                }
+                sb.append("\n");
+            }
+            //sb.append("\n");
+        }
+
+        return sb.toString();
     }
 }
