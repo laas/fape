@@ -5,6 +5,9 @@ import planstack.anml.model.abs.AbstractAction;
 
 import java.util.*;
 
+/**
+ * A disjunctive action is a set of ground actions.
+ */
 public class DisjunctiveAction {
 
     public final Set<GroundAction> actions;
@@ -17,6 +20,15 @@ public class DisjunctiveAction {
         this.actions = new HashSet<>();
     }
 
+    /**
+     * Extracts all abstracts actions together with a set of values for each parameter.
+     *
+     * Invoked on a disjunctive action <code>{Move(a,b), Move(a,c) Pick(r, i, a)}</code>, it would return
+     * <code>[ (Move, [{a}, {b,c}]), (Pick, [{r}, {i}, {a}]) ]</code>
+     *
+     * @param pb Problem in which the actions are defined.
+     * @return All abstract actions with a list of set of values for each action.
+     */
     public List<Pair<AbstractAction, List<Set<String>>>> actionsAndParams(GroundProblem pb) {
         List<Pair<AbstractAction, List<Set<String>>>> ret = new LinkedList<>();
 
