@@ -30,7 +30,7 @@ abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.Arr
    * @return
    */
   def addVertex(v:Int) : Int = {
-    assert(numVertices == v, "Vertex ids have to be the stricly growing (%s != %s)".format(numVertices, v))
+    assert(numVertices == v, "Vertex ids have to be the strictly growing (%s != %s)".format(numVertices, v))
     addVertex()
   }
 
@@ -52,7 +52,7 @@ abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.Arr
     mInEdges(v) = mInEdges(v).filter(edge => edge.u != u)
   }
 
-  def edges : Seq[E] = {
+  def edges() : Seq[E] = {
     var alledges = List[E]()
     mOutEdges.foreach(edgelist => alledges = alledges ++ edgelist)
     alledges
