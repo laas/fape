@@ -80,7 +80,16 @@ class InstanceManager {
   def containsType(typeName:String) = types.contains(typeName)
 
   /** Returns the type of a given instance */
-  def typeOf(instanceName:String) = instancesDef(instanceName)
+  def typeOf(instanceName:String) = instancesDef(instanceName)._1
+
+  /** Returns all (including indirect) subtypes of the given parameter, including itself.
+    *
+    * @param typeName Name of the type to inspect.
+    * @return All subtypes including itself.
+    */
+  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(subTypesRec(typeName))
+
+  private def subTypesRec(typeName:String) : Set[String] = typeHierarchy.children(typeName).map(subTypes(_)).flatten + typeName
 
   /**
    * @return All instances as a list of (name, type) pairs
