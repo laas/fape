@@ -485,13 +485,13 @@ public class State implements Reporter {
         for(String instance : mod.instances()) {
             List<String> domain = new LinkedList<>();
             domain.add(instance);
-            conNet.AddVariable(pb.instances().referenceOf(instance), domain);
+            conNet.AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));
         }
 
         // Declare new variables to the constraint network.
         for(Tuple2<String, VarRef> declaration : mod.vars()) {
             Collection<String> domain = pb.instances().jInstancesOfType(declaration._1());
-            conNet.AddVariable(declaration._2(), domain);
+            conNet.AddVariable(declaration._2(), domain, declaration._1());
         }
 
         for(Statement ts : mod.statements()) {

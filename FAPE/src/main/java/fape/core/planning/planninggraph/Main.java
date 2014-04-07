@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.util.TimeAmount;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.parser.ANMLFactory;
@@ -18,6 +19,11 @@ public class Main {
             pbFile = args[0];
         else
             pbFile = "../fape/FAPE/problems/handover.anml";
+
+        int numIter = 1;
+        if(args.length > 1) {
+            numIter = Integer.parseInt(args[1]);
+        }
 
         /*
         AnmlProblem pb = new AnmlProblem();
@@ -53,20 +59,31 @@ public class Main {
             options.add(da.actionsAndParams(gpb));
         }
         */
+        for(int i=0 ; i<numIter ; i++) {
+            long start, end;
 
-        PGPlanner planner = new PGPlanner();
-        Planner.logging = false;
-        Planner.debugging = false;
-        planner.Init();
-        planner.ForceFact(ANMLFactory.parseAnmlFromFile(pbFile));
+            PGPlanner planner = new PGPlanner();
+            Planner.logging = false;
+            Planner.debugging = false;
+            planner.Init();
+            start = System.currentTimeMillis();
+            planner.ForceFact(ANMLFactory.parseAnmlFromFile(pbFile));
+            end  = System.currentTimeMillis();
+            long init = end -start;
+            start = System.currentTimeMillis();
+            if(planner.Repair(new TimeAmount(1000000))) {
+                end = System.currentTimeMillis();
+                long planning = end-start;
+                System.out.print("Time: "+init+" - "+planning);
+                Plan plan = new Plan(planner.GetCurrentState());
+                plan.exportToDot("plan.dot");
+            }
 
-        if(planner.Repair(new TimeAmount(1000000))) {
-            Plan plan = new Plan(planner.GetCurrentState());
-            plan.exportToDot("plan.dot");
+            AbstractionHierarchy hie = new AbstractionHierarchy(planner.pb);
+            hie.exportToDot("abs-hie.dot");
+
+            System.out.println("  Opened: "+planner.OpenedStates+"   Generated: "+planner.GeneratedStates);
         }
-
-        System.out.println("Opened: "+planner.OpenedStates+"   Generated: "+planner.GeneratedStates);
-
 
         int x = 0;
     }

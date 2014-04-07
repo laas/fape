@@ -118,8 +118,8 @@ public class ConstraintNetworkManager implements Reporter {
      * @param var Reference of the variable
      * @param domain All elements in the domain of the variable
      */
-    public void AddVariable(VarRef var, Collection<String> domain) {
-        domains.put(var, new VariableValues(domain));
+    public void AddVariable(VarRef var, Collection<String> domain, String type) {
+        domains.put(var, new VariableValues(domain, type));
     }
 
     public void AddUnificationConstraint(VarRef a, VarRef b) {
@@ -151,6 +151,15 @@ public class ConstraintNetworkManager implements Reporter {
 
     public Collection<String> domainOf(VarRef v) {
         return domains.get(v).GetDomainObjectConstants();
+    }
+
+    /**
+     * Returns the type of the given variable
+     * @param v Variable to look up
+     * @return Type of the variable
+     */
+    public String typeOf(VarRef v) {
+        return domains.get(v).type();
     }
 
     /* TODO: Was not used and is probably a bit outdated

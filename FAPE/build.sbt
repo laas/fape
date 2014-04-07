@@ -8,11 +8,11 @@ crossPaths := false
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-constraints" % "0.3"
+libraryDependencies += "planstack" % "planstack-constraints" % "0.3.1"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.1"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.2"
 
-libraryDependencies += "planstack" % "planstack-anml" % "0.3.2"
+libraryDependencies += "planstack" % "planstack-anml" % "0.3.3"
 
 javaOptions in run += "-Xmx3000m"
 

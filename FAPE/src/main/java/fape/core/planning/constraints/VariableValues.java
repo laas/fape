@@ -13,26 +13,39 @@ import java.util.List;
  */
 public class VariableValues extends IUnifiable {
 
+
+    /**
+     * A set of possible values for the variable
+     */
+    public final LinkedList<String> domain = new LinkedList<>();
+
+    /**
+     * Type of the corresponding value.
+     */
+    private final String type;
+
     /**
      * Constructor for a domain containing multiple values
      * @param dom A set of values
      */
-    public VariableValues(Collection<String> dom) {
+    public VariableValues(Collection<String> dom, String type) {
         domain.addAll(dom);
+        this.type = type;
     }
 
     /**
      * Constructor for a domain containing only one value.
      * @param dom the unique value
      */
-    public VariableValues(String dom) {
+    public VariableValues(String dom, String type) {
         domain.add(dom);
+        this.type = type;
     }
 
-    /**
-     * A set of possible values for the variable
-     */
-    public final LinkedList<String> domain = new LinkedList<>();
+    public String type() {
+        return type;
+    }
+
 
     /**
      * reduces the domain by keeping only the elements passed as parameter.
@@ -62,6 +75,6 @@ public class VariableValues extends IUnifiable {
 
     @Override
     public VariableValues DeepCopy() {
-        return new VariableValues(this.domain);
+        return new VariableValues(this.domain, this.type);
     }
 }

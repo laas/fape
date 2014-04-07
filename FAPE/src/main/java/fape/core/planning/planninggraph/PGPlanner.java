@@ -3,6 +3,7 @@ package fape.core.planning.planninggraph;
 import fape.core.planning.Planner;
 import fape.core.planning.search.ActionWithBindings;
 import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
@@ -21,12 +22,14 @@ public class PGPlanner extends Planner {
     RelaxedPlanningGraph pg = null;
 
 
+
     @Override
     public void ForceFact(ParseResult anml) {
         super.ForceFact(anml);
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
+
     }
 
     @Override

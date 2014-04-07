@@ -19,6 +19,8 @@ import java.util.List;
  */
 public abstract class IUnifiable {
 
+    public abstract String type();
+
     public abstract List<String> GetDomainObjectConstants();
 
     /**

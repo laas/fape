@@ -17,6 +17,7 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
+import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -361,6 +362,7 @@ public class Planner {
 
 
     private State aStar(TimeAmount forHowLong) {
+        AbstractionHierarchy hierarchy = new AbstractionHierarchy(pb);
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -402,8 +404,8 @@ public class Planner {
             }
 
             //do some sorting here - min domain
-            Collections.sort(opts, optionsComparatorMinDomain);
-            //Collections.sort(opts, new FlawSelector(st));
+            //Collections.sort(opts, optionsComparatorMinDomain);
+            Collections.sort(opts, new FlawSelector(hierarchy, st));
 
             if (opts.isEmpty()) {
                 throw new FAPEException("Error: no flaws but state was not found to be a solution.");

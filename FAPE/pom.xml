@@ -32,17 +32,17 @@
         <dependency>
             <groupId>planstack</groupId>
             <artifactId>planstack-constraints</artifactId>
-            <version>0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>planstack</groupId>
-            <artifactId>planstack-graph</artifactId>
             <version>0.3.1</version>
         </dependency>
         <dependency>
             <groupId>planstack</groupId>
-            <artifactId>planstack-anml</artifactId>
+            <artifactId>planstack-graph</artifactId>
             <version>0.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>planstack</groupId>
+            <artifactId>planstack-anml</artifactId>
+            <version>0.3.3</version>
         </dependency>
     </dependencies>
     <repositories>
