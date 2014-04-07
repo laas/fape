@@ -6,6 +6,6 @@ import planstack.graph.Predef._
 
 object StnPredef {
 
-  def NewGraph() : LabeledDigraph[Int,Int] = new core.impl.intindexed.DirectedSimpleLabeledIIAdjList[Int] //newSimpleLabeledDigraph[Int, Int]
+  def NewGraph() : LabeledDigraph[Int,Int] = new core.impl.intindexed.DirectedMultiLabeledIIAdjList[Int] //newSimpleLabeledDigraph[Int, Int]
 
 }
