@@ -3,12 +3,30 @@ package planstack.graph.printers
 import scala.collection.mutable
 import planstack.graph.core._
 
-/** Simple translator from [[planstack.graph.core.Graph]] to the DOT syntax of graphviz
+/** Simple translator from [[planstack.graph.core.Graph]] to the DOT syntax of graphviz.
+  *
+  * The resulting file will contain something like:
+  * {{{
+  *   digraph g {
+  *     node [shape=plaintext] rankdir="TB";
+  *     0 [label="String representation of node 0"];
+  *     1 [label="String representation of node 1"];
+  *     2 [label="String representation of node 2"];
+  *     ...
+  *     0 -> 1 [label="String representation of the edge label"];
+  *     0 -> 2 [label="String representation of the edge label"];
+  *     ...
+  *  }
+  * }}}
+  *
+  * Such a graph, written to graph.dot can be converted using the dot command line utility, for instance:
+  * `dot -Tps graph.dot > graph.ps`
   *
   * @param g Graph to export.
-  * @tparam V
-  * @tparam EL
-  * @tparam E
+  * @param nep A node/edge printer that is used to translate both nodes and edges' labels to string.
+  * @tparam V Type of vertices.
+  * @tparam EL Type of edge labels.
+  * @tparam E Type of edges.
   */
 class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdgePrinter[V,EL]) {
 
@@ -20,29 +38,44 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdge
   }
 
   val header = g match {
-    case dg:DirectedGraph[V,EL,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"
-    case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\"\n;"  //TODO not a digraph
+    case dg:DirectedGraph[V,EL,E] => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\";\n\n"
+    case _ => "digraph g {\n  node [shape=plaintext] rankdir=\"TB\";\n\n"  //TODO not a digraph
   }
   val footer = "\n}"
 
+  /** Translate an edge to dot syntax such as `0 -- 1;` (for undirected graphs) or `0 -> 1;`
+    * where 0 and 1 are the ids of respectively the source and target node of the graph.
+    * @param e Edge to output.
+    * @return Dot syntax for the declaration of the edge.
+    */
   def edge2Str(e:E) = {
     val link = g match {
       case udg:UndirectedGraph[V,EL,E] => "--"
       case dg:DirectedGraph[V,EL,E] => "->"
     }
     val label = e match {
-      case e:LabeledEdge[V,EL] => "[label=\"%s\"]".format(nep.printEdge(e.l))
+      case e:LabeledEdge[V,EL] => " [label=\"%s\"]".format(nep.printEdge(e.l))
       case _ => ""
     }
-    "  " + node2Str(e.u) +" "+ link +" "+ node2Str(e.v) + label
+    "  " + nodeId(e.u) +" "+ link +" "+ nodeId(e.v) + label +";"
   }
 
-  val nodeId = mutable.Map[V, Int]()
+  private val nodeId = mutable.Map[V, Int]()
 
+  /** Translate a node to dot syntax, for instance `1 [label="some text"];`
+    * where 1 is the id of the node that will be used to draw edges. and `some text`
+    * is the string representation of the node given by a [[planstack.graph.printers.NodeEdgePrinter]].
+    *
+    * @param v Vertex to output.
+    * @return Declaration of the vertex in dot syntax.
+    */
   def node2Str(v:V) = {
-    if(!nodeId.contains(v))
+    if(!nodeId.contains(v)) {
       nodeId(v) = nodeId.size
-    "\"" + nodeId(v) +":"+ nep.printNode(v) + "\""
+      "  " + nodeId(v) +" [label=\""+nep.printNode(v)+"\"];"
+    } else {
+      ""
+    }
   }
 
   /**
@@ -51,6 +84,10 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdge
    */
   def graph2DotString : String = {
     var out = header
+    for(v <- g.vertices)
+      out += node2Str(v)
+    out += g.vertices.map(node2Str(_)).mkString("\n")
+    out += "\n"
     out += g.edges().map(edge2Str(_)).mkString("\n")
     out += footer
     out
