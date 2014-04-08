@@ -1,13 +1,10 @@
 package fape.core.planning.planner;
 
-import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporters;
-import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -27,6 +24,14 @@ import planstack.anml.parser.ParseResult;
 
 import java.util.*;
 
+
+/**
+ * Base for any planner in FAPE. It defines all basic operations useful for planning such
+ * as alterations of search states, inclusions of ANML blocks ...
+ *
+ * Classes that inherit from it only have to implement the abstract methods to provide a search policy.
+ * Overriding methods can also be done to override the default behaviour.
+ */
 public abstract class APlanner {
 
 
@@ -39,6 +44,10 @@ public abstract class APlanner {
 
     public final AnmlProblem pb = new AnmlProblem();
 
+    /**
+     * A short identifier for the planner.
+     * @return THe planner ID.
+     */
     public abstract String shortName();
 
     /**
@@ -286,10 +295,25 @@ public abstract class APlanner {
         return flaws;
     }
 
+    /**
+     * Implementation of search. An easy thing to do to forward this call to the aStar method.
+     * @param forhowLong Max time the planner is allowed to run.
+     * @return A solution state if the planner found one. null otherwise.
+     */
     public abstract State search(TimeAmount forhowLong);
 
+    /**
+     * Provides a comparator that is used to sort flaws. THe first flaw will be selected to be resolved.
+     * @param st State in which the flaws appear.
+     * @return The comparator to use for ordering.
+     */
     public abstract Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st);
 
+    /**
+     * The comparator used to order the queue. THe first state in the queue (according to this comparator,
+     * will be selected for expansion.
+     * @return The comparator to use for ordering the queue.
+     */
     public abstract Comparator<State> stateComparator();
 
     protected State aStar(TimeAmount forHowLong) {

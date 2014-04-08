@@ -39,11 +39,18 @@ import planstack.anml.parser.ParseResult;
 import java.util.*;
 
 /**
-*
-* @author FD
-*/
+ * The base line planner that stick to a lifted representation and supports the whole range of anml problems.
+ *
+ * TODO: use lifted abstraction hierarchies & more efficient DTG
+ */
 public class Planner extends APlanner {
 
+    Comparator<Pair<Flaw, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<SupportOption>>>() {
+        @Override
+        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
+            return o1.value2.size() - o2.value2.size();
+        }
+    };
 
     @Override
     public String shortName() {
@@ -65,12 +72,7 @@ public class Planner extends APlanner {
         return new StateComparator();
     }
 
-    Comparator<Pair<Flaw, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<SupportOption>>>() {
-        @Override
-        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
-            return o1.value2.size() - o2.value2.size();
-        }
-    };
+
 
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();

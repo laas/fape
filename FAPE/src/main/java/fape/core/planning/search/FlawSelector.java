@@ -13,6 +13,9 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A comparator for flaws and their resolvers that uses lifted abstraction hierarchies.
+ */
 public class FlawSelector implements Comparator<Pair<Flaw, List<SupportOption>>> {
 
     private final State state;

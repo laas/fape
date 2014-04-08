@@ -18,6 +18,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Planner that uses a relaxed planning graph for domain analysis (to select action resolvers).
+ *
+ * It does not cover the whole set of ANML problems for instance problems/concurrent-actions.anml
+ * would fail with this planner.
+ * It also produces a ground problem that might impractical in some domain with an important number of objects.
+ */
 public class PGPlanner extends APlanner {
 
     GroundProblem groundPB = null;
