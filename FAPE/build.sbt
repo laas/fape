@@ -14,6 +14,8 @@ libraryDependencies += "planstack" % "planstack-graph" % "0.3.2"
 
 libraryDependencies += "planstack" % "planstack-anml" % "0.3.3"
 
+libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
+
 javaOptions in run += "-Xmx3000m"
 
 javacOptions ++= Seq("-source", "1.7")

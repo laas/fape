@@ -1,25 +1,28 @@
 package fape.core.planning.planninggraph;
 
 import fape.core.planning.Planner;
-import fape.core.planning.search.ActionWithBindings;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.*;
 import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
+import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Factory;
 import planstack.anml.parser.ParseResult;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class PGPlanner extends Planner {
+public class PGPlanner extends APlanner {
 
     GroundProblem groundPB = null;
     RelaxedPlanningGraph pg = null;
+    AbstractionHierarchy hierarchy = null;
 
 
 
@@ -29,7 +32,28 @@ public class PGPlanner extends Planner {
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
+        hierarchy = new AbstractionHierarchy(this.pb);
 
+    }
+
+    @Override
+    public String shortName() {
+        return "rpg";
+    }
+
+    @Override
+    public State search(TimeAmount forhowLong) {
+        return aStar(forhowLong);
+    }
+
+    @Override
+    public Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
+        return new FlawSelector(hierarchy, st);
+    }
+
+    @Override
+    public Comparator<State> stateComparator() {
+        return new StateComparator();
     }
 
     @Override
