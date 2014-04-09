@@ -2,13 +2,9 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
+import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.util.TimeAmount;
-import planstack.anml.model.AnmlProblem;
 import planstack.anml.parser.ANMLFactory;
-
-import java.util.LinkedList;
-import java.util.List;
 
 
 public class Main {

@@ -3,7 +3,9 @@ package fape.core.planning.planner;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
+import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -43,12 +45,15 @@ public abstract class APlanner {
     public int OpenedStates = 0;
 
     public final AnmlProblem pb = new AnmlProblem();
+    LiftedDTG dtg = null;
 
     /**
      * A short identifier for the planner.
      * @return THe planner ID.
      */
     public abstract String shortName();
+
+    public abstract ActionSupporterFinder getActionSupporterFinder();
 
     /**
      *
@@ -466,9 +471,9 @@ public abstract class APlanner {
         //StateVariable[] varis = null;
         //varis = db.domain.values().toArray(varis);
 
-        ActionSupporters supporters = new ActionSupporters(pb);
+        ActionSupporterFinder supporters = getActionSupporterFinder();
         ActionDecompositions decompositions = new ActionDecompositions(pb);
-        Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(db);
+        Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(st, db);
 
         for(Action leaf : st.taskNet.GetOpenLeaves()) {
             for(Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
@@ -569,6 +574,7 @@ public abstract class APlanner {
 
         //TODO: apply ANML to more states and choose the best after the applciation
         pb.addAnml(anml);
+        this.dtg = new LiftedDTG(this.pb);
 
         // apply revisions to best state and check if it is consistent
         State st = GetCurrentState();

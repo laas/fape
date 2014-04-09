@@ -12,28 +12,17 @@ package fape.core.planning;
 
 
 import fape.core.execution.Executor;
-import fape.core.execution.model.AtomicAction;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.AbstractionHierarchy;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
+import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
-import fape.util.TinyLogger;
-import planstack.anml.model.LVarRef;
-import planstack.anml.model.concrete.ActRef;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractDecomposition;
-import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Statement;
+import planstack.anml.parser.AnmlBlock;
 import planstack.anml.parser.ParseResult;
 
 import java.util.*;
@@ -44,6 +33,8 @@ import java.util.*;
  * TODO: use lifted abstraction hierarchies & more efficient DTG
  */
 public class Planner extends APlanner {
+
+
 
     Comparator<Pair<Flaw, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<SupportOption>>>() {
         @Override
@@ -71,6 +62,12 @@ public class Planner extends APlanner {
     public Comparator<State> stateComparator() {
         return new StateComparator();
     }
+
+    @Override
+    public ActionSupporterFinder getActionSupporterFinder() {
+        return new ActionSupporters(pb);
+    }
+
 
 
 

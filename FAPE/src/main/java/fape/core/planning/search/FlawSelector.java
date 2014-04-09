@@ -1,13 +1,11 @@
 package fape.core.planning.search;
 
 
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
+import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.Comparator;
 import java.util.LinkedList;

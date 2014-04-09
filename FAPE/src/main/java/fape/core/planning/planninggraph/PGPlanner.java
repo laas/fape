@@ -1,16 +1,15 @@
 package fape.core.planning.planninggraph;
 
-import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.*;
-import fape.core.planning.search.abstractions.AbstractionHierarchy;
+import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.Factory;
 import planstack.anml.parser.ParseResult;
 
 import java.util.Comparator;
@@ -46,6 +45,11 @@ public class PGPlanner extends APlanner {
     @Override
     public String shortName() {
         return "rpg";
+    }
+
+    @Override
+    public ActionSupporterFinder getActionSupporterFinder() {
+        return new ActionSupporters(pb);
     }
 
     @Override

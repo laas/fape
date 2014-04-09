@@ -1,4 +1,4 @@
-package fape.core.planning.search.abstractions;
+package fape.core.planning.preprocessing;
 
 
 import java.util.List;

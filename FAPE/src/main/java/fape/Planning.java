@@ -4,14 +4,15 @@ import com.martiansoftware.jsap.*;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.BaseDTG;
+import fape.core.planning.planner.BaseDTGAbsHier;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.states.State;
 import fape.util.TimeAmount;
 import planstack.anml.parser.ANMLFactory;
 
-import java.io.File;
-import java.io.FileFilter;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -36,6 +37,8 @@ public class Planning {
                                 .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n" +
                                         " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n" +
+                                        " - base+dtg: Same as base but uses DTG to select action resolvers.\n" +
+                                        " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n" +
                                         " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n" +
                                         "         be aware that it does not handle all anml problems.\n" +
                                         " - all:  will run every possible planner.\n"),
@@ -52,6 +55,12 @@ public class Planning {
                                 .setLongFlag(JSAP.NO_LONGFLAG)
                                 .setDefault("1")
                                 .setHelp("Number of times to repeat all planning activities"),
+                        new FlaggedOption("output")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('o')
+                                .setLongFlag("output")
+                                .setDefault("stdout")
+                                .setHelp("File to which the CSV formatted output will be written"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setDefault("problems/handover.anml")
@@ -66,6 +75,12 @@ public class Planning {
         JSAPResult config = jsap.parse(args);
         if(jsap.messagePrinted())
             System.exit(0);
+
+        Writer writer;
+        if(config.getString("output").equals("stdout"))
+            writer = new OutputStreamWriter(System.out);
+        else
+            writer = new FileWriter(config.getString("output"));
 
         APlanner.logging = config.getBoolean("verbose");
         APlanner.debugging = config.getBoolean("debug");
@@ -90,7 +105,7 @@ public class Planning {
         }
 
         // output format
-        System.out.println("iter, planner, runtime, anml-file, opened-states, generated-states");
+        writer.write("iter, planner, runtime, anml-file, opened-states, generated-states\n");
 
         int repetitions = config.getInt("repetitions");
         for(int i=0 ; i<repetitions ; i++) {
@@ -103,11 +118,19 @@ public class Planning {
                         case "base":
                             planners.add(new Planner());
                             break;
+                        case "base+dtg":
+                            planners.add(new BaseDTG());
+                            break;
+                        case "base+dtg+abs":
+                            planners.add(new BaseDTGAbsHier());
+                            break;
                         case "rpg":
                             planners.add(new PGPlanner());
                             break;
                         case "all":
                             planners.add(new Planner());
+                            planners.add(new BaseDTG());
+                            planners.add(new BaseDTGAbsHier());
                             planners.add(new PGPlanner());
                             break;
                         default:
@@ -149,13 +172,14 @@ public class Planning {
                     else
                         time = Float.toString(total);
 
-                    System.out.println(
+                    writer.write(
                             i + ", " +
                             planner.shortName() +", "+
                             time + ", " +
                             anmlFile +", "+
                             planner.OpenedStates +", "+
-                            planner.GeneratedStates);
+                            planner.GeneratedStates+"\n");
+                    writer.flush();
 
                     if(!timeOut && !config.getBoolean("quiet")) {
                         State sol = planner.GetCurrentState();
@@ -169,5 +193,6 @@ public class Planning {
                 }
             }
         }
+        writer.close();
     }
 }
