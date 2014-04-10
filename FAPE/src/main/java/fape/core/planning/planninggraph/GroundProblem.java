@@ -24,6 +24,24 @@ public class GroundProblem {
 
     final List<GroundAction> actions = new LinkedList<>();
 
+    /**
+     * Gets an upper bound on the number of ground actions that might appear in this problem.
+     * @param pb Problem to inspect.
+     * @return Upper on the number of ground actions.
+     */
+    public static int sizeEvaluation(AnmlProblem pb) {
+        int total = 0;
+        for(AbstractAction a : pb.abstractActions()) {
+            int nemActInstances = 1;
+            for(LVarRef arg : a.args()) {
+                String argTYpe = a.context().getType(arg);
+                nemActInstances *= pb.instances().instancesOfType(argTYpe).size();
+            }
+            total += nemActInstances;
+        }
+        return total;
+    }
+
     public GroundProblem(AnmlProblem liftedPb) {
         this.liftedPb = liftedPb;
 

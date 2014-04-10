@@ -563,8 +563,9 @@ public abstract class APlanner {
      * collisions are considered to be intentional
      *
      * @param anml
+     * @return True if the planner is applicable to resulting anml problem.
      */
-    public void ForceFact(ParseResult anml) {
+    public boolean ForceFact(ParseResult anml) {
         //read everything that is contained in the ANML block
         if (logging) {
             TinyLogger.LogInfo("Forcing new fact into best state.");
@@ -583,6 +584,8 @@ public abstract class APlanner {
         if(!consistent) {
             this.planState = EPlanState.INFESSIBLE;
         }
+
+        return true;
     }
 
 }

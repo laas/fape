@@ -33,14 +33,20 @@ public class PGPlanner extends APlanner {
 
 
     @Override
-    public void ForceFact(ParseResult anml) {
+    public boolean ForceFact(ParseResult anml) {
         super.ForceFact(anml);
+
+        if(GroundProblem.sizeEvaluation(pb) > 1000000)
+            return false;
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
         hierarchy = new AbstractionHierarchy(this.pb);
 
+        return true;
     }
+
+
 
     @Override
     public String shortName() {

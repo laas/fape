@@ -149,7 +149,18 @@ public class Planning {
 
                     planner.Init();
                     try {
-                        planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile));
+                        boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile));
+                        if(!isPlannerUsable) {
+                            writer.write(
+                                    i + ", " +
+                                    planner.shortName() +", "+
+                                    "unusable, " +
+                                    anmlFile +", "+
+                                    "0, "+
+                                    "0\n");
+                            writer.flush();
+                            continue;
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Problem with ANML file: "+anmlFile);

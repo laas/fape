@@ -27,8 +27,9 @@ public class BaseDTGAbsHier extends BaseDTG {
 
 
     @Override
-    public void ForceFact(ParseResult anml) {
+    public boolean ForceFact(ParseResult anml) {
         super.ForceFact(anml);
         this.hierarchy = new AbstractionHierarchy(this.pb);
+        return true;
     }
 }

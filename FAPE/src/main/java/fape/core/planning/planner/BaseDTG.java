@@ -14,9 +14,11 @@ public class BaseDTG extends Planner {
         return "base+dtg";
     }
 
-    public void ForceFact(ParseResult anml) {
+    @Override
+    public boolean ForceFact(ParseResult anml) {
         super.ForceFact(anml);
         dtg = new LiftedDTG(pb);
+        return true;
     }
 
     @Override

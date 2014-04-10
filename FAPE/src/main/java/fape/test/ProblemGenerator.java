@@ -53,8 +53,8 @@ public class ProblemGenerator {
             for (int i = 0; i < numberOfRobots; i++) {
                 instanceRobot += "R" + i + ((i < numberOfRobots - 1) ? ", " : "");
                 instanceGripper += "G" + (2 * i) + ", " + "G" + (2 * i + 1) + ((i < numberOfRobots - 1) ? ", " : "");
-                allContent += "R" + i + ".left := " + "G" + (2 * i) + ";\n";
-                allContent += "R" + i + ".right := " + "G" + (2 * i + 1) + ";\n";
+                startContent += "R" + i + ".left := " + "G" + (2 * i) + ";\n";
+                startContent += "R" + i + ".right := " + "G" + (2 * i + 1) + ";\n";
                 startContent += "G" + (2 * i) + ".empty := true;\n";
                 startContent += "G" + (2 * i+1) + ".empty := true;\n";                               
                 startContent += "R" + i + ".mLocation := " + "L" + rg.nextInt(numberOfLocations) + ";\n";
@@ -75,6 +75,8 @@ public class ProblemGenerator {
             for (int i = 0; i < numberOfTransports; i++) {
                 int destLocation = rg.nextInt(numberOfLocations);
                 goalContent += "I" + i + ".mLocation == " + "L" + destLocation + ";\n";
+                seedContent += "constant Robot r"+nextUnbindedVar+"_;\n";
+                seedContent += "constant Location loc"+(nextUnbindedVar+1)+"_;\n";
                 seedContent += "Transport(r" + nextUnbindedVar++ + "_, I" + i + ", loc" + nextUnbindedVar++ + "_, L" + destLocation +");\n";
             }
             goalContent += "\n";
@@ -86,15 +88,15 @@ public class ProblemGenerator {
             //String out = domain;
             String start = "[start] {\n"
                     + startContent
-                    + "}\n\n";
+                    + "};\n\n";
 
             String all = "[all]{ \n"
                     + allContent
-                    + "}\n\n";
+                    + "};\n\n";
 
             String goal = "[end] {\n"
                     + goalContent
-                    + "}\n\n";
+                    + "};\n\n";
 
             String seed = "action Seed(){\n"
                     + " :decomposition{\n"
