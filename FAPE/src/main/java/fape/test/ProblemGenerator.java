@@ -135,7 +135,7 @@ public class ProblemGenerator {
             p.numberOfLocations = rg.nextInt(100)+1;
             p.numberOfItems = rg.nextInt(p.numberOfLocations)+1;
             p.numberOfRobots = rg.nextInt(20)+1;
-            p.numberOfTransports = rg.nextInt(p.numberOfItems > 15 ? 15 : p.numberOfItems);
+            p.numberOfTransports = rg.nextInt(p.numberOfItems > 7 ? 7 : p.numberOfItems)+1;
             l.add(p);
         }
 

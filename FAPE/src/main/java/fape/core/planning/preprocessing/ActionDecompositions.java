@@ -6,9 +6,7 @@ import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class is used to provide information on the possible outcomes of a decomposition.
@@ -48,7 +46,7 @@ public class ActionDecompositions {
         Set<Integer> decompositionIDs = new HashSet<>();
 
         for(int i=0 ; i<act.jDecompositions().size() ; i++) {
-            if(mightContains(act.jDecompositions().get(i), targets)) {
+            if(mightContains(act.jDecompositions().get(i), targets, new LinkedList())) {
                 decompositionIDs.add(i);
             }
         }
@@ -62,15 +60,21 @@ public class ActionDecompositions {
      * @param targets Actions to look for.
      * @return True if any action in targets can appear in this decomposition or its children. False otherwise
      */
-    private boolean mightContains(AbstractDecomposition dec, Collection<AbstractAction> targets) {
+    private boolean mightContains(AbstractDecomposition dec, Collection<AbstractAction> targets, List<AbstractAction> treated) {
+
         for(AbstractActionRef actRef : dec.jActions()) {
+
             AbstractAction abs = pb.getAction(actRef.name());
+            if(treated.contains(abs))
+                continue;
+            else
+                treated.add(abs);
             if(targets.contains(abs)) {
                 return true;
             }
 
             for(AbstractDecomposition nextDec : abs.jDecompositions()) {
-                if(mightContains(nextDec, targets)) {
+                if(mightContains(nextDec, targets, treated)) {
                     return true;
                 }
             }

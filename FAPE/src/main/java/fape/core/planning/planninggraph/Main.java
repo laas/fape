@@ -63,7 +63,8 @@ public class Main {
             Planner.debugging = false;
             planner.Init();
             start = System.currentTimeMillis();
-            planner.ForceFact(ANMLFactory.parseAnmlFromFile(pbFile));
+            planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.domain.anml"));
+            planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.pb.2.anml"));
             end  = System.currentTimeMillis();
             long init = end -start;
             start = System.currentTimeMillis();

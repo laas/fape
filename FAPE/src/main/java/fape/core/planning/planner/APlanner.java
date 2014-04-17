@@ -488,9 +488,13 @@ public abstract class APlanner {
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (AbstractAction aa : potentialSupporters) {
-                SupportOption o = new SupportOption();
-                o.supportingAction = aa;
-                ret.add(o);
+                if(!aa.isMotivated()) {
+                    SupportOption o = new SupportOption();
+                    o.supportingAction = aa;
+                    ret.add(o);
+//                } else {
+//                    System.out.println("motivated: " + aa);
+                }
             }
         }
 

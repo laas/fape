@@ -9,6 +9,7 @@ import fape.core.planning.planner.BaseDTGAbsHier;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
 import fape.util.TimeAmount;
 import planstack.anml.parser.ANMLFactory;
 
@@ -18,6 +19,35 @@ import java.util.List;
 import java.util.Queue;
 
 public class Planning {
+
+    /**
+     * Tries to infer which file contains the domain definition of this problem.
+     * If the problem takes a form "domainName.xxxx.pb.anml", then the corresponding domain file
+     * would be "domainName.dom.anml"
+     * @param problemFile
+     * @return
+     */
+    public static String domainFile(String problemFile) {
+        File f = new File(problemFile);
+        String name = f.getName();
+        if(name.endsWith(".pb.anml")) {
+            String[] nameParts = name.split("\\.");
+
+            if(nameParts.length != 4) {
+                throw new FAPEException("File name "+name+ " is not correctly formatted. It should be in the form "+
+                " domainName.xxx.pb.anml and have an associated domainName.dom.anml file.");
+            }
+
+            File domain = new File(f.getParentFile(), nameParts[0]+".dom.anml");
+            if(!domain.exists()) {
+                throw new FAPEException("File "+domain+" does not exists (name derived from "+problemFile+")");
+            }
+
+            return domain.getPath();
+        } else {
+            return null;
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         SimpleJSAP jsap = new SimpleJSAP(
@@ -149,6 +179,10 @@ public class Planning {
 
                     planner.Init();
                     try {
+                        // if the anml has a corresponding domain definition, load it first
+                        if(Planning.domainFile(anmlFile) != null) {
+                            planner.ForceFact(ANMLFactory.parseAnmlFromFile(domainFile(anmlFile)));
+                        }
                         boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile));
                         if(!isPlannerUsable) {
                             writer.write(
