@@ -1,6 +1,6 @@
 package planstack.anml.model.abs
 
-import planstack.anml.parser
+import planstack.anml.{ANMLException, parser}
 import planstack.anml.model._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 import planstack.anml.model.abs.statements.AbstractPersistence
@@ -37,17 +37,17 @@ object AbstractActionRef {
           // argument is a variable
           val v = new LVarRef(vExpr.variable)
           if(!context.contains(v)) {
-            // var doesn't exists, add it to context
-            context.addUndefinedVar(v, "object")
+            throw new ANMLException("Error: %s is not defined.".format(v))
           }
           (v, None)
         }
         case f:parser.FuncExpr => {
           // this is a function f, create a new var v and add a persistence [all] f == v;
-          val varName = context.getNewLocalVar("object") // todo stricter type
+          val varName = new LVarRef()
           val ts = new AbstractTemporalStatement(
             AbstractTemporalAnnotation("start","end"),
             new AbstractPersistence(AbstractParameterizedStateVariable(pb, context, f), varName, new LStatementRef()))
+          context.addUndefinedVar(varName, ts.statement.sv.func.valueType)
           (varName, Some(ts))
         }
       }

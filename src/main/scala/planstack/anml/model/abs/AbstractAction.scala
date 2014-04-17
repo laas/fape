@@ -21,6 +21,12 @@ import collection.JavaConversions._
   */
 class AbstractAction(val name:String, private val mArgs:List[LVarRef], val context:PartialContext)  {
 
+  /** True if the action was defined with the motivated keyword. False otherwise. */
+  protected var motivated = false
+
+  /** True if the action was defined with the motivated keyword. False otherwise. */
+  def isMotivated = motivated
+
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
 
@@ -66,6 +72,7 @@ object AbstractAction {
       case tempConstraint:parser.TemporalConstraint => {
         action.temporalConstraints += AbstractTemporalConstraint(tempConstraint)
       }
+      case parser.Motivated => action.motivated = true
     })
 
     action

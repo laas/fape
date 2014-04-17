@@ -78,7 +78,13 @@ class AnmlProblem extends TemporalInterval {
   // create an initial modifier containing the predefined instances (true and false)
   {
     val originalSM = new BaseStateModifier(this)
-    originalSM.instances ++= instances.instances.map(_._1)
+
+    // add predifined isntance to context and to StateModifier
+    for((name, tipe) <- instances.instances) {
+      originalSM.instances += name
+      context.addVar(new LVarRef(name), tipe, instances.referenceOf(name))
+    }
+
     modifiers += originalSM
   }
 
@@ -118,12 +124,9 @@ class AnmlProblem extends TemporalInterval {
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe)
       modifier.instances += instanceDecl.name
+      // all instances are added to the context
+      context.addVar(new LVarRef(instanceDecl.name), instanceDecl.tipe, instances.referenceOf(instanceDecl.name))
     })
-
-    // add all instances to the context.
-    for((name, tipe) <- instances.instances) {
-      context.addVar(new LVarRef(name), tipe, instances.referenceOf(name))
-    }
 
     // add all functions to the function manager
     blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {

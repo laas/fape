@@ -82,7 +82,7 @@ abstract class AbstractContext {
   }
 
   def addVar(localName:LVarRef, typeName:String, globalName:VarRef) {
-    assert(!variables.contains(localName))
+    assert(!variables.contains(localName), "Error: Context already contains local variable: "+localName)
     variables.put(localName, (typeName, globalName))
   }
 

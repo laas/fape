@@ -47,6 +47,9 @@ class Action(
     */
   def status = mStatus
 
+  /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
+  def isMotivated = abs.isMotivated
+
   /** Assigns a new status to the action.
     * Allowed transitions are
     *  - PENDING -> EXECUTING

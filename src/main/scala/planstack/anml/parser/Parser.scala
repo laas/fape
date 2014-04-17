@@ -63,6 +63,8 @@ case class ConsumeResource(left :Expr, right :Int, override val id :String) exte
 
 case class Action(name:String, args:List[Argument], content:List[ActionContent]) extends AnmlBlock
 
+object Motivated extends ActionContent
+
 case class Argument(tipe:String, name:String)
 
 case class Decomposition(content:Seq[DecompositionContent]) extends ActionContent
@@ -97,6 +99,8 @@ case class TemporalConstraint(tp1:TimepointRef, operator:String, tp2:TimepointRe
 }
 
 case class Function(name:String, args:List[Argument], tipe:String, isConstant:Boolean) extends AnmlBlock with TypeContent
+
+class Constant(override val name :String, override val tipe:String) extends Function(name, Nil, tipe, true) with DecompositionContent
 
 case class Type(name:String, parent:String, content:List[TypeContent]) extends AnmlBlock
 
@@ -223,6 +227,7 @@ object AnmlParser extends JavaTokenParsers {
       temporalStatements
     | decomposition ^^ (x => List(x))
     | tempConstraint ^^ (x => List(x))
+    | "motivated"~";" ^^^ List(Motivated)
   )
 
   def decomposition : Parser[Decomposition] =
@@ -230,8 +235,13 @@ object AnmlParser extends JavaTokenParsers {
         case content => Decomposition(content)
       }
 
-  def decompositionContent : Parser[DecompositionContent] =
-      tempConstraint | partiallyOrderedActionRef<~";"
+  def decompositionContent : Parser[DecompositionContent] = (
+      tempConstraint
+    | partiallyOrderedActionRef<~";"
+    | "constant"~>(word|kwTypes)~word<~";" ^^ {
+        case tipe~name => new Constant(name, tipe)
+      })
+
 
   def partiallyOrderedActionRef : Parser[PartiallyOrderedActionRef] = (
       "ordered"~"("~>repsep(partiallyOrderedActionRef,",")<~")" ^^ {

@@ -3,7 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.ANMLException
 import planstack.anml.parser
 import scala.collection.mutable.ListBuffer
-import planstack.anml.model.{AnmlProblem, PartialContext}
+import planstack.anml.model.{LVarRef, AnmlProblem, PartialContext}
 import collection.JavaConversions._
 import planstack.anml.parser.PartiallyOrderedActionRef
 
@@ -74,6 +74,8 @@ object AbstractDecomposition {
         addPrecedenceConstraints(dec, precedenceStruct)
       }
       case constraint:parser.TemporalConstraint => dec.temporalConstraints += AbstractTemporalConstraint(constraint)
+      // constant function with no arguments is interpreted as local variable
+      case const:parser.Constant => dec.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
     })
 
     dec
