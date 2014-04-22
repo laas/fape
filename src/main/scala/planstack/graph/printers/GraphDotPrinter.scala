@@ -28,9 +28,9 @@ import planstack.graph.core._
   * @tparam EL Type of edge labels.
   * @tparam E Type of edges.
   */
-class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdgePrinter[V,EL]) {
+class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdgePrinter[V, EL, E]) {
 
-  def this(g :Graph[V,EL,E]) = this(g, new NodeEdgePrinter[V,EL])
+  def this(g :Graph[V,EL,E]) = this(g, new NodeEdgePrinter[V,EL,E])
 
   def writeToFile(filename: String, s: String): Unit = {
     val pw = new java.io.PrintWriter(new java.io.File(filename))
@@ -54,7 +54,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdge
       case dg:DirectedGraph[V,EL,E] => "->"
     }
     val label = e match {
-      case e:LabeledEdge[V,EL] => " [label=\"%s\"]".format(nep.printEdge(e.l))
+      case e:LabeledEdge[V,EL] => " [label=\"%s\"]".format(nep.printEdge(e.l).replaceAll("\n", "\\\\n"))
       case _ => ""
     }
     "  " + nodeId(e.u) +" "+ link +" "+ nodeId(e.v) + label +";"
@@ -72,7 +72,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdge
   def node2Str(v:V) = {
     if(!nodeId.contains(v)) {
       nodeId(v) = nodeId.size
-      "  " + nodeId(v) +" [label=\""+nep.printNode(v)+"\"];"
+      "  " + nodeId(v) +" [label=\""+nep.printNode(v).replaceAll("\n", "\\\\n")+"\"];\n"
     } else {
       ""
     }
@@ -84,11 +84,11 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E], val nep :NodeEdge
    */
   def graph2DotString : String = {
     var out = header
-    for(v <- g.vertices)
+    for(v <- g.vertices.filter(!nep.excludeNode(_)))
       out += node2Str(v)
-    out += g.vertices.map(node2Str(_)).mkString("\n")
+    out += g.vertices.filter(!nep.excludeNode(_)).map(node2Str(_)).mkString("\n")
     out += "\n"
-    out += g.edges().map(edge2Str(_)).mkString("\n")
+    out += g.edges().filter(!nep.excludeEdge(_)).map(edge2Str(_)).mkString("\n")
     out += footer
     out
   }
