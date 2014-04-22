@@ -2,13 +2,14 @@ package fape.core.planning.planninggraph;
 
 import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.VarRef;
+import planstack.graph.core.Edge;
 import planstack.graph.printers.NodeEdgePrinter;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel> {
+class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel, Edge<PGNode>> {
 
     final GroundProblem pb;
     final RelaxedPlanningGraph rpg;

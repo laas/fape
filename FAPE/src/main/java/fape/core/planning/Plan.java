@@ -20,7 +20,7 @@ import java.util.List;
 
 public class Plan {
 
-    class PlanPrinter extends NodeEdgePrinter<Action, Object> {
+    class PlanPrinter extends NodeEdgePrinter<Action, Object, Edge<Action>> {
         @Override
         public String printNode(Action a) {
             return Printer.action(st, a);

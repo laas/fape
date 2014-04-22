@@ -8,7 +8,7 @@ import java.util.*;
 /**
  * A disjunctive action is a set of ground actions.
  */
-public class DisjunctiveAction {
+public class DisjunctiveAction implements Landmark {
 
     public final Set<GroundAction> actions;
 
@@ -54,5 +54,29 @@ public class DisjunctiveAction {
         }
 
         return ret;
+    }
+
+    /**
+     * Returns true if this action contains all GroundActions present in the other one.
+     * @param o
+     * @return
+     */
+    public boolean contains(DisjunctiveAction o) {
+        for(GroundAction ga : o.actions) {
+            if(!actions.contains(ga))
+                return false;
+        }
+        return true;
+
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for(GroundAction a : actions) {
+            builder.append(a);
+            builder.append('\n');
+        }
+        return builder.toString();
     }
 }

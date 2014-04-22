@@ -19,6 +19,9 @@ public class RelaxedPlanningGraph {
     public RelaxedPlanningGraph(GroundProblem pb) {
         this.pb = pb;
 
+    }
+
+    public void build() {
         setInitState(pb.initState);
         distances.put(pb.initState, 0);
 
@@ -26,6 +29,23 @@ public class RelaxedPlanningGraph {
         updateDistances(pb.initState);
     }
 
+    /**
+     * Provides a way to exclude actions in subclasses.
+     * This is typically used in restricted planning graphs
+     * where enablers for a fluent must be excluded.
+     * @param ga
+     * @return True if the action is excluded from the current model.
+     */
+    public boolean isExcluded(GroundAction ga) {
+        return false;
+    }
+
+    /**
+     * Checks if all preconditions of this action are met (i.e. are in the planning graph).
+     * Note that even excluded action can be applicable.
+     * @param a
+     * @return True if the action is applicable.
+     */
     public boolean applicable(GroundAction a) {
         for(Fluent precondition : a.pre) {
             if(!graph.contains(precondition)) {
@@ -57,13 +77,14 @@ public class RelaxedPlanningGraph {
                 graph.addVertex(addition);
             graph.addEdge(a, addition, new PGEdgeLabel());
         }
-
     }
 
     public boolean expandOnce() {
         int numInsertedActions = 0;
         for(GroundAction a : pb.allActions()) {
             if(graph.contains(a)) {
+                continue;
+            } else if(isExcluded(a)) {
                 continue;
             } else if(applicable(a)) {
                 insertAction(a);
@@ -154,5 +175,35 @@ public class RelaxedPlanningGraph {
         }
 
         return new DisjunctiveAction(actions);
+    }
+
+    /**
+     * @param f FLuent to lookup.
+     * @return True if the fluent is supported by the initial state.
+     */
+    public boolean isInitFact(Fluent f) {
+        for(PGNode n : graph.jParents(f)) {
+            if(n instanceof GroundState)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @param df A disjunctive fluent.
+     * @return True if any of fluent in the disjunction is supported by the initial state
+     *         or if the disjunction is empty (always true).
+     */
+    public boolean isInitFact(DisjunctiveFluent df) {
+        if(df.fluents.isEmpty())
+            return true;
+
+        for(Fluent f : df.fluents) {
+            if(isInitFact(f)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

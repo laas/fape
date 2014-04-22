@@ -60,7 +60,7 @@ public abstract class APlanner {
      */
     public PriorityQueue<State> queue = new PriorityQueue<State>(100, this.stateComparator());
 
-    protected boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
+    public boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
         ChainComponent precedingComponent = null;
         if (o.temporalDatabase != -1) {
@@ -128,20 +128,23 @@ public abstract class APlanner {
             for(LVarRef lvar : o.actionWithBindings.values.keySet()) {
                 next.conNet.restrictDomain(act.context().getGlobalVar(lvar), o.actionWithBindings.values.get(lvar));
             }
+
             // create the binding between consumer and the new statement in the action that supports it
-            TemporalDatabase supportingDatabase = null;
-            for (Statement s : act.statements()) {
-                if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
-                    assert supportingDatabase == null : "Error: several statements might support the database";
-                    supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
+            if(consumer != null)  {
+                TemporalDatabase supportingDatabase = null;
+                for (Statement s : act.statements()) {
+                    if(s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
+                        assert supportingDatabase == null : "Error: several statements might support the database";
+                        supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
+                    }
                 }
-            }
-            if (supportingDatabase == null) {
-                return false;
-            } else {
-                SupportOption opt = new SupportOption();
-                opt.temporalDatabase = supportingDatabase.mID;
-                return ApplyOption(next, opt, consumer);
+                if (supportingDatabase == null) {
+                    return false;
+                } else {
+                    SupportOption opt = new SupportOption();
+                    opt.temporalDatabase = supportingDatabase.mID;
+                    return ApplyOption(next, opt, consumer);
+                }
             }
 
         } else {

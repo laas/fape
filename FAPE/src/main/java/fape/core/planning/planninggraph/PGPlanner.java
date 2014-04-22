@@ -41,6 +41,7 @@ public class PGPlanner extends APlanner {
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
+        pg.build();
         hierarchy = new AbstractionHierarchy(this.pb);
 
         return true;

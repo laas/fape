@@ -7,9 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Fluent implements PGNode {
-    final Function f;
-    final List<VarRef> params;
-    final VarRef value;
+    final public Function f;
+    final public List<VarRef> params;
+    final public VarRef value;
 
     int hashVal;
 

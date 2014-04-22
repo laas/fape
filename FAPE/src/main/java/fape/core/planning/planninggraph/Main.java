@@ -3,8 +3,18 @@ package fape.core.planning.planninggraph;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
+import fape.core.planning.preprocessing.ActionLandmarksFinder;
+import fape.core.planning.search.ActionWithBindings;
+import fape.core.planning.search.SupportOption;
+import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.util.Pair;
 import fape.util.TimeAmount;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ANMLFactory;
+
+import java.util.List;
+import java.util.Set;
 
 
 public class Main {
@@ -54,7 +64,7 @@ public class Main {
         for(DisjunctiveAction da : enablers) {
             options.add(da.actionsAndParams(gpb));
         }
-        */
+        *
         for(int i=0 ; i<numIter ; i++) {
             long start, end;
 
@@ -81,7 +91,60 @@ public class Main {
 
             System.out.println("  Opened: "+planner.OpenedStates+"   Generated: "+planner.GeneratedStates);
         }
+        */
 
-        int x = 0;
+        PGPlanner planner = new PGPlanner();
+        Planner.logging = false;
+        Planner.debugging = false;
+        planner.Init();
+        // long start = System.currentTimeMillis();
+        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.dom.anml"));
+        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.2.pb.anml"));
+
+        ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
+        for(TemporalDatabase db : planner.GetCurrentState().consumers) {
+            DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalConsumeValue(), planner.GetCurrentState().conNet.domains, planner.groundPB);
+/*
+            DisjunctiveAction da = l.getActionLandmarks(df);
+            for(DisjunctiveFluent disPrecond : l.preconditions(da)) {
+                System.out.println(disPrecond);
+            }
+            System.out.println();*/
+
+            l.addGoal(df);
+        }
+
+        l.getLandmarks();
+        l.removeRedundantLandmarks();
+        for(DisjunctiveAction da : l.landmarks) {
+            List<Pair<AbstractAction, List<Set<String>>>> toInsert = da.actionsAndParams(planner.groundPB);
+            if(toInsert.size() == 1) {
+                Pair<AbstractAction, List<Set<String>>> abstractAct = toInsert.get(0);
+                ActionWithBindings opt = new ActionWithBindings();
+                opt.act = abstractAct.value1;//Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
+
+                assert opt.act.args().size() == abstractAct.value2.size() : "Problem: different number of parameters";
+
+                for(int i=0 ; i<opt.act.args().size() ; i++) {
+                    opt.values.put(opt.act.args().get(i), abstractAct.value2.get(i));
+                }
+                SupportOption supportOption = new SupportOption();
+                supportOption.actionWithBindings = opt;
+                planner.ApplyOption(planner.GetCurrentState(), supportOption, null);
+            }
+        }
+
+        State res = planner.search(new TimeAmount(90000));
+        if(res != null) {
+            Plan plan = new Plan(res);
+            plan.exportToDot("plan.dot");
+
+            System.out.println("Opened: "+planner.OpenedStates+" - Generated: "+planner.GeneratedStates);
+        }
+
+        System.out.println(l.report());
+        l.exportToDot("landmarks.dot");
+
+        int xx=0;
     }
 }

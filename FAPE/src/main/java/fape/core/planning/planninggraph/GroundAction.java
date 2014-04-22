@@ -15,12 +15,12 @@ import java.util.*;
 
 public class GroundAction implements PGNode {
 
-    final Action act;
-    final List<VarRef> params;
+    final public Action act;
+    final public List<VarRef> params;
     final Map<LVarRef, VarRef> argMap;
-    final LinkedList<Fluent> pre = new LinkedList<>();
-    final LinkedList<Fluent> add = new LinkedList<>();
-    final LinkedList<Fluent> del = new LinkedList<>();
+    public final LinkedList<Fluent> pre = new LinkedList<>();
+    public final LinkedList<Fluent> add = new LinkedList<>();
+    public final LinkedList<Fluent> del = new LinkedList<>();
     final GroundProblem pb;
 
     public GroundAction(AbstractAction abs, List<VarRef> params, GroundProblem pb) {

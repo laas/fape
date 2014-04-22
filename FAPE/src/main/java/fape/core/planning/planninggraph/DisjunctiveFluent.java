@@ -7,7 +7,7 @@ import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 
-public class DisjunctiveFluent {
+public class DisjunctiveFluent implements Landmark {
 
     public final Set<Fluent> fluents;
 
@@ -61,4 +61,17 @@ public class DisjunctiveFluent {
             fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue));
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for(Fluent f : fluents) {
+            sb.append(f.toString());
+            sb.append('\n');
+        }
+        sb.append('\n');
+        return sb.toString();
+    }
+
+
 }
