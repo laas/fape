@@ -53,6 +53,20 @@ class VarRef(id:T) extends GlobalRef(id) {
   def this() = this(getNext)
 }
 
+/** Reference to a problem instance that takes the form of a variable.
+  *
+  * This is mainly to be able to treat instances as variables (e.g. parameters for
+  * state variables, actions, ...).
+  *
+  * @param id Unique id of the reference.
+  * @param instance Name of the instance.
+  */
+class InstanceRef(id:T, val instance:String) extends VarRef(id) {
+  def this(instance :String) = this(getNext, instance)
+
+  override def toString = instance
+}
+
 object EmptyVarRef extends VarRef(NullID)
 
 /** Reference to a time-point: an temporal variable typically denoting the start or end time of an action

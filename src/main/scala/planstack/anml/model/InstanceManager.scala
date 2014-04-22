@@ -4,7 +4,7 @@ import collection.JavaConversions._
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 import scala.collection.mutable
 import planstack.anml.{ANMLException, parser}
-import planstack.anml.model.concrete.VarRef
+import planstack.anml.model.concrete.{InstanceRef, VarRef}
 
 
 class InstanceManager {
@@ -36,7 +36,7 @@ class InstanceManager {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
 
-    instancesDef(name) = (t, new VarRef())
+    instancesDef(name) = (t, new InstanceRef(name))
     instancesByType(t) = name :: instancesByType(t)
   }
 
