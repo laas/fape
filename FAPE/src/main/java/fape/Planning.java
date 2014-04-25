@@ -135,7 +135,7 @@ public class Planning {
         }
 
         // output format
-        writer.write("iter, planner, runtime, anml-file, opened-states, generated-states\n");
+        writer.write("iter, planner, runtime, anml-file, opened-states, generated-states, sol-depth\n");
 
         int repetitions = config.getInt("repetitions");
         for(int i=0 ; i<repetitions ; i++) {
@@ -190,8 +190,7 @@ public class Planning {
                                     planner.shortName() +", "+
                                     "unusable, " +
                                     anmlFile +", "+
-                                    "0, "+
-                                    "0\n");
+                                    "-, -, -\n");
                             writer.flush();
                             continue;
                         }
@@ -223,7 +222,9 @@ public class Planning {
                             time + ", " +
                             anmlFile +", "+
                             planner.OpenedStates +", "+
-                            planner.GeneratedStates+"\n");
+                            planner.GeneratedStates +", "+
+                            (timeOut ? "-" : planner.GetCurrentState().depth) +
+                            "\n");
                     writer.flush();
 
                     if(!timeOut && !config.getBoolean("quiet")) {

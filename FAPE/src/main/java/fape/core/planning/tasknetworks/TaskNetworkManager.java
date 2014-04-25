@@ -14,32 +14,25 @@ import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.TemporalStatement;
 import planstack.graph.GraphFactory;
-import planstack.graph.core.SimpleUnlabeledDigraph;
-import planstack.graph.core.SimpleUnlabeledDigraph$;
 import planstack.graph.core.UnlabeledDigraph;
 
 import java.util.*;
 
-/**
- *
- * @author FD
- */
 public class TaskNetworkManager implements Reporter {
 
-    final UnlabeledDigraph<Action> network;
+    final UnlabeledDigraph<TNNode> network;
 
     public TaskNetworkManager() {
         network = GraphFactory.getSimpleUnlabeledDigraph();
     }
 
-    public TaskNetworkManager(UnlabeledDigraph<Action> network) {
+    public TaskNetworkManager(UnlabeledDigraph<TNNode> network) {
         this.network = network;
     }
 
     public boolean isRoot(Action a) {
-        return network.inDegree(a) == 0;
+        return network.inDegree(new TNNode(a)) == 0;
     }
 
     /**
@@ -48,9 +41,9 @@ public class TaskNetworkManager implements Reporter {
      */
     public List<Action> roots() {
         List<Action> roots = new LinkedList<>();
-        for(Action a : network.jVertices()) {
-            if(isRoot(a)) {
-                roots.add(a);
+        for(TNNode n : network.jVertices()) {
+            if(n.isAction() && isRoot(n.asAction())) {
+                roots.add(n.asAction());
             }
         }
         return roots;
@@ -61,8 +54,22 @@ public class TaskNetworkManager implements Reporter {
      * @return True if the action is decomposed
      */
     public boolean isDecomposed(Action a) {
-        // TODO: does not detect if an action has an empty decomposition.
-        return network.outDegree(a) != 0;
+        for(TNNode child : network.jChildren(new TNNode(a))) {
+            if(child.isDecomposition()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private TNNode getDecomposition(Action a) {
+        assert isDecomposed(a);
+        for(TNNode child : network.jChildren(new TNNode(a))) {
+            if(child.isDecomposition()) {
+                return child;
+            }
+        }
+        throw new FAPEException("Action "+a+" has no known decomposition.");
     }
 
     /**
@@ -70,9 +77,12 @@ public class TaskNetworkManager implements Reporter {
      */
     public List<Action> GetOpenLeaves() {
         LinkedList<Action> l = new LinkedList<>();
-        for (Action a : network.jVertices()) {
-            if(a.decomposable() && !isDecomposed(a)) {
-                l.add(a);
+        for (TNNode n : network.jVertices()) {
+            if(n.isAction()) {
+                Action a = n.asAction();
+                if(a.decomposable() && !isDecomposed(a)) {
+                    l.add(a);
+                }
             }
         }
         return l;
@@ -80,12 +90,53 @@ public class TaskNetworkManager implements Reporter {
 
     /**
      * Inserts an action in the task network. If the action a has
-     * a parent p, an edge from p to a is also added.
+     * a parent p, an edge from the decomposition of p to a is also added.
      */
     public void insert(Action a) {
-        network.addVertex(a);
+        network.addVertex(new TNNode(a));
         if(a.hasParent()) {
-            network.addEdge(a.parent(), a);
+            assert isDecomposed(a.parent()) : "Error: adding an action as a child of a yet undecomposed action.";
+            network.addEdge(getDecomposition(a.parent()), new TNNode(a));
+        }
+    }
+
+    /**
+     * Adds a Decomposition of an action.
+     * @param dec The decomposition.
+     * @param parent The action containing the decomposition.
+     */
+    public void insert(Decomposition dec, Action parent) {
+        network.addVertex(new TNNode(dec));
+        network.addEdge(new TNNode(parent), new TNNode(dec));
+    }
+
+    /**
+     * Checks if the action is a descendant of the decomposition (i.e. there
+     * is a path from the decomposition to the action in the task network.)
+     * @param child Descendant action.
+     * @param dec Potential ancestor.
+     * @return True if dec is an ancestor of child.
+     */
+    public boolean isDescendantOf(Action child, Decomposition dec) {
+        return isDescendantOf(new TNNode(child), new TNNode(dec));
+    }
+
+    /**
+     * Checks if the first node is a descendant of the second one.
+     * (i.e. there is a path from n2 to n1).
+     * @param n1 Descendant node.
+     * @param n2 Potential ancestor.
+     * @return True if n2 is an ancestor of n1.
+     */
+    private boolean isDescendantOf(TNNode n1, TNNode n2) {
+        if(network.inDegree(n1) == 0) {
+            return false;
+        } else if(network.parents(n1).size() != 1) {
+            throw new FAPEException("Error: node "+n1+" has more than one parent.");
+        } else if(network.parents(n1).contains(n2)) {
+            return true;
+        } else {
+            return isDescendantOf(network.parents(n1).head(), n2);
         }
     }
 
@@ -105,16 +156,17 @@ public class TaskNetworkManager implements Reporter {
         return str;
     }
 
-    public float GetActionCosts() { //TODO: ANML actions have no defined costs
-        float sum = 0;
-        for (Action a : network.jVertices()) {
-            sum += 10;
-        }
-        return sum;
-    }
-
+    /**
+     * @return All actions of the task network.
+     */
     public List<Action> GetAllActions() {
-        return network.jVertices();
+        List<Action> allActions = new LinkedList<>();
+        for(TNNode n : network.jVertices()) {
+            if(n.isAction()) {
+                allActions.add(n.asAction());
+            }
+        }
+        return allActions;
     }
 
     /**
@@ -132,6 +184,14 @@ public class TaskNetworkManager implements Reporter {
         throw new FAPEException("No action with id: "+id);
     }
 
+    /**
+     * Lookup the action containing the given statement.
+     * Implementations currently looks for all statements of all actions
+     * TODO: more efficient implementation
+     *
+     * @param e LogStatement to look for.
+     * @return The action containing the statement. null if no action in the task network contains the statement.
+     */
     public Action getActionContainingStatement(LogStatement e) {
         for(Action a : GetAllActions()) {
             for(LogStatement s : a.logStatements()) {

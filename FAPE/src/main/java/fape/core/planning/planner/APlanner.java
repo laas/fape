@@ -4,7 +4,6 @@ import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
@@ -119,6 +118,11 @@ public abstract class APlanner {
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+
+            // remember that the consuming db has to be supporting by a descendant of this decomposition.
+            if(consumer != null)
+                next.supportConstraints.put(consumer.GetChainComponent(0), dec);
+
             next.applyDecomposition(dec);
         } else if(o.actionWithBindings != null) {
             Action act = Factory.getStandaloneAction(pb, o.actionWithBindings.act);
@@ -273,23 +277,30 @@ public abstract class APlanner {
 
     }
 
-    public List<SupportOption> GetResolvers(State st, Flaw f) {
+    public final List<SupportOption> GetResolvers(State st, Flaw f) {
+        List<SupportOption> candidates;
         if(f instanceof UnsupportedDatabase) {
-            return GetSupporters(((UnsupportedDatabase) f).consumer, st);
+            candidates = GetSupporters(((UnsupportedDatabase) f).consumer, st);
         } else if(f instanceof UndecomposedAction) {
             UndecomposedAction ua = (UndecomposedAction) f;
-            List<SupportOption> resolvers = new LinkedList<>();
+            candidates = new LinkedList<>();
             for(int decompositionID=0 ; decompositionID < ua.action.decompositions().size() ; decompositionID++) {
                 SupportOption res = new SupportOption();
                 res.actionToDecompose = ua.action;
                 res.decompositionID = decompositionID;
-                resolvers.add(res);
+                candidates.add(res);
             }
-            return resolvers;
         } else {
-            assert false : "Unknown flaw type: " + f;
-            return new LinkedList<>();
+            throw new FAPEException("Unknown flaw type: " + f);
         }
+
+        List<SupportOption> resolvers = new LinkedList<>();
+        for(SupportOption opt : candidates) {
+            if(st.isValidOption(opt, f)) {
+                resolvers.add(opt);
+            }
+        }
+        return resolvers;
     }
 
     public List<Flaw> GetFlaws(State st) {
@@ -491,12 +502,12 @@ public abstract class APlanner {
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (AbstractAction aa : potentialSupporters) {
+                // only considere action that are not marked motivated.
+                // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if(!aa.isMotivated()) {
                     SupportOption o = new SupportOption();
                     o.supportingAction = aa;
                     ret.add(o);
-//                } else {
-//                    System.out.println("motivated: " + aa);
                 }
             }
         }

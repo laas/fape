@@ -11,6 +11,10 @@
 package fape.core.planning.states;
 
 import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.search.Flaw;
+import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.UndecomposedAction;
+import fape.core.planning.search.UnsupportedDatabase;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -24,9 +28,7 @@ import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -40,6 +42,9 @@ public class State implements Reporter {
      * Unique identifier of the database.
      */
     public final int mID = idCounter++;
+
+    /** Depth of the state in the search tree */
+    public final int depth;
 
     /**
      *
@@ -55,6 +60,14 @@ public class State implements Reporter {
      *
      */
     public final TaskNetworkManager taskNet;
+
+    /**
+     * Keep tracks of statements that must be supported by a particular decomposition.
+     * (e.g. by a statements which is a consequence of that decomposition).
+     * This map is populated when a decomposition is chosen as a resolver for an unsupported database.
+     * TODO: make more memory efficient (immutable map?)
+     */
+    public final HashMap<ChainComponent, Decomposition> supportConstraints;
 
     /**
      * All databases that require an enabling event (ie. whose first value is not an assignment).
@@ -76,11 +89,13 @@ public class State implements Reporter {
      */
     public State(AnmlProblem pb) {
         this.pb = pb;
+        depth = 0;
         tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         conNet = new ConstraintNetworkManager();
+        supportConstraints = new HashMap<>();
 
         // Insert all problem-defined modifications into the state
         recordTimePoints(pb);
@@ -94,11 +109,13 @@ public class State implements Reporter {
      */
     public State(State st) {
         pb = st.pb;
+        depth = st.depth +1;
         problemRevision = st.problemRevision;
         conNet = st.conNet.DeepCopy();
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
+        supportConstraints = new HashMap<>(st.supportConstraints);
 
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
@@ -117,8 +134,7 @@ public class State implements Reporter {
      * @return the sum of all actions cost.
      */
     public float GetCurrentCost() {
-        float costs = this.taskNet.GetActionCosts();
-        return costs;
+        return this.taskNet.GetAllActions().size() * 10;
     }
 
     /**
@@ -472,6 +488,8 @@ public class State implements Reporter {
         tempoNet.EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
         tempoNet.EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
 
+        taskNet.insert(dec, dec.container());
+
         return apply(dec);
     }
 
@@ -507,5 +525,54 @@ public class State implements Reporter {
         }
 
         return isConsistent();
+    }
+
+    /**
+     * Checks if the option is valid for this flaw.
+     * It is currently used to check if a resolver doesn't contradict an earlier commitment:
+     * when an unsupported database is "resolved" with a decomposition but no causal link is added
+     * (the database is still unsupported), the resolvers for it are then limited to those being a
+     * consequence of the decomposition.
+     * @param opt Resolver whose validity is to be checked.
+     * @param flaw Flaw addressed by the resolver.
+     * @return True if the resolver is valid, False otherwise.
+     */
+    public boolean isValidOption(SupportOption opt, Flaw flaw) {
+        if(flaw instanceof UndecomposedAction) {
+            return true;
+        } else if(flaw instanceof UnsupportedDatabase) {
+            assert ((UnsupportedDatabase) flaw).consumer.chain.size() > 0;
+            if(!supportConstraints.containsKey(((UnsupportedDatabase) flaw).consumer.GetChainComponent(0))) {
+                return true;
+            } else {
+                // this unsupported db must be supported by a descendant of a decomposition
+                // this is a consequence of an earlier commitment.
+                Decomposition dec = supportConstraints.get(((UnsupportedDatabase) flaw).consumer.GetChainComponent(0));
+                if(opt.supportingAction != null || opt.actionWithBindings != null) {
+                    // insertion of a new action is prohibited
+                    return false;
+                } else if(opt.actionToDecompose != null) {
+                    // decomposition is allowed only if the decomposed action is issued from dec.
+                    return taskNet.isDescendantOf(opt.actionToDecompose, dec);
+                } else if(opt.temporalDatabase != -1) {
+                    // DB supporters are limited to those coming from an action descending from dec.
+                    TemporalDatabase db = GetDatabase(opt.temporalDatabase);
+                    ChainComponent cc;
+                    if(opt.precedingChainComponent != -1)
+                        cc = db.GetChainComponent(opt.precedingChainComponent);
+                    else
+                        cc = db.GetChainComponent(db.chain.size()-1);
+                    assert cc.change : "Support is not a change.";
+                    assert cc.contents.size() == 1;
+                    Action a = getActionContaining(cc.contents.getFirst());
+
+                    return a != null && taskNet.isDescendantOf(a, dec);
+                } else {
+                    throw new FAPEException("Unhandled option: "+opt);
+                }
+            }
+        } else {
+            throw new FAPEException("Unhandled flaw: "+flaw);
+        }
     }
 }
