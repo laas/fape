@@ -6,6 +6,8 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
+import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -46,6 +48,9 @@ public abstract class APlanner {
     public final AnmlProblem pb = new AnmlProblem();
     LiftedDTG dtg = null;
 
+    public String[] flawSelStrategies = { "lcf" };
+    public String[] planSelStrategies = { "soca" };
+
     /**
      * A short identifier for the planner.
      * @return THe planner ID.
@@ -57,7 +62,7 @@ public abstract class APlanner {
     /**
      *
      */
-    public PriorityQueue<State> queue = new PriorityQueue<State>(100, this.stateComparator());
+    public PriorityQueue<State> queue;
 
     public boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
@@ -121,7 +126,7 @@ public abstract class APlanner {
 
             // remember that the consuming db has to be supporting by a descendant of this decomposition.
             if(consumer != null)
-                next.supportConstraints.put(consumer.GetChainComponent(0), dec);
+                next.addSupportConstraint(consumer.GetChainComponent(0), dec);
 
             next.applyDecomposition(dec);
         } else if(o.actionWithBindings != null) {
@@ -249,6 +254,7 @@ public abstract class APlanner {
      *
      */
     public void Init() {
+        queue = new PriorityQueue<State>(100, this.stateComparator());
         queue.add(new State(pb));
         best = queue.peek();
     }
@@ -294,14 +300,10 @@ public abstract class APlanner {
             throw new FAPEException("Unknown flaw type: " + f);
         }
 
-        List<SupportOption> resolvers = new LinkedList<>();
-        for(SupportOption opt : candidates) {
-            if(st.isValidOption(opt, f)) {
-                resolvers.add(opt);
-            }
-        }
-        return resolvers;
+        return st.retainValidOptions(f, candidates);
     }
+    static float numOpt = 0;
+    static int total;
 
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
@@ -326,14 +328,18 @@ public abstract class APlanner {
      * @param st State in which the flaws appear.
      * @return The comparator to use for ordering.
      */
-    public abstract Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st);
+    public final Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
+        return FlawCompFactory.get(st, flawSelStrategies);
+    }
 
     /**
      * The comparator used to order the queue. THe first state in the queue (according to this comparator,
      * will be selected for expansion.
      * @return The comparator to use for ordering the queue.
      */
-    public abstract Comparator<State> stateComparator();
+    public final Comparator<State> stateComparator() {
+        return PlanCompFactory.get(planSelStrategies);
+    }
 
     protected State aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
@@ -385,13 +391,15 @@ public abstract class APlanner {
             }
 
             if (opts.getFirst().value2.isEmpty()) {
-                TinyLogger.LogInfo("Dead-end, consumer without resolvers: " + st.mID);
+                TinyLogger.LogInfo("Dead-end, flaw without resolvers: " + opts.getFirst().value1);
                 //dead end
                 continue;
             }
 
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
+
+            TinyLogger.LogInfo("Flaw: "+opt.value1);
 
             for (SupportOption o : opt.value2) {
                 State next = new State(st);

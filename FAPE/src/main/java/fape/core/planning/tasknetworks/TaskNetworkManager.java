@@ -23,12 +23,34 @@ public class TaskNetworkManager implements Reporter {
 
     final UnlabeledDigraph<TNNode> network;
 
+    private int numActions;
+    private int numOpenLeaves;
+    private int numRoots;
+
     public TaskNetworkManager() {
         network = GraphFactory.getSimpleUnlabeledDigraph();
+        numActions = 0;
+        numOpenLeaves = 0;
+        numRoots = 0;
     }
 
-    public TaskNetworkManager(UnlabeledDigraph<TNNode> network) {
-        this.network = network;
+    public TaskNetworkManager(TaskNetworkManager base) {
+        this.network = base.network.cc();
+        this.numActions = base.numActions;
+        this.numOpenLeaves = base.numOpenLeaves;
+        this.numRoots = base.numRoots;
+    }
+
+    public int getNumOpenLeaves() {
+        return numOpenLeaves;
+    }
+
+    public int getNumActions() {
+        return numActions;
+    }
+
+    public int getNumRoots() {
+        return numRoots;
     }
 
     public boolean isRoot(Action a) {
@@ -46,6 +68,7 @@ public class TaskNetworkManager implements Reporter {
                 roots.add(n.asAction());
             }
         }
+        assert roots.size() == numRoots;
         return roots;
     }
 
@@ -85,6 +108,7 @@ public class TaskNetworkManager implements Reporter {
                 }
             }
         }
+        assert l.size() == numOpenLeaves : "Error: wrong number of actions.";
         return l;
     }
 
@@ -94,9 +118,15 @@ public class TaskNetworkManager implements Reporter {
      */
     public void insert(Action a) {
         network.addVertex(new TNNode(a));
+        numActions++;
+        if(a.decomposable())
+            numOpenLeaves++;
+
         if(a.hasParent()) {
             assert isDecomposed(a.parent()) : "Error: adding an action as a child of a yet undecomposed action.";
             network.addEdge(getDecomposition(a.parent()), new TNNode(a));
+        } else {
+            numRoots++;
         }
     }
 
@@ -146,7 +176,7 @@ public class TaskNetworkManager implements Reporter {
      * @return A new TaskManager with the same content.
      */
     public TaskNetworkManager DeepCopy() {
-        return new TaskNetworkManager(network.cc());
+        return new TaskNetworkManager(this);
     }
 
     @Override
@@ -166,6 +196,7 @@ public class TaskNetworkManager implements Reporter {
                 allActions.add(n.asAction());
             }
         }
+        assert allActions.size() == numActions : "Error: wrong number of action.";
         return allActions;
     }
 

@@ -5,6 +5,11 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
+import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.plans.BreadthFirst;
+import fape.core.planning.search.strategies.plans.DepthFirst;
+import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.search.strategies.plans.StateComparator;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
@@ -62,16 +67,6 @@ public class PGPlanner extends APlanner {
     @Override
     public State search(TimeAmount forhowLong) {
         return aStar(forhowLong);
-    }
-
-    @Override
-    public Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
-        return new FlawSelector(hierarchy, st);
-    }
-
-    @Override
-    public Comparator<State> stateComparator() {
-        return new StateComparator();
     }
 
     @Override

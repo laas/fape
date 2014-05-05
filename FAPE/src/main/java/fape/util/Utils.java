@@ -1,8 +1,6 @@
 package fape.util;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Utils {
 
@@ -15,4 +13,27 @@ public class Utils {
         inter.retainAll(bs);
         return !inter.isEmpty();
     }
+
+    public static <T> String print(Iterable<T> coll, String sep) {
+        StringBuilder builder = new StringBuilder();
+        Iterator<T> it = coll.iterator();
+        while(it.hasNext()) {
+            T item = it.next();
+            builder.append(item.toString());
+            if(it.hasNext())
+                builder.append(sep);
+        }
+        return builder.toString();
+    }
+
+    public static <T> String print(T[] coll, String sep) {
+        StringBuilder builder = new StringBuilder();
+        for(int i=0 ; i<coll.length ; i++) {
+            builder.append(coll[i]);
+            if(i<coll.length-1)
+                builder.append(sep);
+        }
+        return builder.toString();
+    }
+
 }

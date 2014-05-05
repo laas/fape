@@ -21,12 +21,14 @@ import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import fape.util.Reporter;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
+import scala.collection.immutable.HashMap;
 
 import java.util.*;
 
@@ -67,7 +69,7 @@ public class State implements Reporter {
      * This map is populated when a decomposition is chosen as a resolver for an unsupported database.
      * TODO: make more memory efficient (immutable map?)
      */
-    public final HashMap<ChainComponent, Decomposition> supportConstraints;
+    private LinkedList<Pair<Integer, Decomposition>> supportConstraints;
 
     /**
      * All databases that require an enabling event (ie. whose first value is not an assignment).
@@ -95,7 +97,7 @@ public class State implements Reporter {
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         conNet = new ConstraintNetworkManager();
-        supportConstraints = new HashMap<>();
+        supportConstraints = new LinkedList<>();
 
         // Insert all problem-defined modifications into the state
         recordTimePoints(pb);
@@ -115,7 +117,7 @@ public class State implements Reporter {
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
-        supportConstraints = new HashMap<>(st.supportConstraints);
+        supportConstraints = new LinkedList<>(st.supportConstraints);
 
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
@@ -527,52 +529,80 @@ public class State implements Reporter {
         return isConsistent();
     }
 
+
+    public List<SupportOption> retainValidOptions(Flaw f, List<SupportOption> opts) {
+        if(f instanceof UndecomposedAction) {
+            return opts;
+        } else if(f instanceof UnsupportedDatabase) {
+            Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedDatabase) f).consumer);
+            if(mustDeriveFrom == null) {
+                return opts;
+            } else {
+                List<SupportOption> retained = new LinkedList<>();
+                for(SupportOption opt : opts) {
+                    if(isOptionDerivedFrom(opt, mustDeriveFrom)) {
+                        retained.add(opt);
+                    }
+                }
+                return retained;
+            }
+        } else {
+            throw new FAPEException("Error: Unrecognized flaw type.");
+        }
+    }
+
+    private Decomposition getSupportConstraint(TemporalDatabase db) {
+        int compID = db.GetChainComponent(0).mID;
+        Decomposition dec = null;
+        for(Pair<Integer, Decomposition> constraint : supportConstraints) {
+            if(constraint.value1 == mID)
+                dec = constraint.value2;
+        }
+        return dec;
+    }
+
     /**
-     * Checks if the option is valid for this flaw.
+     * Checks if the option is a consequence of the given decomposition.
+     * A resolver is considered to be derived from an decomposition if (i) it is a
+     * decomposition of an action descending from the decomposition. (ii) it is a decomposition
+     * of an action descending from the given decomposition.
+     *
      * It is currently used to check if a resolver doesn't contradict an earlier commitment:
      * when an unsupported database is "resolved" with a decomposition but no causal link is added
      * (the database is still unsupported), the resolvers for it are then limited to those being a
      * consequence of the decomposition.
      * @param opt Resolver whose validity is to be checked.
-     * @param flaw Flaw addressed by the resolver.
+     * @param dec Decomposition from which the resolver must be derived.
      * @return True if the resolver is valid, False otherwise.
      */
-    public boolean isValidOption(SupportOption opt, Flaw flaw) {
-        if(flaw instanceof UndecomposedAction) {
-            return true;
-        } else if(flaw instanceof UnsupportedDatabase) {
-            assert ((UnsupportedDatabase) flaw).consumer.chain.size() > 0;
-            if(!supportConstraints.containsKey(((UnsupportedDatabase) flaw).consumer.GetChainComponent(0))) {
-                return true;
-            } else {
-                // this unsupported db must be supported by a descendant of a decomposition
-                // this is a consequence of an earlier commitment.
-                Decomposition dec = supportConstraints.get(((UnsupportedDatabase) flaw).consumer.GetChainComponent(0));
-                if(opt.supportingAction != null || opt.actionWithBindings != null) {
-                    // insertion of a new action is prohibited
-                    return false;
-                } else if(opt.actionToDecompose != null) {
-                    // decomposition is allowed only if the decomposed action is issued from dec.
-                    return taskNet.isDescendantOf(opt.actionToDecompose, dec);
-                } else if(opt.temporalDatabase != -1) {
-                    // DB supporters are limited to those coming from an action descending from dec.
-                    TemporalDatabase db = GetDatabase(opt.temporalDatabase);
-                    ChainComponent cc;
-                    if(opt.precedingChainComponent != -1)
-                        cc = db.GetChainComponent(opt.precedingChainComponent);
-                    else
-                        cc = db.GetChainComponent(db.chain.size()-1);
-                    assert cc.change : "Support is not a change.";
-                    assert cc.contents.size() == 1;
-                    Action a = getActionContaining(cc.contents.getFirst());
+    private boolean isOptionDerivedFrom(SupportOption opt, Decomposition dec) {
+        // this unsupported db must be supported by a descendant of a decomposition
+        // this is a consequence of an earlier commitment.
+        if(opt.supportingAction != null || opt.actionWithBindings != null) {
+            // insertion of a new action is prohibited
+            return false;
+        } else if(opt.actionToDecompose != null) {
+            // decomposition is allowed only if the decomposed action is issued from dec.
+            return taskNet.isDescendantOf(opt.actionToDecompose, dec);
+        } else if(opt.temporalDatabase != -1) {
+            // DB supporters are limited to those coming from an action descending from dec.
+            TemporalDatabase db = GetDatabase(opt.temporalDatabase);
+            ChainComponent cc;
+            if(opt.precedingChainComponent != -1)
+                cc = db.GetChainComponent(opt.precedingChainComponent);
+            else
+                cc = db.GetChainComponent(db.chain.size()-1);
+            assert cc.change : "Support is not a change.";
+            assert cc.contents.size() == 1;
+            Action a = getActionContaining(cc.contents.getFirst());
 
-                    return a != null && taskNet.isDescendantOf(a, dec);
-                } else {
-                    throw new FAPEException("Unhandled option: "+opt);
-                }
-            }
+            return a != null && taskNet.isDescendantOf(a, dec);
         } else {
-            throw new FAPEException("Unhandled flaw: "+flaw);
+            throw new FAPEException("Unhandled option: "+opt);
         }
+    }
+
+    public void addSupportConstraint(ChainComponent cc, Decomposition dec) {
+        this.supportConstraints.add(new Pair(cc.mID, dec));
     }
 }

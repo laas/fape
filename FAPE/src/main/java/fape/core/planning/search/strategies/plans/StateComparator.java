@@ -1,4 +1,4 @@
-package fape.core.planning.search;
+package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
 
@@ -8,10 +8,10 @@ import java.util.Comparator;
 /**
  * Compares two states. THis is to be used for ordering states in a priority queue.
  */
-public class StateComparator implements Comparator<State> {
+public class StateComparator implements PartialPlanComparator {
 
     public float f(State s) {
-        return s.GetCurrentCost() + s.GetGoalDistance() * 3;
+        return s.taskNet.getNumActions()*10 + s.consumers.size()*3 + s.taskNet.getNumOpenLeaves()*3;
     }
 
     @Override
@@ -31,5 +31,10 @@ public class StateComparator implements Comparator<State> {
     @Override
     public boolean equals(Object o) {
         return false;
+    }
+
+    @Override
+    public String shortName() {
+        return "soca";
     }
 }

@@ -18,6 +18,10 @@ public class ChainComponent {
      */
     public final boolean change;
 
+    public final int mID;
+
+    private static int nextID=0;
+
     /**
      *
      */
@@ -28,6 +32,7 @@ public class ChainComponent {
      * @param s Statement to be included in the component
      */
     public ChainComponent(LogStatement s) {
+        mID = nextID++;
         contents.add(s);
         if (s instanceof Persistence) {
             change = false;
@@ -41,6 +46,7 @@ public class ChainComponent {
      * @param toCopy ChainComponent to copy
      */
     public ChainComponent(ChainComponent toCopy) {
+        mID = toCopy.mID;
         contents.addAll(toCopy.contents);
         change = toCopy.change;
     }
