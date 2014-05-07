@@ -90,7 +90,7 @@ public class PGPlanner extends APlanner {
         }
         supportOptions.removeAll(toRemove);
 
-        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet.domains, groundPB);
+        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet, groundPB);
         DisjunctiveAction dAct = pg.enablers(fluent);
         List<Pair<AbstractAction, List<Set<String>>>> options = dAct.actionsAndParams(groundPB);
 

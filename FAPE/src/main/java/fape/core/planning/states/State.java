@@ -10,7 +10,8 @@
  */
 package fape.core.planning.states;
 
-import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.constraints.ConservativeConstraintNetwork;
+import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.search.Flaw;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.search.UndecomposedAction;
@@ -22,7 +23,6 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
-import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
@@ -73,7 +73,7 @@ public class State implements Reporter {
      * All databases that require an enabling event (ie. whose first value is not an assignment).
      */
     public final List<TemporalDatabase> consumers;
-    public final ConstraintNetworkManager conNet;
+    public final ConstraintNetwork conNet;
 
     public final AnmlProblem pb;
 
@@ -94,11 +94,11 @@ public class State implements Reporter {
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
-        conNet = new ConstraintNetworkManager();
+        conNet = new ConservativeConstraintNetwork();
+//        conNet = new ConstraintNetworkManager();
         supportConstraints = new HashMap<>();
 
         // Insert all problem-defined modifications into the state
-        recordTimePoints(pb);
         problemRevision = -1;
         update();
     }
@@ -349,7 +349,7 @@ public class State implements Reporter {
      * @return
      */
     public boolean Unifiable(VarRef a, VarRef b) {
-        return Utils.nonEmptyIntersection(possibleValues(a), possibleValues(b));
+        return conNet.unifiable(a, b);
     }
 
     /**
@@ -374,6 +374,7 @@ public class State implements Reporter {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
+        tempoNet.EnforceBefore(pb.earliestExecution(), act.start());
         tempoNet.EnforceDelay(act.start(), act.end(), 1);
         taskNet.insert(act);
         return apply(act);
@@ -397,6 +398,13 @@ public class State implements Reporter {
      * @return True if the resulting state is consistent, False otherwise.
      */
     public boolean update() {
+        if(problemRevision == -1) {
+            tempoNet.recordTimePoint(pb.start());
+            tempoNet.recordTimePoint(pb.end());
+            tempoNet.recordTimePoint(pb.earliestExecution());
+            tempoNet.EnforceDelay(pb.start(), pb.earliestExecution(), 55);
+
+        }
         for(int i=problemRevision+1 ; i<pb.modifiers().size() ; i++) {
             apply(pb.modifiers().get(i));
             problemRevision = i;
@@ -501,6 +509,7 @@ public class State implements Reporter {
     public boolean apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for(String instance : mod.instances()) {
+            conNet.addPossibleValue(instance);
             List<String> domain = new LinkedList<>();
             domain.add(instance);
             conNet.AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));

@@ -103,7 +103,7 @@ public class Main {
 
         ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
         for(TemporalDatabase db : planner.GetCurrentState().consumers) {
-            DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalConsumeValue(), planner.GetCurrentState().conNet.domains, planner.groundPB);
+            DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalConsumeValue(), planner.GetCurrentState().conNet, planner.groundPB);
 /*
             DisjunctiveAction da = l.getActionLandmarks(df);
             for(DisjunctiveFluent disPrecond : l.preconditions(da)) {
