@@ -473,7 +473,7 @@ public class State implements Reporter {
                 break;
             case "=":
                 // tp1 --- [x, x] ---> tp2
-                tempoNet.EnforceConstraint(tp1, tp2, tc.plus(), tc.plus());
+                tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
 
         return isConsistent();

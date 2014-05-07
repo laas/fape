@@ -488,7 +488,12 @@ public abstract class APlanner {
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
 
+            if(APlanner.logging)
+                TinyLogger.LogInfo(" Flaw:" +opt.value1.toString());
+
             for (SupportOption o : opt.value2) {
+                if(APlanner.logging)
+                    TinyLogger.LogInfo("   Res: "+o);
                 State next = new State(st);
                 boolean success = false;
                 if(opt.value1 instanceof Threat ||
@@ -503,7 +508,7 @@ public abstract class APlanner {
                     queue.add(next);
                     GeneratedStates++;
                 } else {
-                    TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                    TinyLogger.LogInfo("   Dead-end reached for state: " + next.mID);
                     //inconsistent state, doing nothing
                 }
             }

@@ -26,6 +26,8 @@ fork in run := true
 
 javaOptions in run += "-Xmx4G"
 
+javacOptions += "-g"
+
 
 pomExtra :=
 <build>
