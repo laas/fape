@@ -1,6 +1,7 @@
 package fape.core.planning.constraints;
 
 
+import scala.collection.JavaConversions;
 import scala.collection.immutable.BitSet;
 import scala.collection.immutable.BitSet$;
 
@@ -29,11 +30,35 @@ public class ValuesHolder {
         this.values = values;
     }
 
+    public boolean isEmpty() {
+        return values.isEmpty();
+    }
+
     public boolean equals(ValuesHolder o) {
         return this == o || this.values.equals(o.values);
     }
 
     public ValuesHolder intersect(ValuesHolder holder) {
         return new ValuesHolder((BitSet) this.values.$amp(holder.values));
+    }
+
+    public Collection<Object> values() {
+        return JavaConversions.asJavaCollection(values);
+    }
+
+    public int size() {
+        return values.size();
+    }
+
+    public ValuesHolder remove(int value) {
+        return new ValuesHolder(values.$minus(value));
+    }
+
+    public ValuesHolder remove(ValuesHolder toRemove) {
+        return new ValuesHolder((BitSet) values.$amp$tilde(toRemove.values));
+    }
+
+    public boolean contains(int value) {
+        return values.contains(value);
     }
 }

@@ -49,6 +49,10 @@ public abstract class ConstraintNetwork implements Reporter {
      */
     public abstract void AddUnificationConstraint(VarRef a, VarRef b);
 
+    public void AddSeparationConstraint(VarRef a, VarRef b) {
+        throw new UnsupportedOperationException("This method is not supported yet.");
+    }
+
 
     /**
      * Adds unification constraints for all variables
@@ -109,5 +113,27 @@ public abstract class ConstraintNetwork implements Reporter {
      * @return True if the two variable are unifiable.
      */
     public abstract boolean unifiable(VarRef a, VarRef b);
+
+    /**
+     * Checks if the addition of a separation constraint between two variables is possible.
+     * @return True if the two variable are separable.
+     */
+    public boolean separable(VarRef a, VarRef b) {
+        throw new UnsupportedOperationException("");
+    }
+
+    /**
+     * @return True if there is a unification constraint between a and b.
+     */
+    public boolean unified(VarRef a, VarRef b) {
+        throw new UnsupportedOperationException("");
+    }
+
+    /**
+     * @return True if there is a separation constraint between a and b.
+     */
+    public boolean separated(VarRef a, VarRef b) {
+        throw new UnsupportedOperationException("");
+    }
 
 }

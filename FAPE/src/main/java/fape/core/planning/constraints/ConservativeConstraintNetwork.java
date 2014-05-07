@@ -1,5 +1,6 @@
 package fape.core.planning.constraints;
 
+import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.VarRef;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
@@ -23,7 +24,7 @@ import java.util.*;
  */
 public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
-    enum ConstraintType { EQUALITY }
+    enum ConstraintType { EQUALITY, DIFFERENCE }
 
     /**
      * Maps variables to their domain. The ValuesHolder object is to be recreated whenever a
@@ -116,7 +117,41 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return consistent;
     }
 
+    private ValuesHolder vals(VarRef var) {
+        return variables.apply(var);
+    }
+
     protected boolean revise(LabeledEdge<VarRef, ConstraintType> c) {
+        if(c.l() == ConstraintType.DIFFERENCE) {
+            return reviseDifference(c);
+        } else if(c.l() == ConstraintType.EQUALITY) {
+            return reviseEquality(c);
+        } else {
+            throw new FAPEException("Unknwon constraint type: "+ c);
+        }
+    }
+
+    protected boolean reviseDifference(LabeledEdge<VarRef, ConstraintType> c) {
+        assert c.l() == ConstraintType.DIFFERENCE;
+
+        if(variables.apply(c.u()).size() == 1) {
+            if(vals(c.v()).contains((Integer) vals(c.u()).values.head())) {
+                variables = variables.updated(c.v(), vals(c.v()).remove(vals(c.u())));
+                toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.u())));
+            }
+        }
+
+        if(variables.apply(c.v()).size() == 1) {
+            if(vals(c.u()).contains((Integer) vals(c.v()).values.head())) {
+                variables = variables.updated(c.u(), vals(c.u()).remove(vals(c.v())));
+                toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.v())));
+            }
+        }
+
+        return !vals(c.u()).isEmpty() && !vals(c.v()).isEmpty();
+    }
+
+    protected boolean reviseEquality(LabeledEdge<VarRef, ConstraintType> c) {
         assert c.l() == ConstraintType.EQUALITY;
 
         if(!variables.apply(c.u()).equals(variables.apply(c.v()))) {
@@ -169,6 +204,14 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
     }
 
     @Override
+    public void AddSeparationConstraint(VarRef a, VarRef b) {
+        LabeledEdge<VarRef, ConstraintType> constraint = new LabeledEdge<VarRef, ConstraintType>(a, b, ConstraintType.DIFFERENCE);
+        constraints.addEdge(a, b, ConstraintType.DIFFERENCE);
+        toProcess.add(constraint);
+        isConsistent();
+    }
+
+    @Override
     public boolean contains(VarRef v) {
         return variables.contains(v);
     }
@@ -196,7 +239,37 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
     @Override
     public boolean unifiable(VarRef a, VarRef b) {
-        return variables.apply(a).intersect(variables.apply(b)).values.size() != 0;
+        return !separated(a,b) && variables.apply(a).intersect(variables.apply(b)).values.size() != 0;
+    }
+
+    @Override
+    public boolean separable(VarRef a, VarRef b) {
+        if(unified(a, b))
+            return false;
+        else if(separated(a, b))
+            return true;
+        else if(vals(a).size() == 1 && vals(b).size() == 1)
+            return !vals(a).equals(vals(b));
+        else
+            return true;
+    }
+
+    @Override
+    public boolean unified(VarRef a, VarRef b) {
+        for(LabeledEdge<VarRef, ConstraintType> c : JavaConversions.asJavaCollection(constraints.edges(a, b))) {
+            if(c.l() == ConstraintType.EQUALITY)
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean separated(VarRef a, VarRef b) {
+        for(LabeledEdge<VarRef, ConstraintType> c : JavaConversions.asJavaCollection(constraints.edges(a, b))) {
+            if(c.l() == ConstraintType.DIFFERENCE)
+                return true;
+        }
+        return false;
     }
 
 
