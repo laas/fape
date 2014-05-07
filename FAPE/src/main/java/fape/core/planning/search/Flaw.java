@@ -1,4 +1,4 @@
 package fape.core.planning.search;
 
-public class Flaw {
+public abstract class Flaw {
 }

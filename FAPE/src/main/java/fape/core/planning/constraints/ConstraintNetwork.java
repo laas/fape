@@ -49,6 +49,11 @@ public abstract class ConstraintNetwork implements Reporter {
      */
     public abstract void AddUnificationConstraint(VarRef a, VarRef b);
 
+    /**
+     * Adds a constraint stating that a and b must be different.
+     * @param a
+     * @param b
+     */
     public void AddSeparationConstraint(VarRef a, VarRef b) {
         throw new UnsupportedOperationException("This method is not supported yet.");
     }
@@ -103,7 +108,7 @@ public abstract class ConstraintNetwork implements Reporter {
 
     /**
      * Makes a copy of the CSP.
-     * @return A new COnstraintNetwork object with the same content.
+     * @return A new ConstraintNetwork object with the same content.
      */
     public abstract ConstraintNetwork DeepCopy();
 
@@ -133,6 +138,13 @@ public abstract class ConstraintNetwork implements Reporter {
      * @return True if there is a separation constraint between a and b.
      */
     public boolean separated(VarRef a, VarRef b) {
+        throw new UnsupportedOperationException("");
+    }
+
+    /**
+     * @return A list of variable whose domain contains more than one value.
+     */
+    public List<VarRef> getUnboundVariables() {
         throw new UnsupportedOperationException("");
     }
 

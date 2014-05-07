@@ -43,9 +43,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         // build the constraint between fluents types
         for(AbstractAction aa : problem.abstractActions()) {
             for(AbstractTemporalStatement ts : aa.jTemporalStatements()) {
-                if(ts.statement() instanceof AbstractAssignment) {
-                    throw new FAPEException("Assignments inside actions are not supported.");
-                } else if(ts.statement() instanceof AbstractTransition) {
+                if(ts.statement() instanceof AbstractTransition || ts.statement() instanceof AbstractAssignment) {
                     for(FluentType prec : getPreconditions(aa, ts.statement())) {
                         for(FluentType eff : getEffects(aa, ts.statement())) {
                             if(!dag.contains(prec))
@@ -58,7 +56,7 @@ public class LiftedDTG implements ActionSupporterFinder{
                 }
             }
         }
-        dag.exportToDotFile("dtg.dot");
+//        dag.exportToDotFile("dtg.dot");
     }
 
     public Collection<AbstractAction> getActionsSupporting(State st, TemporalDatabase db) {
@@ -130,6 +128,12 @@ public class LiftedDTG implements ActionSupporterFinder{
                 argTypes.add(a.context().getType(arg));
             }
             valType = a.context().getType(((AbstractPersistence) s).value());
+        } else if(s instanceof AbstractAssignment) {
+            for(LVarRef arg : s.sv().jArgs()) {
+                argTypes.add(a.context().getType(arg));
+            }
+            // the value before an assignment can be anything with the type of the state variable.
+            valType = s.sv().func().valueType();
         } else {
             // this statement has no effects
             return allPrecond;

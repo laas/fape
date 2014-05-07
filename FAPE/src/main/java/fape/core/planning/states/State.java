@@ -12,10 +12,7 @@ package fape.core.planning.states;
 
 import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.constraints.ConstraintNetwork;
-import fape.core.planning.search.Flaw;
-import fape.core.planning.search.SupportOption;
-import fape.core.planning.search.UndecomposedAction;
-import fape.core.planning.search.UnsupportedDatabase;
+import fape.core.planning.search.*;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -402,7 +399,7 @@ public class State implements Reporter {
             tempoNet.recordTimePoint(pb.start());
             tempoNet.recordTimePoint(pb.end());
             tempoNet.recordTimePoint(pb.earliestExecution());
-            tempoNet.EnforceDelay(pb.start(), pb.earliestExecution(), 55);
+            tempoNet.EnforceBefore(pb.start(), pb.earliestExecution());
 
         }
         for(int i=problemRevision+1 ; i<pb.modifiers().size() ; i++) {
@@ -475,8 +472,8 @@ public class State implements Reporter {
                 tempoNet.EnforceDelay(tp1, tp2, - tc.plus());
                 break;
             case "=":
-                // tp2 --- [x, x] ---> tp1
-                tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
+                // tp1 --- [x, x] ---> tp2
+                tempoNet.EnforceConstraint(tp1, tp2, tc.plus(), tc.plus());
         }
 
         return isConsistent();
@@ -547,7 +544,7 @@ public class State implements Reporter {
      * @return True if the resolver is valid, False otherwise.
      */
     public boolean isValidOption(SupportOption opt, Flaw flaw) {
-        if(flaw instanceof UndecomposedAction) {
+        if(flaw instanceof UndecomposedAction || flaw instanceof Threat || flaw instanceof UnboundVariable) {
             return true;
         } else if(flaw instanceof UnsupportedDatabase) {
             assert ((UnsupportedDatabase) flaw).consumer.chain.size() > 0;

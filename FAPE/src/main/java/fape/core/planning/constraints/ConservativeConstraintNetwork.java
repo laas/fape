@@ -5,6 +5,7 @@ import planstack.anml.model.concrete.VarRef;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
+import scala.Tuple2;
 import scala.collection.JavaConversions;
 
 import java.util.*;
@@ -272,6 +273,15 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return false;
     }
 
+    @Override
+    public List<VarRef> getUnboundVariables() {
+        List<VarRef> unbound = new LinkedList<>();
+        for(Tuple2<VarRef, ValuesHolder> varValues : JavaConversions.asJavaList(variables.toList())) {
+            if(varValues._2().size() > 1)
+                unbound.add(varValues._1());
+        }
+        return unbound;
+    }
 
     @Override
     public String Report() {
