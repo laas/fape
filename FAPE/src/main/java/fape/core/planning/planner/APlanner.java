@@ -156,6 +156,18 @@ public abstract class APlanner {
                 }
             }
 
+        } else if(o instanceof TemporalSeparation) {
+            for(LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
+                for(LogStatement second : ((TemporalSeparation) o).second.chain.getLast().contents) {
+                    next.tempoNet.EnforceBefore(first.end(), second.start());
+                }
+            }
+        } else if(o instanceof BindingSeparation) {
+            next.conNet.AddSeparationConstraint(((BindingSeparation) o).a, ((BindingSeparation) o).b);
+        } else if(o instanceof VarBinding) {
+            List<String> values = new LinkedList<>();
+            values.add(((VarBinding) o).value);
+            next.conNet.restrictDomain(((VarBinding) o).var, values);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -296,6 +308,10 @@ public abstract class APlanner {
                 res.decompositionID = decompositionID;
                 candidates.add(res);
             }
+        } else if(f instanceof Threat) {
+            candidates = GetResolvers(st, (Threat) f);
+        } else if(f instanceof UnboundVariable) {
+            candidates = GetResolvers(st, (UnboundVariable) f);
         } else {
             throw new FAPEException("Unknown flaw type: " + f);
         }
@@ -305,6 +321,31 @@ public abstract class APlanner {
     static float numOpt = 0;
     static int total;
 
+    public final List<SupportOption> GetResolvers(State st, UnboundVariable uv) {
+        List<SupportOption> bindings = new LinkedList<>();
+        for(String value : st.conNet.domainOf(uv.var)) {
+            bindings.add(new VarBinding(uv.var, value));
+        }
+        return bindings;
+    }
+
+    public final List<SupportOption> GetResolvers(State st, Threat f) {
+        List<SupportOption> options = new LinkedList<>();
+        options.add(new TemporalSeparation(f.db1, f.db2));
+        options.add(new TemporalSeparation(f.db2, f.db1));
+        for(int i=0 ; i<f.db1.stateVariable.jArgs().size() ; i++) {
+            options.add(new BindingSeparation(
+                    f.db1.stateVariable.jArgs().get(i),
+                    f.db2.stateVariable.jArgs().get(i)));
+        }
+        return options;
+    }
+
+    /**
+     * Finds all flaws of a given state.
+     * Currently, threats and unbound variables are considered only if no other flaws are present.
+     * @return A list of flaws present in the system. The set of flaw might not be exhaustive.
+     */
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
         for(TemporalDatabase consumer : st.consumers) {
@@ -312,6 +353,22 @@ public abstract class APlanner {
         }
         for(Action refinable : st.taskNet.GetOpenLeaves()) {
             flaws.add(new UndecomposedAction(refinable));
+        }
+        if(flaws.isEmpty()) {
+            for(int i=0 ; i<st.tdb.vars.size() ; i++) {
+                TemporalDatabase db1 = st.tdb.vars.get(i);
+                for(int j=i+1 ; j<st.tdb.vars.size() ; j++) {
+                    TemporalDatabase db2 = st.tdb.vars.get(j);
+                    if(isThreatening(st, db1, db2)) {
+                        flaws.add(new Threat(db1, db2));
+                    }
+                }
+            }
+        }
+        if(flaws.isEmpty()) {
+            for(VarRef v : st.conNet.getUnboundVariables()) {
+                flaws.add(new UnboundVariable(v));
+            }
         }
         return flaws;
     }
@@ -341,6 +398,42 @@ public abstract class APlanner {
         return PlanCompFactory.get(planSelStrategies);
     }
 
+    /**
+     * Checks if two temporal databases are threatening each others.
+     * It is the case if:
+     *   - both are not consuming databases (start with an assignment). Otherwise, threat is naturally handled
+     *     by looking for supporters.
+     *   - their state variables are unifiable.
+     *   - they can overlap
+     * TODO: handle case where multiple persitences are in the last part.
+     * @return True there is a threat.
+     */
+    protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
+        if(db1.isConsumer() || db2.isConsumer()) {
+            return false;
+        } else if(st.Unifiable(db1, db2)) {
+            if(st.tempoNet.CanBeBefore(
+                    db1.GetChainComponent(0).getConsumeTimePoint(),                        // c1
+                    db2.GetChainComponent(db2.chain.size()-1).getSupportTimePoint()) &&    // s2
+               st.tempoNet.CanBeBefore(
+                    db2.GetChainComponent(db2.chain.size()-1).getSupportTimePoint(),       // s2
+                    db1.GetChainComponent(db1.chain.size()-1).getSupportTimePoint())) {    // s1
+                return true;
+            } else if(
+                    st.tempoNet.CanBeBefore(
+                            db2.GetChainComponent(0).getConsumeTimePoint(),                     // c2
+                            db1.GetChainComponent(db1.chain.size()-1).getSupportTimePoint()) && // s1
+                    st.tempoNet.CanBeBefore(
+                            db1.GetChainComponent(0).getConsumeTimePoint(),                     // c1
+                            db2.GetChainComponent(0).getConsumeTimePoint())) {                  // c2
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
     protected State aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
@@ -367,8 +460,10 @@ public abstract class APlanner {
             State st = queue.remove();
             OpenedStates++;
 
+            List<Flaw> flaws = GetFlaws(st);
+
             TinyLogger.LogInfo(st);
-            if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
+            if (flaws.isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(st.taskNet);
@@ -378,7 +473,7 @@ public abstract class APlanner {
             }
             //continue the search
             LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();
-            for(Flaw flaw : GetFlaws(st)) {
+            for(Flaw flaw : flaws) {
                 opts.add(new Pair(flaw, GetResolvers(st, flaw)));
             }
 
@@ -399,12 +494,17 @@ public abstract class APlanner {
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
 
-            TinyLogger.LogInfo("Flaw: "+opt.value1);
+            if(APlanner.logging)
+                TinyLogger.LogInfo(" Flaw:" +opt.value1.toString());
 
             for (SupportOption o : opt.value2) {
+                if(APlanner.logging)
+                    TinyLogger.LogInfo("   Res: "+o);
                 State next = new State(st);
                 boolean success = false;
-                if(opt.value1 instanceof UndecomposedAction) {
+                if(opt.value1 instanceof Threat ||
+                        opt.value1 instanceof UnboundVariable ||
+                        opt.value1 instanceof UndecomposedAction) {
                     success = ApplyOption(next, o, null);
                 } else {
                     success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));
@@ -414,7 +514,7 @@ public abstract class APlanner {
                     queue.add(next);
                     GeneratedStates++;
                 } else {
-                    TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                    TinyLogger.LogInfo("   Dead-end reached for state: " + next.mID);
                     //inconsistent state, doing nothing
                 }
             }

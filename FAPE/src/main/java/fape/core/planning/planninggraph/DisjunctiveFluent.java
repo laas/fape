@@ -1,5 +1,6 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.constraints.IUnifiable;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -15,7 +16,7 @@ public class DisjunctiveFluent implements Landmark {
         this.fluents = new HashSet<>(fluents);
     }
 
-    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, Map<VarRef, IUnifiable> varValues, GroundProblem pb) {
+    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, ConstraintNetwork cn, GroundProblem pb) {
         List<VarRef> variables = new LinkedList<>();
         for(VarRef var : sv.jArgs()) {
             if(!variables.contains(var)) {
@@ -29,7 +30,7 @@ public class DisjunctiveFluent implements Landmark {
         List<List<VarRef>> valuesSets = new LinkedList<>();
         for(VarRef var : variables) {
             List<VarRef> values = new LinkedList<>();
-            for(String val : varValues.get(var).GetDomainObjectConstants()) {
+            for(String val : cn.domainOf(var)) {
                 values.add(pb.liftedPb.instances().referenceOf(val));
             }
             valuesSets.add(values);

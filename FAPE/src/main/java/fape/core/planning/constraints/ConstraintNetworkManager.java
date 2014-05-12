@@ -12,6 +12,7 @@ package fape.core.planning.constraints;
 
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
+import fape.util.Utils;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.VarRef;
 
@@ -21,7 +22,7 @@ import java.util.*;
  *
  * @author FD
  */
-public class ConstraintNetworkManager implements Reporter {
+public class ConstraintNetworkManager extends ConstraintNetwork {
 
     /**
      * Contains all constraints of the CSP (now limited to equality constraints)
@@ -128,19 +129,6 @@ public class ConstraintNetworkManager implements Reporter {
         unificationConstraints.add(new UnificationConstraint(a, b));
     }
 
-    public void AddUnificationConstraints(List<VarRef> as, List<VarRef> bs) {
-        assert as.size() == bs.size();
-        for(int i=0 ; i < as.size() ; i++) {
-            AddUnificationConstraint(as.get(i), bs.get(i));
-        }
-    }
-
-    public void AddUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        if(!a.func().equals(b.func()))
-            throw new FAPEException("Error: adding unification constraint between two different predicates: "+ a +"  --  "+ b);
-        AddUnificationConstraints(a.jArgs(), b.jArgs());
-    }
-
     /**
      * @param v Variable to look up
      * @return True if variable v is declared in the CSP.
@@ -190,6 +178,11 @@ public class ConstraintNetworkManager implements Reporter {
 
     public ConstraintNetworkManager DeepCopy() {
         return new ConstraintNetworkManager(this);
+    }
+
+    @Override
+    public boolean unifiable(VarRef a, VarRef b) {
+        return Utils.nonEmptyIntersection(domainOf(a), domainOf(b));
     }
 
     /**

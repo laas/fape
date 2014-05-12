@@ -5,6 +5,7 @@ import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -164,13 +165,19 @@ public class GroundProblem {
         }
     }
 
-    protected Fluent statementToDeletion(LogStatement s, Map<LVarRef, VarRef> argMap) {
+    protected Collection<Fluent> statementToDeletions(LogStatement s, Map<LVarRef, VarRef> argMap) {
+        List<Fluent> fluents = new LinkedList<>();
         if(!(s instanceof Assignment || s instanceof Transition)) {
-            return null;
         } else if(s instanceof Assignment) {
-            throw new FAPEException("Error: creating delete list from assignment is not supported");
+            for(String value : liftedPb.instances().instancesOfType(s.sv().func().valueType())) {
+                VarRef val = liftedPb.instances().referenceOf(value);
+                if(val != s.endValue()) {
+                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val));
+                }
+            }
         } else {
-            return new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue());
+            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue()));
         }
+        return fluents;
     }
 }

@@ -75,7 +75,7 @@ public class STNManager implements Reporter {
      */
     public final boolean EnforceConstraint(TPRef a, TPRef b, int min, int max) {
         STN backup = stn.cc();
-        TinyLogger.LogInfo("Adding temporal constraint: "+a+" ["+min+","+max+"] "+b);
+        //TinyLogger.LogInfo("Adding temporal constraint: "+a+" ["+min+","+max+"] "+b);
         stn.enforceInterval(id(a), id(b), min, max);
 
         return stn.consistent();
