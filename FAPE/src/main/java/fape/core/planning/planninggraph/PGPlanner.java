@@ -3,6 +3,7 @@ package fape.core.planning.planninggraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
+import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
@@ -25,9 +26,10 @@ import java.util.Set;
  */
 public class PGPlanner extends APlanner {
 
-    GroundProblem groundPB = null;
-    RelaxedPlanningGraph pg = null;
-    AbstractionHierarchy hierarchy = null;
+    protected GroundProblem groundPB = null;
+    protected  RelaxedPlanningGraph pg = null;
+    AbstractionHierarchy hierarchy = null; //TODO why?
+    LiftedDTG dtg = null;
 
 
 
@@ -44,6 +46,7 @@ public class PGPlanner extends APlanner {
         if(APlanner.debugging)
             pg.graph.exportToDotFile("rpg.dot");
         hierarchy = new AbstractionHierarchy(this.pb);
+        dtg = new LiftedDTG(pb);
 
         return true;
     }
@@ -57,7 +60,7 @@ public class PGPlanner extends APlanner {
 
     @Override
     public ActionSupporterFinder getActionSupporterFinder() {
-        return new ActionSupporters(pb);
+        return dtg;
     }
 
     @Override
@@ -81,6 +84,20 @@ public class PGPlanner extends APlanner {
         }
         supportOptions.removeAll(toRemove);
 
+
+        for(ActionWithBindings opt : rpgActionSupporters(db, st)) {
+            SupportOption supportOption = new SupportOption();
+            supportOption.actionWithBindings = opt;
+            supportOptions.add(supportOption);
+        }
+
+
+        return supportOptions;
+        //return super.GetSupporters(db, st);
+    }
+
+    public List<ActionWithBindings> rpgActionSupporters(TemporalDatabase db, State st) {
+        List<ActionWithBindings> supporters = new LinkedList<>();
         DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet, groundPB);
         DisjunctiveAction dAct = pg.enablers(fluent);
         List<Pair<AbstractAction, List<Set<String>>>> options = dAct.actionsAndParams(groundPB);
@@ -95,13 +112,8 @@ public class PGPlanner extends APlanner {
             for(int i=0 ; i<opt.act.args().size() ; i++) {
                 opt.values.put(opt.act.args().get(i), supporter.value2.get(i));
             }
-            SupportOption supportOption = new SupportOption();
-            supportOption.actionWithBindings = opt;
-            supportOptions.add(supportOption);
+            supporters.add(opt);
         }
-
-
-        return supportOptions;
-        //return super.GetSupporters(db, st);
+        return supporters;
     }
 }

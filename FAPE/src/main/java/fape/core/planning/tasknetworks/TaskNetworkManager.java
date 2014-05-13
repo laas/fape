@@ -134,7 +134,7 @@ public class TaskNetworkManager implements Reporter {
                 }
             }
         }
-        assert l.size() == numOpenLeaves : "Error: wrong number of actions.";
+        assert l.size() == numOpenLeaves : "Error: wrong number of opened leaves.";
         return l;
     }
 
@@ -165,6 +165,7 @@ public class TaskNetworkManager implements Reporter {
     public void insert(Decomposition dec, Action parent) {
         network.addVertex(new TNNode(dec));
         network.addEdge(new TNNode(parent), new TNNode(dec));
+        this.numOpenLeaves++;
     }
 
     /**

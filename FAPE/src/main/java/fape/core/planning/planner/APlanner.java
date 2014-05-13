@@ -2,6 +2,7 @@ package fape.core.planning.planner;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
+import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
@@ -89,11 +90,51 @@ public abstract class APlanner {
             assert consumer.chain.size() == 1 && !consumer.chain.get(0).change
                     : "This is restricted to databases containing single persistence only";
 
+            ChainComponent supportingStatement = precedingComponent;
+            if(this instanceof PGPlanner && supportingStatement.change) {
+                Action supportingAction = next.getActionContaining(precedingComponent.contents.getFirst());
+                if(supportingAction != null) {
+                    PGPlanner self = (PGPlanner) this;
+                    for(ActionWithBindings candidate : self.rpgActionSupporters(consumer, next)) {
+                        if(candidate.act != supportingAction.abs())
+                            continue;
+                        for(LVarRef lvar : candidate.values.keySet()) {
+                            next.conNet.restrictDomain(supportingAction.context().getGlobalVar(lvar), candidate.values.get(lvar));
+                        }
+                    }
+                }
+
+            }
+
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
+
+
 
         } else if (supporter != null) {
 
             assert consumer != null : "Consumer was not passed as an argument";
+
+            ChainComponent supportingStatement = null;
+            if(supporter.chain.getLast().change)
+                supportingStatement = supporter.chain.getLast();
+            else if(supporter.chain.size()>1) {
+                supportingStatement = supporter.chain.get(supporter.chain.size()-2);
+            }
+            if(this instanceof PGPlanner && supportingStatement != null && supportingStatement.change) {
+                Action supportingAction = next.getActionContaining(supportingStatement.contents.getFirst());
+                if(supportingAction != null) {
+                    PGPlanner self = (PGPlanner) this;
+                    for(ActionWithBindings candidate : self.rpgActionSupporters(consumer, next)) {
+                        if(candidate.act != supportingAction.abs())
+                            continue;
+                        for(LVarRef lvar : candidate.values.keySet()) {
+                            next.conNet.restrictDomain(supportingAction.context().getGlobalVar(lvar), candidate.values.get(lvar));
+                        }
+                    }
+                }
+            }
+
+
             // database concatenation
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
 
