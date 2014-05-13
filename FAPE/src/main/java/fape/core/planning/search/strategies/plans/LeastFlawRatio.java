@@ -2,6 +2,12 @@ package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
 
+
+/**
+ * Selects the plans with the least number of flaws with respect to the number of action.
+ *
+ * Evaluation function: (num open leaves + num consumers) / numActions.
+ */
 public class LeastFlawRatio implements PartialPlanComparator {
     @Override
     public String shortName() {

@@ -41,23 +41,42 @@ public class TaskNetworkManager implements Reporter {
         this.numRoots = base.numRoots;
     }
 
+    /**
+     * O(1)
+     * @return The number of undecomposed method.
+     */
     public int getNumOpenLeaves() {
         return numOpenLeaves;
     }
 
+    /**
+     * O(1)
+     * @return The number of actions in the task network (all actions are considered).
+     */
     public int getNumActions() {
         return numActions;
     }
 
+    /**
+     * O(1)
+     * @return Number of roots in the task network.
+     */
     public int getNumRoots() {
         return numRoots;
     }
 
+    /**
+     * O(1)
+     * @param a The action to check
+     * @return True if the action is a root of the task network (e.g. it is not part
+     *         of any decomposition.
+     */
     public boolean isRoot(Action a) {
         return network.inDegree(new TNNode(a)) == 0;
     }
 
     /**
+     * O(n)
      * @return All actions of the task network that are not issued from a decomposition
      *         (ie. roots of the task network).
      */
@@ -68,7 +87,7 @@ public class TaskNetworkManager implements Reporter {
                 roots.add(n.asAction());
             }
         }
-        assert roots.size() == numRoots;
+        assert roots.size() == numRoots : "Error: wrong number of roots.";
         return roots;
     }
 
@@ -85,8 +104,14 @@ public class TaskNetworkManager implements Reporter {
         return false;
     }
 
+    /**
+     * Retrieves the decomposition of an action.
+     * @throws FAPEException if the action has no decomposition.
+     * @param a The action for which to retrieve the decomposition.
+     * @return The decomposition of the action.
+     */
     private TNNode getDecomposition(Action a) {
-        assert isDecomposed(a);
+        assert isDecomposed(a) : "Error: action "+a+" has no decomposition.";
         for(TNNode child : network.jChildren(new TNNode(a))) {
             if(child.isDecomposition()) {
                 return child;
@@ -96,6 +121,7 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * O(n)
      * @return All decomposable actions that are not decomposed yet.
      */
     public List<Action> GetOpenLeaves() {
@@ -115,6 +141,7 @@ public class TaskNetworkManager implements Reporter {
     /**
      * Inserts an action in the task network. If the action a has
      * a parent p, an edge from the decomposition of p to a is also added.
+     * O(1)
      */
     public void insert(Action a) {
         network.addVertex(new TNNode(a));
@@ -187,6 +214,7 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * O(n).
      * @return All actions of the task network.
      */
     public List<Action> GetAllActions() {
@@ -201,10 +229,10 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
-     * returns the action with the given id
+     * O(n)
      *
      * @param id Id of the action
-     * @return
+     * @return the action with the given id
      */
     public Action GetAction(ActRef id) {
         for(Action a : GetAllActions()) {
@@ -218,6 +246,7 @@ public class TaskNetworkManager implements Reporter {
     /**
      * Lookup the action containing the given statement.
      * Implementations currently looks for all statements of all actions
+     * O(n)
      * TODO: more efficient implementation
      *
      * @param e LogStatement to look for.

@@ -3,8 +3,12 @@ package fape.core.planning.search.strategies.plans;
 import fape.core.planning.states.State;
 
 /**
+ * The evaluation function is the number of roots in the task network (* 2) plus
+ * the number of undecomposed actions and the number of consumers.
  *
- * PSA+OCA in Schaddenberg, eq 4.16, p. 163
+ * Hence this strategy favours decomposition over action insertion.
+ *
+ * PSA+OCA in Schaddenberg's thesis, eq 4.16, p. 163
  */
 public class RootsOCA implements PartialPlanComparator {
     @Override

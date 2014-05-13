@@ -93,7 +93,12 @@ public class Planning {
                                 .setList(true)
                                 .setListSeparator(',')
                                 .setDefault("|")
-                                .setHelp("help"),
+                                .setHelp("This is used to define search strategies. A search strategy consists of " +
+                                        "one or more flaw selection strategy and one or more state selection strategy. " +
+                                        "Ex: the argument 'lcf>lfr|dfs' would give for flaws: lcf (LeastCommitingFirst), using " +
+                                        "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). " +
+                                        "For more information on search strategies, look at the fape.core.planning.search.strategies " +
+                                        "package. If several strategies are given (separated by commas), they will all be attempted."),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')

@@ -6,6 +6,10 @@ import fape.util.Pair;
 
 import java.util.List;
 
+
+/**
+ * This strategies orders flaws by increasing number of resolvers.
+ */
 public class LeastCommitingFirst implements FlawComparator {
 
 

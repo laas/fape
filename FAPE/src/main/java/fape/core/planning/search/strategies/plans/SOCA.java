@@ -6,9 +6,9 @@ import java.util.Comparator;
 
 
 /**
- * Compares two states. THis is to be used for ordering states in a priority queue.
+ * Evaluation function: num-actions*10 + num-consumers*3 + num-undecomposed*3
  */
-public class StateComparator implements PartialPlanComparator {
+public class SOCA implements PartialPlanComparator {
 
     public float f(State s) {
         return s.taskNet.getNumActions()*10 + s.consumers.size()*3 + s.taskNet.getNumOpenLeaves()*3;

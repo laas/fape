@@ -64,7 +64,6 @@ public class State implements Reporter {
      * Keep tracks of statements that must be supported by a particular decomposition.
      * (e.g. by a statements which is a consequence of that decomposition).
      * This map is populated when a decomposition is chosen as a resolver for an unsupported database.
-     * TODO: make more memory efficient (immutable map?)
      */
     private LinkedList<Pair<Integer, Decomposition>> supportConstraints;
 
@@ -536,7 +535,14 @@ public class State implements Reporter {
         return isConsistent();
     }
 
-
+    /**
+     * Given a flaw and a set of resolvers, retain only the valid resolvers.
+     * It is currently used to filter out the resolvers of flaws that have partially addressed by
+     * an action decomposition.
+     * @param f The flaw for which the resolvers are emitted.
+     * @param opts The  set of resolvers to address the flaw
+     * @return A list of resolvers containing only the valid ones.
+     */
     public List<SupportOption> retainValidOptions(Flaw f, List<SupportOption> opts) {
         if(f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable) {
             return opts;
@@ -558,6 +564,12 @@ public class State implements Reporter {
         }
     }
 
+    /**
+     * Checks if there is a support constraint for a temporal database.
+     * @param db The temporal database that needs to be supported.
+     * @return A decomposition if the resolvers for this database must derive from a decomposition
+     *         (e.g. this flaw was previously addressed by decomposing a method. null if there is no constraints.
+     */
     private Decomposition getSupportConstraint(TemporalDatabase db) {
         int compID = db.GetChainComponent(0).mID;
         Decomposition dec = null;

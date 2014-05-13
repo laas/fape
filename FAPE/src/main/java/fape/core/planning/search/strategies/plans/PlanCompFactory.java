@@ -18,13 +18,16 @@ public class PlanCompFactory {
                     compList.add(new DepthFirst());
                     break;
                 case "soca":
-                    compList.add(new StateComparator());
+                    compList.add(new SOCA());
                     break;
                 case "psaoca":
                     compList.add(new RootsOCA());
                     break;
                 case "lfr":
                     compList.add(new LeastFlawRatio());
+                    break;
+                case "actions-10-cons-3":
+                    compList.add(new Actions10Consumers3());
                     break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: "+compID);

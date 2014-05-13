@@ -8,6 +8,13 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+
+/**
+ * Used to use a sequence of FlawComparator as one.
+ *
+ * The basic algorithm for comparing two flaws is to apply the comparators in sequence until it results in an ordering
+ * between the two flaws. If no comparator is found, the flaws are left unordered.
+ */
 public class SeqFlawComparator implements FlawComparator {
 
     List<FlawComparator> comparators;

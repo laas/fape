@@ -5,11 +5,6 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
-import fape.core.planning.search.strategies.flaws.FlawCompFactory;
-import fape.core.planning.search.strategies.plans.BreadthFirst;
-import fape.core.planning.search.strategies.plans.DepthFirst;
-import fape.core.planning.search.strategies.plans.PlanCompFactory;
-import fape.core.planning.search.strategies.plans.StateComparator;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
@@ -17,7 +12,6 @@ import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ParseResult;
 
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +41,8 @@ public class PGPlanner extends APlanner {
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
         pg.build();
+        if(APlanner.debugging)
+            pg.graph.exportToDotFile("rpg.dot");
         hierarchy = new AbstractionHierarchy(this.pb);
 
         return true;

@@ -48,7 +48,15 @@ public abstract class APlanner {
     public final AnmlProblem pb = new AnmlProblem();
     LiftedDTG dtg = null;
 
+    /**
+     * Used to build comparators for flaws.
+     * Default to a least commiting first.
+     */
     public String[] flawSelStrategies = { "lcf" };
+
+    /**
+     * Used to build comparators for partial plans.
+     */
     public String[] planSelStrategies = { "soca" };
 
     /**
@@ -318,8 +326,6 @@ public abstract class APlanner {
 
         return st.retainValidOptions(f, candidates);
     }
-    static float numOpt = 0;
-    static int total;
 
     public final List<SupportOption> GetResolvers(State st, UnboundVariable uv) {
         List<SupportOption> bindings = new LinkedList<>();

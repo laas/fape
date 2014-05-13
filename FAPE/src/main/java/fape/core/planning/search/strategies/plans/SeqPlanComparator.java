@@ -5,6 +5,12 @@ import fape.core.planning.states.State;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Used to use a sequence of PartialPlanComparator as one.
+ *
+ * The basic algorithm for comparing two partial plans is to apply the comparators in sequence until it results in an ordering
+ * between the two plans. If no comparator is found, the plans are left unordered.
+ */
 public class SeqPlanComparator implements PartialPlanComparator {
 
     List<PartialPlanComparator> comparators;

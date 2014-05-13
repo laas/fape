@@ -16,6 +16,10 @@ import java.util.*;
 
 /**
  * A comparator for flaws and their resolvers that uses lifted abstraction hierarchies.
+ *
+ * The ordering places unsupported databases first. Other flaws are left unordered
+ * Unsupported databases are ordered according to their level in the abstraction hierarchy.
+ *
  */
 public class AbsHierarchyComp implements FlawComparator {
 

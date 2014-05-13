@@ -17,7 +17,6 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
-import fape.core.planning.search.strategies.plans.StateComparator;
 import fape.core.planning.states.State;
 import fape.util.Pair;
 import fape.util.TimeAmount;
