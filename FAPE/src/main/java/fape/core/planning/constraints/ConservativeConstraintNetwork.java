@@ -1,6 +1,7 @@
 package fape.core.planning.constraints;
 
 import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import planstack.anml.model.concrete.VarRef;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
@@ -25,7 +26,7 @@ import java.util.*;
  */
 public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
-    enum ConstraintType { EQUALITY, DIFFERENCE }
+    enum ConstraintType { EQUALITY, DIFFERENCE, EXTENSION }
 
     /**
      * Maps variables to their domain. The ValuesHolder object is to be recreated whenever a
@@ -60,12 +61,19 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
     final MultiLabeledUndirectedAdjacencyList<VarRef, ConstraintType> constraints;
 
     /**
-     * All constraints that need to processed for incremental consistency checking.
+     * Contains all extension constraints defined in the CSP.
+     * For any constraints involving two variables a and b, there needs to be an
+     * edge (a, b, EXTENSION) in the constraint graph.
      */
-    final Queue<LabeledEdge<VarRef, ConstraintType>> toProcess;
+    final LinkedList<ExtensionConstraint> exts = new LinkedList<>();
 
     /**
-     * Flag indicating if the CSP is consistent (e.g. no varaibles with empty domain).
+     * All constraints that need to processed for incremental consistency checking.
+     */
+    final Queue<Pair<VarRef, VarRef>> toProcess;
+
+    /**
+     * Flag indicating if the CSP is consistent (e.g. no variables with empty domain).
      * If toProcess is not empty, then a consistency check has to be performed before
      * checking this flag.
      * However if this flag is set to false, the CSP is guaranteed to be inconsistent even
@@ -91,8 +99,12 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         constraints = base.constraints.cc();
         toProcess = new LinkedList<>(base.toProcess);
         consistent = base.consistent;
+        for(ExtensionConstraint ext : base.exts) {
+            exts.add(ext.DeepCopy());
+        }
     }
 
+    @Override
     public void addPossibleValue(String val) {
         if(!valuesIds.containsKey(val)) {
             int id = values.size();
@@ -109,8 +121,8 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
         if(!toProcess.isEmpty()) {
             while(!toProcess.isEmpty()) {
-                LabeledEdge<VarRef, ConstraintType> c = toProcess.remove();
-                consistent = consistent && revise(c);
+                Pair<VarRef, VarRef> c = toProcess.remove();
+                consistent &= revise(c);
             }
         } else {
             return consistent;
@@ -122,14 +134,21 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return variables.apply(var);
     }
 
-    protected boolean revise(LabeledEdge<VarRef, ConstraintType> c) {
-        if(c.l() == ConstraintType.DIFFERENCE) {
-            return reviseDifference(c);
-        } else if(c.l() == ConstraintType.EQUALITY) {
-            return reviseEquality(c);
-        } else {
-            throw new FAPEException("Unknwon constraint type: "+ c);
+    protected boolean revise(Pair<VarRef,VarRef> pair) {
+        boolean isConsistent = true;
+        for(LabeledEdge<VarRef, ConstraintType> c :JavaConversions.asJavaCollection(constraints.edges(pair.value1, pair.value2))) {
+            if(c.l() == ConstraintType.DIFFERENCE) {
+                isConsistent &= reviseDifference(c);
+            } else if(c.l() == ConstraintType.EQUALITY) {
+                isConsistent &= reviseEquality(c);
+            } else if(c.l() == ConstraintType.EXTENSION) {
+                isConsistent &= reviseExts(c.u(), c.v());
+                isConsistent &= reviseExts(c.v(), c.u());
+            } else {
+                throw new FAPEException("Unknwon constraint type: "+ c);
+            }
         }
+        return isConsistent;
     }
 
     protected boolean reviseDifference(LabeledEdge<VarRef, ConstraintType> c) {
@@ -138,14 +157,18 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         if(variables.apply(c.u()).size() == 1) {
             if(vals(c.v()).contains((Integer) vals(c.u()).values.head())) {
                 variables = variables.updated(c.v(), vals(c.v()).remove(vals(c.u())));
-                toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.u())));
+                for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.v())))
+                    if(neighbour != c.u())
+                        toProcess.add(new Pair<>(neighbour, c.v()));
             }
         }
 
         if(variables.apply(c.v()).size() == 1) {
             if(vals(c.u()).contains((Integer) vals(c.v()).values.head())) {
                 variables = variables.updated(c.u(), vals(c.u()).remove(vals(c.v())));
-                toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.v())));
+                for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.u())))
+                    if(neighbour != c.v())
+                        toProcess.add(new Pair<>(neighbour, c.u()));
             }
         }
 
@@ -159,14 +182,57 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
             ValuesHolder newDomain = variables.apply(c.u()).intersect(variables.apply(c.v()));
             variables = variables.updated(c.u(), newDomain);
             variables = variables.updated(c.v(), newDomain);
-            toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.u())));
-            toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(c.v())));
+            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.v())))
+                if(neighbour != c.u())
+                    toProcess.add(new Pair<>(neighbour, c.v()));
+            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.u())))
+                if(neighbour != c.v())
+                    toProcess.add(new Pair<>(neighbour, c.u()));
 
             if(newDomain.values.isEmpty()) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Revise all extension constraints involving the two variables. It is asymmetrical and
+     * only the domain of the first variable will be reduced.
+     *
+     * If the domain of var changed, the edges to reconsider are added to the queue.
+     *
+     * @param var Variable whose domain is to check for reduction.
+     * @param other Other variable for which values of var need to be checked.
+     * @return True if the domain is non-empty after the propagation.
+     */
+    protected boolean reviseExts(VarRef var, VarRef other) {
+        assert variables.contains(var);
+        assert variables.contains(other);
+        boolean updated = false;
+        for(ExtensionConstraint ext : exts) {
+            if(ext.isAbout(var) && ext.isAbout(other)) {
+                Map<VarRef,Map<Integer, List<Integer>>> constraintsPerVar = ext.processed().get(var);
+                LinkedList<Integer> toRemove = new LinkedList<>();
+                Map<Integer, List<Integer>> constraints = constraintsPerVar.get(other);
+                for(Object vObj : vals(var).values()) {
+                    Integer v = (Integer) vObj;
+                    if(!constraints.containsKey(v) || !vals(other).containsAtLeastOne(constraints.get(v)))
+                        toRemove.add(v);
+                }
+                while(!toRemove.isEmpty()) {
+                    updated = true;
+                    variables = variables.updated(var, vals(var).remove(toRemove.remove()));
+                }
+            }
+        }
+
+        if(updated) {
+            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(var)))
+                if(neighbour != other)
+                    toProcess.add(new Pair<>(neighbour, var));
+        }
+        return !vals(var).isEmpty();
     }
 
     @Override
@@ -176,9 +242,13 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         for(String value : toValues) {
             ids.add(valuesIds.get(value));
         }
+        if(vals(var).equals(new ValuesHolder(ids)))
+            return isConsistent();
+
         variables = variables.updated(var, variables.apply(var).intersect(new ValuesHolder(ids)));
 
-        toProcess.addAll(JavaConversions.asJavaCollection(constraints.edges(var)));
+        for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(var)))
+            toProcess.add(new Pair<>(neighbour, var));
 
         return isConsistent();
     }
@@ -200,7 +270,7 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
     public void AddUnificationConstraint(VarRef a, VarRef b) {
         LabeledEdge<VarRef, ConstraintType> constraint = new LabeledEdge<VarRef, ConstraintType>(a, b, ConstraintType.EQUALITY);
         constraints.addEdge(a, b, ConstraintType.EQUALITY);
-        toProcess.add(constraint);
+        toProcess.add(new Pair<>(a, b));
         isConsistent();
     }
 
@@ -208,8 +278,26 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
     public void AddSeparationConstraint(VarRef a, VarRef b) {
         LabeledEdge<VarRef, ConstraintType> constraint = new LabeledEdge<VarRef, ConstraintType>(a, b, ConstraintType.DIFFERENCE);
         constraints.addEdge(a, b, ConstraintType.DIFFERENCE);
-        toProcess.add(constraint);
+        toProcess.add(new Pair<>(a, b));
         isConsistent();
+    }
+
+    public void addExtensionConstraint(List<VarRef> vars, List<List<String>> values) {
+        LinkedList<LinkedList<Integer>> intValues = new LinkedList<>();
+        for(List<String> valSeq : values) {
+            LinkedList<Integer> intValSeq = new LinkedList<>();
+            for(String v : valSeq) {
+                intValSeq.add(valuesIds.get(v));
+            }
+            assert intValSeq.size() == vars.size();
+            intValues.add(intValSeq);
+        }
+        exts.add(new ExtensionConstraint(vars, intValues));
+        for(int i=0 ; i<vars.size() ; i++) {
+            for(int j=i+1 ; j<vars.size() ; j++) {
+                constraints.addEdge(vars.get(i), vars.get(j), ConstraintType.EXTENSION);
+            }
+        }
     }
 
     @Override
@@ -286,11 +374,22 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
     @Override
     public String Report() {
         StringBuilder builder = new StringBuilder();
+        for(VarRef var : JavaConversions.asJavaCollection(variables.keys())) {
+            builder.append(var);
+            builder.append("  ");
+            builder.append(domainOf(var));
+            builder.append("\n");
+        }
         builder.append("\n");
-        for(Edge<VarRef> c : constraints.jEdges()) {
+        for(LabeledEdge<VarRef,ConstraintType> c : constraints.jEdges()) {
             builder.append(c.u()+":");
             builder.append(domainOf(c.u()));
-            builder.append(" == ");
+            if(c.l() == ConstraintType.DIFFERENCE)
+                builder.append(" != ");
+            else if(c.l() == ConstraintType.EQUALITY)
+                builder.append(" == ");
+            else if(c.l() == ConstraintType.EXTENSION)
+                builder.append(" EXTENSION ");
             builder.append(c.v()+":");
             builder.append(domainOf(c.v()));
             builder.append("\n");

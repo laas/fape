@@ -42,6 +42,17 @@ public class ValuesHolder {
         return new ValuesHolder((BitSet) this.values.$amp(holder.values));
     }
 
+    /**
+     * @return True if the at least one of the given values is present in this domain.
+     */
+    public boolean containsAtLeastOne(Collection<Integer> possibleValues) {
+        for(int val : possibleValues) {
+            if(values.contains(val))
+                return true;
+        }
+        return false;
+    }
+
     public Collection<Object> values() {
         return JavaConversions.asJavaCollection(values);
     }
