@@ -622,13 +622,15 @@ public abstract class APlanner {
                     }
                     ct++;
                 }
-            } else {
-                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
-                        && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                    SupportOption o = new SupportOption();
-                    o.temporalDatabase = b.mID;
-                    ret.add(o);
-                }
+
+                // Otherwise, check for databases containing a change whose support value can
+                // be unified with our consume value.
+            } else if(st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
+                    && !b.HasSinglePersistence()
+                    && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
+                SupportOption o = new SupportOption();
+                o.temporalDatabase = b.mID;
+                ret.add(o);
             }
         }
 
