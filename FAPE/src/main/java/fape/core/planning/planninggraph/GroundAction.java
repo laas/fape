@@ -38,9 +38,8 @@ public class GroundAction implements PGNode {
             if(precondition != null) {
                 pre.add(precondition);
             }
-            Fluent deletion = statementToDeletion(s);
-            if(deletion != null) {
-                del.add(deletion);
+            for(Fluent f : statementToDeletions(s)) {
+                del.add(f);
             }
             Fluent addition = statementToAddition(s);
             if(addition != null) {
@@ -73,7 +72,7 @@ public class GroundAction implements PGNode {
         return pb.statementToAddition(s, argMap);
     }
 
-    protected Fluent statementToDeletion(LogStatement s) {
-        return pb.statementToDeletion(s, argMap);
+    protected Collection<Fluent> statementToDeletions(LogStatement s) {
+        return pb.statementToDeletions(s, argMap);
     }
 }

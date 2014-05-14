@@ -19,6 +19,14 @@ public class ChainComponent {
     public final boolean change;
 
     /**
+     * Id of the chain component. This ID is shared with any instance cloned from this one.
+     */
+    public final int mID;
+
+    /** Next mID for newly created ChainComponents. */
+    private static int nextID=0;
+
+    /**
      *
      */
     public final LinkedList<LogStatement> contents = new LinkedList<>();
@@ -28,6 +36,7 @@ public class ChainComponent {
      * @param s Statement to be included in the component
      */
     public ChainComponent(LogStatement s) {
+        mID = nextID++;
         contents.add(s);
         if (s instanceof Persistence) {
             change = false;
@@ -41,14 +50,23 @@ public class ChainComponent {
      * @param toCopy ChainComponent to copy
      */
     public ChainComponent(ChainComponent toCopy) {
+        mID = toCopy.mID;
         contents.addAll(toCopy.contents);
         change = toCopy.change;
     }
 
+    /**
+     * TODO: There might be more than one time point
+     * @return One end time point in the chain component (there might be more!)
+     */
     public TPRef getSupportTimePoint() {
         return contents.getFirst().end();
     }
 
+    /**
+     * TODO: There might be more than one time point
+     * @return One start time point in the chain component (there might be more!)
+     */
     public TPRef getConsumeTimePoint() {
         return contents.getFirst().start();
     }
@@ -70,16 +88,14 @@ public class ChainComponent {
     }
 
     /**
-     *
-     * @return
+     * @return The variable containing the value of the state variable at the end of the component.
      */
     public VarRef GetSupportValue() {
         return contents.getFirst().endValue();
     }
 
     /**
-     *
-     * @return
+     * @return The variable containing the value of the state variable at the end of the component.
      */
     public VarRef GetConsumeValue() {
         return contents.getFirst().startValue();

@@ -2,11 +2,13 @@ package fape.core.planning.planner;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
+import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
+import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -48,6 +50,17 @@ public abstract class APlanner {
     LiftedDTG dtg = null;
 
     /**
+     * Used to build comparators for flaws.
+     * Default to a least commiting first.
+     */
+    public String[] flawSelStrategies = { "lcf" };
+
+    /**
+     * Used to build comparators for partial plans.
+     */
+    public String[] planSelStrategies = { "soca" };
+
+    /**
      * A short identifier for the planner.
      * @return THe planner ID.
      */
@@ -58,7 +71,7 @@ public abstract class APlanner {
     /**
      *
      */
-    public PriorityQueue<State> queue = new PriorityQueue<State>(100, this.stateComparator());
+    public PriorityQueue<State> queue;
 
     public boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
@@ -77,11 +90,25 @@ public abstract class APlanner {
             assert consumer.chain.size() == 1 && !consumer.chain.get(0).change
                     : "This is restricted to databases containing single persistence only";
 
+            assert precedingComponent.change;
+            causalLinkAdded(next, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
+
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
 
         } else if (supporter != null) {
 
             assert consumer != null : "Consumer was not passed as an argument";
+
+            ChainComponent supportingStatement = null;
+            if(supporter.chain.getLast().change)
+                supportingStatement = supporter.chain.getLast();
+            else if(supporter.chain.size()>1) {
+                supportingStatement = supporter.chain.get(supporter.chain.size()-2);
+            }
+
+            assert supportingStatement != null && supportingStatement.change;
+            causalLinkAdded(next, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
+
             // database concatenation
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
 
@@ -119,6 +146,11 @@ public abstract class APlanner {
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+
+            // remember that the consuming db has to be supporting by a descendant of this decomposition.
+            if(consumer != null)
+                next.addSupportConstraint(consumer.GetChainComponent(0), dec);
+
             next.applyDecomposition(dec);
         } else if(o.actionWithBindings != null) {
             Action act = Factory.getStandaloneAction(pb, o.actionWithBindings.act);
@@ -147,6 +179,18 @@ public abstract class APlanner {
                 }
             }
 
+        } else if(o instanceof TemporalSeparation) {
+            for(LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
+                for(LogStatement second : ((TemporalSeparation) o).second.chain.getLast().contents) {
+                    next.tempoNet.EnforceBefore(first.end(), second.start());
+                }
+            }
+        } else if(o instanceof BindingSeparation) {
+            next.conNet.AddSeparationConstraint(((BindingSeparation) o).a, ((BindingSeparation) o).b);
+        } else if(o instanceof VarBinding) {
+            List<String> values = new LinkedList<>();
+            values.add(((VarBinding) o).value);
+            next.conNet.restrictDomain(((VarBinding) o).var, values);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -154,6 +198,15 @@ public abstract class APlanner {
         // if the propagation failed and we have achieved an inconsistent state
         return next.isConsistent();
     }
+
+    /**
+     * This method is invoked whenever a causal link is added and offers a way to react to it
+     * for planner extending this class.
+     * @param st
+     * @param supporter
+     * @param consumer
+     */
+    public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) { }
 
     /**
      * we remove the action results from the system
@@ -245,6 +298,7 @@ public abstract class APlanner {
      *
      */
     public void Init() {
+        queue = new PriorityQueue<State>(100, this.stateComparator());
         queue.add(new State(pb));
         best = queue.peek();
     }
@@ -273,25 +327,55 @@ public abstract class APlanner {
 
     }
 
-    public List<SupportOption> GetResolvers(State st, Flaw f) {
+    public final List<SupportOption> GetResolvers(State st, Flaw f) {
+        List<SupportOption> candidates;
         if(f instanceof UnsupportedDatabase) {
-            return GetSupporters(((UnsupportedDatabase) f).consumer, st);
+            candidates = GetSupporters(((UnsupportedDatabase) f).consumer, st);
         } else if(f instanceof UndecomposedAction) {
             UndecomposedAction ua = (UndecomposedAction) f;
-            List<SupportOption> resolvers = new LinkedList<>();
+            candidates = new LinkedList<>();
             for(int decompositionID=0 ; decompositionID < ua.action.decompositions().size() ; decompositionID++) {
                 SupportOption res = new SupportOption();
                 res.actionToDecompose = ua.action;
                 res.decompositionID = decompositionID;
-                resolvers.add(res);
+                candidates.add(res);
             }
-            return resolvers;
+        } else if(f instanceof Threat) {
+            candidates = GetResolvers(st, (Threat) f);
+        } else if(f instanceof UnboundVariable) {
+            candidates = GetResolvers(st, (UnboundVariable) f);
         } else {
-            assert false : "Unknown flaw type: " + f;
-            return new LinkedList<>();
+            throw new FAPEException("Unknown flaw type: " + f);
         }
+
+        return st.retainValidOptions(f, candidates);
     }
 
+    public final List<SupportOption> GetResolvers(State st, UnboundVariable uv) {
+        List<SupportOption> bindings = new LinkedList<>();
+        for(String value : st.conNet.domainOf(uv.var)) {
+            bindings.add(new VarBinding(uv.var, value));
+        }
+        return bindings;
+    }
+
+    public final List<SupportOption> GetResolvers(State st, Threat f) {
+        List<SupportOption> options = new LinkedList<>();
+        options.add(new TemporalSeparation(f.db1, f.db2));
+        options.add(new TemporalSeparation(f.db2, f.db1));
+        for(int i=0 ; i<f.db1.stateVariable.jArgs().size() ; i++) {
+            options.add(new BindingSeparation(
+                    f.db1.stateVariable.jArgs().get(i),
+                    f.db2.stateVariable.jArgs().get(i)));
+        }
+        return options;
+    }
+
+    /**
+     * Finds all flaws of a given state.
+     * Currently, threats and unbound variables are considered only if no other flaws are present.
+     * @return A list of flaws present in the system. The set of flaw might not be exhaustive.
+     */
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
         for(TemporalDatabase consumer : st.consumers) {
@@ -299,6 +383,22 @@ public abstract class APlanner {
         }
         for(Action refinable : st.taskNet.GetOpenLeaves()) {
             flaws.add(new UndecomposedAction(refinable));
+        }
+        if(flaws.isEmpty()) {
+            for(int i=0 ; i<st.tdb.vars.size() ; i++) {
+                TemporalDatabase db1 = st.tdb.vars.get(i);
+                for(int j=i+1 ; j<st.tdb.vars.size() ; j++) {
+                    TemporalDatabase db2 = st.tdb.vars.get(j);
+                    if(isThreatening(st, db1, db2)) {
+                        flaws.add(new Threat(db1, db2));
+                    }
+                }
+            }
+        }
+        if(flaws.isEmpty()) {
+            for(VarRef v : st.conNet.getUnboundVariables()) {
+                flaws.add(new UnboundVariable(v));
+            }
         }
         return flaws;
     }
@@ -315,14 +415,54 @@ public abstract class APlanner {
      * @param st State in which the flaws appear.
      * @return The comparator to use for ordering.
      */
-    public abstract Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st);
+    public final Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
+        return FlawCompFactory.get(st, flawSelStrategies);
+    }
 
     /**
      * The comparator used to order the queue. THe first state in the queue (according to this comparator,
      * will be selected for expansion.
      * @return The comparator to use for ordering the queue.
      */
-    public abstract Comparator<State> stateComparator();
+    public final Comparator<State> stateComparator() {
+        return PlanCompFactory.get(planSelStrategies);
+    }
+
+    /**
+     * Checks if two temporal databases are threatening each others.
+     * It is the case if:
+     *   - both are not consuming databases (start with an assignment). Otherwise, threat is naturally handled
+     *     by looking for supporters.
+     *   - their state variables are unifiable.
+     *   - they can overlap
+     * TODO: handle case where multiple persitences are in the last part.
+     * @return True there is a threat.
+     */
+    protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
+        if(db1.isConsumer() || db2.isConsumer()) {
+            return false;
+        } else if(st.Unifiable(db1, db2)) {
+            if(st.tempoNet.CanBeBefore(
+                    db1.GetChainComponent(0).getConsumeTimePoint(),                        // c1
+                    db2.GetChainComponent(db2.chain.size()-1).getSupportTimePoint()) &&    // s2
+               st.tempoNet.CanBeBefore(
+                    db2.GetChainComponent(db2.chain.size()-1).getSupportTimePoint(),       // s2
+                    db1.GetChainComponent(db1.chain.size()-1).getSupportTimePoint())) {    // s1
+                return true;
+            } else if(
+                    st.tempoNet.CanBeBefore(
+                            db2.GetChainComponent(0).getConsumeTimePoint(),                     // c2
+                            db1.GetChainComponent(db1.chain.size()-1).getSupportTimePoint()) && // s1
+                    st.tempoNet.CanBeBefore(
+                            db1.GetChainComponent(0).getConsumeTimePoint(),                     // c1
+                            db2.GetChainComponent(0).getConsumeTimePoint())) {                  // c2
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
 
     protected State aStar(TimeAmount forHowLong) {
         // first start by checking all the consistencies and propagating necessary constraints
@@ -350,8 +490,10 @@ public abstract class APlanner {
             State st = queue.remove();
             OpenedStates++;
 
+            List<Flaw> flaws = GetFlaws(st);
+
             TinyLogger.LogInfo(st);
-            if (st.consumers.isEmpty() && st.taskNet.GetOpenLeaves().isEmpty()) {
+            if (flaws.isEmpty()) {
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(st.taskNet);
@@ -361,7 +503,7 @@ public abstract class APlanner {
             }
             //continue the search
             LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();
-            for(Flaw flaw : GetFlaws(st)) {
+            for(Flaw flaw : flaws) {
                 opts.add(new Pair(flaw, GetResolvers(st, flaw)));
             }
 
@@ -374,7 +516,7 @@ public abstract class APlanner {
             }
 
             if (opts.getFirst().value2.isEmpty()) {
-                TinyLogger.LogInfo("Dead-end, consumer without resolvers: " + st.mID);
+                TinyLogger.LogInfo("Dead-end, flaw without resolvers: " + opts.getFirst().value1);
                 //dead end
                 continue;
             }
@@ -382,10 +524,17 @@ public abstract class APlanner {
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
 
+            if(APlanner.logging)
+                TinyLogger.LogInfo(" Flaw:" +opt.value1.toString());
+
             for (SupportOption o : opt.value2) {
+                if(APlanner.logging)
+                    TinyLogger.LogInfo("   Res: "+o);
                 State next = new State(st);
                 boolean success = false;
-                if(opt.value1 instanceof UndecomposedAction) {
+                if(opt.value1 instanceof Threat ||
+                        opt.value1 instanceof UnboundVariable ||
+                        opt.value1 instanceof UndecomposedAction) {
                     success = ApplyOption(next, o, null);
                 } else {
                     success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));
@@ -395,7 +544,7 @@ public abstract class APlanner {
                     queue.add(next);
                     GeneratedStates++;
                 } else {
-                    TinyLogger.LogInfo("Dead-end reached for state: " + next.mID);
+                    TinyLogger.LogInfo("   Dead-end reached for state: " + next.mID);
                     //inconsistent state, doing nothing
                 }
             }
@@ -456,13 +605,15 @@ public abstract class APlanner {
                     }
                     ct++;
                 }
-            } else {
-                if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
-                        && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                    SupportOption o = new SupportOption();
-                    o.temporalDatabase = b.mID;
-                    ret.add(o);
-                }
+
+                // Otherwise, check for databases containing a change whose support value can
+                // be unified with our consume value.
+            } else if(st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
+                    && !b.HasSinglePersistence()
+                    && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
+                SupportOption o = new SupportOption();
+                o.temporalDatabase = b.mID;
+                ret.add(o);
             }
         }
 
@@ -491,12 +642,12 @@ public abstract class APlanner {
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (AbstractAction aa : potentialSupporters) {
+                // only considere action that are not marked motivated.
+                // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if(!aa.isMotivated()) {
                     SupportOption o = new SupportOption();
                     o.supportingAction = aa;
                     ret.add(o);
-//                } else {
-//                    System.out.println("motivated: " + aa);
                 }
             }
         }

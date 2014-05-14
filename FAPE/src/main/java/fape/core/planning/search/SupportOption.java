@@ -62,7 +62,7 @@ public class SupportOption {
         //return "" + tdb + " " + precedingComponent + " " + supportingAction + " " + actionToDecompose;
         if (temporalDatabase != -1 && precedingChainComponent != -1) {
             // this is database merge of one persistence into another
-            return "{merge of two persistences, tdb="+temporalDatabase+", preceding="+precedingChainComponent;
+            return "{merge of two databases, tdb="+temporalDatabase+", preceding="+precedingChainComponent;
         } else if (temporalDatabase != -1) {
             //this is a database concatenation
             return "{DB Concatenation w/ "+temporalDatabase+"}";

@@ -13,17 +13,13 @@ package fape.core.planning;
 
 import fape.core.execution.Executor;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
-import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.search.*;
 import fape.core.planning.states.State;
 import fape.util.Pair;
 import fape.util.TimeAmount;
-import planstack.anml.parser.AnmlBlock;
-import planstack.anml.parser.ParseResult;
 
 import java.util.*;
 
@@ -45,7 +41,7 @@ public class Planner extends APlanner {
 
     @Override
     public String shortName() {
-        return "baseline";
+        return "base";
     }
 
     @Override
@@ -54,22 +50,9 @@ public class Planner extends APlanner {
     }
 
     @Override
-    public Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
-        return optionsComparatorMinDomain;
-    }
-
-    @Override
-    public Comparator<State> stateComparator() {
-        return new StateComparator();
-    }
-
-    @Override
     public ActionSupporterFinder getActionSupporterFinder() {
         return new ActionSupporters(pb);
     }
-
-
-
 
     public static void main(String[] args) throws InterruptedException {
         long start = System.currentTimeMillis();

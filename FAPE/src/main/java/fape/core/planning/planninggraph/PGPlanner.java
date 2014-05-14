@@ -1,18 +1,23 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
+import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.parser.ParseResult;
 
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -26,9 +31,10 @@ import java.util.Set;
  */
 public class PGPlanner extends APlanner {
 
-    GroundProblem groundPB = null;
-    RelaxedPlanningGraph pg = null;
-    AbstractionHierarchy hierarchy = null;
+    protected GroundProblem groundPB = null;
+    protected RelaxedPlanningGraph pg = null;
+    AbstractionHierarchy hierarchy = null; //TODO why?
+    LiftedDTG dtg = null;
 
 
 
@@ -42,11 +48,13 @@ public class PGPlanner extends APlanner {
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
         pg.build();
+        if(APlanner.debugging)
+            pg.graph.exportToDotFile("rpg.dot");
         hierarchy = new AbstractionHierarchy(this.pb);
+        dtg = new LiftedDTG(pb);
 
         return true;
     }
-
 
 
     @Override
@@ -56,7 +64,7 @@ public class PGPlanner extends APlanner {
 
     @Override
     public ActionSupporterFinder getActionSupporterFinder() {
-        return new ActionSupporters(pb);
+        return dtg;
     }
 
     @Override
@@ -65,24 +73,12 @@ public class PGPlanner extends APlanner {
     }
 
     @Override
-    public Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
-        return new FlawSelector(hierarchy, st);
-    }
-
-    @Override
-    public Comparator<State> stateComparator() {
-        return new StateComparator();
-    }
-
-    @Override
     public List<SupportOption> GetSupporters(TemporalDatabase db, State st) {
         // use the inherited GtSupporter method
         List<SupportOption> supportOptions = super.GetSupporters(db, st);
-        if(false)
-            return supportOptions;
 
         // remove all supporting actions, they will be replaced by out own ActionWithBindings
-        List toRemove = new LinkedList();
+        List<SupportOption> toRemove = new LinkedList<>();
         for(SupportOption o : supportOptions) {
             if(o.supportingAction != null) {
                 toRemove.add(o);
@@ -90,7 +86,21 @@ public class PGPlanner extends APlanner {
         }
         supportOptions.removeAll(toRemove);
 
-        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet.domains, groundPB);
+
+        for(ActionWithBindings opt : rpgActionSupporters(db, st)) {
+            SupportOption supportOption = new SupportOption();
+            supportOption.actionWithBindings = opt;
+            supportOptions.add(supportOption);
+        }
+
+
+        return supportOptions;
+        //return super.GetSupporters(db, st);
+    }
+
+    public List<ActionWithBindings> rpgActionSupporters(TemporalDatabase db, State st) {
+        List<ActionWithBindings> supporters = new LinkedList<>();
+        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet, groundPB);
         DisjunctiveAction dAct = pg.enablers(fluent);
         List<Pair<AbstractAction, List<Set<String>>>> options = dAct.actionsAndParams(groundPB);
 
@@ -104,13 +114,8 @@ public class PGPlanner extends APlanner {
             for(int i=0 ; i<opt.act.args().size() ; i++) {
                 opt.values.put(opt.act.args().get(i), supporter.value2.get(i));
             }
-            SupportOption supportOption = new SupportOption();
-            supportOption.actionWithBindings = opt;
-            supportOptions.add(supportOption);
+            supporters.add(opt);
         }
-
-
-        return supportOptions;
-        //return super.GetSupporters(db, st);
+        return supporters;
     }
 }

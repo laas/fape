@@ -52,7 +52,6 @@ public class STNManager implements Reporter {
      * @param b
      */
     public final void EnforceBefore(TPRef a, TPRef b) {
-        TinyLogger.LogInfo("Adding temporal constraint: "+a+" < "+b);
         stn.enforceBefore(id(a), id(b));
     }
 
@@ -114,9 +113,7 @@ public class STNManager implements Reporter {
      * @return
      */
     public final boolean CanBeBefore(TPRef first, TPRef second) {
-        boolean ret = stn.canBeBefore(id(first), id(second));
-        TinyLogger.LogInfo("STN: "+first+" can occur before "+second);
-        return ret;
+        return stn.canBeBefore(id(first), id(second));
     }
 
     /**

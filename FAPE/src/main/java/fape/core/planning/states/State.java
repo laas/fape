@@ -10,23 +10,24 @@
  */
 package fape.core.planning.states;
 
-import fape.core.planning.constraints.ConstraintNetworkManager;
+import fape.core.planning.constraints.ConservativeConstraintNetwork;
+import fape.core.planning.constraints.ConstraintNetwork;
+import fape.core.planning.search.*;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import fape.util.Reporter;
-import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
+import scala.collection.immutable.HashMap;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -40,6 +41,9 @@ public class State implements Reporter {
      * Unique identifier of the database.
      */
     public final int mID = idCounter++;
+
+    /** Depth of the state in the search tree */
+    public final int depth;
 
     /**
      *
@@ -57,10 +61,17 @@ public class State implements Reporter {
     public final TaskNetworkManager taskNet;
 
     /**
+     * Keep tracks of statements that must be supported by a particular decomposition.
+     * (e.g. by a statements which is a consequence of that decomposition).
+     * This map is populated when a decomposition is chosen as a resolver for an unsupported database.
+     */
+    private LinkedList<Pair<Integer, Decomposition>> supportConstraints;
+
+    /**
      * All databases that require an enabling event (ie. whose first value is not an assignment).
      */
     public final List<TemporalDatabase> consumers;
-    public final ConstraintNetworkManager conNet;
+    public final ConstraintNetwork conNet;
 
     public final AnmlProblem pb;
 
@@ -76,14 +87,17 @@ public class State implements Reporter {
      */
     public State(AnmlProblem pb) {
         this.pb = pb;
+        depth = 0;
         tdb = new TemporalDatabaseManager();
         tempoNet = new STNManager();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
-        conNet = new ConstraintNetworkManager();
+
+        conNet = new ConservativeConstraintNetwork();
+//        conNet = new ConstraintNetworkManager();
+        supportConstraints = new LinkedList<>();
 
         // Insert all problem-defined modifications into the state
-        recordTimePoints(pb);
         problemRevision = -1;
         update();
     }
@@ -94,11 +108,13 @@ public class State implements Reporter {
      */
     public State(State st) {
         pb = st.pb;
+        depth = st.depth +1;
         problemRevision = st.problemRevision;
         conNet = st.conNet.DeepCopy();
         tempoNet = st.tempoNet.DeepCopy();
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
+        supportConstraints = new LinkedList<>(st.supportConstraints);
 
         consumers = new LinkedList<>();
         for (TemporalDatabase sb : st.consumers) {
@@ -117,8 +133,7 @@ public class State implements Reporter {
      * @return the sum of all actions cost.
      */
     public float GetCurrentCost() {
-        float costs = this.taskNet.GetActionCosts();
-        return costs;
+        return this.taskNet.GetAllActions().size() * 10;
     }
 
     /**
@@ -333,7 +348,7 @@ public class State implements Reporter {
      * @return
      */
     public boolean Unifiable(VarRef a, VarRef b) {
-        return Utils.nonEmptyIntersection(possibleValues(a), possibleValues(b));
+        return conNet.unifiable(a, b);
     }
 
     /**
@@ -358,6 +373,7 @@ public class State implements Reporter {
      */
     public boolean insert(Action act) {
         recordTimePoints(act);
+        tempoNet.EnforceBefore(pb.earliestExecution(), act.start());
         tempoNet.EnforceDelay(act.start(), act.end(), 1);
         taskNet.insert(act);
         return apply(act);
@@ -381,6 +397,13 @@ public class State implements Reporter {
      * @return True if the resulting state is consistent, False otherwise.
      */
     public boolean update() {
+        if(problemRevision == -1) {
+            tempoNet.recordTimePoint(pb.start());
+            tempoNet.recordTimePoint(pb.end());
+            tempoNet.recordTimePoint(pb.earliestExecution());
+            tempoNet.EnforceBefore(pb.start(), pb.earliestExecution());
+
+        }
         for(int i=problemRevision+1 ; i<pb.modifiers().size() ; i++) {
             apply(pb.modifiers().get(i));
             problemRevision = i;
@@ -451,7 +474,7 @@ public class State implements Reporter {
                 tempoNet.EnforceDelay(tp1, tp2, - tc.plus());
                 break;
             case "=":
-                // tp2 --- [x, x] ---> tp1
+                // tp1 --- [x, x] ---> tp2
                 tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
 
@@ -472,6 +495,8 @@ public class State implements Reporter {
         tempoNet.EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
         tempoNet.EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
 
+        taskNet.insert(dec, dec.container());
+
         return apply(dec);
     }
 
@@ -483,6 +508,7 @@ public class State implements Reporter {
     public boolean apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for(String instance : mod.instances()) {
+            conNet.addPossibleValue(instance);
             List<String> domain = new LinkedList<>();
             domain.add(instance);
             conNet.AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));
@@ -507,5 +533,95 @@ public class State implements Reporter {
         }
 
         return isConsistent();
+    }
+
+    /**
+     * Given a flaw and a set of resolvers, retain only the valid resolvers.
+     * It is currently used to filter out the resolvers of flaws that have partially addressed by
+     * an action decomposition.
+     * @param f The flaw for which the resolvers are emitted.
+     * @param opts The  set of resolvers to address the flaw
+     * @return A list of resolvers containing only the valid ones.
+     */
+    public List<SupportOption> retainValidOptions(Flaw f, List<SupportOption> opts) {
+        if(f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable) {
+            return opts;
+        } else if(f instanceof UnsupportedDatabase) {
+            Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedDatabase) f).consumer);
+            if(mustDeriveFrom == null) {
+                return opts;
+            } else {
+                List<SupportOption> retained = new LinkedList<>();
+                for(SupportOption opt : opts) {
+                    if(isOptionDerivedFrom(opt, mustDeriveFrom)) {
+                        retained.add(opt);
+                    }
+                }
+                return retained;
+            }
+        } else {
+            throw new FAPEException("Error: Unrecognized flaw type.");
+        }
+    }
+
+    /**
+     * Checks if there is a support constraint for a temporal database.
+     * @param db The temporal database that needs to be supported.
+     * @return A decomposition if the resolvers for this database must derive from a decomposition
+     *         (e.g. this flaw was previously addressed by decomposing a method. null if there is no constraints.
+     */
+    private Decomposition getSupportConstraint(TemporalDatabase db) {
+        int compID = db.GetChainComponent(0).mID;
+        Decomposition dec = null;
+        for(Pair<Integer, Decomposition> constraint : supportConstraints) {
+            if(constraint.value1 == mID)
+                dec = constraint.value2;
+        }
+        return dec;
+    }
+
+    /**
+     * Checks if the option is a consequence of the given decomposition.
+     * A resolver is considered to be derived from an decomposition if (i) it is a
+     * decomposition of an action descending from the decomposition. (ii) it is a decomposition
+     * of an action descending from the given decomposition.
+     *
+     * It is currently used to check if a resolver doesn't contradict an earlier commitment:
+     * when an unsupported database is "resolved" with a decomposition but no causal link is added
+     * (the database is still unsupported), the resolvers for it are then limited to those being a
+     * consequence of the decomposition.
+     * @param opt Resolver whose validity is to be checked.
+     * @param dec Decomposition from which the resolver must be derived.
+     * @return True if the resolver is valid, False otherwise.
+     */
+    private boolean isOptionDerivedFrom(SupportOption opt, Decomposition dec) {
+        // this unsupported db must be supported by a descendant of a decomposition
+        // this is a consequence of an earlier commitment.
+        if(opt.supportingAction != null || opt.actionWithBindings != null) {
+            // insertion of a new action is prohibited
+            return false;
+        } else if(opt.actionToDecompose != null) {
+            // decomposition is allowed only if the decomposed action is issued from dec.
+            return taskNet.isDescendantOf(opt.actionToDecompose, dec);
+        } else if(opt.temporalDatabase != -1) {
+            // DB supporters are limited to those coming from an action descending from dec.
+            TemporalDatabase db = GetDatabase(opt.temporalDatabase);
+            ChainComponent cc;
+            if(opt.precedingChainComponent != -1)
+                cc = db.GetChainComponent(opt.precedingChainComponent);
+            else
+                cc = db.GetChainComponent(db.chain.size()-1);
+            assert cc.change : "Support is not a change.";
+            assert cc.contents.size() == 1;
+            Action a = getActionContaining(cc.contents.getFirst());
+
+            return a != null && taskNet.isDescendantOf(a, dec);
+        } else {
+            throw new FAPEException("Unhandled option: "+opt);
+        }
+    }
+
+    public void addSupportConstraint(ChainComponent cc, Decomposition dec) {
+        this.supportConstraints.add(new Pair(cc.mID, dec));
     }
 }
