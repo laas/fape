@@ -4,6 +4,7 @@ import AnmlParser._
 import java.io.FileReader
 import planstack.anml.ANMLException
 import scala.util.matching.Regex.Match
+import planstack.anml.model.AnmlProblem
 
 object ANMLFactory {
 
@@ -50,32 +51,12 @@ object ANMLFactory {
   }
 
   def main(args :Array[String]) {
-    val in =
-   """fsdqfk  //d qsd
-      |dfldsfk f /***
-      |fmlsdkfmlk */ kmldflsdmlfsdmlkf // aaaaaaaaaaaaaaaaaaaaaaaaaa
-      |sdkflsdk /**** // */
-    """.stripMargin
-
-
-    val replace = (m :Match) => {
-      var i=m.start
-      var replacement = ""
-      while(i < m.end) {
-        if(in.charAt(i) == '\n')
-          replacement += "\n"
-        else
-          replacement += " "
-        i += 1
-      }
-      replacement
+    if(args.size < 1) 
+      println("Please, provide at least one filename as argument");
+    else {
+      val res = parseAnmlFromFile(args(0))
+      val pb = new AnmlProblem
+      pb.addAnml(res)
     }
-
-//    val notMulti = MultiLineCommentRegExp.replaceAllIn(in, replace)
-//    println(notMulti)
-    val out = commentRegEx.replaceAllIn(in, replace)
-
-    println(out)
-    val x = 0
   }
 }

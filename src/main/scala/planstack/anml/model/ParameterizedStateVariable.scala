@@ -32,7 +32,7 @@ object AbstractParameterizedStateVariable {
         if(pb.functions.isDefined(nameParts.mkString("."))) {
           parser.FuncExpr(nameParts, argList)
         } else {
-          assert(nameParts.tail.length == 1)
+          assert(nameParts.tail.length == 1, "Does not seem to be a valid function: "+expr)
           val headType = context.getType(new LVarRef(nameParts.head))
           parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         }

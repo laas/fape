@@ -129,7 +129,7 @@ class InstanceManager {
     } else if(types(typeName).parent.nonEmpty) {
       getQualifiedFunction(types(typeName).parent, methodName)
     } else {
-      throw new ANMLException("Unable to find a method %s for type %s.".format(methodName, typeName))
+      throw new ANMLException("Unable to find a method \"%s\" for type \"%s\".".format(methodName, typeName))
     }
   }
 }
