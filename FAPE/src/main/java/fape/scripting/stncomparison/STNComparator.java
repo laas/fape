@@ -60,7 +60,7 @@ public class STNComparator {
                     }
                     Collections.shuffle(s.eventsToApply, rg);
                     //problems.add(s);
-                    
+
                     long full, copyfull, bell, copybell;
                     {
                         long start = System.currentTimeMillis();
@@ -73,8 +73,10 @@ public class STNComparator {
                         //res.get(s).s = s;
                         full = diff;
                         start = System.currentTimeMillis();
-                        STNManagerOrig mn = o.DeepCopy();
-                        diff = System.currentTimeMillis() - start;
+                        for (int i = 0; i < 1000; i++) {
+                            STNManagerOrig mn = o.DeepCopy();
+                            diff = System.currentTimeMillis() - start;
+                        }
                         copyfull = diff;
                     }
 
@@ -87,11 +89,13 @@ public class STNComparator {
                         //res.get(s).bellTime = diff;
                         bell = diff;
                         start = System.currentTimeMillis();
-                        STNManager mn = n.DeepCopy();
-                        diff = System.currentTimeMillis() - start;
+                        for (int i = 0; i < 1000; i++) {
+                            STNManager mn = n.DeepCopy();
+                            diff = System.currentTimeMillis() - start;
+                        }
                         copybell = diff;
                     }
-                    
+
                     out.append(s.toString()).append(",").append(full).append(",").append(copyfull).append(",").append(bell).append(",").append(copybell).append("\n");
                 }
             }
@@ -123,8 +127,8 @@ public class STNComparator {
          }*/
         //StringBuilder out = new StringBuilder();
         /*for (Result r : res.values()) {
-            out.append(r.s.toString()).append(",").append(r.fullTime).append(",").append(r.bellTime).append("\n");
-        }*/
+         out.append(r.s.toString()).append(",").append(r.fullTime).append(",").append(r.bellTime).append("\n");
+         }*/
         FileHandling.writeFileOutput("results.txt", out.toString());
         int xx = 0;
         //test on bellman
