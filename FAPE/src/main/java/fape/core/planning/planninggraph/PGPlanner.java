@@ -1,5 +1,6 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
@@ -8,9 +9,13 @@ import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.parser.ParseResult;
 
 import java.util.LinkedList;
@@ -27,7 +32,7 @@ import java.util.Set;
 public class PGPlanner extends APlanner {
 
     protected GroundProblem groundPB = null;
-    protected  RelaxedPlanningGraph pg = null;
+    protected RelaxedPlanningGraph pg = null;
     AbstractionHierarchy hierarchy = null; //TODO why?
     LiftedDTG dtg = null;
 
@@ -52,7 +57,6 @@ public class PGPlanner extends APlanner {
     }
 
 
-
     @Override
     public String shortName() {
         return "rpg";
@@ -72,11 +76,9 @@ public class PGPlanner extends APlanner {
     public List<SupportOption> GetSupporters(TemporalDatabase db, State st) {
         // use the inherited GtSupporter method
         List<SupportOption> supportOptions = super.GetSupporters(db, st);
-        if(false)
-            return supportOptions;
 
         // remove all supporting actions, they will be replaced by out own ActionWithBindings
-        List toRemove = new LinkedList();
+        List<SupportOption> toRemove = new LinkedList<>();
         for(SupportOption o : supportOptions) {
             if(o.supportingAction != null) {
                 toRemove.add(o);

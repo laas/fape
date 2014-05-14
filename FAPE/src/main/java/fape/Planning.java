@@ -6,6 +6,7 @@ import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.BaseDTG;
 import fape.core.planning.planner.BaseDTGAbsHier;
+import fape.core.planning.planner.PGExtPlanner;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.printers.Printer;
 import fape.core.planning.states.State;
@@ -72,6 +73,10 @@ public class Planning {
                                         " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n" +
                                         " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n" +
                                         "         be aware that it does not handle all anml problems.\n" +
+                                        " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n" +
+                                        "            is provided by an action. It cheks (using RPG) for every ground action\n" +
+                                        "            supporting the consmer and enforce a n-ary constraint on the action's\n" +
+                                        "            parameters to make sure they fit at least one of the ground action.\n" +
                                         " - all:  will run every possible planner.\n"),
 
                         new FlaggedOption("maxtime")
@@ -174,13 +179,17 @@ public class Planning {
                             case "rpg":
                                 planners.add(new PGPlanner());
                                 break;
+                            case "rpg_ext":
+                                planners.add(new PGExtPlanner());
+                                break;
                             case "all":
                                 planners.add(new Planner());
                                 planners.add(new BaseDTG());
                                 planners.add(new PGPlanner());
+                                planners.add(new PGExtPlanner());
                                 break;
                             default:
-                                System.err.println("Accepted values for planner are: base, base+dtg, rpg, all");
+                                System.err.println("Accepted values for planner are: base, base+dtg, rpg, rpg-ext, all");
                         }
                     }
 
