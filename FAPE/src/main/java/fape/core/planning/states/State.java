@@ -606,11 +606,16 @@ public class State implements Reporter {
         } else if(opt.temporalDatabase != -1) {
             // DB supporters are limited to those coming from an action descending from dec.
             TemporalDatabase db = GetDatabase(opt.temporalDatabase);
+
+            // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc;
             if(opt.precedingChainComponent != -1)
                 cc = db.GetChainComponent(opt.precedingChainComponent);
+            else if(db.chain.getLast().change)
+                cc = db.chain.getLast();
             else
-                cc = db.GetChainComponent(db.chain.size()-1);
+                cc = db.chain.get(db.chain.size()-2);
+
             assert cc.change : "Support is not a change.";
             assert cc.contents.size() == 1;
             Action a = getActionContaining(cc.contents.getFirst());
