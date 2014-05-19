@@ -103,7 +103,10 @@ public class TemporalDatabase {
     }
 
     public TPRef getSupportTimePoint() {
-        return chain.getLast().getSupportTimePoint();
+        if(chain.getLast().change || chain.size() == 1)
+            return chain.getLast().getSupportTimePoint();
+        else
+            return chain.get(chain.size()-2).getSupportTimePoint();
     }
 
     public TPRef getConsumeTimePoint() {
