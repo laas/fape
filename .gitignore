@@ -5,9 +5,14 @@ out
 .idea*
 project/
 target/
-build.sbt
 /fape/problems/generated
 /fape/problems/testCases
+*.log
 *.aux
 *~
-*.log
+experiments/
+results/
+*.csv
+*.CSV
+*.png
+generated*/
