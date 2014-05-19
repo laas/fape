@@ -16,9 +16,7 @@ import fape.util.Utils;
 import planstack.anml.parser.ANMLFactory;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class Planning {
 
@@ -152,6 +150,8 @@ public class Planning {
                 anmlFiles.add(path);
             }
         }
+
+        Collections.sort(anmlFiles);
 
         // output format
         writer.write("iter, planner, runtime, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
