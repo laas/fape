@@ -3,6 +3,8 @@ package fape;
 import com.martiansoftware.jsap.*;
 import fape.core.acting.Actor;
 import fape.core.execution.Executor;
+import fape.core.execution.ExecutorPRS;
+import fape.core.execution.ExecutorSim;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
 import fape.util.TinyLogger;
@@ -36,6 +38,8 @@ public class FAPE {
      */
     public static boolean execLogging;
 
+    public static boolean localSim;
+
     public static void main(String[] args) throws Exception {
         SimpleJSAP jsap = new SimpleJSAP(
                 "FAPE",
@@ -47,6 +51,7 @@ public class FAPE {
                         new Switch("quiet", 'q', "quiet", "FAPE won't detail the execution."),
                         new Switch("debug", 'd', "debug", "Set the planner in debugging mode. " +
                                 "Mainly consists in time consuming checks."),
+                        new Switch("local-sim", JSAP.NO_SHORTFLAG, "sim", "Use built-in simulator. (doesn't use OpenPRS)"),
                         new FlaggedOption("host")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -88,22 +93,16 @@ public class FAPE {
             p = new Planner();
 
             Planner.actionResolvers = true;
-            e = new Executor();
-
-            l = new Listener(host, OPRS_MANIP, CLIENT_NAME, port);
-            l.bind(e);
+            if(config.getBoolean("local-sim"))
+                e = new ExecutorSim();
+            else
+            e = new ExecutorPRS(host, OPRS_MANIP, CLIENT_NAME, port);
 
             a.bind(e, p);
-            e.bind(a, l);
+            e.bind(a);
         } catch (Exception ex) {
             System.err.println("FAPE setup failed.");
             throw ex;
-        }
-
-        int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
-        if(sendMessage != Listener.OK) {
-            System.err.println("Problem while contacting the message passer.");
-            System.exit(1);
         }
 
         p.Init();

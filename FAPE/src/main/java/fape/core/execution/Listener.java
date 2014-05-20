@@ -24,7 +24,7 @@ public class Listener {
      *
      * @param e
      */
-    public void bind(Executor e) {
+    public void bind(ExecutorPRS e) {
         exec = e;
     }
 
@@ -299,5 +299,5 @@ public class Listener {
     // return states
     public static final int ERROR = -1;
     public static final int OK = 1;
-    private Executor exec; //performs the translations
+    private ExecutorPRS exec; //performs the translations
 }
