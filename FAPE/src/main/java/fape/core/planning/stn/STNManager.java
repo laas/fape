@@ -1,6 +1,7 @@
 package fape.core.planning.stn;
 
 
+import fape.core.planning.states.State;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.stn.STN;
@@ -144,5 +145,16 @@ public class STNManager implements Reporter {
 
     public boolean IsConsistent() {
         return stn.consistent();
+    }
+
+    /**
+     * Print the STN to a dot file in a human readable way.
+     * This is a CPU-intensive task that should be avoided except when debugging.
+     * @param st State in which this STN appears (used for retrieving the actions/statements
+     *           containing the time points).
+     * @param fileName Name if the file where the stn will be written.
+     */
+    public void exportToDot(State st, String fileName) {
+        stn.g().exportToDotFile(fileName, new STNNodePrinter(st));
     }
 }

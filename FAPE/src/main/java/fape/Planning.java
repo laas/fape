@@ -268,6 +268,7 @@ public class Planning {
 
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");
+                            sol.tempoNet.exportToDot(sol, "stn.dot");
                             System.out.println("Look at plan.dot for a complete plan.");
                         }
                     }
