@@ -99,12 +99,7 @@ public abstract class APlanner {
 
             assert consumer != null : "Consumer was not passed as an argument";
 
-            ChainComponent supportingStatement = null;
-            if(supporter.chain.getLast().change)
-                supportingStatement = supporter.chain.getLast();
-            else if(supporter.chain.size()>1) {
-                supportingStatement = supporter.chain.get(supporter.chain.size()-2);
-            }
+            ChainComponent supportingStatement = supporter.getSupportingComponent();
 
             assert supportingStatement != null && supportingStatement.change;
             causalLinkAdded(next, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());

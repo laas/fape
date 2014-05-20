@@ -611,11 +611,10 @@ public class State implements Reporter {
             ChainComponent cc;
             if(opt.precedingChainComponent != -1)
                 cc = db.GetChainComponent(opt.precedingChainComponent);
-            else if(db.chain.getLast().change)
-                cc = db.chain.getLast();
             else
-                cc = db.chain.get(db.chain.size()-2);
+                cc = db.getSupportingComponent();
 
+            assert cc != null : "There is no support statement in "+db;
             assert cc.change : "Support is not a change.";
             assert cc.contents.size() == 1;
             Action a = getActionContaining(cc.contents.getFirst());
