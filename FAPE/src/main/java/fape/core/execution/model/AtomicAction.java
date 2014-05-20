@@ -14,6 +14,7 @@ package fape.core.execution.model;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.*;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -38,9 +39,9 @@ public class AtomicAction {
         this.duration = duration;
         params = new LinkedList<>();
         for(VarRef arg : action.args()) {
-            String[] possibleValues = (String[]) st.conNet.domainOf(arg).toArray();
-            assert possibleValues.length == 1 : "Argument "+arg+" of action "+action+" has more than one possible value.";
-            params.add(possibleValues[0]);
+            List<String> possibleValues = new LinkedList<>(st.conNet.domainOf(arg));
+            assert possibleValues.size() == 1 : "Argument "+arg+" of action "+action+" has more than one possible value.";
+            params.add(possibleValues.get(0));
         }
     }
     /*
