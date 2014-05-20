@@ -297,7 +297,7 @@ public class Listener {
     private ListenMessagePasser lmp;
     private String sender;
     // return states
-    private int ERROR = -1;
-    private int OK = 1;
+    public static final int ERROR = -1;
+    public static final int OK = 1;
     private Executor exec; //performs the translations
 }

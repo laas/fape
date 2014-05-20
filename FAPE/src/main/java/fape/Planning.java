@@ -53,7 +53,7 @@ public class Planning {
 
     public static void main(String[] args) throws Exception {
         SimpleJSAP jsap = new SimpleJSAP(
-                "FAPE",
+                "FAPE planners",
                 "Solves ANML problems",
                 new Parameter[] {
                         new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
