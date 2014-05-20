@@ -1,6 +1,6 @@
 package planstack.anml.model.abs.time
 
-import planstack.anml.model.LActRef
+import planstack.anml.model.{LocalRef, LActRef}
 import planstack.anml.parser
 
 class AbstractRelativeTimePoint(val timepoint:AbstractTimepointRef, val delta:Int) {
@@ -18,7 +18,7 @@ class AbstractRelativeTimePoint(val timepoint:AbstractTimepointRef, val delta:In
 object AbstractRelativeTimePoint {
 
   def apply(rtp:parser.RelativeTimepoint) = rtp.tp match {
-    case None => new AbstractRelativeTimePoint(new AbstractTimepointRef("GStart", new LActRef("")), rtp.delta)
+    case None => new AbstractRelativeTimePoint(new AbstractTimepointRef("GStart", new LocalRef("")), rtp.delta)
     case Some(tpRef) => new AbstractRelativeTimePoint(AbstractTimepointRef(tpRef), rtp.delta)
   }
 }

@@ -132,6 +132,7 @@ object AnmlParser extends JavaTokenParsers {
         case tp~"+"~delta => RelativeTimepoint(tp, delta.toInt)
         case tp~"-"~delta => RelativeTimepoint(tp, - delta.toInt)
       }
+    | decimalNumber ^^ { case x => RelativeTimepoint(None, x.toInt)}
     | timepointRef ^^ (x => RelativeTimepoint(Some(x), 0))
     | failure("illegal timepoint")
     )
