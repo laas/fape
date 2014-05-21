@@ -18,8 +18,8 @@ class TemporalStatement(val interval:TemporalAnnotation, val statement:Statement
 
     interval.flag match {
       case "is" => List(
-        new TemporalConstraint(containerStart, "=", statement.start, interval.start.delta),
-        new TemporalConstraint(containerEnd, "=", statement.end, interval.end.delta),
+        new TemporalConstraint(statement.start, "=", containerStart, interval.start.delta),
+        new TemporalConstraint(statement.end, "=", containerEnd, interval.end.delta),
         new TemporalConstraint(statement.start, "<", statement.end, 0))
       case "contains" => List(
         new TemporalConstraint(containerStart, "<", statement.start, - interval.start.delta),
