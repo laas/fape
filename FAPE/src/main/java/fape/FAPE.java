@@ -96,19 +96,22 @@ public class FAPE {
             if(config.getBoolean("local-sim"))
                 e = new ExecutorSim();
             else
-            e = new ExecutorPRS(host, OPRS_MANIP, CLIENT_NAME, port);
+                e = new ExecutorPRS(host, OPRS_MANIP, CLIENT_NAME, port);
 
             a.bind(e, p);
             e.bind(a);
+
+            p.Init();
+            a.PushEvent(Executor.ProcessANMLfromFile(problemFile));
+            a.pbName = problemFile;
+            a.run();
+
         } catch (Exception ex) {
             System.err.println("FAPE setup failed.");
             throw ex;
+        } finally {
+            e.abort();
         }
-
-        p.Init();
-        a.PushEvent(Executor.ProcessANMLfromFile(problemFile));
-        a.pbName = problemFile;
-        a.run();
 
     }
 }

@@ -85,4 +85,10 @@ public class ExecutorPRS extends Executor {
         this.mListener.sendMessage(msg);
 
     }
+
+    @Override
+    public void abort() {
+        mListener.abort();
+    }
+
 }

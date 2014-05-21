@@ -61,4 +61,7 @@ public abstract class Executor {
      * @param acts
      */
     public abstract void executeAtomicActions(AtomicAction acts);
+
+    public void abort() {
+    }
 }

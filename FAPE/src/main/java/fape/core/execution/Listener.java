@@ -29,6 +29,17 @@ public class Listener {
     }
 
     /**
+     * Closes the socket which causes the thread to stop.
+     */
+    public void abort() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.err.println("Error while closing the socket: "+ e);
+        }
+    }
+
+    /**
      * "name of the machine", "who am I talking to", "my name (fape)", "3300"
      *
      * @param oprs_host
@@ -102,7 +113,7 @@ public class Listener {
         try {
             /* Create the sockets */
             System.out.print("Connecting socket to Message Passer...");
-            Socket socket = new Socket(OPRS_HOST, SOCKET_MP);
+            socket = new Socket(OPRS_HOST, SOCKET_MP);
             System.out.println(" done.");
             out = socket.getOutputStream();
             ostream = new PrintWriter(out);
@@ -143,27 +154,16 @@ public class Listener {
         public ListenMessagePasser() {
         }
 
-        public int ReadInt() {
-            try {
-                /*byte[] from = new byte[4];
-                int ok = istream.read(from, 0, 4);
-                if (ok == -1) {
-                    throw new UnsupportedOperationException("Stream read failure.");
-                }*/
+        public int ReadInt() throws IOException {
+            int b1 = istream.read();
+            int b2 = istream.read();
+            int b3 = istream.read();
+            int b4 = istream.read();
 
-                int b1 = istream.read();
-                int b2 = istream.read();
-                int b3 = istream.read();
-                int b4 = istream.read();
+            int res;
+            res = (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
 
-                int res;
-                res = (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
-
-                return res;
-            } catch (IOException e) {
-                System.out.println("Error :" + e + "\nError while listening on the socket...");
-                return ERROR;
-            }
+            return res;
         }
 
         /**
@@ -174,15 +174,6 @@ public class Listener {
             try {
                 // At the very beginning, we receive four 0, so we get rid of them
                 // They correspond to the REGISTER_OK
-                /*while (true) {
-                    int read = istream.read();
-                    if (read == -1) {
-                        break;
-                    } else {
-                        System.out.println(read);
-                    }
-
-                }*/
 
                 int protocol = ReadInt();
                 // In fact, we should check that we are getting REGISTER_OK, otherwise something went wrong.
@@ -203,6 +194,9 @@ public class Listener {
 
                     receivedMessage(new String(from), new String(message));
                 }
+            } catch (java.net.SocketException closed) {
+                // socket closed, graceful stop
+                System.out.println("[FAPE] Closing connection to message passer.");
             } catch (IOException e) {
                 System.out.println("Error :" + e + "\nError while listening on the socket...");
             }
@@ -300,4 +294,6 @@ public class Listener {
     public static final int ERROR = -1;
     public static final int OK = 1;
     private ExecutorPRS exec; //performs the translations
+
+    Socket socket;
 }
