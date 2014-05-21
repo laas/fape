@@ -58,7 +58,7 @@ public class FAPE {
                                 .setLongFlag("host")
                                 .setDefault("localhost"),
                         new FlaggedOption("port")
-                                .setStringParser(JSAP.STRING_PARSER)
+                                .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("port")
                                 .setDefault("3300"),
@@ -76,7 +76,7 @@ public class FAPE {
             System.exit(0);
 
         String host = config.getString("host");
-        String port = config.getString("port");
+        int port = config.getInt("port");
 
         Planner.debugging = config.getBoolean("debug");
         Planner.logging = config.getBoolean("verbose-planner");
@@ -110,7 +110,8 @@ public class FAPE {
             System.err.println("FAPE setup failed.");
             throw ex;
         } finally {
-            e.abort();
+            // ask executor to abort (to make sure any socket/thread is closed)
+            if(e != null) e.abort();
         }
 
     }

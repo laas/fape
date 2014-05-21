@@ -12,8 +12,8 @@ public class ExecutorPRS extends Executor {
 
     Listener mListener;
 
-    public ExecutorPRS(String oprs_host, String oprs_manip, String client_name, String socket_mp) {
-        mListener = new Listener(oprs_host, oprs_manip, client_name, socket_mp);
+    public ExecutorPRS(String oprs_host, String oprs_manip, String client_name, int socket_port) {
+        mListener = new Listener(oprs_host, oprs_manip, client_name, socket_port);
         mListener.bind(this);
         int sendMessage = mListener.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
         if(sendMessage != Listener.OK) {

@@ -20,6 +20,36 @@ import java.net.Socket;
 */
 public class Listener {
 
+    // The host where the message passer is running.
+    // sane default would be localhost
+    private final String OPRS_HOST;
+    // The name of the OPRS Kernel you want to talk to. Note that you
+    // can talk to any program connected to the message passer, his is
+    // just an example.
+    // sane default would be OPRS
+    private final String OPRS_MANIP;
+    // Your name (this is where other program will send you message).
+    private final String CLIENT_NAME;
+    // The default port to connect to the message passer.
+    // sane default would be 3300
+    private final int SOCKET_MP;
+
+    private boolean debug = false;
+    private PrintWriter ostream;
+    private OutputStream out;
+    private BufferedReader istream;
+    private ListenMessagePasser lmp;
+    private String sender;
+    // return states
+    public static final int ERROR = -1;
+    public static final int OK = 1;
+
+    /** Executor to which the messages are forwarded */
+    private ExecutorPRS exec;
+
+    /** Socket connect to the message passer */
+    Socket socket = null;
+
     /**
      *
      * @param e
@@ -32,6 +62,7 @@ public class Listener {
      * Closes the socket which causes the thread to stop.
      */
     public void abort() {
+        assert socket != null : "Socket doesn't exists.";
         try {
             socket.close();
         } catch (IOException e) {
@@ -42,13 +73,17 @@ public class Listener {
     /**
      * "name of the machine", "who am I talking to", "my name (fape)", "3300"
      *
-     * @param oprs_host
-     * @param oprs_manip
-     * @param client_name
-     * @param socket_mp
+     * @param oprs_host Host on which the message passer is running.
+     * @param oprs_manip Name of OPRS kernel you want to talk to.
+     * @param client_name Name that should by given to the message passer for yourself.
+     * @param socket_port Port on which the message passer is running.
      */
-    public Listener(String oprs_host, String oprs_manip, String client_name, String socket_mp) {
-        connect(oprs_host, oprs_manip, client_name, socket_mp);
+    public Listener(String oprs_host, String oprs_manip, String client_name, int socket_port) {
+        this.OPRS_HOST = oprs_host;
+        this.OPRS_MANIP = oprs_manip;
+        this.CLIENT_NAME = client_name;
+        this.SOCKET_MP = socket_port;
+        connect();
     }
 
     /**
@@ -103,12 +138,7 @@ public class Listener {
         }
     }
 
-    private void connect(String oprs_host, String oprs_manip, String client_name, String socket_mp) {
-        OPRS_HOST = oprs_host;
-        OPRS_MANIP = oprs_manip;
-        CLIENT_NAME = client_name;
-        SOCKET_MP = Integer.parseInt(socket_mp);
-
+    private void connect() {
         /* Connection */
         try {
             /* Create the sockets */
@@ -121,9 +151,9 @@ public class Listener {
             InputStreamReader reader = new InputStreamReader(in);
             istream = new BufferedReader(reader);
         } catch (IOException e) {
-            System.out.println(" FAILED.");
-            System.out.println("MessagePasserClient->initConnection :\nError :" + e + "\nCould not connect to Message Passer...");
-            throw new UnsupportedOperationException();
+            System.err.println(" FAILED.");
+            System.err.println("MessagePasserClient->initConnection :\nError :" + e + "\nCould not connect to Message Passer...");
+            throw new RuntimeException("Could not connect to message passer on host:port: "+OPRS_HOST+":"+SOCKET_MP);
         }
 
         /* Now that we are connected, we'll send the protocol and client name to the message passer */
@@ -210,10 +240,9 @@ public class Listener {
     private void receivedMessage(String from, String message) {
         message = message.replaceAll("\\\\n", "\n");
         TinyLogger.LogInfo("Message received: " + message);
+
+        // forward message to executor
         exec.eventReceived(message);
-        //we intepret the message here
-        //Calendar cal = Calendar.getInstance();
-        //msg_received_textarea.append(cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" + cal.get(Calendar.SECOND) + " from " + from + "> " + message + "\n");
     }
 
     /**
@@ -274,26 +303,5 @@ public class Listener {
         }
         return OK;
     }
-    // The host where the message passer is running.
-    private String OPRS_HOST = "localhost";
-    // The name of the OPRS Kernel you want to talk to. Note that you
-    // can talk to any program connected to the message passer, his is
-    // just an example.
-    private String OPRS_MANIP = "OPRS";
-    // Your name (this is where other program will send you message).
-    private String CLIENT_NAME = "JAVA_CLIENT";
-    // The default port to connect to the message passer.
-    private int SOCKET_MP = 3300;
-    private boolean debug = false;
-    private PrintWriter ostream;
-    private OutputStream out;
-    private BufferedReader istream;
-    private ListenMessagePasser lmp;
-    private String sender;
-    // return states
-    public static final int ERROR = -1;
-    public static final int OK = 1;
-    private ExecutorPRS exec; //performs the translations
 
-    Socket socket;
 }
