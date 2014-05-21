@@ -485,6 +485,8 @@ public abstract class APlanner {
             State st = queue.remove();
             OpenedStates++;
 
+            if(APlanner.debugging) st.tempoNet.exportToDot(st, "current-stn.dot");
+
             List<Flaw> flaws = GetFlaws(st);
 
             TinyLogger.LogInfo(st);

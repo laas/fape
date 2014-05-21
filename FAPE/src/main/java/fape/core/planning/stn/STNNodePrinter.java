@@ -32,10 +32,12 @@ public class STNNodePrinter extends NodeEdgePrinter<Object, Object, LabeledEdge<
     }
 
     /**
-     * Restricts printing to the timepoints appearing as actions or problem start/end
+     *
      */
     @Override
     public boolean excludeNode(Object node) {
+        return false;
+        /* Restricts printing to the timepoints appearing as actions or problem start/end
         int stnId = (Integer) node;
         TPRef tp = Printer.correspondingTimePoint(st, stnId);
         if(tp == null)
@@ -53,5 +55,6 @@ public class STNNodePrinter extends NodeEdgePrinter<Object, Object, LabeledEdge<
             return false;
 
         return true;
+        */
     }
 }
