@@ -128,20 +128,6 @@ public class TemporalDatabase {
         return null;
     }
 
-    /** TODO: Recreate
-     *
-     * @param first
-     * @param second
-     * @param st
-     *
-    public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
-        for (LogStatement f : first.contents) {
-            for(LogStatement s : second.contents){
-                st.tempoNet.EnforceBefore(f.end(), s.start());
-            }
-        }
-    }*/
-
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
     }
