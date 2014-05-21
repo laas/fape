@@ -16,9 +16,7 @@ import fape.util.Utils;
 import planstack.anml.parser.ANMLFactory;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class Planning {
 
@@ -53,7 +51,7 @@ public class Planning {
 
     public static void main(String[] args) throws Exception {
         SimpleJSAP jsap = new SimpleJSAP(
-                "FAPE",
+                "FAPE planners",
                 "Solves ANML problems",
                 new Parameter[] {
                         new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
@@ -152,6 +150,8 @@ public class Planning {
                 anmlFiles.add(path);
             }
         }
+
+        Collections.sort(anmlFiles);
 
         // output format
         writer.write("iter, planner, runtime, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
@@ -268,6 +268,7 @@ public class Planning {
 
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");
+                            sol.tempoNet.exportToDot(sol, "stn.dot");
                             System.out.println("Look at plan.dot for a complete plan.");
                         }
                     }

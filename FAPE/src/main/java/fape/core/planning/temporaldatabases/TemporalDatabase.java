@@ -102,27 +102,31 @@ public class TemporalDatabase {
         return new TemporalDatabase(this);
     }
 
+
+    /**
+     * @return The end time point of the last component inducing a change.
+     */
     public TPRef getSupportTimePoint() {
-        return chain.getLast().getSupportTimePoint();
+        assert getSupportingComponent() != null : "This database appears to be containing only a persitence. " +
+                "Hence it not available for support. " + this.toString();
+        return getSupportingComponent().getSupportTimePoint();
     }
 
     public TPRef getConsumeTimePoint() {
         return chain.getFirst().getConsumeTimePoint();
     }
 
-    /** TODO: Recreate
-     *
-     * @param first
-     * @param second
-     * @param st
-     *
-    public static void PropagatePrecedence(ChainComponent first, ChainComponent second, State st) {
-        for (LogStatement f : first.contents) {
-            for(LogStatement s : second.contents){
-                st.tempoNet.EnforceBefore(f.end(), s.start());
-            }
+    /**
+     * @return The last component of the database containing a change (i.e. an assignment
+     * or a transition). It returns null if no such element exists.
+     */
+    public ChainComponent getSupportingComponent() {
+        for(int i=chain.size()-1 ; i>=0 ; i--) {
+            if(chain.get(i).change)
+                return chain.get(i);
         }
-    }*/
+        return null;
+    }
 
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);

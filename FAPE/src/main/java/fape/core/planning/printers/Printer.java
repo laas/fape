@@ -4,10 +4,15 @@ import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.TPRef;
+import planstack.anml.model.concrete.TemporalInterval;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.*;
+
+import java.util.Map;
 
 /**
  * Contains functions to produce human-readable string from planning objects.
@@ -80,5 +85,66 @@ public class Printer {
         }
 
         return sb.toString();
+    }
+
+    private static boolean intervalContains(TPRef tp, TemporalInterval in) {
+        return tp == in.start() || tp == in.end();
+    }
+
+    private static String tpToString(TPRef tp, TemporalInterval in) {
+        if(tp == in.start())
+            return "start("+in+")";
+        else if(tp == in.end())
+            return "end("+in+")";
+        else
+            throw new FAPEException("Error: time point does not belong to this interval.");
+    }
+
+    public static TPRef correspondingTimePoint(State st, int stnId) {
+        for(Map.Entry<TPRef,Integer> entry : st.tempoNet.ids.entrySet()) {
+            if(entry.getValue().equals(stnId))
+                return entry.getKey();
+        }
+        return null;
+    }
+
+    public static TemporalInterval containingInterval(State st, TPRef tp) {
+        for(Action act : st.taskNet.GetAllActions()) {
+            if(intervalContains(tp, act))
+                return act;
+        }
+
+        for(TemporalDatabase db : st.tdb.vars) {
+            for(ChainComponent cc : db.chain) {
+                for(LogStatement statement : cc.contents) {
+                    if(intervalContains(tp, statement))
+                        return statement;
+                }
+            }
+        }
+        return null;
+    }
+
+
+
+    public static String stnId(State st, int stnID) {
+        TPRef tp = correspondingTimePoint(st, stnID);
+        if(tp == null)
+            return "unknown";
+
+        if(tp == st.pb.start())
+            return "start";
+        else if(tp == st.pb.earliestExecution())
+            return "exec";
+        else if(tp == st.pb.end())
+            return "end";
+
+        TemporalInterval container = containingInterval(st, tp);
+
+        if(container != null)
+            return tpToString(tp, container);
+        else
+            return "unknown";
+
     }
 }

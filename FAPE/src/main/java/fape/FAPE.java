@@ -1,7 +1,10 @@
 package fape;
 
+import com.martiansoftware.jsap.*;
 import fape.core.acting.Actor;
 import fape.core.execution.Executor;
+import fape.core.execution.ExecutorPRS;
+import fape.core.execution.ExecutorSim;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
 import fape.util.TinyLogger;
@@ -27,50 +30,89 @@ import java.util.LinkedList;
 */
 public class FAPE {
 
-    public static boolean parserLogging = false;
-    public static boolean localTesting = true;
-    private static boolean runListener;
+    public static final String OPRS_MANIP = "PR2";
+    public static final String CLIENT_NAME = "FAPE";
 
+    /** True if FAPE should log about the execution details. THis is the default, hence logging
+     * should remain short.
+     */
+    public static boolean execLogging;
 
+    public static boolean localSim;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
+        SimpleJSAP jsap = new SimpleJSAP(
+                "FAPE",
+                "Solves ANML problems",
+                new Parameter[] {
+                        //new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
+                        new Switch("verbose-planner", JSAP.NO_SHORTFLAG, "verbose-planner", "Requests verbose output " +
+                                "for the planner. Every search node will be displayed."),
+                        new Switch("quiet", 'q', "quiet", "FAPE won't detail the execution."),
+                        new Switch("debug", 'd', "debug", "Set the planner in debugging mode. " +
+                                "Mainly consists in time consuming checks."),
+                        new Switch("local-sim", JSAP.NO_SHORTFLAG, "sim", "Use built-in simulator. (doesn't use OpenPRS)"),
+                        new FlaggedOption("host")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("host")
+                                .setDefault("localhost"),
+                        new FlaggedOption("port")
+                                .setStringParser(JSAP.INTEGER_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("port")
+                                .setDefault("3300"),
+                        new UnflaggedOption("anml-file")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setRequired(true)
+                                .setGreedy(true)
+                                .setHelp("ANML problem files on which to run the planners.")
 
+                }
+        );
+
+        JSAPResult config = jsap.parse(args);
+        if(jsap.messagePrinted())
+            System.exit(0);
+
+        String host = config.getString("host");
+        int port = config.getInt("port");
+
+        Planner.debugging = config.getBoolean("debug");
+        Planner.logging = config.getBoolean("verbose-planner");
+        execLogging = !config.getBoolean("quiet");
 
         Actor a = null;
         Planner p = null;
         Executor e = null;
         Listener l = null;
-
+        String problemFile = "";
         try {
+            problemFile = args[0];
             a = new Actor();
             p = new Planner();
-            Planner.debugging = false;
-            Planner.logging = false;
+
             Planner.actionResolvers = true;
-            FAPE.localTesting = false;
-            FAPE.runListener = true;
-            e = new Executor();
-            if (FAPE.runListener) {
-                l = new Listener("localhost", "PR2", "FAPE", "3300");
-                l.bind(e);
-            }
+            if(config.getBoolean("local-sim"))
+                e = new ExecutorSim();
+            else
+                e = new ExecutorPRS(host, OPRS_MANIP, CLIENT_NAME, port);
+
             a.bind(e, p);
-            e.bind(a, l);
+            e.bind(a);
+
+            p.Init();
+            a.PushEvent(Executor.ProcessANMLfromFile(problemFile));
+            a.pbName = problemFile;
+            a.run();
+
         } catch (Exception ex) {
-            System.out.println("FAPE setup failed.");
+            System.err.println("FAPE setup failed.");
             throw ex;
+        } finally {
+            // ask executor to abort (to make sure any socket/thread is closed)
+            if(e != null) e.abort();
         }
 
-        if (FAPE.localTesting) {
-            //pushing the initial event
-            a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\DreamAddition.anml"));
-            //a.PushEvent(e.ProcessANMLfromFile("C:\\ROOT\\PROJECTS\\fape\\FAPE\\problems\\IntervalTest.anml"));
-            p.Init();
-            a.run();
-        } else {
-            int sendMessage = l.sendMessage("(FAPE-action -1 -1 -1 (InitializeTime))");
-            p.Init();
-            a.run();
-        }
     }
 }

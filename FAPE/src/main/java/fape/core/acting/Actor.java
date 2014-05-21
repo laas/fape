@@ -10,10 +10,18 @@
 */
 package fape.core.acting;
 
+import fape.FAPE;
 import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
+import fape.exceptions.FAPEException;
+import fape.util.Pair;
 import fape.util.TimeAmount;
+
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ParseResult;
 
@@ -31,11 +39,13 @@ import java.util.List;
 */
 public class Actor {
 
+    public String pbName = "default";
+
     /**
      *
      * @param b
      */
-    public void PushEvent(ParseResult b) {
+    public synchronized void PushEvent(ParseResult b) {
         newEventBuffer.add(b);
     }
 
@@ -44,12 +54,12 @@ public class Actor {
      * @param e
      * @param p
      */
-    public void bind(Executor e, Planner p) {
+    public synchronized void bind(Executor e, Planner p) {
         mExecutor = e;
         mPlanner = p;
     }
     long sleepTime = 100;
-    long repairTime = 1000;
+    long repairTime = 10000;
     long progressTime = 10000;
     long progressStep = 5000;
     int currentDelay = 0;
@@ -60,7 +70,15 @@ public class Actor {
 
     List<AtomicAction> actionsToDispatch = new LinkedList<>();
     LinkedList<ActRef> failures = new LinkedList<>();
+    LinkedList<Pair<ActRef, Integer>> successes = new LinkedList<>();
     boolean planReady = false;
+
+    boolean finished = false;
+    boolean isInitPlan = true;
+    int prevOpen = 0;
+    int prevGene = 0;
+    String report = "";
+    int timeZero;
 
     /**
      *
@@ -71,7 +89,7 @@ public class Actor {
     HashSet<ActRef> dispatchedActions = new HashSet<>();
     List<AtomicAction> actionsBeingExecuted = new LinkedList<>();
 
-    public void ReportSuccess(ActRef actionID, int realEndTime) {
+    public synchronized void ReportSuccess(ActRef actionID, int realEndTime) {
         planNeedsRepair = true;
         successfulActions.add(idToSignature.get(actionID));
         AtomicAction act = null;
@@ -81,10 +99,11 @@ public class Actor {
             }
         }
         actionsBeingExecuted.remove(act);
-        mPlanner.AddActionEnding(actionID, realEndTime);
+        successes.add(new Pair<>(actionID, realEndTime));
+
     }
 
-    public void ReportFailure(ActRef actionID) {
+    public synchronized void ReportFailure(ActRef actionID) {
         planNeedsRepair = true;
         failures.add(actionID);
         AtomicAction act = null;
@@ -116,69 +135,138 @@ public class Actor {
     }
     EActorState mState = EActorState.ACTING;
 
+    public void run() throws InterruptedException {
+        timeZero = (int) (System.currentTimeMillis() / 1000);
+
+        while(!finished) {
+            runOnce();
+            if(!finished)
+                Thread.sleep(sleepTime);
+        }
+    }
+
+    int previousRun = -1;
+
     /**
      * runs the acting agent
      *
      * @throws java.lang.InterruptedException
      */
-    public void run() throws InterruptedException {
-        int timeZero = (int) (System.currentTimeMillis() / 1000);
+    private synchronized void runOnce() throws InterruptedException {
+        int now = (int) (System.currentTimeMillis() / 1000);
+        switch (mState) {
+            case ACTING:
+                while(!successes.isEmpty()) {
+                    Pair<ActRef, Integer> actAndEndTime = successes.remove();
+                    mPlanner.AddActionEnding(actAndEndTime.value1, actAndEndTime.value2);
+                }
+                if (!failures.isEmpty()) {
+                    if(FAPE.execLogging) System.out.println("Including "+failures.size()+" failures");
+                    while (!failures.isEmpty()) {
+                        mPlanner.FailAction(failures.pop());
+                    }
+                    planNeedsRepair = true;
+                }
+                if (!newEventBuffer.isEmpty()) {
+                    if(FAPE.execLogging) System.out.println("Including "+newEventBuffer.size()+" new events");
+                    while (!newEventBuffer.isEmpty()) {
+                        mPlanner.ForceFact(newEventBuffer.pop());
+                    }
+                    planNeedsRepair = true;
+                }
+                if(previousRun >= 0 && now > previousRun) {
+                    mPlanner.SetEarliestExecution((int) (now - timeZero + 1));
+                    planNeedsRepair = true;
+                    previousRun = now;
+                }
+                if (planNeedsRepair) {
+                    if(FAPE.execLogging) System.out.println("Repairing Plan");
+                    planNeedsRepair = false;
+                    mPlanner.Repair(new TimeAmount(repairTime));
+                    if(mPlanner.planState == Planner.EPlanState.CONSISTENT) {
+                        now = (int) (System.currentTimeMillis() / 1000);
+                        mPlanner.SetEarliestExecution((int) (now - timeZero));
+                        mPlanner.Repair(new TimeAmount(500));
+                    }
 
-        /*int successReportOne = timeZero + 5;
-        int firstFailureTime = timeZero + 6;
-        int newStatementTime = timeZero + 7;*/
+                    if(isInitPlan && mPlanner.planState == Planner.EPlanState.CONSISTENT) {
+                        if(FAPE.execLogging) System.out.println("Plan consistent");
+                        isInitPlan = false;
+                        report += pbName + ", PLAN, " + (mPlanner.OpenedStates - prevOpen) + ", " + (mPlanner.GeneratedStates - prevGene) + "\n";
+                    } else if(mPlanner.planState == Planner.EPlanState.CONSISTENT) {
+                        if(FAPE.execLogging) System.out.println("Repaired plan consistent");
+                        report += pbName+", REPAIR, "+(mPlanner.OpenedStates-prevOpen)+", "+(mPlanner.GeneratedStates - prevGene) + "\n";
+                    } else {
+                        if(FAPE.execLogging) System.out.println("Repaired plan FAILURE");
+                        report += pbName+", REPAIR, "+(mPlanner.OpenedStates-prevOpen)+", "+(mPlanner.GeneratedStates - prevGene) + "\n";
+                    }
+                    prevGene = mPlanner.GeneratedStates;
+                    prevOpen = mPlanner.OpenedStates;
+                }
+                if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
+                    List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero + progressStep/1000));
+                    actionsToDispatch.addAll(scheduledActions);
+                }
+                List<AtomicAction> remove = new LinkedList<>();
+                for (AtomicAction a : actionsToDispatch) {
+                    if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.id)) && !dispatchedActions.contains(a.id)) {
+                        idToSignature.put(a.id, a.GetDescription());
+                        mExecutor.executeAtomicActions(a);
+                        dispatchedActions.add(a.id);
+                        actionsBeingExecuted.add(a);
+                        remove.add(a);
+                    }
+                }
+                actionsToDispatch.removeAll(remove);
+                remove.clear();
+                actionsBeingExecuted.removeAll(remove);
 
-        newEventBuffer.add(Executor.ProcessANMLfromFile("problems/DreamAddition.anml"));
+                if(mPlanner.planState != Planner.EPlanState.UNINITIALIZED) {
+                    if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.numUnfinishedActions() == 0) {
+                        mState = EActorState.ENDING;
+                        break;
+                    }
+                    if(mPlanner.planState == Planner.EPlanState.INCONSISTENT || mPlanner.planState == Planner.EPlanState.INFESSIBLE) {
+                        mState = EActorState.STOPPED;
+                        break;
+                    }
+                }
+                break;
 
-        while (true) {
-            switch (mState) {
-                case ACTING:
-                    int now = (int) (System.currentTimeMillis() / 1000);
-                    if (!failures.isEmpty()) {
-                        while (!failures.isEmpty()) {
-                            mPlanner.FailAction(failures.pop());
-                        }
-                        planNeedsRepair = true;
+            case ENDING:
+                System.err.println("Plan successfully carried out");
+                finished = true;
+                try {
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("repair-states-count.csv", true)));
+                    out.println(report);
+                    out.close();
+                } catch (Exception e) {
+                    throw new FAPEException("Cannot open file");
+                }
+                try {
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("failures.csv", true)));
+                    out.println(pbName + ", OK");
+                    out.close();
+                } catch (Exception e) {
+                    throw new FAPEException("Cannot open file");
+                }
+                break;
+
+            case STOPPED:
+                System.err.println("Problem while executing the plan.");
+                try {
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("failures.csv", true)));
+                    if(isInitPlan) {
+                        out.println(pbName + ", NOPLAN");
+                    } else {
+                        out.println(pbName + ", NOREPAIR");
                     }
-                    if (!newEventBuffer.isEmpty()) {
-                        while (!newEventBuffer.isEmpty()) {
-                            mPlanner.ForceFact(newEventBuffer.pop());
-                        }
-                        planNeedsRepair = true;
-                    }
-                    if (planNeedsRepair) {
-                        planNeedsRepair = false;
-                        mPlanner.SetEarliestExecution((int) (now - timeZero + repairTime/1000));
-                        mPlanner.Repair(new TimeAmount(repairTime));
-                    }
-                    if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
-                        List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero + progressStep/1000));
-                        actionsToDispatch.addAll(scheduledActions);
-                    }
-                    List<AtomicAction> remove = new LinkedList<>();
-                    for (AtomicAction a : actionsToDispatch) {
-                        if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.id)) && !dispatchedActions.contains(a.id)) {
-                            idToSignature.put(a.id, a.GetDescription());
-                            mExecutor.executeAtomicActions(a);
-                            dispatchedActions.add(a.id);
-                            actionsBeingExecuted.add(a);
-                            remove.add(a);
-                        }
-                    }
-                    actionsToDispatch.removeAll(remove);
-                    remove.clear();
-                    /*
-                    for (AtomicAction a : actionsBeingExecuted) {
-                        if (a.duration + a.mStartTime + timeZero < now) {
-                            ReportFailure(a.mID);
-                            remove.add(a);
-                        }
-                    }
-                    */
-                    actionsBeingExecuted.removeAll(remove);
-                    Thread.sleep(sleepTime);
-                    break;
-            }
+                    out.close();
+                } catch (Exception e) {
+                    throw new FAPEException("Cannot open file");
+                }
+                finished = true;
+                break;
         }
     }
 }
