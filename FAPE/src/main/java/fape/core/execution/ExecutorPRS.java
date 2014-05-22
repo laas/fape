@@ -29,6 +29,7 @@ public class ExecutorPRS extends Executor {
      * @param message
      */
     public void eventReceived(String message) {
+        System.out.println("[PRS] Received: "+message);
         String tokens[] = message.split(" ");
         String msgType = tokens[0].split("\\(")[1];
         switch (msgType) {

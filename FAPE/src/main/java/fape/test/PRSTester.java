@@ -93,7 +93,7 @@ public class PRSTester {
 
                 // make sure everybody is dead, then launch the message passer.
                 Thread.sleep(3000);
-                ProcessBuilder mp = new ProcessBuilder("mp-oprs", "-v").inheritIO();
+                ProcessBuilder mp = new ProcessBuilder("mp-oprs", "-v");
                 mp.start();
                 Thread.sleep(1000);
 

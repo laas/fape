@@ -252,6 +252,7 @@ public class Listener {
      * @param msg The message to send
      */
     public int sendMessage(String msg) {
+        System.out.println("[PRS] Sent: "+msg);
         TinyLogger.LogInfo("Sending message: " + msg);
         /* The format of a message is :
          MessageType+sizeof(DestinationName)+DestinationName+sizeof(msg)+msg*/
