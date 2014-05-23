@@ -11,6 +11,7 @@ import planstack.anml.model.ParameterizedStateVariable
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   */
 abstract class ResourceStatement(sv:ParameterizedStateVariable, val param:Int) extends Statement(sv) {
+  require(sv.func isInstanceOf)
 
   def operator :String
 
@@ -39,5 +40,5 @@ class ProduceResource(sv :ParameterizedStateVariable, param :Int) extends Resour
 }
 
 class RequireResource(sv :ParameterizedStateVariable, val operator :String, param :Int) extends ResourceStatement(sv, param) {
-
+  assert(Set("<=",">=","<",">").contains(operator))
 }

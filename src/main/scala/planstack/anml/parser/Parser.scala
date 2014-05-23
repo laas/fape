@@ -456,8 +456,10 @@ object Test extends App {
   } else {
     val pb = new AnmlProblem
     pb.addAnml(ANMLFactory.parseAnmlFromFile(args(0)))
+
+    val x = 0;
   }
 
-  val x = 0;
+
 
 }
