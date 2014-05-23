@@ -98,7 +98,59 @@ case class TemporalConstraint(tp1:TimepointRef, operator:String, tp2:TimepointRe
   require(operator == "=" || operator == "<")
 }
 
-case class Function(name:String, args:List[Argument], tipe:String, isConstant:Boolean) extends AnmlBlock with TypeContent
+class Function(val name:String, val args:List[Argument], val tipe:String, val isConstant:Boolean) extends AnmlBlock with TypeContent
+
+case class SymFunction(
+    override val name:String,
+    override val args:List[Argument],
+    override val tipe:String,
+    override val isConstant:Boolean)
+  extends Function(name, args, tipe, isConstant)
+{
+  assert(tipe != "integer" && tipe != "float", "Symbolic function with a numeric type: "+this)
+}
+
+class NumFunction(
+    override val name:String,
+    override val args:List[Argument],
+    override val tipe:String,
+    override val isConstant:Boolean,
+    val resourceType:Option[String])
+  extends Function(name, args, tipe, isConstant)
+{
+  resourceType match {
+    case None => // OK
+    case Some(x) => assert(x=="consumable" | x=="producible" | x=="reusable" | x=="replenishable")
+  }
+}
+
+case class IntFunction(
+    override val name:String,
+    override val args:List[Argument],
+    override val tipe:String,
+    override val isConstant:Boolean,
+    minValue:Int,
+    maxValue:Int,
+    override val resourceType:Option[String])
+  extends NumFunction(name, args, tipe, isConstant, resourceType)
+{
+  assert(tipe == "integer", "The type of this int function is not an integer: "+this)
+  assert(minValue <= maxValue, "Error: min value greater than max value in integer function: "+this)
+}
+
+case class FloatFunction(
+    override val name:String,
+    override val args:List[Argument],
+    override val tipe:String,
+    override val isConstant:Boolean,
+    minValue:Float,
+    maxValue:Float,
+    override val resourceType:Option[String])
+  extends NumFunction(name, args, tipe, isConstant, resourceType)
+{
+  assert(tipe == "float", "The type of this float function is not a float: "+this)
+  assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
+}
 
 class Constant(override val name :String, override val tipe:String) extends Function(name, Nil, tipe, true) with DecompositionContent
 
@@ -122,10 +174,10 @@ object AnmlParser extends JavaTokenParsers {
   def annotationBase : Parser[TemporalAnnotation] = (
       "["~"all"~"]" ^^
         (x => TemporalAnnotation(new RelativeTimepoint("start"), new RelativeTimepoint("end"), "is"))
-      | "["~> repsep(timepoint,",") <~"]" ^^ {
+    | "["~> repsep(timepoint,",") <~"]" ^^ {
         case List(tp) => TemporalAnnotation(tp, tp, "is")
         case List(tp1, tp2) => TemporalAnnotation(tp1, tp2, "is")
-    })
+      })
 
   def timepoint : Parser[RelativeTimepoint] = (
       opt(timepointRef)~("+"|"-")~decimalNumber ^^ {
@@ -239,7 +291,7 @@ object AnmlParser extends JavaTokenParsers {
   def decompositionContent : Parser[DecompositionContent] = (
       tempConstraint
     | partiallyOrderedActionRef<~";"
-    | "constant"~>(word|kwTypes)~word<~";" ^^ {
+    | "constant"~>(word|kwType)~word<~";" ^^ {
         case tipe~name => new Constant(name, tipe)
       })
 
@@ -284,22 +336,74 @@ object AnmlParser extends JavaTokenParsers {
 
   def anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
 
-  def argList : Parser[List[Argument]] = (
+  def argList : Parser[List[Argument]] =
       "("~>repsep(argument,",")<~")"
-  )
 
-  def functionDecl : Parser[Function] = (
-      "constant"~>tipe~word~opt(argList)<~";" ^^ {
-        case t~name~Some(args) => Function(name, args, t, isConstant=true)
-        case t~name~None => Function(name, Nil, t, isConstant=true)
+  def functionDecl : Parser[Function] = numFunctionDecl | symFunctionDecl
+
+  def anySymType : Parser[String] = symType | word
+
+  def symFunctionDecl : Parser[SymFunction] = (
+      "constant"~>anySymType~word~opt(argList)<~";" ^^ {
+        case t~name~Some(args) => SymFunction(name, args, t, isConstant=true)
+        case t~name~None => SymFunction(name, Nil, t, isConstant=true)
       }
-    | "variable"~>tipe~word<~";" ^^ {case t~name => Function(name, List(), t, isConstant=false)}
-    | "function"~>tipe~word~argList<~";" ^^ {case t~name~args => Function(name, args, t, isConstant=false)}
-    | "predicate"~>word~argList<~";" ^^ {case name~args => Function(name, args, "boolean", isConstant=false)}
+    | "variable"~>anySymType~word<~";" ^^ {case t~name => SymFunction(name, List(), t, isConstant=false)}
+    | "function"~>anySymType~word~argList<~";" ^^ {case t~name~args => SymFunction(name, args, t, isConstant=false)}
+    | "predicate"~>anySymType~argList<~";" ^^ {case name~args => SymFunction(name, args, "boolean", isConstant=false)}
     )
 
+  def numFunctionDecl : Parser[NumFunction] = integerFunctionDecl | floatFunctionDecl
+
+  def numFunctionType : Parser[String] = "constant" | "variable" | "function" | "consumable" | "producible" | "reusable" | "replenishable"
+
+  def floatInterval : Parser[(Float, Float)] = (
+      "["~>floatingPointNumber~","~floatingPointNumber<~"]" ^^ { case min~","~max => (min.toFloat, max.toFloat) }
+    | "["~>floatingPointNumber~","~"infinity"<~"]" ^^ { case min~","~_ => (min.toFloat, Float.MaxValue) })
+
+  def intInterval : Parser[(Int, Int)] = (
+      "["~>floatingPointNumber~","~floatingPointNumber<~"]" ^^ { case min~","~max => (min.toInt, max.toInt) }
+    | "["~>floatingPointNumber~","~"infinity"<~"]" ^^ { case min~","~_ => (min.toInt, Int.MaxValue) })
+
+  def floatFunctionDecl : Parser[FloatFunction] =
+      numFunctionType~"float"~opt(floatInterval)~word~opt(argList)<~";" ^^ {
+        case fType~"float"~interval~name~argsOpt => {
+          val resourceType =
+            if(fType == "constant" || fType == "variable" || fType == "function") None
+            else Some(fType)
+          val constraints = interval match {
+            case None => (Float.MinValue, Float.MaxValue)
+            case Some(anInterval) => anInterval
+          }
+          val args = argsOpt match {
+            case None => List()
+            case Some(arguments) => arguments
+          }
+          new FloatFunction(name, args, "float", fType == "constant", constraints._1, constraints._2, resourceType)
+        }
+      }
+
+  def integerFunctionDecl : Parser[IntFunction] =
+      numFunctionType~"integer"~opt(intInterval)~word~opt(argList)<~";" ^^ {
+        case fType~"integer"~interval~name~argsOpt => {
+          val resourceType =
+            if(fType == "constant" || fType == "variable" || fType == "function") None
+            else Some(fType)
+          val constraints = interval match {
+            case None => (Int.MinValue, Int.MaxValue)
+            case Some(anInterval) => anInterval
+          }
+          val args = argsOpt match {
+            case None => List()
+            case Some(arguments) => arguments
+          }
+          new IntFunction(name, args, "integer", fType == "constant", constraints._1, constraints._2, resourceType)
+        }
+      }
+
+
   def tipe : Parser[String] =
-      kwTypes | word | failure("Unable to parse type")
+      kwType | word | failure("Unable to parse type")
 
   def typeDecl : Parser[Type] = (
       "type"~>tipe~"<"~tipe~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => Type(name, parent, content)}
@@ -309,9 +413,7 @@ object AnmlParser extends JavaTokenParsers {
     | failure("Not a valid type declaration")
     )
 
-  def typeBody : Parser[List[TypeContent]] = (
-      "{"~>rep(functionDecl)<~"}"
-    )
+  def typeBody : Parser[List[TypeContent]] = "{"~>rep(functionDecl)<~"}"
 
   def instanceDecl : Parser[List[Instance]] =
       "instance"~>tipe~repsep(word,",")<~";" ^^ {
@@ -320,10 +422,18 @@ object AnmlParser extends JavaTokenParsers {
 
   def comment : Parser[AnmlBlock] = """/\\*(?:.|[\n\r])*?\\*/""".r ^^^ Comment
 
-  def kwTypes : Parser[String] = "float" | "boolean" | "object"
+  /** all predefined types: boolean, float, integer, object */
+  def kwType : Parser[String] = numType | symType
+
+  /** predefined symbolic types: boolean, object */
+  def symType : Parser[String] = "boolean" | "object"
+
+  /** Predefined numeric types: float and integer */
+  def numType : Parser[String] = "float" | "integer"
+
   def kwTempAnnot : Parser[String] = "start" | "end"
 
-  def keywords = kwTypes | kwTempAnnot
+  def keywords = kwType | kwTempAnnot
 
   def word = not(keywords) ~> ident
 }
@@ -341,8 +451,12 @@ object Test extends App {
     case x => println(x)
   }
 */
-  val pb = new AnmlProblem
-  pb.addAnml(ANMLFactory.parseAnmlFromFile("resources/test-resources.anml"))
+  if(args.size < 1) {
+    println("Error: give one anml file as argument.")
+  } else {
+    val pb = new AnmlProblem
+    pb.addAnml(ANMLFactory.parseAnmlFromFile(args(0)))
+  }
 
   val x = 0;
 
