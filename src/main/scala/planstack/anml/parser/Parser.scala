@@ -158,8 +158,6 @@ case class Type(name:String, parent:String, content:List[TypeContent]) extends A
 
 case class Instance(tipe:String, name:String) extends AnmlBlock
 
-object Comment extends AnmlBlock
-
 object AnmlParser extends JavaTokenParsers {
 
   def annotation : Parser[TemporalAnnotation] = (
@@ -331,7 +329,6 @@ object AnmlParser extends JavaTokenParsers {
     | functionDecl ^^ (func => List(func))
     | typeDecl ^^ (t => List(t))
     | instanceDecl
-    | comment ^^^ List()
     )
 
   def anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
@@ -419,8 +416,6 @@ object AnmlParser extends JavaTokenParsers {
       "instance"~>tipe~repsep(word,",")<~";" ^^ {
         case tipe~names => names.map(Instance(tipe, _))
       }
-
-  def comment : Parser[AnmlBlock] = """/\\*(?:.|[\n\r])*?\\*/""".r ^^^ Comment
 
   /** all predefined types: boolean, float, integer, object */
   def kwType : Parser[String] = numType | symType

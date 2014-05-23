@@ -2,7 +2,7 @@ name := "planstack-anml"
 
 organization := "planstack"
 
-version := "0.3.8"
+version := "0.4.0"
 
 scalaVersion := "2.10.3"
 
@@ -11,6 +11,11 @@ resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 libraryDependencies += "planstack" % "planstack-graph" % "0.3.2"
 
 crossPaths := false
+
+scalacOptions in (Compile, doc) ++= Seq(
+    "-diagrams",
+    "-doc-title", "Planstack: ANML Parser (Documentation)"
+  )
 
 
 // setup plugin for javadoc. Javadoc can be generated with task genjavadoc:doc

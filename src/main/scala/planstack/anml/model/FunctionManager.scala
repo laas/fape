@@ -63,6 +63,20 @@ abstract class NumFunction(name:String, valueType:String, argTypes:List[String],
   def hasSpecificResourceType : Boolean = resourceType != ""
 }
 
+/** Representation of an ANML function on integers.
+  *
+  * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
+  *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
+  * @param valueType Type of the function's value.
+  * @param argTypes Types of the arguments of the function in order.
+  * @param isConstant True if this function is defined as constant. False otherwise
+  * @param minValue Minimum possible value of the function. It is set to `Integer.MIN_VALUE` if no lower bound is
+  *                 specified in the ANML model.
+  * @param maxValue Maximum possible value of the function. It is set to `Integer.MAX_VALUE` if no upper bound is
+  *                 specified in the ANML model.
+  * @param resourceType Type of the resource which can be one of consumable, replenishable, reusable or producible.
+  *                     If it is an empty String, then it is a generic resource.
+  */
 class IntFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean, val minValue:Int, val maxValue:Int, resourceType:String)
   extends NumFunction(name, valueType, argTypes, isConstant, resourceType)
 {
@@ -72,6 +86,20 @@ class IntFunction(name:String, valueType:String, argTypes:List[String], isConsta
     new IntFunction(container+"."+name, valueType, container::argTypes, isConstant, minValue, maxValue, resourceType)
 }
 
+/** Representation of an ANML function on floats.
+  *
+  * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
+  *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
+  * @param valueType Type of the function's value.
+  * @param argTypes Types of the arguments of the function in order.
+  * @param isConstant True if this function is defined as constant. False otherwise
+  * @param minValue Minimum possible value of the function. It is set to `Float.MIN_VALUE` if no lower bound is
+  *                 specified in the ANML model.
+  * @param maxValue Maximum possible value of the function. It is set to `Float.MAX_VALUE` if no upper bound is
+  *                 specified in the ANML model.
+  * @param resourceType Type of the resource which can be one of consumable, replenishable, reusable or producible.
+  *                     If it is an empty String, then it is a generic resource.
+  */
 class FloatFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean, val minValue:Float, val maxValue:Float, resourceType:String)
   extends NumFunction(name, valueType, argTypes, isConstant, resourceType)
 {

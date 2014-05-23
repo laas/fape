@@ -17,6 +17,11 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
 }
 
+/** A state variable parameterized with variables.
+  *
+  * @param func Function on which this state variables applies.
+  * @param args A list of variables that are the parameters of the state variable.
+  */
 class ParameterizedStateVariable(val func:Function, val args:List[VarRef]) {
 
   def jArgs = seqAsJavaList(args)

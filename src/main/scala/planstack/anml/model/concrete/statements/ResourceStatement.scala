@@ -7,6 +7,8 @@ import planstack.anml.model.{NumFunction, ParameterizedStateVariable}
   * It applies on a parameterized state variable and takes integer parameters.
   * Further work should be done to support more complex right hand side expressions.
   *
+  * Subclasses and the `operator` method gives more details on the type of statement.
+  *
   * @param sv State Variable on which this statement applies
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   */
@@ -40,6 +42,12 @@ class ProduceResource(sv :ParameterizedStateVariable, param :Float) extends Reso
   val operator: String = ":produce"
 }
 
+/** Defines a condition on the resource such as <, >, <= or >=
+  *
+  * @param sv State Variable on which this statement applies
+  * @param operator The operator: <, >, <= or >=
+  * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
+  */
 class RequireResource(sv :ParameterizedStateVariable, val operator :String, param :Float) extends ResourceStatement(sv, param) {
   assert(Set("<=",">=","<",">").contains(operator))
 }
