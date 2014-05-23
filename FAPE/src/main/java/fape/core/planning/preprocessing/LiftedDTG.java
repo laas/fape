@@ -14,6 +14,7 @@ import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.SymFunction;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.MultiLabeledDigraph;
@@ -33,10 +34,12 @@ public class LiftedDTG implements ActionSupporterFinder{
         this.problem = pb;
 
         for(Function func : pb.functions().getAll()) {
-            FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaList(func.argTypes()), func.valueType());
-            for(FluentType derived : derivedSubTypes(fluent)) {
-                if(!dag.contains(derived))
-                    dag.addVertex(derived);
+            if(func instanceof SymFunction) {
+                FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaList(func.argTypes()), func.valueType());
+                for(FluentType derived : derivedSubTypes(fluent)) {
+                    if(!dag.contains(derived))
+                        dag.addVertex(derived);
+                }
             }
         }
 
