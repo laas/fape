@@ -1,0 +1,16 @@
+
+
+function float [0.1, 11.1] first;
+replenishable float [0.9, infinity] second(Object arg1, OtherType arg2);
+consumable float third;
+reusable float fourth;
+producible float [-5, 8] fifth;
+constant float sixth;
+variable float seventh;
+
+function integer [0, 11] Ifirst;
+replenishable integer [0, infinity] Isecond(Object arg1, OtherType arg2);
+consumable integer Ithird;
+reusable integer Ifourth;
+producible integer [-5, 8] Ififth;
+constant integer Isixth;
