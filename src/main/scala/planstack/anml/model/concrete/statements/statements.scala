@@ -31,6 +31,8 @@ abstract class Statement(val sv:ParameterizedStateVariable)
   * @param sv State variable on which the statement applies.
   */
 abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv) {
+  require(sv.func.isInstanceOf[SymFunction], "Error: this Logical statement is not applied to a " +
+    "symbolic function: "+this)
 
   /** Value just before the statement. Throws ANMLException if the statement have none, check with needsSupport */
   def startValue : VarRef

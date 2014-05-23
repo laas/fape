@@ -45,17 +45,17 @@ case class Persistence(left:Expr, value:VarExpr, override val id:String) extends
 sealed abstract class ResourceStatement(variable:Expr, id:String) extends Statement(variable, id)
 
 /** resourceFunction := 23; */
-case class SetResource(left :Expr, right:Int, override val id :String) extends ResourceStatement(left, id)
+case class SetResource(left :Expr, right:Float, override val id :String) extends ResourceStatement(left, id)
 
-case class ProduceResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+case class ProduceResource(left :Expr, right :Float, override val id :String) extends ResourceStatement(left, id)
 
-case class RequireResource(left :Expr, operator :String, right :Int, override val id :String) extends ResourceStatement(left, id)
+case class RequireResource(left :Expr, operator :String, right :Float, override val id :String) extends ResourceStatement(left, id)
 
-case class LendResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+case class LendResource(left :Expr, right :Float, override val id :String) extends ResourceStatement(left, id)
 
-case class UseResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+case class UseResource(left :Expr, right :Float, override val id :String) extends ResourceStatement(left, id)
 
-case class ConsumeResource(left :Expr, right :Int, override val id :String) extends ResourceStatement(left, id)
+case class ConsumeResource(left :Expr, right :Float, override val id :String) extends ResourceStatement(left, id)
 
 
 
@@ -214,18 +214,18 @@ object AnmlParser extends JavaTokenParsers {
   def statementWithoutId : Parser[Statement] = resourceStatementWithoutID | logStatementWithoutId
 
   def resourceStatementWithoutID : Parser[ResourceStatement] = (
-      expr~":="~decimalNumber<~";" ^^ {
-        case left~":="~intVal => SetResource(left, intVal.toInt, "")}
-    | expr~("<="|">="|"<"|">")~decimalNumber<~";" ^^ {
-        case left~operator~intVal => RequireResource(left, operator, intVal.toInt, "")}
-    | expr~":consume"~decimalNumber<~";" ^^ {
-        case left~":consume"~intVal => ConsumeResource(left, intVal.toInt, "")}
-    | expr~":produce"~decimalNumber<~";" ^^ {
-        case left~":produce"~intVal => ProduceResource(left, intVal.toInt, "")}
-    | expr~":use"~decimalNumber<~";" ^^ {
-        case left~":use"~intVal => UseResource(left, intVal.toInt, "")}
-    | expr~":lend"~decimalNumber<~";" ^^ {
-        case left~":lend"~intVal => LendResource(left, intVal.toInt, "")}
+      expr~":="~floatingPointNumber<~";" ^^ {
+        case left~":="~floatVal => SetResource(left, floatVal.toFloat, "")}
+    | expr~("<="|">="|"<"|">")~floatingPointNumber<~";" ^^ {
+        case left~operator~floatVal => RequireResource(left, operator, floatVal.toFloat, "")}
+    | expr~":consume"~floatingPointNumber<~";" ^^ {
+        case left~":consume"~floatVal => ConsumeResource(left, floatVal.toFloat, "")}
+    | expr~":produce"~floatingPointNumber<~";" ^^ {
+        case left~":produce"~floatVal => ProduceResource(left, floatVal.toFloat, "")}
+    | expr~":use"~floatingPointNumber<~";" ^^ {
+        case left~":use"~floatVal => UseResource(left, floatVal.toFloat, "")}
+    | expr~":lend"~floatingPointNumber<~";" ^^ {
+        case left~":lend"~floatVal => LendResource(left, floatVal.toFloat, "")}
     )
 
   def logStatementWithoutId : Parser[LogStatement] = (

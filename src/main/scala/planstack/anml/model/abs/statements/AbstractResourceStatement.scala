@@ -12,7 +12,7 @@ import planstack.anml.model.concrete.statements._
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   * @param id A local reference to the Statement (for temporal constraints).
   */
-abstract class AbstractResourceStatement(sv:AbstractParameterizedStateVariable, val param:Int, id:LStatementRef) extends AbstractStatement(sv, id) {
+abstract class AbstractResourceStatement(sv:AbstractParameterizedStateVariable, val param:Float, id:LStatementRef) extends AbstractStatement(sv, id) {
   require(sv.func.valueType == "integer")
 
   def operator : String
@@ -40,26 +40,26 @@ abstract class AbstractResourceStatement(sv:AbstractParameterizedStateVariable, 
 
 }
 
-class AbstractProduceResource(sv:AbstractParameterizedStateVariable, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractProduceResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   val operator = ":produce"
 }
 
-class AbstractSetResource(sv:AbstractParameterizedStateVariable, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractSetResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   val operator = ":="
 }
 
-class AbstractLendResource(sv:AbstractParameterizedStateVariable, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractLendResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   val operator = ":lend"
 }
 
-class AbstractUseResource(sv:AbstractParameterizedStateVariable, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractUseResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   val operator = ":use"
 }
 
-class AbstractConsumeResource(sv:AbstractParameterizedStateVariable, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractConsumeResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   val operator = ":consume"
 }
 
-class AbstractRequireResource(sv:AbstractParameterizedStateVariable, val operator:String, param:Int, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
+class AbstractRequireResource(sv:AbstractParameterizedStateVariable, val operator:String, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {
   require(Set("<=","<",">=",">").contains(operator))
 }
