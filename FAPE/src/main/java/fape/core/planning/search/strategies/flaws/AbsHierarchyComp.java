@@ -44,7 +44,15 @@ public class AbsHierarchyComp implements FlawComparator {
         Flaw flaw = flawAndResolvers.value1;
         List<SupportOption> options = flawAndResolvers.value2;
         int level;
-        if(flaw instanceof UnsupportedDatabase) {
+
+        if(options.size() == 0) {
+            // Dead end end, make sure it comes out first.
+            return -2;
+        } else if(options.size() == 1) {
+            // Only one option, make sure it comes right after dead-ends.
+            return -1;
+        } else if(flaw instanceof UnsupportedDatabase) {
+            // open link, order them according to their level in the abstraction hierarchy
             TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
             String predicate = consumer.stateVariable.func().name();
             List<String> argTypes = new LinkedList<>();
@@ -54,6 +62,7 @@ public class AbsHierarchyComp implements FlawComparator {
             String valueType = state.conNet.typeOf(consumer.GetGlobalConsumeValue());
             level = hierarchy.getLevel(predicate, argTypes, valueType);
         } else {
+            // a flaw (which is not an open link) with at least 2 resolvers, set priority to lowest.
             level = Integer.MAX_VALUE;
         }
 
