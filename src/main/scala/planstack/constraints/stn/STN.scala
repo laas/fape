@@ -9,7 +9,7 @@ import planstack.graph.core.LabeledDigraph
  * @param g A directed simple graph with integer edge labels.
  * @param consistent True if the STN is consistent, false otherwise
  */
-abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
+abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) extends ISTN {
 
   // Creates start and end time points if the STN is empty
   if(size == 0) {
@@ -17,12 +17,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
     addVarUnsafe()
     enforceBefore(start, end)
   }
-
-  /** Id of the Start time point. No time points in the STN should happen before this one. */
-  val start = 0
-
-  /** Id of the End time point. No time point in the STN should happen after this one. */
-  val end = 1
 
   /**
    * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
@@ -164,12 +158,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
    * @return
    */
   def latestStart(u:Int) : Int
-
-  /**
-   * Makespan of the STN (ie the earliest start of End)
-   * @return
-   */
-  def makespan = earliestStart(end)
 
   /**
    * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.
