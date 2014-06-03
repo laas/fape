@@ -7,6 +7,8 @@ trait ISTN {
   /** Id of the End time point. No time point in the STN should happen after this one. */
   val end = 1
 
+  def consistent : Boolean
+
   /**
    * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
    *

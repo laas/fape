@@ -10,9 +10,7 @@ class TighteningEDGSuite extends FunSuite {
   val C = 2
   val D = 3
 
-  class ConcreteEDG extends EDG
-
-  val edg = new ConcreteEDG
+  val edg = new ConcreteEDGForTesting
 
   edg.addContingent(A, B, 10)
   edg.addContingent(B, A, -8)

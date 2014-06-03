@@ -2,16 +2,22 @@ package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
 
+class ConcreteEDGForTesting extends EDG {
+  def edgeAdded(e: E): Unit = {}
+  val start = addVar()
+  val end = addVar()
+}
+
 class EDGSqueezingSuite extends FunSuite {
   val A = 0
   val B = 1
   val C = 2
   val D = 3
 
-  class ConcreteEDG extends EDG
+  
 
   test("No Squeezing, same values") {
-    val edg = new ConcreteEDG
+    val edg = new ConcreteEDGForTesting
 
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)
@@ -22,7 +28,7 @@ class EDGSqueezingSuite extends FunSuite {
   }
 
   test("No Squeezing, higher values") {
-    val edg = new ConcreteEDG
+    val edg = new ConcreteEDGForTesting
 
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)
@@ -33,7 +39,7 @@ class EDGSqueezingSuite extends FunSuite {
   }
 
   test("Squeezing") {
-    val edg = new ConcreteEDG
+    val edg = new ConcreteEDGForTesting
 
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)

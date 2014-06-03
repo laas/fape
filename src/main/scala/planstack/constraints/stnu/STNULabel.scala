@@ -19,11 +19,17 @@ class STNULabel(val value : Int) {
   def node : Int = throw new RuntimeException("This label has no conditional node: "+this)
 }
 
-class Requirement(value : Int) extends STNULabel(value)
+class Requirement(value : Int) extends STNULabel(value) {
+  override def toString = "req: "+value
+}
 
-class Contingent(value : Int) extends STNULabel(value)
+class Contingent(value : Int) extends STNULabel(value) {
+  override def toString = "cont: "+value
+}
 
-class Conditional(override val node : Int, value : Int) extends  STNULabel(value)
+class Conditional(override val node : Int, value : Int) extends  STNULabel(value) {
+  override def toString = "<%s, %d>".format(node, value)
+}
 
 
 
@@ -31,9 +37,13 @@ class EIDC extends ISTNU with EDG {
 
   val ddg = new DirectedMultiLabeledIIAdjList[Int]()
 
+  def consistent = throw new RuntimeException("ksdmklfqdsfsd qfsdfkqsdfk")
+
 
 
   def checkCycleOfNegative() : Boolean = false
+
+  def edgeAdded(e : E) {}
 
   /*
   def efficientIDC(e : LabeledEdge[Int, STNULabel]) : Boolean = {

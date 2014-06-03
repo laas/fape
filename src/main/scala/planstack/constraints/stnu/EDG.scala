@@ -3,8 +3,13 @@ package planstack.constraints.stnu
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
+import planstack.graph.printers.NodeEdgePrinter
 
 trait EDG {
+
+  def start : Int
+  def end : Int
+
 
 
   type E = LabeledEdge[Int, STNULabel]
@@ -69,6 +74,24 @@ trait EDG {
     }
   }
 
+  protected def addEdge(e : E) : Boolean = {
+    if(!tightens(e)) {
+      return false
+    } else {
+      if(e.l.req)
+        requirements.addEdge(e.asInstanceOf[LabeledEdge[Int, Requirement]])
+      else if(e.l.cond)
+        conditionals.addEdge(e.asInstanceOf[LabeledEdge[Int, Conditional]])
+      else if(e.l.cont)
+        contingents.addEdge(e.asInstanceOf[LabeledEdge[Int, Contingent]])
+      else
+        throw new RuntimeException("Error: Unknown contraint type.")
+
+      edgeAdded(e)
+      return true
+    }
+  }
+
 
   def addRequirement(from:Int, to:Int, value:Int) : Boolean = {
     while(!requirements.contains(from) || !requirements.contains(to)) {
@@ -76,7 +99,7 @@ trait EDG {
     }
 
     val e = new LabeledEdge[Int, Requirement](from, to, new Requirement(value))
-    requirements.addEdge(e)
+    addEdge(e)
 
     //    efficientIDC(e)
     true
@@ -87,18 +110,21 @@ trait EDG {
       addVar()
     }
     val e = new LabeledEdge[Int, Contingent](from, to, new Contingent(value))
-    contingents.addEdge(e)
+    addEdge(e)
+    addEdge(new E(from, to, new Requirement(value)))
 
     //    efficientIDC(e)
     true
   }
+
+  def edgeAdded(e : E)
 
   def addConditional(from:Int, to:Int, on:Int, value:Int) : Boolean = {
     while(!requirements.contains(from) || !requirements.contains(to) || !requirements.contains(on)) {
       addVar()
     }
     val e = new LabeledEdge[Int, Conditional](from, to, new Conditional(on, value))
-    conditionals.addEdge(e)
+    addEdge(e)
     true
   }
 
@@ -251,5 +277,22 @@ trait EDG {
       }
     }
     (toAdd, Nil)
+  }
+
+  def exportToDot(file:String, printer:NodeEdgePrinter[Int, STNULabel, LabeledEdge[Int,STNULabel]]) {
+    val g = GraphFactory.getLabeledDigraph[Int, STNULabel]
+    for(i <- 0 until requirements.numVertices) {
+      g.addVertex(i)
+    }
+    for(e <- requirements.edges()) g.addEdge(e)
+    for(e <- contingents.edges()) g.addEdge(e)
+    for(e <- conditionals.edges()) g.addEdge(e)
+
+    g.exportToDotFile(file, printer)
+  }
+
+  protected[stnu] def hasRequirement(from:Int, to:Int, value:Int) = requirements.edge(from, to) match {
+    case None => false
+    case Some(req) => req.l.value == value
   }
 }

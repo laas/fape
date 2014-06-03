@@ -50,4 +50,7 @@ trait ISTNU extends ISTN {
    * @return
    */
   def cc(): ISTNU
+
+  /** Returns true if the given requirement edge is present in the STNU */
+  protected[stnu] def hasRequirement(from: Int, to:Int, value:Int) : Boolean
 }
