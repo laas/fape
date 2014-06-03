@@ -11,7 +11,7 @@ package planstack.graph.core
   * @tparam V Type of the Vertices
   * @tparam EdgeLabel
   */
-final class LabeledEdge[V,EdgeLabel](u:V, v:V, val l:EdgeLabel) extends Edge[V](u, v) {
+final class LabeledEdge[+V,+EdgeLabel](u:V, v:V, val l:EdgeLabel) extends Edge[V](u, v) {
 
   /** Label of the edge */
   @deprecated
