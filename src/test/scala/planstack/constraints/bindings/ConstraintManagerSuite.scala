@@ -16,13 +16,9 @@ class ConstraintManagerSuite extends Suite {
     assert(cm.isPossibleValue("B", "c"))
     assert(!cm.isPossibleValue("B", "e"))
 
-    cm.cn.print()
-
     cm.bindVarToVar("A", "B")
     cm.assignValueToVar("A", "c")
     cm.propagate()
-
-    cm.cn.print()
 
     assert(cm.isPossibleValue("A", "c"))
     assert(!cm.isPossibleValue("A", "a"))
@@ -38,8 +34,6 @@ class ConstraintManagerSuite extends Suite {
     assert(cm.isPossibleValue("C", "a"))
     assert(cm.isPossibleValue("C", "b"))
     assert(!cm.isPossibleValue("C", "c"))
-
-    cm.cn.print()
   }
 
 }

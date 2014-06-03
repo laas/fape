@@ -26,7 +26,7 @@ class ConstraintNetwork {
     while(worklist.nonEmpty) {
       val cur = worklist.head
       worklist = worklist.tail
-      println(cur)
+//      println(cur)
       if(arcReduce(cur._1, cur._2)) {
         if(node(cur._1).dom.isEmpty) {
           return false
@@ -63,19 +63,19 @@ class ConstraintNetwork {
       var possible = false
       for(yValue <- yVar.dom) {
         possible = possible || constraints.forall(c => c.isSatisfying(xValue, yValue))
-        println("%s (%d %d)".format(possible, xValue, yValue))
+//        println("%s (%d %d)".format(possible, xValue, yValue))
       }
 
       if(!possible) {
-        println("%s  -->  %s".format(xVar, xVar.remove(xValue)))
+//        println("%s  -->  %s".format(xVar, xVar.remove(xValue)))
         node(x) = node(x).remove(xValue)
         change = true
       }
 
     }
 
-    println("-- Change: "+change)
-    cn.mVertices.map(node(_)).foreach(println(_))
+//    println("-- Change: "+change)
+//    cn.mVertices.map(node(_)).foreach(println(_))
     change
   }
 

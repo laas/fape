@@ -15,7 +15,7 @@ class RulesSuite extends FunSuite{
   val v = 50
 
   test("D1 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addRequirement(A, B, 10)
     stnu.addContingent(B, C, -4)
@@ -36,7 +36,7 @@ class RulesSuite extends FunSuite{
   }
 
    test("D2 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addConditional(C, A, B, -y)
     stnu.addContingent(C, D, -u)
@@ -57,7 +57,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D3 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addConditional(C, A, B, -y)
     stnu.addRequirement(D, C, v)
@@ -77,7 +77,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D4 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addRequirement(A, B, v)
     stnu.addRequirement(B, C, -x)
@@ -96,7 +96,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D5 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addRequirement(A, B, v)
     stnu.addConditional(B, C, D, -x)
@@ -116,7 +116,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D6 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addRequirement(B, A, -u)
     stnu.addContingent(B, C, -x)
@@ -136,7 +136,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D7 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     stnu.addRequirement(B, A, -u)
     stnu.addRequirement(C, B, y)
@@ -155,7 +155,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D8 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     val u = 10
     val x = 12
@@ -180,7 +180,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D9 rule") {
-    val stnu = new STNU
+    val stnu = new EIDC
 
     val u = 10
     val x = 8

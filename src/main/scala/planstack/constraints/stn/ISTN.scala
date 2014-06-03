@@ -41,7 +41,9 @@ trait ISTN {
    * @param u
    * @param v
    */
-  def enforceBefore(u:Int, v:Int)
+  def enforceBefore(u:Int, v:Int) {
+    addConstraint(v, u, 0)
+  }
 
   /**
    * Enforces that the time point u must happens strictly before time point v
@@ -50,7 +52,9 @@ trait ISTN {
    * @param u
    * @param v
    */
-  def enforceStrictlyBefore(u:Int, v:Int)
+  def enforceStrictlyBefore(u:Int, v:Int) {
+    addConstraint(v, u, -1)
+  }
 
   /**
    * Creates a constraint stipulating that v in [u+min, u+max]
@@ -59,7 +63,10 @@ trait ISTN {
    * @param min
    * @param max
    */
-  def enforceInterval(u:Int, v:Int, min:Int, max:Int)
+  def enforceInterval(u:Int, v:Int, min:Int, max:Int) {
+    addConstraint(u, v, max)
+    addConstraint(v, u, -min)
+  }
 
   /**
    * Write a dot serialisation of the graph to file
@@ -98,7 +105,8 @@ trait ISTN {
    */
   def isConstraintPossible(u:Int, v:Int, w:Int) : Boolean
 
-  def canBeBefore(u:Int, v:Int) : Boolean
+
+  def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
 
 
   /**

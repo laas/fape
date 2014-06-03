@@ -106,40 +106,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
   def checkConsistencyFromScratch() : Boolean
 
   /**
-   * Enforces that the time point u must happens before time point v or at the same time
-   *
-   * Results in the addition of an edge from v to u with weight 0: (v, u, 0)
-   * @param u
-   * @param v
-   */
-  def enforceBefore(u:Int, v:Int) {
-    addConstraint(v, u, 0)
-  }
-
-  /**
-   * Enforces that the time point u must happens strictly before time point v
-   *
-   * Results in the addition of an edge from v to u with weight -1: (v, u, -1)
-   * @param u
-   * @param v
-   */
-  def enforceStrictlyBefore(u:Int, v:Int) {
-    addConstraint(v, u, -1)
-  }
-
-  /**
-   * Creates a constraint stipulating that v in [u+min, u+max]
-   * @param u
-   * @param v
-   * @param min
-   * @param max
-   */
-  def enforceInterval(u:Int, v:Int, min:Int, max:Int) {
-    addConstraint(u, v, max)
-    addConstraint(v, u, -min)
-  }
-
-  /**
    * Write a dot serialisation of the graph to file
    * @param file
    */
@@ -174,7 +140,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
     tmpSTN.consistent
   }
 
-  def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
 
 
   /**

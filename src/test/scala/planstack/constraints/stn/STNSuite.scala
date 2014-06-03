@@ -43,8 +43,8 @@ class STNSuite extends Suite {
     val s2 = stn.cc().asInstanceOf[STNIncBellmanFord]
     s2.addConstraint(v, u, -20)
 
-    println("Clone : \n" + s2.distancesToString )
-    s2.writeToDotFile("/home/abitmonn/these/Documents/Experiments/tmp/g2.dot")
+//    println("Clone : \n" + s2.distancesToString )
+//    s2.writeToDotFile("/home/abitmonn/these/Documents/Experiments/tmp/g2.dot")
 
     assert(!s2.consistent, "s2 should be inconsistent (there is a negative cycle.")
     assert(stn.consistent, "The base stn shouldn't have moved")
@@ -68,8 +68,8 @@ class STNSuite extends Suite {
     val deadline = 50
     stn.addConstraint(stn.start, stn.end, deadline)
 
-    println(stn.distancesToString )
-    stn.writeToDotFile("/home/abitmonn/these/Documents/Experiments/tmp/g.dot")
+//    println(stn.distancesToString )
+//    stn.writeToDotFile("/home/abitmonn/these/Documents/Experiments/tmp/g.dot")
   }
 
   def testEarliestStart {
@@ -94,7 +94,7 @@ class STNSuite extends Suite {
     stn.addConstraint(u, v, 10)
     stn.addConstraint(u, v, 100)
     stn.addConstraint(u, v, 5)
-    println(stn.g.edges(u,v))
+//    println(stn.g.edges(u,v))
     stn.g.edges(u, v).foldLeft(Int.MinValue)((max, e) => {
       assert(max <= e.l, "the weight on the edges should be growing (since a constraint that does not reduces the value is useless and shouldn't be inserted to the graph")
       e.l
