@@ -2,12 +2,12 @@ package planstack.constraints.stnu
 
 import planstack.graph.GraphFactory
 import planstack.graph.algorithms.Algos
+import planstack.graph.core.SimpleUnlabeledDigraph
 
-class CCGraph {
+class CCGraph(val g : SimpleUnlabeledDigraph[Int], var acyclic : Boolean) {
 
-  val g = GraphFactory.getSimpleUnlabeledDigraph[Int]
-
-  var acyclic = true
+  def this() = this(GraphFactory.getSimpleUnlabeledDigraph[Int], true)
+  def this(cc : CCGraph) = this(cc.g.cc, cc.acyclic)
 
   def addEdge(from:Int, to:Int) {
     if(!g.contains(from))
@@ -33,5 +33,7 @@ class CCGraph {
       case e:Exception => acyclic = false
     }
   }
+
+  def cc() = new CCGraph(this)
 
 }

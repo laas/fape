@@ -32,7 +32,7 @@ class Conditional(override val node : Int, value : Int) extends  STNULabel(value
 }
 
 
-
+/*
 class EIDC extends ISTNU with EDG {
 
   val ddg = new DirectedMultiLabeledIIAdjList[Int]()
@@ -104,3 +104,4 @@ class EIDC extends ISTNU with EDG {
   def cc(): planstack.constraints.stnu.ISTNU = ???
   def size: Int = ???
 }
+*/

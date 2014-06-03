@@ -9,17 +9,19 @@ class IDCSuite extends FunSuite {
 
   test("Pseudo controllable") {
     val idc = new FastIDC
-    for(i <- 0 until 10) idc.addVar()
+    val A = idc.addVar()
+    val B = idc.addVar()
+    val C = idc.addVar()
+    val D = idc.addVar()
 
-    idc.enforceBefore(0, 1)
-    idc.enforceBefore(0, 2)
-    idc.enforceBefore(0, 3)
+    idc.enforceBefore(A, B)
+    idc.enforceBefore(A, C)
+    idc.enforceBefore(A, D)
 
-    idc.addContingent(1, 2, 15)
-    idc.addContingent(2, 1, -10)
+    idc.addContingent(B, C, 10, 15)
 
-    idc.enforceBefore(2, 3)
-    idc.enforceInterval(0, 3, 16, 16)
+    idc.enforceBefore(C, D)
+    idc.enforceInterval(A, D, 16, 16)
 
     assert(idc.consistent)
   }
@@ -28,15 +30,21 @@ class IDCSuite extends FunSuite {
     val idc = new FastIDC
     for(i <- 0 until 10) idc.addVar()
 
-    idc.enforceBefore(0, 1)
-    idc.enforceBefore(0, 2)
-    idc.enforceBefore(0, 3)
+    val A = idc.addVar()
+    val B = idc.addVar()
+    val C = idc.addVar()
+    val D = idc.addVar()
 
-    idc.addContingent(1, 2, 15)
-    idc.addContingent(2, 1, -10)
+    idc.enforceBefore(A, B)
+    idc.enforceBefore(A, C)
+    idc.enforceBefore(A, D)
 
-    idc.enforceBefore(2, 3)
-    idc.enforceInterval(0, 3, 16, 12)
+    idc.addContingent(B, C, 10, 15)
+
+    idc.enforceBefore(C, D)
+
+    assert(idc.consistent)
+    idc.enforceInterval(A, D, 12, 12)
 
     assert(!idc.consistent)
   }

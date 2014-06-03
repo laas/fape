@@ -1,10 +1,18 @@
 package planstack.constraints.stnu
 
 import scala.collection.mutable.ListBuffer
+import planstack.graph.core.LabeledEdge
+import planstack.graph.printers.NodeEdgePrinter
 
-class FastIDC extends ISTNU with EDG {
+class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGListener {
 
-  val todo = ListBuffer[E]()
+  def this() = this(new EDG, ListBuffer[E]())
+
+  def this(toCopy : FastIDC) = this(new EDG(toCopy.edg), toCopy.todo.clone())
+
+
+  edg.listener = this
+  assert(edg.listener == this)
 
   {
     val myStart = addVar()
@@ -15,12 +23,13 @@ class FastIDC extends ISTNU with EDG {
 
   private var isConsistent = true
   def consistent = {
-    while(todo.nonEmpty)
-      fastIDC(todo.remove(0))
+    while(isConsistent && todo.nonEmpty)
+      isConsistent &= fastIDC(todo.remove(0))
     isConsistent
   }
 
-  def checkConsistency(): Boolean = ???
+
+  def checkConsistency(): Boolean = consistent
 
   def checkConsistencyFromScratch(): Boolean = ???
 
@@ -30,7 +39,7 @@ class FastIDC extends ISTNU with EDG {
    * Write a dot serialisation of the graph to file
    * @param file
    */
-  def writeToDotFile(file: String): Unit = ???
+  def writeToDotFile(file: String): Unit = edg.exportToDot(file, new NodeEdgePrinter[Int, STNULabel, E])
 
   /**
    * Returns the earliest start time of time point u with respect to the start time point of the STN
@@ -50,23 +59,14 @@ class FastIDC extends ISTNU with EDG {
    * Return the number of time points in the STN
    * @return
    */
-  def size: Int = ???
+  def size: Int = edg.size
 
   /**
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc(): ISTNU = ???
+  def cc(): FastIDC = new FastIDC(this)
 
-  def edgeAdded(e : E) {
-    if(e.l.negative)
-      ccgraph.addEdge(e.u, e.v)
-    if(ccgraph.acyclic && !squeezed) {
-      todo += e
-    } else {
-      isConsistent = false
-    }
-  }
 
   def fastIDC(e : E) : Boolean = {
     if(e.u == e.v) { // this is a loop on one vertex
@@ -78,14 +78,58 @@ class FastIDC extends ISTNU with EDG {
         return false
     }
     val additionAndRemovals : List[(List[E],List[E])]=
-      D1(e) :: D2(e) :: D3(e) :: D4(e) ::D5(e) :: D6(e) ::D7(e) :: D8(e) :: D9(e) :: Nil
+      edg.D1(e) :: edg.D2(e) :: edg.D3(e) :: edg.D4(e) ::edg.D5(e) :: edg.D6(e) ::edg.D7(e) :: edg.D8(e) :: edg.D9(e) :: Nil
 
+    val prevSize = todo.size
     for((toAdd,toRemove) <- additionAndRemovals) {
       for(edge <- toAdd) {
-        addEdge(edge)
+        todo ++= edg.addEdge(edge)
       }
     }
 
-    true
+    if(todo.size == prevSize) {
+      assert(!edg.hasNegativeCycles && !edg.squeezed)
+      true
+    } else {
+      !edg.hasNegativeCycles && !edg.squeezed
+    }
   }
+
+  def addRequirement(from: Int, to: Int, value: Int): Boolean = {
+    edg.addRequirement(from, to, value).nonEmpty
+  }
+
+  def addContingent(from: Int, to: Int, lb: Int, ub:Int): Boolean = {
+    (edg.addContingent(from, to, ub) ++ edg.addContingent(to, from, -lb)).nonEmpty
+  }
+
+  def addConditional(from: Int, to: Int, on: Int, value: Int): Boolean = {
+    edg.addConditional(from, to, on, value).nonEmpty
+  }
+
+
+  def edgeAdded(e: E): Unit = {
+    todo += e
+    isConsistent &= !edg.hasNegativeCycles && !edg.squeezed
+  }
+
+  /** Returns true if the given requirement edge is present in the STNU */
+  protected[stnu] def hasRequirement(from: Int, to: Int, value: Int): Boolean = edg.hasRequirement(from, to, value)
+
+  /**
+   * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
+   *
+   * @return ID of the created time point
+   */
+  def addVar(): Int = {
+    val n = edg.addVar()
+    if(n != start && n != end) {
+      this.enforceBefore(start, n)
+      this.enforceBefore(n, end)
+    } else if(n == end) {
+      enforceBefore(start, end)
+    }
+    n
+  }
+
 }

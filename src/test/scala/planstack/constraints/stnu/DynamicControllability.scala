@@ -22,8 +22,7 @@ class DynamicControllability extends FunSuite {
       idc.enforceInterval(C, D, 5, 10)
       idc.enforceInterval(E, A, 5, 7)
 
-      idc.addContingent(A, U, 50)
-      idc.addContingent(U, A, -5)
+      idc.addContingent(A, U, 5, 50)
 
       assert(idc.consistent)
 
@@ -63,17 +62,14 @@ class DynamicControllability extends FunSuite {
         override def excludeNode(n:Int) = n == 1 || n == 0
       }
 
-      idc.addContingent(WifeStore, StartDriving, 60)
-      idc.addContingent(StartDriving, WifeStore, -30)
+      idc.addContingent(WifeStore, StartDriving, 30, 60)
 
-      idc.addContingent(StartDriving, WifeHome, 40)
-      idc.addContingent(WifeHome, StartDriving, -35)
+      idc.addContingent(StartDriving, WifeHome, 35, 40)
 
       idc.addRequirement(WifeHome, DinnerReady, 5)
       idc.addRequirement(DinnerReady, WifeHome, 5)
 
-      idc.addContingent(StartCooking, DinnerReady, 30)
-      idc.addContingent(DinnerReady, StartCooking, -25)
+      idc.addContingent(StartCooking, DinnerReady, 25, 30)
 
       assert(idc.consistent)
 
@@ -82,5 +78,4 @@ class DynamicControllability extends FunSuite {
       assert(idc.hasRequirement(StartCooking, StartDriving, -10))
     }
   }
-
 }

@@ -15,7 +15,7 @@ class RulesSuite extends FunSuite{
   val v = 50
 
   test("D1 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addRequirement(A, B, 10)
     stnu.addContingent(B, C, -4)
@@ -23,7 +23,7 @@ class RulesSuite extends FunSuite{
 
     val focus = stnu.outPosReq(A).head
 
-    val out = stnu.D1(focus.asInstanceOf[stnu.E])
+    val out = stnu.D1(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -36,7 +36,7 @@ class RulesSuite extends FunSuite{
   }
 
    test("D2 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addConditional(C, A, B, -y)
     stnu.addContingent(C, D, -u)
@@ -44,7 +44,7 @@ class RulesSuite extends FunSuite{
 
     val focus = stnu.outConditionals(C).head
 
-    val out = stnu.D2(focus.asInstanceOf[stnu.E])
+    val out = stnu.D2(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -57,14 +57,14 @@ class RulesSuite extends FunSuite{
   }
 
   test("D3 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addConditional(C, A, B, -y)
     stnu.addRequirement(D, C, v)
 
     val focus = stnu.outConditionals(C).head
 
-    val out = stnu.D3(focus.asInstanceOf[stnu.E])
+    val out = stnu.D3(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -77,14 +77,14 @@ class RulesSuite extends FunSuite{
   }
 
   test("D4 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addRequirement(A, B, v)
     stnu.addRequirement(B, C, -x)
 
     val focus = stnu.outRequirements(A).head
 
-    val out = stnu.D4(focus.asInstanceOf[stnu.E])
+    val out = stnu.D4(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -96,14 +96,14 @@ class RulesSuite extends FunSuite{
   }
 
   test("D5 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addRequirement(A, B, v)
     stnu.addConditional(B, C, D, -x)
 
     val focus = stnu.outRequirements(A).head
 
-    val out = stnu.D5(focus.asInstanceOf[stnu.E])
+    val out = stnu.D5(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -116,7 +116,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D6 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addRequirement(B, A, -u)
     stnu.addContingent(B, C, -x)
@@ -124,7 +124,7 @@ class RulesSuite extends FunSuite{
 
     val focus = stnu.inNegReq(A).head
 
-    val out = stnu.D6(focus.asInstanceOf[stnu.E])
+    val out = stnu.D6(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -136,14 +136,14 @@ class RulesSuite extends FunSuite{
   }
 
   test("D7 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     stnu.addRequirement(B, A, -u)
     stnu.addRequirement(C, B, y)
 
     val focus = stnu.inNegReq(A).head
 
-    val out = stnu.D7(focus.asInstanceOf[stnu.E])
+    val out = stnu.D7(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head
@@ -155,7 +155,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D8 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     val u = 10
     val x = 12
@@ -165,7 +165,7 @@ class RulesSuite extends FunSuite{
 
     val focus = stnu.inConditionals(A).head
 
-    val out = stnu.D8(focus.asInstanceOf[stnu.E])
+    val out = stnu.D8(focus)
     assert(out._1.nonEmpty)
     assert(out._2.nonEmpty)
     val added = out._1.head
@@ -180,7 +180,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D9 rule") {
-    val stnu = new EIDC
+    val stnu = new EDG
 
     val u = 10
     val x = 8
@@ -190,7 +190,7 @@ class RulesSuite extends FunSuite{
 
     val focus = stnu.inConditionals(A).head
 
-    val out = stnu.D9(focus.asInstanceOf[stnu.E])
+    val out = stnu.D9(focus)
     assert(out._1.nonEmpty)
     assert(out._2.isEmpty)
     val added = out._1.head

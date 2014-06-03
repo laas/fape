@@ -5,23 +5,29 @@ import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 
-trait EDG {
+/** Objects implementing this interface can be passed to an EDG instance
+  * to react to events occurring in an EDG such as edge addition, negative cycle ...
+  */
+trait EDGListener {
+  def edgeAdded(e : LabeledEdge[Int, STNULabel])
+}
 
-  def start : Int
-  def end : Int
+class EDG(
+    val contingents : DirectedSimpleLabeledIIAdjList[Contingent],
+    val requirements : DirectedSimpleLabeledIIAdjList[Requirement],
+    val conditionals : DirectedMultiLabeledIIAdjList[Conditional],
+    val ccgraph : CCGraph,
+    protected[stnu] var listener : EDGListener) {
 
+  def this(edg : EDG, listener:EDGListener = null) = this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), listener)
 
-
-  type E = LabeledEdge[Int, STNULabel]
-
-  val contingents = new DirectedSimpleLabeledIIAdjList[Contingent]()
-  val requirements = new DirectedSimpleLabeledIIAdjList[Requirement]()
-  val conditionals = new DirectedMultiLabeledIIAdjList[Conditional]()
-
-
-
-  /** Contains all negative edges */
-  val ccgraph = new CCGraph
+  def this(listener:EDGListener = null) = this(
+    new DirectedSimpleLabeledIIAdjList[Contingent](),
+    new DirectedSimpleLabeledIIAdjList[Requirement](),
+    new DirectedMultiLabeledIIAdjList[Conditional](),
+    new CCGraph,
+    listener
+  )
 
   def inConditionals(n : Int) = conditionals.inEdges(n).filter(_.l.cond)
   def outConditionals(n : Int) = conditionals.outEdges(n).filter(_.l.cond)
@@ -33,6 +39,8 @@ trait EDG {
   def outNegReq(n : Int) = requirements.outEdges(n).filter(_.l.negReq)
   def inContingent(n : Int) = contingents.inEdges(n).filter(_.l.cont)
   def outContingent(n : Int) = contingents.outEdges(n).filter(_.l.cont)
+
+  def size = requirements.numVertices
 
   /**
    * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
@@ -74,9 +82,12 @@ trait EDG {
     }
   }
 
-  protected def addEdge(e : E) : Boolean = {
+  def hasNegativeCycles = !ccgraph.acyclic
+
+  protected[stnu] def addEdge(e : E) : List[E] = {
     if(!tightens(e)) {
-      return false
+      // this edge is not tightening, nothing to add
+      Nil
     } else {
       if(e.l.req)
         requirements.addEdge(e.asInstanceOf[LabeledEdge[Int, Requirement]])
@@ -87,45 +98,40 @@ trait EDG {
       else
         throw new RuntimeException("Error: Unknown contraint type.")
 
-      edgeAdded(e)
-      return true
+      if(e.l.negative)
+        ccgraph.addEdge(e.u, e.v)
+
+      if(listener != null)
+        listener.edgeAdded(e)
+      // return the added edges
+      List(e)
     }
   }
 
 
-  def addRequirement(from:Int, to:Int, value:Int) : Boolean = {
+  def addRequirement(from:Int, to:Int, value:Int) : List[E] = {
     while(!requirements.contains(from) || !requirements.contains(to)) {
       addVar()
     }
 
     val e = new LabeledEdge[Int, Requirement](from, to, new Requirement(value))
     addEdge(e)
-
-    //    efficientIDC(e)
-    true
   }
 
-  def addContingent(from:Int, to:Int, value:Int) : Boolean = {
+  def addContingent(from:Int, to:Int, value:Int) : List[E] = {
     while(!requirements.contains(from) || !requirements.contains(to)) {
       addVar()
     }
     val e = new LabeledEdge[Int, Contingent](from, to, new Contingent(value))
-    addEdge(e)
-    addEdge(new E(from, to, new Requirement(value)))
-
-    //    efficientIDC(e)
-    true
+    addEdge(e) ++ addEdge(new E(from, to, new Requirement(value)))
   }
 
-  def edgeAdded(e : E)
-
-  def addConditional(from:Int, to:Int, on:Int, value:Int) : Boolean = {
+  def addConditional(from:Int, to:Int, on:Int, value:Int) : List[E] = {
     while(!requirements.contains(from) || !requirements.contains(to) || !requirements.contains(on)) {
       addVar()
     }
     val e = new LabeledEdge[Int, Conditional](from, to, new Conditional(on, value))
     addEdge(e)
-    true
   }
 
   def D1(e : E) : (List[E], List[E]) = {
@@ -137,7 +143,7 @@ trait EDG {
         (contingents.edge(B, C), contingents.edge(C, B)) match {
           case (Some(bc), Some(cb)) => {
             if(bc.l.negative && cb.l.positive) {
-              toAdd = (new E(A, C, new Conditional(B, e.l.value - cb.l.value))) :: toAdd
+              toAdd = new E(A, C, new Conditional(B, e.l.value - cb.l.value)) :: toAdd
             }
           }
           case _ =>

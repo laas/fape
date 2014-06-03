@@ -13,7 +13,7 @@ trait ISTNU extends ISTN {
   def addConstraint(u: Int, v: Int, w: Int): Boolean = addRequirement(u, v, w)
 
   def addRequirement(from:Int, to:Int, value:Int) : Boolean
-  def addContingent(from:Int, to:Int, value:Int) : Boolean
+  def addContingent(from:Int, to:Int, lb:Int, ub:Int) : Boolean
   def addConditional(from:Int, to:Int, on:Int, value:Int) : Boolean
 
   /**
@@ -53,4 +53,5 @@ trait ISTNU extends ISTN {
 
   /** Returns true if the given requirement edge is present in the STNU */
   protected[stnu] def hasRequirement(from: Int, to:Int, value:Int) : Boolean
+
 }
