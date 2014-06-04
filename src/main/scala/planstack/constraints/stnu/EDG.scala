@@ -4,6 +4,7 @@ import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, Dire
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.graph.core.impl.matrix.SimpleLabeledDirectedIIMatrix
 
 /** Objects implementing this interface can be passed to an EDG instance
   * to react to events occurring in an EDG such as edge addition, negative cycle ...
@@ -14,7 +15,7 @@ trait EDGListener {
 
 class EDG(
     val contingents : DirectedSimpleLabeledIIAdjList[Contingent],
-    val requirements : DirectedSimpleLabeledIIAdjList[Requirement],
+    val requirements : SimpleLabeledDirectedIIMatrix[Requirement],
     val conditionals : DirectedMultiLabeledIIAdjList[Conditional],
     val ccgraph : CCGraph,
     protected[stnu] var listener : EDGListener) {
@@ -23,7 +24,7 @@ class EDG(
 
   def this(listener:EDGListener = null) = this(
     new DirectedSimpleLabeledIIAdjList[Contingent](),
-    new DirectedSimpleLabeledIIAdjList[Requirement](),
+    new SimpleLabeledDirectedIIMatrix[Requirement](),
     new DirectedMultiLabeledIIAdjList[Conditional](),
     new CCGraph,
     listener
@@ -196,10 +197,10 @@ class EDG(
     val A = e.u
     val B = e.v
     if(e.l.req && e.l.positive) {
-      for(req <- requirements.outEdges(B)) {
-        val C = req.v
-        if(req.l.negative) {
-          toAdd = new E(A, C, new Requirement(e.l.value + req.l.value)) :: toAdd
+      for(C <- 0 until requirements.numVertices) {
+        val BCvalue = requirements.edgeValue(B, C)
+        if(BCvalue != null && BCvalue.negative) {
+          toAdd = new E(A, C, new Requirement(e.l.value + BCvalue.value)) :: toAdd
         }
       }
     }

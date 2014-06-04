@@ -14,7 +14,7 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
   edg.listener = this
   assert(edg.listener == this)
 
-  {
+  if(size == 0) {
     val myStart = addVar()
     val myEnd = addVar()
     assert(myStart == start)
