@@ -3,7 +3,6 @@ package planstack.constraints.stnu
 import org.scalatest.FunSuite
 
 class ConcreteEDGForTesting extends EDG {
-  def edgeAdded(e: E): Unit = {}
   val start = addVar()
   val end = addVar()
 }

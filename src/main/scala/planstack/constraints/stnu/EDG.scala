@@ -11,6 +11,8 @@ import planstack.graph.core.impl.matrix.SimpleLabeledDirectedIIMatrix
   */
 trait EDGListener {
   def edgeAdded(e : LabeledEdge[Int, STNULabel])
+  def cycleDetected()
+  def squeezingDetected()
 }
 
 class EDG(
@@ -54,6 +56,8 @@ class EDG(
     contingents.addVertex()
   }
 
+  var squeezed = false //TODO inherit from ancestor
+  /*
   def squeezed = !contingents.edges().forall(cont => {
     requirements.edge(cont.u, cont.v) match {
       case Some(req) => {
@@ -61,7 +65,7 @@ class EDG(
       } //TODO more fine grained test to detect misusages
       case None => true
     }
-  })
+  })*/
 
   def tightens(e : E) : Boolean = {
     e.l match {
@@ -99,13 +103,38 @@ class EDG(
       else
         throw new RuntimeException("Error: Unknown contraint type.")
 
-      if(e.l.negative)
-        ccgraph.addEdge(e.u, e.v)
 
-      if(listener != null)
-        listener.edgeAdded(e)
+      edgeAdded(e)
+
       // return the added edges
       List(e)
+    }
+  }
+
+  def edgeAdded(e : E) {
+    if(e.l.negative)
+      ccgraph.addEdge(e.u, e.v)
+
+    if(e.l.cont) {
+      requirements.edge(e.u, e.v) match {
+        case Some(req) => squeezed |= e.l.value > req.l.value
+        case None =>
+      }
+    } else if(e.l.req) {
+      contingents.edge(e.u, e.v) match {
+        case Some(cont) => squeezed |= cont.l.value > e.l.value
+        case None =>
+      }
+    }
+
+    if(listener != null) {
+      if(!ccgraph.acyclic)
+        listener.cycleDetected()
+
+      if(squeezed)
+        listener.squeezingDetected()
+
+      listener.edgeAdded(e)
     }
   }
 

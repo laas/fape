@@ -87,12 +87,14 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
       }
     }
 
+    isConsistent
+/*
     if(todo.size == prevSize) {
-      assert(!edg.hasNegativeCycles && !edg.squeezed)
+      //assert(!edg.hasNegativeCycles && !edg.squeezed)
       true
     } else {
       !edg.hasNegativeCycles && !edg.squeezed
-    }
+    }*/
   }
 
   def addRequirement(from: Int, to: Int, value: Int): Boolean = {
@@ -110,7 +112,6 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
 
   def edgeAdded(e: E): Unit = {
     todo += e
-    isConsistent &= !edg.hasNegativeCycles && !edg.squeezed
   }
 
   /** Returns true if the given requirement edge is present in the STNU */
@@ -132,4 +133,7 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
     n
   }
 
+  def cycleDetected() { isConsistent = false }
+
+  def squeezingDetected() { isConsistent = false }
 }
