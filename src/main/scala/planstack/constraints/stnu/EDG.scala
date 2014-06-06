@@ -20,15 +20,17 @@ class EDG(
     val requirements : SimpleLabeledDirectedIIMatrix[Requirement],
     val conditionals : DirectedMultiLabeledIIAdjList[Conditional],
     val ccgraph : CCGraph,
+    var squeezed : Boolean,
     protected[stnu] var listener : EDGListener) {
 
-  def this(edg : EDG, listener:EDGListener = null) = this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), listener)
+  def this(edg : EDG, listener:EDGListener = null) = this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
 
   def this(listener:EDGListener = null) = this(
     new DirectedSimpleLabeledIIAdjList[Contingent](),
     new SimpleLabeledDirectedIIMatrix[Requirement](),
     new DirectedMultiLabeledIIAdjList[Conditional](),
     new CCGraph,
+    false,
     listener
   )
 
@@ -56,13 +58,14 @@ class EDG(
     contingents.addVertex()
   }
 
-  var squeezed = false //TODO inherit from ancestor
+  def allEdges = requirements.edges() ++ contingents.edges() ++ conditionals.edges()
+
   /*
   def squeezed = !contingents.edges().forall(cont => {
     requirements.edge(cont.u, cont.v) match {
       case Some(req) => {
         req.l.value >= cont.l.value
-      } //TODO more fine grained test to detect misusages
+      }
       case None => true
     }
   })*/
@@ -78,7 +81,8 @@ class EDG(
       case cont:Contingent => {
         contingents.edge(e.u, e.v) match {
           case None => true
-          case Some(prev) => throw new RuntimeException("Error: tightening a contingent constraint.")
+          case Some(prev) => if(prev.l.value == e.l.value) false
+            else throw new RuntimeException("Error: tightening/relaxing a contingent constraint.")
         }
       }
       case cond:Conditional => {
@@ -153,7 +157,7 @@ class EDG(
       addVar()
     }
     val e = new LabeledEdge[Int, Contingent](from, to, new Contingent(value))
-    addEdge(e) ++ addEdge(new E(from, to, new Requirement(value)))
+    addEdge(e) ++ addEdge(new E(from, to, new Requirement(value))) //TODO
   }
 
   def addConditional(from:Int, to:Int, on:Int, value:Int) : List[E] = {

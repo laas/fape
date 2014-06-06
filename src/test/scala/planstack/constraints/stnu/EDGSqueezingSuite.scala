@@ -8,15 +8,12 @@ class ConcreteEDGForTesting extends EDG {
 }
 
 class EDGSqueezingSuite extends FunSuite {
-  val A = 0
-  val B = 1
-  val C = 2
-  val D = 3
-
-  
 
   test("No Squeezing, same values") {
     val edg = new ConcreteEDGForTesting
+
+    val A = edg.addVar()
+    val B = edg.addVar()
 
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)
@@ -29,6 +26,9 @@ class EDGSqueezingSuite extends FunSuite {
   test("No Squeezing, higher values") {
     val edg = new ConcreteEDGForTesting
 
+    val A = edg.addVar()
+    val B = edg.addVar()
+
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)
     edg.addRequirement(A, B, 11)
@@ -39,6 +39,9 @@ class EDGSqueezingSuite extends FunSuite {
 
   test("Squeezing") {
     val edg = new ConcreteEDGForTesting
+
+    val A = edg.addVar()
+    val B = edg.addVar()
 
     edg.addContingent(A, B, 10)
     edg.addContingent(B, A, -8)

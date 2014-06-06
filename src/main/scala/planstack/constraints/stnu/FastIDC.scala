@@ -4,11 +4,11 @@ import scala.collection.mutable.ListBuffer
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 
-class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGListener {
+class FastIDC(val edg : EDG, val todo : ListBuffer[E], protected var isConsistent : Boolean) extends ISTNU with EDGListener {
 
-  def this() = this(new EDG, ListBuffer[E]())
+  def this() = this(new EDG, ListBuffer[E](), true)
 
-  def this(toCopy : FastIDC) = this(new EDG(toCopy.edg), toCopy.todo.clone())
+  def this(toCopy : FastIDC) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)
 
 
   edg.listener = this
@@ -21,17 +21,17 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
     assert(myEnd == end)
   }
 
-  private var isConsistent = true
-  def consistent = {
+  def consistent : Boolean = {
     while(isConsistent && todo.nonEmpty)
       isConsistent &= fastIDC(todo.remove(0))
+
     isConsistent
   }
 
 
   def checkConsistency(): Boolean = consistent
 
-  def checkConsistencyFromScratch(): Boolean = ???
+  def checkConsistencyFromScratch(): Boolean = { todo ++= edg.allEdges ; consistent }
 
 
 
@@ -80,10 +80,9 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
     val additionAndRemovals : List[(List[E],List[E])]=
       edg.D1(e) :: edg.D2(e) :: edg.D3(e) :: edg.D4(e) ::edg.D5(e) :: edg.D6(e) ::edg.D7(e) :: edg.D8(e) :: edg.D9(e) :: Nil
 
-    val prevSize = todo.size
     for((toAdd,toRemove) <- additionAndRemovals) {
       for(edge <- toAdd) {
-        todo ++= edg.addEdge(edge)
+        edg.addEdge(edge)
       }
     }
 
@@ -112,6 +111,10 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E]) extends ISTNU with EDGLis
 
   def edgeAdded(e: E): Unit = {
     todo += e
+    for(neighbour <- edg.allEdges) {
+      if(neighbour.u == e.u || neighbour.u == e.v || neighbour.v == e.u || neighbour.v == e.v)
+        todo += neighbour
+    }
   }
 
   /** Returns true if the given requirement edge is present in the STNU */
