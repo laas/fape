@@ -34,7 +34,7 @@ public class AbstractionHierarchy {
      */
     final HashMap<FluentType, Integer> fluentsGroup = new HashMap<>();
 
-    private UnlabeledDigraph<FluentType> dag = GraphFactory.getUnlabeledDigraph();
+    private UnlabeledDigraph<FluentType> dag = GraphFactory.getSimpleUnlabeledDigraph();
 
     public AbstractionHierarchy(AnmlProblem pb) {
         this.problem = pb;

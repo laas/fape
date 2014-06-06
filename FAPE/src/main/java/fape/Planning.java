@@ -198,6 +198,7 @@ public class Planning {
 
 
                     while(!planners.isEmpty()) {
+                        System.gc(); // clean up previous runs to avoid impact on performance measure
                         long start = System.currentTimeMillis();
 
                         APlanner planner = planners.remove();

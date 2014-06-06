@@ -14,6 +14,8 @@ import fape.FAPE;
 import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
+import fape.core.planning.printers.Printer;
+import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
@@ -119,7 +121,6 @@ public class Actor {
      *
      */
     public enum EActorState {
-
         /**
          *
          */

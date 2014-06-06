@@ -38,6 +38,13 @@ import java.util.*;
  */
 public abstract class APlanner {
 
+    public class ActionExecution {
+        Action a;
+        int startTime;
+        int endTime;
+        List<String> args;
+    }
+
 
     public static boolean debugging = true;
     public static boolean logging = true;
@@ -238,6 +245,15 @@ public abstract class APlanner {
         // insert new constraint specifying the end time of the action
         bestState.tempoNet.EnforceConstraint(pb.start(), a.end(), realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
+    }
+
+    public void setActionExecuting(AtomicAction aa) {
+        State myState = GetCurrentState();
+        Action a = myState.taskNet.GetAction(aa.id);
+        myState.setActionExecuting(a.id());
+        myState.tempoNet.RemoveConstraints(new Pair(pb.earliestExecution(), a.start()),
+                new Pair(a.start(), pb.earliestExecution()));
+        myState.tempoNet.EnforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
     }
 
     /**
@@ -687,11 +703,7 @@ public abstract class APlanner {
         // for all selecting actions, we set them as being executed and we bind their start time point
         // to the one we requested.
         for(AtomicAction aa : ret) {
-            Action a = myState.taskNet.GetAction(aa.id);
-            myState.setActionExecuting(a.id());
-            myState.tempoNet.RemoveConstraints(new Pair(pb.earliestExecution(), a.start()),
-                    new Pair(a.start(), pb.earliestExecution()));
-            myState.tempoNet.EnforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
+            setActionExecuting(aa);
         }
 
         return ret;
@@ -739,7 +751,7 @@ public abstract class APlanner {
 
         KeepBestStateOnly();
 
-        //TODO: apply ANML to more states and choose the best after the applciation
+        //TODO: apply ANML to more states and choose the best after the application
         pb.addAnml(anml);
         this.dtg = new LiftedDTG(this.pb);
 
@@ -752,6 +764,15 @@ public abstract class APlanner {
         }
 
         return true;
+    }
+
+    public State extractCurrentState(int now) {
+        State tmp = new State(best);
+        for(Action a : tmp.taskNet.GetAllActions()) {
+            if(a.status() == ActionStatus.PENDING)
+                tmp.setActionFailed(a.id());
+        }
+        return tmp;
     }
 
 }
