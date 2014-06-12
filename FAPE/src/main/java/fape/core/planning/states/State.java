@@ -473,10 +473,10 @@ public class State implements Reporter {
      * @return True if the resulting state is consistent.
      */
     public boolean apply(ResourceStatement s) {
-        recordTimePoints(s);       
+        recordTimePoints(s);
 
-        Resource r = ResourceManager.generateResourcePrototype((NumFunction)s.sv().func());
-        
+        Resource r = ResourceManager.generateResourcePrototype((NumFunction) s.sv().func());
+
         if (s instanceof SetResource) {
             r.addAssignement(this, s.start(), s.end(), s.param());
         } else if (s instanceof UseResource) {
@@ -493,8 +493,8 @@ public class State implements Reporter {
             throw new FAPEException("Unsupported resource event.");
         }
         r.stateVariable = s.sv();
-                
-        boolean consistent = resMan.AddResourceEvent(r, this);        
+
+        boolean consistent = resMan.AddResourceEvent(r, this);
         return consistent;
 
     }
@@ -623,6 +623,9 @@ public class State implements Reporter {
                 }
                 return retained;
             }
+        } else if (f instanceof ResourceFlaw) {
+            return opts;
+
         } else {
             throw new FAPEException("Error: Unrecognized flaw type.");
         }
@@ -707,6 +710,8 @@ public class State implements Reporter {
      * @return
      */
     public List<SupportOption> ResourceBalancingActions(TPRef when, boolean after, float requiredAmount) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        //TODO
+        return new LinkedList<>();
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

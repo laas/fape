@@ -167,6 +167,26 @@ public class ResourceManager {
             return unifies;
         }
     }
+    
+    /**
+     * can the two resources be the same?
+     *
+     * @param a
+     * @param b
+     * @param st
+     * @return
+     */
+    public boolean Unifiable(Resource a, Resource b, State st) {
+        if (!a.stateVariable.func().name().equals(b.stateVariable.func().name()) || a.stateVariable.jArgs().size() != b.stateVariable.jArgs().size()) {
+            return false;
+        } else {
+            boolean unifies = true;
+            for (int i = 0; i < a.stateVariable.jArgs().size() && unifies; i++) {
+                unifies &= st.conNet.unifiable(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
+            }
+            return unifies;
+        }
+    }
 
     /**
      * merge the second resource into the first one
@@ -211,7 +231,10 @@ public class ResourceManager {
     Collection<? extends SupportOption> GetResolvingBindings(Replenishable aThis, float f, State st) {
         List<SupportOption> l = new LinkedList<>();
         for (Resource r : resources) {
-            if (Unified(r, aThis, st)) { 
+            if(aThis.equals(r)){
+                continue;
+            }
+            if (Unifiable(r, aThis, st)) { 
                 Resource x = aThis.DeepCopy();
                 x.MergeInto(r);
                 if (x.isConsistent(st)) { //create options that bindigs with resources that make this one consistent

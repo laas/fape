@@ -72,7 +72,7 @@ public class Reusable extends Resource {
         //create a possible intersection graph
         ArrayList<LinkedList<Integer>> edges = new ArrayList<>(events.size());
         for (int i = 0; i < events.size(); i++) {
-            edges.set(i, new LinkedList<Integer>());
+            edges.add(new LinkedList<Integer>());
         }
         for (int i = 0; i < events.size(); i++) {
             for (int j = i + 1; j < events.size(); j++) {

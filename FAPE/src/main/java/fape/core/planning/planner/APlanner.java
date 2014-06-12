@@ -200,7 +200,7 @@ public abstract class APlanner {
             values.add(((VarBinding) o).value);
             next.conNet.restrictDomain(((VarBinding) o).var, values);
         } else if (o instanceof StateVariableBinding) {
-            next.conNet.AddUnificationConstraint(((StateVariableBinding)o).one, ((StateVariableBinding)o).two);
+            next.conNet.AddUnificationConstraint(((StateVariableBinding) o).one, ((StateVariableBinding) o).two);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -357,6 +357,8 @@ public abstract class APlanner {
             candidates = GetResolvers(st, (Threat) f);
         } else if (f instanceof UnboundVariable) {
             candidates = GetResolvers(st, (UnboundVariable) f);
+        } else if (f instanceof ResourceFlaw) {
+            candidates = ((ResourceFlaw)f).resolvers;
         } else {
             throw new FAPEException("Unknown flaw type: " + f);
         }
