@@ -8,9 +8,9 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-
 package fape.core.planning.search;
 
+import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -22,11 +22,12 @@ import java.util.Map;
 
 /**
  * non-null values represent the option
+ *
  * @author FD
  */
 public class SupportOption {
 
-
+    public TemporalConstraint tCon = null;
 
     public ActionWithBindings actionWithBindings = null;
 
@@ -62,16 +63,19 @@ public class SupportOption {
         //return "" + tdb + " " + precedingComponent + " " + supportingAction + " " + actionToDecompose;
         if (temporalDatabase != -1 && precedingChainComponent != -1) {
             // this is database merge of one persistence into another
-            return "{merge of two databases, tdb="+temporalDatabase+", preceding="+precedingChainComponent;
+            return "{merge of two databases, tdb=" + temporalDatabase + ", preceding=" + precedingChainComponent;
         } else if (temporalDatabase != -1) {
             //this is a database concatenation
-            return "{DB Concatenation w/ "+temporalDatabase+"}";
+            return "{DB Concatenation w/ " + temporalDatabase + "}";
         } else if (supportingAction != null) {
             //this is a simple applciation of an action
-            return "{ActionApplication "+supportingAction+"}";
+            return "{ActionApplication " + supportingAction + "}";
         } else if (actionToDecompose != null) {
             // this is a task decomposition
-            return "{ActionDecomposition "+actionToDecompose+", dec="+decompositionID+"}";
+            return "{ActionDecomposition " + actionToDecompose + ", dec=" + decompositionID + "}";
+        } else if (tCon != null) {
+            // this is a temporal constraint            
+            return "{TemporalConstraint " + tCon.first + " -> " + tCon.second + ":" + "[" + tCon.min + "," + tCon.max + "]";
         } else {
             return "Unknown option.";
         }

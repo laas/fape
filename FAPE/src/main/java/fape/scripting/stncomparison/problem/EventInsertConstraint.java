@@ -23,12 +23,11 @@ import planstack.anml.model.concrete.TPRef;
 public class EventInsertConstraint extends Event {
 
     private class Constraint {
-
         public int min, max, a, b;
     }
-
+    
     public static int conRangeMin = 10, conRangeMax = 1000, conAddion = 3000;
-
+    
     private Constraint innerRG( Random rg, int top) {
         Constraint c = new Constraint();
         //only with having at least two timepoints this makes sense
@@ -65,7 +64,7 @@ public class EventInsertConstraint extends Event {
 
         int top = n.stn.size()-2;
         if (top > 2) {
-            Constraint c = innerRG(rg, top);
+            Constraint c = innerRG(rg, top);            
             n.EnforceConstraint(new TPRef(c.a+2), new TPRef(c.b+2), c.min, c.max);
         }
     }
