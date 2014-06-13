@@ -702,6 +702,8 @@ public class State implements Reporter {
         this.supportConstraints.add(new Pair(cc.mID, dec));
     }
 
+    
+    
     /**
      *
      * @param when time point we relate the new action to
@@ -709,9 +711,10 @@ public class State implements Reporter {
      * @param requiredAmount how much do we need
      * @return
      */
-    public List<SupportOption> ResourceBalancingActions(TPRef when, boolean after, float requiredAmount) {
+    /*public List<SupportOption> ResourceBalancingActions(TPRef when, boolean after, float requiredAmount) {
+        
         //TODO
         return new LinkedList<>();
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    }*/
 }

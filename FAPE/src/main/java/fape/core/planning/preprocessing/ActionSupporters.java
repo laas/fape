@@ -10,6 +10,8 @@ import planstack.anml.model.abs.AbstractTemporalStatement;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
+import planstack.anml.model.abs.statements.AbstractConsumeResource;
+import planstack.anml.model.abs.statements.AbstractProduceResource;
 
 /**
  * This class aims at analysing a problem to identify actions that might enablers for a
@@ -60,4 +62,5 @@ public class ActionSupporters implements ActionSupporterFinder {
         }
         return ret;
     }
+
 }

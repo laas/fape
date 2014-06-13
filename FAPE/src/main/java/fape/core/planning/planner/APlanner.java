@@ -37,6 +37,7 @@ import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
 
@@ -86,6 +87,17 @@ public abstract class APlanner {
      */
     public PriorityQueue<State> queue;
 
+    /**
+     * applies a resolver to the state
+     *
+     * TODO: rewrite to a polymorphic switch instead of checking nulls in
+     * variables
+     *
+     * @param next
+     * @param o
+     * @param consumer
+     * @return
+     */
     public boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
         ChainComponent precedingComponent = null;
@@ -201,6 +213,56 @@ public abstract class APlanner {
             next.conNet.restrictDomain(((VarBinding) o).var, values);
         } else if (o instanceof StateVariableBinding) {
             next.conNet.AddUnificationConstraint(((StateVariableBinding) o).one, ((StateVariableBinding) o).two);
+        } else if (o instanceof ResourceSupportingAction) {
+            ResourceSupportingAction opt = (ResourceSupportingAction) o;
+            Action action = Factory.getStandaloneAction(pb, opt.action);
+            //add the actual action
+            next.insert(action);
+
+            //unify the state variables supporting the resource
+            ResourceStatement theSupport = null;
+            for (ResourceStatement s : action.resourceStatements()) {
+                if (s.sv().func().name().equals(opt.unifyingResourceVariable.func().name())) {
+                    if (theSupport != null) {
+                        throw new FAPEException("Distinguishing resource events upon the same resource in one action needs to be implemented.");
+                    } else {
+                        theSupport = s;
+                    }
+                }
+            }
+            next.conNet.AddUnificationConstraint(theSupport.sv(), opt.unifyingResourceVariable);
+
+            //add temporal constraint
+            if (opt.before) {
+                //the new action must occour before the given time point
+                next.tempoNet.EnforceBefore(action.end(), opt.when);
+            } else {
+                //vice-versa
+                next.tempoNet.EnforceBefore(opt.when, action.start());
+            }
+        } else if (o instanceof ResourceSupportingDecomposition) {
+            ResourceSupportingDecomposition opt = (ResourceSupportingDecomposition) o;
+             // Apply the i^th decomposition of o.actionToDecompose, where i is given by
+            // o.decompositionID
+
+            // Action to decomposed
+            Action decomposedAction = opt.resoouceMotivatedActionToDecompose;
+
+            // Abstract version of the decomposition
+            AbstractDecomposition absDec = decomposedAction.decompositions().get(o.decompositionID);
+
+            // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+
+            // remember that the consuming db has to be supporting by a descendant of this decomposition.
+            if (consumer != null) {
+                next.addSupportConstraint(consumer.GetChainComponent(0), dec);
+            }
+
+            next.applyDecomposition(dec);
+
+            //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one of the decomposed actions
+            //for now we leave it to search
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -358,7 +420,7 @@ public abstract class APlanner {
         } else if (f instanceof UnboundVariable) {
             candidates = GetResolvers(st, (UnboundVariable) f);
         } else if (f instanceof ResourceFlaw) {
-            candidates = ((ResourceFlaw)f).resolvers;
+            candidates = ((ResourceFlaw) f).resolvers;
         } else {
             throw new FAPEException("Unknown flaw type: " + f);
         }
