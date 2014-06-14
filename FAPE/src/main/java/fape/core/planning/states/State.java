@@ -10,8 +10,12 @@
  */
 package fape.core.planning.states;
 
+import fape.core.planning.Planner;
 import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.constraints.ConstraintNetwork;
+import fape.core.planning.heuristics.lmcut.LMCut;
+import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
@@ -25,16 +29,24 @@ import fape.util.Pair;
 import fape.util.Reporter;
 import java.util.*;
 import planstack.anml.model.*;
+import planstack.anml.model.abs.AbstractTemporalStatement;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
+import scala.collection.mutable.AbstractBuffer;
 //import scala.collection.immutable.HashMap;
 
 /**
  *
  * @author FD
  */
-public class State implements Reporter {
+public class State implements Reporter{
+
+
+
+    public float h = -1, g = -1;
+
+    
 
     private static int idCounter = 0;
 
@@ -702,19 +714,4 @@ public class State implements Reporter {
         this.supportConstraints.add(new Pair(cc.mID, dec));
     }
 
-    
-    
-    /**
-     *
-     * @param when time point we relate the new action to
-     * @param after should the new ocourr after the time point
-     * @param requiredAmount how much do we need
-     * @return
-     */
-    /*public List<SupportOption> ResourceBalancingActions(TPRef when, boolean after, float requiredAmount) {
-        
-        //TODO
-        return new LinkedList<>();
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }*/
 }

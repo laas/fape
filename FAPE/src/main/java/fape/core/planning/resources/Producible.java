@@ -1,7 +1,7 @@
 /*
- * Author:  Filip Dvoøák <filip.dvorak@runbox.com>
+ * Author:  Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>
  *
- * Copyright (c) 2013 Filip Dvoøák <filip.dvorak@runbox.com>, all rights reserved
+ * Copyright (c) 2013 Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>, all rights reserved
  *
  * Publishing, providing further or using this program is prohibited
  * without previous written permission of the author. Publishing or providing
@@ -53,7 +53,7 @@ public class Producible extends Resource {
 
     @Override
     public void addAssignement(State st, TPRef start, TPRef end, float value) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.produced = 0;
     }
 
     @Override

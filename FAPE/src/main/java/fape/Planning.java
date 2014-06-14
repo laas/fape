@@ -192,7 +192,7 @@ public class Planning {
                                 System.err.println("Accepted values for planner are: base, base+dtg, rpg, rpg-ext, all");
                         }
                     }
-
+                    APlanner.currentPlanner = planners.peek();
                     int maxtime = config.getInt("maxtime");
 
 

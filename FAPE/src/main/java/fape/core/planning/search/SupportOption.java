@@ -27,6 +27,10 @@ import java.util.Map;
  */
 public class SupportOption {
 
+    public boolean representsCausalLinkAddition(){
+        return this.temporalDatabase != -1;
+    }
+    
     public TemporalConstraint tCon = null;
 
     public ActionWithBindings actionWithBindings = null;

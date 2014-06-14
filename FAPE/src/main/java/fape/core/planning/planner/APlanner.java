@@ -2,6 +2,9 @@ package fape.core.planning.planner;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
+import fape.core.planning.Planner;
+import fape.core.planning.heuristics.lmcut.LMCut;
+import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
@@ -12,6 +15,7 @@ import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.resources.Reusable;
+import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.search.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -51,6 +55,8 @@ import planstack.anml.parser.ParseResult;
  */
 public abstract class APlanner {
 
+    public static APlanner currentPlanner = null;
+    
     public static boolean debugging = true;
     public static boolean logging = true;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
@@ -108,8 +114,11 @@ public abstract class APlanner {
             }
         }
 
+        TinyLogger.LogInfo("[" + next.mID + "] Adding " + o);
+
         //now we can happily apply all the options
         if (supporter != null && precedingComponent != null) {
+
             assert consumer != null : "Consumer was not passed as an argument";
             // this is database merge of one persistence into another
             assert consumer.chain.size() == 1 && !consumer.chain.get(0).change : "This is restricted to databases containing single persistence only";
@@ -153,6 +162,7 @@ public abstract class APlanner {
                 opt.temporalDatabase = supportingDatabase.mID;
                 return ApplyOption(next, opt, consumer);
             }
+
         } else if (o.actionToDecompose != null) {
             // Apply the i^th decomposition of o.actionToDecompose, where i is given by
             // o.decompositionID
@@ -263,6 +273,8 @@ public abstract class APlanner {
 
             //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one of the decomposed actions
             //for now we leave it to search
+        } else if (o.tCon != null) {
+            next.tempoNet.EnforceConstraint(o.tCon.first, o.tCon.second, o.tCon.min, o.tCon.max);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -549,6 +561,7 @@ public abstract class APlanner {
     }
 
     protected State aStar(TimeAmount forHowLong) {
+        ///Planner.logging = true;
         // first start by checking all the consistencies and propagating necessary constraints
         // those are irreversible operations, we do not make any decisions on them
         //State st = GetCurrentState();
@@ -556,6 +569,8 @@ public abstract class APlanner {
         //st.bindings.PropagateNecessary(st);
         //st.tdb.Propagate(st);
         long deadLine = System.currentTimeMillis() + forHowLong.val;
+        //initializace heuristic
+        LMCut lm = new LMCut(new GroundProblem(pb));
         /**
          * search
          */
@@ -572,6 +587,7 @@ public abstract class APlanner {
             }
             //get the best state and continue the search
             State st = queue.remove();
+            //GroundProblem pr = new GroundProblem(pb);
             OpenedStates++;
 
             if (APlanner.debugging) {
@@ -612,19 +628,18 @@ public abstract class APlanner {
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
 
-            if (APlanner.logging) {
-                TinyLogger.LogInfo(" Flaw:" + opt.value1.toString());
-            }
+            TinyLogger.LogInfo(" Flaw:" + opt.value1.toString());
 
             for (SupportOption o : opt.value2) {
-                if (APlanner.logging) {
-                    TinyLogger.LogInfo("   Res: " + o);
-                }
+
+                TinyLogger.LogInfo("   Res: " + o);
+
                 State next = new State(st);
                 boolean success = false;
                 if (opt.value1 instanceof Threat
                         || opt.value1 instanceof UnboundVariable
-                        || opt.value1 instanceof UndecomposedAction) {
+                        || opt.value1 instanceof UndecomposedAction
+                        || opt.value1 instanceof ResourceFlaw) {
                     success = ApplyOption(next, o, null);
                 } else {
                     success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));

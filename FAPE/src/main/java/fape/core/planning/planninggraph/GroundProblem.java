@@ -20,8 +20,8 @@ import scala.collection.JavaConversions;
 public class GroundProblem {
 
     final AnmlProblem liftedPb;
-    final GroundState initState = new GroundState();
-    final GroundState goalState = new GroundState();
+    public final GroundState initState = new GroundState();
+    public final GroundState goalState = new GroundState();
 
     final List<GroundAction> actions = new LinkedList<>();
 
