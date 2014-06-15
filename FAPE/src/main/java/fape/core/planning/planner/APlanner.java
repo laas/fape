@@ -18,6 +18,7 @@ import fape.core.planning.resources.Reusable;
 import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.search.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -56,7 +57,7 @@ import planstack.anml.parser.ParseResult;
 public abstract class APlanner {
 
     public static APlanner currentPlanner = null;
-    
+
     public static boolean debugging = true;
     public static boolean logging = true;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
@@ -560,6 +561,8 @@ public abstract class APlanner {
         return false;
     }
 
+    public static boolean optimal = false;
+
     protected State aStar(TimeAmount forHowLong) {
         ///Planner.logging = true;
         // first start by checking all the consistencies and propagating necessary constraints
@@ -570,7 +573,7 @@ public abstract class APlanner {
         //st.tdb.Propagate(st);
         long deadLine = System.currentTimeMillis() + forHowLong.val;
         //initializace heuristic
-        LMCut lm = new LMCut(new GroundProblem(pb));
+        //LMCut lm = new LMCut(new GroundProblem(pb));
         /**
          * search
          */
@@ -581,9 +584,14 @@ public abstract class APlanner {
                 break;
             }
             if (queue.isEmpty()) {
-                TinyLogger.LogInfo("No plan found.");
-                this.planState = EPlanState.INFESSIBLE;
-                break;
+                if (!APlanner.optimal) {
+                    TinyLogger.LogInfo("No plan found.");
+                    this.planState = EPlanState.INFESSIBLE;
+                    break;
+                } else if (GetFlaws(best).isEmpty()) {
+                    this.planState = EPlanState.CONSISTENT;
+                    return best;
+                }
             }
             //get the best state and continue the search
             State st = queue.remove();
@@ -598,12 +606,25 @@ public abstract class APlanner {
 
             TinyLogger.LogInfo(st);
             if (flaws.isEmpty()) {
-                this.planState = EPlanState.CONSISTENT;
-                TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(st.taskNet);
-                TinyLogger.LogInfo(st.tdb);
-                TinyLogger.LogInfo(st.tempoNet);
-                return st;
+                if (!APlanner.optimal) {
+                    this.planState = EPlanState.CONSISTENT;
+                    TinyLogger.LogInfo("Plan found:");
+                    TinyLogger.LogInfo(st.taskNet);
+                    TinyLogger.LogInfo(st.tdb);
+                    TinyLogger.LogInfo(st.tempoNet);
+                    return st;
+                }else{
+                    best = st;
+                    //remove all suboptimal candidates from the queue
+                    List<State> remove = new LinkedList<>();
+                    for(State s:queue){
+                        if(LMC.singleton.cost(s) <= LMC.singleton.cost(best)){
+                            remove.add(s);
+                        }
+                    }
+                    queue.removeAll(remove);
+                    continue;
+                }
             }
             //continue the search
             LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();

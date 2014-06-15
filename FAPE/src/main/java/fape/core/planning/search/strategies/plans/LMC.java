@@ -31,6 +31,8 @@ import planstack.anml.model.concrete.VarRef;
  */
 public class LMC implements PartialPlanComparator {
 
+    public static LMC singleton = null;
+    
     /**
      * gets an atom description if fully binded, returns null otherwise
      *
@@ -91,6 +93,10 @@ public class LMC implements PartialPlanComparator {
 
     }
 
+    public LMC(){
+        singleton = this;
+    }
+    
     public void Evaluate(State st, LMCut lm) {
         BitSet init = new BitSet(), goal = new BitSet();
         st.g = st.taskNet.GetAllActions().size();
