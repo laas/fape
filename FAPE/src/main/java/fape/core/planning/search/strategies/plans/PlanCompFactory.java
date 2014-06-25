@@ -17,6 +17,8 @@ public class PlanCompFactory {
                 case "dfs":
                     compList.add(new DepthFirst());
                     break;
+                case "fex":
+                    compList.add(new Fex());
                 case "soca":
                     compList.add(new SOCA());
                     break;

@@ -24,7 +24,7 @@ import java.io.PrintStream;
  */
 public class AnotherExperimentRunner {
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         String path = "problems/generated"; //default problems
         int maxTime = 1000 * 60;            // default timeout: 1min
         PrintStream out = new PrintStream(System.out); //print out standard output
@@ -44,18 +44,18 @@ public class AnotherExperimentRunner {
         }
 
         try {
-            run(path, maxTime, out);
+            run(path, maxTime, out, "--planner rpg --strats lcf>abs|soca --quiet");
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
-    public static void run(String path) throws InterruptedException, Exception {
+    public static void run(String path, String arguments) throws InterruptedException, Exception {
         // using a default timeout of 1 minute
-        run(path, 1000 * 10, new PrintStream(System.out));
+        run(path, 1000 * 10, new PrintStream(System.out), arguments);
     }
 
-    public static void run(String path, int maxRuntime, PrintStream out) throws InterruptedException, Exception {
+    public static void run(String path, int maxRuntime, PrintStream out, String arguments) throws InterruptedException, Exception {
         File f = new File(path);
         File[] anmls = f.listFiles(new FileFilter() {
             @Override
@@ -76,7 +76,7 @@ public class AnotherExperimentRunner {
             problems += " " + a.getAbsolutePath();
         }
 
-        Planning.main(("--planner rpg --strats lcf>abs|soca>lmc --quiet" + problems).split(" "));
+        Planning.main((arguments + problems).split(" "));
 
     }
 

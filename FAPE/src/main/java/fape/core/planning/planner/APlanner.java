@@ -573,7 +573,6 @@ public abstract class APlanner {
         //st.tdb.Propagate(st);
         long deadLine = System.currentTimeMillis() + forHowLong.val;
         //initializace heuristic
-        //LMCut lm = new LMCut(new GroundProblem(pb));
         /**
          * search
          */
@@ -595,7 +594,6 @@ public abstract class APlanner {
             }
             //get the best state and continue the search
             State st = queue.remove();
-            //GroundProblem pr = new GroundProblem(pb);
             OpenedStates++;
 
             if (APlanner.debugging) {

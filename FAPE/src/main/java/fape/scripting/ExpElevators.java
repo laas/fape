@@ -17,6 +17,7 @@ package fape.scripting;
  */
 public class ExpElevators {
     public static void main(String[] args) throws InterruptedException, Exception {
-        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlOpt");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf>abs|soca>lmc --quiet");
+        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf>abs|fex --quiet");
     }
 }

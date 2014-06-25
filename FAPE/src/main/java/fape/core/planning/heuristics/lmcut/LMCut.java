@@ -28,16 +28,16 @@ import java.util.List;
  * @author FD
  */
 public final class LMCut {
+
     public static BitSet commonInit = null;
-    
-    
+
     public static LinkedHashMap<RelaxedGroundAtom, LinkedList<RelaxedGroundAction>> at2eff;
     public static LinkedHashSet<RelaxedGroundAtom> mAtoms;
     public static LinkedHashMap<Integer, RelaxedGroundAtom> at2index;
     public static Iterable<RelaxedGroundAction> mActions;
     public static LinkedHashMap<RelaxedGroundAtom, LinkedList<RelaxedGroundAction>> at2con;
     LinkedList<RelaxedGroundAction> latestUsefulActions = null;
-    
+
     RelaxedGroundProblem problem = null;
 
     private static boolean isApplicable(HashSet<RelaxedGroundAtom> kb, RelaxedGroundAction a) {
@@ -150,7 +150,7 @@ public final class LMCut {
         Init(new LinkedHashSet<>(pr.atoms), pr.actions);
         problem = pr;
     }
-    
+
     public Iterable<RelaxedGroundAction> DiscoverRelevantActions(BitSet init, BitSet goal) {
         LinkedHashSet<RelaxedGroundAction> ret = new LinkedHashSet<>();
         //we now want to find all relevant actions, those are the actions that can contribute the search in some way
@@ -163,16 +163,16 @@ public final class LMCut {
                 processedAtoms.add(at2index.get(i));
             }
         }
-        while(!atomQueue.isEmpty()){
+        while (!atomQueue.isEmpty()) {
             RelaxedGroundAtom a = atomQueue.pop();
             LinkedList<RelaxedGroundAction> l = at2eff.get(a);
-            for(RelaxedGroundAction ai : l){
-                if(ret.contains(ai)){
+            for (RelaxedGroundAction ai : l) {
+                if (ret.contains(ai)) {
                     continue;
                 }
                 ret.add(ai);
-                for(RelaxedGroundAtom con : ai.pre){ //for each condition of the action
-                    if(!processedAtoms.contains(con)){ //enqueue the condition, unless it was already processed
+                for (RelaxedGroundAtom con : ai.pre) { //for each condition of the action
+                    if (!processedAtoms.contains(con)) { //enqueue the condition, unless it was already processed
                         atomQueue.add(con);
                         processedAtoms.add(con);
                     }
@@ -198,7 +198,8 @@ public final class LMCut {
             RelaxedGroundAtom at = at2index.get(i);
             atCost.put(at, 0f);
             base.add(at);
-            //for each action that i support
+            //for each action that i suppo
+
             for (RelaxedGroundAction ac : at2con.get(at)) {
                 if (ac.IsApplicableClean(base)) {
                     queue.add(ac);
@@ -268,16 +269,16 @@ public final class LMCut {
         for (RelaxedGroundAction a : mActions) {
             cActCost.put(a, a.cost);
         }
-        
+
         //hMaxForward(caCost, cActCost, init);
         hMaxForwardQueue(caCost, cActCost, init);
 
         boolean allZeroCost = true;
         for (int i = goal.nextSetBit(0); i >= 0; i = goal.nextSetBit(i + 1)) {
             Float f = caCost.get(at2index.get(i));
-            if(f == null){
+            if (f == null) {
                 return Float.MAX_VALUE;
-            }else if (caCost.get(at2index.get(i)) > 0) {
+            } else if (caCost.get(at2index.get(i)) > 0) {
                 allZeroCost = false;
             }
         }
@@ -323,6 +324,7 @@ public final class LMCut {
             //end if there is no more cost to extract
             end = allZeroCost;
         }
+        //System.out.println(totalHVal);
         return totalHVal;
     }
 

@@ -10,10 +10,13 @@
  */
 package fape.core.planning.heuristics.lmcut;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
@@ -75,6 +78,8 @@ public class JustificationGraph {
     Vertex[] init, goal;
     float cutMin;
 
+    public static boolean debug = true;
+    
     JustificationGraph(HashMap<RelaxedGroundAtom, Float> caCost, HashMap<RelaxedGroundAction, Float> cActCost, Iterable<RelaxedGroundAction> actions, BitSet _init, BitSet _goal) {
         vertices = new Vertex[caCost.size()];
 
@@ -102,6 +107,30 @@ public class JustificationGraph {
         for (int i = _goal.nextSetBit(0); i >= 0; i = _goal.nextSetBit(i + 1)) {
             goal[ct++] = vertices[i];
         }
+        
+        //check trivial satisfibility for debug
+        if(debug){
+            HashSet<Vertex> kb = new HashSet();
+            HashSet<Vertex> newVertices = new HashSet<>();
+            newVertices.addAll(Arrays.asList(init));
+            while(!newVertices.isEmpty()){
+                kb.addAll(newVertices);
+                HashSet<Vertex> newNewVertices = new HashSet<>();
+                for(Vertex x:newVertices){
+                    for(Edge e:x.fromMe){
+                        if(!kb.contains(e.to)){
+                            newNewVertices.add(e.to);
+                        }
+                    }
+                }
+                newVertices = newNewVertices;
+            }
+            kb.retainAll(Arrays.asList(goal));
+            if(kb.size() != goal.length){
+                throw new UnsupportedOperationException("unsatisfiable justification graph.");
+            }
+        }
+        
     }
 
     private void addEdge(RelaxedGroundAtom _from, RelaxedGroundAtom _to, float cost, RelaxedGroundAction ai) {
@@ -117,11 +146,7 @@ public class JustificationGraph {
     }
 
     private void spreadGoalZone(Vertex v) {
-        try{
         v.examined2 = true;
-        }catch(Exception e){
-            int xx= 0;
-        }
         v.goalZone = true;
         for (Edge e : v.toMe) {
             if (e.cost < 0.001f && !e.from.examined2) { //TODO check this, looks unstable

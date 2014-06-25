@@ -118,8 +118,8 @@ public class TemporalDatabase {
         return chain.getFirst().getConsumeTimePoint();
     }
 
-    public String GetRepresentativeSupportAtomName(State st) {
-        return LMC.GetAtomName(st, this.stateVariable, this.GetGlobalSupportValue());
+    public List<String> GetPossibleSupportAtomNames(State st) {
+        return LMC.GetAtomNames(st, this.stateVariable, this.GetGlobalSupportValue());
     }
 
     /**
