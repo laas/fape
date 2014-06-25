@@ -275,6 +275,10 @@ public class Planning {
                 }
             }
         }
-        writer.close();
+        /**
+         * let's do not close the writer, although it is a good behavior, closing the "System.out" mutes the rest of the output of the planner :)
+         * /Filip
+         */
+        //writer.close();
     }
 }

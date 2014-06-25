@@ -1,7 +1,7 @@
 /*
- * Author:  Filip Dvoøák <filip.dvorak@runbox.com>
+ * Author:  Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>
  *
- * Copyright (c) 2013 Filip Dvoøák <filip.dvorak@runbox.com>, all rights reserved
+ * Copyright (c) 2013 Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>, all rights reserved
  *
  * Publishing, providing further or using this program is prohibited
  * without previous written permission of the author. Publishing or providing
@@ -237,7 +237,7 @@ public class ResourceManager {
             if (Unifiable(r, aThis, st)) { 
                 Resource x = aThis.DeepCopy();
                 x.MergeInto(r);
-                if (x.isConsistent(st)) { //create options that bindigs with resources that make this one consistent
+                if (x.isTriviallyConsistent(st)) { //create options that bindigs with resources that make this one consistent
                     StateVariableBinding o = new StateVariableBinding();
                     o.one = r.stateVariable;
                     o.two = aThis.stateVariable;

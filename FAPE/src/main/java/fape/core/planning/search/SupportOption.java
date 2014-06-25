@@ -27,10 +27,10 @@ import java.util.Map;
  */
 public class SupportOption {
 
-    public boolean representsCausalLinkAddition(){
+    public boolean representsCausalLinkAddition() {
         return this.temporalDatabase != -1;
     }
-    
+
     public TemporalConstraint tCon = null;
 
     public ActionWithBindings actionWithBindings = null;
@@ -80,6 +80,10 @@ public class SupportOption {
         } else if (tCon != null) {
             // this is a temporal constraint            
             return "{TemporalConstraint " + tCon.first + " -> " + tCon.second + ":" + "[" + tCon.min + "," + tCon.max + "]";
+        } else if (this instanceof StateVariableBinding) {
+            StateVariableBinding svb = (StateVariableBinding) this;
+            // this is a temporal constraint            
+            return "{SVBinding: " + svb.one + " + " + svb.two;
         } else {
             return "Unknown option.";
         }

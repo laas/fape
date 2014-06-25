@@ -1,7 +1,7 @@
 /*
- * Author:  Filip Dvoøák <filip.dvorak@runbox.com>
+ * Author:  Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>
  *
- * Copyright (c) 2013 Filip Dvoøák <filip.dvorak@runbox.com>, all rights reserved
+ * Copyright (c) 2013 Filip Dvoï¿½ï¿½k <filip.dvorak@runbox.com>, all rights reserved
  *
  * Publishing, providing further or using this program is prohibited
  * without previous written permission of the author. Publishing or providing
@@ -131,6 +131,111 @@ public class Replenishable extends Resource {
         return ret;
     }
 
+    /**
+     * determines whether the resource has any conflicts to resolve
+     * @param st
+     * @return 
+     */
+    
+    public boolean isTriviallyConsistent(State st){
+        ArrayList<HashSet<Integer>> b = new ArrayList<>(), a = new ArrayList<>(), bs = new ArrayList<>(), as = new ArrayList<>();
+        for (Event event : events) {
+            b.add(new HashSet<Integer>());
+            a.add(new HashSet<Integer>());
+            bs.add(new HashSet<Integer>());
+            as.add(new HashSet<Integer>());
+        }
+        for (int i = 0; i < events.size(); i++) {
+            for (int j = 0; j < events.size(); j++) {
+                if (i == j) {
+                    continue;
+                }
+                if (st.tempoNet.CanBeBefore(events.get(i).tp, events.get(j).tp)) {
+                    b.get(j).add(i);
+                    a.get(i).add(j);
+                } else {
+                    // j happens strictly before i, i happens strictly after j
+                    bs.get(i).add(j);
+                    as.get(j).add(i);
+                }
+            }
+        }
+
+        //L^<_, L^>
+        for (int i = 0; i < events.size(); i++) {
+            float totalMinBefore = 0, totalMaxBefore = 0, totalMinAfter = events.get(i).value, totalMaxAfter = events.get(i).value; //after includes myself
+
+            for (Integer j : b.get(i)) {//all possible productions
+                if (events.get(j).value > 0) {
+                    totalMinBefore += events.get(j).value;
+                }
+            }
+            for (Integer j : bs.get(i)) {//all necessary consumptions
+                if (events.get(j).value < 0) {
+                    totalMinBefore += events.get(j).value;
+                }
+            }
+
+            for (Integer j : b.get(i)) {//all possible consumptions
+                if (events.get(j).value < 0) {
+                    totalMaxBefore += events.get(j).value;
+                }
+            }
+            for (Integer j : bs.get(i)) {//all necessary productions
+                if (events.get(j).value > 0) {
+                    totalMaxBefore += events.get(j).value;
+                }
+            }
+
+            for (Integer j : a.get(i)) {//all possible productions
+                if (events.get(j).value > 0) {
+                    totalMinAfter += events.get(j).value;
+                }
+            }
+            for (Integer j : as.get(i)) {//all necessary consumptions
+                if (events.get(j).value < 0) {
+                    totalMinAfter += events.get(j).value;
+                }
+            }
+
+            for (Integer j : a.get(i)) {//all possible consumptions
+                if (events.get(j).value < 0) {
+                    totalMaxAfter += events.get(j).value;
+                }
+            }
+            for (Integer j : as.get(i)) {//all necessary productions
+                if (events.get(j).value > 0) {
+                    totalMaxAfter += events.get(j).value;
+                }
+            }
+
+            if (totalMinBefore < min) {//overconsumption
+                return false;
+            }
+            if (totalMaxBefore > max) {//overproduction
+                return false;
+            }
+            if (totalMinAfter < min) {//overconsumption
+                return false;
+            }
+            if (totalMaxAfter > max) {//overproduction
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * determines necessary conditions for consistency of this resource
+     *
+     * @param st
+     * @return
+     */
+    @Override
+    public boolean isConsistent(State st) {
+        return true; //the reservoir resource is always considered consistent, since any conflict can be resolved by adding an appropriete action
+    }
+
     private List<ResourceFlaw> GatherFlawsThroughBalanceConstraint(State st) {
         List<ResourceFlaw> ret = new LinkedList<>();
 
@@ -158,6 +263,7 @@ public class Replenishable extends Resource {
                 }
             }
         }
+
         //L^<_, L^>
         for (int i = 0; i < events.size(); i++) {
             float totalMinBefore = 0, totalMaxBefore = 0, totalMinAfter = events.get(i).value, totalMaxAfter = events.get(i).value; //after includes myself

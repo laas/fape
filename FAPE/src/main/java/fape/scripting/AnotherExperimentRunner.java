@@ -68,7 +68,7 @@ public class AnotherExperimentRunner {
         Planner.logging = false;
         //Planner.actionResolvers = true;
 
-        out.println("Problem\tTime\t");// + Planner.DomainTableReportFormat() + Planner.PlanTableReportFormat());
+        out.println("***");// + Planner.DomainTableReportFormat() + Planner.PlanTableReportFormat());
 
         String problems = "";
 
@@ -76,6 +76,8 @@ public class AnotherExperimentRunner {
             problems += " " + a.getAbsolutePath();
         }
 
+        //System.out.println("java -jar \"target/fape-0.1.jar\""+ arguments + problems);
+        
         Planning.main((arguments + problems).split(" "));
 
     }
