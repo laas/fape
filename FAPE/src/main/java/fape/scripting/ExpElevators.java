@@ -51,7 +51,11 @@ public class ExpElevators {
         //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf>abs|lmc>soca --quiet");
         //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf>abs|lmc>psaoca --quiet");
         
-        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf|fex --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|lfr --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlHierarchy/", "--planner rpg --strats lcf|lfr --quiet");
+        
+        //scaling
+        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/scaling/", "--planner base --strats lcf|fex --quiet");
         
     }
 }
