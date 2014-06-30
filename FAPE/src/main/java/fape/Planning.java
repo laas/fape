@@ -22,25 +22,26 @@ public class Planning {
 
     /**
      * Tries to infer which file contains the domain definition of this problem.
-     * If the problem takes a form "domainName.xxxx.pb.anml", then the corresponding domain file
-     * would be "domainName.dom.anml"
+     * If the problem takes a form "domainName.xxxx.pb.anml", then the
+     * corresponding domain file would be "domainName.dom.anml"
+     *
      * @param problemFile
      * @return
      */
     public static String domainFile(String problemFile) {
         File f = new File(problemFile);
         String name = f.getName();
-        if(name.endsWith(".pb.anml")) {
+        if (name.endsWith(".pb.anml")) {
             String[] nameParts = name.split("\\.");
 
-            if(nameParts.length != 4) {
-                throw new FAPEException("File name "+name+ " is not correctly formatted. It should be in the form "+
-                " domainName.xxx.pb.anml and have an associated domainName.dom.anml file.");
+            if (nameParts.length != 4) {
+                throw new FAPEException("File name " + name + " is not correctly formatted. It should be in the form "
+                        + " domainName.xxx.pb.anml and have an associated domainName.dom.anml file.");
             }
 
-            File domain = new File(f.getParentFile(), nameParts[0]+".dom.anml");
-            if(!domain.exists()) {
-                throw new FAPEException("File "+domain+" does not exists (name derived from "+problemFile+")");
+            File domain = new File(f.getParentFile(), nameParts[0] + ".dom.anml");
+            if (!domain.exists()) {
+                throw new FAPEException("File " + domain + " does not exists (name derived from " + problemFile + ")");
             }
 
             return domain.getPath();
@@ -53,81 +54,82 @@ public class Planning {
         SimpleJSAP jsap = new SimpleJSAP(
                 "FAPE planners",
                 "Solves ANML problems",
-                new Parameter[] {
-                        new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
-                        new Switch("quiet", 'q', "quiet", "Planner won't print the final plan."),
-                        new Switch("debug", 'd', "debug", "Set the planner in debugging mode. " +
-                                "Mainly consists in time consuming checks."),
-                        new FlaggedOption("plannerID")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag('p')
-                                .setLongFlag("planner")
-                                .setDefault("base")
-                                .setList(true)
-                                .setListSeparator(',')
-                                .setHelp("Defines which planner implementation to use. Possible values are:\n" +
-                                        " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n" +
-                                        " - base+dtg: Same as base but uses DTG to select action resolvers.\n" +
-                                        " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n" +
-                                        " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n" +
-                                        "         be aware that it does not handle all anml problems.\n" +
-                                        " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n" +
-                                        "            is provided by an action. It cheks (using RPG) for every ground action\n" +
-                                        "            supporting the consmer and enforce a n-ary constraint on the action's\n" +
-                                        "            parameters to make sure they fit at least one of the ground action.\n" +
-                                        " - all:  will run every possible planner.\n"),
-
-                        new FlaggedOption("maxtime")
-                                .setStringParser(JSAP.INTEGER_PARSER)
-                                .setShortFlag('t')
-                                .setLongFlag("timeout")
-                                .setDefault("60")
-                                .setHelp("Time in seconds after which a planner times out."),
-                        new FlaggedOption("repetitions")
-                                .setStringParser(JSAP.INTEGER_PARSER)
-                                .setShortFlag('n')
-                                .setLongFlag(JSAP.NO_LONGFLAG)
-                                .setDefault("1")
-                                .setHelp("Number of times to repeat all planning activities"),
-                        new FlaggedOption("strategies")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
-                                .setLongFlag("strats")
-                                .setList(true)
-                                .setListSeparator(',')
-                                .setDefault("|")
-                                .setHelp("This is used to define search strategies. A search strategy consists of " +
-                                        "one or more flaw selection strategy and one or more state selection strategy. " +
-                                        "Ex: the argument 'lcf>lfr|dfs' would give for flaws: lcf (LeastCommitingFirst), using " +
-                                        "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). " +
-                                        "For more information on search strategies, look at the fape.core.planning.search.strategies " +
-                                        "package. If several strategies are given (separated by commas), they will all be attempted."),
-                        new FlaggedOption("output")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag('o')
-                                .setLongFlag("output")
-                                .setDefault("stdout")
-                                .setHelp("File to which the CSV formatted output will be written"),
-                        new UnflaggedOption("anml-file")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setDefault("problems/handover.anml")
-                                .setRequired(false)
-                                .setGreedy(true)
-                                .setHelp("ANML problem files on which to run the planners. If it is set " +
-                                        "to a directory, all files ending with .anml will be considered.")
+                new Parameter[]{
+                    new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
+                    new Switch("quiet", 'q', "quiet", "Planner won't print the final plan."),
+                    new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
+                            + "Mainly consists in time consuming checks."),
+                    new FlaggedOption("plannerID")
+                    .setStringParser(JSAP.STRING_PARSER)
+                    .setShortFlag('p')
+                    .setLongFlag("planner")
+                    .setDefault("base")
+                    .setList(true)
+                    .setListSeparator(',')
+                    .setHelp("Defines which planner implementation to use. Possible values are:\n"
+                            + " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
+                            + " - base+dtg: Same as base but uses DTG to select action resolvers.\n"
+                            + " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n"
+                            + " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n"
+                            + "         be aware that it does not handle all anml problems.\n"
+                            + " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n"
+                            + "            is provided by an action. It cheks (using RPG) for every ground action\n"
+                            + "            supporting the consmer and enforce a n-ary constraint on the action's\n"
+                            + "            parameters to make sure they fit at least one of the ground action.\n"
+                            + " - all:  will run every possible planner.\n"),
+                    new FlaggedOption("maxtime")
+                    .setStringParser(JSAP.INTEGER_PARSER)
+                    .setShortFlag('t')
+                    .setLongFlag("timeout")
+                    .setDefault("60")
+                    .setHelp("Time in seconds after which a planner times out."),
+                    new FlaggedOption("repetitions")
+                    .setStringParser(JSAP.INTEGER_PARSER)
+                    .setShortFlag('n')
+                    .setLongFlag(JSAP.NO_LONGFLAG)
+                    .setDefault("1")
+                    .setHelp("Number of times to repeat all planning activities"),
+                    new FlaggedOption("strategies")
+                    .setStringParser(JSAP.STRING_PARSER)
+                    .setShortFlag(JSAP.NO_SHORTFLAG)
+                    .setLongFlag("strats")
+                    .setList(true)
+                    .setListSeparator(',')
+                    .setDefault("|")
+                    .setHelp("This is used to define search strategies. A search strategy consists of "
+                            + "one or more flaw selection strategy and one or more state selection strategy. "
+                            + "Ex: the argument 'lcf>lfr|dfs' would give for flaws: lcf (LeastCommitingFirst), using "
+                            + "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). "
+                            + "For more information on search strategies, look at the fape.core.planning.search.strategies "
+                            + "package. If several strategies are given (separated by commas), they will all be attempted."),
+                    new FlaggedOption("output")
+                    .setStringParser(JSAP.STRING_PARSER)
+                    .setShortFlag('o')
+                    .setLongFlag("output")
+                    .setDefault("stdout")
+                    .setHelp("File to which the CSV formatted output will be written"),
+                    new UnflaggedOption("anml-file")
+                    .setStringParser(JSAP.STRING_PARSER)
+                    .setDefault("problems/handover.anml")
+                    .setRequired(false)
+                    .setGreedy(true)
+                    .setHelp("ANML problem files on which to run the planners. If it is set "
+                            + "to a directory, all files ending with .anml will be considered.")
 
                 }
         );
 
         JSAPResult config = jsap.parse(args);
-        if(jsap.messagePrinted())
+        if (jsap.messagePrinted()) {
             System.exit(0);
+        }
 
         Writer writer;
-        if(config.getString("output").equals("stdout"))
+        if (config.getString("output").equals("stdout")) {
             writer = new OutputStreamWriter(System.out);
-        else
+        } else {
             writer = new FileWriter(config.getString("output"));
+        }
 
         APlanner.logging = config.getBoolean("verbose");
         APlanner.debugging = config.getBoolean("debug");
@@ -135,17 +137,18 @@ public class Planning {
         String[] configFiles = config.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
 
-        for(String path : configFiles) {
+        for (String path : configFiles) {
             File f = new File(path);
-            if(f.isDirectory()) {
+            if (f.isDirectory()) {
                 File[] anmls = f.listFiles(new FileFilter() {
                     @Override
                     public boolean accept(File fi) {
                         return fi.getName().endsWith(".anml");
                     }
                 });
-                for(File anmlFile : anmls)
+                for (File anmlFile : anmls) {
                     anmlFiles.add(anmlFile.getPath());
+                }
             } else {
                 anmlFiles.add(path);
             }
@@ -154,21 +157,21 @@ public class Planning {
         Collections.sort(anmlFiles);
 
         // output format
-        writer.write("iter, planner, runtime, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
+        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
 
         int repetitions = config.getInt("repetitions");
-        for(int i=0 ; i<repetitions ; i++) {
+        for (int i = 0; i < repetitions; i++) {
 
-            for(String anmlFile : anmlFiles) {
+            for (String anmlFile : anmlFiles) {
 
-                for(String strategy : config.getStringArray("strategies")) {
+                for (String strategy : config.getStringArray("strategies")) {
                     assert strategy.contains("|") : "Strategy is not well formed see help.";
                     String flawStrat = strategy.substring(0, strategy.indexOf('|'));
-                    String planStrat = strategy.substring(strategy.indexOf('|')+1);
+                    String planStrat = strategy.substring(strategy.indexOf('|') + 1);
 
                     Queue<APlanner> planners = new LinkedList<APlanner>();
                     String[] plannerIDs = config.getStringArray("plannerID");
-                    for(String plannerID : plannerIDs) {
+                    for (String plannerID : plannerIDs) {
                         switch (plannerID) {
                             case "base":
                                 planners.add(new Planner());
@@ -192,49 +195,53 @@ public class Planning {
                                 System.err.println("Accepted values for planner are: base, base+dtg, rpg, rpg-ext, all");
                         }
                     }
-
+                    APlanner.currentPlanner = planners.peek();
                     int maxtime = config.getInt("maxtime");
-
-
+                    long planningStart = 0;
 
                     while(!planners.isEmpty()) {
                         System.gc(); // clean up previous runs to avoid impact on performance measure
+
                         long start = System.currentTimeMillis();
 
                         APlanner planner = planners.remove();
 
-                        if(!flawStrat.isEmpty())
+                        if (!flawStrat.isEmpty()) {
                             planner.flawSelStrategies = flawStrat.split(">");
-                        if(!planStrat.isEmpty())
+                        }
+                        if (!planStrat.isEmpty()) {
                             planner.planSelStrategies = planStrat.split(">");
+                        }
 
                         planner.Init();
                         try {
                             // if the anml has a corresponding domain definition, load it first
-                            if(Planning.domainFile(anmlFile) != null) {
+                            if (Planning.domainFile(anmlFile) != null) {
                                 planner.ForceFact(ANMLFactory.parseAnmlFromFile(domainFile(anmlFile)));
                             }
+
                             boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile));
-                            if(!isPlannerUsable) {
+                            if (!isPlannerUsable) {
                                 writer.write(
-                                        i + ", " +
-                                        planner.shortName() +", "+
-                                        "unusable, " +
-                                        anmlFile +", "+
-                                        "-, -, -, "+
-                                        Utils.print(planner.flawSelStrategies,">")+", "+
-                                        Utils.print(planner.planSelStrategies, ">") +"\n");
+                                        i + ", "
+                                        + planner.shortName() + ", "
+                                        + "unusable, "
+                                        + anmlFile + ", "
+                                        + "-, -, -, "
+                                        + Utils.print(planner.flawSelStrategies, ">") + ", "
+                                        + Utils.print(planner.planSelStrategies, ">") + "\n");
                                 writer.flush();
                                 continue;
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.err.println("Problem with ANML file: "+anmlFile);
+                            System.err.println("Problem with ANML file: " + anmlFile);
                             System.exit(1);
                         }
 
                         boolean timeOut = false;
                         try {
+                            planningStart = System.currentTimeMillis();
                             timeOut = !planner.Repair(new TimeAmount(1000 * maxtime));
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -244,28 +251,31 @@ public class Planning {
                         long end = System.currentTimeMillis();
                         float total = (end - start) / 1000f;
                         String time;
-                        if(timeOut)
+                        String planningTime = Float.toString((end - planningStart) / 1000f);
+                        if (timeOut) {
                             time = "timeout";
-                        else
+                        } else {
                             time = Float.toString(total);
+                        }
 
                         writer.write(
-                                i + ", " +
-                                planner.shortName() +", "+
-                                time + ", " +
-                                anmlFile +", "+
-                                planner.OpenedStates +", "+
-                                planner.GeneratedStates +", "+
-                                (timeOut ? "-" : planner.GetCurrentState().depth) +", "+
-                                Utils.print(planner.flawSelStrategies,">")+", "+
-                                Utils.print(planner.planSelStrategies, ">")+
-                                "\n");
+                                i + ", "
+                                + planner.shortName() + ", "
+                                + time + ", "
+                                + planningTime + ", "
+                                + anmlFile + ", "
+                                + planner.OpenedStates + ", "
+                                + planner.GeneratedStates + ", "
+                                + (timeOut ? "-" : planner.GetCurrentState().depth) + ", "
+                                + Utils.print(planner.flawSelStrategies, ">") + ", "
+                                + Utils.print(planner.planSelStrategies, ">")
+                                + "\n");
                         writer.flush();
 
-                        if(!timeOut && !config.getBoolean("quiet")) {
+                        if (!timeOut && !config.getBoolean("quiet")) {
                             State sol = planner.GetCurrentState();
 
-                            System.out.println("=== Temporal databases === \n"+ Printer.temporalDatabaseManager(sol, sol.tdb));
+                            System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol, sol.tdb));
 
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");
@@ -276,6 +286,11 @@ public class Planning {
                 }
             }
         }
-        writer.close();
+        /**
+         * let's do not close the writer, although it is a good behavior,
+         * closing the "System.out" mutes the rest of the output of the planner
+         * :) /Filip
+         */
+        //writer.close();
     }
 }

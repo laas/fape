@@ -15,6 +15,7 @@ import fape.exceptions.FAPEException;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
 import fape.scripting.stncomparison.problem.Event;
 import fape.scripting.stncomparison.problem.EventCheckConsistency;
+import fape.scripting.stncomparison.problem.EventCopy;
 import fape.scripting.stncomparison.problem.EventInsertConstraint;
 import fape.scripting.stncomparison.problem.EventInsertVar;
 import fape.scripting.stncomparison.problem.STNScenario;
@@ -58,6 +59,9 @@ public class STNComparator {
                     for (int i = 0; i < consistencyCheckCount; i++) {
                         s.eventsToApply.add(new EventCheckConsistency());
                     }
+                    for (int i = 0; i < constraintCount / 8; i++) {
+                        s.eventsToApply.add(new EventCopy());
+                    }
                     Collections.shuffle(s.eventsToApply, rg);
                     //problems.add(s);
 
@@ -72,12 +76,12 @@ public class STNComparator {
                         //res.get(s).fullTime = diff;
                         //res.get(s).s = s;
                         full = diff;
-                        start = System.currentTimeMillis();
-                        for (int i = 0; i < 1000; i++) {
+                        /*start = System.currentTimeMillis();
+                        for (int i = 0; i < constraintCount / 6; i++) {
                             STNManagerOrig mn = o.DeepCopy();
                             diff = System.currentTimeMillis() - start;
                         }
-                        copyfull = diff;
+                        copyfull = diff;*/
                     }
 
                     {
@@ -88,15 +92,15 @@ public class STNComparator {
                         System.out.println("bellman:" + s.toString() + " time: " + diff + "ms.");
                         //res.get(s).bellTime = diff;
                         bell = diff;
-                        start = System.currentTimeMillis();
-                        for (int i = 0; i < 1000; i++) {
+                        /*start = System.currentTimeMillis();
+                        for (int i = 0; i < constraintCount / 6; i++) {
                             STNManager mn = n.DeepCopy();
                             diff = System.currentTimeMillis() - start;
                         }
-                        copybell = diff;
+                        copybell = diff;*/
                     }
 
-                    out.append(s.toString()).append(",").append(full).append(",").append(copyfull).append(",").append(bell).append(",").append(copybell).append("\n");
+                    out.append(s.toString()).append(",").append(full).append(",").append(bell).append("\n");
                 }
             }
         }

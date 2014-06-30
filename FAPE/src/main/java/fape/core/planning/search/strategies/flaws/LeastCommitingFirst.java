@@ -14,7 +14,7 @@ public class LeastCommitingFirst implements FlawComparator {
 
 
     @Override
-    public int compare(Pair<Flaw, List<SupportOption>> f1, Pair<Flaw, List<SupportOption>> f2) {
+    public int compare(Pair<Flaw, List<SupportOption>> f1, Pair<Flaw, List<SupportOption>> f2) {        
         return f1.value2.size() - f2.value2.size();
     }
 

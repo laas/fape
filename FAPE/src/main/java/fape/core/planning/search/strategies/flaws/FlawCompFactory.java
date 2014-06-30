@@ -9,18 +9,20 @@ import java.util.List;
 public class FlawCompFactory {
 
     /**
-     * Factory to creates a FlawComparator that implements the given strategy.
-     * A strategy consists of a sequence of strings each one mapping to a strategy.
+     * Factory to creates a FlawComparator that implements the given strategy. A
+     * strategy consists of a sequence of strings each one mapping to a
+     * strategy.
      *
-     * If more than one strategy is given, a strategy is only used if all previous
-     * strategy resulted in a tie.
+     * If more than one strategy is given, a strategy is only used if all
+     * previous strategy resulted in a tie.
+     *
      * @param st State for which to create the comparator.
      * @param comparators A sequence of string describing the strategy.
      * @return A comparator for flaws issued from the state.
      */
-    public static FlawComparator get(State st, String... comparators ) {
+    public static FlawComparator get(State st, String... comparators) {
         List<FlawComparator> compList = new LinkedList<>();
-        for(String compID : comparators) {
+        for (String compID : comparators) {
             switch (compID) {
                 case "abs":
                     compList.add(new AbsHierarchyComp(st));
@@ -28,8 +30,11 @@ public class FlawCompFactory {
                 case "lcf":
                     compList.add(new LeastCommitingFirst());
                     break;
+                case "rfp":
+                    compList.add(new ResourceFlawPreference());
+                    break;
                 default:
-                    throw new FAPEException("Unrecognized flaw comparator option: "+compID);
+                    throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }
         }
         return new SeqFlawComparator(compList);

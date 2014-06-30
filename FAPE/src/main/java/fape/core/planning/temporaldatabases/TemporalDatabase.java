@@ -10,17 +10,19 @@
  */
 package fape.core.planning.temporaldatabases;
 
+import fape.core.planning.search.strategies.plans.LMC;
+import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-import planstack.anml.model.ParameterizedStateVariable;
-import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
 
 import java.lang.Deprecated;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.concrete.TPRef;
+import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
 
 /**
  * records the events for one state variable
@@ -49,15 +51,15 @@ public class TemporalDatabase {
 
     public TemporalDatabase(TemporalDatabase toCopy) {
         mID = toCopy.mID;
-        for(ChainComponent cc : toCopy.chain) {
+        for (ChainComponent cc : toCopy.chain) {
             chain.add(cc.DeepCopy());
         }
         stateVariable = toCopy.stateVariable;
     }
 
     public boolean contains(LogStatement s) {
-        for(ChainComponent cc : chain) {
-            if(cc.contains(s)) {
+        for (ChainComponent cc : chain) {
+            if (cc.contains(s)) {
                 return true;
             }
         }
@@ -68,7 +70,7 @@ public class TemporalDatabase {
         String ret = "";
         //ret += "{\n";
 
-        ret += "    " + this.stateVariable + "  :  id="+mID+"\n";
+        ret += "    " + this.stateVariable + "  :  id=" + mID + "\n";
         for (ChainComponent c : chain) {
             for (LogStatement e : c.contents) {
                 ret += "    " + e;
@@ -81,7 +83,8 @@ public class TemporalDatabase {
     }
 
     /**
-     * @return True if the first statement of this TDB requires support (ie not an assignment)
+     * @return True if the first statement of this TDB requires support (ie not
+     * an assignment)
      */
     public boolean isConsumer() {
         return chain.getFirst().contents.getFirst().needsSupport();
@@ -102,13 +105,12 @@ public class TemporalDatabase {
         return new TemporalDatabase(this);
     }
 
-
     /**
      * @return The end time point of the last component inducing a change.
      */
     public TPRef getSupportTimePoint() {
-        assert getSupportingComponent() != null : "This database appears to be containing only a persitence. " +
-                "Hence it not available for support. " + this.toString();
+        assert getSupportingComponent() != null : "This database appears to be containing only a persitence. "
+                + "Hence it not available for support. " + this.toString();
         return getSupportingComponent().getSupportTimePoint();
     }
 
@@ -116,14 +118,19 @@ public class TemporalDatabase {
         return chain.getFirst().getConsumeTimePoint();
     }
 
+    public List<String> GetPossibleSupportAtomNames(State st) {
+        return LMC.GetAtomNames(st, this.stateVariable, this.GetGlobalSupportValue());
+    }
+
     /**
-     * @return The last component of the database containing a change (i.e. an assignment
-     * or a transition). It returns null if no such element exists.
+     * @return The last component of the database containing a change (i.e. an
+     * assignment or a transition). It returns null if no such element exists.
      */
     public ChainComponent getSupportingComponent() {
-        for(int i=chain.size()-1 ; i>=0 ; i--) {
-            if(chain.get(i).change)
+        for (int i = chain.size() - 1; i >= 0; i--) {
+            if (chain.get(i).change) {
                 return chain.get(i);
+            }
         }
         return null;
     }
@@ -132,17 +139,17 @@ public class TemporalDatabase {
         return chain.get(precedingChainComponent);
     }
 
-
-
     /**
-     * @return A global variable representing the value at the end of the temporal database
+     * @return A global variable representing the value at the end of the
+     * temporal database
      */
     public boolean HasSinglePersistence() {
         return chain.size() == 1 && !chain.get(0).change;
     }
 
     /**
-     * @return A global variable representing the value at the end of the temporal database
+     * @return A global variable representing the value at the end of the
+     * temporal database
      */
     public VarRef GetGlobalSupportValue() {
         return chain.getLast().GetSupportValue();
@@ -171,12 +178,13 @@ public class TemporalDatabase {
     }
 
     /**
-     * Checks if there is not two persistence events following each other in the chain.
+     * Checks if there is not two persistence events following each other in the
+     * chain.
      */
     public void CheckChainComposition() {
         boolean wasPreviousTransition = true;
-        for(ChainComponent cc : this.chain) {
-            if(!wasPreviousTransition && ! cc.change) {
+        for (ChainComponent cc : this.chain) {
+            if (!wasPreviousTransition && !cc.change) {
                 throw new FAPEException("We have two persistence events following each other.");
             }
             wasPreviousTransition = cc.change;
