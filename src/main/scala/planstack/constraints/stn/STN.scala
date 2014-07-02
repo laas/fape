@@ -187,6 +187,8 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) {
   }
 
   def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
+  
+  def canBeStrictlyBefore(u:Int, v:Int) : Boolean = isConstraintPossible(u, v, 1)
 
 
   /**
