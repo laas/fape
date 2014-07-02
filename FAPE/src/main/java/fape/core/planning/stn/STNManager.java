@@ -47,6 +47,10 @@ public class STNManager implements Reporter {
         return ids.get(tp);
     }
 
+    public final boolean CanBeStrictlyBefore(TPRef a, TPRef b){
+        return stn.canBeStrictlyBefore(id(a), id(b));
+    }
+    
     /**
      *
      * @param a

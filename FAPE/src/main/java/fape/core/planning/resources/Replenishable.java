@@ -133,30 +133,38 @@ public class Replenishable extends Resource {
 
     /**
      * determines whether the resource has any conflicts to resolve
+     *
      * @param st
-     * @return 
+     * @return
      */
-    
-    public boolean isTriviallyConsistent(State st){
-        ArrayList<HashSet<Integer>> b = new ArrayList<>(), a = new ArrayList<>(), bs = new ArrayList<>(), as = new ArrayList<>();
+    @Override
+    public boolean isTriviallyConsistent(State st) {
+        ArrayList<HashSet<Integer>> b = new ArrayList<>(), pbs = new ArrayList<>(), bs = new ArrayList<>(), pb = new ArrayList<>();
         for (Event event : events) {
             b.add(new HashSet<Integer>());
-            a.add(new HashSet<Integer>());
+            pbs.add(new HashSet<Integer>());
             bs.add(new HashSet<Integer>());
-            as.add(new HashSet<Integer>());
+            pb.add(new HashSet<Integer>());
         }
         for (int i = 0; i < events.size(); i++) {
             for (int j = 0; j < events.size(); j++) {
                 if (i == j) {
                     continue;
                 }
-                if (st.tempoNet.CanBeBefore(events.get(i).tp, events.get(j).tp)) {
-                    b.get(j).add(i);
-                    a.get(i).add(j);
+                if (st.tempoNet.CanBeStrictlyBefore(events.get(i).tp, events.get(j).tp)) {
+                    // i in pb(j)
+                    pb.get(j).add(i);
                 } else {
-                    // j happens strictly before i, i happens strictly after j
+                    // j in bs(i)
                     bs.get(i).add(j);
-                    as.get(j).add(i);
+                }
+
+                if (st.tempoNet.CanBeBefore(events.get(j).tp, events.get(i).tp)) {
+                    //j in pbs(i)
+                    pbs.get(i).add(j);
+                } else {
+                    //i in b(j)
+                    b.get(j).add(i);
                 }
             }
         }
@@ -187,23 +195,23 @@ public class Replenishable extends Resource {
                 }
             }
 
-            for (Integer j : a.get(i)) {//all possible productions
+            for (Integer j : pbs.get(i)) {//all possible productions
                 if (events.get(j).value > 0) {
                     totalMinAfter += events.get(j).value;
                 }
             }
-            for (Integer j : as.get(i)) {//all necessary consumptions
+            for (Integer j : pb.get(i)) {//all necessary consumptions
                 if (events.get(j).value < 0) {
                     totalMinAfter += events.get(j).value;
                 }
             }
 
-            for (Integer j : a.get(i)) {//all possible consumptions
+            for (Integer j : pbs.get(i)) {//all possible consumptions
                 if (events.get(j).value < 0) {
                     totalMaxAfter += events.get(j).value;
                 }
             }
-            for (Integer j : as.get(i)) {//all necessary productions
+            for (Integer j : pb.get(i)) {//all necessary productions
                 if (events.get(j).value > 0) {
                     totalMaxAfter += events.get(j).value;
                 }
@@ -224,7 +232,7 @@ public class Replenishable extends Resource {
         }
         return true;
     }
-    
+
     /**
      * determines necessary conditions for consistency of this resource
      *
@@ -240,89 +248,91 @@ public class Replenishable extends Resource {
         List<ResourceFlaw> ret = new LinkedList<>();
 
         //create precedence sets
-        // BS - strictly before , AS - strictly after
-        ArrayList<HashSet<Integer>> b = new ArrayList<>(), a = new ArrayList<>(), bs = new ArrayList<>(), as = new ArrayList<>();
+        // B - strictly before, BS - before or same, PB - possibly before, PBS - possibly before or same
+        ArrayList<HashSet<Integer>> bs = new ArrayList<>(), b = new ArrayList<>(), pbs = new ArrayList<>(), pb = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
-            b.add(new HashSet<Integer>());
-            a.add(new HashSet<Integer>());
             bs.add(new HashSet<Integer>());
-            as.add(new HashSet<Integer>());
+            pb.add(new HashSet<Integer>());
+            b.add(new HashSet<Integer>());
+            pbs.add(new HashSet<Integer>());
         }
         for (int i = 0; i < events.size(); i++) {
             for (int j = 0; j < events.size(); j++) {
                 if (i == j) {
                     continue;
                 }
-                if (st.tempoNet.CanBeBefore(events.get(i).tp, events.get(j).tp)) {
-                    b.get(j).add(i);
-                    a.get(i).add(j);
+                if (st.tempoNet.CanBeStrictlyBefore(events.get(i).tp, events.get(j).tp)) {
+                    // i in pb(j)
+                    pb.get(j).add(i);
                 } else {
-                    // j happens strictly before i, i happens strictly after j
+                    // j in bs(i)
                     bs.get(i).add(j);
-                    as.get(j).add(i);
+                }
+
+                if (st.tempoNet.CanBeBefore(events.get(j).tp, events.get(i).tp)) {
+                    //j in pbs(i)
+                    pbs.get(i).add(j);
+                } else {
+                    //i in b(j)
+                    b.get(j).add(i);
                 }
             }
         }
 
         //L^<_, L^>
         for (int i = 0; i < events.size(); i++) {
-            float totalMinBefore = 0, totalMaxBefore = 0, totalMinAfter = events.get(i).value, totalMaxAfter = events.get(i).value; //after includes myself
+            float totalMinBefore = 0, totalMaxBefore = 0, totalMinAfter = events.get(i).value, totalMaxAfter = events.get(i).value; //after includes itself
 
-            for (Integer j : b.get(i)) {//all possible productions
+            //totalMaxBefore
+            for (Integer j : pb.get(i)) {//all possible consumptions
+                if (events.get(j).value < 0) {
+                    totalMaxBefore += events.get(j).value;
+                }
+            }
+            for (Integer j : b.get(i)) {//all necessary productions
+                if (events.get(j).value > 0) {
+                    totalMaxBefore += events.get(j).value;
+                }
+            }
+
+            //totalMinBefore
+            for (Integer j : pb.get(i)) {//all possible productions
                 if (events.get(j).value > 0) {
                     totalMinBefore += events.get(j).value;
                 }
             }
-            for (Integer j : bs.get(i)) {//all necessary consumptions
+            for (Integer j : b.get(i)) {//all necessary consumptions
                 if (events.get(j).value < 0) {
                     totalMinBefore += events.get(j).value;
                 }
             }
 
-            for (Integer j : b.get(i)) {//all possible consumptions
+            //totalMaxAfter
+            for (Integer j : pbs.get(i)) {//all possible consumptions
                 if (events.get(j).value < 0) {
-                    totalMaxBefore += events.get(j).value;
+                    totalMaxAfter += events.get(j).value;
                 }
             }
             for (Integer j : bs.get(i)) {//all necessary productions
                 if (events.get(j).value > 0) {
-                    totalMaxBefore += events.get(j).value;
+                    totalMaxAfter += events.get(j).value;
                 }
             }
 
-            for (Integer j : a.get(i)) {//all possible productions
+            //totalMinAfter
+            for (Integer j : pbs.get(i)) {//all possible productions
                 if (events.get(j).value > 0) {
                     totalMinAfter += events.get(j).value;
                 }
             }
-            for (Integer j : as.get(i)) {//all necessary consumptions
+            for (Integer j : bs.get(i)) {//all necessary consumptions
                 if (events.get(j).value < 0) {
                     totalMinAfter += events.get(j).value;
-                }
-            }
-
-            for (Integer j : a.get(i)) {//all possible consumptions
-                if (events.get(j).value < 0) {
-                    totalMaxAfter += events.get(j).value;
-                }
-            }
-            for (Integer j : as.get(i)) {//all necessary productions
-                if (events.get(j).value > 0) {
-                    totalMaxAfter += events.get(j).value;
                 }
             }
 
             if (totalMinBefore < min) {//overconsumption
                 ResourceFlaw f = new ResourceFlaw();
-                //find an consumption event that can be moved after i
-                /*LinkedList<Integer> candidates = new LinkedList<>(a.get(i));
-                 candidates.retainAll(b.get(i));
-                 for (Integer j : candidates) {
-                 if (events.get(j).value <= totalBefore - min) {
-                 //moving this event resolves the flaw
-                 f.resolvers.add(Resource.createTemporalConstrainOption(events.get(i).tp, events.get(j).tp, 1, Integer.MAX_VALUE));
-                 }
-                 }*/
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinBefore - min, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
@@ -330,35 +340,28 @@ public class Replenishable extends Resource {
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }
-            if (totalMaxBefore > max) {//overproduction
+            
+            if (totalMaxBefore > max) {//overconsumption
                 ResourceFlaw f = new ResourceFlaw();
-                //find an production event that can be moved after i
-                /*LinkedList<Integer> candidates = new LinkedList<>(a.get(i));
-                 candidates.retainAll(b.get(i));
-                 for (Integer j : candidates) {
-                 if (events.get(j).value >= totalMaxBefore - max) {
-                 //moving this event resolves the flaw
-                 f.resolvers.add(Resource.createTemporalConstrainOption(events.get(i).tp, events.get(j).tp, 1, Integer.MAX_VALUE));
-                 }
-                 }*/
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxBefore - max, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
-                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMaxBefore - max, st);
+                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMaxBefore - min, st);
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }
+            
             if (totalMinAfter < min) {//overconsumption
                 ResourceFlaw f = new ResourceFlaw();
-                //find an production event that can be moved after i
-                /*LinkedList<Integer> candidates = new LinkedList<>(b.get(i));
-                 candidates.retainAll(a.get(i));
-                 for (Integer j : candidates) {
-                 if (events.get(j).value <= totalAfter - min) {
-                 //moving this event resolves the flaw
-                 f.resolvers.add(Resource.createTemporalConstrainOption(events.get(j).tp, events.get(i).tp, 1, Integer.MAX_VALUE));
-                 }
-                 }*/
+                //find an production event that can be moved before i
+                /*LinkedList<Integer> candidates = new LinkedList<>(pbs.get(i));
+                candidates.retainAll(pbs.get(i));
+                for (Integer j : candidates) {
+                    if (events.get(j).value <= totalMinAfter - min) {
+                        //moving this event resolves the flaw
+                        f.resolvers.add(Resource.createTemporalConstrainOption(events.get(j).tp, events.get(i).tp, 1, Integer.MAX_VALUE));
+                    }
+                }*/
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinAfter - min, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
@@ -368,15 +371,15 @@ public class Replenishable extends Resource {
             }
             if (totalMaxAfter > max) {//overproduction
                 ResourceFlaw f = new ResourceFlaw();
-                //find an production event that can be moved after i
+                //find an production event that can be moved before i
                 /*LinkedList<Integer> candidates = new LinkedList<>(b.get(i));
-                 candidates.retainAll(a.get(i));
-                 for (Integer j : candidates) {
-                 if (events.get(j).value >= totalAfter - max) {
-                 //moving this event resolves the flaw
-                 f.resolvers.add(Resource.createTemporalConstrainOption(events.get(j).tp, events.get(i).tp, 1, Integer.MAX_VALUE));
-                 }
-                 }*/
+                candidates.retainAll(pbs.get(i));
+                for (Integer j : candidates) {
+                    if (events.get(j).value >= totalMaxAfter - max) {
+                        //moving this event resolves the flaw
+                        f.resolvers.add(Resource.createTemporalConstrainOption(events.get(j).tp, events.get(i).tp, 1, Integer.MAX_VALUE));
+                    }
+                }*/
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxAfter - max, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action

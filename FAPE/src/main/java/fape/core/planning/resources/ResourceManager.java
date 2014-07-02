@@ -95,6 +95,16 @@ public class ResourceManager {
         return ret;
     }
 
+    public int GetInconsistentResources(State st){
+        int ret = 0;
+        for(Resource r:resources){
+            if(!r.isConsistent(st)){
+                ret++;
+            }
+        }
+        return ret;
+    }
+    
     List<Resource> resources = new LinkedList<>();
 
     /**
