@@ -22,6 +22,9 @@ public class PlanCompFactory {
                 case "soca":
                     compList.add(new SOCA());
                     break;
+                case "metric":
+                    compList.add(new Metric());
+                    break;
                 case "psaoca":
                     compList.add(new RootsOCA());
                     break;

@@ -52,10 +52,26 @@ public class ExpElevators {
         //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf>abs|lmc>psaoca --quiet");
         
         //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|lfr --quiet");
-        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlHierarchy/", "--planner rpg --strats lcf|lfr --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlHierarchy/", "--planner rpg --strats lcf>abs|soca --quiet");
+        
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|lmc>fex --quiet");
         
         //scaling
-        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/scaling/", "--planner base --strats lcf|fex --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/scaling/", "--planner base --strats lcf|fex --quiet");
+        
+        
+        //new tests
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|lmc>soca --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|lmc --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf>abs|soca --quiet");
+        
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf|lmc>soca --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf|lmc --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlComplicate/", "--planner rpg --strats lcf|soca --quiet");
+        //AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anmlHierarchy/", "--planner base --strats lcf|lfr --quiet");
+        
+        AnotherExperimentRunner.run("C:/ROOT/PROJECTS/fape/FAPE/problems/elevators/anml/", "--planner rpg --strats lcf|lfr --quiet");
+        
         
     }
 }

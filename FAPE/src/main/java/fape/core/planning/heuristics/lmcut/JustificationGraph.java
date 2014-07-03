@@ -79,7 +79,7 @@ public class JustificationGraph {
     float cutMin;
 
     public static boolean debug = true;
-    
+
     JustificationGraph(HashMap<RelaxedGroundAtom, Float> caCost, HashMap<RelaxedGroundAction, Float> cActCost, Iterable<RelaxedGroundAction> actions, BitSet _init, BitSet _goal) {
         vertices = new Vertex[caCost.size()];
 
@@ -90,6 +90,14 @@ public class JustificationGraph {
                 if (caCost.get(at) > maxVal) {
                     hMaxAtom = at;
                     maxVal = caCost.get(at);
+                }
+            }
+            //if there are no preconditions, we connect hmax to an atom with price zero
+            if (hMaxAtom == null) {
+                for (RelaxedGroundAtom at : caCost.keySet()) {
+                    if(caCost.get(at) == 0.0){
+                        hMaxAtom = at;
+                    }
                 }
             }
             for (RelaxedGroundAtom at : a.eff) {
@@ -107,18 +115,18 @@ public class JustificationGraph {
         for (int i = _goal.nextSetBit(0); i >= 0; i = _goal.nextSetBit(i + 1)) {
             goal[ct++] = vertices[i];
         }
-        
+
         //check trivial satisfibility for debug
-        if(debug){
+        if (debug) {
             HashSet<Vertex> kb = new HashSet();
             HashSet<Vertex> newVertices = new HashSet<>();
             newVertices.addAll(Arrays.asList(init));
-            while(!newVertices.isEmpty()){
+            while (!newVertices.isEmpty()) {
                 kb.addAll(newVertices);
                 HashSet<Vertex> newNewVertices = new HashSet<>();
-                for(Vertex x:newVertices){
-                    for(Edge e:x.fromMe){
-                        if(!kb.contains(e.to)){
+                for (Vertex x : newVertices) {
+                    for (Edge e : x.fromMe) {
+                        if (!kb.contains(e.to)) {
                             newNewVertices.add(e.to);
                         }
                     }
@@ -126,16 +134,20 @@ public class JustificationGraph {
                 newVertices = newNewVertices;
             }
             kb.retainAll(Arrays.asList(goal));
-            if(kb.size() != goal.length){
+            if (kb.size() != goal.length) {
                 throw new UnsupportedOperationException("unsatisfiable justification graph.");
             }
         }
-        
+
     }
 
     private void addEdge(RelaxedGroundAtom _from, RelaxedGroundAtom _to, float cost, RelaxedGroundAction ai) {
-        if (vertices[_from.mID] == null) {
-            vertices[_from.mID] = new Vertex(_from);
+        try {
+            if (vertices[_from.mID] == null) {
+                vertices[_from.mID] = new Vertex(_from);
+            }
+        } catch (Exception e) {
+            int xx = 0;
         }
         if (vertices[_to.mID] == null) {
             vertices[_to.mID] = new Vertex(_to);
@@ -160,7 +172,6 @@ public class JustificationGraph {
             return;
         }
         v.examined = true;
-
 
         for (Edge e : v.fromMe) {
             if (e.to.goalZone) {
