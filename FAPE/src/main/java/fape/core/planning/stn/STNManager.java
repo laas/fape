@@ -47,8 +47,13 @@ public class STNManager implements Reporter {
         return ids.get(tp);
     }
 
+    /**
+     * Returns true if there can be a delay of 1 time unit from a to b.
+     * The STN is not modified.
+     * In a distance graph this done by checking if the edge (b, a, 1) is consistent.
+     */
     public final boolean CanBeStrictlyBefore(TPRef a, TPRef b){
-        return stn.canBeStrictlyBefore(id(a), id(b));
+        return stn.isConstraintPossible(id(b), id(a), 1);
     }
     
     /**
