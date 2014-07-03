@@ -60,7 +60,6 @@ public class GroundAction implements PGNode {
     public boolean isValid() {
         Set<Fluent> inter = new HashSet<>(add);
         inter.retainAll(del);
-
         return inter.isEmpty();
     }
 

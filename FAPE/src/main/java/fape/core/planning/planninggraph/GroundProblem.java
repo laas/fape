@@ -176,7 +176,8 @@ public class GroundProblem {
                 }
             }
         } else {
-            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue()));
+            if(s.startValue() != s.endValue())
+                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue()));
         }
         return fluents;
     }
