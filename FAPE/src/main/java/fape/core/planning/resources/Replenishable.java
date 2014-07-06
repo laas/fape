@@ -151,7 +151,7 @@ public class Replenishable extends Resource {
                 if (i == j) {
                     continue;
                 }
-                if (st.tempoNet.CanBeStrictlyBefore(events.get(i).tp, events.get(j).tp)) {
+                if (st.tempoNet.CanBeStrictlyBefore(events.get(j).tp, events.get(i).tp)) {
                     // i in pb(j)
                     pb.get(j).add(i);
                 } else {
@@ -331,7 +331,7 @@ public class Replenishable extends Resource {
                 }
             }
 
-            if (totalMinBefore < min) {//overconsumption
+            if (totalMinBefore < min) {//overconsumption                
                 ResourceFlaw f = new ResourceFlaw();
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinBefore - min, st));
@@ -434,6 +434,7 @@ public class Replenishable extends Resource {
      */
     @Override
     public void addAssignement(State st, TPRef start, TPRef end, float value) {
+        this.max = value;
         this.addProduction(st, start, end, value - this.min);
     }
 
