@@ -468,14 +468,32 @@ public class State implements Reporter{
     public boolean apply(LogStatement s) {
         recordTimePoints(s);
 
-        TemporalDatabase db = new TemporalDatabase(s);
+        if(s.sv().func().isConstant()) {
+            if(s.needsSupport()) {
+                List<VarRef> variables = new LinkedList<>(s.sv().jArgs());
+                variables.add(s.startValue());
+                conNet.addValuesSetConstraint(variables, s.sv().func().name());
+            } else {
+                List<String> values = new LinkedList<>();
+                for(VarRef v : s.sv().jArgs()) {
+                    assert v instanceof InstanceRef;
+                    values.add(((InstanceRef) v).instance());
+                }
+                assert s.endValue() instanceof InstanceRef;
+                values.add(((InstanceRef) s.endValue()).instance());
+                conNet.addValuesToValuesSet(s.sv().func().name(), values);
+            }
+            return isConsistent();
+        } else {
+            TemporalDatabase db = new TemporalDatabase(s);
 
-        if (db.isConsumer()) {
-            consumers.add(db);
+            if (db.isConsumer()) {
+                consumers.add(db);
+            }
+            tdb.vars.add(db);
+
+            return isConsistent();
         }
-        tdb.vars.add(db);
-
-        return isConsistent();
     }
 
     /**
