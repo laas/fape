@@ -129,6 +129,8 @@ public class ConservativeConstraintNetwork<VarRef> {
 
                 ValuesHolder old = variables.apply(focusVar);
                 Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, restrictions);
+                if(domainRestrictions == null)
+                    break;
                 variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(domainRestrictions)));
                 if(!old.equals(variables.apply(focusVar)))
                     domainModified(focusVar);
