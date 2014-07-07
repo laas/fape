@@ -61,6 +61,6 @@ public class PGExtPlanner extends PGPlanner {
             }
             values.add(valueSeq);
         }
-        cn.addExtensionConstraint(act.args(), values);
+//        cn.addExtensionConstraint(act.args(), values); //TODO: uncomment
     }
 }

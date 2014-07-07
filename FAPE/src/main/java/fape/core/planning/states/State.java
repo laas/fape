@@ -113,7 +113,7 @@ public class State implements Reporter{
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
 
-        conNet = new ConservativeConstraintNetwork();
+        conNet = new ConstraintNetwork();
 //        conNet = new ConstraintNetworkManager();
         supportConstraints = new LinkedList<>();
 

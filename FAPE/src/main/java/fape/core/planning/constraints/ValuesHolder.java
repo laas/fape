@@ -6,6 +6,7 @@ import scala.collection.immutable.BitSet;
 import scala.collection.immutable.BitSet$;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Holds values for CSP.
@@ -53,8 +54,8 @@ public class ValuesHolder {
         return false;
     }
 
-    public Collection<Object> values() {
-        return JavaConversions.asJavaCollection(values);
+    public Set<Integer> values() {
+        return (Set) JavaConversions.setAsJavaSet(values);
     }
 
     public int size() {
