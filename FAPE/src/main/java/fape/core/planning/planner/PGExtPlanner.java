@@ -1,6 +1,7 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.constraints.ConservativeConstraintNetwork;
+import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.planninggraph.DisjunctiveAction;
 import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GroundAction;
@@ -40,11 +41,12 @@ public class PGExtPlanner extends PGPlanner {
         }
     }
 
-
+    static int nextConstraint = 0;
 
     //TODO doc
     public void unify(State st, Action act, DisjunctiveAction disAct) {
-        ConservativeConstraintNetwork cn = (ConservativeConstraintNetwork) st.conNet;
+        String constraintID = "rpg_ext" + nextConstraint++;
+
 
         LinkedList<List<String>> values = new LinkedList<>();
         for(GroundAction ga : disAct.actions) {
@@ -59,8 +61,9 @@ public class PGExtPlanner extends PGPlanner {
                     throw new FAPEException("ERROR: ground param is not an instance");
                 }
             }
-            values.add(valueSeq);
+            st.conNet.addValuesToValuesSet(constraintID, valueSeq);
         }
-//        cn.addExtensionConstraint(act.args(), values); //TODO: uncomment
+
+        st.conNet.addValuesSetConstraint(act.args(), constraintID);
     }
 }
