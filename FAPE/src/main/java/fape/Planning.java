@@ -20,6 +20,8 @@ import java.util.*;
 
 public class Planning {
 
+    public static String currentPlanner = "";
+
     /**
      * Tries to infer which file contains the domain definition of this problem.
      * If the problem takes a form "domainName.xxxx.pb.anml", then the
@@ -205,6 +207,7 @@ public class Planning {
                         long start = System.currentTimeMillis();
 
                         APlanner planner = planners.remove();
+                        currentPlanner = planner.shortName();
 
                         if (!flawStrat.isEmpty()) {
                             planner.flawSelStrategies = flawStrat.split(">");
@@ -217,10 +220,11 @@ public class Planning {
                         try {
                             // if the anml has a corresponding domain definition, load it first
                             if (Planning.domainFile(anmlFile) != null) {
-                                planner.ForceFact(ANMLFactory.parseAnmlFromFile(domainFile(anmlFile)));
+                                // add the domain and do not propagate since the problem is still incomplete
+                                planner.ForceFact(ANMLFactory.parseAnmlFromFile(domainFile(anmlFile)), false);
                             }
 
-                            boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile));
+                            boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile), true);
                             if (!isPlannerUsable) {
                                 writer.write(
                                         i + ", "

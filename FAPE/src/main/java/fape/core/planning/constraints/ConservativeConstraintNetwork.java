@@ -1,5 +1,6 @@
 package fape.core.planning.constraints;
 
+import fape.Planning;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
@@ -79,6 +80,12 @@ public class ConservativeConstraintNetwork<VarRef> {
      */
     boolean consistent;
 
+    /**
+     * This boolean is used to make sure we don't add possible values to an extension constraints
+     * after a propagation has occured.
+     */
+    public boolean extChecked;
+
     public ConservativeConstraintNetwork() {
         toProcess = new LinkedList<>();
         variables = new scala.collection.immutable.HashMap<>();
@@ -89,9 +96,10 @@ public class ConservativeConstraintNetwork<VarRef> {
         consistent = true;
         exts = new HashMap<String, ExtensionConstraint<VarRef>>();
         mappings = new HashMap<>();
+        extChecked = false;
     }
 
-    public ConservativeConstraintNetwork(ConservativeConstraintNetwork base) {
+    public ConservativeConstraintNetwork(ConservativeConstraintNetwork<VarRef> base) {
         variables = base.variables;
         types = base.types; // todo, need to copy?
         values = base.values;
@@ -101,21 +109,26 @@ public class ConservativeConstraintNetwork<VarRef> {
         consistent = base.consistent;
         mappings = new HashMap<List<VarRef>, String>(base.mappings);
         exts = base.exts;
+        extChecked = base.extChecked;
     }
 
     public void domainModified(VarRef v) {
         if(!toProcess.contains(v))
             toProcess.add(v);
 
-        List<List<VarRef>> constraintsToCheck = new LinkedList<>();
         if(domainOf(v).size() == 0) {
             consistent = false;
+        }
+    }
+
+    public void checkValuesSetConstraints(VarRef v) {
+        if(domainOf(v).size() != 1)
             return;
-        } else if(domainOf(v).size() == 1) {
-            for(List<VarRef> constraint : mappings.keySet()) {
-                if(constraint.contains(v))
-                    constraintsToCheck.add(constraint);
-            }
+
+        List<List<VarRef>> constraintsToCheck = new LinkedList<>();
+        for(List<VarRef> constraint : mappings.keySet()) {
+            if(constraint.contains(v))
+                constraintsToCheck.add(constraint);
         }
 
         for(List<VarRef> cons : constraintsToCheck) {
@@ -146,6 +159,8 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
     }
 
+
+
     public boolean isConsistent() {
         if(!consistent) {
             return false;
@@ -153,8 +168,10 @@ public class ConservativeConstraintNetwork<VarRef> {
 
         if(!toProcess.isEmpty()) {
             while(!toProcess.isEmpty()) {
-                VarRef c = toProcess.remove();
-                consistent &= revise(c);
+                VarRef v = toProcess.remove();
+                consistent &= revise(v);
+                checkValuesSetConstraints(v);
+                extChecked = true; // note that a propagation occurred
             }
         } else {
             return consistent;
@@ -228,22 +245,19 @@ public class ConservativeConstraintNetwork<VarRef> {
         assert c.l() == ConstraintType.EQUALITY;
 
         if(!variables.apply(c.u()).equals(variables.apply(c.v()))) {
-            ValuesHolder newDomain = variables.apply(c.u()).intersect(variables.apply(c.v()));
             restrictDomain(c.u(), variables.apply(c.v()));
             restrictDomain(c.v(), variables.apply(c.u()));
         }
         return consistent;
     }
 
-    public boolean restrictDomain(VarRef var, Collection<String> toValues) {
+    public void restrictDomain(VarRef var, Collection<String> toValues) {
         assert variables.contains(var);
         List<Integer> ids = new LinkedList<>();
         for(String value : toValues) {
             ids.add(valuesIds.get(value));
         }
         restrictDomain(var, new ValuesHolder(ids));
-
-        return isConsistent();
     }
 
     public void AddVariable(VarRef var, Collection<String> domain, String type) {
@@ -264,7 +278,6 @@ public class ConservativeConstraintNetwork<VarRef> {
         constraints.addEdge(a, b, ConstraintType.EQUALITY);
         toProcess.add(a);
         toProcess.add(b);
-        isConsistent();
     }
 
     public void AddSeparationConstraint(VarRef a, VarRef b) {
@@ -272,7 +285,6 @@ public class ConservativeConstraintNetwork<VarRef> {
         constraints.addEdge(a, b, ConstraintType.DIFFERENCE);
         toProcess.add(a);
         toProcess.add(b);
-        isConsistent();
     }
 
     public boolean contains(VarRef v) {
@@ -336,6 +348,12 @@ public class ConservativeConstraintNetwork<VarRef> {
         return unbound;
     }
 
+    /**
+     * Adds a new tuple of value to an extension constraint.
+     * If no constraint with this ID exists, it is created.
+     * @param setID ID of the extension constraint.
+     * @param values A tuple of value to be added.
+     */
     public void addValuesToValuesSet(String setID, List<String> values) {
         List<Integer> vals = new LinkedList<>();
         for(String v : values) {
@@ -347,8 +365,15 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
 
         exts.get(setID).addValues(vals);
+        assert !extChecked || Planning.currentPlanner.equals("rpg_ext")
+               : "Error: adding values to constraints in extension while propagation already occurred.";
     }
 
+    /**
+     * Forces the given tuple of variable to respect an extension constraint
+     * @param variables a tuple of variable.
+     * @param setID ID of the extension cosntraint to respect.
+     */
     public void addValuesSetConstraint(List<VarRef> variables, String setID) {
         assert exts.containsKey(setID);
         assert !exts.get(setID).values.isEmpty();

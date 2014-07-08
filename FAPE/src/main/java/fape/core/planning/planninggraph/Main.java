@@ -98,8 +98,8 @@ public class Main {
         Planner.debugging = false;
         planner.Init();
         // long start = System.currentTimeMillis();
-        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.dom.anml"));
-        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.2.pb.anml"));
+        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.dom.anml"), false);
+        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.2.pb.anml"), true);
 
         ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
         for(TemporalDatabase db : planner.GetCurrentState().consumers) {

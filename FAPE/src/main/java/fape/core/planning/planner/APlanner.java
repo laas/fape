@@ -866,10 +866,12 @@ public abstract class APlanner {
      * incremental step, if there was something already defined, the name
      * collisions are considered to be intentional
      *
-     * @param anml
+     * @param anml An ANML AST to be integrated in the planner.
+     * @param propagate If true, a propagation will be done in the constraint networks.
+     *                  This should be avoided if the domain is not completely described yet.
      * @return True if the planner is applicable to resulting anml problem.
      */
-    public boolean ForceFact(ParseResult anml) {
+    public boolean ForceFact(ParseResult anml, boolean propagate) {
         //read everything that is contained in the ANML block
         if (logging) {
             TinyLogger.LogInfo("Forcing new fact into best state.");
@@ -884,28 +886,8 @@ public abstract class APlanner {
         // apply revisions to best state and check if it is consistent
         State st = GetCurrentState();
 
-        //create resource prototypes
-        /*for (Function fn : pb.functions().getAll()) {
-         if (fn instanceof NumFunction) {
-         NumFunction f = (NumFunction) fn;
-         if (!f.name().contains(".")) {
-         Resource r = ResourceManager.generateResourcePrototype(f.name(), new String[]{}, f);
-         this.resourcePrototype.add(r);
-         //st.resources.put(r.getQualifyingName(),r);
-         } else {
-         //this is a structured type, we need to generate resource instances for all the declared instances of the type
-         String type = f.name().split("\\.")[0];
-         //String variable = f.name().split("\\.")[1];
-         for (String instanceName : pb.instances().instancesOfType(type)) {
-         Resource r = ResourceManager.generateResourcePrototype(f.name(),new String[]{instanceName}, f);
-         this.resourcePrototype.add(r);
-         //st.resources.put(r.getQualifyingName(),r);
-         }
-         }
-         }
-         }*/
-        boolean consistent = st.update();
-        if (!consistent) {
+        st.update();
+        if (propagate && !st.isConsistent()) {
             this.planState = EPlanState.INFESSIBLE;
         }
 

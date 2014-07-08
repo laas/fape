@@ -39,8 +39,8 @@ public class PGPlanner extends APlanner {
 
 
     @Override
-    public boolean ForceFact(ParseResult anml) {
-        super.ForceFact(anml);
+    public boolean ForceFact(ParseResult anml, boolean propagate) {
+        super.ForceFact(anml, propagate);
 
         if(GroundProblem.sizeEvaluation(pb) > 1000000)
             return false;
