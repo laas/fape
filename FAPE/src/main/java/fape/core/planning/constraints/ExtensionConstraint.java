@@ -9,7 +9,7 @@ import java.util.*;
  * It consists of a n-tuple of variables and a set of n-tuples of values.
  */
 public class ExtensionConstraint<VarRef> {
-    LinkedList<LinkedList<Integer>> values = new LinkedList<>();
+    protected LinkedList<LinkedList<Integer>> values = new LinkedList<>();
 
     public ExtensionConstraint DeepCopy() {
         return this;

@@ -1,6 +1,7 @@
 package fape.core.planning.constraints;
 
 import fape.Planning;
+import fape.core.planning.Planner;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
@@ -406,6 +407,42 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
         builder.append("\n----------------\n");
         return builder.toString();
+    }
+
+    public void assertGroundAndConsistent() {
+        assert Planner.debugging : "Error: this should be done only when debugging.";
+
+        for(ValuesHolder vals : JavaConversions.asJavaCollection(variables.values()))
+            assert vals.size() == 1;
+
+        for(List<VarRef> extConst : mappings.keySet()) {
+            List<Integer> vals = new LinkedList<>();
+            for(VarRef v : extConst) vals.add(variables.apply(v).values().iterator().next());
+
+            boolean isValidTuple = false;
+            for(List<Integer> valsTuple : exts.get(mappings.get(extConst)).values) {
+                for(int i=0 ; i<valsTuple.size() ; i++) {
+                    if(!valsTuple.get(i).equals(vals.get(i)))
+                        break;
+                    if(i == valsTuple.size()-1)
+                        isValidTuple = true;
+                }
+                if(isValidTuple)
+                    break;
+            }
+            if(!isValidTuple)
+                assert isValidTuple;
+        }
+
+        for(LabeledEdge<VarRef, ConstraintType> e : constraints.jEdges()) {
+            int v1 = variables.apply(e.u()).values().iterator().next();
+            int v2 = variables.apply(e.v()).values().iterator().next();
+
+            if(e.l() == ConstraintType.EQUALITY)
+                assert v1 == v2;
+            else if(e.l() == ConstraintType.DIFFERENCE)
+                assert v1 != v2;
+        }
     }
 
 }

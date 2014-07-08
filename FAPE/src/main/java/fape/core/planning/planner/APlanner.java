@@ -620,6 +620,8 @@ public abstract class APlanner {
 
             TinyLogger.LogInfo(st);
             if (flaws.isEmpty()) {
+                if(Planner.debugging)
+                    st.conNet.assertGroundAndConsistent();
                 if (!APlanner.optimal) {
                     this.planState = EPlanState.CONSISTENT;
                     TinyLogger.LogInfo("Plan found:");
