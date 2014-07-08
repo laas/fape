@@ -53,38 +53,4 @@ public class Planner extends APlanner {
     public ActionSupporterFinder getActionSupporterFinder() {
         return new ActionSupporters(pb);
     }
-
-    public static void main(String[] args) throws InterruptedException {
-        long start = System.currentTimeMillis();
-        String anml = "problems/handover.anml";
-
-        if(args.length > 0)
-            anml = args[0];
-        Planner p = new Planner();
-        Planner.actionResolvers = true;
-        p.Init();
-        p.ForceFact(Executor.ProcessANMLfromFile(anml));
-        boolean timeOut = false;
-        try {
-            timeOut = !p.Repair(new TimeAmount(1000 * 6000));
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Planning finished for " + anml + " with failure.");
-            //throw new FAPEException("Repair failure.");
-        }
-        long end = System.currentTimeMillis();
-        float total = (end - start) / 1000f;
-        if (timeOut) {
-            System.out.println("Planning finished for " + anml + " timed out.");
-        } else {
-            System.out.println("Planning finished for " + anml + " in " + total + "s");
-            State sol = p.GetCurrentState();
-
-            System.out.println("=== Temporal databases === \n"+ Printer.temporalDatabaseManager(sol, sol.tdb));
-
-            Plan plan = new Plan(sol);
-            plan.exportToDot("plan.dot");
-            System.out.println("Look at plan.dot for a complete plan.");
-        }
-    }
 }

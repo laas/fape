@@ -71,7 +71,7 @@ public class ExperimentRunner {
 
             Planner p = new Planner();
             p.Init();
-            p.ForceFact(Executor.ProcessANMLfromFile(anml));
+            p.ForceFact(Executor.ProcessANMLfromFile(anml), true);
 
             long start = System.currentTimeMillis();
 

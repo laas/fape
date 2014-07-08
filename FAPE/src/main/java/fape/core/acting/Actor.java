@@ -171,7 +171,7 @@ public class Actor {
                 if (!newEventBuffer.isEmpty()) {
                     if(FAPE.execLogging) System.out.println("Including "+newEventBuffer.size()+" new events");
                     while (!newEventBuffer.isEmpty()) {
-                        mPlanner.ForceFact(newEventBuffer.pop());
+                        mPlanner.ForceFact(newEventBuffer.pop(), true);
                     }
                     planNeedsRepair = true;
                 }

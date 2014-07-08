@@ -113,7 +113,7 @@ public class State implements Reporter{
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
 
-        conNet = new ConservativeConstraintNetwork();
+        conNet = new ConstraintNetwork();
 //        conNet = new ConstraintNetworkManager();
         supportConstraints = new LinkedList<>();
 
@@ -416,12 +416,12 @@ public class State implements Reporter{
      * @param act Action to insert.
      * @return True if the resulting state is consistent, false otherwise.
      */
-    public boolean insert(Action act) {
+    public void insert(Action act) {
         recordTimePoints(act);
         tempoNet.EnforceBefore(pb.earliestExecution(), act.start());
         tempoNet.EnforceDelay(act.start(), act.end(), 1);
         taskNet.insert(act);
-        return apply(act);
+        apply(act);
     }
 
     /**
@@ -443,7 +443,7 @@ public class State implements Reporter{
      *
      * @return True if the resulting state is consistent, False otherwise.
      */
-    public boolean update() {
+    public void update() {
         if (problemRevision == -1) {
             tempoNet.recordTimePoint(pb.start());
             tempoNet.recordTimePoint(pb.end());
@@ -455,8 +455,6 @@ public class State implements Reporter{
             apply(pb.modifiers().get(i));
             problemRevision = i;
         }
-
-        return isConsistent();
     }
 
     /**
@@ -465,17 +463,32 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent
      */
-    public boolean apply(LogStatement s) {
+    public void apply(LogStatement s) {
         recordTimePoints(s);
 
-        TemporalDatabase db = new TemporalDatabase(s);
+        if(s.sv().func().isConstant()) {
+            if(s.needsSupport()) {
+                List<VarRef> variables = new LinkedList<>(s.sv().jArgs());
+                variables.add(s.startValue());
+                conNet.addValuesSetConstraint(variables, s.sv().func().name());
+            } else {
+                List<String> values = new LinkedList<>();
+                for(VarRef v : s.sv().jArgs()) {
+                    assert v instanceof InstanceRef;
+                    values.add(((InstanceRef) v).instance());
+                }
+                assert s.endValue() instanceof InstanceRef;
+                values.add(((InstanceRef) s.endValue()).instance());
+                conNet.addValuesToValuesSet(s.sv().func().name(), values);
+            }
+        } else {
+            TemporalDatabase db = new TemporalDatabase(s);
 
-        if (db.isConsumer()) {
-            consumers.add(db);
+            if (db.isConsumer()) {
+                consumers.add(db);
+            }
+            tdb.vars.add(db);
         }
-        tdb.vars.add(db);
-
-        return isConsistent();
     }
 
     /**
@@ -484,7 +497,7 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent.
      */
-    public boolean apply(ResourceStatement s) {
+    public void apply(ResourceStatement s) {
         recordTimePoints(s);
 
         Resource r = ResourceManager.generateResourcePrototype((NumFunction) s.sv().func());
@@ -506,9 +519,7 @@ public class State implements Reporter{
         }
         r.stateVariable = s.sv();
 
-        boolean consistent = resMan.AddResourceEvent(r, this);
-        return consistent;
-
+        resMan.AddResourceEvent(r, this);
     }
 
     /**
@@ -518,11 +529,11 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent
      */
-    public boolean apply(StateModifier mod, Statement s) {
+    public void apply(StateModifier mod, Statement s) {
         if (s instanceof LogStatement) {
-            return apply((LogStatement) s);
+            apply((LogStatement) s);
         } else if (s instanceof ResourceStatement) {
-            return apply((ResourceStatement) s);
+            apply((ResourceStatement) s);
         } else {
             throw new FAPEException("Unsupported statement: " + s);
         }
@@ -537,7 +548,7 @@ public class State implements Reporter{
      * @param tc The TemporalConstraint to insert.
      * @return True if the resulting state is consistent, False otherwise.
      */
-    public boolean apply(StateModifier mod, TemporalConstraint tc) {
+    public void apply(StateModifier mod, TemporalConstraint tc) {
         TPRef tp1 = tc.tp1();
         TPRef tp2 = tc.tp2();
 
@@ -550,8 +561,6 @@ public class State implements Reporter{
                 // tp1 --- [x, x] ---> tp2
                 tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
-
-        return isConsistent();
     }
 
     /**
@@ -562,7 +571,7 @@ public class State implements Reporter{
      * @param dec Decomposition to insert
      * @return True if the resulting state is consistent.
      */
-    public boolean applyDecomposition(Decomposition dec) {
+    public void applyDecomposition(Decomposition dec) {
         recordTimePoints(dec);
 
         // interval of the decomposition is equal to the one of the containing action.
@@ -571,7 +580,7 @@ public class State implements Reporter{
 
         taskNet.insert(dec, dec.container());
 
-        return apply(dec);
+        apply(dec);
     }
 
     /**
@@ -580,7 +589,7 @@ public class State implements Reporter{
      * @param mod StateModifier to apply
      * @return True if the resulting State is consistent, False otherwise.
      */
-    public boolean apply(StateModifier mod) {
+    public void apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for (String instance : mod.instances()) {
             conNet.addPossibleValue(instance);
@@ -606,8 +615,6 @@ public class State implements Reporter{
         for (TemporalConstraint tc : mod.temporalConstraints()) {
             apply(mod, tc);
         }
-
-        return isConsistent();
     }
 
     /**
@@ -711,7 +718,7 @@ public class State implements Reporter{
     }
 
     public void addSupportConstraint(ChainComponent cc, Decomposition dec) {
-        this.supportConstraints.add(new Pair(cc.mID, dec));
+        this.supportConstraints.add(new Pair<>(cc.mID, dec));
     }
 
 }

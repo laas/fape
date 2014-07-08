@@ -1,8 +1,6 @@
 package fape.core.planning.constraints;
 
 
-import planstack.anml.model.concrete.VarRef;
-
 import java.util.*;
 
 /**
@@ -10,28 +8,54 @@ import java.util.*;
  *
  * It consists of a n-tuple of variables and a set of n-tuples of values.
  */
-public class ExtensionConstraint {
-    LinkedList<VarRef> variables = new LinkedList<>();
-    LinkedList<LinkedList<Integer>> values = new LinkedList<>();
-
-    Map<VarRef, Map<VarRef,Map<Integer, List<Integer>>>> processed = null;
-
-    public ExtensionConstraint(Collection<VarRef> vars, Collection<LinkedList<Integer>> values) {
-        variables.addAll(vars);
-        for(Collection<Integer> valueSeq : values) {
-            this.values.add(new LinkedList<>(valueSeq));
-        }
-    }
-
-    /**
-     * @return True if this variable appears in the constraint.
-     */
-    public boolean isAbout(VarRef v) {
-        return variables.contains(v);
-    }
+public class ExtensionConstraint<VarRef> {
+    protected LinkedList<LinkedList<Integer>> values = new LinkedList<>();
 
     public ExtensionConstraint DeepCopy() {
         return this;
+    }
+
+    LinkedList<Map<Integer, BitSet>> relevantConstraints = new LinkedList<>();
+
+    public void addValues(List<Integer> vals) {
+        assert values.isEmpty() || values.get(0).size() == vals.size();
+        this.values.add(new LinkedList<Integer>(vals));
+
+        if(relevantConstraints.size() == 0) {
+            for(int i=0 ; i<vals.size() ; i++)
+                relevantConstraints.add(new HashMap<Integer, BitSet>());
+        }
+
+        for(int i=0 ; i<vals.size() ; i++) {
+            if(!relevantConstraints.get(i).containsKey(vals.get(i)))
+                relevantConstraints.get(i).put(vals.get(i), new BitSet());
+            relevantConstraints.get(i).get(vals.get(i)).set(this.values.size()-1);
+        }
+    }
+
+    public Set<Integer> valuesUnderRestriction(int wanted, Map<Integer, Set<Integer>> constraints) {
+        BitSet toConsider = new BitSet(values.size());
+        toConsider.set(0, values.size());
+        for(int var : constraints.keySet()) {
+            BitSet local = new BitSet(values.size());
+            for(int val : constraints.get(var)) {
+                if(relevantConstraints.get(var).containsKey(val)) {
+                    local.or(relevantConstraints.get(var).get(val));
+                }
+            }
+            toConsider.and(local);
+        }
+
+        Set<Integer> ret = new HashSet<>();
+        int i =0;
+        for(List<Integer> vals : this.values) {
+            if(toConsider.get(i)) {
+                ret.add(vals.get(wanted));
+            }
+            i++;
+        }
+
+        return ret;
     }
 
     /**
@@ -59,31 +83,31 @@ public class ExtensionConstraint {
      * </code>
      * @return
      */
-    public Map<VarRef, Map<VarRef,Map<Integer, List<Integer>>>> processed() {
-        if(processed != null)
-            return processed;
-
-        processed = new HashMap<>();
-        for(int i=0 ; i<variables.size() ; i++) {
-            Map<VarRef,Map<Integer, List<Integer>>> currentVar = new HashMap<>();
-            for(int j=0 ; j<variables.size() ; j++) {
-                if(i == j) continue;
-
-                Map<Integer, List<Integer>> possibleValues = new HashMap<>();
-
-                for(LinkedList<Integer> valuesSeq : values) {
-                    Integer currVal = valuesSeq.get(i);
-                    if(!possibleValues.containsKey(currVal))
-                        possibleValues.put(currVal, new LinkedList<Integer>());
-
-                    if(!possibleValues.get(currVal).contains(valuesSeq.get(j))) {
-                        possibleValues.get(currVal).add(valuesSeq.get(j));
-                    }
-                }
-                currentVar.put(variables.get(j), possibleValues);
-            }
-            processed.put(variables.get(i), currentVar);
-        }
-        return processed;
-    }
+//    public Map<VarRef, Map<VarRef,Map<Integer, List<Integer>>>> processed() {
+//        if(processed != null)
+//            return processed;
+//
+//        processed = new HashMap<>();
+//        for(int i=0 ; i<variables.size() ; i++) {
+//            Map<VarRef,Map<Integer, List<Integer>>> currentVar = new HashMap<>();
+//            for(int j=0 ; j<variables.size() ; j++) {
+//                if(i == j) continue;
+//
+//                Map<Integer, List<Integer>> possibleValues = new HashMap<>();
+//
+//                for(LinkedList<Integer> valuesSeq : values) {
+//                    Integer currVal = valuesSeq.get(i);
+//                    if(!possibleValues.containsKey(currVal))
+//                        possibleValues.put(currVal, new LinkedList<Integer>());
+//
+//                    if(!possibleValues.get(currVal).contains(valuesSeq.get(j))) {
+//                        possibleValues.get(currVal).add(valuesSeq.get(j));
+//                    }
+//                }
+//                currentVar.put(variables.get(j), possibleValues);
+//            }
+//            processed.put(variables.get(i), currentVar);
+//        }
+//        return processed;
+//    }
 }

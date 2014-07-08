@@ -1,8 +1,7 @@
 package fape.core.planning.constraints;
 
-import fape.exceptions.FAPEException;
-import fape.util.Pair;
-import planstack.anml.model.concrete.VarRef;
+import fape.Planning;
+import fape.core.planning.Planner;
 import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
@@ -24,9 +23,9 @@ import java.util.*;
  * Domain holders objects are immutable as well and as such can be shared between
  * multiple instances. (See the ValuesHolder class).
  */
-public class ConservativeConstraintNetwork extends ConstraintNetwork {
+public class ConservativeConstraintNetwork<VarRef> {
 
-    enum ConstraintType { EQUALITY, DIFFERENCE, EXTENSION }
+    enum ConstraintType { EQUALITY, DIFFERENCE }
 
     /**
      * Maps variables to their domain. The ValuesHolder object is to be recreated whenever a
@@ -65,12 +64,13 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
      * For any constraints involving two variables a and b, there needs to be an
      * edge (a, b, EXTENSION) in the constraint graph.
      */
-    final LinkedList<ExtensionConstraint> exts = new LinkedList<>();
+    final HashMap<String, ExtensionConstraint<VarRef>> exts;
+    HashMap<List<VarRef>, String> mappings;
 
     /**
      * All constraints that need to processed for incremental consistency checking.
      */
-    final Queue<Pair<VarRef, VarRef>> toProcess;
+    final Queue<VarRef> toProcess;
 
     /**
      * Flag indicating if the CSP is consistent (e.g. no variables with empty domain).
@@ -81,6 +81,12 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
      */
     boolean consistent;
 
+    /**
+     * This boolean is used to make sure we don't add possible values to an extension constraints
+     * after a propagation has occured.
+     */
+    public boolean extChecked;
+
     public ConservativeConstraintNetwork() {
         toProcess = new LinkedList<>();
         variables = new scala.collection.immutable.HashMap<>();
@@ -89,22 +95,63 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         valuesIds = new HashMap<>();
         constraints = new MultiLabeledUndirectedAdjacencyList<>();
         consistent = true;
+        exts = new HashMap<String, ExtensionConstraint<VarRef>>();
+        mappings = new HashMap<>();
+        extChecked = false;
     }
 
-    public ConservativeConstraintNetwork(ConservativeConstraintNetwork base) {
+    public ConservativeConstraintNetwork(ConservativeConstraintNetwork<VarRef> base) {
         variables = base.variables;
         types = base.types; // todo, need to copy?
         values = base.values;
         valuesIds = base.valuesIds;
         constraints = base.constraints.cc();
-        toProcess = new LinkedList<>(base.toProcess);
+        toProcess = new LinkedList<VarRef>(base.toProcess);
         consistent = base.consistent;
-        for(ExtensionConstraint ext : base.exts) {
-            exts.add(ext.DeepCopy());
+        mappings = new HashMap<List<VarRef>, String>(base.mappings);
+        exts = base.exts;
+        extChecked = base.extChecked;
+    }
+
+    public void domainModified(VarRef v) {
+        if(!toProcess.contains(v))
+            toProcess.add(v);
+
+        if(domainOf(v).size() == 0) {
+            consistent = false;
         }
     }
 
-    @Override
+    public void checkValuesSetConstraints(VarRef v) {
+        if(domainOf(v).size() != 1)
+            return;
+
+        List<List<VarRef>> constraintsToCheck = new LinkedList<>();
+        for(List<VarRef> constraint : mappings.keySet()) {
+            if(constraint.contains(v))
+                constraintsToCheck.add(constraint);
+        }
+
+        for(List<VarRef> cons : constraintsToCheck) {
+            for(int focus=0 ; focus<cons.size() ; focus++) {
+                VarRef focusVar = cons.get(focus);
+                Map<Integer, Set<Integer>> restrictions = new HashMap<>();
+                for(int j=0 ; j<cons.size() ; j++) {
+                    if(j != focus)
+                        restrictions.put(j, variables.apply(cons.get(j)).values());
+                }
+
+                ValuesHolder old = variables.apply(focusVar);
+                Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, restrictions);
+                if(domainRestrictions == null)
+                    break;
+                variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(domainRestrictions)));
+                if(!old.equals(variables.apply(focusVar)))
+                    domainModified(focusVar);
+            }
+        }
+    }
+
     public void addPossibleValue(String val) {
         if(!valuesIds.containsKey(val)) {
             int id = values.size();
@@ -113,7 +160,8 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         }
     }
 
-    @Override
+
+
     public boolean isConsistent() {
         if(!consistent) {
             return false;
@@ -121,8 +169,10 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
         if(!toProcess.isEmpty()) {
             while(!toProcess.isEmpty()) {
-                Pair<VarRef, VarRef> c = toProcess.remove();
-                consistent &= revise(c);
+                VarRef v = toProcess.remove();
+                consistent &= revise(v);
+                checkValuesSetConstraints(v);
+                extChecked = true; // note that a propagation occurred
             }
         } else {
             return consistent;
@@ -134,21 +184,42 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return variables.apply(var);
     }
 
-    protected boolean revise(Pair<VarRef,VarRef> pair) {
+    protected boolean revise(VarRef v) {
+        boolean res = true;
+        for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(v)))
+            res &= revise(v, neighbour);
+
+        return res;
+    }
+
+    protected boolean revise(VarRef v1, VarRef v2) {
         boolean isConsistent = true;
-        for(LabeledEdge<VarRef, ConstraintType> c :JavaConversions.asJavaCollection(constraints.edges(pair.value1, pair.value2))) {
+        for(LabeledEdge<VarRef, ConstraintType> c :JavaConversions.asJavaCollection(constraints.edges(v1, v2))) {
             if(c.l() == ConstraintType.DIFFERENCE) {
                 isConsistent &= reviseDifference(c);
             } else if(c.l() == ConstraintType.EQUALITY) {
                 isConsistent &= reviseEquality(c);
-            } else if(c.l() == ConstraintType.EXTENSION) {
-                isConsistent &= reviseExts(c.u(), c.v());
-                isConsistent &= reviseExts(c.v(), c.u());
             } else {
-                throw new FAPEException("Unknwon constraint type: "+ c);
+                throw new RuntimeException("Unknown constraint type: "+ c);
             }
         }
         return isConsistent;
+    }
+
+    protected boolean restrictDomain(VarRef v, ValuesHolder values) {
+        ValuesHolder old = variables.apply(v);
+        ValuesHolder newDom = old.intersect(values);
+        variables = variables.updated(v, newDom);
+
+        if(newDom.isEmpty()) {
+            consistent = false;
+            return true;
+        } else if(!old.equals(newDom)) {
+            domainModified(v);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     protected boolean reviseDifference(LabeledEdge<VarRef, ConstraintType> c) {
@@ -156,19 +227,15 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
 
         if(variables.apply(c.u()).size() == 1) {
             if(vals(c.v()).contains((Integer) vals(c.u()).values.head())) {
-                variables = variables.updated(c.v(), vals(c.v()).remove(vals(c.u())));
-                for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.v())))
-                    if(neighbour != c.u())
-                        toProcess.add(new Pair<>(neighbour, c.v()));
+                boolean changed = restrictDomain(c.v(), vals(c.v()).remove(vals(c.u())));
+                assert changed;
             }
         }
 
         if(variables.apply(c.v()).size() == 1) {
             if(vals(c.u()).contains((Integer) vals(c.v()).values.head())) {
-                variables = variables.updated(c.u(), vals(c.u()).remove(vals(c.v())));
-                for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.u())))
-                    if(neighbour != c.v())
-                        toProcess.add(new Pair<>(neighbour, c.u()));
+                boolean changed = restrictDomain(c.u(), vals(c.u()).remove(vals(c.v())));
+                assert changed;
             }
         }
 
@@ -179,81 +246,21 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         assert c.l() == ConstraintType.EQUALITY;
 
         if(!variables.apply(c.u()).equals(variables.apply(c.v()))) {
-            ValuesHolder newDomain = variables.apply(c.u()).intersect(variables.apply(c.v()));
-            variables = variables.updated(c.u(), newDomain);
-            variables = variables.updated(c.v(), newDomain);
-            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.v())))
-                if(neighbour != c.u())
-                    toProcess.add(new Pair<>(neighbour, c.v()));
-            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(c.u())))
-                if(neighbour != c.v())
-                    toProcess.add(new Pair<>(neighbour, c.u()));
-
-            if(newDomain.values.isEmpty()) {
-                return false;
-            }
+            restrictDomain(c.u(), variables.apply(c.v()));
+            restrictDomain(c.v(), variables.apply(c.u()));
         }
-        return true;
+        return consistent;
     }
 
-    /**
-     * Revise all extension constraints involving the two variables. It is asymmetrical and
-     * only the domain of the first variable will be reduced.
-     *
-     * If the domain of var changed, the edges to reconsider are added to the queue.
-     *
-     * @param var Variable whose domain is to check for reduction.
-     * @param other Other variable for which values of var need to be checked.
-     * @return True if the domain is non-empty after the propagation.
-     */
-    protected boolean reviseExts(VarRef var, VarRef other) {
-        assert variables.contains(var);
-        assert variables.contains(other);
-        boolean updated = false;
-        for(ExtensionConstraint ext : exts) {
-            if(ext.isAbout(var) && ext.isAbout(other)) {
-                Map<VarRef,Map<Integer, List<Integer>>> constraintsPerVar = ext.processed().get(var);
-                LinkedList<Integer> toRemove = new LinkedList<>();
-                Map<Integer, List<Integer>> constraints = constraintsPerVar.get(other);
-                for(Object vObj : vals(var).values()) {
-                    Integer v = (Integer) vObj;
-                    if(!constraints.containsKey(v) || !vals(other).containsAtLeastOne(constraints.get(v)))
-                        toRemove.add(v);
-                }
-                while(!toRemove.isEmpty()) {
-                    updated = true;
-                    variables = variables.updated(var, vals(var).remove(toRemove.remove()));
-                }
-            }
-        }
-
-        if(updated) {
-            for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(var)))
-                if(neighbour != other)
-                    toProcess.add(new Pair<>(neighbour, var));
-        }
-        return !vals(var).isEmpty();
-    }
-
-    @Override
-    public boolean restrictDomain(VarRef var, Collection<String> toValues) {
+    public void restrictDomain(VarRef var, Collection<String> toValues) {
         assert variables.contains(var);
         List<Integer> ids = new LinkedList<>();
         for(String value : toValues) {
             ids.add(valuesIds.get(value));
         }
-        if(vals(var).equals(new ValuesHolder(ids)))
-            return isConsistent();
-
-        variables = variables.updated(var, variables.apply(var).intersect(new ValuesHolder(ids)));
-
-        for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(var)))
-            toProcess.add(new Pair<>(neighbour, var));
-
-        return isConsistent();
+        restrictDomain(var, new ValuesHolder(ids));
     }
 
-    @Override
     public void AddVariable(VarRef var, Collection<String> domain, String type) {
         assert !variables.contains(var);
         List<Integer> valueIds = new LinkedList<>();
@@ -262,76 +269,50 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
             valueIds.add(valuesIds.get(val));
         }
         variables = variables.updated(var, new ValuesHolder(valueIds));
+        domainModified(var);
         constraints.addVertex(var);
         types.put(var, type);
     }
 
-    @Override
     public void AddUnificationConstraint(VarRef a, VarRef b) {
         LabeledEdge<VarRef, ConstraintType> constraint = new LabeledEdge<VarRef, ConstraintType>(a, b, ConstraintType.EQUALITY);
         constraints.addEdge(a, b, ConstraintType.EQUALITY);
-        toProcess.add(new Pair<>(a, b));
-        isConsistent();
+        toProcess.add(a);
+        toProcess.add(b);
     }
 
-    @Override
     public void AddSeparationConstraint(VarRef a, VarRef b) {
         LabeledEdge<VarRef, ConstraintType> constraint = new LabeledEdge<VarRef, ConstraintType>(a, b, ConstraintType.DIFFERENCE);
         constraints.addEdge(a, b, ConstraintType.DIFFERENCE);
-        toProcess.add(new Pair<>(a, b));
-        isConsistent();
+        toProcess.add(a);
+        toProcess.add(b);
     }
 
-    public void addExtensionConstraint(List<VarRef> vars, List<List<String>> values) {
-        LinkedList<LinkedList<Integer>> intValues = new LinkedList<>();
-        for(List<String> valSeq : values) {
-            LinkedList<Integer> intValSeq = new LinkedList<>();
-            for(String v : valSeq) {
-                intValSeq.add(valuesIds.get(v));
-            }
-            assert intValSeq.size() == vars.size();
-            intValues.add(intValSeq);
-        }
-        exts.add(new ExtensionConstraint(vars, intValues));
-        for(int i=0 ; i<vars.size() ; i++) {
-            for(int j=i+1 ; j<vars.size() ; j++) {
-                constraints.addEdge(vars.get(i), vars.get(j), ConstraintType.EXTENSION);
-            }
-        }
-    }
-
-    @Override
     public boolean contains(VarRef v) {
         return variables.contains(v);
     }
 
-    @Override
     public Collection<String> domainOf(VarRef var) {
         List<String> domain = new LinkedList<>();
-        for(Object v : JavaConversions.asJavaCollection(variables.apply(var).values)) {
-            Integer id = (Integer) v;
+        for(Integer id : variables.apply(var).values()) {
             domain.add(values.get(id));
         }
         return domain;
     }
 
-    @Override
     public String typeOf(VarRef v) {
         assert types.containsKey(v);
         return types.get(v);
     }
 
-    @Override
-    public ConstraintNetwork DeepCopy() {
-        return new ConservativeConstraintNetwork(this);
+    public ConservativeConstraintNetwork<VarRef> DeepCopy() {
+        return new ConservativeConstraintNetwork<>(this);
     }
 
-    @Override
     public boolean unifiable(VarRef a, VarRef b) {
         return !separated(a,b) && variables.apply(a).intersect(variables.apply(b)).values.size() != 0;
     }
 
-    @Override
     public boolean separable(VarRef a, VarRef b) {
         if(unified(a, b))
             return false;
@@ -343,7 +324,6 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
             return true;
     }
 
-    @Override
     public boolean unified(VarRef a, VarRef b) {
         for(LabeledEdge<VarRef, ConstraintType> c : JavaConversions.asJavaCollection(constraints.edges(a, b))) {
             if(c.l() == ConstraintType.EQUALITY)
@@ -352,7 +332,6 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return false;
     }
 
-    @Override
     public boolean separated(VarRef a, VarRef b) {
         for(LabeledEdge<VarRef, ConstraintType> c : JavaConversions.asJavaCollection(constraints.edges(a, b))) {
             if(c.l() == ConstraintType.DIFFERENCE)
@@ -361,7 +340,6 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return false;
     }
 
-    @Override
     public List<VarRef> getUnboundVariables() {
         List<VarRef> unbound = new LinkedList<>();
         for(Tuple2<VarRef, ValuesHolder> varValues : JavaConversions.asJavaList(variables.toList())) {
@@ -371,7 +349,42 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
         return unbound;
     }
 
-    @Override
+    /**
+     * Adds a new tuple of value to an extension constraint.
+     * If no constraint with this ID exists, it is created.
+     * @param setID ID of the extension constraint.
+     * @param values A tuple of value to be added.
+     */
+    public void addValuesToValuesSet(String setID, List<String> values) {
+        List<Integer> vals = new LinkedList<>();
+        for(String v : values) {
+            assert valuesIds.containsKey(v);
+            vals.add(valuesIds.get(v));
+        }
+        if(!exts.containsKey(setID)) {
+            exts.put(setID, new ExtensionConstraint<VarRef>());
+        }
+
+        exts.get(setID).addValues(vals);
+        assert !extChecked || Planning.currentPlanner.equals("rpg_ext")
+               : "Error: adding values to constraints in extension while propagation already occurred.";
+    }
+
+    /**
+     * Forces the given tuple of variable to respect an extension constraint
+     * @param variables a tuple of variable.
+     * @param setID ID of the extension cosntraint to respect.
+     */
+    public void addValuesSetConstraint(List<VarRef> variables, String setID) {
+        assert exts.containsKey(setID);
+        assert !exts.get(setID).values.isEmpty();
+        assert exts.get(setID).values.get(0).size() == variables.size();
+        mappings.put(new LinkedList<VarRef>(variables), setID);
+        for(VarRef v : variables) {
+            domainModified(v);
+        }
+    }
+
     public String Report() {
         StringBuilder builder = new StringBuilder();
         for(VarRef var : JavaConversions.asJavaCollection(variables.keys())) {
@@ -388,14 +401,48 @@ public class ConservativeConstraintNetwork extends ConstraintNetwork {
                 builder.append(" != ");
             else if(c.l() == ConstraintType.EQUALITY)
                 builder.append(" == ");
-            else if(c.l() == ConstraintType.EXTENSION)
-                builder.append(" EXTENSION ");
             builder.append(c.v()+":");
             builder.append(domainOf(c.v()));
             builder.append("\n");
         }
         builder.append("\n----------------\n");
         return builder.toString();
+    }
+
+    public void assertGroundAndConsistent() {
+        assert Planner.debugging : "Error: this should be done only when debugging.";
+
+        for(ValuesHolder vals : JavaConversions.asJavaCollection(variables.values()))
+            assert vals.size() == 1;
+
+        for(List<VarRef> extConst : mappings.keySet()) {
+            List<Integer> vals = new LinkedList<>();
+            for(VarRef v : extConst) vals.add(variables.apply(v).values().iterator().next());
+
+            boolean isValidTuple = false;
+            for(List<Integer> valsTuple : exts.get(mappings.get(extConst)).values) {
+                for(int i=0 ; i<valsTuple.size() ; i++) {
+                    if(!valsTuple.get(i).equals(vals.get(i)))
+                        break;
+                    if(i == valsTuple.size()-1)
+                        isValidTuple = true;
+                }
+                if(isValidTuple)
+                    break;
+            }
+            if(!isValidTuple)
+                assert isValidTuple;
+        }
+
+        for(LabeledEdge<VarRef, ConstraintType> e : constraints.jEdges()) {
+            int v1 = variables.apply(e.u()).values().iterator().next();
+            int v2 = variables.apply(e.v()).values().iterator().next();
+
+            if(e.l() == ConstraintType.EQUALITY)
+                assert v1 == v2;
+            else if(e.l() == ConstraintType.DIFFERENCE)
+                assert v1 != v2;
+        }
     }
 
 }
