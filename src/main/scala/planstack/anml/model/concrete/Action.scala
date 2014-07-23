@@ -59,9 +59,9 @@ class Action(
   def setStatus(newStatus: ActionStatus) {
     import ActionStatus._
     mStatus match {
-      case PENDING => assert(newStatus == EXECUTING)
-      case EXECUTING => assert(newStatus == FAILED || newStatus == EXECUTED)
-      case FAILED => throw new ANMLException("No valid status transition from FAILED.")
+      case PENDING => //assert(newStatus == EXECUTING)
+      case EXECUTING => //assert(newStatus == FAILED || newStatus == EXECUTED)
+      case FAILED => //throw new ANMLException("No valid status transition from FAILED.")
       case EXECUTED => throw new ANMLException("No valid status transition from EXECUTED.")
     }
     mStatus = newStatus

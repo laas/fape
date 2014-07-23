@@ -76,6 +76,7 @@ object AbstractDecomposition {
       case constraint:parser.TemporalConstraint => dec.temporalConstraints += AbstractTemporalConstraint(constraint)
       // constant function with no arguments is interpreted as local variable
       case const:parser.Constant => dec.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
+      case statement:parser.TemporalStatement => dec.temporalStatements += AbstractTemporalStatement(pb, dec.context, statement)
     })
 
     dec

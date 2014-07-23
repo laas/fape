@@ -13,7 +13,7 @@ sealed trait TypeContent
 
 
 
-case class TemporalStatement(annotation:TemporalAnnotation, statement:Statement) extends AnmlBlock with ActionContent
+case class TemporalStatement(annotation:TemporalAnnotation, statement:Statement) extends AnmlBlock with ActionContent with DecompositionContent
 
 case class TemporalAnnotation(start:RelativeTimepoint, end:RelativeTimepoint, flag:String) {
   require(flag == "is" || flag == "contains")
@@ -283,14 +283,15 @@ object AnmlParser extends JavaTokenParsers {
 
   def decomposition : Parser[Decomposition] =
       ":decomposition"~"{"~>rep(decompositionContent)<~"}"~";" ^^ {
-        case content => Decomposition(content)
+        case content => Decomposition(content.flatten)
       }
 
-  def decompositionContent : Parser[DecompositionContent] = (
-      tempConstraint
-    | partiallyOrderedActionRef<~";"
+  def decompositionContent : Parser[List[DecompositionContent]] = (
+      tempConstraint ^^ (x => List(x))
+    | temporalStatements
+    | partiallyOrderedActionRef<~";" ^^ (x => List(x))
     | "constant"~>(word|kwType)~word<~";" ^^ {
-        case tipe~name => new Constant(name, tipe)
+        case tipe~name => List(new Constant(name, tipe))
       })
 
 
