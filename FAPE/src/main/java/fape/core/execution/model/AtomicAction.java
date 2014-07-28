@@ -40,7 +40,7 @@ public class AtomicAction {
         this.duration = duration;
         params = new LinkedList<>();
         for(VarRef arg : action.args()) {
-            List<String> possibleValues = new LinkedList<>(st.conNet.domainOf(arg));
+            List<String> possibleValues = new LinkedList<>(st.domainOf(arg));
             assert possibleValues.size() == 1 : "Argument "+arg+" of action "+action+" has more than one possible value.";
             params.add(possibleValues.get(0));
         }

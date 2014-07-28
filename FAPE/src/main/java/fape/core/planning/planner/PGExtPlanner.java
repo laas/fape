@@ -33,7 +33,7 @@ public class PGExtPlanner extends PGPlanner {
         Action supportingAction = st.getActionContaining(supporter);
 
         if(supportingAction != null) {
-            DisjunctiveFluent fluent = new DisjunctiveFluent(consumer.sv(), consumer.startValue(), st.conNet, groundPB);
+            DisjunctiveFluent fluent = new DisjunctiveFluent(consumer.sv(), consumer.startValue(), st, groundPB);
             DisjunctiveAction dAct = pg.enablers(fluent);
             unify(st, supportingAction, dAct);
         }
@@ -59,9 +59,9 @@ public class PGExtPlanner extends PGPlanner {
                     throw new FAPEException("ERROR: ground param is not an instance");
                 }
             }
-            st.conNet.addValuesToValuesSet(constraintID, valueSeq);
+            st.addValuesToValuesSet(constraintID, valueSeq);
         }
 
-        st.conNet.addValuesSetConstraint(act.args(), constraintID);
+        st.addValuesSetConstraint(act.args(), constraintID);
     }
 }

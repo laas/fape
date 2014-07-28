@@ -169,7 +169,7 @@ public class ResourceManager {
         } else {
             boolean unifies = true;
             for (int i = 0; i < a.stateVariable.jArgs().size() && unifies; i++) {
-                unifies &= st.conNet.unified(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
+                unifies &= st.unified(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
             }
             return unifies;
         }
@@ -189,7 +189,7 @@ public class ResourceManager {
         } else {
             boolean unifies = true;
             for (int i = 0; i < a.stateVariable.jArgs().size() && unifies; i++) {
-                unifies &= st.conNet.unifiable(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
+                unifies &= st.unifiable(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
             }
             return unifies;
         }

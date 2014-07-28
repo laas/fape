@@ -145,7 +145,7 @@ public abstract class APlanner {
             if(((SupportingAction) o).values != null)
                 // restrict domain of given variables to the given set of variables.
                 for (LVarRef lvar : ((SupportingAction) o).values.keySet()) {
-                    next.conNet.restrictDomain(action.context().getGlobalVar(lvar), ((SupportingAction) o).values.get(lvar));
+                    next.restrictDomain(action.context().getGlobalVar(lvar), ((SupportingAction) o).values.get(lvar));
                 }
 
             // create the binding between consumer and the new statement in the action that supports it
@@ -190,13 +190,13 @@ public abstract class APlanner {
                 }
             }
         } else if (o instanceof BindingSeparation) {
-            next.conNet.AddSeparationConstraint(((BindingSeparation) o).a, ((BindingSeparation) o).b);
+            next.addSeparationConstraint(((BindingSeparation) o).a, ((BindingSeparation) o).b);
         } else if (o instanceof VarBinding) {
             List<String> values = new LinkedList<>();
             values.add(((VarBinding) o).value);
-            next.conNet.restrictDomain(((VarBinding) o).var, values);
+            next.restrictDomain(((VarBinding) o).var, values);
         } else if (o instanceof StateVariableBinding) {
-            next.conNet.AddUnificationConstraint(((StateVariableBinding) o).one, ((StateVariableBinding) o).two);
+            next.addUnificationConstraint(((StateVariableBinding) o).one, ((StateVariableBinding) o).two);
         } else if (o instanceof ResourceSupportingAction) {
             ResourceSupportingAction opt = (ResourceSupportingAction) o;
             Action action = Factory.getStandaloneAction(pb, opt.action);
@@ -214,7 +214,7 @@ public abstract class APlanner {
                     }
                 }
             }
-            next.conNet.AddUnificationConstraint(theSupport.sv(), opt.unifyingResourceVariable);
+            next.addUnificationConstraint(theSupport.sv(), opt.unifyingResourceVariable);
 
             //add temporal constraint
             if (opt.before) {
@@ -423,7 +423,7 @@ public abstract class APlanner {
 
     public final List<Resolver> GetResolvers(State st, UnboundVariable uv) {
         List<Resolver> bindings = new LinkedList<>();
-        for (String value : st.conNet.domainOf(uv.var)) {
+        for (String value : st.domainOf(uv.var)) {
             bindings.add(new VarBinding(uv.var, value));
         }
         return bindings;
@@ -470,7 +470,7 @@ public abstract class APlanner {
         //find the resource flaws
         flaws.addAll(st.resMan.GatherFlaws(st));
         if (flaws.isEmpty()) {
-            for (VarRef v : st.conNet.getUnboundVariables()) {
+            for (VarRef v : st.getUnboundVariables()) {
                 flaws.add(new UnboundVariable(v));
             }
         }
@@ -585,7 +585,7 @@ public abstract class APlanner {
             TinyLogger.LogInfo(st);
             if (flaws.isEmpty()) {
                 if(Planner.debugging)
-                    st.conNet.assertGroundAndConsistent();
+                    st.assertConstraintNetworkGroundAndConsistent();
                 if (!APlanner.optimal) {
                     this.planState = EPlanState.CONSISTENT;
                     TinyLogger.LogInfo("Plan found:");
@@ -700,7 +700,7 @@ public abstract class APlanner {
                 //we are looking for chain integration too
                 int ct = 0;
                 for (ChainComponent comp : b.chain) {
-                    if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
+                    if (comp.change && st.unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
                             && st.canBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
                         ret.add(new SupportingDatabase(b.mID, ct));
                     }
@@ -709,7 +709,7 @@ public abstract class APlanner {
 
                 // Otherwise, check for databases containing a change whose support value can
                 // be unified with our consume value.
-            } else if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
+            } else if (st.unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
                     && !b.HasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
                 ret.add(new SupportingDatabase(b.mID));

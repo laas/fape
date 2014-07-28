@@ -59,9 +59,9 @@ public class AbsHierarchyComp implements FlawComparator {
             String predicate = consumer.stateVariable.func().name();
             List<String> argTypes = new LinkedList<>();
             for(VarRef argVar : consumer.stateVariable.jArgs()) {
-                argTypes.add(state.conNet.typeOf(argVar));
+                argTypes.add(state.typeOf(argVar));
             }
-            String valueType = state.conNet.typeOf(consumer.GetGlobalConsumeValue());
+            String valueType = state.typeOf(consumer.GetGlobalConsumeValue());
             level = hierarchy.getLevel(predicate, argTypes, valueType);
         } else {
             // a flaw (which is not an open link) with at least 2 resolvers, set priority to lowest.

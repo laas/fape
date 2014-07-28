@@ -66,9 +66,9 @@ public class LiftedDTG implements ActionSupporterFinder{
         String predicate = db.stateVariable.func().name();
         List<String> argTypes = new LinkedList<>();
         for(VarRef argVar : db.stateVariable.jArgs()) {
-            argTypes.add(st.conNet.typeOf(argVar));
+            argTypes.add(st.typeOf(argVar));
         }
-        String valueType = st.conNet.typeOf(db.GetGlobalConsumeValue());
+        String valueType = st.typeOf(db.GetGlobalConsumeValue());
         return this.getActionsSupporting(new FluentType(predicate, argTypes, valueType));
 
     }

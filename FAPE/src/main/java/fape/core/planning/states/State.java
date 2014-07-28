@@ -68,6 +68,8 @@ public class State implements Reporter {
 
     protected final TaskNetworkManager taskNet;
 
+    protected final ConstraintNetwork conNet;
+
     /**
      * Keep tracks of statements that must be supported by a particular
      * decomposition. (e.g. by a statements which is a consequence of that
@@ -81,7 +83,7 @@ public class State implements Reporter {
      * not an assignment).
      */
     public final List<TemporalDatabase> consumers;
-    public final ConstraintNetwork conNet;
+
 
     public final ResourceManager resMan;
     //public final HashMap<String, Resource> resources;
@@ -368,23 +370,11 @@ public class State implements Reporter {
     public boolean Unifiable(List<VarRef> as, List<VarRef> bs) {
         assert as.size() == bs.size() : "The two lists have different size.";
         for (int i = 0; i < as.size(); i++) {
-            if (!Unifiable(as.get(i), bs.get(i))) {
+            if (!unifiable(as.get(i), bs.get(i))) {
                 return false;
             }
         }
         return true;
-    }
-
-    /**
-     * Return true if the two variables are unifiable (ie: share at least one
-     * value)
-     *
-     * @param a
-     * @param b
-     * @return
-     */
-    public boolean Unifiable(VarRef a, VarRef b) {
-        return conNet.unifiable(a, b);
     }
 
     /**
@@ -399,7 +389,7 @@ public class State implements Reporter {
     public boolean canBeEnabler(LogStatement s, TemporalDatabase db) {
         boolean canSupport = s instanceof Transition || s instanceof Assignment;
         canSupport = canSupport && Unifiable(s.sv(), db.stateVariable);
-        canSupport = canSupport && Unifiable(s.endValue(), db.GetGlobalConsumeValue());
+        canSupport = canSupport && unifiable(s.endValue(), db.GetGlobalConsumeValue());
         return canSupport;
     }
 
@@ -745,5 +735,32 @@ public class State implements Reporter {
     public int getNumOpenLeaves() { return taskNet.getNumOpenLeaves(); }
 
     public int getNumRoots() { return taskNet.getNumRoots(); }
+
+    /******** Wrapper around the constraint network ***********/
+
+    public Collection<String> domainOf(VarRef var) { return conNet.domainOf(var); }
+
+    public void addUnificationConstraint(VarRef a, VarRef b) { conNet.AddUnificationConstraint(a, b); }
+
+    public void addUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        conNet.AddUnificationConstraint(a, b); }
+
+    public void addSeparationConstraint(VarRef a, VarRef b) { conNet.AddSeparationConstraint(a, b); }
+
+    public String typeOf(VarRef var) { return conNet.typeOf(var); }
+
+    public void restrictDomain(VarRef var, Collection<String> values) { conNet.restrictDomain(var, values); }
+
+    public List<VarRef> getUnboundVariables() { return conNet.getUnboundVariables(); }
+
+    public void assertConstraintNetworkGroundAndConsistent() { conNet.assertGroundAndConsistent(); }
+
+    public boolean unified(VarRef a, VarRef b) { return conNet.unified(a, b); }
+
+    public boolean unifiable(VarRef a, VarRef b) { return conNet.unifiable(a, b); }
+
+    public void addValuesToValuesSet(String setID, List<String> values) { conNet.addValuesToValuesSet(setID, values);}
+
+    public void addValuesSetConstraint(List<VarRef> variables, String setID) { conNet.addValuesSetConstraint(variables, setID);}
 
 }

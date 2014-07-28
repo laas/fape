@@ -99,7 +99,7 @@ public class TemporalDatabaseManager implements Reporter {
         if(!included.chain.getFirst().change && !after.change) {
             //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
             // into 'after' before going any further.
-            st.conNet.AddUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
+            st.addUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
 
             // add persitence events to after, and removing them from the included database
             after.Add(included.chain.getFirst());
@@ -130,7 +130,7 @@ public class TemporalDatabaseManager implements Reporter {
         enforceAllConstraints(st, tdb);
 
         // the new domain is the intersection of both domains
-        st.conNet.AddUnificationConstraint(tdb.stateVariable, included.stateVariable);
+        st.addUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
         // Remove the included database from the system
         st.tdb.vars.remove(included);
@@ -155,7 +155,7 @@ public class TemporalDatabaseManager implements Reporter {
 
             assert first.change || second.change : "There should not be two persistence following each other";
 
-            st.conNet.AddUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
+            st.addUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
 
             // Enforce all statements of first to be before all statements of second
             for(LogStatement sa : first.contents) {

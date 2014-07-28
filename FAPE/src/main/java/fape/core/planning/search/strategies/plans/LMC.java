@@ -45,13 +45,13 @@ public class LMC implements PartialPlanComparator {
 
     public static List<String> GetAtomNames(State state, ParameterizedStateVariable v, VarRef value) {
         List<String> ret = new ArrayList<>();
-        Collection<String> dom = state.conNet.domainOf(value);
+        Collection<String> dom = state.domainOf(value);
         for (String val : dom) {
             List<Collection<String>> inits = new LinkedList<>();
             scala.collection.Iterator<VarRef> it = v.args().iterator();
             while (it.hasNext()) {
                 VarRef var = it.next();
-                inits.add(state.conNet.domainOf(var));
+                inits.add(state.domainOf(var));
             }
             List<String> variations = new LinkedList<>();
             recGen(inits, variations, "", 0);

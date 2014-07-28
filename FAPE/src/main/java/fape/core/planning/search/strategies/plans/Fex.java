@@ -20,7 +20,7 @@ import fape.core.planning.states.State;
 public class Fex implements PartialPlanComparator  {
     
     public float f(State s) {
-        return s.conNet.getUnboundVariables().size();
+        return s.getUnboundVariables().size();
     }
 
     @Override
