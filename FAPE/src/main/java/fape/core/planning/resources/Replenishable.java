@@ -146,7 +146,7 @@ public class Replenishable extends Resource {
                 if (i == j) {
                     continue;
                 }
-                if (st.tempoNet.CanBeStrictlyBefore(events.get(j).tp, events.get(i).tp)) {
+                if (st.canBeStrictlyBefore(events.get(j).tp, events.get(i).tp)) {
                     // i in pb(j)
                     pb.get(j).add(i);
                 } else {
@@ -154,7 +154,7 @@ public class Replenishable extends Resource {
                     bs.get(i).add(j);
                 }
 
-                if (st.tempoNet.CanBeBefore(events.get(j).tp, events.get(i).tp)) {
+                if (st.canBeBefore(events.get(j).tp, events.get(i).tp)) {
                     //j in pbs(i)
                     pbs.get(i).add(j);
                 } else {
@@ -256,7 +256,7 @@ public class Replenishable extends Resource {
                 if (i == j) {
                     continue;
                 }
-                if (st.tempoNet.CanBeStrictlyBefore(events.get(i).tp, events.get(j).tp)) {
+                if (st.canBeStrictlyBefore(events.get(i).tp, events.get(j).tp)) {
                     // i in pb(j)
                     pb.get(j).add(i);
                 } else {
@@ -264,7 +264,7 @@ public class Replenishable extends Resource {
                     bs.get(i).add(j);
                 }
 
-                if (st.tempoNet.CanBeBefore(events.get(j).tp, events.get(i).tp)) {
+                if (st.canBeBefore(events.get(j).tp, events.get(i).tp)) {
                     //j in pbs(i)
                     pbs.get(i).add(j);
                 } else {

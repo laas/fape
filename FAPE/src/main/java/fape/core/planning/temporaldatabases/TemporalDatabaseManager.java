@@ -160,7 +160,7 @@ public class TemporalDatabaseManager implements Reporter {
             // Enforce all statements of first to be before all statements of second
             for(LogStatement sa : first.contents) {
                 for(LogStatement sb : second.contents) {
-                    st.tempoNet.EnforceBefore(sa.end(), sb.start());
+                    st.enforceBefore(sa.end(), sb.start());
                 }
             }
         }
@@ -173,7 +173,7 @@ public class TemporalDatabaseManager implements Reporter {
             //for(int j=i+1 ; j<tdb.chain.size() ; j++) {
                 for(LogStatement a : tdb.chain.get(i).contents) {
                     for(LogStatement b : tdb.chain.get(j).contents) {
-                        st.tempoNet.EnforceBefore(a.end(), b.start());
+                        st.enforceBefore(a.end(), b.start());
                     }
                 }
             //}

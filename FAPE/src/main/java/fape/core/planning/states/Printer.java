@@ -1,6 +1,5 @@
-package fape.core.planning.printers;
+package fape.core.planning.states;
 
-import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;

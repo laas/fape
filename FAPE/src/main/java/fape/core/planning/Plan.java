@@ -1,7 +1,7 @@
 package fape.core.planning;
 
 
-import fape.core.planning.printers.Printer;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;

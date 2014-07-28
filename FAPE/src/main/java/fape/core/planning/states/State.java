@@ -39,7 +39,7 @@ import java.util.List;
  *
  * @author FD
  */
-public class State implements Reporter{
+public class State implements Reporter {
 
 
 
@@ -64,10 +64,7 @@ public class State implements Reporter{
      */
     public final TemporalDatabaseManager tdb;
 
-    /**
-     *
-     */
-    public final STNManager tempoNet;
+    protected final STNManager tempoNet;
 
     /**
      *
@@ -716,5 +713,25 @@ public class State implements Reporter{
     public void addSupportConstraint(ChainComponent cc, Decomposition dec) {
         this.supportConstraints.add(new Pair<>(cc.mID, dec));
     }
+
+
+
+    /*** Wrapper around STN ******/
+
+    public void enforceBefore(TPRef a, TPRef b) { tempoNet.EnforceBefore(a, b); }
+
+    public boolean canBeBefore(TPRef a, TPRef b) { return tempoNet.CanBeBefore(a, b); }
+
+    public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return tempoNet.CanBeStrictlyBefore(a, b); }
+
+    public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return tempoNet.EnforceConstraint(a, b, min, max); }
+
+    public boolean removeConstraints(Pair<TPRef,TPRef>... pairs) { return tempoNet.RemoveConstraints(pairs); }
+
+    public void enforceDelay(TPRef a, TPRef b, int delay) { tempoNet.EnforceDelay(a, b, delay); }
+
+    public long getEarliestStartTime(TPRef a) { return tempoNet.GetEarliestStartTime(a); }
+
+    public void exportTemporalNetwork(String filename) { tempoNet.exportToDot(this, filename); }
 
 }

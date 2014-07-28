@@ -1,6 +1,6 @@
 package fape.core.planning.stn;
 
-import fape.core.planning.printers.Printer;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.printers.NodeEdgePrinter;

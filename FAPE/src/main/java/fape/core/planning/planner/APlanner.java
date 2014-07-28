@@ -186,7 +186,7 @@ public abstract class APlanner {
         } else if (o instanceof TemporalSeparation) {
             for (LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
                 for (LogStatement second : ((TemporalSeparation) o).second.chain.getLast().contents) {
-                    next.tempoNet.EnforceBefore(first.end(), second.start());
+                    next.enforceBefore(first.end(), second.start());
                 }
             }
         } else if (o instanceof BindingSeparation) {
@@ -219,10 +219,10 @@ public abstract class APlanner {
             //add temporal constraint
             if (opt.before) {
                 //the new action must occour before the given time point
-                next.tempoNet.EnforceBefore(action.end(), opt.when);
+                next.enforceBefore(action.end(), opt.when);
             } else {
                 //vice-versa
-                next.tempoNet.EnforceBefore(opt.when, action.start());
+                next.enforceBefore(opt.when, action.start());
             }
         } else if (o instanceof ResourceSupportingDecomposition) {
             ResourceSupportingDecomposition opt = (ResourceSupportingDecomposition) o;
@@ -249,7 +249,7 @@ public abstract class APlanner {
             //for now we leave it to search
         } else if (o instanceof TemporalConstraint) {
             TemporalConstraint tc = (TemporalConstraint) o;
-            next.tempoNet.EnforceConstraint(tc.first, tc.second, tc.min, tc.max);
+            next.enforceConstraint(tc.first, tc.second, tc.min, tc.max);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -300,9 +300,9 @@ public abstract class APlanner {
         bestState.setActionSuccess(actionID);
         Action a = bestState.taskNet.GetAction(actionID);
         // remove the duration constraints of the action
-        bestState.tempoNet.RemoveConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
+        bestState.removeConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
         // insert new constraint specifying the end time of the action
-        bestState.tempoNet.EnforceConstraint(pb.start(), a.end(), realEndTime, realEndTime);
+        bestState.enforceConstraint(pb.start(), a.end(), realEndTime, realEndTime);
         TinyLogger.LogInfo("Overriding constraint.");
     }
 
@@ -310,9 +310,9 @@ public abstract class APlanner {
         State myState = GetCurrentState();
         Action a = myState.taskNet.GetAction(aa.id);
         myState.setActionExecuting(a.id());
-        myState.tempoNet.RemoveConstraints(new Pair(pb.earliestExecution(), a.start()),
+        myState.removeConstraints(new Pair(pb.earliestExecution(), a.start()),
                 new Pair(a.start(), pb.earliestExecution()));
-        myState.tempoNet.EnforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
+        myState.enforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
     }
 
     /**
@@ -324,10 +324,10 @@ public abstract class APlanner {
     public void SetEarliestExecution(int earliestExecution) {
         KeepBestStateOnly();
         State s = GetCurrentState();
-        s.tempoNet.EnforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
+        s.enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
         // If the STN is not consistent after this addition, the the current plan is not feasible.
         // Full replan is necessary
-        if (!s.tempoNet.IsConsistent()) {
+        if (!s.isConsistent()) {
             this.best = null;
             this.queue.clear();
         }
@@ -520,17 +520,17 @@ public abstract class APlanner {
         if (db1.isConsumer() || db2.isConsumer()) {
             return false;
         } else if (st.Unifiable(db1, db2)) {
-            if (st.tempoNet.CanBeBefore(
+            if (st.canBeBefore(
                     db1.GetChainComponent(0).getConsumeTimePoint(), // c1
                     db2.GetChainComponent(db2.chain.size() - 1).getSupportTimePoint()) && // s2
-                    st.tempoNet.CanBeBefore(
+                    st.canBeBefore(
                             db2.GetChainComponent(db2.chain.size() - 1).getSupportTimePoint(), // s2
                             db1.GetChainComponent(db1.chain.size() - 1).getSupportTimePoint())) {    // s1
                 return true;
-            } else if (st.tempoNet.CanBeBefore(
+            } else if (st.canBeBefore(
                     db2.GetChainComponent(0).getConsumeTimePoint(), // c2
                     db1.GetChainComponent(db1.chain.size() - 1).getSupportTimePoint()) && // s1
-                    st.tempoNet.CanBeBefore(
+                    st.canBeBefore(
                             db1.GetChainComponent(0).getConsumeTimePoint(), // c1
                             db2.GetChainComponent(0).getConsumeTimePoint())) {                  // c2
                 return true;
@@ -577,7 +577,7 @@ public abstract class APlanner {
             OpenedStates++;
 
             if (APlanner.debugging) {
-                st.tempoNet.exportToDot(st, "current-stn.dot");
+                st.exportTemporalNetwork("current-stn.dot");
             }
 
             List<Flaw> flaws = GetFlaws(st);
@@ -589,9 +589,7 @@ public abstract class APlanner {
                 if (!APlanner.optimal) {
                     this.planState = EPlanState.CONSISTENT;
                     TinyLogger.LogInfo("Plan found:");
-                    TinyLogger.LogInfo(st.taskNet);
-                    TinyLogger.LogInfo(st.tdb);
-                    TinyLogger.LogInfo(st.tempoNet);
+                    TinyLogger.LogInfo(st);
                     return st;
                 }else{
                     best = st;
@@ -703,7 +701,7 @@ public abstract class APlanner {
                 int ct = 0;
                 for (ChainComponent comp : b.chain) {
                     if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
-                            && st.tempoNet.CanBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
+                            && st.canBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
                         ret.add(new SupportingDatabase(b.mID, ct));
                     }
                     ct++;
@@ -713,7 +711,7 @@ public abstract class APlanner {
                 // be unified with our consume value.
             } else if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
                     && !b.HasSinglePersistence()
-                    && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
+                    && st.canBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
                 ret.add(new SupportingDatabase(b.mID));
             }
         }
@@ -763,7 +761,7 @@ public abstract class APlanner {
 
         List<AtomicAction> ret = new LinkedList<>();
         for (Action a : plan.GetNextActions()) {
-            long startTime = myState.tempoNet.GetEarliestStartTime(a.start());
+            long startTime = myState.getEarliestStartTime(a.start());
             if (startTime > howFarToProgress.val) {
                 continue;
             }

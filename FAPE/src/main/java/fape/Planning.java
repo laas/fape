@@ -7,7 +7,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.BaseDTG;
 import fape.core.planning.planner.PGExtPlanner;
 import fape.core.planning.planninggraph.PGPlanner;
-import fape.core.planning.printers.Printer;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.TimeAmount;
@@ -285,7 +285,7 @@ public class Planning {
 
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");
-                            sol.tempoNet.exportToDot(sol, "stn.dot");
+                            sol.exportTemporalNetwork("stn.dot");
                             System.out.println("Look at plan.dot for a complete plan.");
                         }
                     }

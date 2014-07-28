@@ -180,8 +180,8 @@ public class LMC implements PartialPlanComparator {
                         Slice sss = initSlice.get(s.variable);
                         //add only those slices to the init that can be ordered before the corresponding goal slice
                         // do not add slices that must necesseraly occur before some other slice of the same state variable
-                        if ((ss == null || st.tempoNet.CanBeBefore(s.when, ss.when))
-                                && (sss == null || !st.tempoNet.CanBeBefore(s.when, sss.when))) {
+                        if ((ss == null || st.canBeBefore(s.when, ss.when))
+                                && (sss == null || !st.canBeBefore(s.when, sss.when))) {
                             initSlice.put(s.variable, s);
                         }
                     }
