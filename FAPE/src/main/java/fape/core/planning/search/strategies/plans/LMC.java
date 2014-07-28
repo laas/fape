@@ -65,43 +65,6 @@ public class LMC implements PartialPlanComparator {
         return ret;
     }
 
-    /**
-     * gets an atom description if fully binded, returns null otherwise
-     *
-     * @param state
-     * @param v
-     * @param value
-     * @return
-     */
-    /*public static String GetAtomName(State state, ParameterizedStateVariable v, VarRef value) {
-     Collection<String> dom = state.conNet.domainOf(value);
-     if (dom.size() > 1) {
-     return null; //checking only the fully binded variables
-     }
-     String val = null;
-     for (String st : dom) {
-     val = st;
-     break;
-     }
-     String name = v.func().name() + "[";
-     scala.collection.Iterator<VarRef> it = v.args().iterator();
-     while (it.hasNext()) {
-     VarRef var = it.next();
-     Collection<String> dm = state.conNet.domainOf(var);
-     if (dm.size() > 1) {
-     return null; //checking only the fully binded variables
-     }
-     String vl = "";
-     for (String st : dm) {
-     vl = st;
-     break;
-     }
-     name += vl + ",";
-     }
-     name = name.substring(0, name.length() - 1);
-     name += "]=" + val;
-     return name;
-     }*/
     private class Slice {
 
         String variable;
@@ -130,7 +93,7 @@ public class LMC implements PartialPlanComparator {
 
     public void Evaluate(State st, LMCut lm) {
         BitSet init = new BitSet(), goal = new BitSet();
-        st.g = st.taskNet.GetAllActions().size();
+        st.g = st.getAllActions().size();
         //now we need to translate consumers into goals, we are interested in those consumers that require an action application
 
         HashMap<String, Slice> goalSlice = new HashMap<>(), initSlice = new HashMap<>();

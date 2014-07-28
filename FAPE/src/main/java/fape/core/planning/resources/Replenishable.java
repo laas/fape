@@ -86,7 +86,6 @@ public class Replenishable extends Resource {
      * @param when
      * @param after
      * @param var
-     * @param f Function to look for.
      * @param amount
      * @param st
      * @return Actions containing at least one statement inducing a change on
@@ -112,7 +111,7 @@ public class Replenishable extends Resource {
         }
         //we may also achieve the action through decomposition
         ActionDecompositions decompositions = new ActionDecompositions(st.pb);
-        for (Action leaf : st.taskNet.GetOpenLeaves()) {
+        for (Action leaf : st.getOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, candidates)) {
                 ResourceSupportingDecomposition opt = new ResourceSupportingDecomposition();
                 opt.resourceMotivatedActionToDecompose = leaf;

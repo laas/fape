@@ -66,10 +66,7 @@ public class State implements Reporter {
 
     protected final STNManager tempoNet;
 
-    /**
-     *
-     */
-    public final TaskNetworkManager taskNet;
+    protected final TaskNetworkManager taskNet;
 
     /**
      * Keep tracks of statements that must be supported by a particular
@@ -733,5 +730,20 @@ public class State implements Reporter {
     public long getEarliestStartTime(TPRef a) { return tempoNet.GetEarliestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) { tempoNet.exportToDot(this, filename); }
+
+
+    /********* Wrapper around the task network **********/
+
+    public Action getAction(ActRef actionID) { return taskNet.GetAction(actionID); }
+
+    public List<Action> getAllActions() { return taskNet.GetAllActions(); }
+
+    public List<Action> getOpenLeaves() { return taskNet.GetOpenLeaves(); }
+
+    public int getNumActions() { return taskNet.getNumActions(); }
+
+    public int getNumOpenLeaves() { return taskNet.getNumOpenLeaves(); }
+
+    public int getNumRoots() { return taskNet.getNumRoots(); }
 
 }

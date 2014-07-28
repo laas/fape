@@ -15,7 +15,7 @@ public class LeastFlawRatio implements PartialPlanComparator {
     }
 
     float eval(State st) {
-        return ((float) st.taskNet.getNumOpenLeaves() + st.consumers.size()) / ((float) st.taskNet.getNumActions())*100;
+        return ((float) st.getNumOpenLeaves() + st.consumers.size()) / ((float) st.getNumActions())*100;
     }
 
     @Override

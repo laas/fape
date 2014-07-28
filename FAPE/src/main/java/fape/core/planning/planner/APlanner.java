@@ -298,7 +298,7 @@ public abstract class APlanner {
         KeepBestStateOnly();
         State bestState = GetCurrentState();
         bestState.setActionSuccess(actionID);
-        Action a = bestState.taskNet.GetAction(actionID);
+        Action a = bestState.getAction(actionID);
         // remove the duration constraints of the action
         bestState.removeConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
         // insert new constraint specifying the end time of the action
@@ -308,7 +308,7 @@ public abstract class APlanner {
 
     public void setActionExecuting(AtomicAction aa) {
         State myState = GetCurrentState();
-        Action a = myState.taskNet.GetAction(aa.id);
+        Action a = myState.getAction(aa.id);
         myState.setActionExecuting(a.id());
         myState.removeConstraints(new Pair(pb.earliestExecution(), a.start()),
                 new Pair(a.start(), pb.earliestExecution()));
@@ -453,7 +453,7 @@ public abstract class APlanner {
         for (TemporalDatabase consumer : st.consumers) {
             flaws.add(new UnsupportedDatabase(consumer));
         }
-        for (Action refinable : st.taskNet.GetOpenLeaves()) {
+        for (Action refinable : st.getOpenLeaves()) {
             flaws.add(new UndecomposedAction(refinable));
         }
         if (flaws.isEmpty()) {
@@ -727,7 +727,7 @@ public abstract class APlanner {
         ActionDecompositions decompositions = new ActionDecompositions(pb);
         Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(st, db);
 
-        for (Action leaf : st.taskNet.GetOpenLeaves()) {
+        for (Action leaf : st.getOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
                 ret.add(new fape.core.planning.search.resolvers.Decomposition(leaf, decID));
             }
@@ -791,7 +791,7 @@ public abstract class APlanner {
 
     public int numUnfinishedActions() {
         int cnt = 0;
-        for (Action a : best.taskNet.GetAllActions()) {
+        for (Action a : best.getAllActions()) {
             if (!a.decomposable() && (a.status() == ActionStatus.PENDING || a.status() == ActionStatus.EXECUTING)) {
                 cnt++;
             }
@@ -800,7 +800,7 @@ public abstract class APlanner {
     }
 
     public boolean hasPendingActions() {
-        for (Action a : best.taskNet.GetAllActions()) {
+        for (Action a : best.getAllActions()) {
             if (a.status() == ActionStatus.PENDING) {
                 return true;
             }
@@ -850,7 +850,7 @@ public abstract class APlanner {
 
     public State extractCurrentState(int now) {
         State tmp = new State(best);
-        for(Action a : tmp.taskNet.GetAllActions()) {
+        for(Action a : tmp.getAllActions()) {
             if(a.status() == ActionStatus.PENDING)
                 tmp.setActionFailed(a.id());
         }

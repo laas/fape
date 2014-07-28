@@ -9,7 +9,7 @@ import fape.core.planning.states.State;
 public class SOCA implements PartialPlanComparator {
 
     public float f(State s) {
-        return s.taskNet.getNumActions()*10 + s.consumers.size()*3 + s.taskNet.getNumOpenLeaves()*3;
+        return s.getNumActions()*10 + s.consumers.size()*3 + s.getNumOpenLeaves()*3;
     }
 
     @Override
