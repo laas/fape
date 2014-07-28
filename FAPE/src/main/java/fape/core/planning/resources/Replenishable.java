@@ -328,7 +328,7 @@ public class Replenishable extends Resource {
             if (totalMinBefore < min) {//overconsumption                
                 ResourceFlaw f = new ResourceFlaw();
                 //we can merge this resource with another one
-                f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinBefore - min, st));
+                f.resolvers.addAll(st.getResolvingBindings(this, totalMinBefore - min));
                 //we can also add a production action, or decompose an action that shall lead to a production action
                 List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMinBefore - min, st);
                 f.resolvers.addAll(ol);
@@ -338,7 +338,7 @@ public class Replenishable extends Resource {
             if (totalMaxBefore > max) {//overconsumption
                 ResourceFlaw f = new ResourceFlaw();
                 //we can merge this resource with another one
-                f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxBefore - max, st));
+                f.resolvers.addAll(st.getResolvingBindings(this, totalMaxBefore - max));
                 //we can also add a production action, or decompose an action that shall lead to a production action
                 List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMaxBefore - min, st);
                 f.resolvers.addAll(ol);
@@ -357,7 +357,7 @@ public class Replenishable extends Resource {
                     }
                 }*/
                 //we can merge this resource with another one
-                f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinAfter - min, st));
+                f.resolvers.addAll(st.getResolvingBindings(this, totalMinAfter - min));
                 //we can also add a production action, or decompose an action that shall lead to a production action
                 List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMinAfter - min, st);
                 f.resolvers.addAll(ol);
@@ -375,7 +375,7 @@ public class Replenishable extends Resource {
                     }
                 }*/
                 //we can merge this resource with another one
-                f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxAfter - max, st));
+                f.resolvers.addAll(st.getResolvingBindings(this, totalMaxAfter - max));
                 //we can also add a production action, or decompose an action that shall lead to a production action
                 List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMaxAfter - max, st);
                 f.resolvers.addAll(ol);

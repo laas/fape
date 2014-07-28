@@ -469,7 +469,7 @@ public abstract class APlanner {
             }
         }
         //find the resource flaws
-        flaws.addAll(st.resMan.GatherFlaws(st));
+        flaws.addAll(st.resourceFlaws());
         if (flaws.isEmpty()) {
             for (VarRef v : st.getUnboundVariables()) {
                 flaws.add(new UnboundVariable(v));

@@ -11,6 +11,7 @@
 package fape.core.planning.states;
 
 import fape.core.planning.constraints.ConstraintNetwork;
+import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
@@ -70,6 +71,8 @@ public class State implements Reporter {
 
     protected final ConstraintNetwork conNet;
 
+    protected final ResourceManager resMan;
+
     /**
      * Keep tracks of statements that must be supported by a particular
      * decomposition. (e.g. by a statements which is a consequence of that
@@ -84,9 +87,6 @@ public class State implements Reporter {
      */
     public final List<TemporalDatabase> consumers;
 
-
-    public final ResourceManager resMan;
-    //public final HashMap<String, Resource> resources;
 
     public final AnmlProblem pb;
 
@@ -781,4 +781,11 @@ public class State implements Reporter {
     public TemporalDatabase getDBContaining(LogStatement s) { return tdb.getDBContaining(s); }
 
 
+    /************** Wrapper around the Resource Manager ****************/
+
+    public Collection<Resolver> getResolvingBindings(Replenishable replenishable, float f) {
+        return resMan.GetResolvingBindings(replenishable, f, this);
+    }
+
+    public Collection<Flaw> resourceFlaws() { return resMan.GatherFlaws(this); }
 }

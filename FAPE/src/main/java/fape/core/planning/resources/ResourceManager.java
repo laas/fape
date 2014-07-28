@@ -146,7 +146,7 @@ public class ResourceManager {
         }
     }
 
-    public Collection<? extends Flaw> GatherFlaws(State st) {
+    public Collection<Flaw> GatherFlaws(State st) {
         List<Flaw> ret = new LinkedList<>();
         for (Resource r : resources) {
             List<ResourceFlaw> l = r.GatherFlaws(st);
@@ -235,7 +235,7 @@ public class ResourceManager {
      * @param f
      * @return
      */
-    Collection<? extends Resolver> GetResolvingBindings(Replenishable aThis, float f, State st) {
+    public Collection<Resolver> GetResolvingBindings(Replenishable aThis, float f, State st) {
         List<Resolver> l = new LinkedList<>();
         for (Resource r : resources) {
             if(aThis.equals(r)){
