@@ -281,7 +281,7 @@ public class Planning {
                         if (!timeOut && !config.getBoolean("quiet")) {
                             State sol = planner.GetCurrentState();
 
-                            System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol, sol.tdb));
+                            System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
 
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");

@@ -56,9 +56,9 @@ public class Printer {
         return ret + ")";
     }
 
-    public static String temporalDatabaseManager(State st, TemporalDatabaseManager tdbm) {
+    public static String temporalDatabaseManager(State st) {
         StringBuilder sb = new StringBuilder();
-        for(TemporalDatabase tdb : tdbm.vars) {
+        for(TemporalDatabase tdb : st.getDatabases()) {
             sb.append(print(st, tdb));
             sb.append("\n");
         }

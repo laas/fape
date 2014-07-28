@@ -33,7 +33,7 @@ public class Plan {
     public Plan(State st) {
         this.st = st;
 
-        for(TemporalDatabase db : st.tdb.vars) {
+        for(TemporalDatabase db : st.getDatabases()) {
             buildDependencies(db);
         }
 

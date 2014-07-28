@@ -62,7 +62,7 @@ public class State implements Reporter {
     /**
      *
      */
-    public final TemporalDatabaseManager tdb;
+    protected final TemporalDatabaseManager tdb;
 
     protected final STNManager tempoNet;
 
@@ -762,5 +762,23 @@ public class State implements Reporter {
     public void addValuesToValuesSet(String setID, List<String> values) { conNet.addValuesToValuesSet(setID, values);}
 
     public void addValuesSetConstraint(List<VarRef> variables, String setID) { conNet.addValuesSetConstraint(variables, setID);}
+
+
+    /************ Wrapper around TemporalDatabaseManager **********************/
+
+    public List<TemporalDatabase> getDatabases() { return tdb.vars; }
+
+    public void removeDatabase(TemporalDatabase db) {
+        tdb.vars.remove(db);
+        if(consumers.contains(db))
+            consumers.remove(db);
+    }
+
+    public void insertDatabaseAfter(TemporalDatabase supporter, TemporalDatabase consumer, ChainComponent precedingComponent) {
+        tdb.InsertDatabaseAfter(this, supporter, consumer, precedingComponent);
+    }
+
+    public TemporalDatabase getDBContaining(LogStatement s) { return tdb.getDBContaining(s); }
+
 
 }

@@ -133,8 +133,7 @@ public class TemporalDatabaseManager implements Reporter {
         st.addUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
         // Remove the included database from the system
-        st.tdb.vars.remove(included);
-        st.consumers.remove(included);
+        st.removeDatabase(included);
     }
 
     /**

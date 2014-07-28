@@ -121,7 +121,7 @@ public abstract class APlanner {
             assert precedingComponent.change;
             causalLinkAdded(next, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
 
-            next.tdb.InsertDatabaseAfter(next, supporter, consumer, precedingComponent);
+            next.insertDatabaseAfter(supporter, consumer, precedingComponent);
 
         } else if (supporter != null) {
 
@@ -133,7 +133,7 @@ public abstract class APlanner {
             causalLinkAdded(next, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
 
             // database concatenation
-            next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
+            next.insertDatabaseAfter(supporter, consumer, supporter.chain.getLast());
 
         } else if (o instanceof SupportingAction) {
 
@@ -153,7 +153,7 @@ public abstract class APlanner {
             for (Statement s : action.statements()) {
                 if (s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
                     assert supportingDatabase == null : "Error: several statements might support the database";
-                    supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
+                    supportingDatabase = next.getDBContaining((LogStatement) s);
                 }
             }
             if (supportingDatabase == null) {
@@ -457,10 +457,11 @@ public abstract class APlanner {
             flaws.add(new UndecomposedAction(refinable));
         }
         if (flaws.isEmpty()) {
-            for (int i = 0; i < st.tdb.vars.size(); i++) {
-                TemporalDatabase db1 = st.tdb.vars.get(i);
-                for (int j = i + 1; j < st.tdb.vars.size(); j++) {
-                    TemporalDatabase db2 = st.tdb.vars.get(j);
+            List<TemporalDatabase> dbs = st.getDatabases();
+            for (int i = 0; i < dbs.size(); i++) {
+                TemporalDatabase db1 = dbs.get(i);
+                for (int j = i + 1; j < dbs.size(); j++) {
+                    TemporalDatabase db2 = dbs.get(j);
                     if (isThreatening(st, db1, db2)) {
                         flaws.add(new Threat(db1, db2));
                     }
@@ -690,7 +691,7 @@ public abstract class APlanner {
         List<Resolver> ret = new LinkedList<>();
 
         //get chain connections
-        for (TemporalDatabase b : st.tdb.vars) {
+        for (TemporalDatabase b : st.getDatabases()) {
             if (db == b || !st.Unifiable(db, b)) {
                 continue;
             }

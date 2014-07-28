@@ -131,7 +131,7 @@ public class LMC implements PartialPlanComparator {
         }
         //now we make a slice of the initial state we are considering
         if (true || LMCut.commonInit == null) {
-            for (TemporalDatabase b : st.tdb.vars) {
+            for (TemporalDatabase b : st.getDatabases()) {
                 if (b.HasSinglePersistence()) {
                     continue;
                 }
