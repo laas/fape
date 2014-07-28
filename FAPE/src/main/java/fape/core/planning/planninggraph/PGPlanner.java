@@ -4,7 +4,6 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.search.ActionWithBindings;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;

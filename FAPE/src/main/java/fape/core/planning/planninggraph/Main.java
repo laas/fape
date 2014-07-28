@@ -3,7 +3,6 @@ package fape.core.planning.planninggraph;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.ActionLandmarksFinder;
-import fape.core.planning.search.ActionWithBindings;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
