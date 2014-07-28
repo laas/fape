@@ -16,3 +16,13 @@ results/
 *.CSV
 *.png
 generated*/
+*.dot
+*.ps
+*.gnuplot
+*.bbl
+*.blg
+*.pdf
+*.out
+*.backup
+*.svg
+.directory
