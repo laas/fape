@@ -12,9 +12,9 @@ package fape.core.planning.resources;
 
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.ResourceSupportingAction;
-import fape.core.planning.search.ResourceSupportingDecomposition;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.ResourceSupportingAction;
+import fape.core.planning.search.resolvers.ResourceSupportingDecomposition;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -92,8 +92,8 @@ public class Replenishable extends Resource {
      * @return Actions containing at least one statement inducing a change on
      * the function.
      */
-    public List<SupportOption> ResourceBalancingActions(TPRef when, boolean after, ParameterizedStateVariable var, float amount, State st) {
-        List<SupportOption> ret = new LinkedList<>();
+    public List<Resolver> ResourceBalancingActions(TPRef when, boolean after, ParameterizedStateVariable var, float amount, State st) {
+        List<Resolver> ret = new LinkedList<>();
         //check whether we can add an action to resolve a conflict
         HashSet<AbstractAction> candidates = new HashSet<>();
         for (AbstractAction act : st.pb.abstractActions()) {
@@ -115,7 +115,7 @@ public class Replenishable extends Resource {
         for (Action leaf : st.taskNet.GetOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, candidates)) {
                 ResourceSupportingDecomposition opt = new ResourceSupportingDecomposition();
-                opt.resoouceMotivatedActionToDecompose = leaf;
+                opt.resourceMotivatedActionToDecompose = leaf;
                 opt.decompositionID = decID;
                 opt.when = when;
                 opt.before = !after;
@@ -331,7 +331,7 @@ public class Replenishable extends Resource {
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinBefore - min, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
-                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMinBefore - min, st);
+                List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMinBefore - min, st);
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }
@@ -341,7 +341,7 @@ public class Replenishable extends Resource {
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxBefore - max, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
-                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMaxBefore - min, st);
+                List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, false, this.stateVariable, totalMaxBefore - min, st);
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }
@@ -360,7 +360,7 @@ public class Replenishable extends Resource {
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMinAfter - min, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
-                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMinAfter - min, st);
+                List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMinAfter - min, st);
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }
@@ -378,7 +378,7 @@ public class Replenishable extends Resource {
                 //we can merge this resource with another one
                 f.resolvers.addAll(st.resMan.GetResolvingBindings(this, totalMaxAfter - max, st));
                 //we can also add a production action, or decompose an action that shall lead to a production action
-                List<SupportOption> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMaxAfter - max, st);
+                List<Resolver> ol = ResourceBalancingActions(events.get(i).tp, true, this.stateVariable, totalMaxAfter - max, st);
                 f.resolvers.addAll(ol);
                 ret.add(f);
             }

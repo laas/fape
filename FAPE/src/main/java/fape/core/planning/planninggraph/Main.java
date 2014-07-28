@@ -4,16 +4,17 @@ import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.ActionLandmarksFinder;
 import fape.core.planning.search.ActionWithBindings;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
 import fape.util.TimeAmount;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ANMLFactory;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class Main {
@@ -119,16 +120,15 @@ public class Main {
             List<Pair<AbstractAction, List<Set<String>>>> toInsert = da.actionsAndParams(planner.groundPB);
             if(toInsert.size() == 1) {
                 Pair<AbstractAction, List<Set<String>>> abstractAct = toInsert.get(0);
-                ActionWithBindings opt = new ActionWithBindings();
-                opt.act = abstractAct.value1;//Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
+                AbstractAction act = abstractAct.value1;
+                Map<LVarRef, Collection<String>> values = new HashMap<>();
 
-                assert opt.act.args().size() == abstractAct.value2.size() : "Problem: different number of parameters";
+                assert act.args().size() == abstractAct.value2.size() : "Problem: different number of parameters";
 
-                for(int i=0 ; i<opt.act.args().size() ; i++) {
-                    opt.values.put(opt.act.args().get(i), abstractAct.value2.get(i));
+                for(int i=0 ; i<act.args().size() ; i++) {
+                    values.put(act.args().get(i), abstractAct.value2.get(i));
                 }
-                SupportOption supportOption = new SupportOption();
-                supportOption.actionWithBindings = opt;
+                Resolver supportOption = new SupportingAction(act, values);
                 planner.ApplyOption(planner.GetCurrentState(), supportOption, null);
             }
         }

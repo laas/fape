@@ -8,7 +8,7 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.core.planning.constraints;
+package fape.core.planning.search.resolvers;
 
 import planstack.anml.model.concrete.TPRef;
 
@@ -17,8 +17,15 @@ import planstack.anml.model.concrete.TPRef;
  *
  * @author FD
  */
-public class TemporalConstraint {
+public class TemporalConstraint extends Resolver {
 
-    public TPRef first, second;
-    public int min, max;
+    public final TPRef first, second;
+    public final int min, max;
+
+    public TemporalConstraint(TPRef first, TPRef second, int min, int max) {
+        this.first = first;
+        this.second = second;
+        this.min = min;
+        this.max = max;
+    }
 }

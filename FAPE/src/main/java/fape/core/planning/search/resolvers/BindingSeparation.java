@@ -1,8 +1,8 @@
-package fape.core.planning.search;
+package fape.core.planning.search.resolvers;
 
 import planstack.anml.model.concrete.VarRef;
 
-public class BindingSeparation extends SupportOption {
+public class BindingSeparation extends Resolver {
 
     public final VarRef a, b;
 

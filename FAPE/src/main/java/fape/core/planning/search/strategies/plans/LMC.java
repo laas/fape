@@ -14,7 +14,7 @@ import fape.core.planning.heuristics.lmcut.LMCut;
 import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.GroundProblem;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.AnmlProblem;
@@ -137,8 +137,8 @@ public class LMC implements PartialPlanComparator {
 
         for (TemporalDatabase b : st.consumers) {
             boolean hasSimpleResolution = false;
-            List<SupportOption> ops = APlanner.currentPlanner.GetSupporters(b, st);
-            for (SupportOption o : ops) {
+            List<Resolver> ops = APlanner.currentPlanner.GetSupporters(b, st);
+            for (Resolver o : ops) {
                 if (o.representsCausalLinkAddition()) {
                     hasSimpleResolution = true;
                     break;

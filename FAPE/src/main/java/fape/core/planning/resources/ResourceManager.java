@@ -12,8 +12,8 @@ package fape.core.planning.resources;
 
 import fape.core.planning.search.Flaw;
 import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.StateVariableBinding;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.StateVariableBinding;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
@@ -235,8 +235,8 @@ public class ResourceManager {
      * @param f
      * @return
      */
-    Collection<? extends SupportOption> GetResolvingBindings(Replenishable aThis, float f, State st) {
-        List<SupportOption> l = new LinkedList<>();
+    Collection<? extends Resolver> GetResolvingBindings(Replenishable aThis, float f, State st) {
+        List<Resolver> l = new LinkedList<>();
         for (Resource r : resources) {
             if(aThis.equals(r)){
                 continue;
@@ -245,9 +245,7 @@ public class ResourceManager {
                 Resource x = aThis.DeepCopy();
                 x.MergeInto(r);
                 if (x.isTriviallyConsistent(st)) { //create options that bindigs with resources that make this one consistent
-                    StateVariableBinding o = new StateVariableBinding();
-                    o.one = r.stateVariable;
-                    o.two = aThis.stateVariable;
+                    StateVariableBinding o = new StateVariableBinding(r.stateVariable, aThis.stateVariable);
                     l.add(o);
                 }
             }

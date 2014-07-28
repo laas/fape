@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.Flaw;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.util.Pair;
 
 import java.util.List;
@@ -14,7 +14,7 @@ public class LeastCommitingFirst implements FlawComparator {
 
 
     @Override
-    public int compare(Pair<Flaw, List<SupportOption>> f1, Pair<Flaw, List<SupportOption>> f2) {        
+    public int compare(Pair<Flaw, List<Resolver>> f1, Pair<Flaw, List<Resolver>> f2) {
         return f1.value2.size() - f2.value2.size();
     }
 

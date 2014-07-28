@@ -1,8 +1,8 @@
-package fape.core.planning.search;
+package fape.core.planning.search.resolvers;
 
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 
-public class TemporalSeparation extends SupportOption {
+public class TemporalSeparation extends Resolver {
 
     public final TemporalDatabase first;
     public final TemporalDatabase second;

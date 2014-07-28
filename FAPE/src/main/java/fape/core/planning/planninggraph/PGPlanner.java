@@ -5,17 +5,18 @@ import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.ActionWithBindings;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
 import fape.util.TimeAmount;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.Action;
 import planstack.anml.parser.ParseResult;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Planner that uses a relaxed planning graph for domain analysis (to select action resolvers).
@@ -68,24 +69,22 @@ public class PGPlanner extends APlanner {
     }
 
     @Override
-    public List<SupportOption> GetSupporters(TemporalDatabase db, State st) {
+    public List<Resolver> GetSupporters(TemporalDatabase db, State st) {
         // use the inherited GtSupporter method
-        List<SupportOption> supportOptions = super.GetSupporters(db, st);
+        List<Resolver> supportOptions = super.GetSupporters(db, st);
 
         // remove all supporting actions, they will be replaced by out own ActionWithBindings
-        List<SupportOption> toRemove = new LinkedList<>();
-        for(SupportOption o : supportOptions) {
-            if(o.supportingAction != null) {
+        List<Resolver> toRemove = new LinkedList<>();
+        for(Resolver o : supportOptions) {
+            if(o.hasActionInsertion()) {
                 toRemove.add(o);
             }
         }
         supportOptions.removeAll(toRemove);
 
 
-        for(ActionWithBindings opt : rpgActionSupporters(db, st)) {
-            SupportOption supportOption = new SupportOption();
-            supportOption.actionWithBindings = opt;
-            supportOptions.add(supportOption);
+        for(SupportingAction opt : rpgActionSupporters(db, st)) {
+            supportOptions.add(opt);
         }
 
 
@@ -93,23 +92,22 @@ public class PGPlanner extends APlanner {
         //return super.GetSupporters(db, st);
     }
 
-    public List<ActionWithBindings> rpgActionSupporters(TemporalDatabase db, State st) {
-        List<ActionWithBindings> supporters = new LinkedList<>();
+    public List<SupportingAction> rpgActionSupporters(TemporalDatabase db, State st) {
+        List<SupportingAction> supporters = new LinkedList<>();
         DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st.conNet, groundPB);
         DisjunctiveAction dAct = pg.enablers(fluent);
         List<Pair<AbstractAction, List<Set<String>>>> options = dAct.actionsAndParams(groundPB);
 
 
         for(Pair<AbstractAction, List<Set<String>>> supporter : options) {
-            ActionWithBindings opt = new ActionWithBindings();
-            opt.act = supporter.value1;//Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
+            AbstractAction act = supporter.value1;//Factory.getStandaloneAction(groundPB.liftedPb, supporter.value1);
+            Map<LVarRef, Collection<String>> values = new HashMap<>();
+            assert act.args().size() == supporter.value2.size() : "Problem: different number of parameters";
 
-            assert opt.act.args().size() == supporter.value2.size() : "Problem: different number of parameters";
-
-            for(int i=0 ; i<opt.act.args().size() ; i++) {
-                opt.values.put(opt.act.args().get(i), supporter.value2.get(i));
+            for(int i=0 ; i<act.args().size() ; i++) {
+                values.put(act.args().get(i), supporter.value2.get(i));
             }
-            supporters.add(opt);
+            supporters.add(new SupportingAction(act, values));
         }
         return supporters;
     }

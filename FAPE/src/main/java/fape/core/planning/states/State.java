@@ -14,6 +14,7 @@ import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
+import fape.core.planning.search.resolvers.*;
 import fape.core.planning.stn.STNManager;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -24,6 +25,8 @@ import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.Decomposition;
+import planstack.anml.model.concrete.TemporalConstraint;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
 
@@ -622,7 +625,7 @@ public class State implements Reporter{
      * @param opts The set of resolvers to address the flaw
      * @return A list of resolvers containing only the valid ones.
      */
-    public List<SupportOption> retainValidOptions(Flaw f, List<SupportOption> opts) {
+    public List<Resolver> retainValidOptions(Flaw f, List<Resolver> opts) {
         if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable) {
             return opts;
         } else if (f instanceof UnsupportedDatabase) {
@@ -630,8 +633,8 @@ public class State implements Reporter{
             if (mustDeriveFrom == null) {
                 return opts;
             } else {
-                List<SupportOption> retained = new LinkedList<>();
-                for (SupportOption opt : opts) {
+                List<Resolver> retained = new LinkedList<>();
+                for (Resolver opt : opts) {
                     if (isOptionDerivedFrom(opt, mustDeriveFrom)) {
                         retained.add(opt);
                     }
@@ -681,23 +684,20 @@ public class State implements Reporter{
      * @param dec Decomposition from which the resolver must be derived.
      * @return True if the resolver is valid, False otherwise.
      */
-    private boolean isOptionDerivedFrom(SupportOption opt, Decomposition dec) {
+    private boolean isOptionDerivedFrom(Resolver opt, Decomposition dec) {
         // this unsupported db must be supported by a descendant of a decomposition
         // this is a consequence of an earlier commitment.
-        if (opt.supportingAction != null || opt.actionWithBindings != null) {
-            // insertion of a new action is prohibited
-            return false;
-        } else if (opt.actionToDecompose != null) {
+        if (opt.hasDecomposition()) {
             // decomposition is allowed only if the decomposed action is issued from dec.
-            return taskNet.isDescendantOf(opt.actionToDecompose, dec);
-        } else if (opt.temporalDatabase != -1) {
+            return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
+        } else if (opt instanceof SupportingDatabase) {
             // DB supporters are limited to those coming from an action descending from dec.
-            TemporalDatabase db = GetDatabase(opt.temporalDatabase);
+            TemporalDatabase db = GetDatabase(((SupportingDatabase) opt).temporalDatabase);
 
             // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc;
-            if (opt.precedingChainComponent != -1) {
-                cc = db.GetChainComponent(opt.precedingChainComponent);
+            if (((SupportingDatabase) opt).precedingChainComponent != -1) {
+                cc = db.GetChainComponent(((SupportingDatabase) opt).precedingChainComponent);
             } else {
                 cc = db.getSupportingComponent();
             }
@@ -709,7 +709,7 @@ public class State implements Reporter{
 
             return a != null && taskNet.isDescendantOf(a, dec);
         } else {
-            throw new FAPEException("Unhandled option: " + opt);
+            return false;
         }
     }
 

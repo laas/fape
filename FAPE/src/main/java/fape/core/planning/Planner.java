@@ -15,7 +15,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.Flaw;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.util.Pair;
 import fape.util.TimeAmount;
@@ -32,9 +32,9 @@ public class Planner extends APlanner {
 
 
 
-    Comparator<Pair<Flaw, List<SupportOption>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<SupportOption>>>() {
+    Comparator<Pair<Flaw, List<Resolver>>> optionsComparatorMinDomain = new Comparator<Pair<Flaw, List<Resolver>>>() {
         @Override
-        public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
+        public int compare(Pair<Flaw, List<Resolver>> o1, Pair<Flaw, List<Resolver>> o2) {
             return o1.value2.size() - o2.value2.size();
         }
     };

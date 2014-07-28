@@ -1,8 +1,8 @@
-package fape.core.planning.search;
+package fape.core.planning.search.resolvers;
 
 import planstack.anml.model.concrete.VarRef;
 
-public class VarBinding extends SupportOption {
+public class VarBinding extends Resolver {
 
     public final VarRef var;
     public final String value;

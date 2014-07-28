@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.Flaw;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.util.Pair;
 
 import java.util.LinkedList;
@@ -23,7 +23,7 @@ public class SeqFlawComparator implements FlawComparator {
     }
 
     @Override
-    public int compare(Pair<Flaw, List<SupportOption>> flawListPair, Pair<Flaw, List<SupportOption>> flawListPair2) {
+    public int compare(Pair<Flaw, List<Resolver>> flawListPair, Pair<Flaw, List<Resolver>> flawListPair2) {
         for(FlawComparator comp : comparators) {
             int res = comp.compare(flawListPair, flawListPair2);
             if(res != 0) {

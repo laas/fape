@@ -12,7 +12,7 @@ package fape.core.planning.resources;
 
 import fape.core.planning.resources.solvers.MCS;
 import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 
@@ -95,11 +95,11 @@ public class Reusable extends Resource {
                 for (Integer j : set) {
                     if (i < j) {
                         if (st.tempoNet.CanBeBefore(events.get(i).end, events.get(j).start)) {
-                            SupportOption o = Resource.createTemporalConstrainOption(events.get(i).end, events.get(j).start, 0, Integer.MAX_VALUE);
+                            Resolver o = Resource.createTemporalConstrainOption(events.get(i).end, events.get(j).start, 0, Integer.MAX_VALUE);
                             f.resolvers.add(o);
                         }
                         if (st.tempoNet.CanBeBefore(events.get(j).end, events.get(i).start)) {
-                            SupportOption o = Resource.createTemporalConstrainOption(events.get(j).end, events.get(i).start, 0, Integer.MAX_VALUE);
+                            Resolver o = Resource.createTemporalConstrainOption(events.get(j).end, events.get(i).start, 0, Integer.MAX_VALUE);
                             f.resolvers.add(o);
                         }
                     }

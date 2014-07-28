@@ -10,9 +10,9 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.constraints.TemporalConstraint;
+import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.SupportOption;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -59,14 +59,8 @@ public abstract class Resource {
         return true;
     }
 
-    public static SupportOption createTemporalConstrainOption(TPRef first, TPRef second, int min, int max) {
-        SupportOption o = new SupportOption();
-        o.tCon = new TemporalConstraint();
-        o.tCon.first = first;
-        o.tCon.second = second;
-        o.tCon.min = min;
-        o.tCon.max = max;
-        return o;
+    public static Resolver createTemporalConstrainOption(TPRef first, TPRef second, int min, int max) {
+        return new TemporalConstraint(first, second, min, max);
     }
 
     public abstract void addConsumption(State st, TPRef start, TPRef end, float value);

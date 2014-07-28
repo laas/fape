@@ -3,8 +3,8 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.search.Flaw;
-import fape.core.planning.search.SupportOption;
 import fape.core.planning.search.UnsupportedDatabase;
+import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
@@ -42,9 +42,9 @@ public class AbsHierarchyComp implements FlawComparator {
         this.hierarchy = hierarchies.get(st.pb).value2;
     }
 
-    private int priority(Pair<Flaw, List<SupportOption>> flawAndResolvers) {
+    private int priority(Pair<Flaw, List<Resolver>> flawAndResolvers) {
         Flaw flaw = flawAndResolvers.value1;
-        List<SupportOption> options = flawAndResolvers.value2;
+        List<Resolver> options = flawAndResolvers.value2;
         int level;
 
         if(options.size() == 0) {
@@ -73,7 +73,7 @@ public class AbsHierarchyComp implements FlawComparator {
 
 
     @Override
-    public int compare(Pair<Flaw, List<SupportOption>> o1, Pair<Flaw, List<SupportOption>> o2) {
+    public int compare(Pair<Flaw, List<Resolver>> o1, Pair<Flaw, List<Resolver>> o2) {
         return priority(o1) - priority(o2);
     }
 

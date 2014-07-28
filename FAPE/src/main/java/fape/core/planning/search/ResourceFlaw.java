@@ -11,6 +11,8 @@
 
 package fape.core.planning.search;
 
+import fape.core.planning.search.resolvers.Resolver;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,5 +21,5 @@ import java.util.List;
  * @author FD
  */
 public class ResourceFlaw extends Flaw {
-    public List<SupportOption> resolvers = new LinkedList<>();
+    public List<Resolver> resolvers = new LinkedList<>();
 }

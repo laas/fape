@@ -8,6 +8,8 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.search.*;
+import fape.core.planning.search.resolvers.*;
+import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -23,6 +25,7 @@ import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
@@ -96,13 +99,13 @@ public abstract class APlanner {
      * @param consumer
      * @return
      */
-    public boolean ApplyOption(State next, SupportOption o, TemporalDatabase consumer) {
+    public boolean ApplyOption(State next, Resolver o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
         ChainComponent precedingComponent = null;
-        if (o.temporalDatabase != -1) {
-            supporter = next.GetDatabase(o.temporalDatabase);
-            if (o.precedingChainComponent != -1) {
-                precedingComponent = supporter.GetChainComponent(o.precedingChainComponent);
+        if (o instanceof SupportingDatabase) {
+            supporter = next.GetDatabase(((SupportingDatabase) o).temporalDatabase);
+            if (((SupportingDatabase) o).precedingChainComponent != -1) {
+                precedingComponent = supporter.GetChainComponent(((SupportingDatabase) o).precedingChainComponent);
             }
         }
 
@@ -132,12 +135,18 @@ public abstract class APlanner {
             // database concatenation
             next.tdb.InsertDatabaseAfter(next, supporter, consumer, supporter.chain.getLast());
 
-        } else if (o.supportingAction != null) {
+        } else if (o instanceof SupportingAction) {
 
             assert consumer != null : "Consumer was not passed as an argument";
 
-            Action action = Factory.getStandaloneAction(pb, o.supportingAction);
+            Action action = Factory.getStandaloneAction(pb, ((SupportingAction) o).act);
             next.insert(action);
+
+            if(((SupportingAction) o).values != null)
+                // restrict domain of given variables to the given set of variables.
+                for (LVarRef lvar : ((SupportingAction) o).values.keySet()) {
+                    next.conNet.restrictDomain(action.context().getGlobalVar(lvar), ((SupportingAction) o).values.get(lvar));
+                }
 
             // create the binding between consumer and the new statement in the action that supports it
             TemporalDatabase supportingDatabase = null;
@@ -150,20 +159,19 @@ public abstract class APlanner {
             if (supportingDatabase == null) {
                 return false;
             } else {
-                SupportOption opt = new SupportOption();
-                opt.temporalDatabase = supportingDatabase.mID;
+                Resolver opt = new SupportingDatabase(supportingDatabase.mID);
                 return ApplyOption(next, opt, consumer);
             }
 
-        } else if (o.actionToDecompose != null) {
+        } else if (o instanceof fape.core.planning.search.resolvers.Decomposition) {
             // Apply the i^th decomposition of o.actionToDecompose, where i is given by
             // o.decompositionID
 
             // Action to decomposed
-            Action decomposedAction = o.actionToDecompose;
+            Action decomposedAction = o.actionToDecompose();
 
             // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.decompositions().get(o.decompositionID);
+            AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.resolvers.Decomposition) o).decID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
@@ -174,32 +182,6 @@ public abstract class APlanner {
             }
 
             next.applyDecomposition(dec);
-        } else if (o.actionWithBindings != null) {
-            Action act = Factory.getStandaloneAction(pb, o.actionWithBindings.act);
-            next.insert(act);
-
-            // restrict domain of given variables to the given set of variables.
-            for (LVarRef lvar : o.actionWithBindings.values.keySet()) {
-                next.conNet.restrictDomain(act.context().getGlobalVar(lvar), o.actionWithBindings.values.get(lvar));
-            }
-
-            // create the binding between consumer and the new statement in the action that supports it
-            if (consumer != null) {
-                TemporalDatabase supportingDatabase = null;
-                for (Statement s : act.statements()) {
-                    if (s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
-                        assert supportingDatabase == null : "Error: several statements might support the database";
-                        supportingDatabase = next.tdb.getDBContaining((LogStatement) s);
-                    }
-                }
-                if (supportingDatabase == null) {
-                    return false;
-                } else {
-                    SupportOption opt = new SupportOption();
-                    opt.temporalDatabase = supportingDatabase.mID;
-                    return ApplyOption(next, opt, consumer);
-                }
-            }
 
         } else if (o instanceof TemporalSeparation) {
             for (LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
@@ -248,10 +230,10 @@ public abstract class APlanner {
             // o.decompositionID
 
             // Action to decomposed
-            Action decomposedAction = opt.resoouceMotivatedActionToDecompose;
+            Action decomposedAction = opt.resourceMotivatedActionToDecompose;
 
             // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.decompositions().get(o.decompositionID);
+            AbstractDecomposition absDec = decomposedAction.decompositions().get(((ResourceSupportingDecomposition) o).decompositionID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
@@ -265,8 +247,9 @@ public abstract class APlanner {
 
             //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one of the decomposed actions
             //for now we leave it to search
-        } else if (o.tCon != null) {
-            next.tempoNet.EnforceConstraint(o.tCon.first, o.tCon.second, o.tCon.min, o.tCon.max);
+        } else if (o instanceof TemporalConstraint) {
+            TemporalConstraint tc = (TemporalConstraint) o;
+            next.tempoNet.EnforceConstraint(tc.first, tc.second, tc.min, tc.max);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -415,18 +398,15 @@ public abstract class APlanner {
 
     }
 
-    public final List<SupportOption> GetResolvers(State st, Flaw f) {
-        List<SupportOption> candidates;
+    public final List<Resolver> GetResolvers(State st, Flaw f) {
+        List<Resolver> candidates;
         if (f instanceof UnsupportedDatabase) {
             candidates = GetSupporters(((UnsupportedDatabase) f).consumer, st);
         } else if (f instanceof UndecomposedAction) {
             UndecomposedAction ua = (UndecomposedAction) f;
             candidates = new LinkedList<>();
             for (int decompositionID = 0; decompositionID < ua.action.decompositions().size(); decompositionID++) {
-                SupportOption res = new SupportOption();
-                res.actionToDecompose = ua.action;
-                res.decompositionID = decompositionID;
-                candidates.add(res);
+                candidates.add(new fape.core.planning.search.resolvers.Decomposition(ua.action, decompositionID));
             }
         } else if (f instanceof Threat) {
             candidates = GetResolvers(st, (Threat) f);
@@ -441,16 +421,16 @@ public abstract class APlanner {
         return st.retainValidOptions(f, candidates);
     }
 
-    public final List<SupportOption> GetResolvers(State st, UnboundVariable uv) {
-        List<SupportOption> bindings = new LinkedList<>();
+    public final List<Resolver> GetResolvers(State st, UnboundVariable uv) {
+        List<Resolver> bindings = new LinkedList<>();
         for (String value : st.conNet.domainOf(uv.var)) {
             bindings.add(new VarBinding(uv.var, value));
         }
         return bindings;
     }
 
-    public final List<SupportOption> GetResolvers(State st, Threat f) {
-        List<SupportOption> options = new LinkedList<>();
+    public final List<Resolver> GetResolvers(State st, Threat f) {
+        List<Resolver> options = new LinkedList<>();
         options.add(new TemporalSeparation(f.db1, f.db2));
         options.add(new TemporalSeparation(f.db2, f.db1));
         for (int i = 0; i < f.db1.stateVariable.jArgs().size(); i++) {
@@ -513,7 +493,7 @@ public abstract class APlanner {
      * @param st State in which the flaws appear.
      * @return The comparator to use for ordering.
      */
-    public final Comparator<Pair<Flaw, List<SupportOption>>> flawComparator(State st) {
+    public final Comparator<Pair<Flaw, List<Resolver>>> flawComparator(State st) {
         return FlawCompFactory.get(st, flawSelStrategies);
     }
 
@@ -627,7 +607,7 @@ public abstract class APlanner {
                 }
             }
             //continue the search
-            LinkedList<Pair<Flaw, List<SupportOption>>> opts = new LinkedList<>();
+            LinkedList<Pair<Flaw, List<Resolver>>> opts = new LinkedList<>();
             for (Flaw flaw : flaws) {
                 opts.add(new Pair(flaw, GetResolvers(st, flaw)));
             }
@@ -647,11 +627,11 @@ public abstract class APlanner {
             }
 
             //we just take the first option here as a tie breaker by min-domain
-            Pair<Flaw, List<SupportOption>> opt = opts.getFirst();
+            Pair<Flaw, List<Resolver>> opt = opts.getFirst();
 
             TinyLogger.LogInfo(" Flaw:" + opt.value1.toString());
 
-            for (SupportOption o : opt.value2) {
+            for (Resolver o : opt.value2) {
 
                 TinyLogger.LogInfo("   Res: " + o);
 
@@ -704,12 +684,12 @@ public abstract class APlanner {
      * @param st
      * @return
      */
-    public List<SupportOption> GetSupporters(TemporalDatabase db, State st) {
+    public List<Resolver> GetSupporters(TemporalDatabase db, State st) {
         //here we need to find several types of supporters
         //1) chain parts that provide the value we need
         //2) actions that provide the value we need and can be added
         //3) tasks that can decompose into an action we need
-        List<SupportOption> ret = new LinkedList<>();
+        List<Resolver> ret = new LinkedList<>();
 
         //get chain connections
         for (TemporalDatabase b : st.tdb.vars) {
@@ -724,10 +704,7 @@ public abstract class APlanner {
                 for (ChainComponent comp : b.chain) {
                     if (comp.change && st.Unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
                             && st.tempoNet.CanBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                        SupportOption o = new SupportOption();
-                        o.precedingChainComponent = ct;
-                        o.temporalDatabase = b.mID;
-                        ret.add(o);
+                        ret.add(new SupportingDatabase(b.mID, ct));
                     }
                     ct++;
                 }
@@ -737,9 +714,7 @@ public abstract class APlanner {
             } else if (st.Unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
                     && !b.HasSinglePersistence()
                     && st.tempoNet.CanBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                SupportOption o = new SupportOption();
-                o.temporalDatabase = b.mID;
-                ret.add(o);
+                ret.add(new SupportingDatabase(b.mID));
             }
         }
 
@@ -756,10 +731,7 @@ public abstract class APlanner {
 
         for (Action leaf : st.taskNet.GetOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
-                SupportOption opt = new SupportOption();
-                opt.actionToDecompose = leaf;
-                opt.decompositionID = decID;
-                ret.add(opt);
+                ret.add(new fape.core.planning.search.resolvers.Decomposition(leaf, decID));
             }
         }
 
@@ -769,9 +741,7 @@ public abstract class APlanner {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if (!aa.isMotivated()) {
-                    SupportOption o = new SupportOption();
-                    o.supportingAction = aa;
-                    ret.add(o);
+                    ret.add(new SupportingAction(aa));
                 }
             }
         }
