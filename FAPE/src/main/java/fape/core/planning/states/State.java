@@ -259,7 +259,7 @@ public class State implements Reporter{
      *
      * @param s Statement to remove.
      */
-    public void removeStatement(LogStatement s) {
+    private void removeStatement(LogStatement s) {
         TemporalDatabase theDatabase = tdb.getDBContaining(s);
 
         // First find which component contains s
@@ -428,7 +428,7 @@ public class State implements Reporter{
      * network manager. It also adds a constraint specifying that start must
      * happen before end.
      */
-    public void recordTimePoints(TemporalInterval interval) {
+    private void recordTimePoints(TemporalInterval interval) {
         tempoNet.recordTimePoint(interval.start());
         tempoNet.recordTimePoint(interval.end());
         tempoNet.EnforceBefore(interval.start(), interval.end());
@@ -462,7 +462,7 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent
      */
-    public void apply(LogStatement s) {
+    private void apply(LogStatement s) {
         recordTimePoints(s);
 
         if(s.sv().func().isConstant()) {
@@ -496,7 +496,7 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent.
      */
-    public void apply(ResourceStatement s) {
+    private void apply(ResourceStatement s) {
         recordTimePoints(s);
 
         Resource r = ResourceManager.generateResourcePrototype((NumFunction) s.sv().func());
@@ -528,7 +528,7 @@ public class State implements Reporter{
      * @param s Statement to insert
      * @return True if the resulting state is consistent
      */
-    public void apply(StateModifier mod, Statement s) {
+    private void apply(StateModifier mod, Statement s) {
         if (s instanceof LogStatement) {
             apply((LogStatement) s);
         } else if (s instanceof ResourceStatement) {
@@ -547,7 +547,7 @@ public class State implements Reporter{
      * @param tc The TemporalConstraint to insert.
      * @return True if the resulting state is consistent, False otherwise.
      */
-    public void apply(StateModifier mod, TemporalConstraint tc) {
+    private void apply(StateModifier mod, TemporalConstraint tc) {
         TPRef tp1 = tc.tp1();
         TPRef tp2 = tc.tp2();
 
@@ -588,7 +588,7 @@ public class State implements Reporter{
      * @param mod StateModifier to apply
      * @return True if the resulting State is consistent, False otherwise.
      */
-    public void apply(StateModifier mod) {
+    private void apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for (String instance : mod.instances()) {
             conNet.addPossibleValue(instance);
