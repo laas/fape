@@ -7,11 +7,6 @@ import fape.core.execution.ExecutorPRS;
 import fape.core.execution.ExecutorSim;
 import fape.core.execution.Listener;
 import fape.core.planning.Planner;
-import fape.util.TinyLogger;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 
 /*
 * Author:  Filip Dvořák <filip.dvorak@runbox.com>

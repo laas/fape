@@ -13,14 +13,8 @@ package fape.core.planning.heuristics.lmcut;
 import fape.core.planning.planninggraph.Fluent;
 import fape.core.planning.planninggraph.GroundAction;
 import fape.core.planning.planninggraph.GroundProblem;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
+
+import java.util.*;
 
 /**
  * implements the landmark cut heuristic

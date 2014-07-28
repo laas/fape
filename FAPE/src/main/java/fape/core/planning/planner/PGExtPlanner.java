@@ -1,7 +1,5 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.constraints.ConservativeConstraintNetwork;
-import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.planninggraph.DisjunctiveAction;
 import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GroundAction;

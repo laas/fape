@@ -11,17 +11,17 @@
 package fape.core.planning;
 
 
-import fape.core.execution.Executor;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
-import fape.core.planning.printers.Printer;
-import fape.core.planning.search.*;
+import fape.core.planning.search.Flaw;
+import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * The base line planner that stick to a lifted representation and supports the whole range of anml problems.

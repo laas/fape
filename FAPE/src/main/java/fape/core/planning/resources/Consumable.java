@@ -11,11 +11,11 @@
 
 package fape.core.planning.resources;
 
-import fape.core.planning.search.Flaw;
 import fape.core.planning.search.ResourceFlaw;
 import fape.core.planning.states.State;
-import java.util.List;
 import planstack.anml.model.concrete.TPRef;
+
+import java.util.List;
 
 /**
  *

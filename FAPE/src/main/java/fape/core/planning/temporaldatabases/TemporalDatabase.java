@@ -13,16 +13,13 @@ package fape.core.planning.temporaldatabases;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-
-import java.lang.Deprecated;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * records the events for one state variable

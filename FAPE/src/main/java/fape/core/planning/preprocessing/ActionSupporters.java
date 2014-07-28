@@ -5,13 +5,12 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.AbstractTemporalStatement;
-import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.abs.statements.AbstractPersistence;
 
-import java.util.*;
-import planstack.anml.model.abs.statements.AbstractConsumeResource;
-import planstack.anml.model.abs.statements.AbstractProduceResource;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * This class aims at analysing a problem to identify actions that might enablers for a

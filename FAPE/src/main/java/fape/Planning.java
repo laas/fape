@@ -5,7 +5,6 @@ import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.BaseDTG;
-import fape.core.planning.planner.BaseDTGAbsHier;
 import fape.core.planning.planner.PGExtPlanner;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.printers.Printer;
@@ -16,7 +15,10 @@ import fape.util.Utils;
 import planstack.anml.parser.ANMLFactory;
 
 import java.io.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class Planning {
 

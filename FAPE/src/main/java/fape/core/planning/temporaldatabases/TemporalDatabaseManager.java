@@ -15,7 +15,8 @@ import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.statements.LogStatement;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *

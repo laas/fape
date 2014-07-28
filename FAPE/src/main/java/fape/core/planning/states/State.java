@@ -10,12 +10,7 @@
  */
 package fape.core.planning.states;
 
-import fape.core.planning.Planner;
-import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.constraints.ConstraintNetwork;
-import fape.core.planning.heuristics.lmcut.LMCut;
-import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
-import fape.core.planning.planner.APlanner;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
@@ -27,13 +22,14 @@ import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.Reporter;
-import java.util.*;
 import planstack.anml.model.*;
-import planstack.anml.model.abs.AbstractTemporalStatement;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import scala.Tuple2;
-import scala.collection.mutable.AbstractBuffer;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 //import scala.collection.immutable.HashMap;
 
 /**

@@ -10,13 +10,7 @@
  */
 package fape.core.planning.heuristics.lmcut;
 
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  *

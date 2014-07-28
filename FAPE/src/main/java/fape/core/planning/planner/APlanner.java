@@ -3,19 +3,10 @@ package fape.core.planning.planner;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
-import fape.core.planning.heuristics.lmcut.LMCut;
-import fape.core.planning.planninggraph.GroundProblem;
-import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.resources.Consumable;
-import fape.core.planning.resources.Producible;
-import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.Resource;
-import fape.core.planning.resources.ResourceManager;
-import fape.core.planning.resources.Reusable;
-import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.search.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
@@ -27,24 +18,17 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
-
-import java.util.*;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.FloatFunction;
-import planstack.anml.model.Function;
-import planstack.anml.model.FunctionManager;
-import planstack.anml.model.InstanceManager;
-import planstack.anml.model.IntFunction;
 import planstack.anml.model.LVarRef;
-import planstack.anml.model.NumFunction;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
+
+import java.util.*;
 
 /**
  * Base for any planner in FAPE. It defines all basic operations useful for

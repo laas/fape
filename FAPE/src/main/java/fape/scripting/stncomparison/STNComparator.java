@@ -11,23 +11,13 @@
 package fape.scripting.stncomparison;
 
 import fape.core.planning.stn.STNManager;
-import fape.exceptions.FAPEException;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
-import fape.scripting.stncomparison.problem.Event;
-import fape.scripting.stncomparison.problem.EventCheckConsistency;
-import fape.scripting.stncomparison.problem.EventCopy;
-import fape.scripting.stncomparison.problem.EventInsertConstraint;
-import fape.scripting.stncomparison.problem.EventInsertVar;
-import fape.scripting.stncomparison.problem.STNScenario;
+import fape.scripting.stncomparison.problem.*;
 import fape.util.FileHandling;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import planstack.anml.model.concrete.TPRef;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
+
+import java.util.*;
 
 /**
  *

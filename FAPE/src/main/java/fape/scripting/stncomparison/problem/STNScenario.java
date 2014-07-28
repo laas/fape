@@ -13,6 +13,7 @@ package fape.scripting.stncomparison.problem;
 import fape.core.planning.stn.STNManager;
 import fape.exceptions.FAPEException;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;

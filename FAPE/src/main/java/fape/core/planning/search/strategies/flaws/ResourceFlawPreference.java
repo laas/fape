@@ -12,9 +12,9 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.Flaw;
 import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.StateVariableBinding;
 import fape.core.planning.search.SupportOption;
 import fape.util.Pair;
+
 import java.util.List;
 
 /**

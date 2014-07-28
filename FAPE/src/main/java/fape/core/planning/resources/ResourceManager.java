@@ -17,14 +17,11 @@ import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import planstack.anml.model.FloatFunction;
 import planstack.anml.model.IntFunction;
 import planstack.anml.model.NumFunction;
+
+import java.util.*;
 
 /**
  *

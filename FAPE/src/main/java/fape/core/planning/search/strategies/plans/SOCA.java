@@ -2,8 +2,6 @@ package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
 
-import java.util.Comparator;
-
 
 /**
  * Evaluation function: num-actions*10 + num-consumers*3 + num-undecomposed*3

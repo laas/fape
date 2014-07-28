@@ -11,7 +11,6 @@
 package fape.scripting.stncomparison.fullstn;
 
 import fape.exceptions.FAPEException;
-import fape.util.TinyLogger;
 
 /**
  *

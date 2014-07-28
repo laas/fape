@@ -5,7 +5,6 @@ import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.Collection;
 import java.util.List;
 
 public class ConstraintNetwork extends ConservativeConstraintNetwork<VarRef> implements Reporter {

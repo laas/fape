@@ -10,7 +10,6 @@
  */
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.heuristics.lmcut.JustificationGraph;
 import fape.core.planning.heuristics.lmcut.LMCut;
 import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
 import fape.core.planning.planner.APlanner;
@@ -18,16 +17,12 @@ import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
+
+import java.util.*;
 
 /**
  *

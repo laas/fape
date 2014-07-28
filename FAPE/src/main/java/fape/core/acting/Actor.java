@@ -14,24 +14,17 @@ import fape.FAPE;
 import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
-import fape.core.planning.printers.Printer;
-import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
-
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ParseResult;
 
-import java.util.Collections;
-import java.util.Comparator;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import java.util.LinkedList;
 import java.util.List;
 

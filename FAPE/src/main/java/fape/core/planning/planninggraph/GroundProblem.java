@@ -4,18 +4,17 @@ import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.StateModifier;
+import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.concrete.statements.Assignment;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
+import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import planstack.anml.model.concrete.statements.*;
-import planstack.anml.model.concrete.StateModifier;
-import planstack.anml.model.concrete.TemporalConstraint;
-import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.concrete.statements.Statement;
-import scala.collection.JavaConversions;
 
 public class GroundProblem {
 

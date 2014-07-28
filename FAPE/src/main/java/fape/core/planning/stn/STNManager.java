@@ -2,12 +2,11 @@ package fape.core.planning.stn;
 
 
 import fape.core.planning.states.State;
+import fape.util.Pair;
 import fape.util.Reporter;
-import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.TPRef;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
-import fape.util.TinyLogger;
-import fape.util.Pair;
 
 import java.util.HashMap;
 

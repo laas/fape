@@ -10,23 +10,13 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.preprocessing.ActionDecompositions;
-import fape.core.planning.resources.solvers.MCS;
-import fape.core.planning.search.Flaw;
 import fape.core.planning.search.ResourceFlaw;
 import fape.core.planning.search.ResourceSupportingAction;
 import fape.core.planning.search.ResourceSupportingDecomposition;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import planstack.anml.model.Function;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTemporalStatement;
@@ -34,6 +24,11 @@ import planstack.anml.model.abs.statements.AbstractConsumeResource;
 import planstack.anml.model.abs.statements.AbstractProduceResource;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * aka Reservoir

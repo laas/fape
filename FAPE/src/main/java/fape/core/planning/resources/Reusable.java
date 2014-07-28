@@ -10,17 +10,15 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.constraints.TemporalConstraint;
 import fape.core.planning.resources.solvers.MCS;
-import fape.core.planning.search.Flaw;
 import fape.core.planning.search.ResourceFlaw;
 import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
+import planstack.anml.model.concrete.TPRef;
+
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import planstack.anml.model.concrete.TPRef;
 
 /**
  *

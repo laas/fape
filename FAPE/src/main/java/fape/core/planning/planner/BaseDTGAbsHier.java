@@ -1,15 +1,7 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.preprocessing.AbstractionHierarchy;
-import fape.core.planning.search.Flaw;
-import fape.core.planning.search.strategies.flaws.FlawCompFactory;
-import fape.core.planning.search.SupportOption;
-import fape.core.planning.states.State;
-import fape.util.Pair;
 import planstack.anml.parser.ParseResult;
-
-import java.util.Comparator;
-import java.util.List;
 
 public class BaseDTGAbsHier extends BaseDTG {
 

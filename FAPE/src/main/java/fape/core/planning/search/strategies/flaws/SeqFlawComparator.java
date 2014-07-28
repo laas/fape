@@ -4,7 +4,6 @@ import fape.core.planning.search.Flaw;
 import fape.core.planning.search.SupportOption;
 import fape.util.Pair;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

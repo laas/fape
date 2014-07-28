@@ -7,12 +7,14 @@ import fape.core.planning.search.SupportOption;
 import fape.core.planning.search.UnsupportedDatabase;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.test.ProblemGenerator;
 import fape.util.Pair;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A comparator for flaws and their resolvers that uses lifted abstraction hierarchies.

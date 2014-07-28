@@ -3,8 +3,6 @@ package fape.core.planning.planninggraph;
 import fape.exceptions.FAPEException;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledDigraph;
-import planstack.graph.core.LabeledDigraph$;
-import planstack.graph.printers.NodeEdgePrinter;
 
 import java.util.*;
 

@@ -5,7 +5,6 @@ import fape.util.Utils;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.graph.GraphFactory;
-import planstack.graph.core.DirectedGraph;
 import planstack.graph.core.Edge;
 import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.printers.NodeEdgePrinter;

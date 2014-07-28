@@ -12,9 +12,10 @@
 package fape.core.execution.model;
 
 import fape.core.planning.states.State;
-import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.ActRef;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.VarRef;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

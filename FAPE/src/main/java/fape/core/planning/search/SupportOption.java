@@ -11,14 +11,8 @@
 package fape.core.planning.search;
 
 import fape.core.planning.constraints.TemporalConstraint;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.VarRef;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * non-null values represent the option

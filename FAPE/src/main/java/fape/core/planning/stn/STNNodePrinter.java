@@ -2,9 +2,6 @@ package fape.core.planning.stn;
 
 import fape.core.planning.printers.Printer;
 import fape.core.planning.states.State;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.TemporalInterval;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.printers.NodeEdgePrinter;
 

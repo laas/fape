@@ -13,8 +13,9 @@ package fape.scripting.stncomparison.problem;
 
 import fape.core.planning.stn.STNManager;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
-import java.util.Random;
 import planstack.anml.model.concrete.TPRef;
+
+import java.util.Random;
 
 /**
  *

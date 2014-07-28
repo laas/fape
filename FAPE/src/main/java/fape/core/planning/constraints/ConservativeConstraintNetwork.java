@@ -2,7 +2,6 @@ package fape.core.planning.constraints;
 
 import fape.Planning;
 import fape.core.planning.Planner;
-import planstack.graph.core.Edge;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
 import scala.Tuple2;

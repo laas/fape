@@ -1,21 +1,16 @@
 package fape.core.planning.planninggraph;
 
-import fape.core.planning.constraints.ConservativeConstraintNetwork;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.ActionSupporters;
-import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.search.*;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.preprocessing.LiftedDTG;
+import fape.core.planning.search.ActionWithBindings;
+import fape.core.planning.search.SupportOption;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.VarRef;
 import planstack.anml.parser.ParseResult;
 
 import java.util.LinkedList;

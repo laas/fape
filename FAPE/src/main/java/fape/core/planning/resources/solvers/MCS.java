@@ -10,8 +10,6 @@
  */
 package fape.core.planning.resources.solvers;
 
-import fape.core.planning.resources.Reusable;
-import fape.core.planning.states.State;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;

@@ -1,7 +1,6 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.planninggraph.PGUtils;
-import fape.core.planning.preprocessing.FluentType;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
@@ -11,8 +10,8 @@ import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.graph.GraphFactory;
-import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.algorithms.StronglyConnectedComponent;
+import planstack.graph.core.UnlabeledDigraph;
 
 import java.util.*;
 

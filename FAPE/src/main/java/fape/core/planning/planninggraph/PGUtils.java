@@ -1,7 +1,5 @@
 package fape.core.planning.planninggraph;
 
-import planstack.anml.model.concrete.VarRef;
-
 import java.util.LinkedList;
 import java.util.List;
 

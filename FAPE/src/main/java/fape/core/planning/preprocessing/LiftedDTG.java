@@ -3,10 +3,10 @@ package fape.core.planning.preprocessing;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
+import planstack.anml.model.SymFunction;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTemporalStatement;
 import planstack.anml.model.abs.statements.AbstractAssignment;
@@ -14,14 +14,12 @@ import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.SymFunction;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.MultiLabeledDigraph;
+import scala.collection.JavaConversions;
 
 import java.util.*;
-
-import scala.collection.JavaConversions;
 
 public class LiftedDTG implements ActionSupporterFinder{
 

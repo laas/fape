@@ -3,8 +3,6 @@ package fape.core.planning.search;
 
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.VarRef;
 
 import java.util.Collection;
 import java.util.HashMap;

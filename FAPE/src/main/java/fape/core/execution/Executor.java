@@ -10,12 +10,8 @@
 */
 package fape.core.execution;
 
-import fape.util.FileHandling;
 import fape.core.acting.Actor;
 import fape.core.execution.model.AtomicAction;
-import fape.exceptions.FAPEException;
-import fape.util.TinyLogger;
-import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ANMLFactory;
 import planstack.anml.parser.ParseResult;
 
