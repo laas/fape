@@ -171,6 +171,7 @@ object Action {
       abs :AbstractAction,
       args :util.List[VarRef],
       localID :LActRef,
+      id : ActRef = new ActRef(),
       parentAction :Action = null,
       contextOpt :Context = null)
   : Action = {
@@ -180,7 +181,8 @@ object Action {
       args,
       localID,
       if(parentAction == null) None else Some(parentAction),
-      if(contextOpt == null) None else Some(contextOpt)
+      if(contextOpt == null) None else Some(contextOpt),
+      id
     )
   }
 
@@ -201,7 +203,8 @@ object Action {
       args :Seq[VarRef],
       localID :LActRef,
       parentAction :Option[Action] = None,
-      contextOpt :Option[Context] = None)
+      contextOpt :Option[Context] = None,
+      id :ActRef = new ActRef())
   : Action = {
     // containing context is the one passed, if it is empty, it defaults to the problem's
     val parentContext = contextOpt match {
@@ -213,7 +216,7 @@ object Action {
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), args(i))
     val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
 
-    val act = new Action(abs, context, new ActRef(), parentAction)
+    val act = new Action(abs, context, id, parentAction)
 
     // annotated statements produce both statements and temporal constraints.
     val annotatedStatements =
