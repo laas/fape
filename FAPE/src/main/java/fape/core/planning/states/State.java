@@ -220,7 +220,7 @@ public class State implements Reporter {
      *
      * @param actRef Reference of the action to update.
      */
-    public void setActionExecuting(ActRef actRef) {
+    private void setActionExecuting(ActRef actRef) {
         taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTING);
     }
 
@@ -229,7 +229,7 @@ public class State implements Reporter {
      *
      * @param actRef Reference to the action to update.
      */
-    public void setActionSuccess(ActRef actRef) {
+    private void setActionSuccess(ActRef actRef) {
         taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTED);
     }
 
@@ -244,7 +244,9 @@ public class State implements Reporter {
         toRemove.setStatus(ActionStatus.FAILED);
 
         for (LogStatement s : toRemove.logStatements()) {
-            removeStatement(s);
+            // ignore statements on constant functions that are handled through constraints
+            if(!s.sv().func().isConstant())
+                removeStatement(s);
         }
     }
 
@@ -751,6 +753,12 @@ public class State implements Reporter {
 
     public void restrictDomain(VarRef var, Collection<String> values) { conNet.restrictDomain(var, values); }
 
+    public void bindVariable(VarRef var, String value) {
+        List<String> values = new LinkedList<>();
+        values.add(value);
+        restrictDomain(var, values);
+    }
+
     public List<VarRef> getUnboundVariables() { return conNet.getUnboundVariables(); }
 
     public void assertConstraintNetworkGroundAndConsistent() { conNet.assertGroundAndConsistent(); }
@@ -788,4 +796,22 @@ public class State implements Reporter {
     }
 
     public Collection<Flaw> resourceFlaws() { return resMan.GatherFlaws(this); }
+
+
+    public void setActionExecuting(Action a, int startTime) {
+        setActionExecuting(a.id());
+        removeConstraints(new Pair(pb.earliestExecution(), a.start()),
+                new Pair(a.start(), pb.earliestExecution()));
+        enforceConstraint(pb.start(), a.start(), (int) startTime, (int) startTime);
+    }
+
+    public void setActionSuccess(Action a, int endTime) {
+        setActionSuccess(a.id());
+        // remove the duration constraints of the action
+        removeConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
+        // insert new constraint specifying the end time of the action
+        enforceConstraint(pb.start(), a.end(), endTime, endTime);
+
+    }
+
 }

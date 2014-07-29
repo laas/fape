@@ -41,7 +41,7 @@ public class FAPE {
                 "Solves ANML problems",
                 new Parameter[] {
                         //new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
-                        new Switch("verbose-planner", JSAP.NO_SHORTFLAG, "verbose-planner", "Requests verbose output " +
+                        new Switch("verbose-planner", 'v', "verbose-planner", "Requests verbose output " +
                                 "for the planner. Every search node will be displayed."),
                         new Switch("quiet", 'q', "quiet", "FAPE won't detail the execution."),
                         new Switch("debug", 'd', "debug", "Set the planner in debugging mode. " +
@@ -97,6 +97,10 @@ public class FAPE {
             e.bind(a);
 
             p.Init();
+            if (Planning.domainFile(problemFile) != null) {
+                // add the domain and do not propagate since the problem is still incomplete
+                a.PushEvent(Executor.ProcessANMLfromFile(Planning.domainFile(problemFile)));
+            }
             a.PushEvent(Executor.ProcessANMLfromFile(problemFile));
             a.pbName = problemFile;
             a.run();

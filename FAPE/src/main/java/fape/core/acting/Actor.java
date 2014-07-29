@@ -14,7 +14,7 @@ import fape.FAPE;
 import fape.core.execution.Executor;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Planner;
-import fape.exceptions.FAPEException;
+import fape.core.planning.planner.APlanner;import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.concrete.ActRef;
@@ -181,6 +181,12 @@ public class Actor {
                         now = (int) (System.currentTimeMillis() / 1000);
                         mPlanner.SetEarliestExecution((int) (now - timeZero));
                         mPlanner.Repair(new TimeAmount(500));
+                    }
+
+                    if(mPlanner.planState != APlanner.EPlanState.CONSISTENT) {
+                        if(FAPE.execLogging) System.out.println("Repair Failed. Replanning");
+                        mPlanner.SetEarliestExecution(now - timeZero);
+                        mPlanner.Replan(3000);
                     }
 
                     if(isInitPlan && mPlanner.planState == Planner.EPlanState.CONSISTENT) {

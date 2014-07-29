@@ -44,11 +44,42 @@ import java.util.*;
 public abstract class APlanner {
 
     public class ActionExecution {
-        Action a;
-        int startTime;
-        int endTime;
+        final ActRef id;
+        final AbstractAction abs;
+        long startTime;
+        long endTime;
         List<String> args;
+        ActionStatus status;
+
+
+        public ActionExecution(Action a, List<String> args, long startTime) {
+            this.id = a.id();
+            this.abs = a.abs();
+            this.startTime = startTime;
+            this.args = args;
+            this.status = ActionStatus.EXECUTING;
+        }
+
+        public void setSuccess(long endTime) {
+            this.endTime = endTime;
+            this.status = ActionStatus.EXECUTED;
+        }
+
+        public void setFailed() {
+            this.status = ActionStatus.FAILED;
+        }
+
+        public Action createNewGroundAction() {
+            List<VarRef> argVars = new LinkedList<>();
+            for(String arg : args) {
+                argVars.add(pb.instances().referenceOf(arg));
+            }
+            return Factory.getInstantiatedAction(pb, abs, argVars, id);
+        }
     }
+
+    public Map<ActRef, ActionExecution> executedAction = new HashMap<>();
+    public int currentTime = 0;
 
     public static APlanner currentPlanner = null;
 
@@ -276,13 +307,10 @@ public abstract class APlanner {
      */
     public void FailAction(ActRef actionRef) {
         KeepBestStateOnly();
-        if (best == null) {
-            throw new FAPEException("No current state.");
-        } else {
-            State bestState = GetCurrentState();
-
-            bestState.setActionFailed(actionRef);
-        }
+        assert best != null;
+        State st = GetCurrentState();
+        st.setActionFailed(actionRef);
+        executedAction.get(actionRef).setFailed();
     }
 
     /**
@@ -296,23 +324,17 @@ public abstract class APlanner {
      */
     public void AddActionEnding(ActRef actionID, int realEndTime) {
         KeepBestStateOnly();
-        State bestState = GetCurrentState();
-        bestState.setActionSuccess(actionID);
-        Action a = bestState.getAction(actionID);
-        // remove the duration constraints of the action
-        bestState.removeConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
-        // insert new constraint specifying the end time of the action
-        bestState.enforceConstraint(pb.start(), a.end(), realEndTime, realEndTime);
-        TinyLogger.LogInfo("Overriding constraint.");
+        State st = GetCurrentState();
+        Action a = st.getAction(actionID);
+        st.setActionSuccess(a, realEndTime);
+        executedAction.get(actionID).setSuccess(realEndTime);
     }
 
     public void setActionExecuting(AtomicAction aa) {
-        State myState = GetCurrentState();
-        Action a = myState.getAction(aa.id);
-        myState.setActionExecuting(a.id());
-        myState.removeConstraints(new Pair(pb.earliestExecution(), a.start()),
-                new Pair(a.start(), pb.earliestExecution()));
-        myState.enforceConstraint(pb.start(), a.start(), (int) aa.mStartTime, (int) aa.mStartTime);
+        State st = GetCurrentState();
+        Action a = st.getAction(aa.id);
+        st.setActionExecuting(a, (int) aa.mStartTime);
+        executedAction.put(aa.id, new ActionExecution(a, aa.params, aa.mStartTime));
     }
 
     /**
@@ -322,14 +344,17 @@ public abstract class APlanner {
      * @param earliestExecution
      */
     public void SetEarliestExecution(int earliestExecution) {
+        this.currentTime = earliestExecution;
         KeepBestStateOnly();
         State s = GetCurrentState();
-        s.enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
-        // If the STN is not consistent after this addition, the the current plan is not feasible.
-        // Full replan is necessary
-        if (!s.isConsistent()) {
-            this.best = null;
-            this.queue.clear();
+        if(s != null) {
+            s.enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
+            // If the STN is not consistent after this addition, the the current plan is not feasible.
+            // Full replan is necessary
+            if (!s.isConsistent()) {
+                this.best = null;
+                this.queue.clear();
+            }
         }
     }
 
@@ -812,8 +837,25 @@ public abstract class APlanner {
     /**
      * restarts the planning problem into its initial state
      */
-    public void Restart() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public boolean Replan(int forHowLong) {
+        State st = new State(pb);
+
+        for(ActionExecution ae : executedAction.values()) {
+            Action a = ae.createNewGroundAction();
+            if(ae.status == ActionStatus.EXECUTING || ae.status == ActionStatus.EXECUTED) {
+                st.insert(a);
+                st.setActionExecuting(a, (int) ae.startTime);
+            }
+            if(ae.status == ActionStatus.EXECUTED) {
+                st.setActionSuccess(a, (int) ae.endTime);
+            }
+        }
+        st.enforceDelay(pb.start(), pb.earliestExecution(), currentTime);
+        st.isConsistent();
+        best = st;
+        queue.clear();
+        queue.add(st);
+        return Repair(new TimeAmount(forHowLong));
     }
 
     /**
