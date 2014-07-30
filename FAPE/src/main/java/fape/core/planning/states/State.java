@@ -597,6 +597,12 @@ public class State implements Reporter {
             insert(act);
         }
 
+        for(ActionCondition ac : mod.actionConditions()) {
+            assert mod instanceof Decomposition;
+            recordTimePoints(ac);
+            taskNet.insert(ac, (Decomposition) mod);
+        }
+
         for (TemporalConstraint tc : mod.temporalConstraints()) {
             apply(mod, tc);
         }
@@ -612,7 +618,8 @@ public class State implements Reporter {
      * @return A list of resolvers containing only the valid ones.
      */
     public List<Resolver> retainValidOptions(Flaw f, List<Resolver> opts) {
-        if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable) {
+        if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable ||
+                f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond) {
             return opts;
         } else if (f instanceof UnsupportedDatabase) {
             Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedDatabase) f).consumer);
@@ -627,9 +634,6 @@ public class State implements Reporter {
                 }
                 return retained;
             }
-        } else if (f instanceof ResourceFlaw) {
-            return opts;
-
         } else {
             throw new FAPEException("Error: Unrecognized flaw type.");
         }
@@ -731,6 +735,10 @@ public class State implements Reporter {
     public List<Action> getAllActions() { return taskNet.GetAllActions(); }
 
     public List<Action> getOpenLeaves() { return taskNet.GetOpenLeaves(); }
+
+    public List<ActionCondition> getOpenTaskConditions() { return taskNet.getOpenTaskConditions(); }
+
+    public void addSupport(ActionCondition cond, Action act) { taskNet.addSupport(cond, act); }
 
     public int getNumActions() { return taskNet.getNumActions(); }
 

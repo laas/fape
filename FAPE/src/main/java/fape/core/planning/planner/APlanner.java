@@ -115,6 +115,15 @@ public abstract class APlanner {
     public abstract ActionSupporterFinder getActionSupporterFinder();
 
     /**
+     * If this returns true, decomposition will yield ActionConditions instead of Actions.
+     * ActionConditions results in flaws that can be solved by unifying the action condition with
+     * an action.
+     */
+    public boolean useActionConditions() {
+        return false;
+    }
+
+    /**
      *
      */
     public PriorityQueue<State> queue;
@@ -205,7 +214,7 @@ public abstract class APlanner {
             AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.resolvers.Decomposition) o).decID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec, useActionConditions());
 
             // remember that the consuming db has to be supporting by a descendant of this decomposition.
             if (consumer != null) {
@@ -267,7 +276,7 @@ public abstract class APlanner {
             AbstractDecomposition absDec = decomposedAction.decompositions().get(((ResourceSupportingDecomposition) o).decompositionID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec, useActionConditions());
 
             // remember that the consuming db has to be supporting by a descendant of this decomposition.
             if (consumer != null) {
@@ -281,6 +290,28 @@ public abstract class APlanner {
         } else if (o instanceof TemporalConstraint) {
             TemporalConstraint tc = (TemporalConstraint) o;
             next.enforceConstraint(tc.first, tc.second, tc.min, tc.max);
+        } else if(o instanceof NewTaskSupporter) {
+            ActionCondition ac = ((NewTaskSupporter) o).condition;
+            // create new action with the same arguments
+            Action act = Factory.getInstantiatedAction(pb, ((NewTaskSupporter) o).abs, ac.args());
+            next.insert(act);
+
+            // enforce equality of time points
+            next.enforceConstraint(ac.start(), act.start(), 0, 0);
+            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+            next.addSupport(ac, act);
+        } else if(o instanceof ExistingTaskSupporter) {
+            ActionCondition ac = ((ExistingTaskSupporter) o).condition;
+            Action act = ((ExistingTaskSupporter) o).act;
+
+            // add equality constraint between all args
+            for(int i=0 ; i<ac.args().size() ; i++) {
+                next.addUnificationConstraint(act.args().get(i), ac.args().get(i));
+            }
+            //enforce equality of time points
+            next.enforceConstraint(ac.start(), act.start(), 0, 0);
+            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+            next.addSupport(ac, act);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -439,6 +470,8 @@ public abstract class APlanner {
             candidates = GetResolvers(st, (UnboundVariable) f);
         } else if (f instanceof ResourceFlaw) {
             candidates = ((ResourceFlaw) f).resolvers;
+        } else if(f instanceof UnsupportedTaskCond) {
+            candidates = GetResolvers(st, (UnsupportedTaskCond) f);
         } else {
             throw new FAPEException("Unknown flaw type: " + f);
         }
@@ -467,6 +500,36 @@ public abstract class APlanner {
     }
 
     /**
+     * Resolvers for an action conditions of finding or inserting an action that can be
+     * unified with the action condition.
+     * @param st
+     * @param utc
+     * @return
+     */
+    public final List<Resolver> GetResolvers(State st, UnsupportedTaskCond utc) {
+        List<Resolver> resolvers = new LinkedList<>();
+
+        // inserting a new action is always a resolver.
+        resolvers.add(new NewTaskSupporter(utc.actCond, utc.actCond.abs()));
+
+        for(Action act : st.getAllActions()) {
+            if(act.abs() == utc.actCond.abs()) {
+                boolean unifiable = true;
+                for(int i=0 ; i<act.args().size() ; i++) {
+                    unifiable &= st.unifiable(act.args().get(i), utc.actCond.args().get(i));
+                }
+                unifiable &= st.canBeBefore(act.start(), utc.actCond.start());
+                unifiable &= st.canBeBefore(utc.actCond.start(), act.start());
+                unifiable &= st.canBeBefore(act.end(), utc.actCond.end());
+                unifiable &= st.canBeBefore(utc.actCond.end(), act.end());
+                if(unifiable)
+                    resolvers.add(new ExistingTaskSupporter(utc.actCond, act));
+            }
+        }
+        return resolvers;
+    }
+
+    /**
      * Finds all flaws of a given state. Currently, threats and unbound
      * variables are considered only if no other flaws are present.
      *
@@ -480,6 +543,9 @@ public abstract class APlanner {
         }
         for (Action refinable : st.getOpenLeaves()) {
             flaws.add(new UndecomposedAction(refinable));
+        }
+        for (ActionCondition ac : st.getOpenTaskConditions()) {
+            flaws.add(new UnsupportedTaskCond(ac));
         }
         if (flaws.isEmpty()) {
             List<TemporalDatabase> dbs = st.getDatabases();
@@ -664,7 +730,8 @@ public abstract class APlanner {
                 if (opt.value1 instanceof Threat
                         || opt.value1 instanceof UnboundVariable
                         || opt.value1 instanceof UndecomposedAction
-                        || opt.value1 instanceof ResourceFlaw) {
+                        || opt.value1 instanceof ResourceFlaw
+                        || opt.value1 instanceof UnsupportedTaskCond) {
                     success = ApplyOption(next, o, null);
                 } else {
                     success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));

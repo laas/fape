@@ -14,6 +14,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
@@ -108,6 +109,20 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * @param ac ActionCondition to lookup
+     * @return True if the action condition is supported (i.e. there is an edge
+     *         from ac to an action.
+     */
+    public boolean isSupported(ActionCondition ac) {
+        for(TNNode child : network.jChildren(new TNNode(ac))) {
+            if(child.isAction()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Retrieves the decomposition of an action.
      * @throws FAPEException if the action has no decomposition.
      * @param a The action for which to retrieve the decomposition.
@@ -142,6 +157,40 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * O(n)
+     * @return All action condition that are not supported yet.
+     */
+    public List<ActionCondition> getOpenTaskConditions() {
+        LinkedList<ActionCondition> l = new LinkedList<>();
+        for (TNNode n : network.jVertices()) {
+            if(n.isActionCondition()) {
+                ActionCondition ac = n.asActionCondition();
+                if(!isSupported(ac)) {
+                    l.add(ac);
+                }
+            }
+        }
+        return l;
+    }
+
+    /**
+     * Add a task support link from an action condition to an action.
+     * THis link means: the action condition cond is supported by the action a.
+     *
+     * An action condition should be supported by exactly one action.
+     * @param cond An action condition already present in the task network.
+     * @param a An action already present in the task network.
+     */
+    public void addSupport(ActionCondition cond, Action a) {
+        assert network.contains(new TNNode(cond));
+        assert network.contains(new TNNode(a));
+        assert network.outDegree(new TNNode(cond)) == 0;
+        network.addEdge(new TNNode(cond), new TNNode(a));
+        if(network.inDegree(new TNNode(a)) == 1)
+            numRoots--;
+    }
+
+    /**
      * Inserts an action in the task network. If the action a has
      * a parent p, an edge from the decomposition of p to a is also added.
      * O(1)
@@ -169,6 +218,17 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(dec));
         network.addEdge(new TNNode(parent), new TNNode(dec));
         this.numOpenLeaves--;
+    }
+
+    /**
+     * Adds an action condition to a decomposition.
+     * @param ac The action condition.
+     * @param parent The decomposition in which ac appears. This decomposition must be already
+     *               present in the task network.
+     */
+    public void insert(ActionCondition ac, Decomposition parent) {
+        network.addVertex(new TNNode(ac));
+        network.addEdge(new TNNode(parent), new TNNode(ac));
     }
 
     /**
@@ -252,6 +312,7 @@ public class TaskNetworkManager implements Reporter {
      * Implementations currently looks for all statements of all actions
      * O(n)
      * TODO: more efficient implementation
+     * TODO: account for decompositions?
      *
      * @param e LogStatement to look for.
      * @return The action containing the statement. null if no action in the task network contains the statement.

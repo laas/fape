@@ -6,6 +6,7 @@ import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.BaseDTG;
 import fape.core.planning.planner.PGExtPlanner;
+import fape.core.planning.planner.TaskConditionPlanner;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -80,6 +81,8 @@ public class Planning {
                             + "            is provided by an action. It cheks (using RPG) for every ground action\n"
                             + "            supporting the consmer and enforce a n-ary constraint on the action's\n"
                             + "            parameters to make sure they fit at least one of the ground action.\n"
+                            + " - taskcond: The actions in decompositions are replaced with task conditions that\n"
+                            + "         are fulfilled through search be linking with other actions in the plan\n"
                             + " - all:  will run every possible planner.\n"),
                     new FlaggedOption("maxtime")
                     .setStringParser(JSAP.INTEGER_PARSER)
@@ -188,6 +191,9 @@ public class Planning {
                                 break;
                             case "rpg_ext":
                                 planners.add(new PGExtPlanner());
+                                break;
+                            case "taskcond":
+                                planners.add(new TaskConditionPlanner());
                                 break;
                             case "all":
                                 planners.add(new Planner());
