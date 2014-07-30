@@ -42,7 +42,7 @@
         <dependency>
             <groupId>planstack</groupId>
             <artifactId>planstack-anml</artifactId>
-            <version>0.4.2</version>
+            <version>0.5</version>
         </dependency>
         <dependency>
             <groupId>com.martiansoftware</groupId>

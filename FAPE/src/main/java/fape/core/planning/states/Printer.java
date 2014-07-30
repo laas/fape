@@ -146,4 +146,8 @@ public class Printer {
             return "unknown";
 
     }
+
+    public static String constraints(State st) {
+        return st.conNet.Report();
+    }
 }

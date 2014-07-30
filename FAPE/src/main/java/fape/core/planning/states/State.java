@@ -619,7 +619,7 @@ public class State implements Reporter {
      */
     public List<Resolver> retainValidOptions(Flaw f, List<Resolver> opts) {
         if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable ||
-                f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond) {
+                f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
             return opts;
         } else if (f instanceof UnsupportedDatabase) {
             Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedDatabase) f).consumer);
@@ -737,6 +737,8 @@ public class State implements Reporter {
     public List<Action> getOpenLeaves() { return taskNet.GetOpenLeaves(); }
 
     public List<ActionCondition> getOpenTaskConditions() { return taskNet.getOpenTaskConditions(); }
+
+    public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
 
     public void addSupport(ActionCondition cond, Action act) { taskNet.addSupport(cond, act); }
 

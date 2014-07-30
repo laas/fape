@@ -1,10 +1,13 @@
 package fape.core.planning.preprocessing;
 
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
+import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.*;
 
@@ -80,5 +83,52 @@ public class ActionDecompositions {
             }
         }
         return false;
+    }
+
+    /**
+     * Lookup a partial set of resolvers for a motivated action a.
+     *
+     * Retrieve a tuple (abs:AbstractAction, decompositionID:integer, actRef:LocalActionReference),
+     * where abs must be instantiated and inserted into the plan. It decomposition number decompositionID
+     * must then be performed. The actRef gives the ID of a task condition that is approprate to support a.
+     * @param a An action that need support (it is motivated and must be part of decomposition)
+     */
+    public List<Tuple3<AbstractAction, Integer, LActRef>> supporterForMotivatedAction(Action a) {
+        List<Tuple3<AbstractAction, Integer, LActRef>> supporters = new LinkedList<>();
+        for(AbstractAction abs : pb.abstractActions()) {
+            for(int decID=0 ; decID<abs.jDecompositions().size() ; decID++) {
+                AbstractDecomposition dec = abs.jDecompositions().get(decID);
+                for(AbstractActionRef actRef : dec.jActions()) {
+                    if(actRef.name().equals(a.name())) {
+                        supporters.add(new Tuple3<AbstractAction, Integer, LActRef>(abs, decID, actRef.localId()));
+                    }
+                }
+            }
+        }
+        return supporters;
+    }
+
+    /**
+     * Lookup a partial set of resolvers for a motivated action a.
+     *
+     * Given an undecomposed action "supporting", it
+     * retrieves a pair (decompositionID:integer, actRef:LocalActionReference). "supporting" must
+     * be decomposition with decomposition number decompositionID.
+     * must then be performed. The actRef gives the ID of a task condition that is appropriate to support a.
+     * @param consuming An action that need support (it is motivated and must be part of decomposition)
+     * @param supporting An action in the plan that can be decomposed to provide a task condition matching
+     *                   the consuming action.
+     */
+    public List<Tuple2<Integer, LActRef>> supporterForMotivatedAction(Action supporting, Action consuming) {
+        List<Tuple2<Integer, LActRef>> supporters = new LinkedList<>();
+        for(int decID=0 ; decID<supporting.abs().jDecompositions().size() ; decID++) {
+            AbstractDecomposition dec = supporting.abs().jDecompositions().get(decID);
+            for(AbstractActionRef actRef : dec.jActions()) {
+                if(actRef.name().equals(consuming.name())) {
+                    supporters.add(new Tuple2<Integer, LActRef>(decID, actRef.localId()));
+                }
+            }
+        }
+        return supporters;
     }
 }

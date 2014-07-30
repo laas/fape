@@ -21,6 +21,7 @@ import fape.util.Pair;
 import fape.util.TimeAmount;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.LActRef;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
@@ -30,6 +31,8 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
+import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.*;
 
@@ -305,13 +308,42 @@ public abstract class APlanner {
             Action act = ((ExistingTaskSupporter) o).act;
 
             // add equality constraint between all args
-            for(int i=0 ; i<ac.args().size() ; i++) {
+            for (int i = 0; i < ac.args().size(); i++) {
                 next.addUnificationConstraint(act.args().get(i), ac.args().get(i));
             }
             //enforce equality of time points
             next.enforceConstraint(ac.start(), act.start(), 0, 0);
             next.enforceConstraint(ac.end(), act.end(), 0, 0);
             next.addSupport(ac, act);
+        } else if(o instanceof MotivatedSupport) {
+            MotivatedSupport ms = (MotivatedSupport) o;
+
+            // action that will be decomposed. Either it is already in the plan or we add it now
+            Action act = null;
+            if(ms.act == null) {
+                act = Factory.getStandaloneAction(pb, ms.abs);
+                next.insert(act);
+            } else {
+                act = ms.act;
+            }
+
+            // decompose the action with the given decomposition ID
+            AbstractDecomposition absDec = act.decompositions().get(ms.decID);
+            Decomposition dec = Factory.getDecomposition(pb, act, absDec, useActionConditions());
+            next.applyDecomposition(dec);
+
+            // Get the action condition we wanted
+            ActionCondition ac = dec.context().actionConditions().apply(ms.actRef);
+            // add equality constraint between all args
+            for (int i = 0; i < ac.args().size(); i++) {
+                next.addUnificationConstraint(ms.toSupport.args().get(i), ac.args().get(i));
+            }
+            //enforce equality of time points
+            next.enforceConstraint(ac.start(), act.start(), 0, 0);
+            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+
+            // finally, add the support ling in the task network
+            next.addSupport(ac, ms.toSupport);
         } else {
             throw new FAPEException("Unknown option.");
         }
@@ -472,6 +504,8 @@ public abstract class APlanner {
             candidates = ((ResourceFlaw) f).resolvers;
         } else if(f instanceof UnsupportedTaskCond) {
             candidates = GetResolvers(st, (UnsupportedTaskCond) f);
+        } else if(f instanceof UnmotivatedAction) {
+            candidates = GetResolvers(st, (UnmotivatedAction) f);
         } else {
             throw new FAPEException("Unknown flaw type: " + f);
         }
@@ -529,6 +563,45 @@ public abstract class APlanner {
         return resolvers;
     }
 
+    public List<Resolver> GetResolvers(State st, UnmotivatedAction ua) {
+        List<Resolver> resolvers = new LinkedList<>();
+        // action that must be matched with a task conditions
+        Action act = ua.act;
+
+        // any task condition unifiable with act
+        for(ActionCondition ac : st.getOpenTaskConditions()) {
+            boolean unifiable = true;
+            if(ac.abs() != act.abs())
+                break;
+            for(int i=0 ; i<act.args().size() ; i++) {
+                unifiable &= st.unifiable(act.args().get(i), ac.args().get(i));
+            }
+            unifiable &= st.canBeBefore(act.start(), ac.start());
+            unifiable &= st.canBeBefore(ac.start(), act.start());
+            unifiable &= st.canBeBefore(act.end(), ac.end());
+            unifiable &= st.canBeBefore(ac.end(), act.end());
+            if(unifiable)
+                resolvers.add(new ExistingTaskSupporter(ac, act));
+        }
+
+        ActionDecompositions preproc = new ActionDecompositions(pb);
+
+        // resolvers: any any action we add to the plan and that might provide (through decomposition)
+        // a task condition
+        for(Tuple3<AbstractAction, Integer, LActRef> insertion : preproc.supporterForMotivatedAction(act)) {
+            resolvers.add(new MotivatedSupport(act, insertion._1(), insertion._2(), insertion._3()));
+        }
+
+        // resolvers: any action in the plan that can be refined to a task condition
+        for(Action a : st.getOpenLeaves()) {
+            for (Tuple2<Integer, LActRef> insertion : preproc.supporterForMotivatedAction(a, act)) {
+                resolvers.add(new MotivatedSupport(act, a, insertion._1(), insertion._2()));
+            }
+        }
+
+        return resolvers;
+    }
+
     /**
      * Finds all flaws of a given state. Currently, threats and unbound
      * variables are considered only if no other flaws are present.
@@ -546,6 +619,9 @@ public abstract class APlanner {
         }
         for (ActionCondition ac : st.getOpenTaskConditions()) {
             flaws.add(new UnsupportedTaskCond(ac));
+        }
+        for (Action unmotivated : st.getUnmotivatedActions()) {
+            flaws.add(new UnmotivatedAction(unmotivated));
         }
         if (flaws.isEmpty()) {
             List<TemporalDatabase> dbs = st.getDatabases();
@@ -731,7 +807,8 @@ public abstract class APlanner {
                         || opt.value1 instanceof UnboundVariable
                         || opt.value1 instanceof UndecomposedAction
                         || opt.value1 instanceof ResourceFlaw
-                        || opt.value1 instanceof UnsupportedTaskCond) {
+                        || opt.value1 instanceof UnsupportedTaskCond
+                        || opt.value1 instanceof UnmotivatedAction) {
                     success = ApplyOption(next, o, null);
                 } else {
                     success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));
@@ -831,7 +908,7 @@ public abstract class APlanner {
             for (AbstractAction aa : potentialSupporters) {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
-                if (!aa.isMotivated()) {
+                if (useActionConditions() || !aa.isMotivated()) {
                     ret.add(new SupportingAction(aa));
                 }
             }

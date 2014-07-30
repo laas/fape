@@ -174,6 +174,24 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * O(n)
+     * @return All actions that have a motivated statements but are not yet
+     *         part of any decomposition.
+     */
+    public List<Action> getUnmotivatedActions() {
+        LinkedList<Action> l = new LinkedList<>();
+        for (TNNode n : network.jVertices()) {
+            if(n.isAction()) {
+                Action a = n.asAction();
+                if(a.isMotivated() && network.inDegree(n) == 0) {
+                    l.add(a);
+                }
+            }
+        }
+        return l;
+    }
+
+    /**
      * Add a task support link from an action condition to an action.
      * THis link means: the action condition cond is supported by the action a.
      *
