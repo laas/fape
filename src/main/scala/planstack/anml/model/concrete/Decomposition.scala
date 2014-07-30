@@ -17,6 +17,7 @@ class Decomposition(
   val statements = new util.LinkedList[Statement]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
   val actions = new util.LinkedList[Action]()
+  val actionConditions = new util.LinkedList[ActionCondition]()
 
   assert(context.interval == null)
   context.setInterval(this)
@@ -27,7 +28,7 @@ class Decomposition(
 
 object Decomposition {
 
-  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition) : Decomposition = {
+  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition, actionConditions :Boolean) : Decomposition = {
     val context = dec.context.buildContext(pb, Some(parent.context))
 
     val decomposition = new Decomposition(context, parent)
@@ -43,7 +44,10 @@ object Decomposition {
     decomposition.statements ++= annotatedStatements.map(_.statement)
     decomposition.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
 
-    decomposition.actions ++= dec.actions.map(Action(pb, _, Some(parent), Some(context)))
+    if(actionConditions)
+      decomposition.actionConditions ++= dec.actions.map(ActionCondition(pb, _, context, Some(parent)))
+    else
+      decomposition.actions ++= dec.actions.map(Action(pb, _, Some(parent), Some(context)))
     decomposition.temporalConstraints ++= dec.temporalConstraints.map(TemporalConstraint(pb, context, _))
 
     decomposition

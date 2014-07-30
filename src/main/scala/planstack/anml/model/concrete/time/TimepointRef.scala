@@ -36,8 +36,6 @@ object TimepointRef {
       case _ => {
         val interval :TemporalInterval = abs.id match {
           case empty :LocalRef if empty.isEmpty => context.interval
-          case actID :LActRef => context.getAction(actID)
-          case statementID :LStatementRef => context.getStatement(statementID)
           case ref :LocalRef => context.getIntervalWithID(ref)
           case _ => throw new ANMLException("Unable to extract interval from context:"+abs)
         }

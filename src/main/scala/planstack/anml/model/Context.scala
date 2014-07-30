@@ -3,7 +3,7 @@ package planstack.anml.model
 import scala.collection.mutable
 import planstack.anml.ANMLException
 import scala.collection.mutable.ListBuffer
-import planstack.anml.model.concrete.{TemporalInterval, Action, VarRef}
+import planstack.anml.model.concrete.{ActionCondition, TemporalInterval, Action, VarRef}
 import planstack.anml.model.concrete.statements.Statement
 
 /**
@@ -21,16 +21,23 @@ abstract class AbstractContext {
   protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
   protected val actions = mutable.Map[LActRef, Action]()
+  protected val actionConditions = mutable.Map[LActRef, ActionCondition]()
 
   protected val statements = mutable.Map[LStatementRef, Statement]()
 
   def getIntervalWithID(ref:LocalRef) : TemporalInterval = {
-    if(actions.contains(new LActRef(ref.id))) {
+    if(actions.contains(new LActRef(ref.id)) && !actionConditions.contains(new LActRef(ref.id))) {
+      //TODO above line is a ugly hack
       actions(new LActRef(ref.id))
     } else if(statements.contains(new LStatementRef(ref.id))) {
       statements(new LStatementRef(ref.id))
+    } else if(actionConditions.contains(new LActRef(ref.id))) {
+      actionConditions(new LActRef(ref.id))
     } else {
-      throw new ANMLException("Unable to find an interval with ID: "+ref)
+      parentContext match {
+        case Some(context) => context.getIntervalWithID(ref)
+        case None => throw new ANMLException("Unable to find an interval with ID: "+ref)
+      }
     }
   }
 
@@ -115,6 +122,12 @@ abstract class AbstractContext {
   def addAction(localID:LActRef, globalID:Action) {
     assert(!actions.contains(localID) || actions(localID) == null)
     actions(localID) = globalID
+  }
+
+  def addActionCondition(localID:LActRef, globalDef:ActionCondition) {
+    assert(!actions.contains(localID) || actions(localID) == null)
+    assert(!actionConditions.contains(localID) || actionConditions(localID) == null)
+    actionConditions(localID) = globalDef
   }
 
 

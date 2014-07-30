@@ -41,6 +41,14 @@ trait StateModifier {
   /** Actions to be inserted in the plan */
   def actions : java.util.List[Action]
 
+  /** Actions conditions that must be fulfilled by the plan.
+    *
+    * An action condition has an action name, a set of parameters and two timepoints.
+    * It can be fulfilled/supported by an action with the same whose parameters and
+    * time points are equal to those of the action condition.
+    */
+  def actionConditions : java.util.List[ActionCondition]
+
   /** (Type, Reference) of global variables to be declared */
   def vars : java.util.List[Pair[String, VarRef]]
 
@@ -56,6 +64,7 @@ class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 
   val statements = new util.LinkedList[Statement]()
   val actions = new util.LinkedList[Action]()
+  val actionConditions = new util.LinkedList[ActionCondition]()
   val vars = new util.LinkedList[Pair[String, VarRef]]()
   override val instances = new util.LinkedList[String]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()

@@ -78,6 +78,7 @@ class Action(
 
   def name = abs.name
   val actions = new util.LinkedList[Action]()
+  val actionConditions = new util.LinkedList[ActionCondition]()
 
   def decompositions = seqAsJavaList(abs.decompositions)
 
