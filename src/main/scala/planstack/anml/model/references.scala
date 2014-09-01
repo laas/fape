@@ -7,7 +7,7 @@ object LocalRef {
   def getNext = {next+=1; "locRef$"+(next-1)}
 }
 
-import LocalRef._
+import planstack.anml.model.LocalRef._
 
 class LocalRef(val id:T) {
   def this() = this(getNext)
@@ -37,14 +37,33 @@ class LActRef(id:T) extends LocalRef(id) {
   def this() = this(getNext)
 }
 
+object LActRef {
+  def apply(id:T) =
+    if(id == NullID) new LActRef()
+    else new LActRef(id)
+}
+
 /** Local reference to a variable */
 class LVarRef(id:T) extends LocalRef(id) {
   def this() = this(getNext)
+}
+
+object LVarRef {
+  def apply(id:T) =
+    if(id == NullID) new LVarRef()
+    else new LVarRef(id)
 }
 
 /** Local reference to a statement */
 class LStatementRef(id:T) extends LocalRef(id) {
   def this() = this(getNext)
 }
+
+object LStatementRef {
+  def apply(id:T) =
+    if(id == NullID) new LStatementRef()
+    else new LStatementRef(id)
+}
+
 
 

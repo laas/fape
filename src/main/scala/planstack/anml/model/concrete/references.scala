@@ -9,7 +9,7 @@ object GlobalRef {
   def getNext = {next += 1; next-1}
 }
 
-import GlobalRef._
+import planstack.anml.model.concrete.GlobalRef._
 
 /** Global reference to an anml object.
   *

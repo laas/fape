@@ -1,17 +1,20 @@
 package planstack.anml
 
+import planstack.anml.model.AnmlProblem
 import planstack.anml.parser.ANMLFactory
 
 object Parsing extends App {
 
-  if(args.size == 0)
-    println("Error: give one anml file to parse.")
-  else {
-    val file = args(0)
-    println("Parsing: "+file)
+  val file =
+    if(args.size == 0)
+      "resources/simple.anml"
+    else
+      args(0)
+  println("Parsing: "+file)
 
-    println(ANMLFactory.parseAnmlFromFile(file))
-  }
+  val res = ANMLFactory.parseAnmlFromFile(file)
 
+  val pb = new AnmlProblem(usesActionConditions = true)
+  pb.addAnml(res)
 
 }

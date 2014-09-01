@@ -1,17 +1,22 @@
 package planstack.anml.model.abs
 
-import planstack.anml.parser
-import planstack.anml.model.{LocalRef, LActRef}
+import planstack.anml.model.abs.statements.AbstractStatement
 import planstack.anml.model.abs.time.AbstractTimepointRef
+import planstack.anml.model.concrete.TemporalConstraint
+import planstack.anml.model.{AnmlProblem, Context, LActRef, LocalRef}
+import planstack.anml.parser
 
 
 class AbstractTemporalConstraint(
     val tp1:AbstractTimepointRef,
     val op:String,
     val tp2:AbstractTimepointRef,
-    val plus:Integer) {
+    val plus:Integer)
+  extends AbstractStatement(new LocalRef()) {
 
   override def toString = "%s %s %s + %s".format(tp1, op, tp2, plus)
+
+  override def bind(context:Context, pb:AnmlProblem) = TemporalConstraint(pb, context, this)
 }
 
 object AbstractTemporalConstraint {

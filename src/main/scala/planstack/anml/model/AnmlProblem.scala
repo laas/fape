@@ -1,16 +1,11 @@
 package planstack.anml.model
 
-import collection.JavaConversions._
+import planstack.anml.model.abs.{AbstractAction, AbstractTemporalConstraint, StatementsFactory}
+import planstack.anml.model.concrete._
+import planstack.anml.parser.ParseResult
 import planstack.anml.{ANMLException, parser}
 
-import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
-import planstack.anml.parser.{ParseResult, FuncExpr, VarExpr}
-import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import planstack.anml.model.concrete._
-import planstack.anml.model.concrete.statements.TemporalStatement
-import planstack.anml.model.abs.{AbstractTemporalConstraint, AbstractTemporalStatement, AbstractActionRef, AbstractAction}
-import scala.Some
+import scala.collection.JavaConversions._
 
 /** Description of an ANML problem.
   *
@@ -37,8 +32,10 @@ import scala.Some
   * A first one is added in the constructor containing predefined instances of the problem (such as true and false).
   * Every time an `addAnml(...)` method it called, the problem's components are updated accordingly and a new
   * [[planstack.anml.model.concrete.StateModifier]] is added to represent the changes in the problems.
+  *
+  * @param usesActionConditions If set to true, the ANML problem will use ActionCondition instead of Action for representing subtasks.
   */
-class AnmlProblem extends TemporalInterval {
+class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
   /**
    * A time-point representing the earliest possible execution of an action.
@@ -98,6 +95,12 @@ class AnmlProblem extends TemporalInterval {
     case None => throw new ANMLException("No action named "+name)
   }
 
+  /** Returns true if this problem definition contains an action with the given name */
+  def containsAction(name:String) : Boolean = abstractActions.find(_.name == name) match {
+    case Some(act) => true
+    case None => false
+  }
+
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
    * those are encoded as a StateModifier and added to `modifiers`
@@ -132,7 +135,13 @@ class AnmlProblem extends TemporalInterval {
     blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {
       assert(!funcDecl.name.contains("."), "Declaring function "+funcDecl+" is not supported. If you wanted to " +
         "declared a function linked to type, you should do so in the type itself.") // TODO: should be easy to support
-      functions.addFunction(funcDecl)
+
+      if(funcDecl.args.isEmpty && funcDecl.isConstant)
+        // declare as a variable since it as no argument and is constant.
+        context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, new VarRef())
+      else
+        // either non-constant or with arguments
+        functions.addFunction(funcDecl)
     })
 
     // find all methods declared inside a type and them to functions and to the type.
@@ -143,13 +152,6 @@ class AnmlProblem extends TemporalInterval {
       })
     })
 
-    blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
-      val ts = AbstractTemporalStatement(this, this.context, tempStatement)
-      val annotatedStatement = TemporalStatement(this, context, ts)
-      modifier.statements += annotatedStatement.statement
-      context.addStatement(ts.statement.id, annotatedStatement.statement)
-      modifier.temporalConstraints ++= annotatedStatement.getTemporalConstraints
-    })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
       val abs = AbstractAction(actionDecl, this)
@@ -157,11 +159,14 @@ class AnmlProblem extends TemporalInterval {
 
       // if the action is a seed, add it to the modifier to make sure it appears in the initial plan.
       if(abs.name == "Seed" || abs.name == "seed") {
-        val localRef = new LActRef()
-        val act = Action.getNewStandaloneAction(this, abs)
-        context.addAction(localRef, act)
-        modifier.actions += act
+        throw new ANMLException("Seed action is depreciated.")
       }
+    })
+
+
+    blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
+      val absStatements = StatementsFactory(tempStatement, this.context, this)
+      modifier.addAll(absStatements, context, this)
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {

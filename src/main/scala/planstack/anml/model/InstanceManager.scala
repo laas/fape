@@ -1,10 +1,11 @@
 package planstack.anml.model
 
-import collection.JavaConversions._
-import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
-import scala.collection.mutable
-import planstack.anml.{ANMLException, parser}
+import planstack.anml.ANMLException
 import planstack.anml.model.concrete.{InstanceRef, VarRef}
+import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 
 class InstanceManager {

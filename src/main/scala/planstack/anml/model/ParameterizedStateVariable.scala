@@ -1,9 +1,9 @@
 package planstack.anml.model
 
-import planstack.anml.{ANMLException, parser}
-import scala.collection.JavaConversions._
-
 import planstack.anml.model.concrete.VarRef
+import planstack.anml.{ANMLException, parser}
+
+import scala.collection.JavaConversions._
 
 
 class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRef]) {
@@ -13,6 +13,9 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
     new ParameterizedStateVariable(func, args.map(context.getGlobalVar(_)))
 
   def jArgs = seqAsJavaList(args)
+
+  /** True if this state variables represents a resource (i.e. has a numeric type) */
+  def isResource = func.isInstanceOf[NumFunction]
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
 }
@@ -32,6 +35,7 @@ class ParameterizedStateVariable(val func:Function, val args:List[VarRef]) {
 object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
+    // get a normalized version of the expression
     val func:parser.FuncExpr = expr match {
       case parser.FuncExpr(nameParts, argList) => {
         if(pb.functions.isDefined(nameParts.mkString("."))) {

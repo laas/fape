@@ -1,82 +1,37 @@
 package planstack.anml.model.abs
 
-import planstack.anml.ANMLException
+import planstack.anml.model.abs.statements.{AbstractResourceStatement, AbstractLogStatement, AbstractStatement}
+import planstack.anml.model.{AnmlProblem, LVarRef, PartialContext}
 import planstack.anml.parser
+
+import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
-import planstack.anml.model.{LVarRef, AnmlProblem, PartialContext}
-import collection.JavaConversions._
-import planstack.anml.parser.PartiallyOrderedActionRef
 
 class AbstractDecomposition(parentContext:PartialContext) {
   val context = new PartialContext(Some(parentContext))
 
-  val actions = ListBuffer[AbstractActionRef]()
-  def jActions = seqAsJavaList(actions)
+  val statements = ListBuffer[AbstractStatement]()
 
-  val temporalConstraints = ListBuffer[AbstractTemporalConstraint]()
-  val temporalStatements = ListBuffer[AbstractTemporalStatement]()
+  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractActionRef]).map(_.asInstanceOf[AbstractActionRef]))
+  def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
+  def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
+  def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
+
 }
 
 
 object AbstractDecomposition {
 
-  /**
-   * Extracts all leaves in a tree structure composed
-   * of Lists and Sets and where every leaf in an Int
-   * @param in
-   * @return
-   */
-  private def extractAllInt(in:Any) : Set[Int] = {
-    in match {
-      case i:Int => Set(i)
-      case l:List[Any] => l.foldLeft(Set[Int]())((set, in) => set ++ extractAllInt(in))
-      case s:Set[Any] @unchecked => s.foldLeft(Set[Int]())((set, in) => set ++ extractAllInt(in))
-      case x => throw new ANMLException("Unsupported structure for extraction: " + x)
-    }
-  }
-
-  private def addPrecedenceConstraints(dec:AbstractDecomposition, constraints:Any) {
-    constraints match {
-      case x:Int =>
-      case s:Set[Any] @unchecked => s.foreach(addPrecedenceConstraints(dec, _))
-      case head :: Nil => addPrecedenceConstraints(dec, head)
-      case head :: tail => {
-        for(i <- extractAllInt(head) ; j <- extractAllInt(tail.head)) {
-          dec.temporalConstraints += AbstractTemporalConstraint.before(dec.actions(i).localId, dec.actions(j).localId)
-        }
-        addPrecedenceConstraints(dec, head)
-        addPrecedenceConstraints(dec, tail)
-      }
-    }
-  }
-
-  private def addPOActions(pb:AnmlProblem, dec:AbstractDecomposition, poActions:parser.PartiallyOrderedActionRef) : Any = {
-    poActions match {
-      case ar:parser.ActionRef => {
-        val (actionRef, statements) = AbstractActionRef(pb, dec.context, ar)
-        dec.actions += actionRef
-        dec.temporalStatements ++= statements
-        dec.actions.length -1
-      }
-      case unordered:parser.UnorderedActionRef => {
-        unordered.list.map(addPOActions(pb, dec, _)).toSet
-      }
-      case ordered:parser.OrderedActionRef => ordered.list.map(addPOActions(pb, dec, _)).toList
-    }
-  }
-
   def apply(pb:AnmlProblem, context:PartialContext, pDec:parser.Decomposition) : AbstractDecomposition = {
     val dec = new AbstractDecomposition(context)
 
     pDec.content.foreach(_ match {
-      case actions:parser.PartiallyOrderedActionRef => {
-        val precedenceStruct = addPOActions(pb, dec, actions)
-        addPrecedenceConstraints(dec, precedenceStruct)
-      }
-      case constraint:parser.TemporalConstraint => dec.temporalConstraints += AbstractTemporalConstraint(constraint)
+      case constraint:parser.TemporalConstraint => dec.statements += AbstractTemporalConstraint(constraint)
       // constant function with no arguments is interpreted as local variable
       case const:parser.Constant => dec.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
-      case statement:parser.TemporalStatement => dec.temporalStatements += AbstractTemporalStatement(pb, dec.context, statement)
+      case statement:parser.TemporalStatement => {
+        dec.statements ++= StatementsFactory(statement, dec.context, pb)
+      }
     })
 
     dec

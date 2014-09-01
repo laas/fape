@@ -1,11 +1,10 @@
 package planstack.anml.model.concrete
 
 import planstack.anml.ANMLException
+import planstack.anml.model.abs.{AbstractAction, AbstractActionRef}
+import planstack.anml.model.{AnmlProblem, Context}
 
 import scala.collection.JavaConversions._
-
-import planstack.anml.model.{Context, AnmlProblem}
-import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
 
 /** An action condition states that some task with the same name, parameters and time points must
   * be present in the plan.

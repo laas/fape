@@ -1,7 +1,7 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
+import planstack.anml.model.{AnmlProblem, Context}
 
 
 /** Representation of an ANML temporal annotation such as [start, end+10].

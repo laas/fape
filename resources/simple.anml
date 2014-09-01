@@ -53,6 +53,8 @@ action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
     r.mLocation == l;
     s.mLocation == l :-> g; 
   };
+
+  [all] DropWithRightGripper(r, g, s, l);
 };
 
 action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){

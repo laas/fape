@@ -1,9 +1,8 @@
 package planstack.anml.model.concrete.statements
 
-import planstack.anml.model._
-import planstack.anml.model.concrete.{VarRef, TemporalInterval}
 import planstack.anml.ANMLException
-import planstack.anml.model.abs.statements.AbstractStatement
+import planstack.anml.model._
+import planstack.anml.model.concrete.{TemporalInterval, VarRef}
 
 
 /** Describes a concrete ANML statement such as `location(Rb) == l`, ...

@@ -1,13 +1,12 @@
 package planstack.anml.model.concrete
 
-import collection.JavaConversions._
-
-import planstack.anml.model._
-import planstack.anml.model.concrete.statements.{LogStatement, TemporalStatement, Statement}
-import planstack.anml.ANMLException
-import planstack.anml.model.abs.{AbstractActionRef, AbstractAction}
-import scala.collection.mutable.ListBuffer
 import java.util
+
+import planstack.anml.ANMLException
+import planstack.anml.model._
+import planstack.anml.model.abs.{AbstractAction, AbstractActionRef}
+import planstack.anml.model.concrete.statements.Statement
+
 import scala.collection.JavaConversions._
 
 
@@ -57,7 +56,7 @@ class Action(
     * @param newStatus New status of the action.
     */
   def setStatus(newStatus: ActionStatus) {
-    import ActionStatus._
+    import planstack.anml.model.concrete.ActionStatus._
     mStatus match {
       case PENDING => //assert(newStatus == EXECUTING)
       case EXECUTING => //assert(newStatus == FAILED || newStatus == EXECUTED)
@@ -219,19 +218,7 @@ object Action {
 
     val act = new Action(abs, context, id, parentAction)
 
-    // annotated statements produce both statements and temporal constraints.
-    val annotatedStatements =
-      for(absStatement <- abs.temporalStatements) yield {
-        val concrete = TemporalStatement(pb, context, absStatement)
-        // update the context with a mapping from the local ID to the actual statement
-        context.addStatement(absStatement.statement.id, concrete.statement)
-        concrete
-      }
-    act.statements ++= annotatedStatements.map(_.statement)
-    act.temporalConstraints ++= annotatedStatements.map(_.getTemporalConstraints).flatten
-
-
-    act.temporalConstraints ++= abs.temporalConstraints.map(TemporalConstraint(pb, context, _))
+    act.addAll(abs.statements, context, pb)
 
     // if there is a parent action, add a mapping localId -> globalID to its context
     contextOpt match {

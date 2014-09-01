@@ -2,8 +2,8 @@ package planstack.anml.model
 
 import planstack.anml.{ANMLException, parser}
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
-import collection.JavaConversions._
 
 /** Representation of an ANML function.
   *

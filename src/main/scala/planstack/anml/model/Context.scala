@@ -1,10 +1,11 @@
 package planstack.anml.model
 
-import scala.collection.mutable
 import planstack.anml.ANMLException
-import scala.collection.mutable.ListBuffer
-import planstack.anml.model.concrete.{ActionCondition, TemporalInterval, Action, VarRef}
 import planstack.anml.model.concrete.statements.Statement
+import planstack.anml.model.concrete.{Action, ActionCondition, TemporalInterval, VarRef}
+
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 /**
  * A context defines mapping between local references appearing in abstract objects and

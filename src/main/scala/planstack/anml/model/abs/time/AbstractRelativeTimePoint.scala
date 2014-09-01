@@ -1,6 +1,6 @@
 package planstack.anml.model.abs.time
 
-import planstack.anml.model.{LocalRef, LActRef}
+import planstack.anml.model.LocalRef
 import planstack.anml.parser
 
 class AbstractRelativeTimePoint(val timepoint:AbstractTimepointRef, val delta:Int) {

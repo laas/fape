@@ -1,13 +1,11 @@
 package planstack.anml.model.abs
 
-import planstack.anml.{ANMLException, parser}
-import scala.collection.mutable
-import planstack.anml.parser._
-import planstack.anml.parser.TemporalStatement
-import planstack.anml.parser.ActionRef
-import planstack.anml.model.{LVarRef, PartialContext, AnmlProblem}
+import planstack.anml.model.abs.statements.{AbstractResourceStatement, AbstractLogStatement, AbstractStatement}
+import planstack.anml.model.{AnmlProblem, LVarRef, PartialContext}
+import planstack.anml.parser
 
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /** An abstract action is an representation for an action as it is defined in an ANML problem.
   * It gives, for an action, an abstract view of what it does, regardless of the parameters it will be given when instantiated.
@@ -37,12 +35,15 @@ class AbstractAction(val name:String, private val mArgs:List[LVarRef], val conte
   def jDecompositions = seqAsJavaList(decompositions)
 
   /** All abstract temporal statements appearing in this action */
-  val temporalStatements = mutable.ArrayBuffer[AbstractTemporalStatement]()
+  val statements = mutable.ArrayBuffer[AbstractStatement]()
 
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
-  def jTemporalStatements = seqAsJavaList(temporalStatements)
+  def jTemporalStatements = seqAsJavaList(statements)
 
-  val temporalConstraints = mutable.ArrayBuffer[AbstractTemporalConstraint]()
+  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractActionRef]).map(_.asInstanceOf[AbstractActionRef]))
+  def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
+  def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
+  def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
 
   override def toString = name
 }
@@ -64,13 +65,13 @@ object AbstractAction {
 
     act.content foreach( _ match {
       case ts:parser.TemporalStatement => {
-        action.temporalStatements += AbstractTemporalStatement(pb, action.context, ts)
+        action.statements ++= StatementsFactory(ts, action.context, pb)
       }
       case dec:parser.Decomposition => {
         action.decompositions += AbstractDecomposition(pb, action.context, dec)
       }
       case tempConstraint:parser.TemporalConstraint => {
-        action.temporalConstraints += AbstractTemporalConstraint(tempConstraint)
+        action.statements += AbstractTemporalConstraint(tempConstraint)
       }
       case parser.Motivated => action.motivated = true
     })

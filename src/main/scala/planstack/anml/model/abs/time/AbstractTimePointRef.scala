@@ -1,8 +1,7 @@
 package planstack.anml.model.abs.time
 
-import planstack.anml.parser
-import planstack.anml.model.{LocalRef, LActRef}
-import planstack.anml.ANMLException
+import planstack.anml.model.{LActRef, LocalRef}
+import planstack.anml.{ANMLException, parser}
 
 /** Reference to a the start or end timepoint of a temporal interval.
   *

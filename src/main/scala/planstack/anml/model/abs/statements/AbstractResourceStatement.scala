@@ -1,7 +1,7 @@
 package planstack.anml.model.abs.statements
 
-import planstack.anml.model.{Context, LStatementRef, AbstractParameterizedStateVariable}
 import planstack.anml.model.concrete.statements._
+import planstack.anml.model.{AbstractParameterizedStateVariable, AnmlProblem, Context, LStatementRef}
 
 /** An abstract ANML resource Statement.
   *
@@ -12,7 +12,9 @@ import planstack.anml.model.concrete.statements._
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   * @param id A local reference to the Statement (for temporal constraints).
   */
-abstract class AbstractResourceStatement(sv:AbstractParameterizedStateVariable, val param:Float, id:LStatementRef) extends AbstractStatement(sv, id) {
+abstract class AbstractResourceStatement(val sv:AbstractParameterizedStateVariable, val param:Float, override val id:LStatementRef)
+  extends AbstractStatement(id)
+{
   require(sv.func.valueType == "integer")
 
   def operator : String
@@ -25,7 +27,7 @@ abstract class AbstractResourceStatement(sv:AbstractParameterizedStateVariable, 
    * @param context Context in which this statement appears.
    * @return
    */
-  def bind(context: Context): ResourceStatement = {
+  override def bind(context: Context, pb:AnmlProblem): ResourceStatement = {
     val variable = sv.bind(context)
 
     this match {

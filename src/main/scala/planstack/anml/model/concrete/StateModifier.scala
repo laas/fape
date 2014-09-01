@@ -1,9 +1,14 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.concrete.statements.{ResourceStatement, LogStatement, Statement, TemporalStatement}
-import collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
 import java.util
+
+import planstack.anml.ANMLException
+import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.abs.{AbstractActionRef, AbstractTemporalConstraint}
+import planstack.anml.model.concrete.statements.{LogStatement, ResourceStatement, Statement}
+import planstack.anml.model.{AnmlProblem, Context}
+
+import scala.collection.JavaConversions._
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -58,7 +63,36 @@ trait StateModifier {
   def instances : java.util.List[String] = Nil
 
   def temporalConstraints : java.util.List[TemporalConstraint]
+
+  def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem): Unit = {
+    for(absStatement <- absStatements) {
+      absStatement match {
+        case s: AbstractLogStatement => {
+          val binded = s.bind(context, pb)
+          statements += binded
+          context.addStatement(s.id, binded)
+        }
+        case s: AbstractResourceStatement => {
+          val binded = s.bind(context, pb)
+          statements += binded
+          context.addStatement(s.id, binded)
+        }
+        case s:AbstractTemporalConstraint => temporalConstraints += s.bind(context, pb)
+        case s:AbstractActionRef => {
+          val parent =
+            if (this.isInstanceOf[Action]) Some(this.asInstanceOf[Action])
+            else None
+          if (pb.usesActionConditions) {
+            actionConditions += ActionCondition(pb, s, context, parent)
+          } else {
+            actions += Action(pb, s, parent, Some(context))
+          }
+        }
+        case _ => throw new ANMLException("unsupported yet:" + absStatement)
+      }
+    }
   }
+}
 
 class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 

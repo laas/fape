@@ -1,11 +1,12 @@
 package planstack.anml
 
-import scala.util.parsing.combinator._
-import planstack.anml.parser.AnmlParser._
 import java.io.FileReader
+
 import planstack.anml.model.AnmlProblem
-import planstack.anml.model.concrete.{Decomposition, Action}
-import collection.JavaConversions._
+import planstack.anml.model.concrete.{Action, Decomposition}
+import planstack.anml.parser.AnmlParser._
+
+import scala.collection.JavaConversions._
 
 object Main extends App {
 
@@ -21,7 +22,7 @@ object Main extends App {
 //    case x => println("Failure: "+x)
 //  }
 
-  val pb = new AnmlProblem
+  val pb = new AnmlProblem(usesActionConditions = true)
 
 
   parseAll(anml, new FileReader("resources/test.anml")) match {

@@ -1,8 +1,8 @@
 package planstack.anml.model.concrete.time
 
-import planstack.anml.model.{AnmlProblem, Context}
 import planstack.anml.model.abs.time.AbstractRelativeTimePoint
 import planstack.anml.model.concrete.TPRef
+import planstack.anml.model.{AnmlProblem, Context}
 
 /** Refers to a virtual timepoint placed relatively to a concrete timepoint.
   *

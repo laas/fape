@@ -1,10 +1,10 @@
 package planstack.anml.parser
 
-import AnmlParser._
-import java.io.FileReader
 import planstack.anml.ANMLException
-import scala.util.matching.Regex.Match
 import planstack.anml.model.AnmlProblem
+import planstack.anml.parser.AnmlParser._
+
+import scala.util.matching.Regex.Match
 
 object ANMLFactory {
 
@@ -55,7 +55,7 @@ object ANMLFactory {
       println("Please, provide at least one filename as argument");
     else {
       val res = parseAnmlFromFile(args(0))
-      val pb = new AnmlProblem
+      val pb = new AnmlProblem(usesActionConditions = true)
       pb.addAnml(res)
     }
   }
