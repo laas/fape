@@ -69,7 +69,7 @@ class AbstractDuration(val constantDur : Int, val func : AbstractParameterizedSt
   def this(constantDur : Int) = this(constantDur, null)
   def this(func : AbstractParameterizedStateVariable) = this (-1, func)
 
-  def isConstant = func != null
+  def isConstant = func == null
 }
 
 object AbstractDuration {

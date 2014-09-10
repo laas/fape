@@ -25,6 +25,7 @@ object StatementsFactory {
         }
       }
       case parser.VarExpr(x) => parser.FuncExpr(List(x), Nil)
+      case _ => throw new ANMLException("Unsupported expression: "+expr)
     }
   }
 

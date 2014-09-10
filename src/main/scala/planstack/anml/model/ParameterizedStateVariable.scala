@@ -54,6 +54,7 @@ object AbstractParameterizedStateVariable {
           throw new ANMLException("This VarExpr does not refer to any existing function: "+expr)
         }
       }
+      case parser.NumExpr(_) => throw new ANMLException("Cannot build a state variable from a numeric expression: "+expr)
     }
     new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(e => new LVarRef(e.variable)))
   }
