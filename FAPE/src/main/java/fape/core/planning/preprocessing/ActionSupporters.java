@@ -5,8 +5,9 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractTemporalStatement;
+import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
+import planstack.anml.model.abs.statements.AbstractStatement;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -52,9 +53,9 @@ public class ActionSupporters implements ActionSupporterFinder {
         Set<AbstractAction> ret = new HashSet<>();
 
         for(AbstractAction act : pb.abstractActions()) {
-            for(AbstractTemporalStatement ts : act.jTemporalStatements()) {
-                if(ts.statement().sv().func() == f && !(ts.statement() instanceof AbstractPersistence)) {
-                    assert !ret.contains(act) : "Action "+act+" has at least two statements supporting the database.";
+            for(AbstractLogStatement s : act.jLogStatements()) {
+                if (s.sv().func() == f && !(s instanceof AbstractPersistence)) {
+                    assert !ret.contains(act) : "Action " + act + " has at least two statements supporting the database.";
                     ret.add(act);
                 }
             }

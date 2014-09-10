@@ -19,9 +19,10 @@ import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractTemporalStatement;
 import planstack.anml.model.abs.statements.AbstractConsumeResource;
 import planstack.anml.model.abs.statements.AbstractProduceResource;
+import planstack.anml.model.abs.statements.AbstractResourceStatement;
+import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 
@@ -96,9 +97,9 @@ public class Replenishable extends Resource {
         //check whether we can add an action to resolve a conflict
         HashSet<AbstractAction> candidates = new HashSet<>();
         for (AbstractAction act : st.pb.abstractActions()) {
-            for (AbstractTemporalStatement ts : act.jTemporalStatements()) {
-                if (ts.statement().sv().func() == var.func() && ((amount < 0 && ts.statement() instanceof AbstractProduceResource) || //we need a production event to satisfy our overconsumption
-                        (amount > 0 && ts.statement() instanceof AbstractConsumeResource))) { //vice-versa
+            for (AbstractResourceStatement resStatement : act.jResStatements()) {
+                if (resStatement.sv().func() == var.func() && ((amount < 0 && resStatement instanceof AbstractProduceResource) || //we need a production event to satisfy our overconsumption
+                        (amount > 0 && resStatement instanceof AbstractConsumeResource))) { //vice-versa
                     candidates.add(act);
                     ResourceSupportingAction o = new ResourceSupportingAction();
                     o.action = act;

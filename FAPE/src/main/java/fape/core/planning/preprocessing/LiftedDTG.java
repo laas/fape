@@ -8,11 +8,7 @@ import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.SymFunction;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractTemporalStatement;
-import planstack.anml.model.abs.statements.AbstractAssignment;
-import planstack.anml.model.abs.statements.AbstractPersistence;
-import planstack.anml.model.abs.statements.AbstractStatement;
-import planstack.anml.model.abs.statements.AbstractTransition;
+import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.concrete.VarRef;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
@@ -43,10 +39,10 @@ public class LiftedDTG implements ActionSupporterFinder{
 
         // build the constraint between fluents types
         for(AbstractAction aa : problem.abstractActions()) {
-            for(AbstractTemporalStatement ts : aa.jTemporalStatements()) {
-                if(ts.statement() instanceof AbstractTransition || ts.statement() instanceof AbstractAssignment) {
-                    for(FluentType prec : getPreconditions(aa, ts.statement())) {
-                        for(FluentType eff : getEffects(aa, ts.statement())) {
+            for(AbstractLogStatement s : aa.jLogStatements()) {
+                if(s instanceof AbstractTransition || s instanceof AbstractAssignment) {
+                    for(FluentType prec : getPreconditions(aa, s)) {
+                        for(FluentType eff : getEffects(aa, s)) {
                             if(!dag.contains(prec))
                                 dag.addVertex(prec);
                             if(!dag.contains(eff))
@@ -81,7 +77,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         return supporters;
     }
 
-    public Set<FluentType> getEffects(AbstractAction a, AbstractStatement s) {
+    public Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
         Set<FluentType> allEffects = new HashSet<>();
         List<String> argTypes = new LinkedList<>();
         String valType = null;
@@ -108,13 +104,13 @@ public class LiftedDTG implements ActionSupporterFinder{
 
     public Set<FluentType> getEffects(AbstractAction a) {
         Set<FluentType> allEffects = new HashSet<>();
-        for(AbstractTemporalStatement ts : a.jTemporalStatements()) {
-            allEffects.addAll(getEffects(a, ts.statement()));
+        for(AbstractLogStatement s : a.jLogStatements()) {
+            allEffects.addAll(getEffects(a, (AbstractLogStatement) s));
         }
         return allEffects;
     }
 
-    public Set<FluentType> getPreconditions(AbstractAction a, AbstractStatement s) {
+    public Set<FluentType> getPreconditions(AbstractAction a, AbstractLogStatement s) {
         Set<FluentType> allPrecond = new HashSet<>();
         List<String> argTypes = new LinkedList<>();
         String valType = null;
@@ -148,8 +144,8 @@ public class LiftedDTG implements ActionSupporterFinder{
     public Set<FluentType> getPreconditions(AbstractAction a) {
         Set<FluentType> allPrecond = new HashSet<>();
 
-        for(AbstractTemporalStatement ts : a.jTemporalStatements()) {
-            allPrecond.addAll(getPreconditions(a, ts.statement()));
+        for(AbstractLogStatement s : a.jLogStatements()) {
+            allPrecond.addAll(getPreconditions(a, s));
         }
 
         return allPrecond;

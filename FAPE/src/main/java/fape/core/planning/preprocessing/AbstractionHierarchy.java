@@ -5,10 +5,7 @@ import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractTemporalStatement;
-import planstack.anml.model.abs.statements.AbstractAssignment;
-import planstack.anml.model.abs.statements.AbstractPersistence;
-import planstack.anml.model.abs.statements.AbstractTransition;
+import planstack.anml.model.abs.statements.*;
 import planstack.graph.GraphFactory;
 import planstack.graph.algorithms.StronglyConnectedComponent;
 import planstack.graph.core.UnlabeledDigraph;
@@ -90,26 +87,26 @@ public class AbstractionHierarchy {
 
     public Set<FluentType> getEffects(AbstractAction a) {
         Set<FluentType> allEffects = new HashSet<>();
-        for(AbstractTemporalStatement ts : a.jTemporalStatements()) {
+        for(AbstractLogStatement ls : a.jLogStatements()) {
             List<String> argTypes = new LinkedList<>();
             String valType = null;
-            if(ts.statement() instanceof AbstractTransition) {
-                for(LVarRef arg : ts.statement().sv().jArgs()) {
+            if (ls instanceof AbstractTransition) {
+                for (LVarRef arg : ls.sv().jArgs()) {
                     argTypes.add(a.context().getType(arg));
                 }
-                valType = a.context().getType(((AbstractTransition) ts.statement()).to());
+                valType = a.context().getType(((AbstractTransition) ls).to());
 
-            } else if(ts.statement() instanceof AbstractAssignment) {
-                for(LVarRef arg : ts.statement().sv().jArgs()) {
+            } else if (ls instanceof AbstractAssignment) {
+                for (LVarRef arg : ls.sv().jArgs()) {
                     argTypes.add(a.context().getType(arg));
                 }
-                valType = a.context().getType(((AbstractAssignment) ts.statement()).value());
+                valType = a.context().getType(((AbstractAssignment) ls).value());
             } else {
                 // this statement has no effects
                 continue;
             }
 
-            FluentType fluent = new FluentType(ts.statement().sv().func().name(), argTypes, valType);
+            FluentType fluent = new FluentType(ls.sv().func().name(), argTypes, valType);
             allEffects.addAll(derivedSubTypes(fluent));
         }
         return allEffects;
@@ -117,26 +114,26 @@ public class AbstractionHierarchy {
 
     public Set<FluentType> getPreconditions(AbstractAction a) {
         Set<FluentType> allPrecond = new HashSet<>();
-        for(AbstractTemporalStatement ts : a.jTemporalStatements()) {
+        for(AbstractLogStatement s : a.jLogStatements()) {
             List<String> argTypes = new LinkedList<>();
             String valType = null;
-            if(ts.statement() instanceof AbstractTransition) {
-                for(LVarRef arg : ts.statement().sv().jArgs()) {
+            if (s instanceof AbstractTransition) {
+                for (LVarRef arg : s.sv().jArgs()) {
                     argTypes.add(a.context().getType(arg));
                 }
-                valType = a.context().getType(((AbstractTransition) ts.statement()).from());
+                valType = a.context().getType(((AbstractTransition) s).from());
 
-            } else if(ts.statement() instanceof AbstractPersistence) {
-                for(LVarRef arg : ts.statement().sv().jArgs()) {
+            } else if (s instanceof AbstractPersistence) {
+                for (LVarRef arg : s.sv().jArgs()) {
                     argTypes.add(a.context().getType(arg));
                 }
-                valType = a.context().getType(((AbstractPersistence) ts.statement()).value());
+                valType = a.context().getType(((AbstractPersistence) s).value());
             } else {
                 // this statement has no effects
                 continue;
             }
 
-            FluentType fluent = new FluentType(ts.statement().sv().func().name(), argTypes, valType);
+            FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
             allPrecond.addAll(derivedSubTypes(fluent));
         }
         return allPrecond;

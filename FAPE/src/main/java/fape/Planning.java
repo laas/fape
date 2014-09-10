@@ -200,9 +200,10 @@ public class Planning {
                                 planners.add(new BaseDTG());
                                 planners.add(new PGPlanner());
                                 planners.add(new PGExtPlanner());
+                                planners.add(new TaskConditionPlanner());
                                 break;
                             default:
-                                System.err.println("Accepted values for planner are: base, base+dtg, rpg, rpg-ext, all");
+                                System.err.println("Accepted values for planner are: base, base+dtg, rpg, rpg-ext, taskcond, all");
                         }
                     }
                     APlanner.currentPlanner = planners.peek();
