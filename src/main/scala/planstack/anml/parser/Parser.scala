@@ -42,6 +42,28 @@ case class Action(name:String, args:List[Argument], content:List[ActionContent])
 
 object Motivated extends ActionContent
 
+sealed trait Duration extends ActionContent {
+  if(minDur.isInstanceOf[NumExpr]) {
+    val f = minDur.asInstanceOf[NumExpr].value
+    assert((f - f.toInt.toFloat) == 0.0, "Duration is not an integer: "+minDur)
+  }
+  if(maxDur.isInstanceOf[NumExpr]) {
+    val f = maxDur.asInstanceOf[NumExpr].value
+    assert((f - f.toInt.toFloat) == 0.0, "Duration is not an integer: "+maxDur)
+  }
+
+  def minDur : Expr
+  def maxDur : Expr
+}
+
+case class ExactDuration(dur : Expr) extends Duration {
+  override def minDur = dur
+  override def maxDur = dur
+}
+
+case class BoundedDuration(minDur : Expr, maxDur : Expr) extends Duration
+
+
 case class Argument(tipe:String, name:String)
 
 case class Decomposition(content:Seq[DecompositionContent]) extends ActionContent
@@ -225,6 +247,10 @@ object AnmlParser extends JavaTokenParsers {
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
       | "motivated"~";" ^^^ List(Motivated)
+      | "duration"~":="~>expr<~";" ^^ (x => List(ExactDuration(x)))
+      | "duration"~":in"~"["~>expr~","~expr<~"]"~";" ^^ {
+        case min~","~max => List(BoundedDuration(min, max))
+      }
     )
 
   def decomposition : Parser[Decomposition] =
@@ -360,7 +386,7 @@ object AnmlParser extends JavaTokenParsers {
 
   def kwTempAnnot : Parser[String] = "start" | "end"
 
-  def keywords = kwType | kwTempAnnot | "motivated"
+  def keywords = kwType | kwTempAnnot | "motivated" | "duration"
 
   def word = not(keywords) ~> ident
 

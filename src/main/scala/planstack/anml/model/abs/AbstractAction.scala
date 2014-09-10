@@ -1,8 +1,9 @@
 package planstack.anml.model.abs
 
 import planstack.anml.model.abs.statements.{AbstractResourceStatement, AbstractLogStatement, AbstractStatement}
-import planstack.anml.model.{AnmlProblem, LVarRef, PartialContext}
+import planstack.anml.model._
 import planstack.anml.parser
+import planstack.anml.parser.NumExpr
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -25,6 +26,12 @@ class AbstractAction(val name:String, private val mArgs:List[LVarRef], val conte
   /** True if the action was defined with the motivated keyword. False otherwise. */
   def isMotivated = motivated
 
+  protected var _minDur : AbstractDuration = null
+  protected var _maxDur : AbstractDuration = null
+
+  def minDur = _minDur
+  def maxDur = _maxDur
+
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
 
@@ -46,6 +53,34 @@ class AbstractAction(val name:String, private val mArgs:List[LVarRef], val conte
   def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
 
   override def toString = name
+}
+
+/** Represents a duration used to represent minimal or maximal duration f an action.
+  * It can either be constant or a state variable (underlying function must be constant in time).
+  *
+  * @param constantDur Constant duration. SHould be set to -1 if the duration is a state variable
+  * @param func State Variable representing the (parameterized) duration of the action. Should be set
+  *             to null if the duration is represented by an integer.
+  */
+class AbstractDuration(val constantDur : Int, val func : AbstractParameterizedStateVariable) {
+  require(constantDur == -1 || func == null)
+  require(func == null || func.func.isConstant, "Error: a duration is represented as a non-constant function.")
+
+  def this(constantDur : Int) = this(constantDur, null)
+  def this(func : AbstractParameterizedStateVariable) = this (-1, func)
+
+  def isConstant = func != null
+}
+
+object AbstractDuration {
+
+  /** Creates an abstract duration from an expression. */
+  def apply(e : parser.Expr, context : AbstractContext, pb : AnmlProblem) : AbstractDuration = {
+    e match {
+      case v : parser.NumExpr => new AbstractDuration(v.value.toInt)
+      case e : parser.Expr => new AbstractDuration(StatementsFactory.asStateVariable(e, context, pb))
+    }
+  }
 }
 
 object AbstractAction {
@@ -73,7 +108,17 @@ object AbstractAction {
       case tempConstraint:parser.TemporalConstraint => {
         action.statements += AbstractTemporalConstraint(tempConstraint)
       }
-      case parser.Motivated => action.motivated = true
+      case parser.Motivated =>
+        action.motivated = true
+      case parser.ExactDuration(e) => {
+        val dur = AbstractDuration(e, action.context, pb)
+        action._minDur = dur
+        action._maxDur = dur
+      }
+      case parser.BoundedDuration(min, max) => {
+        action._minDur = AbstractDuration(min, action.context, pb)
+        action._maxDur = AbstractDuration(max, action.context, pb)
+      }
     })
 
     action

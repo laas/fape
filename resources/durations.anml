@@ -1,0 +1,18 @@
+type Loc;
+constant int travel_time(Loc a, Loc b);
+
+action a() {
+ duration := 10;
+};
+
+action b() {
+ duration :in [10,20];
+};
+
+action c(Loc a, Loc b) {
+ duration := travel_time(a, b);
+};
+
+action d(Loc a, Loc b, Loc c) {
+ duration :in [travel_time(a,b), travel_time(a,c)];
+};

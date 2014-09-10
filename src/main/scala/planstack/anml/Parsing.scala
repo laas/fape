@@ -7,7 +7,7 @@ object Parsing extends App {
 
   val file =
     if(args.size == 0)
-      "resources/simple.anml"
+      "resources/durations.anml"
     else
       args(0)
   println("Parsing: "+file)
@@ -17,4 +17,5 @@ object Parsing extends App {
   val pb = new AnmlProblem(usesActionConditions = true)
   pb.addAnml(res)
 
+  val breakPoint = true
 }

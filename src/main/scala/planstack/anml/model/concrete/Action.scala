@@ -4,7 +4,7 @@ import java.util
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.{AbstractAction, AbstractActionRef}
+import planstack.anml.model.abs.{AbstractDuration, AbstractAction, AbstractActionRef}
 import planstack.anml.model.concrete.statements.Statement
 
 import scala.collection.JavaConversions._
@@ -49,6 +49,9 @@ class Action(
   /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
   def isMotivated = abs.isMotivated
 
+  val minDuration = Duration(abs.minDur, context)
+  val maxDuration = Duration(abs.maxDur, context)
+
   /** Assigns a new status to the action.
     * Allowed transitions are
     *  - PENDING -> EXECUTING
@@ -87,36 +90,6 @@ class Action(
   /** Returns true if the statement `s` is contained in this action */
   def contains(s: Statement) = statements.contains(s)
 
-  /** Tries too find the minimal duration of this action by looking at explicit constraints between the
-    * start and the end time point of this action.
-    * It only provides an easy way to look up the duration of an action but it might (and will) miss some implicit constraints.
-    * Using this method should not prevent you from processing temporal constraints.
-    * @return A lower bound on the minimal duration of the action.
-    */
-  def minDuration : Int = temporalConstraints.foldLeft(Integer.MIN_VALUE)((minDur, constraint) => {
-    constraint match {
-      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == start && tp2 == end => Math.max(minDur, - plus)
-      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == end && tp2 == start => Math.max(minDur, plus)
-      case TemporalConstraint(tp1, "<", tp2, plus) if tp1 == start && tp2 == end => Math.max(minDur, - plus)
-      case _ => minDur
-    }
-  })
-
-  /** Tries too find the maximal duration of this action by looking at explicit constraints between the
-    * start and the end time point of this action.
-    * It only provides an easy way to look up the duration of an action but it might (and will) miss some implicit constraints.
-    * Using this method should not prevent you from processing temporal constraints.
-    * @return An upper bound on the maximal duration of the action.
-    */
-  def maxDuration : Int = temporalConstraints.foldLeft(Integer.MAX_VALUE)((maxDur, constraint) => {
-    constraint match {
-      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == start && tp2 == end => Math.min(maxDur, - plus)
-      case TemporalConstraint(tp1, "=", tp2, plus) if tp1 == end && tp2 == start => Math.min(maxDur, plus)
-      case TemporalConstraint(tp1, "<", tp2, plus) if tp1 == end && tp2 == start => Math.min(maxDur, plus)
-      case _ => maxDur
-    }
-  })
-
   /** Returns true if this action has a parent (ie. it is issued from a decomposition). */
   def hasParent = parentAction match {
     case Some(_) => true
@@ -134,6 +107,33 @@ class Action(
   def args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
+}
+
+/** Expresses either the min or max duration of an action. */
+sealed trait Duration {
+  def d : Int = -1
+  def sv : ParameterizedStateVariable = null
+
+  def isFunction = sv != null
+}
+
+object Duration {
+  def apply(abs:AbstractDuration, context:Context) : Duration = {
+    if(abs.isConstant)
+      new IntDuration(abs.constantDur)
+    else
+      new FuncDuration(abs.func.bind(context))
+  }
+}
+
+/** A constant duration. Does not deepend on any parameters. */
+class IntDuration(override val d : Int) extends Duration
+
+/** A constant duration depending on some parameters.
+  * This is represented by a *constant* parameterized state variable.
+  */
+class FuncDuration(override val sv : ParameterizedStateVariable) extends Duration {
+  require(sv.func.isConstant, "Function used as duration is not constant: "+sv)
 }
 
 
