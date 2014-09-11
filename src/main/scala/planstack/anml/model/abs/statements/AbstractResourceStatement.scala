@@ -40,6 +40,7 @@ abstract class AbstractResourceStatement(val sv:AbstractParameterizedStateVariab
     }
   }
 
+  override def isTemporalInterval = true
 }
 
 class AbstractProduceResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {

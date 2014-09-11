@@ -14,5 +14,7 @@ class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LAc
   require(name nonEmpty)
 
   override def bind(context:Context, pb:AnmlProblem) = throw new UnsupportedOperationException
+
+  override def isTemporalInterval = true
 }
 

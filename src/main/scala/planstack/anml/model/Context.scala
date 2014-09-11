@@ -42,6 +42,8 @@ abstract class AbstractContext {
     }
   }
 
+  def addUndefinedVar(name:LVarRef, typeName:String)
+
   /**
    * @param localName Name of the local variable to look up
    * @return a pair (type, globalName) of the local variable
@@ -170,5 +172,11 @@ class Context(
   def setInterval(interval : TemporalInterval) { this.interval = interval}
 
   def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
+
+  override def addUndefinedVar(name: LVarRef, typeName: String): Unit = {
+    val globalVar = new VarRef()
+    addVar(name, typeName, globalVar)
+    addVarToCreate(typeName, globalVar)
+  }
 }
 

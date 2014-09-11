@@ -17,6 +17,8 @@ class AbstractTemporalConstraint(
   override def toString = "%s %s %s + %s".format(tp1, op, tp2, plus)
 
   override def bind(context:Context, pb:AnmlProblem) = TemporalConstraint(pb, context, this)
+
+  override def isTemporalInterval = false
 }
 
 object AbstractTemporalConstraint {

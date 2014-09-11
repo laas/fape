@@ -3,9 +3,9 @@ package planstack.anml.model.concrete
 import java.util
 
 import planstack.anml.ANMLException
-import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.abs.statements.{AbstractBindingConstraint, AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.abs.{AbstractActionRef, AbstractTemporalConstraint}
-import planstack.anml.model.concrete.statements.{LogStatement, ResourceStatement, Statement}
+import planstack.anml.model.concrete.statements.{BindingConstraint, LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
 
 import scala.collection.JavaConversions._
@@ -36,6 +36,9 @@ trait StateModifier {
 
   /** Temporally annotated statements to be inserted in the plan */
   def statements : java.util.List[Statement]
+
+  /** Constraints over constant functions and variables */
+  def bindingConstraints : java.util.List[BindingConstraint]
 
   /** Returns all logical statements */
   def logStatements : java.util.List[LogStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
@@ -77,7 +80,8 @@ trait StateModifier {
           statements += binded
           context.addStatement(s.id, binded)
         }
-        case s:AbstractTemporalConstraint => temporalConstraints += s.bind(context, pb)
+        case s:AbstractTemporalConstraint =>
+          temporalConstraints += s.bind(context, pb)
         case s:AbstractActionRef => {
           val parent =
             if (this.isInstanceOf[Action]) Some(this.asInstanceOf[Action])
@@ -88,6 +92,8 @@ trait StateModifier {
             actions += Action(pb, s, parent, Some(context))
           }
         }
+        case s:AbstractBindingConstraint =>
+          bindingConstraints += s.bind(context, pb)
         case _ => throw new ANMLException("unsupported yet:" + absStatement)
       }
     }
@@ -97,6 +103,7 @@ trait StateModifier {
 class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 
   val statements = new util.LinkedList[Statement]()
+  val bindingConstraints = new util.LinkedList[BindingConstraint]()
   val actions = new util.LinkedList[Action]()
   val actionConditions = new util.LinkedList[ActionCondition]()
   val vars = new util.LinkedList[Pair[String, VarRef]]()

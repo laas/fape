@@ -7,7 +7,7 @@ object Parsing extends App {
 
   val file =
     if(args.size == 0)
-      "resources/durations.anml"
+      "resources/test.anml"
     else
       args(0)
   println("Parsing: "+file)

@@ -1,97 +1,15 @@
 
-type Location < object;
+type Country;
 
-type Gripper < Location with {
-  variable boolean empty;
-};
-
-type Robot < object with {
-  variable Location mLocation;
-  constant Gripper left;
-  constant Gripper right;
-};
-
-type Item < object with {
-  variable Location mLocation;
-  variable boolean onTable;
-};
-
-predicate connected(Location a, Location b);
-
-/**
- * defining actions
- */
- 
- 
-/**
- * pick some item s with robor r, at location l 
- */  
-
-action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
-        
-  [all]{
-    r.right == g;
-    g.empty == true :-> false;
-    r.mLocation == l;
-    s.mLocation == l :-> g; 
-  };
-};
-
-action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
-  [start+1, end-1] contains {
-    r.right == g;
-    g.empty == false :-> true;
-    r.mLocation == l;
-    s.mLocation == g :-> l; 
-  };
-}; 
-
-action Move(Robot r, Location a, Location b){
-  
-  [all]{
-    r.mLocation == a :-> b;
-  };
-  
-};  
-
-action Transport(Robot r, Item i, Location a, Location b){
-
-  :decomposition{ 
-    ordered(
-      PickWithRightGripper(r, r.right,i, a),
-      DropWithRightGripper(r, r.right,i, b));};
-
-};
-
-instance Robot R0;
-instance Gripper G0, G1;
-instance Item I0;
-instance Location L0, L1, L2;
-
-[start] {
-G0.empty := true;
-G1.empty := true;
-R0.mLocation := L0;
-myID : I0.mLocation := L1;
-R0.left := G0;
-R0.right := G1;
+type Place with {
+  constant Country country();
 };
 
 
-[all] contains {
-goal1 : I0.mLocation == L2;
-goal2 : I0.mLocation == L0;
-};
 
-end(goal1) < start(goal2);
-
-/*
-action Seed(){
-  :decomposition{ 
-   unordered(
-     t1 : Transport(r0_, I0, loc1_, L2),
-     t2 : Transport(r2_, I0, loc3_, L1));
-   end(t1) = start(t2) +1;
-  };
+action move(Place a, Place b, Place c, Place d) {
+  a.country == b.country;
+  d.country != a.country;
+  a == b;
+  a != c;
 };
-*/

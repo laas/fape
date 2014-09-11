@@ -5,7 +5,7 @@ import java.util
 import planstack.anml.ANMLException
 import planstack.anml.model._
 import planstack.anml.model.abs.{AbstractDuration, AbstractAction, AbstractActionRef}
-import planstack.anml.model.concrete.statements.Statement
+import planstack.anml.model.concrete.statements.{BindingConstraint, Statement}
 
 import scala.collection.JavaConversions._
 
@@ -38,6 +38,8 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
+  val bindingConstraints = new util.LinkedList[BindingConstraint]()
+
   private var mStatus = ActionStatus.PENDING
 
   /** Depicts the current status of the action. It is first
@@ -49,8 +51,12 @@ class Action(
   /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
   def isMotivated = abs.isMotivated
 
-  val minDuration = Duration(abs.minDur, context)
-  val maxDuration = Duration(abs.maxDur, context)
+  val minDuration =
+    if(abs.minDur != null) Duration(abs.minDur, context)
+    else null
+  val maxDuration =
+    if(abs.maxDur != null) Duration(abs.maxDur, context)
+    else null
 
   /** Assigns a new status to the action.
     * Allowed transitions are

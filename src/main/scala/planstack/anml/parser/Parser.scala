@@ -392,7 +392,8 @@ object AnmlParser extends JavaTokenParsers {
 
 
   def op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
-  private def opString : Parser[String] = "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">"
+  private def opString : Parser[String] =
+    "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!="
 
 }
 
