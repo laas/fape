@@ -29,7 +29,7 @@ class Decomposition(
 
 object Decomposition {
 
-  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition, actionConditions :Boolean) : Decomposition = {
+  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition) : Decomposition = {
     val context = dec.context.buildContext(pb, Some(parent.context))
 
     val decomposition = new Decomposition(context, parent)

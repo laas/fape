@@ -61,11 +61,10 @@ public class Factory {
      * @param pb Problem containing the action/decomposition
      * @param parent Action in which the decomposition appears
      * @param abs Abstract version of the decomposition.
-     * @param actionCondition If set to true, the decomposition will contain ActionConditions instead of Actions
      * @return A fully instantiated Decomposition
      */
-    public static Decomposition getDecomposition(AnmlProblem pb, Action parent, AbstractDecomposition abs, boolean actionCondition) {
-        return Decomposition$.MODULE$.apply(pb, parent, abs, actionCondition);
+    public static Decomposition getDecomposition(AnmlProblem pb, Action parent, AbstractDecomposition abs) {
+        return Decomposition$.MODULE$.apply(pb, parent, abs);
     }
 
 }

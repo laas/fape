@@ -85,6 +85,7 @@ trait StateModifier {
         case s:AbstractActionRef => {
           val parent =
             if (this.isInstanceOf[Action]) Some(this.asInstanceOf[Action])
+            else if(this.isInstanceOf[Decomposition]) Some(this.asInstanceOf[Decomposition].container)
             else None
           if (pb.usesActionConditions) {
             actionConditions += ActionCondition(pb, s, context, parent)
