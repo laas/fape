@@ -217,7 +217,7 @@ public abstract class APlanner {
             AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.resolvers.Decomposition) o).decID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec, useActionConditions());
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
 
             // remember that the consuming db has to be supporting by a descendant of this decomposition.
             if (consumer != null) {
@@ -279,7 +279,7 @@ public abstract class APlanner {
             AbstractDecomposition absDec = decomposedAction.decompositions().get(((ResourceSupportingDecomposition) o).decompositionID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec, useActionConditions());
+            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
 
             // remember that the consuming db has to be supporting by a descendant of this decomposition.
             if (consumer != null) {
@@ -330,7 +330,7 @@ public abstract class APlanner {
 
             // decompose the action with the given decomposition ID
             AbstractDecomposition absDec = act.decompositions().get(ms.decID); // TODO not limited to decompositions now
-            Decomposition dec = Factory.getDecomposition(pb, act, absDec, useActionConditions());
+            Decomposition dec = Factory.getDecomposition(pb, act, absDec);
             next.applyDecomposition(dec);
 
             // Get the action condition we wanted
