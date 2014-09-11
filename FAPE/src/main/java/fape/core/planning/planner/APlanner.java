@@ -93,7 +93,7 @@ public abstract class APlanner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
-    public final AnmlProblem pb = new AnmlProblem();
+    public final AnmlProblem pb = new AnmlProblem(useActionConditions());
     LiftedDTG dtg = null;
 
     public List<Resource> resourcePrototype = new LinkedList<>();
@@ -938,7 +938,8 @@ public abstract class APlanner {
             if (a.status() != ActionStatus.PENDING) {
                 continue;
             }
-            AtomicAction aa = new AtomicAction(a, startTime, a.maxDuration(), best);
+            assert !a.maxDuration().isFunction() : "Actions with parameterized duration are not supported yet.";
+            AtomicAction aa = new AtomicAction(a, startTime, a.maxDuration().d(), best);
             ret.add(aa);
         }
 

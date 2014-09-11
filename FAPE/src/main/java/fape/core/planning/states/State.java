@@ -404,8 +404,20 @@ public class State implements Reporter {
     public void insert(Action act) {
         recordTimePoints(act);
         tempoNet.EnforceBefore(pb.earliestExecution(), act.start());
-        tempoNet.EnforceDelay(act.start(), act.end(), 1);
         taskNet.insert(act);
+
+        if(act.minDuration() != null) {
+            assert !act.minDuration().isFunction() : "Parameterized durations are not supported yet.";
+            tempoNet.EnforceDelay(act.start(), act.end(), act.minDuration().d());
+        } else {
+            tempoNet.EnforceDelay(act.start(), act.end(), 1);
+        }
+
+        if(act.maxDuration() != null) {
+            assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
+            tempoNet.EnforceDelay(act.end(), act.start(), -act.maxDuration().d());
+        }
+
         apply(act);
     }
 
@@ -452,6 +464,7 @@ public class State implements Reporter {
         recordTimePoints(s);
 
         if(s.sv().func().isConstant()) {
+            assert !(s instanceof Persistence) : "Transition on a constant function: "+s;
             if(s.needsSupport()) {
                 List<VarRef> variables = new LinkedList<>(s.sv().jArgs());
                 variables.add(s.startValue());
@@ -598,9 +611,12 @@ public class State implements Reporter {
         }
 
         for(ActionCondition ac : mod.actionConditions()) {
-            assert mod instanceof Decomposition;
+//            assert mod instanceof Decomposition;
             recordTimePoints(ac);
-            taskNet.insert(ac, (Decomposition) mod);
+            if(mod instanceof Decomposition)
+                taskNet.insert(ac, (Decomposition) mod);
+            else if(mod instanceof Action)
+                taskNet.insert(ac, (Action) mod);
         }
 
         for (TemporalConstraint tc : mod.temporalConstraints()) {

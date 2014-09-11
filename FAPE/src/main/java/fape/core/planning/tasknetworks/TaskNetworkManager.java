@@ -250,6 +250,17 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
+     * Adds an action condition to an action.
+     * @param ac The action condition.
+     * @param parent The action in which ac appears. This action must be already
+     *               present in the task network.
+     */
+    public void insert(ActionCondition ac, Action parent) {
+        network.addVertex(new TNNode(ac));
+        network.addEdge(new TNNode(parent), new TNNode(ac));
+    }
+
+    /**
      * Checks if the action is a descendant of the decomposition (i.e. there
      * is a path from the decomposition to the action in the task network.)
      * @param child Descendant action.
