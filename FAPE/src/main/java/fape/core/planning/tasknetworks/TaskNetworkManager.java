@@ -220,8 +220,7 @@ public class TaskNetworkManager implements Reporter {
             numOpenLeaves++;
 
         if(a.hasParent()) {
-            assert isDecomposed(a.parent()) : "Error: adding an action as a child of a yet undecomposed action.";
-            network.addEdge(getDecomposition(a.parent()), new TNNode(a));
+            network.addEdge(new TNNode(a.parent()), new TNNode(a));
         } else {
             numRoots++;
         }

@@ -316,6 +316,7 @@ public abstract class APlanner {
             next.enforceConstraint(ac.end(), act.end(), 0, 0);
             next.addSupport(ac, act);
         } else if(o instanceof MotivatedSupport) {
+            assert useActionConditions() : "Error looking for motivated support in a planner that does not use action conditions.";
             MotivatedSupport ms = (MotivatedSupport) o;
 
             // action that will be decomposed. Either it is already in the plan or we add it now
@@ -328,7 +329,7 @@ public abstract class APlanner {
             }
 
             // decompose the action with the given decomposition ID
-            AbstractDecomposition absDec = act.decompositions().get(ms.decID);
+            AbstractDecomposition absDec = act.decompositions().get(ms.decID); // TODO not limited to decompositions now
             Decomposition dec = Factory.getDecomposition(pb, act, absDec, useActionConditions());
             next.applyDecomposition(dec);
 

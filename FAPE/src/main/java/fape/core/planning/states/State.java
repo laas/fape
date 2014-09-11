@@ -29,6 +29,7 @@ import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.TemporalConstraint;
 import planstack.anml.model.concrete.statements.*;
+import planstack.constraints.bindings.Equal;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -462,30 +463,57 @@ public class State implements Reporter {
      */
     private void apply(LogStatement s) {
         recordTimePoints(s);
+        assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
 
-        if(s.sv().func().isConstant()) {
-            assert !(s instanceof Persistence) : "Transition on a constant function: "+s;
-            if(s.needsSupport()) {
-                List<VarRef> variables = new LinkedList<>(s.sv().jArgs());
-                variables.add(s.startValue());
-                conNet.addValuesSetConstraint(variables, s.sv().func().name());
-            } else {
-                List<String> values = new LinkedList<>();
-                for(VarRef v : s.sv().jArgs()) {
-                    assert v instanceof InstanceRef;
-                    values.add(((InstanceRef) v).instance());
-                }
-                assert s.endValue() instanceof InstanceRef;
-                values.add(((InstanceRef) s.endValue()).instance());
-                conNet.addValuesToValuesSet(s.sv().func().name(), values);
+        TemporalDatabase db = new TemporalDatabase(s);
+
+        if (db.isConsumer()) {
+            consumers.add(db);
+        }
+        tdb.vars.add(db);
+    }
+
+    /**
+     * Enforce a binding constraint in the state.
+     *
+     * Those have effect on the constraint network only.
+     * @param mod Modifier in which the constraint appears.
+     * @param bc BindingConstraint to be enforced.
+     */
+    public void apply(StateModifier mod, BindingConstraint bc) {
+        if(bc instanceof AssignmentConstraint) {
+            AssignmentConstraint c = (AssignmentConstraint) bc;
+            List<String> values = new LinkedList<>();
+            for(VarRef v : c.sv().jArgs()) {
+                assert v instanceof InstanceRef;
+                values.add(((InstanceRef) v).instance());
             }
+            assert c.variable() instanceof InstanceRef;
+            values.add(((InstanceRef) c.variable()).instance());
+            conNet.addValuesToValuesSet(c.sv().func().name(), values);
+        } else if(bc instanceof VarEqualityConstraint) {
+            VarEqualityConstraint c = (VarEqualityConstraint) bc;
+            conNet.AddUnificationConstraint(c.leftVar(), c.rightVar());
+        } else if(bc instanceof VarInequalityConstraint) {
+            VarInequalityConstraint c = (VarInequalityConstraint) bc;
+            conNet.AddSeparationConstraint(c.leftVar(), c.rightVar());
+        } else if(bc instanceof EqualityConstraint) {
+            EqualityConstraint c = (EqualityConstraint) bc;
+            List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
+            variables.add(c.variable());
+            conNet.addValuesSetConstraint(variables, c.sv().func().name());
+        } else if(bc instanceof InequalityConstraint) {
+            // create a new value tmp such that
+            // c.sv == tmp and tmp != c.variable
+            InequalityConstraint c = (InequalityConstraint) bc;
+            List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
+            VarRef tmp = new VarRef();
+            conNet.AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
+            variables.add(tmp);
+            conNet.addValuesSetConstraint(variables, c.sv().func().name());
+            conNet.AddSeparationConstraint(tmp, c.variable());
         } else {
-            TemporalDatabase db = new TemporalDatabase(s);
-
-            if (db.isConsumer()) {
-                consumers.add(db);
-            }
-            tdb.vars.add(db);
+            throw new FAPEException("Unhandled constraint type: "+bc);
         }
     }
 
@@ -610,8 +638,10 @@ public class State implements Reporter {
             insert(act);
         }
 
+        for(BindingConstraint bc : mod.bindingConstraints())
+            apply(mod, bc);
+
         for(ActionCondition ac : mod.actionConditions()) {
-//            assert mod instanceof Decomposition;
             recordTimePoints(ac);
             if(mod instanceof Decomposition)
                 taskNet.insert(ac, (Decomposition) mod);
