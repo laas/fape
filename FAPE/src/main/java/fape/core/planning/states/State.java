@@ -464,6 +464,7 @@ public class State implements Reporter {
         recordTimePoints(s);
 
         if(s.sv().func().isConstant()) {
+            assert !(s instanceof Persistence) : "Transition on a constant function: "+s;
             if(s.needsSupport()) {
                 List<VarRef> variables = new LinkedList<>(s.sv().jArgs());
                 variables.add(s.startValue());
