@@ -12,9 +12,13 @@ class UncontrollableAction extends FunSuite {
     val event = idc.addVar()
 
     idc.addContingent(start, end, 50, 60)
-    idc.enforceInterval(event, end, 15, 15)
+    idc.enforceInterval(event, end, 5, 15)
 
     assert(idc.consistent)
+
+    idc.enforceInterval(event, end, 6, 15)
+
+    assert(!idc.consistent)
   }
 
 }
