@@ -1,4 +1,4 @@
-package planstack.constraints.binding
+package planstack.constraints.bindings
 
 import org.scalatest.{FunSuite, Suite}
 import planstack.constraints.bindings.ConservativeConstraintNetwork
