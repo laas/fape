@@ -5,16 +5,16 @@ import planstack.constraints.stn.STNManager
 
 class CSP[VarRef, TPRef](
                           val bindings : ConservativeConstraintNetwork[VarRef],
-                          val stn : STNManager[TPRef])
+                          val stn : STNManager[TPRef],
+                          protected[constraints] var varsToConstraints : Map[VarRef, List[Tuple3[TPRef,TPRef,(Int=>Int)]]]
+                          )
   extends IntBindingListener[VarRef]
 {
   bindings.setListener(this)
 
-  protected[constraints] var varsToConstraints : Map[VarRef, List[Tuple3[TPRef,TPRef,(Int=>Int)]]] = Map()
+  def this() = this(new ConservativeConstraintNetwork[VarRef](), new STNManager[TPRef](), Map())
 
-  def this() = this(new ConservativeConstraintNetwork[VarRef](), new STNManager[TPRef]())
-
-  def this(toCopy : CSP[VarRef,TPRef]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.DeepCopy())
+  def this(toCopy : CSP[VarRef,TPRef]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.DeepCopy(), toCopy.varsToConstraints)
 
 
   /** Add a constraint u < v + d */

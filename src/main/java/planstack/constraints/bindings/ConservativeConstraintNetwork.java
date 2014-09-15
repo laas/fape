@@ -153,7 +153,7 @@ public class ConservativeConstraintNetwork<VarRef> {
     }
 
     protected void checkValuesSetConstraints(VarRef v) {
-        if(domainOf(v).size() != 1)
+        if(domainSize(v) != 1)
             return;
 
         List<List<VarRef>> constraintsToCheck = new LinkedList<>();
@@ -337,6 +337,14 @@ public class ConservativeConstraintNetwork<VarRef> {
         constraints.addVertex(var);
     }
 
+    /**
+     * Creates a new integer variable. Its domain will all integer values that where delared up to now.
+     * @param var Variable to record.
+     */
+    public void AddIntVariable(VarRef var) {
+        AddIntVariable(var, intValues);
+    }
+
     public void AddIntVariable(VarRef var, Collection<Integer> domain) {
         assert !variables.contains(var);
         List<Integer> valueIds = new LinkedList<>();
@@ -465,11 +473,14 @@ public class ConservativeConstraintNetwork<VarRef> {
         return false;
     }
 
+    /**
+     * @return All non-integer variables whose domain is not a singleton.
+     */
     public List<VarRef> getUnboundVariables() {
         List<VarRef> unbound = new LinkedList<>();
-        for(Tuple2<VarRef, ValuesHolder> varValues : JavaConversions.asJavaList(variables.toList())) {
-            if(varValues._2().size() > 1)
-                unbound.add(varValues._1());
+        for(VarRef var : JavaConversions.asJavaList(variables.keys().toList())) {
+            if(domainSize(var) > 1 && !isIntegerVar(var))
+                unbound.add(var);
         }
         return unbound;
     }
