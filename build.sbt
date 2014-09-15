@@ -2,7 +2,7 @@ name := "planstack-constraints"
 
 organization := "planstack"
 
-version := "0.3.3"
+version := "0.4.0"
 
 scalaVersion := "2.10.3"
 

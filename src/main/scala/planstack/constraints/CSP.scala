@@ -1,7 +1,7 @@
 package planstack.constraints
 
 import planstack.constraints.bindings.{IntBindingListener, ConservativeConstraintNetwork}
-import planstack.constraints.stn.{STNManager, STN}
+import planstack.constraints.stn.STNManager
 
 class CSP[VarRef, TPRef](
                           val bindings : ConservativeConstraintNetwork[VarRef],

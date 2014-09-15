@@ -3,7 +3,9 @@ package planstack.constraints.stn;
 
 import scala.Tuple2;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 public class STNManager<TPRef> {
 
@@ -108,7 +110,7 @@ public class STNManager<TPRef> {
      * @param ps
      * @return true if the STN is consistent after removal
      */
-    public boolean RemoveConstraints(Tuple2<TPRef, TPRef>... ps) {
+    public boolean RemoveConstraints(Collection<Tuple2<TPRef, TPRef>> ps) {
         for (Tuple2<TPRef, TPRef> p : ps) {
             stn.removeConstraintUnsafe(id(p._1()), id(p._2()));
         }
