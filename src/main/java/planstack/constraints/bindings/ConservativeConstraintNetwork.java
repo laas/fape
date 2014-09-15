@@ -24,6 +24,12 @@ public class ConservativeConstraintNetwork<VarRef> {
 
     enum ConstraintType { EQUALITY, DIFFERENCE }
 
+    /** A listener that will be notified every time a variable is binded.
+     * No notification will be issued for variables that were binded before
+     * this variable is set to a non-null value.
+     */
+    public IntBindingListener<VarRef> listener = null;
+
     /**
      * Maps variables to their domain. The ValuesHolder object is to be recreated whenever a
      * modification is done.
@@ -117,16 +123,36 @@ public class ConservativeConstraintNetwork<VarRef> {
         extChecked = base.extChecked;
     }
 
-    public void domainModified(VarRef v) {
+    /**
+     * Defines a listener that will be updated every time a variable is binded.
+     * If a variable was already binded before that, no notification will be issued.
+     * @param listener Object to be notified.
+     */
+    public void setListener(IntBindingListener<VarRef> listener) {
+        this.listener = listener;
+    }
+
+    /** Invoked whenever the domain of a variable is modified (including on variable creation)
+     *
+     * The variable is added in the agenda for propagation.
+     * If the domain is empty, the CSP is set to inconsistent.
+     * If the domain is a singleton (variable is binded), the listener is notified of that binding.
+     * @param v Variable whose domain changed.
+     */
+    private void domainModified(VarRef v) {
         if(!toProcess.contains(v))
             toProcess.add(v);
 
-        if(domainOf(v).size() == 0) {
+        if(domainSize(v) == 0) {
             consistent = false;
+        }
+
+        if(listener != null && domainSize(v) == 1 && isIntegerVar(v)) {
+            listener.onBinded(v, domainOfIntVar(v).get(0));
         }
     }
 
-    public void checkValuesSetConstraints(VarRef v) {
+    protected void checkValuesSetConstraints(VarRef v) {
         if(domainOf(v).size() != 1)
             return;
 
@@ -172,8 +198,11 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
     }
 
-
-
+    /**
+     * Checks the consistency of the binding constraints network.
+     * If needed, a propagation is performed.
+     * @return True if it is consistent (no variables with empty domain).
+     */
     public boolean isConsistent() {
         if(!consistent) {
             return false;
@@ -196,6 +225,11 @@ public class ConservativeConstraintNetwork<VarRef> {
         return variables.apply(var);
     }
 
+    /**
+     * Revises all equality and difference constraints in which a variable appears
+     * @param v Focus variable.
+     * @return If no inconsistency was detected during propagation.
+     */
     protected boolean revise(VarRef v) {
         boolean res = true;
         for(VarRef neighbour : JavaConversions.asJavaCollection(constraints.neighbours(v)))
@@ -204,6 +238,11 @@ public class ConservativeConstraintNetwork<VarRef> {
         return res;
     }
 
+    /**
+     * Revises all equality and difference constraints in which both variables appear.
+     *
+     * @return True if no inconsistency was detected (ie both v1 and v2 have non empty domains)
+     */
     protected boolean revise(VarRef v1, VarRef v2) {
         boolean isConsistent = true;
         for(LabeledEdge<VarRef, ConstraintType> c :JavaConversions.asJavaCollection(constraints.edges(v1, v2))) {
@@ -266,9 +305,20 @@ public class ConservativeConstraintNetwork<VarRef> {
 
     public void restrictDomain(VarRef var, Collection<String> toValues) {
         assert variables.contains(var);
+        assert !isIntegerVar(var);
         List<Integer> ids = new LinkedList<>();
         for(String value : toValues) {
             ids.add(valuesIds.get(value));
+        }
+        restrictDomain(var, new ValuesHolder(ids));
+    }
+
+    public void restrictIntDomain(VarRef var, Collection<Integer> toValues) {
+        assert variables.contains(var);
+        assert isIntegerVar(var);
+        List<Integer> ids = new LinkedList<>();
+        for(Integer value : toValues) {
+            ids.add(intValuesIds.get(value));
         }
         restrictDomain(var, new ValuesHolder(ids));
     }
@@ -314,10 +364,12 @@ public class ConservativeConstraintNetwork<VarRef> {
         toProcess.add(b);
     }
 
+    /** Returns true if the variable has already been declared. */
     public boolean contains(VarRef v) {
         return variables.contains(v);
     }
 
+    /** Human readable representation of a domain. */
     public String domainAsString(VarRef v) {
         if(isIntegerVar(v)) {
             return domainOfIntVar(v).toString();
@@ -326,7 +378,17 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
     }
 
-    public Collection<String> domainOf(VarRef var) {
+    /** number of values in the domain of this variable */
+    public Integer domainSize(VarRef var) {
+        return variables.apply(var).values.size();
+    }
+
+    /**
+     * Returns the domain of a variable (except for integer variables).
+     *
+     * Complexity is O(|dom(var)|) since a translation of every value of the domain is necessary
+     */
+    public List<String> domainOf(VarRef var) {
         assert !isIntegerVar(var);
         List<String> domain = new LinkedList<>();
         for(Integer id : variables.apply(var).values()) {
@@ -335,7 +397,12 @@ public class ConservativeConstraintNetwork<VarRef> {
         return domain;
     }
 
-    public Collection<Integer> domainOfIntVar(VarRef var) {
+    /**
+     * Returns the domain of an integer variable.
+     *
+     * Complexity is O(|dom(var)|) since a translation of every value of the domain is necessary
+     */
+    public List<Integer> domainOfIntVar(VarRef var) {
         assert isIntegerVar(var);
         List<Integer> domain = new LinkedList<>();
         for(Integer id : variables.apply(var).values()) {
@@ -344,18 +411,27 @@ public class ConservativeConstraintNetwork<VarRef> {
         return domain;
     }
 
+    /**
+     * Returns the type of this variable.
+     */
     public String typeOf(VarRef v) {
         assert types.containsKey(v);
         return types.get(v);
     }
 
+    /**
+     * Returns true if the domain of v is of type Integer
+     */
     public boolean isIntegerVar(VarRef v) {
         assert !typeOf(v).equals("int");
         return typeOf(v).equals("integer");
     }
 
+    /**
+     * Makes an independent copy of this binding constraint network.
+     */
     public ConservativeConstraintNetwork<VarRef> DeepCopy() {
-        return new ConservativeConstraintNetwork<>(this);
+        return new ConservativeConstraintNetwork<VarRef>(this);
     }
 
     public boolean unifiable(VarRef a, VarRef b) {
