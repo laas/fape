@@ -140,8 +140,6 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
     tmpSTN.consistent
   }
 
-
-
   /**
    * WARNING: Removes constraint from network but do _not_ update the distances. Make sure to always
    * make a checkConsistencyFromScratch after that.
