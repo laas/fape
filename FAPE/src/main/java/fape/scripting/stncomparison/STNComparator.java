@@ -10,12 +10,12 @@
  */
 package fape.scripting.stncomparison;
 
-import fape.core.planning.stn.STNManager;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
 import fape.scripting.stncomparison.problem.*;
 import fape.util.FileHandling;
 import planstack.constraints.stn.STN;
 import planstack.constraints.stn.STNIncBellmanFord;
+import planstack.constraints.stn.STNManager;
 
 import java.util.*;
 

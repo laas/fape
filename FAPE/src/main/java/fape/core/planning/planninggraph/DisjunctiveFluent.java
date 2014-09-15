@@ -1,6 +1,5 @@
 package fape.core.planning.planninggraph;
 
-import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;

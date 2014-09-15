@@ -10,10 +10,10 @@
  */
 package fape.scripting.stncomparison.problem;
 
-import fape.core.planning.stn.STNManager;
 import fape.exceptions.FAPEException;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
 import planstack.anml.model.concrete.TPRef;
+import planstack.constraints.stn.STNManager;
 
 import java.util.Random;
 

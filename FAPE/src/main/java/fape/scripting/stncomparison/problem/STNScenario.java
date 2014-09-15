@@ -10,9 +10,9 @@
  */
 package fape.scripting.stncomparison.problem;
 
-import fape.core.planning.stn.STNManager;
 import fape.exceptions.FAPEException;
 import fape.scripting.stncomparison.fullstn.STNManagerOrig;
+import planstack.constraints.stn.STNManager;
 
 import java.util.LinkedList;
 import java.util.List;

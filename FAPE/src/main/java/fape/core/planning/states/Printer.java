@@ -32,7 +32,7 @@ public class Printer {
     }
 
     public static String variable(State st, VarRef var) {
-        return st.conNet.domainOf(var).toString();
+        return st.csp.bindings().domainAsString(var);
     }
 
     public static String statement(State st, LogStatement s) {
@@ -100,7 +100,7 @@ public class Printer {
     }
 
     public static TPRef correspondingTimePoint(State st, int stnId) {
-        for(Map.Entry<TPRef,Integer> entry : st.tempoNet.ids.entrySet()) {
+        for(Map.Entry<TPRef,Integer> entry : st.csp.stn().ids.entrySet()) {
             if(entry.getValue().equals(stnId))
                 return entry.getKey();
         }
@@ -148,6 +148,6 @@ public class Printer {
     }
 
     public static String constraints(State st) {
-        return st.conNet.Report();
+        return st.csp.bindings().Report();
     }
 }

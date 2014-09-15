@@ -316,7 +316,7 @@ public abstract class APlanner {
             next.enforceConstraint(ac.end(), act.end(), 0, 0);
             next.addSupport(ac, act);
         } else if(o instanceof MotivatedSupport) {
-            assert useActionConditions() : "Error looking for motivated support in a planner that does not use action conditions.";
+            assert useActionConditions() : "Error: looking for motivated support in a planner that does not use action conditions.";
             MotivatedSupport ms = (MotivatedSupport) o;
 
             // action that will be decomposed. Either it is already in the plan or we add it now

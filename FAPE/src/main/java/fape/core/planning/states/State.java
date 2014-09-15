@@ -10,13 +10,12 @@
  */
 package fape.core.planning.states;
 
-import fape.core.planning.constraints.ConstraintNetwork;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
 import fape.core.planning.search.resolvers.*;
-import fape.core.planning.stn.STNManager;
+import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -29,7 +28,7 @@ import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.TemporalConstraint;
 import planstack.anml.model.concrete.statements.*;
-import planstack.constraints.bindings.Equal;
+import planstack.constraints.CSP;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -66,11 +65,9 @@ public class State implements Reporter {
      */
     protected final TemporalDatabaseManager tdb;
 
-    protected final STNManager tempoNet;
+    protected final CSP<VarRef,TPRef> csp;
 
     protected final TaskNetworkManager taskNet;
-
-    protected final ConstraintNetwork conNet;
 
     protected final ResourceManager resMan;
 
@@ -104,13 +101,11 @@ public class State implements Reporter {
         this.pb = pb;
         depth = 0;
         tdb = new TemporalDatabaseManager();
-        tempoNet = new STNManager();
+        csp = new CSP<>();
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
 
-        conNet = new ConstraintNetwork();
-//        conNet = new ConstraintNetworkManager();
         supportConstraints = new LinkedList<>();
 
         // Insert all problem-defined modifications into the state
@@ -127,8 +122,7 @@ public class State implements Reporter {
         pb = st.pb;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
-        conNet = st.conNet.DeepCopy();
-        tempoNet = st.tempoNet.DeepCopy();
+        csp = new CSP<VarRef,TPRef>(st.csp);
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
@@ -146,8 +140,8 @@ public class State implements Reporter {
      */
     public boolean isConsistent() {
         boolean consistency = true;
-        consistency &= tempoNet.IsConsistent();
-        consistency &= conNet.isConsistent();
+        consistency &= csp.stn().IsConsistent();
+        consistency &= csp.bindings().isConsistent();
         consistency &= resMan.isConsistent(this);
         return consistency;
     }
@@ -172,8 +166,8 @@ public class State implements Reporter {
         String ret = "";
         ret += "{\n";
         ret += "  state[" + mID + "]\n";
-        ret += "  cons: " + conNet.Report() + "\n";
-        //ret += "  stn: " + this.tempoNet.Report() + "\n";
+        ret += "  cons: " + csp.bindings().Report() + "\n";
+        //ret += "  stn: " + this.csp.stn().Report() + "\n";
         ret += "  consumers: " + this.consumers.size() + "\n";
         for (TemporalDatabase b : consumers) {
             ret += b.Report();
@@ -318,8 +312,8 @@ public class State implements Reporter {
      * @return All possible values for this variable.
      */
     public Collection<String> possibleValues(VarRef var) {
-        assert conNet.contains(var) : "Constraint Network doesn't contains " + var;
-        return conNet.domainOf(var);
+        assert csp.bindings().contains(var) : "Constraint Network doesn't contains " + var;
+        return csp.bindings().domainOf(var);
     }
 
     /**
@@ -404,19 +398,19 @@ public class State implements Reporter {
      */
     public void insert(Action act) {
         recordTimePoints(act);
-        tempoNet.EnforceBefore(pb.earliestExecution(), act.start());
+        csp.stn().EnforceBefore(pb.earliestExecution(), act.start());
         taskNet.insert(act);
 
         if(act.minDuration() != null) {
             assert !act.minDuration().isFunction() : "Parameterized durations are not supported yet.";
-            tempoNet.EnforceDelay(act.start(), act.end(), act.minDuration().d());
+            csp.stn().EnforceMinDelay(act.start(), act.end(), act.minDuration().d());
         } else {
-            tempoNet.EnforceDelay(act.start(), act.end(), 1);
+            csp.stn().EnforceMinDelay(act.start(), act.end(), 1);
         }
 
         if(act.maxDuration() != null) {
             assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
-            tempoNet.EnforceDelay(act.end(), act.start(), -act.maxDuration().d());
+            csp.stn().EnforceMinDelay(act.end(), act.start(), -act.maxDuration().d());
         }
 
         apply(act);
@@ -428,9 +422,9 @@ public class State implements Reporter {
      * happen before end.
      */
     private void recordTimePoints(TemporalInterval interval) {
-        tempoNet.recordTimePoint(interval.start());
-        tempoNet.recordTimePoint(interval.end());
-        tempoNet.EnforceBefore(interval.start(), interval.end());
+        csp.stn().recordTimePoint(interval.start());
+        csp.stn().recordTimePoint(interval.end());
+        csp.stn().EnforceBefore(interval.start(), interval.end());
     }
 
     /**
@@ -443,10 +437,10 @@ public class State implements Reporter {
      */
     public void update() {
         if (problemRevision == -1) {
-            tempoNet.recordTimePoint(pb.start());
-            tempoNet.recordTimePoint(pb.end());
-            tempoNet.recordTimePoint(pb.earliestExecution());
-            tempoNet.EnforceBefore(pb.start(), pb.earliestExecution());
+            csp.stn().recordTimePoint(pb.start());
+            csp.stn().recordTimePoint(pb.end());
+            csp.stn().recordTimePoint(pb.earliestExecution());
+            csp.stn().EnforceBefore(pb.start(), pb.earliestExecution());
 
         }
         for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
@@ -481,37 +475,45 @@ public class State implements Reporter {
      * @param bc BindingConstraint to be enforced.
      */
     public void apply(StateModifier mod, BindingConstraint bc) {
-        if(bc instanceof AssignmentConstraint) {
+        if (bc instanceof AssignmentConstraint) {
             AssignmentConstraint c = (AssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
-            for(VarRef v : c.sv().jArgs()) {
+            for (VarRef v : c.sv().jArgs()) {
                 assert v instanceof InstanceRef;
                 values.add(((InstanceRef) v).instance());
             }
             assert c.variable() instanceof InstanceRef;
             values.add(((InstanceRef) c.variable()).instance());
-            conNet.addValuesToValuesSet(c.sv().func().name(), values);
-        } else if(bc instanceof VarEqualityConstraint) {
+            csp.bindings().addValuesToValuesSet(c.sv().func().name(), values);
+        } else if (bc instanceof VarEqualityConstraint) {
             VarEqualityConstraint c = (VarEqualityConstraint) bc;
-            conNet.AddUnificationConstraint(c.leftVar(), c.rightVar());
-        } else if(bc instanceof VarInequalityConstraint) {
+            csp.bindings().AddUnificationConstraint(c.leftVar(), c.rightVar());
+        } else if (bc instanceof VarInequalityConstraint) {
             VarInequalityConstraint c = (VarInequalityConstraint) bc;
-            conNet.AddSeparationConstraint(c.leftVar(), c.rightVar());
-        } else if(bc instanceof EqualityConstraint) {
+            csp.bindings().AddSeparationConstraint(c.leftVar(), c.rightVar());
+        } else if (bc instanceof EqualityConstraint) {
             EqualityConstraint c = (EqualityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
             variables.add(c.variable());
-            conNet.addValuesSetConstraint(variables, c.sv().func().name());
-        } else if(bc instanceof InequalityConstraint) {
+            csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
+        } else if (bc instanceof InequalityConstraint) {
             // create a new value tmp such that
             // c.sv == tmp and tmp != c.variable
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
             VarRef tmp = new VarRef();
-            conNet.AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
+            csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
             variables.add(tmp);
-            conNet.addValuesSetConstraint(variables, c.sv().func().name());
-            conNet.AddSeparationConstraint(tmp, c.variable());
+            csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
+            csp.bindings().AddSeparationConstraint(tmp, c.variable());
+        } else if (bc instanceof IntegerAssignmentConstraint) {
+            IntegerAssignmentConstraint c = (IntegerAssignmentConstraint) bc;
+            List<String> values = new LinkedList<>();
+            for (VarRef v : c.sv().jArgs()) {
+                assert v instanceof InstanceRef;
+                values.add(((InstanceRef) v).instance());
+            }
+            csp.bindings().addValuesToValuesSet(c.sv().func().name(), values, c.value());
         } else {
             throw new FAPEException("Unhandled constraint type: "+bc);
         }
@@ -581,11 +583,11 @@ public class State implements Reporter {
         switch (tc.op()) {
             case "<":
                 // tp1 < tp2 + x => tp1 --[-x, inf] --> tp2
-                tempoNet.EnforceDelay(tp1, tp2, -tc.plus());
+                csp.stn().EnforceMinDelay(tp1, tp2, -tc.plus());
                 break;
             case "=":
                 // tp1 --- [x, x] ---> tp2
-                tempoNet.EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
+                csp.stn().EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
     }
 
@@ -601,8 +603,8 @@ public class State implements Reporter {
         recordTimePoints(dec);
 
         // interval of the decomposition is equal to the one of the containing action.
-        tempoNet.EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
-        tempoNet.EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
+        csp.stn().EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
+        csp.stn().EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
 
         taskNet.insert(dec, dec.container());
 
@@ -618,16 +620,16 @@ public class State implements Reporter {
     private void apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
         for (String instance : mod.instances()) {
-            conNet.addPossibleValue(instance);
+            csp.bindings().addPossibleValue(instance);
             List<String> domain = new LinkedList<>();
             domain.add(instance);
-            conNet.AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));
+            csp.bindings().AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));
         }
 
         // Declare new variables to the constraint network.
         for (Tuple2<String, VarRef> declaration : mod.vars()) {
             Collection<String> domain = pb.instances().jInstancesOfType(declaration._1());
-            conNet.AddVariable(declaration._2(), domain, declaration._1());
+            csp.bindings().AddVariable(declaration._2(), domain, declaration._1());
         }
 
         for (Statement ts : mod.statements()) {
@@ -757,21 +759,28 @@ public class State implements Reporter {
 
     /*** Wrapper around STN ******/
 
-    public void enforceBefore(TPRef a, TPRef b) { tempoNet.EnforceBefore(a, b); }
+    public void enforceBefore(TPRef a, TPRef b) { csp.stn().EnforceBefore(a, b); }
 
-    public boolean canBeBefore(TPRef a, TPRef b) { return tempoNet.CanBeBefore(a, b); }
+    public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().CanBeBefore(a, b); }
 
-    public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return tempoNet.CanBeStrictlyBefore(a, b); }
+    public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().CanBeStrictlyBefore(a, b); }
 
-    public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return tempoNet.EnforceConstraint(a, b, min, max); }
+    public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().EnforceConstraint(a, b, min, max); }
 
-    public boolean removeConstraints(Pair<TPRef,TPRef>... pairs) { return tempoNet.RemoveConstraints(pairs); }
+    public boolean removeConstraints(Pair<TPRef,TPRef>... pairs) {
+        List<Tuple2<TPRef,TPRef>> ps = new LinkedList<>();
+        for(Pair<TPRef,TPRef> p : pairs)
+            ps.add(new Tuple2<TPRef, TPRef>(p.value1, p.value2));
+        return csp.stn().RemoveConstraints(ps);
+    }
 
-    public void enforceDelay(TPRef a, TPRef b, int delay) { tempoNet.EnforceDelay(a, b, delay); }
+    public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().EnforceMinDelay(a, b, delay); }
 
-    public long getEarliestStartTime(TPRef a) { return tempoNet.GetEarliestStartTime(a); }
+    public long getEarliestStartTime(TPRef a) { return csp.stn().GetEarliestStartTime(a); }
 
-    public void exportTemporalNetwork(String filename) { tempoNet.exportToDot(this, filename); }
+    public void exportTemporalNetwork(String filename) {
+        csp.stn().stn.g().exportToDotFile(filename, new STNNodePrinter(this));
+    }
 
 
     /********* Wrapper around the task network **********/
@@ -796,18 +805,23 @@ public class State implements Reporter {
 
     /******** Wrapper around the constraint network ***********/
 
-    public Collection<String> domainOf(VarRef var) { return conNet.domainOf(var); }
+    public Collection<String> domainOf(VarRef var) { return csp.bindings().domainOf(var); }
 
-    public void addUnificationConstraint(VarRef a, VarRef b) { conNet.AddUnificationConstraint(a, b); }
+    public void addUnificationConstraint(VarRef a, VarRef b) { csp.bindings().AddUnificationConstraint(a, b); }
 
     public void addUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        conNet.AddUnificationConstraint(a, b); }
+        assert a.func() == b.func() : "Error unifying two state variable on different functions.";
+        assert a.jArgs().size() == b.jArgs().size() : "Error different number of arguments.";
+        for (int i = 0; i < a.jArgs().size(); i++) {
+            csp.bindings().AddUnificationConstraint(a.jArgs().get(i), b.jArgs().get(i));
+        }
+    }
 
-    public void addSeparationConstraint(VarRef a, VarRef b) { conNet.AddSeparationConstraint(a, b); }
+    public void addSeparationConstraint(VarRef a, VarRef b) { csp.bindings().AddSeparationConstraint(a, b); }
 
-    public String typeOf(VarRef var) { return conNet.typeOf(var); }
+    public String typeOf(VarRef var) { return csp.bindings().typeOf(var); }
 
-    public void restrictDomain(VarRef var, Collection<String> values) { conNet.restrictDomain(var, values); }
+    public void restrictDomain(VarRef var, Collection<String> values) { csp.bindings().restrictDomain(var, values); }
 
     public void bindVariable(VarRef var, String value) {
         List<String> values = new LinkedList<>();
@@ -815,17 +829,17 @@ public class State implements Reporter {
         restrictDomain(var, values);
     }
 
-    public List<VarRef> getUnboundVariables() { return conNet.getUnboundVariables(); }
+    public List<VarRef> getUnboundVariables() { return csp.bindings().getUnboundVariables(); }
 
-    public void assertConstraintNetworkGroundAndConsistent() { conNet.assertGroundAndConsistent(); }
+    public void assertConstraintNetworkGroundAndConsistent() { csp.bindings().assertGroundAndConsistent(); }
 
-    public boolean unified(VarRef a, VarRef b) { return conNet.unified(a, b); }
+    public boolean unified(VarRef a, VarRef b) { return csp.bindings().unified(a, b); }
 
-    public boolean unifiable(VarRef a, VarRef b) { return conNet.unifiable(a, b); }
+    public boolean unifiable(VarRef a, VarRef b) { return csp.bindings().unifiable(a, b); }
 
-    public void addValuesToValuesSet(String setID, List<String> values) { conNet.addValuesToValuesSet(setID, values);}
+    public void addValuesToValuesSet(String setID, List<String> values) { csp.bindings().addValuesToValuesSet(setID, values);}
 
-    public void addValuesSetConstraint(List<VarRef> variables, String setID) { conNet.addValuesSetConstraint(variables, setID);}
+    public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addValuesSetConstraint(variables, setID);}
 
 
     /************ Wrapper around TemporalDatabaseManager **********************/
