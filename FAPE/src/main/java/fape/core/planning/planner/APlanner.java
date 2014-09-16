@@ -624,6 +624,9 @@ public abstract class APlanner {
         for (Action unmotivated : st.getUnmotivatedActions()) {
             flaws.add(new UnmotivatedAction(unmotivated));
         }
+        //find the resource flaws
+        flaws.addAll(st.resourceFlaws());
+
         if (flaws.isEmpty()) {
             List<TemporalDatabase> dbs = st.getDatabases();
             for (int i = 0; i < dbs.size(); i++) {
@@ -636,13 +639,14 @@ public abstract class APlanner {
                 }
             }
         }
-        //find the resource flaws
-        flaws.addAll(st.resourceFlaws());
+
         if (flaws.isEmpty()) {
             for (VarRef v : st.getUnboundVariables()) {
+                assert !st.typeOf(v).equals("integer");
                 flaws.add(new UnboundVariable(v));
             }
         }
+
         return flaws;
     }
 

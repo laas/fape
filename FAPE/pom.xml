@@ -32,7 +32,7 @@
         <dependency>
             <groupId>planstack</groupId>
             <artifactId>planstack-constraints</artifactId>
-            <version>0.3.3</version>
+            <version>0.4.1</version>
         </dependency>
         <dependency>
             <groupId>planstack</groupId>

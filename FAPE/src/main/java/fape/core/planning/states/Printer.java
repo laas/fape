@@ -72,6 +72,11 @@ public class Printer {
         sb.append("  id:"+db.mID+"\n");
         for(ChainComponent cc : db.chain) {
             for(LogStatement s : cc.contents) {
+                sb.append("[");
+                sb.append(st.getEarliestStartTime(s.start()));
+                sb.append(",");
+                sb.append(st.getEarliestStartTime(s.end()));
+                sb.append("] ");
                 sb.append(statement(st, s));
                 Action a  = st.taskNet.getActionContainingStatement(s);
                 if(a != null) {

@@ -140,8 +140,9 @@ public class State implements Reporter {
      */
     public boolean isConsistent() {
         boolean consistency = true;
-        consistency &= csp.stn().IsConsistent();
+        // note that this order is important so that binded constraint can be propagated into the stn
         consistency &= csp.bindings().isConsistent();
+        consistency &= csp.stn().IsConsistent();
         consistency &= resMan.isConsistent(this);
         return consistency;
     }
@@ -400,20 +401,51 @@ public class State implements Reporter {
         recordTimePoints(act);
         csp.stn().EnforceBefore(pb.earliestExecution(), act.start());
         taskNet.insert(act);
+        apply(act);
 
         if(act.minDuration() != null) {
-            assert !act.minDuration().isFunction() : "Parameterized durations are not supported yet.";
-            csp.stn().EnforceMinDelay(act.start(), act.end(), act.minDuration().d());
+            if(act.minDuration().isFunction()) {
+                // create a constraint defined in extension sv(a1,...,an) = tmp
+                // add a constraint act.start +tmp < act.end
+                // the last one will be propagated in the CSP when tmp is binded in the CSP
+                ParameterizedStateVariable sv = act.minDuration().sv();
+                assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
+                assert sv.func().valueType() == "integer" : "Cannot parameterize an action duration with a non-integer function.";
+                VarRef intValue = new VarRef();
+                csp.bindings().AddIntVariable(intValue);
+                List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
+                varsOfExtConst.add(intValue);
+                csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
+                csp.addMinDelay(act.start(), act.end(), intValue);
+            } else {
+                csp.stn().EnforceMinDelay(act.start(), act.end(), act.minDuration().d());
+            }
         } else {
             csp.stn().EnforceMinDelay(act.start(), act.end(), 1);
         }
 
         if(act.maxDuration() != null) {
-            assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
-            csp.stn().EnforceMinDelay(act.end(), act.start(), -act.maxDuration().d());
+            if(act.maxDuration().isFunction()) {
+                // create a constraint defined in extension sv(a1,...,an) = tmp
+                // add a constraint act.start +tmp > act.end
+                // the last one will be propagated in the STN when tmp is binded in the CSP
+                ParameterizedStateVariable sv = act.maxDuration().sv();
+                assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
+                assert sv.func().valueType() == "integer" : "Cannot parameterize an action duration with a non-integer function.";
+                VarRef intValue = new VarRef();
+                csp.bindings().AddIntVariable(intValue);
+                List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
+                varsOfExtConst.add(intValue);
+                csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
+                csp.addMaxDelay(act.start(), act.end(), intValue);
+            } else {
+                assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
+                csp.stn().EnforceMaxDelay(act.start(), act.end(), act.maxDuration().d());
+            }
         }
 
-        apply(act);
+        csp.bindings().isConsistent();
+        csp.stn().IsConsistent();
     }
 
     /**
@@ -441,6 +473,9 @@ public class State implements Reporter {
             csp.stn().recordTimePoint(pb.end());
             csp.stn().recordTimePoint(pb.earliestExecution());
             csp.stn().EnforceBefore(pb.start(), pb.earliestExecution());
+
+            // TODO this voodoo to make pb.start == 0
+            csp.stn().stn.enforceInterval(csp.stn().ids.get(pb.start()), csp.stn().stn.start(), 0, 0);
 
         }
         for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
@@ -513,6 +548,7 @@ public class State implements Reporter {
                 assert v instanceof InstanceRef;
                 values.add(((InstanceRef) v).instance());
             }
+            csp.bindings().addPossibleValue(c.value());
             csp.bindings().addValuesToValuesSet(c.sv().func().name(), values, c.value());
         } else {
             throw new FAPEException("Unhandled constraint type: "+bc);
