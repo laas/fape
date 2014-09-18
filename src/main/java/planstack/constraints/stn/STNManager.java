@@ -63,10 +63,16 @@ public class STNManager<TPRef> {
     }
 
     /**
+     * Enforces a < b
+     */
+    public final void EnforceStrictlyBefore(TPRef a, TPRef b) {
+        stn.enforceStrictlyBefore(id(a), id(b));
+    }
+
+    /**
      * Enforces that b must happens at least minDelay after a
      */
     public final void EnforceMinDelay(TPRef a, TPRef b, int minDelay) {
-        System.out.println(b+" -- -"+minDelay+" --> "+a);
         stn.addConstraint(id(b), id(a), -minDelay);
     }
 
@@ -74,7 +80,6 @@ public class STNManager<TPRef> {
      * Enforces that b must happens at most maxDelay after a
      */
     public final void EnforceMaxDelay(TPRef a, TPRef b, int maxDelay) {
-        System.out.println(a+" -- "+maxDelay+" --> "+b);
         stn.addConstraint(id(a), id(b), maxDelay);
     }
 
@@ -83,10 +88,7 @@ public class STNManager<TPRef> {
      * @return True if the resulting STN is consistent.
      */
     public final boolean EnforceConstraint(TPRef a, TPRef b, int min, int max) {
-        STN backup = stn.cc();
-        //TinyLogger.LogInfo("Adding temporal constraint: "+a+" ["+min+","+max+"] "+b);
         stn.enforceInterval(id(a), id(b), min, max);
-
         return stn.consistent();
     }
 
