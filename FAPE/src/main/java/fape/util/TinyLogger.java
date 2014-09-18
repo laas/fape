@@ -31,7 +31,7 @@ public class TinyLogger {
 
         String inFormating = toFormat;
 
-        String[] printables = new String[objects.length];
+        Object[] printables = new Object[objects.length];
         for(int i=0 ; i<objects.length ; i++) {
             printables[i] = Printer.stateDependentPrint(st, objects[i]);
         }
