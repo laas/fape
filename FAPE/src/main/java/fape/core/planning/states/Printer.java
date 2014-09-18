@@ -1,9 +1,11 @@
 package fape.core.planning.states;
 
+import fape.core.planning.search.Threat;
+import fape.core.planning.search.resolvers.TemporalSeparation;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
@@ -19,6 +21,28 @@ import java.util.Map;
  * Most methods are parameterized with the state from which the information can be extracted.
  */
 public class Printer {
+
+    public static String stateDependentPrint(State st, Object o) {
+        if(o instanceof Action)
+            return action(st, (Action) o);
+        else if(o instanceof VarRef)
+            return variable(st, (VarRef) o);
+        else if(o instanceof LogStatement)
+            return statement(st, (LogStatement) o);
+        else if(o instanceof ParameterizedStateVariable)
+            return stateVariable(st, (ParameterizedStateVariable) o);
+        else if(o instanceof TemporalDatabase)
+            return temporalDatabase(st, (TemporalDatabase) o);
+        else if(o instanceof Reporter)
+            return ((Reporter) o).Report();
+        else if(o instanceof Threat)
+            return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
+        else if(o instanceof TemporalSeparation)
+            return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).first)+" && "
+                    +inlineTemporalDatabase(st, ((TemporalSeparation) o).second);
+        else
+            return o.toString();
+    }
 
     public static String action(State st, Action act) {
         if(act == null)
@@ -59,14 +83,14 @@ public class Printer {
     public static String temporalDatabaseManager(State st) {
         StringBuilder sb = new StringBuilder();
         for(TemporalDatabase tdb : st.getDatabases()) {
-            sb.append(print(st, tdb));
+            sb.append(temporalDatabase(st, tdb));
             sb.append("\n");
         }
 
         return sb.toString();
     }
 
-    public static String print(State st, TemporalDatabase db) {
+    public static String temporalDatabase(State st, TemporalDatabase db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append("  id:"+db.mID+"\n");
@@ -84,6 +108,26 @@ public class Printer {
                     sb.append(action(st, a));
                 }
                 sb.append("\n");
+            }
+            //sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    public static String inlineTemporalDatabase(State st, TemporalDatabase db) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(stateVariable(st, db.stateVariable));
+        sb.append(":"+db.mID+"  ");
+        for(ChainComponent cc : db.chain) {
+            for(LogStatement s : cc.contents) {
+                sb.append("[");
+                sb.append(st.getEarliestStartTime(s.start()));
+                sb.append(",");
+                sb.append(st.getEarliestStartTime(s.end()));
+                sb.append("] ");
+                sb.append(statement(st, s));
+                sb.append(" ");
             }
             //sb.append("\n");
         }

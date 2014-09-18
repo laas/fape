@@ -799,6 +799,8 @@ public class State implements Reporter {
 
     public void enforceBefore(TPRef a, TPRef b) { csp.stn().EnforceBefore(a, b); }
 
+    public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().EnforceStrictlyBefore(a, b); }
+
     public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().CanBeBefore(a, b); }
 
     public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().CanBeStrictlyBefore(a, b); }

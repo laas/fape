@@ -13,12 +13,31 @@ package fape.util;
 //import fape.core.planning.Planner;
 
 import fape.core.planning.Planner;
+import fape.core.planning.states.Printer;
+import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
+
+import java.util.regex.Pattern;
 
 /**
  *
  * @author Filip Dvořák
  */
 public class TinyLogger {
+
+    public static void LogInfo(State st, String toFormat, Object... objects) {
+        if(!Planner.logging)
+            return;
+
+        String inFormating = toFormat;
+
+        String[] printables = new String[objects.length];
+        for(int i=0 ; i<objects.length ; i++) {
+            printables[i] = Printer.stateDependentPrint(st, objects[i]);
+        }
+
+        System.out.println(String.format(toFormat, printables));
+    }
 
     //public static boolean logging = false;
     public static void LogInfo(String st) {

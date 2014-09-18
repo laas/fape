@@ -152,7 +152,7 @@ public abstract class APlanner {
             }
         }
 
-        TinyLogger.LogInfo("[" + next.mID + "] Adding " + o);
+        TinyLogger.LogInfo(next, "     [%s] Adding %s",next.mID, o);
 
         //now we can happily apply all the options
         if (supporter != null && precedingComponent != null) {
@@ -228,8 +228,8 @@ public abstract class APlanner {
 
         } else if (o instanceof TemporalSeparation) {
             for (LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
-                for (LogStatement second : ((TemporalSeparation) o).second.chain.getLast().contents) {
-                    next.enforceBefore(first.end(), second.start());
+                for (LogStatement second : ((TemporalSeparation) o).second.chain.getFirst().contents) {
+                    next.enforceStrictlyBefore(first.end(), second.start());
                 }
             }
         } else if (o instanceof BindingSeparation) {
@@ -800,11 +800,11 @@ public abstract class APlanner {
             //we just take the first option here as a tie breaker by min-domain
             Pair<Flaw, List<Resolver>> opt = opts.getFirst();
 
-            TinyLogger.LogInfo(" Flaw:" + opt.value1.toString());
+            TinyLogger.LogInfo(st, " Flaw: %s", opt.value1);
 
             for (Resolver o : opt.value2) {
 
-                TinyLogger.LogInfo("   Res: " + o);
+                TinyLogger.LogInfo(st, "   Res: %s", o);
 
                 State next = new State(st);
                 boolean success = false;
@@ -823,7 +823,7 @@ public abstract class APlanner {
                     queue.add(next);
                     GeneratedStates++;
                 } else {
-                    TinyLogger.LogInfo("   Dead-end reached for state: " + next.mID);
+                    TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
                     //inconsistent state, doing nothing
                 }
             }
