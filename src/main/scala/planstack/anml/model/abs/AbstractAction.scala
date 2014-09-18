@@ -119,6 +119,7 @@ object AbstractAction {
         action._minDur = AbstractDuration(min, action.context, pb)
         action._maxDur = AbstractDuration(max, action.context, pb)
       }
+      case const:parser.Constant => action.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
     })
 
     action

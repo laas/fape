@@ -1,5 +1,7 @@
 package planstack.anml.parser
 
+import planstack.anml.ANMLException
+
 import scala.util.parsing.combinator._
 
 
@@ -141,7 +143,8 @@ case class FloatFunction(
   assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
 }
 
-class Constant(override val name :String, override val tipe:String) extends Function(name, Nil, tipe, true) with DecompositionContent
+class Constant(override val name :String, override val tipe:String)
+  extends Function(name, Nil, tipe, true) with DecompositionContent with ActionContent
 
 case class Type(name:String, parent:String, content:List[TypeContent]) extends AnmlBlock
 
@@ -190,6 +193,7 @@ object AnmlParser extends JavaTokenParsers {
           case SingleTermStatement(e, "") => SingleTermStatement(e, id)
           case TwoTermsStatement(e1, o, e2, "") => TwoTermsStatement(e1, o, e2, id)
           case ThreeTermsStatement(e1, o1, e2, o2, e3, "") => ThreeTermsStatement(e1, o1, e2, o2, e3, id)
+          case _ => throw new ANMLException("Problem while parsing: id was detected by statementWithoutID")
         }}
     | statementWithoutID
     )
@@ -247,6 +251,8 @@ object AnmlParser extends JavaTokenParsers {
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
       | "motivated"~";" ^^^ List(Motivated)
+      | "constant"~>(word|kwType)~word<~";" ^^ {
+      case tipe~name => List(new Constant(name, tipe)) }
       | "duration"~":="~>expr<~";" ^^ (x => List(ExactDuration(x)))
       | "duration"~":in"~"["~>expr~","~expr<~"]"~";" ^^ {
         case min~","~max => List(BoundedDuration(min, max))
