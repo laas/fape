@@ -15,6 +15,9 @@ import scala.collection.mutable
   */
 abstract class Function(val name:String, val valueType:String, val argTypes:List[String], val isConstant:Boolean) {
 
+  override def toString =
+    name+"("+argTypes.mkString(",")+"):"+valueType
+
   /** Builds a version of this defined as if it was scoped inside this containingType.
     * if the function is `AType aFunction(Object)`, invoking `scoped("Container)` on it would result in:
     * `AType Container.aFunction(Container, Object)`

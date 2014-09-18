@@ -24,7 +24,7 @@ class AbstractAction(val name:String, private val mArgs:List[LVarRef], val conte
   protected var motivated = false
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
-  def isMotivated = motivated
+  def mustBeMotivated = motivated
 
   protected var _minDur : AbstractDuration = null
   protected var _maxDur : AbstractDuration = null

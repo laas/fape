@@ -49,7 +49,7 @@ class Action(
   def status = mStatus
 
   /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
-  def isMotivated = abs.isMotivated
+  def mustBeMotivated = abs.mustBeMotivated
 
   val minDuration =
     if(abs.minDur != null) Duration(abs.minDur, context)
@@ -165,6 +165,7 @@ object Action {
         case Some(act) => act
         case None => throw new ANMLException("Unable to find action "+ref.name)
       }
+    assert(abs.args.size() == ref.args.size, "Error: wrong number of arguments in action ref: "+ref)
 
     // map every abstract variable to the global one defined in the parent context.
     val args = ref.args.map(parentContext.getGlobalVar(_))
@@ -217,6 +218,7 @@ object Action {
       case Some(parentContext) => parentContext
       case None => pb.context
     }
+    assert(abs.args.size() == args.size, "Wrong number of arguments ("+args.size+") for action: "+abs)
 
     // creates pair (localVar, globalVar) as defined by the ActionRef
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), args(i))

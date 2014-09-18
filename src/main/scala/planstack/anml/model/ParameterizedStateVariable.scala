@@ -26,6 +26,8 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   * @param args A list of variables that are the parameters of the state variable.
   */
 class ParameterizedStateVariable(val func:Function, val args:List[VarRef]) {
+  assert(args.length == func.argTypes.length,
+    "There is "+args.length+" arguments instead of "+func.argTypes.length+" for the state varaible: "+func)
 
   def jArgs = seqAsJavaList(args)
 

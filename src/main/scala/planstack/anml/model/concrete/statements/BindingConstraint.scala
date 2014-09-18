@@ -7,6 +7,8 @@ abstract class BindingConstraint
 
 class AssignmentConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
 
+class IntegerAssignmentConstraint(val sv : ParameterizedStateVariable, val value : Int) extends BindingConstraint
+
 class VarEqualityConstraint(val leftVar : VarRef, val rightVar : VarRef) extends BindingConstraint
 
 class EqualityConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint

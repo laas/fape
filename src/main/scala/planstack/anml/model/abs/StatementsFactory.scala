@@ -66,7 +66,7 @@ object StatementsFactory {
         if (isStateVariable(s.term, context, pb)) {
           // state variable alone. Make sure it is a boolean make it a persistence condition at true
           val sv = asStateVariable(s.term, context, pb)
-          assert(sv.func.valueType == "boolean")
+          assert(sv.func.valueType == "boolean", "Non-boolean function as a single term statement: "+s)
           List(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id)))
         } else {
           // it should be an action, but we can't check since this action might not have been parsed yet
@@ -78,7 +78,7 @@ object StatementsFactory {
       case parser.TwoTermsStatement(e1, op, e2, id) => {
         if (isStateVariable(e1, context, pb)) {
           val sv = asStateVariable(e1, context, pb)
-          if(sv.isResource) {
+          if(sv.isResource && !sv.func.isConstant) {
             assert(e2.isInstanceOf[NumExpr], "Non numerical expression at the right side of a resource statement.")
             val rightValue = e2.asInstanceOf[NumExpr].value
             op.op match {
@@ -93,7 +93,12 @@ object StatementsFactory {
           } else {
             if(sv.func.isConstant) {
               // those are binding constraints (on constant functions)
-              if(e2.isInstanceOf[VarExpr]) {
+              if(e2.isInstanceOf[NumExpr]) {
+                assert(sv.func.valueType == "integer")
+                assert(op.op == ":=")
+                val value = e2.asInstanceOf[NumExpr].value.toInt
+                List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id)))
+              } else if(e2.isInstanceOf[VarExpr]) {
                 // f(a, b) == c  and f(a, b) != c
                 val variable = LVarRef(e2.functionName)
                 op.op match {

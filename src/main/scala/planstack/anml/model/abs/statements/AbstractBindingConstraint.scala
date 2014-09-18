@@ -23,6 +23,18 @@ class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, 
     new AssignmentConstraint(sv.bind(context), context.getGlobalVar(variable))
 }
 
+class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val value : Int, id:LStatementRef)
+  extends AbstractBindingConstraint(id)
+{
+  require(sv.func.isConstant && sv.func.valueType == "integer")
+
+  override def toString = "%s := %s".format(sv, value)
+
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new IntegerAssignmentConstraint(sv.bind(context), value)
+}
+
 class AbstractEqualityConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
   extends AbstractBindingConstraint(id)
 {

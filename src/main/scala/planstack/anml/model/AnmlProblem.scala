@@ -136,12 +136,15 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
       assert(!funcDecl.name.contains("."), "Declaring function "+funcDecl+" is not supported. If you wanted to " +
         "declared a function linked to type, you should do so in the type itself.") // TODO: should be easy to support
 
-      if(funcDecl.args.isEmpty && funcDecl.isConstant)
+      if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, new VarRef())
-      else
+        val newVar = new VarRef()
+        context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, newVar)
+        modifier.vars += ((funcDecl.tipe, newVar))
+      } else {
         // either non-constant or with arguments
         functions.addFunction(funcDecl)
+      }
     })
 
     // find all methods declared inside a type and them to functions and to the type.

@@ -3,7 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.AbstractStatement
 
-/** Reference to an action as it appears in a dcomposition
+/** Reference to an action as it appears in a decomposition
   *
   * @param name Name of the action
   * @param args Parameters of the action as instances of local variables
@@ -16,5 +16,7 @@ class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LAc
   override def bind(context:Context, pb:AnmlProblem) = throw new UnsupportedOperationException
 
   override def isTemporalInterval = true
+
+  override def toString = name+"("+args.mkString(",")+")"
 }
 
