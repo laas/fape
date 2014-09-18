@@ -183,12 +183,33 @@ public class TaskNetworkManager implements Reporter {
         for (TNNode n : network.jVertices()) {
             if(n.isAction()) {
                 Action a = n.asAction();
-                if(a.isMotivated() && network.inDegree(n) == 0) {
+                if(a.mustBeMotivated() && !isMotivated(a)) {
                     l.add(a);
                 }
             }
         }
         return l;
+    }
+
+    /**
+     * @return True if this action is motivated: it is part of an action or a decomposition.
+     */
+    public boolean isMotivated(Action a) {
+        assert a.mustBeMotivated();
+        TNNode n = new TNNode(a);
+        if(network.inDegree(n) == 0) {
+            return false;
+        } else {
+            for(TNNode parent : network.jParents(n)) {
+                // it is part of an action or a decomposition
+                if(parent.isAction() || parent.isDecomposition())
+                    return true;
+                // it is an action condition which it self is part of an action or decomposition
+                if(network.inDegree(parent) > 0)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /**
@@ -258,6 +279,15 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
     }
+
+    /**
+     * Adds an action condition in the task network.
+     * @param ac The action condition.
+     */
+    public void insert(ActionCondition ac) {
+        network.addVertex(new TNNode(ac));
+    }
+
 
     /**
      * Checks if the action is a descendant of the decomposition (i.e. there

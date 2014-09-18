@@ -913,7 +913,7 @@ public abstract class APlanner {
             for (AbstractAction aa : potentialSupporters) {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
-                if (useActionConditions() || !aa.isMotivated()) {
+                if (useActionConditions() || !aa.mustBeMotivated()) {
                     ret.add(new SupportingAction(aa));
                 }
             }

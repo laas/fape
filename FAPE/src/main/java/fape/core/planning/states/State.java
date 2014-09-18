@@ -685,6 +685,8 @@ public class State implements Reporter {
                 taskNet.insert(ac, (Decomposition) mod);
             else if(mod instanceof Action)
                 taskNet.insert(ac, (Action) mod);
+            else
+                taskNet.insert(ac);
         }
 
         for (TemporalConstraint tc : mod.temporalConstraints()) {
