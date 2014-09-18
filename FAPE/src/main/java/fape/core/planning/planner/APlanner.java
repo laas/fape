@@ -328,13 +328,20 @@ public abstract class APlanner {
                 act = ms.act;
             }
 
-            // decompose the action with the given decomposition ID
-            AbstractDecomposition absDec = act.decompositions().get(ms.decID); // TODO not limited to decompositions now
-            Decomposition dec = Factory.getDecomposition(pb, act, absDec);
-            next.applyDecomposition(dec);
+            ActionCondition ac;
+            if(ms.decID == -1) {
+                // the action condition is directly in the main body
+                ac = act.context().actionConditions().apply(ms.actRef);
+            } else {
+                // we need to make one decomposition
+                // decompose the action with the given decomposition ID
+                AbstractDecomposition absDec = act.decompositions().get(ms.decID); // TODO not limited to decompositions now
+                Decomposition dec = Factory.getDecomposition(pb, act, absDec);
+                next.applyDecomposition(dec);
 
-            // Get the action condition we wanted
-            ActionCondition ac = dec.context().actionConditions().apply(ms.actRef);
+                // Get the action condition we wanted
+                ac = dec.context().actionConditions().apply(ms.actRef);
+            }
             // add equality constraint between all args
             for (int i = 0; i < ac.args().size(); i++) {
                 next.addUnificationConstraint(ms.toSupport.args().get(i), ac.args().get(i));

@@ -474,9 +474,9 @@ public class State implements Reporter {
             csp.stn().recordTimePoint(pb.earliestExecution());
             csp.stn().EnforceBefore(pb.start(), pb.earliestExecution());
 
-            // TODO this voodoo to make pb.start == 0
+            // TODO this voodoo to make pb.start == stn.start && pb.end == stn.end
             csp.stn().stn.enforceInterval(csp.stn().ids.get(pb.start()), csp.stn().stn.start(), 0, 0);
-
+            csp.stn().stn.enforceInterval(csp.stn().ids.get(pb.end()), csp.stn().stn.end(), 0, 0);
         }
         for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
             apply(pb.modifiers().get(i));

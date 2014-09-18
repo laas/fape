@@ -8,6 +8,11 @@ public class MotivatedSupport extends Resolver {
 
     public final AbstractAction abs;
     public final Action act;
+
+    /**
+     * Id of the decomposition in which the action reference appears. If set to -1, it means that it appears
+     * in the main body of the action.
+     */
     public final int decID;
     public final LActRef actRef;
 

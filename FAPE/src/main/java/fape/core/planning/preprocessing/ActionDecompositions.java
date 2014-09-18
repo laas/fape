@@ -88,14 +88,20 @@ public class ActionDecompositions {
     /**
      * Lookup a partial set of resolvers for a motivated action a.
      *
-     * Retrieve a tuple (abs:AbstractAction, decompositionID:integer, actRef:LocalActionReference),
-     * where abs must be instantiated and inserted into the plan. It decomposition number decompositionID
-     * must then be performed. The actRef gives the ID of a task condition that is approprate to support a.
+     * Retrieves a tuple (abs:AbstractAction, decompositionID:integer, actRef:LocalActionReference),
+     * where abs must be instantiated and inserted into the plan.
+     *  - Its decomposition number decompositionID must then be performed. If decompositionID == -1,
+     *  it means that the supporting actionReference is the body of the action itself. Hence no decomposition is needed.
+     * The actRef gives the ID of a task condition that is approprate to support a.
      * @param a An action that need support (it is motivated and must be part of decomposition)
      */
     public List<Tuple3<AbstractAction, Integer, LActRef>> supporterForMotivatedAction(Action a) {
         List<Tuple3<AbstractAction, Integer, LActRef>> supporters = new LinkedList<>();
         for(AbstractAction abs : pb.abstractActions()) {
+            for(AbstractActionRef actRef : abs.jActions()) {
+                if(actRef.name().equals(a.name()))
+                    supporters.add(new Tuple3<AbstractAction, Integer, LActRef>(abs, -1, actRef.localId()));
+            }
             for(int decID=0 ; decID<abs.jDecompositions().size() ; decID++) {
                 AbstractDecomposition dec = abs.jDecompositions().get(decID);
                 for(AbstractActionRef actRef : dec.jActions()) {
