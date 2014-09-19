@@ -13,7 +13,7 @@ import planstack.anml.model.concrete.TemporalInterval;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.*;
 
-import java.util.Map;
+import java.util.*;
 
 /**
  * Contains functions to produce human-readable string from planning objects.
@@ -80,10 +80,59 @@ public class Printer {
         return ret + ")";
     }
 
-    public static String temporalDatabaseManager(State st) {
-        StringBuilder sb = new StringBuilder();
+    public static String temporalDatabaseManager(final State st) {
+        HashMap<String, List<TemporalDatabase>> groupedDBs = new HashMap<>();
         for(TemporalDatabase tdb : st.getDatabases()) {
-            sb.append(temporalDatabase(st, tdb));
+            if(!groupedDBs.containsKey(stateVariable(st, tdb.stateVariable))) {
+                groupedDBs.put(stateVariable(st, tdb.stateVariable), new LinkedList<TemporalDatabase>());
+            }
+            groupedDBs.get(stateVariable(st, tdb.stateVariable)).add(tdb);
+        }
+        for(List<TemporalDatabase> dbs : groupedDBs.values()) {
+            Collections.sort(dbs, new Comparator<TemporalDatabase>() {
+                @Override
+                public int compare(TemporalDatabase db1, TemporalDatabase db2) {
+                    return (int) st.getEarliestStartTime(db1.getConsumeTimePoint())
+                            - (int) st.getEarliestStartTime(db2.getConsumeTimePoint());
+                }
+            });
+        }
+        StringBuilder sb = new StringBuilder();
+        for(Map.Entry<String,List<TemporalDatabase>> entry : groupedDBs.entrySet()) {
+            int offset = entry.getKey().length();
+            sb.append(entry.getKey());
+            boolean first = true;
+            for(TemporalDatabase db : entry.getValue()) {
+                boolean newDb = true;
+                for(ChainComponent cc : db.chain) {
+                    for (LogStatement s : cc.contents) {
+                        if(!first)
+                            for(int i=0;i<offset;i++) sb.append(" ");
+                        first = false;
+                        if(newDb) sb.append(" | ");
+                        else sb.append("   ");
+                        newDb = false;
+                        sb.append("[");
+                        sb.append(st.getEarliestStartTime(s.start()));
+                        sb.append(",");
+                        sb.append(st.getEarliestStartTime(s.end()));
+                        sb.append("] ");
+                        if(s instanceof Persistence) {
+                            sb.append(" == " + variable(st, s.endValue()));
+                        } else if(s instanceof Assignment) {
+                            sb.append(" := " + variable(st, s.endValue()));
+                        } else if(s instanceof Transition) {
+                            sb.append(" == " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
+                        }
+                        Action act = st.getActionContaining(s);
+                        if(act != null) {
+                            sb.append("    From: ");
+                            sb.append(action(st, act));
+                        }
+                        sb.append("\n");
+                    }
+                }
+            }
             sb.append("\n");
         }
 
