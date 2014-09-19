@@ -41,7 +41,6 @@ public class PGExtPlanner extends PGPlanner {
 
     static int nextConstraint = 0;
 
-    //TODO doc
     public void unify(State st, Action act, DisjunctiveAction disAct) {
         String constraintID = "rpg_ext" + nextConstraint++;
 

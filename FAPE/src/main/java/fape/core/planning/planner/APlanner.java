@@ -336,7 +336,7 @@ public abstract class APlanner {
             } else {
                 // we need to make one decomposition
                 // decompose the action with the given decomposition ID
-                AbstractDecomposition absDec = act.decompositions().get(ms.decID); // TODO not limited to decompositions now
+                AbstractDecomposition absDec = act.decompositions().get(ms.decID);
                 Decomposition dec = Factory.getDecomposition(pb, act, absDec);
                 next.applyDecomposition(dec);
 
