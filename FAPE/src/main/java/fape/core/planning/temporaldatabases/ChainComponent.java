@@ -56,18 +56,18 @@ public class ChainComponent {
     }
 
     /**
-     * TODO: There might be more than one time point
      * @return One end time point in the chain component (there might be more!)
      */
     public TPRef getSupportTimePoint() {
+        assert contents.size() == 1 : "There is more than one statement in this chain component.";
         return contents.getFirst().end();
     }
 
     /**
-     * TODO: There might be more than one time point
      * @return One start time point in the chain component (there might be more!)
      */
     public TPRef getConsumeTimePoint() {
+        assert contents.size() == 1 : "There is more than one statement in this chain component.";
         return contents.getFirst().start();
     }
 

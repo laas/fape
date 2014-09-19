@@ -804,7 +804,7 @@ public abstract class APlanner {
             }
 
             if (opts.getFirst().value2.isEmpty()) {
-                TinyLogger.LogInfo("Dead-end, flaw without resolvers: " + opts.getFirst().value1);
+                TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", opts.getFirst().value1);
                 //dead end
                 continue;
             }
