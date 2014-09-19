@@ -111,6 +111,28 @@ public class TemporalDatabase {
         return getSupportingComponent().getSupportTimePoint();
     }
 
+    /**
+     * @return All time points from the last component.
+     */
+    public LinkedList<TPRef> getLastTimePoints() {
+        LinkedList<TPRef> tps = new LinkedList<>();
+        for(LogStatement s : chain.getLast().contents) {
+            tps.add(s.end());
+        }
+        return tps;
+    }
+
+    /**
+     * @return All time points from the first component.
+     */
+    public LinkedList<TPRef> getFirstTimePoints() {
+        LinkedList<TPRef> tps = new LinkedList<>();
+        for(LogStatement s : chain.getFirst().contents) {
+            tps.add(s.start());
+        }
+        return tps;
+    }
+
     public TPRef getConsumeTimePoint() {
         return chain.getFirst().getConsumeTimePoint();
     }

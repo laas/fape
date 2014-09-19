@@ -884,6 +884,8 @@ public class State implements Reporter {
 
     public boolean unifiable(VarRef a, VarRef b) { return csp.bindings().unifiable(a, b); }
 
+    public boolean separable(VarRef a, VarRef b) { return csp.bindings().separable(a, b); }
+
     public void addValuesToValuesSet(String setID, List<String> values) { csp.bindings().addValuesToValuesSet(setID, values);}
 
     public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addValuesSetConstraint(variables, setID);}

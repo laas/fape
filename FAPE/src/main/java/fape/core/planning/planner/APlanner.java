@@ -532,12 +532,16 @@ public abstract class APlanner {
 
     public final List<Resolver> GetResolvers(State st, Threat f) {
         List<Resolver> options = new LinkedList<>();
-        options.add(new TemporalSeparation(f.db1, f.db2));
-        options.add(new TemporalSeparation(f.db2, f.db1));
+
+        if(st.canBeStrictlyBefore(f.db1.getLastTimePoints().getFirst(), f.db2.getFirstTimePoints().getFirst()))
+            options.add(new TemporalSeparation(f.db1, f.db2));
+        if(st.canBeStrictlyBefore(f.db2.getLastTimePoints().getFirst(), f.db1.getFirstTimePoints().getFirst()))
+            options.add(new TemporalSeparation(f.db2, f.db1));
         for (int i = 0; i < f.db1.stateVariable.jArgs().size(); i++) {
-            options.add(new BindingSeparation(
-                    f.db1.stateVariable.jArgs().get(i),
-                    f.db2.stateVariable.jArgs().get(i)));
+            if(st.separable(f.db1.stateVariable.jArgs().get(i), f.db2.stateVariable.jArgs().get(i)))
+                options.add(new BindingSeparation(
+                        f.db1.stateVariable.jArgs().get(i),
+                        f.db2.stateVariable.jArgs().get(i)));
         }
         return options;
     }
