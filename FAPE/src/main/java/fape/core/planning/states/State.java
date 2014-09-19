@@ -174,7 +174,7 @@ public class State implements Reporter {
             ret += b.Report();
         }
         ret += "\n";
-        ret += "  tasks: " + this.taskNet.Report() + "\n";
+        ret += Printer.taskNetwork(this, taskNet);
         //ret += "  databases: "+this.tdb.Report()+"\n";
 
         ret += "}\n";
@@ -847,6 +847,8 @@ public class State implements Reporter {
     public int getNumOpenLeaves() { return taskNet.getNumOpenLeaves(); }
 
     public int getNumRoots() { return taskNet.getNumRoots(); }
+
+    public void exportTaskNetwork(String filename) { taskNet.exportToDot(this, filename); }
 
     /******** Wrapper around the constraint network ***********/
 

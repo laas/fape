@@ -293,6 +293,7 @@ public class Planning {
                             Plan plan = new Plan(sol);
                             plan.exportToDot("plan.dot");
                             sol.exportTemporalNetwork("stn.dot");
+                            sol.exportTaskNetwork("task-network.dot");
                             System.out.println("Look at plan.dot for a complete plan.");
                         }
                     }

@@ -10,6 +10,7 @@
  */
 package fape.core.planning.tasknetworks;
 
+import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.ActRef;
@@ -413,5 +414,9 @@ public class TaskNetworkManager implements Reporter {
             }
         }
         return null;
+    }
+
+    public void exportToDot(State st, String filename) {
+        network.exportToDotFile(filename);
     }
 }

@@ -1,5 +1,7 @@
 package fape.core.planning.tasknetworks;
 
+import fape.FAPE;
+import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Decomposition;
@@ -46,6 +48,14 @@ public class TNNode {
 
     public boolean isActionCondition() {
         return actCond != null;
+    }
+
+    @Override
+    public String toString() {
+        if(isAction()) return act.toString();
+        else if(isDecomposition()) return dec.toString();
+        else if(isActionCondition()) return actCond.toString();
+        else throw new FAPEException("Uncomplete switch");
     }
 
     public Action asAction() {
