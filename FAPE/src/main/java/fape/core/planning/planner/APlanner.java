@@ -13,6 +13,7 @@ import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -691,8 +692,8 @@ public abstract class APlanner {
      * Checks if two temporal databases are threatening each others. It is the
      * case if: - both are not consuming databases (start with an assignment).
      * Otherwise, threat is naturally handled by looking for supporters. - their
-     * state variables are unifiable. - they can overlap TODO: handle case where
-     * multiple persitences are in the last part.
+     * state variables are unifiable. - they can overlap
+     * TODO: handle case where multiple persitences are in the last part.
      *
      * @return True there is a threat.
      */
@@ -700,25 +701,21 @@ public abstract class APlanner {
         if (db1.isConsumer() || db2.isConsumer()) {
             return false;
         } else if (st.Unifiable(db1, db2)) {
-            if (st.canBeBefore(
-                    db1.GetChainComponent(0).getConsumeTimePoint(), // c1
-                    db2.GetChainComponent(db2.chain.size() - 1).getSupportTimePoint()) && // s2
-                    st.canBeBefore(
-                            db2.GetChainComponent(db2.chain.size() - 1).getSupportTimePoint(), // s2
-                            db1.GetChainComponent(db1.chain.size() - 1).getSupportTimePoint())) {    // s1
-                return true;
-            } else if (st.canBeBefore(
-                    db2.GetChainComponent(0).getConsumeTimePoint(), // c2
-                    db1.GetChainComponent(db1.chain.size() - 1).getSupportTimePoint()) && // s1
-                    st.canBeBefore(
-                            db1.GetChainComponent(0).getConsumeTimePoint(), // c1
-                            db2.GetChainComponent(0).getConsumeTimePoint())) {                  // c2
-                return true;
-            } else {
+            TPRef start1 = db1.getConsumeTimePoint();
+            TPRef end1 = db1.chain.getLast().contents.getFirst().end();
+            TPRef start2 = db2.getConsumeTimePoint();
+            TPRef end2 = db2.chain.getLast().contents.getFirst().end();
+
+            // test if the two intervals can overlap
+            if(!st.canBeBefore(start1, end2))
                 return false;
-            }
+            else if(!st.canBeBefore(start2, end1))
+                return false;
+            else
+                return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     public static boolean optimal = false;
