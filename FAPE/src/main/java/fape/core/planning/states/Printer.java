@@ -1,16 +1,18 @@
 package fape.core.planning.states;
 
 import fape.core.planning.search.Threat;
-import fape.core.planning.search.resolvers.TemporalSeparation;
+import fape.core.planning.search.UnboundVariable;
+import fape.core.planning.search.UndecomposedAction;
+import fape.core.planning.search.UnsupportedTaskCond;
+import fape.core.planning.search.resolvers.*;
+import fape.core.planning.search.resolvers.Decomposition;
+import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.TemporalInterval;
-import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 
 import java.util.*;
@@ -35,13 +37,49 @@ public class Printer {
             return temporalDatabase(st, (TemporalDatabase) o);
         else if(o instanceof Reporter)
             return ((Reporter) o).Report();
+        // Flaws
         else if(o instanceof Threat)
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
+        else if(o instanceof UndecomposedAction)
+            return "Undecomposed: "+action(st, ((UndecomposedAction) o).action);
+        else if(o instanceof UnboundVariable)
+            return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
+        else if(o instanceof UnsupportedTaskCond) {
+            return "UnsuppoertedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
+        }
+
+        // Resolvers
         else if(o instanceof TemporalSeparation)
             return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).first)+" && "
                     +inlineTemporalDatabase(st, ((TemporalSeparation) o).second);
+        else if(o instanceof SupportingAction)
+            return "SupportingAction: "+((SupportingAction) o).act.name();
+        else if(o instanceof SupportingDatabase)
+            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).temporalDatabase));
+        else if(o instanceof Decomposition)
+            return "Decompose: no "+((Decomposition) o).decID;
+        else if(o instanceof VarBinding)
+            return "VarBinding: "+((VarBinding) o).var.id()+"="+((VarBinding) o).value;
+        else if(o instanceof BindingSeparation)
+            return "BindingSeparation: "+((BindingSeparation) o).a.id()+"!="+((BindingSeparation) o).b.id();
+        else if(o instanceof NewTaskSupporter)
+            return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
+        else if(o instanceof ExistingTaskSupporter)
+            return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
+
         else
             return o.toString();
+    }
+
+    public static String taskNetwork(State st, TaskNetworkManager tn) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Tasks: ");
+        for(Action a : tn.GetAllActions()) {
+            sb.append(action(st, a));
+            sb.append("  ");
+        }
+        sb.append("\n");
+        return sb.toString();
     }
 
     public static String action(State st, Action act) {
@@ -53,6 +91,17 @@ public class Printer {
             ret += variable(st, arg);
         }
         return ret + "):"+act.id();
+    }
+
+    public static String taskCondition(State st, ActionCondition act) {
+        if(act == null)
+            return "null";
+
+        String ret = act.abs().name()+"(";
+        for(VarRef arg : act.args()) {
+            ret += variable(st, arg);
+        }
+        return ret + ")";
     }
 
     public static String variable(State st, VarRef var) {
