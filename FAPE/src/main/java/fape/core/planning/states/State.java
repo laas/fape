@@ -793,6 +793,10 @@ public class State implements Reporter {
         this.supportConstraints.add(new Pair<>(cc.mID, dec));
     }
 
+    public int numFlaws() {
+        return consumers.size() + taskNet.getNumOpenActionConditions() + taskNet.getNumOpenLeaves() +taskNet.getNumUnmotivatedActions();
+    }
+
 
 
     /*** Wrapper around STN ******/
@@ -817,6 +821,7 @@ public class State implements Reporter {
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().EnforceMinDelay(a, b, delay); }
 
     public long getEarliestStartTime(TPRef a) { return csp.stn().GetEarliestStartTime(a); }
+//    public long getLatestStartTime(TPRef a) { return csp.stn().GetLatestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) {
         csp.stn().stn.g().exportToDotFile(filename, new STNNodePrinter(this));

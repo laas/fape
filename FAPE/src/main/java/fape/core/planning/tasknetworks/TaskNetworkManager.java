@@ -30,12 +30,16 @@ public class TaskNetworkManager implements Reporter {
     private int numActions;
     private int numOpenLeaves;
     private int numRoots;
+    private int numOpenedActionConditions;
+    private int numUnmotivatedActions;
 
     public TaskNetworkManager() {
         network = GraphFactory.getSimpleUnlabeledDigraph();
         numActions = 0;
         numOpenLeaves = 0;
         numRoots = 0;
+        numOpenedActionConditions = 0;
+        numUnmotivatedActions = 0;
     }
 
     public TaskNetworkManager(TaskNetworkManager base) {
@@ -43,6 +47,8 @@ public class TaskNetworkManager implements Reporter {
         this.numActions = base.numActions;
         this.numOpenLeaves = base.numOpenLeaves;
         this.numRoots = base.numRoots;
+        this.numOpenedActionConditions = base.numOpenedActionConditions;
+        this.numUnmotivatedActions = base.numUnmotivatedActions;
     }
 
     /**
@@ -68,6 +74,18 @@ public class TaskNetworkManager implements Reporter {
     public int getNumRoots() {
         return numRoots;
     }
+
+    /**
+     * O(1)
+     * @return Number of opened action conditions.
+     */
+    public int getNumOpenActionConditions() { return numOpenedActionConditions; }
+
+    /**
+     * O(1)
+     * @return Number of action with motivated keyword that are motivated yet.
+     */
+    public int getNumUnmotivatedActions() { return numUnmotivatedActions; }
 
     /**
      * O(1)
@@ -170,6 +188,7 @@ public class TaskNetworkManager implements Reporter {
                 }
             }
         }
+        assert l.size() == numOpenedActionConditions;
         return l;
     }
 
@@ -188,6 +207,7 @@ public class TaskNetworkManager implements Reporter {
                 }
             }
         }
+        assert l.size() == numUnmotivatedActions;
         return l;
     }
 
@@ -225,8 +245,12 @@ public class TaskNetworkManager implements Reporter {
         assert network.contains(new TNNode(a));
         assert network.outDegree(new TNNode(cond)) == 0;
         network.addEdge(new TNNode(cond), new TNNode(a));
-        if(network.inDegree(new TNNode(a)) == 1)
+        if(network.inDegree(new TNNode(a)) == 1) {
             numRoots--;
+            if(a.mustBeMotivated())
+                numUnmotivatedActions--;
+        }
+        numOpenedActionConditions--;
     }
 
     /**
@@ -245,6 +269,8 @@ public class TaskNetworkManager implements Reporter {
         } else {
             numRoots++;
         }
+        if(a.mustBeMotivated() && !isMotivated(a))
+            numUnmotivatedActions++;
     }
 
     /**
@@ -267,6 +293,7 @@ public class TaskNetworkManager implements Reporter {
     public void insert(ActionCondition ac, Decomposition parent) {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
+        numOpenedActionConditions++;
     }
 
     /**
@@ -278,6 +305,7 @@ public class TaskNetworkManager implements Reporter {
     public void insert(ActionCondition ac, Action parent) {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
+        numOpenedActionConditions++;
     }
 
     /**
@@ -286,6 +314,7 @@ public class TaskNetworkManager implements Reporter {
      */
     public void insert(ActionCondition ac) {
         network.addVertex(new TNNode(ac));
+        numOpenedActionConditions++;
     }
 
 
