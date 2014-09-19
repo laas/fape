@@ -152,6 +152,8 @@ public class STNManager<TPRef> {
         return stn.earliestStart(id(start));
     }
 
+    public long GetLatestStartTime(TPRef tp) { return stn.latestStart(id(tp)); }
+
     public boolean IsConsistent() {
         return stn.consistent();
     }

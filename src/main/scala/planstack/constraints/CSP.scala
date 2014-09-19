@@ -42,7 +42,6 @@ class CSP[VarRef, TPRef](
 
   override def onBinded(variable: VarRef, value: Int): Unit = {
     if(varsToConstraints contains variable) {
-      println("onBinded(%s, %s)".format(variable, value))
       for ((u, v, f) <- varsToConstraints(variable)) {
         stn.EnforceMaxDelay(u, v, f(value))
       }
