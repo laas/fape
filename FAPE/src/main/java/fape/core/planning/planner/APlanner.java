@@ -697,29 +697,33 @@ public abstract class APlanner {
      * case if: - both are not consuming databases (start with an assignment).
      * Otherwise, threat is naturally handled by looking for supporters. - their
      * state variables are unifiable. - they can overlap
-     * TODO: handle case where multiple persitences are in the last part.
      *
      * @return True there is a threat.
      */
     protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
-        if (db1.isConsumer() || db2.isConsumer()) {
+        // if they are not both consumers, it is dealt by open goal reasoning
+        if (db1.isConsumer() || db2.isConsumer())
             return false;
-        } else if (st.Unifiable(db1, db2)) {
-            TPRef start1 = db1.getConsumeTimePoint();
-            TPRef end1 = db1.chain.getLast().contents.getFirst().end();
-            TPRef start2 = db2.getConsumeTimePoint();
-            TPRef end2 = db2.chain.getLast().contents.getFirst().end();
 
-            // test if the two intervals can overlap
-            if(!st.canBeBefore(start1, end2))
-                return false;
-            else if(!st.canBeBefore(start2, end1))
-                return false;
-            else
-                return true;
-        } else {
+        // if their state variables are not unifiable
+        if(!st.Unifiable(db1, db2))
             return false;
-        }
+
+        // if db1 cannot start before db2 ends
+        for(TPRef start1 : db1.getFirstTimePoints())
+            for(TPRef end2 : db2.getLastTimePoints())
+                if(!st.canBeBefore(start1, end2))
+                    return false;
+
+        // if db2 cannot start before db1 ends
+        for(TPRef end1 : db1.getLastTimePoints())
+            for(TPRef start2 : db2.getFirstTimePoints())
+                if(!st.canBeBefore(start2, end1))
+                    return false;
+
+        // they can overlap and they are unifiable
+        return true;
+
     }
 
     public static boolean optimal = false;
