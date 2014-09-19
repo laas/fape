@@ -821,7 +821,7 @@ public class State implements Reporter {
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().EnforceMinDelay(a, b, delay); }
 
     public long getEarliestStartTime(TPRef a) { return csp.stn().GetEarliestStartTime(a); }
-//    public long getLatestStartTime(TPRef a) { return csp.stn().GetLatestStartTime(a); }
+    public long getLatestStartTime(TPRef a) { return csp.stn().GetLatestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) {
         csp.stn().stn.g().exportToDotFile(filename, new STNNodePrinter(this));
