@@ -348,8 +348,8 @@ public abstract class APlanner {
                 next.addUnificationConstraint(ms.toSupport.args().get(i), ac.args().get(i));
             }
             //enforce equality of time points
-            next.enforceConstraint(ac.start(), act.start(), 0, 0);
-            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+            next.enforceConstraint(ac.start(), ms.toSupport.start(), 0, 0);
+            next.enforceConstraint(ac.end(), ms.toSupport.end(), 0, 0);
 
             // finally, add the support ling in the task network
             next.addSupport(ac, ms.toSupport);
@@ -759,7 +759,7 @@ public abstract class APlanner {
 
             List<Flaw> flaws = GetFlaws(st);
 
-            TinyLogger.LogInfo(st);
+            TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);
             if (flaws.isEmpty()) {
                 if(Planner.debugging)
                     st.assertConstraintNetworkGroundAndConsistent();
