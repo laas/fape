@@ -48,8 +48,10 @@ class StronglyConnectedComponent[V](dag : DirectedGraph[V, Nothing, Edge[V]]) {
         reduced.addEdge(groups(g1), groups(g2))
     })
 
+    /* this might be nice to be configurable :) //Filip
+    
     val printer = new GraphDotPrinter(reduced)
-    printer.print2Dot("/home/abitmonn/tmp/g.dot")
+    printer.print2Dot("/home/abitmonn/tmp/g.dot")*/
 
     reduced
   }
