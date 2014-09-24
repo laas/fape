@@ -1,15 +1,20 @@
 package planstack.constraints.stn;
 
 
+import scala.Array;
 import scala.Tuple2;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
+import scala.collection.mutable.ListBuffer;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 public class STNManager<TPRef> {
 
-    public final STN stn;
+    public final ISTN stn;
     public final HashMap<TPRef, Integer> ids;
 
     /**
@@ -113,9 +118,14 @@ public class STNManager<TPRef> {
      * @return true if the STN is consistent after removal
      */
     public boolean RemoveConstraints(Collection<Tuple2<TPRef, TPRef>> ps) {
+
+        List<Tuple2<Object,Object>> toRemove = new LinkedList<>();
         for (Tuple2<TPRef, TPRef> p : ps) {
-            stn.removeConstraintUnsafe(id(p._1()), id(p._2()));
+            Integer a = id(p._1());
+            Integer b = id(p._2());
+            toRemove.add(new Tuple2<Object, Object>(a, b));
         }
+        stn.removeConstraints(JavaConversions.asScalaBuffer(toRemove));
         return stn.checkConsistencyFromScratch();
     }
 
@@ -132,13 +142,7 @@ public class STNManager<TPRef> {
      * @return
      */
     public STNManager<TPRef> DeepCopy() {
-        return new STNManager(this);
-    }
-
-    public String Report() {
-        String ret = "size: " + this.stn.size() + "\n";
-        ret += stn.g().edges().mkString("\n");
-        return ret;
+        return new STNManager<>(this);
     }
 
     public void AssertConsistent() {

@@ -1,11 +1,12 @@
 package planstack.constraints.stn
 
 trait ISTN {
+
   /** Id of the Start time point. No time points in the STN should happen before this one. */
-  val start = 0
+  def start = 0
 
   /** Id of the End time point. No time point in the STN should happen after this one. */
-  val end = 1
+  def end = 1
 
   def consistent : Boolean
 
