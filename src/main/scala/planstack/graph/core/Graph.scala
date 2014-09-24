@@ -54,6 +54,12 @@ trait Graph[V, +EL, E <: Edge[V]] {
   /** Delete a particular edge in the graph */
   def deleteEdge(e:E)
 
+  /** Deletes all edges for which the toDelete function yields True */
+  def deleteEdges(toDelete : E => Boolean): Unit =
+    for(e <- edges())
+      if(toDelete(e))
+        deleteEdge(e)
+
   /** Builds a new copy of the graph. */
   def cc : Graph[V, EL, E]
 
