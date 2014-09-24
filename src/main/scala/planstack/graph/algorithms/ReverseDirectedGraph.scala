@@ -37,5 +37,8 @@ class ReverseDirectedGraph[V, EL](val dg : DirectedGraph[V, Nothing, Edge[V]]) e
    */
   def deleteEdges(u: V, v: V): Unit = ???
 
+  /** Delete a particular edge in the graph */
+  override def deleteEdge(e: Edge[V]): Unit = ???
+
   def cc: Graph[V, Nothing, E] = ???
 }

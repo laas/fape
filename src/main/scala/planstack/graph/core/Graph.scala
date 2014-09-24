@@ -51,6 +51,9 @@ trait Graph[V, +EL, E <: Edge[V]] {
   /** Removes all edges from u to v in the graph */
   def deleteEdges(u:V, v:V)
 
+  /** Delete a particular edge in the graph */
+  def deleteEdge(e:E)
+
   /** Builds a new copy of the graph. */
   def cc : Graph[V, EL, E]
 

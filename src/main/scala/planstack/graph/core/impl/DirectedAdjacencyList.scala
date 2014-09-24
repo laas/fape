@@ -52,6 +52,13 @@ abstract class DirectedAdjacencyList[V, EL, E <: Edge[V]](val mOutEdges : mutabl
     mInEdges(vId) = mInEdges(vId).filter(edge => edge.u != u)
   }
 
+  def deleteEdge(e:E): Unit = {
+    val uId = mIndexes(e.u)
+    val vId = mIndexes(e.v)
+    mOutEdges(uId) = mOutEdges(uId).filter(edge => !(edge eq e))
+    mInEdges(vId) = mInEdges(vId).filter(edge => !(edge eq e))
+  }
+
   def edges : Seq[E] = {
     var alledges = List[E]()
     mOutEdges.foreach(edgelist => alledges = alledges ++ edgelist)

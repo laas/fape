@@ -31,3 +31,4 @@ class MultiLabeledUndirectedAdjListSuite extends LabeledGraphSuite[Int, Int]
 
 
 }
+

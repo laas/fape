@@ -75,6 +75,13 @@ abstract class UndirectedAdjacencyList[V, EL, E <: Edge[V]](val mEdges : mutable
     mEdges(vId) = mEdges(vId).filter(edge => edge.u != u && edge.v != u)
   }
 
+  def deleteEdge(e:E): Unit = {
+    val uId = mIndexes(e.u)
+    val vId = mIndexes(e.v)
+    mEdges(uId) = mEdges(uId).filter(edge => !(edge eq e))
+    mEdges(vId) = mEdges(vId).filter(edge => !(edge eq e))
+  }
+
   /**
    * Returns all edges touching v
    * @param v

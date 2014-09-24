@@ -52,6 +52,11 @@ abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.Arr
     mInEdges(v) = mInEdges(v).filter(edge => edge.u != u)
   }
 
+  def deleteEdge(e:E) {
+    mOutEdges(e.u) = mOutEdges(e.u).filter(edge => !(edge eq e))
+    mInEdges(e.v) = mInEdges(e.v).filter(edge => !(edge eq e))
+  }
+
   def edges() : Seq[E] = {
     var alledges = List[E]()
     mOutEdges.foreach(edgelist => alledges = alledges ++ edgelist)
