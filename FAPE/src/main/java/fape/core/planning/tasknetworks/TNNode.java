@@ -1,6 +1,5 @@
 package fape.core.planning.tasknetworks;
 
-import fape.FAPE;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;

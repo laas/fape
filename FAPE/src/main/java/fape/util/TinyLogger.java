@@ -15,9 +15,6 @@ package fape.util;
 import fape.core.planning.Planner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.exceptions.FAPEException;
-
-import java.util.regex.Pattern;
 
 /**
  *

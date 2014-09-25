@@ -132,7 +132,7 @@ public class ResourceManager {
         for (int i = 0; i < ar.size(); i++) {
             for (int j = i + 1; j < ar.size(); j++) {
                 if (Unified(ar.get(i), ar.get(j), st)) {
-                    candidates.add(new Pair(ar.get(i), ar.get(j)));
+                    candidates.add(new Pair<>(ar.get(i), ar.get(j)));
                     exists.add(ar.get(i));
                     exists.add(ar.get(j));
                 }

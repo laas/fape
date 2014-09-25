@@ -37,7 +37,7 @@ public class AbsHierarchyComp implements FlawComparator {
     public AbsHierarchyComp(State st) {
         this.state = st;
         if(!hierarchies.containsKey(st.pb) || hierarchies.get(st.pb).value1 != st.pb.modifiers().size()) {
-            hierarchies.put(st.pb, new Pair(st.pb.modifiers().size(), new AbstractionHierarchy(st.pb)));
+            hierarchies.put(st.pb, new Pair<>(st.pb.modifiers().size(), new AbstractionHierarchy(st.pb)));
         }
         this.hierarchy = hierarchies.get(st.pb).value2;
     }

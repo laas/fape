@@ -22,7 +22,6 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractConsumeResource;
 import planstack.anml.model.abs.statements.AbstractProduceResource;
 import planstack.anml.model.abs.statements.AbstractResourceStatement;
-import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 

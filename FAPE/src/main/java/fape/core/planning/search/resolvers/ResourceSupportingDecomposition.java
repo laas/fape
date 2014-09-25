@@ -11,7 +11,6 @@
 
 package fape.core.planning.search.resolvers;
 
-import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 

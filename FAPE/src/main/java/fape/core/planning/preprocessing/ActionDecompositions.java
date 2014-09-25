@@ -49,7 +49,7 @@ public class ActionDecompositions {
         Set<Integer> decompositionIDs = new HashSet<>();
 
         for(int i=0 ; i<act.jDecompositions().size() ; i++) {
-            if(mightContains(act.jDecompositions().get(i), targets, new LinkedList())) {
+            if(mightContains(act.jDecompositions().get(i), targets, new LinkedList<AbstractAction>())) {
                 decompositionIDs.add(i);
             }
         }

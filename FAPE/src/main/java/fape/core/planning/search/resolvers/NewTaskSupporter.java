@@ -1,7 +1,6 @@
 package fape.core.planning.search.resolvers;
 
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 
 public class NewTaskSupporter extends Resolver {

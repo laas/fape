@@ -13,7 +13,6 @@ import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -135,13 +134,12 @@ public abstract class APlanner {
     /**
      * applies a resolver to the state
      *
-     * TODO: rewrite to a polymorphic switch instead of checking nulls in
-     * variables
+     * TODO: rewrite to a polymorphic switch instead of checking nulls in variables
      *
-     * @param next
-     * @param o
-     * @param consumer
-     * @return
+     * @param next State which we need to apply the changes
+     * @param o Resolver to apply
+     * @param consumer if non null, this is the database that must be supported by the resolver.
+     * @return True if the resulting state is consistent.
      */
     public boolean ApplyOption(State next, Resolver o, TemporalDatabase consumer) {
         TemporalDatabase supporter = null;
@@ -258,6 +256,7 @@ public abstract class APlanner {
                     }
                 }
             }
+            assert theSupport != null : "Could not find a supporting resource statement in the action.";
             next.addUnificationConstraint(theSupport.sv(), opt.unifyingResourceVariable);
 
             //add temporal constraint
@@ -321,7 +320,7 @@ public abstract class APlanner {
             MotivatedSupport ms = (MotivatedSupport) o;
 
             // action that will be decomposed. Either it is already in the plan or we add it now
-            Action act = null;
+            Action act;
             if(ms.act == null) {
                 act = Factory.getStandaloneAction(pb, ms.abs);
                 next.insert(act);
@@ -365,17 +364,17 @@ public abstract class APlanner {
      * This method is invoked whenever a causal link is added and offers a way
      * to react to it for planner extending this class.
      *
-     * @param st
-     * @param supporter
-     * @param consumer
+     * @param st State in which the causal link was added.
+     * @param supporter Left side of the causal link.
+     * @param consumer Right side of the causal link.
      */
     public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) {
     }
 
     /**
-     * we remove the action results from the system
+     * Removes the action results from the system.
      *
-     * @param
+     * @param actionRef The action that failed.
      */
     public void FailAction(ActRef actionRef) {
         KeepBestStateOnly();
@@ -391,8 +390,8 @@ public abstract class APlanner {
      * duration anml variable). Adds a new constraint [realEndTime, realEndtime]
      * between the global start and the end of action time points.
      *
-     * @param actionID
-     * @param realEndTime
+     * @param actionID Id of the action that finished.
+     * @param realEndTime Observed end time.
      */
     public void AddActionEnding(ActRef actionID, int realEndTime) {
         KeepBestStateOnly();
@@ -412,8 +411,6 @@ public abstract class APlanner {
     /**
      * Pushes the earliest execution time point forward. Causes all pending
      * actions to be delayed
-     *
-     * @param earliestExecution
      */
     public void SetEarliestExecution(int earliestExecution) {
         this.currentTime = earliestExecution;
@@ -431,27 +428,10 @@ public abstract class APlanner {
     }
 
     /**
-     *
+     * All possible state of the planner.
      */
     public enum EPlanState {
-
-        TIMEOUT,
-        /**
-         *
-         */
-        CONSISTENT,
-        /**
-         *
-         */
-        INCONSISTENT,
-        /**
-         *
-         */
-        INFESSIBLE,
-        /**
-         *
-         */
-        UNINITIALIZED
+        TIMEOUT, CONSISTENT, INCONSISTENT, INFESSIBLE, UNINITIALIZED
     }
     /**
      * what is the current state of the plan
@@ -463,17 +443,15 @@ public abstract class APlanner {
 
     /**
      * initializes the data structures of the planning problem
-     *
      */
     public void Init() {
-        queue = new PriorityQueue<State>(100, this.stateComparator());
+        queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(new State(pb));
         best = queue.peek();
     }
 
     /**
-     *
-     * @return
+     * @return The current best state. Null if no consistent state was found.
      */
     public State GetCurrentState() {
         return best;
@@ -549,9 +527,6 @@ public abstract class APlanner {
     /**
      * Resolvers for an action conditions of finding or inserting an action that can be
      * unified with the action condition.
-     * @param st
-     * @param utc
-     * @return
      */
     public final List<Resolver> GetResolvers(State st, UnsupportedTaskCond utc) {
         List<Resolver> resolvers = new LinkedList<>();
@@ -619,7 +594,7 @@ public abstract class APlanner {
      * Finds all flaws of a given state. Currently, threats and unbound
      * variables are considered only if no other flaws are present.
      *
-     * @return A list of flaws present in the system. The set of flaw might not
+     * @return A list of flaws present in the system. The list of flaws might not
      * be exhaustive.
      */
     public List<Flaw> GetFlaws(State st) {
@@ -792,7 +767,7 @@ public abstract class APlanner {
             //continue the search
             LinkedList<Pair<Flaw, List<Resolver>>> opts = new LinkedList<>();
             for (Flaw flaw : flaws) {
-                opts.add(new Pair(flaw, GetResolvers(st, flaw)));
+                opts.add(new Pair<>(flaw, GetResolvers(st, flaw)));
             }
 
             //do some sorting here - min domain
@@ -847,8 +822,6 @@ public abstract class APlanner {
     /**
      * starts plan repair, records the best plan, produces the best plan after
      * <b>forHowLong</b> miliseconds or null, if no plan was found
-     *
-     * @param forHowLong
      */
     public boolean Repair(TimeAmount forHowLong) {
         KeepBestStateOnly();
@@ -864,10 +837,8 @@ public abstract class APlanner {
     }
 
     /**
-     *
-     * @param db
-     * @param st
-     * @return
+     * Finds all resolvers for an unsupported temporal database.
+     * This includes causal links from an other database and actions insertions.
      */
     public List<Resolver> GetSupporters(TemporalDatabase db, State st) {
         //here we need to find several types of supporters
@@ -908,8 +879,6 @@ public abstract class APlanner {
         //find actions that help me with achieving my value through some decomposition in the task network
         //they are those that I can find in the virtual decomposition tree
         //first get the action names from the abstract dtgs
-        //StateVariable[] varis = null;
-        //varis = db.domain.values().toArray(varis);
         ActionSupporterFinder supporters = getActionSupporterFinder();
         ActionDecompositions decompositions = new ActionDecompositions(pb);
         Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(st, db);
@@ -935,12 +904,9 @@ public abstract class APlanner {
     }
 
     /**
-     * progresses in the plan up for howFarToProgress, returns either
-     * AtomicActions that were instantiated with corresponding start times, or
+     * Progresses in the plan up for howFarToProgress.
+     * Returns either AtomicActions that were instantiated with corresponding start times, or
      * null, if not solution was found in the given time
-     *
-     * @param howFarToProgress
-     * @return
      */
     public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
         State myState = best;
@@ -1021,7 +987,7 @@ public abstract class APlanner {
     }
 
     /**
-     * enforces given facts into the plan (possibly breaking it) this is an
+     * Enforces given facts into the plan (possibly breaking it) this is an
      * incremental step, if there was something already defined, the name
      * collisions are considered to be intentional
      *

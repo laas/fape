@@ -45,7 +45,7 @@ public class DisjunctiveAction implements Landmark {
                 for(int i=0 ; i<act.params.size() ; i++) {
                     argValues.add(new HashSet<String>());
                 }
-                ret.add(new Pair(act.act.abs(), argValues));
+                ret.add(new Pair<>(act.act.abs(), argValues));
             }
 
             for(int i=0 ; i<act.params.size() ; i++) {

@@ -14,7 +14,8 @@ import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.*;
-import fape.core.planning.search.resolvers.*;
+import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.SupportingDatabase;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -25,8 +26,6 @@ import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.Decomposition;
-import planstack.anml.model.concrete.TemporalConstraint;
 import planstack.anml.model.concrete.statements.*;
 import planstack.constraints.CSP;
 import scala.Tuple2;
@@ -122,7 +121,7 @@ public class State implements Reporter {
         pb = st.pb;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
-        csp = new CSP<VarRef,TPRef,ActRef>(st.csp);
+        csp = new CSP<>(st.csp);
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
@@ -139,9 +138,8 @@ public class State implements Reporter {
      * consistent), False otherwise.
      */
     public boolean isConsistent() {
-        boolean consistency = true;
         // note that this order is important so that binded constraint can be propagated into the stn
-        consistency &= csp.bindings().isConsistent();
+        boolean consistency = csp.bindings().isConsistent();
         consistency &= csp.stn().IsConsistent();
         consistency &= resMan.isConsistent(this);
         return consistency;
@@ -159,8 +157,7 @@ public class State implements Reporter {
      * consumer
      */
     public float GetGoalDistance() {
-        float distance = this.consumers.size();
-        return distance;
+        return this.consumers.size();
     }
 
     public String Report() {
@@ -258,7 +255,7 @@ public class State implements Reporter {
 
         // First find which component contains s
         ChainComponent comp = null; // component containing the statement
-        int ct = 0; // index of the component in the chain
+        int ct; // index of the component in the chain
         for (ct = 0; ct < theDatabase.chain.size(); ct++) {
             if (theDatabase.chain.get(ct).contains(s)) {
                 comp = theDatabase.chain.get(ct);
@@ -324,7 +321,7 @@ public class State implements Reporter {
      * @param context Context in which the variables appears (such as action or
      * problem). This is used to retrieve the type or the global variable linked
      * to the local var.
-     * @return
+     * @return all possible values of local variable (based on its type).
      */
     public Collection<String> possibleValues(LVarRef locVar, AbstractContext context) {
         Tuple2<String, VarRef> def = context.getDefinition(locVar);
@@ -346,10 +343,6 @@ public class State implements Reporter {
     /**
      * Returns true if two state variables are unifiable (ie: they are on the
      * same function and their variables are unifiable).
-     *
-     * @param a
-     * @param b
-     * @return
      */
     public boolean Unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
         if (a.func().equals(b.func())) {
@@ -395,7 +388,6 @@ public class State implements Reporter {
      * Insert an action into the state, applying all needed modifications.
      *
      * @param act Action to insert.
-     * @return True if the resulting state is consistent, false otherwise.
      */
     public void insert(Action act) {
         recordTimePoints(act);
@@ -490,7 +482,6 @@ public class State implements Reporter {
      * Inserts a logical statement into a state
      *
      * @param s Statement to insert
-     * @return True if the resulting state is consistent
      */
     private void apply(LogStatement s) {
         recordTimePoints(s);
@@ -561,7 +552,6 @@ public class State implements Reporter {
      * Inserts a resource statement into a state.
      *
      * @param s Statement to insert
-     * @return True if the resulting state is consistent.
      */
     private void apply(ResourceStatement s) {
         recordTimePoints(s);
@@ -593,7 +583,6 @@ public class State implements Reporter {
      *
      * @param mod StateModifier in which the statement appears
      * @param s Statement to insert
-     * @return True if the resulting state is consistent
      */
     private void apply(StateModifier mod, Statement s) {
         if (s instanceof LogStatement) {
@@ -635,7 +624,6 @@ public class State implements Reporter {
      * containing action. Then the state modifier is applied.
      *
      * @param dec Decomposition to insert
-     * @return True if the resulting state is consistent.
      */
     public void applyDecomposition(Decomposition dec) {
         recordTimePoints(dec);
@@ -653,7 +641,6 @@ public class State implements Reporter {
      * Applies all modifications stated in a StateModifier in this this State
      *
      * @param mod StateModifier to apply
-     * @return True if the resulting State is consistent, False otherwise.
      */
     private void apply(StateModifier mod) {
         // for every instance declaration, create a new CSP Var with itself as domain
@@ -736,7 +723,6 @@ public class State implements Reporter {
      * decomposing a method. null if there is no constraints.
      */
     private Decomposition getSupportConstraint(TemporalDatabase db) {
-        int compID = db.GetChainComponent(0).mID;
         Decomposition dec = null;
         for (Pair<Integer, Decomposition> constraint : supportConstraints) {
             if (constraint.value1 == mID) {
@@ -812,14 +798,6 @@ public class State implements Reporter {
     public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().CanBeStrictlyBefore(a, b); }
 
     public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().EnforceConstraint(a, b, min, max); }
-
-    @Deprecated
-    public boolean removeConstraints(Pair<TPRef,TPRef>... pairs) {
-        List<Tuple2<TPRef,TPRef>> ps = new LinkedList<>();
-        for(Pair<TPRef,TPRef> p : pairs)
-            ps.add(new Tuple2<TPRef, TPRef>(p.value1, p.value2));
-        return csp.stn().RemoveConstraints(ps);
-    }
 
     public boolean removeActionDurationOf(ActRef id) {
         return csp.removeConstraintsWithID(id);

@@ -1,6 +1,6 @@
 package fape.core.execution;
 
-import com.sun.net.httpserver.Authenticator;import fape.core.execution.model.AtomicAction;
+import fape.core.execution.model.AtomicAction;
 
 public class ExecutorSim extends Executor {
 

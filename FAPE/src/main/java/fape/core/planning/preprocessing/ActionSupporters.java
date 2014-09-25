@@ -7,7 +7,6 @@ import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
-import planstack.anml.model.abs.statements.AbstractStatement;
 
 import java.util.Collection;
 import java.util.HashSet;

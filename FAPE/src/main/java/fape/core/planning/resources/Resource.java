@@ -10,9 +10,9 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.ResourceFlaw;
 import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.states.State;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;

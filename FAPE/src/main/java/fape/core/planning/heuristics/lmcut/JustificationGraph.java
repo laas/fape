@@ -112,7 +112,7 @@ public class JustificationGraph {
 
         //check trivial satisfibility for debug
         if (debug) {
-            HashSet<Vertex> kb = new HashSet();
+            HashSet<Vertex> kb = new HashSet<>();
             HashSet<Vertex> newVertices = new HashSet<>();
             newVertices.addAll(Arrays.asList(init));
             while (!newVertices.isEmpty()) {

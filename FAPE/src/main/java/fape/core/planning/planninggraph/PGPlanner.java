@@ -12,7 +12,6 @@ import fape.util.Pair;
 import fape.util.TimeAmount;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.parser.ParseResult;
 
 import java.util.*;

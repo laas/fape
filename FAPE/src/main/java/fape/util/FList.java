@@ -1,7 +1,7 @@
 package fape.util;
 
-import scala.collection.immutable.List$;
 import scala.collection.JavaConversions;
+import scala.collection.immutable.List$;
 
 import java.util.Collection;
 import java.util.Iterator;

@@ -5,7 +5,10 @@ import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.statements.*;
+import planstack.anml.model.abs.statements.AbstractAssignment;
+import planstack.anml.model.abs.statements.AbstractLogStatement;
+import planstack.anml.model.abs.statements.AbstractPersistence;
+import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.graph.GraphFactory;
 import planstack.graph.algorithms.StronglyConnectedComponent;
 import planstack.graph.core.UnlabeledDigraph;
@@ -65,7 +68,7 @@ public class AbstractionHierarchy {
         }
 
         // Get the strongly connected component of the constraint graph
-        StronglyConnectedComponent scc = new StronglyConnectedComponent(dag);
+        StronglyConnectedComponent<FluentType> scc = new StronglyConnectedComponent<>(dag);
 
         // topological sort of the strongly connected components gives us the final hierarchy
         List<Set<FluentType>> groups = scc.jTopologicalSortOfReducedGraph();
