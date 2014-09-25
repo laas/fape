@@ -65,7 +65,7 @@ public class State implements Reporter {
      */
     protected final TemporalDatabaseManager tdb;
 
-    protected final CSP<VarRef,TPRef> csp;
+    protected final CSP<VarRef,TPRef,ActRef> csp;
 
     protected final TaskNetworkManager taskNet;
 
@@ -122,7 +122,7 @@ public class State implements Reporter {
         pb = st.pb;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
-        csp = new CSP<VarRef,TPRef>(st.csp);
+        csp = new CSP<VarRef,TPRef,ActRef>(st.csp);
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
@@ -403,6 +403,8 @@ public class State implements Reporter {
         taskNet.insert(act);
         apply(act);
 
+        // creates constraints associated with the action duration.
+        // all those constraints are given the action's reference as ID to allow for later removal.
         if(act.minDuration() != null) {
             if(act.minDuration().isFunction()) {
                 // create a constraint defined in extension sv(a1,...,an) = tmp
@@ -416,12 +418,12 @@ public class State implements Reporter {
                 List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
                 varsOfExtConst.add(intValue);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
-                csp.addMinDelay(act.start(), act.end(), intValue);
+                csp.addMinDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
-                csp.stn().EnforceMinDelay(act.start(), act.end(), act.minDuration().d());
+                csp.stn().EnforceMinDelayWithID(act.start(), act.end(), act.minDuration().d(), act.id());
             }
         } else {
-            csp.stn().EnforceMinDelay(act.start(), act.end(), 1);
+            csp.stn().EnforceMinDelayWithID(act.start(), act.end(), 1, act.id());
         }
 
         if(act.maxDuration() != null) {
@@ -437,10 +439,10 @@ public class State implements Reporter {
                 List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
                 varsOfExtConst.add(intValue);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
-                csp.addMaxDelay(act.start(), act.end(), intValue);
+                csp.addMaxDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
                 assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
-                csp.stn().EnforceMaxDelay(act.start(), act.end(), act.maxDuration().d());
+                csp.stn().EnforceMaxDelayWithID(act.start(), act.end(), act.maxDuration().d(), act.id());
             }
         }
 
@@ -811,11 +813,16 @@ public class State implements Reporter {
 
     public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().EnforceConstraint(a, b, min, max); }
 
+    @Deprecated
     public boolean removeConstraints(Pair<TPRef,TPRef>... pairs) {
         List<Tuple2<TPRef,TPRef>> ps = new LinkedList<>();
         for(Pair<TPRef,TPRef> p : pairs)
             ps.add(new Tuple2<TPRef, TPRef>(p.value1, p.value2));
         return csp.stn().RemoveConstraints(ps);
+    }
+
+    public boolean removeActionDurationOf(ActRef id) {
+        return csp.removeConstraintsWithID(id);
     }
 
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().EnforceMinDelay(a, b, delay); }
@@ -824,7 +831,7 @@ public class State implements Reporter {
     public long getLatestStartTime(TPRef a) { return csp.stn().GetLatestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) {
-        csp.stn().stn.g().exportToDotFile(filename, new STNNodePrinter(this));
+        csp.stn().exportToDotFile(filename, new STNNodePrinter(this));
     }
 
 
@@ -919,15 +926,14 @@ public class State implements Reporter {
 
     public void setActionExecuting(Action a, int startTime) {
         setActionExecuting(a.id());
-        removeConstraints(new Pair(pb.earliestExecution(), a.start()),
-                new Pair(a.start(), pb.earliestExecution()));
+        removeActionDurationOf(a.id());
         enforceConstraint(pb.start(), a.start(), (int) startTime, (int) startTime);
     }
 
     public void setActionSuccess(Action a, int endTime) {
         setActionSuccess(a.id());
         // remove the duration constraints of the action
-        removeConstraints(new Pair(a.start(), a.end()), new Pair(a.end(), a.start()));
+        removeActionDurationOf(a.id());
         // insert new constraint specifying the end time of the action
         enforceConstraint(pb.start(), a.end(), endTime, endTime);
 
