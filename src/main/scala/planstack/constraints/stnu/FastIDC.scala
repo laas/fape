@@ -4,11 +4,11 @@ import scala.collection.mutable.ListBuffer
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 
-class FastIDC(val edg : EDG, val todo : ListBuffer[E], protected var isConsistent : Boolean) extends ISTNU with EDGListener {
+class FastIDC[ID](val edg : EDG, val todo : ListBuffer[E], protected var isConsistent : Boolean) extends ISTNU[ID] with EDGListener {
 
   def this() = this(new EDG, ListBuffer[E](), true)
 
-  def this(toCopy : FastIDC) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)
+  def this(toCopy : FastIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)
 
 
   edg.listener = this
@@ -65,7 +65,7 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E], protected var isConsisten
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc(): FastIDC = new FastIDC(this)
+  def cc(): FastIDC[ID] = new FastIDC(this)
 
 
   def fastIDC(e : E) : Boolean = {
@@ -139,4 +139,13 @@ class FastIDC(val edg : EDG, val todo : ListBuffer[E], protected var isConsisten
   def cycleDetected() { isConsistent = false }
 
   def squeezingDetected() { isConsistent = false }
+
+  /** Adds a constraint to the STN specifying that v - u <= w.
+    * The constraint is associated with an ID than can be later used to remove the constraint.
+    * @return True if the STN tightened due to this operation.
+    */
+  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
+
+  /** Removes all constraints that were recorded with the given ID */
+  override def removeConstraintsWithID(id: ID): Boolean = ???
 }

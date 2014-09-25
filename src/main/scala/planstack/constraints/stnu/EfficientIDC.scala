@@ -8,11 +8,11 @@ import scala.collection.mutable
 
 
 /*** NOT FINISHED. This implementation of EfficientIDC is not finished yet. */
-class EfficientIDC(val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU with EDGListener {
+class EfficientIDC[ID](val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU[ID] with EDGListener {
 
   def this() = this(new EDG, ListBuffer[Int]())
 
-  def this(toCopy : EfficientIDC) = this(new EDG(toCopy.edg), toCopy.todo.clone())
+  def this(toCopy : EfficientIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone())
 
   val ddg = GraphFactory.getMultiLabeledDigraph[Int, Int]
 
@@ -73,7 +73,7 @@ class EfficientIDC(val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU with
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc(): EfficientIDC = new EfficientIDC(this)
+  def cc(): EfficientIDC[ID] = new EfficientIDC(this)
 
   def addRequirement(from: Int, to: Int, value: Int): Boolean = {
     edg.addRequirement(from, to, value).nonEmpty
@@ -201,6 +201,15 @@ class EfficientIDC(val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU with
   def cycleDetected() { isConsistent = false }
 
   def squeezingDetected() { isConsistent = false }
+
+  /** Adds a constraint to the STN specifying that v - u <= w.
+    * The constraint is associated with an ID than can be later used to remove the constraint.
+    * @return True if the STN tightened due to this operation.
+    */
+  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
+
+  /** Removes all constraints that were recorded with the given ID */
+  override def removeConstraintsWithID(id: ID): Boolean = ???
 }
 
 object EfficientIDC {

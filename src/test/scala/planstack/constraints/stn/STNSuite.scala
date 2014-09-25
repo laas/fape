@@ -1,15 +1,15 @@
 package planstack.constraints.stn
 
-import org.scalatest.Suite
+import org.scalatest.FunSuite
 
-class STNSuite extends Suite {
+class STNSuite extends FunSuite {
 
-  def testStartEnd {
+  test("start and end creation") {
     val stn = STN()
     assert(stn.size == 2)
   }
 
-  def testSimpleConsistency {
+  test("Simple Consistency") {
     val s = STN()
 
     val u = s.addVar()
@@ -31,7 +31,7 @@ class STNSuite extends Suite {
     assert(! s.consistent)
   }
 
-  def testSTNCloning {
+  test("STN cloning") {
     val stn = STN()
 
     val u = stn.addVar()
@@ -40,7 +40,7 @@ class STNSuite extends Suite {
 
     val stnSize = stn.size
 
-    val s2 = stn.cc().asInstanceOf[STNIncBellmanFord]
+    val s2 = stn.cc().asInstanceOf[STNIncBellmanFord[Int]]
     s2.addConstraint(v, u, -20)
 
 //    println("Clone : \n" + s2.distancesToString )
@@ -52,27 +52,7 @@ class STNSuite extends Suite {
     assert(stn.size == stnSize, "No new variable should have been added to the stn")
   }
 
-  def testDummy {
-    println("TestDummy")
-    val stn = STN().asInstanceOf[STNIncBellmanFord]
-
-    stn.addVar()
-    stn.addVar()
-    stn.addVar()
-
-    stn.enforceBefore(2, 3)
-    stn.enforceBefore(3, 4)
-
-    stn.addConstraint(3, 2, -10)
-
-    val deadline = 50
-    stn.addConstraint(stn.start, stn.end, deadline)
-
-//    println(stn.distancesToString )
-//    stn.writeToDotFile("/home/abitmonn/these/Documents/Experiments/tmp/g.dot")
-  }
-
-  def testEarliestStart {
+  test("Earliest start") {
     val stn = STN()
 
     val u = stn.addVar()
@@ -86,7 +66,7 @@ class STNSuite extends Suite {
     assert(stn.makespan == 10)
   }
 
-  def testEdgesSorted {
+  test("Edges sorted") {
     val stn = STN()
 
     val u = stn.addVar()
@@ -94,7 +74,7 @@ class STNSuite extends Suite {
     stn.addConstraint(u, v, 10)
     stn.addConstraint(u, v, 100)
     stn.addConstraint(u, v, 5)
-//    println(stn.g.edges(u,v))
+
     stn.g.edges(u, v).foldLeft(Int.MinValue)((max, e) => {
       assert(max <= e.l, "the weight on the edges should be growing (since a constraint that does not reduces the value is useless and shouldn't be inserted to the graph")
       e.l

@@ -5,7 +5,7 @@ import org.scalatest.FunSuite
 class MixedConstraintsSuite extends FunSuite {
 
   test("isPropagated") {
-    val csp = new CSP[String,String]()
+    val csp = new CSP[String,String,String]()
 
     val iDomain = new java.util.LinkedList[Integer]
     for(i <- 1 until 5)
@@ -41,7 +41,7 @@ class MixedConstraintsSuite extends FunSuite {
   }
 
   test("is Propagated Right Away On Singleton Domain (Max)") {
-    val csp = new CSP[String,String]()
+    val csp = new CSP[String,String,String]()
 
     val iDomain = new java.util.LinkedList[Integer]
     iDomain.add(4)
@@ -61,7 +61,7 @@ class MixedConstraintsSuite extends FunSuite {
   }
 
   test("is Propagated Right Away On Singleton Domain (Min)") {
-    val csp = new CSP[String,String]()
+    val csp = new CSP[String,String,String]()
 
     val iDomain = new java.util.LinkedList[Integer]
     iDomain.add(4)

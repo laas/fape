@@ -1,7 +1,6 @@
 package planstack.constraints.bindings
 
 import org.scalatest.{FunSuite, Suite}
-import planstack.constraints.bindings.ConservativeConstraintNetwork
 import scala.collection.JavaConversions._
 
 class ExtensionConstraintsSuite extends FunSuite {

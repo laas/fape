@@ -28,6 +28,13 @@ class Weight(val inf : Boolean, val w : Int) {
       w > o.w
   }
 
+  def > (that:Int) : Boolean = {
+    if(inf)
+      true
+    else
+      w > that
+  }
+
   def < (o: Weight) : Boolean = {
     if(inf)
       false

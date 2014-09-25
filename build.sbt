@@ -10,7 +10,7 @@ libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.5"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.8"
 
 
 crossPaths := false

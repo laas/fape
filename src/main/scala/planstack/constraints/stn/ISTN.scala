@@ -1,6 +1,6 @@
 package planstack.constraints.stn
 
-trait ISTN {
+trait ISTN[ID] {
 
   /** Id of the Start time point. No time points in the STN should happen before this one. */
   def start = 0
@@ -33,6 +33,12 @@ trait ISTN {
    * @return
    */
   def addConstraint(u:Int, v:Int, w:Int) : Boolean
+
+  /** Adds a constraint to the STN specifying that v - u <= w.
+    * The constraint is associated with an ID than can be later used to remove the constraint.
+    * @return True if the STN tightened due to this operation.
+    */
+  def addConstraintWithID(u:Int, v:Int, w:Int, id:ID) : Boolean
 
   def checkConsistency() : Boolean
   def checkConsistencyFromScratch() : Boolean
@@ -122,6 +128,9 @@ trait ISTN {
    */
   def removeConstraint(u:Int, v:Int) : Boolean
 
+  /** Removes all constraints that were recorded with the given ID */
+  def removeConstraintsWithID(id:ID) : Boolean
+
   /**
    * For all pairs, remove the corresponding directed edge in the constraint graph. After all of every pair are removed,
    * a consistency check is performed from scratch.
@@ -134,6 +143,6 @@ trait ISTN {
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc() : ISTN
+  def cc() : ISTN[ID]
 
 }

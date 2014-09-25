@@ -2,7 +2,7 @@ package planstack.constraints.stnu
 
 import planstack.constraints.stn.ISTN
 
-trait ISTNU extends ISTN {
+trait ISTNU[ID] extends ISTN[ID] {
 
   /**
    * Return the number of time points in the STN
@@ -49,7 +49,7 @@ trait ISTNU extends ISTN {
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc(): ISTNU
+  def cc(): ISTNU[ID]
 
   /** Returns true if the given requirement edge is present in the STNU */
   protected[stnu] def hasRequirement(from: Int, to:Int, value:Int) : Boolean

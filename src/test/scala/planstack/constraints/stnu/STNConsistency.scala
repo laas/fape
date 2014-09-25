@@ -5,7 +5,7 @@ import planstack.constraints.stn.{STNIncBellmanFord, ISTN}
 
 class STNConsistency extends FunSuite {
 
-  for(stn <- List[ISTN](new STNIncBellmanFord(), new FastIDC)) {
+  for(stn <- List[ISTN[Int]](new STNIncBellmanFord[Int](), new FastIDC[Int])) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 3
     test("STN inconsistency: "+stn.getClass.getName) {

@@ -12,7 +12,7 @@ class JobShopProblem(val numJobs:Int, val numTasks:Int, val deadline:Int) {
   def s(t:JobShopTask) = startMap(t.jid)(t.tid)
   def e(t:JobShopTask) = endMap(t.jid)(t.tid)
 
-  val stn = new STNIncBellmanFord
+  val stn = new STNIncBellmanFord[Int]
 
   stn.addConstraint(stn.start, stn.end, deadline)
 
@@ -32,7 +32,7 @@ class JobShopProblem(val numJobs:Int, val numTasks:Int, val deadline:Int) {
 
 
     if(!stn.consistent) {
-      val s = stn.asInstanceOf[STNIncBellmanFord]
+      val s = stn.asInstanceOf[STNIncBellmanFord[Int]]
       for(e <- s.g.edges()) {
         println("%d -> %d : %d".format(e.u, e.v, e.l))
       }

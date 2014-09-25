@@ -2,14 +2,20 @@ package planstack.constraints.stn
 
 import StnPredef._
 import planstack.graph.printers.GraphDotPrinter
-import planstack.graph.core.LabeledDigraph
+import planstack.graph.core.{Edge, LabeledEdge, LabeledDigraph}
 
 /**
  *
  * @param g A directed simple graph with integer edge labels.
  * @param consistent True if the STN is consistent, false otherwise
+ *
  */
-abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) extends ISTN {
+abstract class STN[ID](
+                        val g : LabeledDigraph[Int,Int],
+                        protected var notIntegrated : List[LabeledEdge[Int,Int]],
+                        var consistent : Boolean)
+  extends ISTN[ID]
+{
 
   // Creates start and end time points if the STN is empty
   if(size == 0) {
@@ -74,17 +80,22 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * @param w
    * @return true if the STN was updated
    */
-  protected def addConstraintFast(u:Int, v:Int, w:Int) : Boolean = {
+  protected def addConstraintFast(u:Int, v:Int, w:Int, optID : Option[ID]) : Boolean = {
     if(!consistent) {
       return false
     }
-    val oldW = getWeight(u, v)
-    if(oldW > new Weight(w)) {
-      g.addEdge(u, v, w)
+    val e = optID match {
+      case Some(id) => new LabeledEdgeWithID(u,v,w,id)
+      case None => new LabeledEdge(u,v,w)
+    }
+
+    if(getWeight(u, v) > new Weight(w)) {
+      g.addEdge(e)
       consistent = false
-      return true
+      true
     } else {
-      return false
+      notIntegrated = e :: notIntegrated
+      false
     }
   }
 
@@ -97,11 +108,20 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * @param w
    * @return
    */
-  def addConstraint(u:Int, v:Int, w:Int) : Boolean = {
-    addConstraintFast(u, v, w)
+  override def addConstraint(u:Int, v:Int, w:Int) : Boolean = {
+    addConstraintFast(u, v, w, None)
     checkConsistency()
   }
-  
+
+  /** Adds a constraint to the STN specifying that v - u <= w.
+    * The constraint is associated with an ID than can be later used to remove the constraint.
+    * @return True if the STN tightened due to this operation.
+    */
+  override def addConstraintWithID(u:Int, v:Int, w:Int, id:ID) : Boolean = {
+    addConstraintFast(u, v, w, Some(id))
+    checkConsistency()
+  }
+
   def checkConsistency() : Boolean
   def checkConsistencyFromScratch() : Boolean
 
@@ -146,6 +166,7 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * @param u
    * @param v
    */
+  @Deprecated
   def removeConstraintUnsafe(u:Int,v:Int) {
     g.deleteEdges(u, v)
   }
@@ -159,6 +180,7 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * @param v
    * @return True if the STN is consistent after removal
    */
+  @Deprecated
   def removeConstraint(u:Int, v:Int) : Boolean = {
     removeConstraintUnsafe(u, v)
     checkConsistencyFromScratch()
@@ -170,8 +192,34 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * @param edges
    * @return true if the STN is consistent after removal
    */
+  @Deprecated
   def removeConstraints(edges:Pair[Int,Int]*) = {
     edges.foreach(e => removeConstraintUnsafe(e._1, e._2))
+    checkConsistencyFromScratch()
+  }
+
+
+  /** Removes all constraints that were recorded with the given ID */
+  override def removeConstraintsWithID(id: ID): Boolean = {
+    val e = new LabeledEdgeWithID(1,1,1,"st")
+
+    // function matching edges with the given id
+    def hasID(e:LabeledEdge[Int,Int]) = e match {
+      case eID:LabeledEdgeWithID[Int,Int,ID] => eID.id == id
+      case _ => false
+    }
+
+    // remove those constraints from the graph
+    g.deleteEdges(hasID)
+
+    // remove those constraints from the not integrated list
+    notIntegrated = notIntegrated.filter(e => !hasID(e))
+
+    // make sure we have integrated all constraint that are now relevant
+    for(e <- notIntegrated.reverse)
+      if(getWeight(e.u, e.v) > e.l)
+        g.addEdge(e)
+
     checkConsistencyFromScratch()
   }
 
@@ -179,7 +227,7 @@ abstract class STN(val g : LabeledDigraph[Int,Int], var consistent : Boolean) ex
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc() : STN
+  def cc() : STN[ID]
 
 }
 
@@ -190,5 +238,5 @@ object STN {
    * algorithm to check its consistency.
    * @return
    */
-  def apply() : STN = new STNIncBellmanFord()
+  def apply[ID]() : STN[ID] = new STNIncBellmanFord[ID]()
 }

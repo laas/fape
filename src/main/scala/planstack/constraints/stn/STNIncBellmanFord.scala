@@ -3,22 +3,27 @@ package planstack.constraints.stn
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import StnPredef._
-import planstack.graph.core.LabeledDigraph
+import planstack.graph.core.{LabeledEdge, Edge, LabeledDigraph}
 import planstack.graph.algorithms.Algos
 
-class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
-                        val forwardDist:ArrayBuffer[Weight],
-                        val backwardDist:ArrayBuffer[Weight],
-                        sup_g: LabeledDigraph[Int,Int],
-                        sup_consistent:Boolean)
-  extends STN(sup_g, sup_consistent) {
+class STNIncBellmanFord[ID](
+                             val q:mutable.Queue[Tuple2[Int,Int]],
+                             val forwardDist:ArrayBuffer[Weight],
+                             val backwardDist:ArrayBuffer[Weight],
+                             sup_g: LabeledDigraph[Int,Int],
+                             notIntegrated : List[LabeledEdge[Int,Int]],
+                             sup_consistent:Boolean)
+  extends STN[ID](sup_g, notIntegrated, sup_consistent) {
 
 //  var updatedVars = List[Int]()
 
-  def this() = this(new mutable.Queue[Tuple2[Int,Int]],
-                    new ArrayBuffer[Weight](0),
-                    new ArrayBuffer[Weight](0),
-                    NewGraph(), true)
+  def this() = this(
+    new mutable.Queue[Tuple2[Int,Int]],
+    new ArrayBuffer[Weight](0),
+    new ArrayBuffer[Weight](0),
+    NewGraph(),
+    List(),
+    true)
 
 
   override def addVarUnsafe() : Int = {
@@ -32,8 +37,8 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
     super.addVarUnsafe()
   }
 
-  override def addConstraintFast(v1:Int, v2:Int, w:Int) : Boolean = {
-    val inserted = super.addConstraintFast(v1, v2, w)
+  override def addConstraintFast(v1:Int, v2:Int, w:Int, optID:Option[ID]) : Boolean = {
+    val inserted = super.addConstraintFast(v1, v2, w, optID)
 
     if(inserted) {
       q.enqueue((v1, v2))
@@ -156,8 +161,8 @@ class STNIncBellmanFord(val q:mutable.Queue[Tuple2[Int,Int]],
     consistent
   }
 
-  def cc() : STNIncBellmanFord = {
-    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc.asInstanceOf[LabeledDigraph[Int,Int]], consistent)
+  def cc() : STNIncBellmanFord[ID] = {
+    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc, notIntegrated, consistent)
   }
 
   def distancesToString = {

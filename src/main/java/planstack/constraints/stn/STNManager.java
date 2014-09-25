@@ -1,6 +1,8 @@
 package planstack.constraints.stn;
 
 
+import planstack.graph.core.LabeledEdge;
+import planstack.graph.printers.NodeEdgePrinter;
 import scala.Array;
 import scala.Tuple2;
 import scala.collection.JavaConversions;
@@ -12,20 +14,25 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-public class STNManager<TPRef> {
+/**
+ * This class is a wrapper around an STN to allow usage of time points of any type.
+ * @param <TPRef> Type of the time points.
+ * @param <ID> Type of identifiers that are attached to constraints.
+ */
+public class STNManager<TPRef, ID> {
 
-    public final ISTN stn;
+    public final ISTN<ID> stn;
     public final HashMap<TPRef, Integer> ids;
 
     /**
      * Creates a new empty STN
      */
     public STNManager() {
-        stn = new STNIncBellmanFord();
+        stn = new STNIncBellmanFord<ID>();
         ids = new HashMap<>();
     }
 
-    public STNManager(STNManager toCopy) {
+    public STNManager(STNManager<TPRef,ID> toCopy) {
         stn = toCopy.stn.cc();
         ids = new HashMap<>(toCopy.ids);
     }
@@ -82,10 +89,27 @@ public class STNManager<TPRef> {
     }
 
     /**
+     * Enforces that b must happens at least minDelay after a.
+     * The constraint is added with an ID than can be used for later removal.
+     */
+    public final void EnforceMinDelayWithID(TPRef a, TPRef b, int minDelay, ID id) {
+        stn.addConstraintWithID(id(b), id(a), -minDelay, id);
+    }
+
+
+    /**
      * Enforces that b must happens at most maxDelay after a
      */
     public final void EnforceMaxDelay(TPRef a, TPRef b, int maxDelay) {
         stn.addConstraint(id(a), id(b), maxDelay);
+    }
+
+    /**
+     * Enforces that b must happens at most maxDelay after a.
+     * The constraint is associated with an id that can be used for constraint removal.
+     */
+    public final void EnforceMaxDelayWithID(TPRef a, TPRef b, int maxDelay, ID id) {
+        stn.addConstraintWithID(id(a), id(b), maxDelay, id);
     }
 
     /**
@@ -106,6 +130,7 @@ public class STNManager<TPRef> {
      * @param v
      * @return true if the STN is consistent after removal
      */
+    @Deprecated
     public boolean RemoveConstraint(int u, int v) {
         return stn.removeConstraint(u, v);
     }
@@ -117,6 +142,7 @@ public class STNManager<TPRef> {
      * @param ps
      * @return true if the STN is consistent after removal
      */
+    @Deprecated
     public boolean RemoveConstraints(Collection<Tuple2<TPRef, TPRef>> ps) {
 
         List<Tuple2<Object,Object>> toRemove = new LinkedList<>();
@@ -127,6 +153,14 @@ public class STNManager<TPRef> {
         }
         stn.removeConstraints(JavaConversions.asScalaBuffer(toRemove));
         return stn.checkConsistencyFromScratch();
+    }
+
+    /**
+     * Removes all constraints that were recorded with the given ID
+     * @return True if the resulting STN is consistent.
+     */
+    public boolean removeConstraintsWithID(ID id) {
+        return stn.removeConstraintsWithID(id);
     }
 
     /**
@@ -141,7 +175,7 @@ public class STNManager<TPRef> {
     /**
      * @return
      */
-    public STNManager<TPRef> DeepCopy() {
+    public STNManager<TPRef,ID> DeepCopy() {
         return new STNManager<>(this);
     }
 
@@ -149,6 +183,11 @@ public class STNManager<TPRef> {
         if (!stn.consistent()) {
             throw new RuntimeException("Inconsistent STN:");
         }
+    }
+
+    public void exportToDotFile(String filename, NodeEdgePrinter<Object,Object,LabeledEdge<Object,Object>> printer) {
+        if(stn instanceof STN)
+            ((STN<ID>) stn).g().exportToDotFile(filename, printer);
     }
 
 

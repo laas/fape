@@ -1,15 +1,15 @@
 package planstack.constraints.stn
 
-import org.scalatest.Suite
+import org.scalatest.FunSuite
 
-class WeightSuite extends Suite {
+class WeightSuite extends FunSuite {
 
   val inf = new Weight()
   val big = new Weight(100)
   val small = new Weight(1)
   val neg = new Weight(-20)
 
-  def testComparisons {
+  test("Comparisons") {
     assert(inf > big)
     assert(big < inf)
     assert(!(inf < big))
@@ -24,7 +24,7 @@ class WeightSuite extends Suite {
     assert(!(neg > big))
   }
 
-  def testAdditions {
+  test("Additions") {
     var w = big + small
     assert(w > big)
     assert(w < inf)

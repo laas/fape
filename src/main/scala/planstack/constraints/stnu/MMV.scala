@@ -2,7 +2,7 @@ package planstack.constraints.stnu
 
 import planstack.graph.core.LabeledEdge
 
-class MMV(val edg : EDG) extends ISTNU with EDGListener {
+class MMV[ID](val edg : EDG) extends ISTNU[ID] with EDGListener {
 
 
 
@@ -55,7 +55,7 @@ class MMV(val edg : EDG) extends ISTNU with EDGListener {
    * Returns a complete clone of the STN.
    * @return
    */
-  def cc(): ISTNU = ???
+  def cc(): ISTNU[ID] = ???
 
   /** Returns true if the given requirement edge is present in the STNU */
   protected[stnu] def hasRequirement(from: Int, to: Int, value: Int): Boolean = ???
@@ -65,4 +65,13 @@ class MMV(val edg : EDG) extends ISTNU with EDGListener {
   def cycleDetected(): Unit = ???
 
   def squeezingDetected(): Unit = ???
+
+  /** Adds a constraint to the STN specifying that v - u <= w.
+    * The constraint is associated with an ID than can be later used to remove the constraint.
+    * @return True if the STN tightened due to this operation.
+    */
+  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
+
+  /** Removes all constraints that were recorded with the given ID */
+  override def removeConstraintsWithID(id: ID): Boolean = ???
 }
