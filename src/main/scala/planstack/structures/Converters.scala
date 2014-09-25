@@ -1,5 +1,7 @@
 package planstack.structures
 
+import scala.language.implicitConversions
+
 object Converters {
 
   implicit def Pair2Tuple[T,V](v : Pair[T,V]) = Tuple2[T,V](v.value1, v.value2)

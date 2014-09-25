@@ -1,6 +1,7 @@
 package planstack.constraints.bindings
 
-import org.scalatest.{FunSuite, Suite}
+import org.scalatest.FunSuite
+
 import scala.collection.JavaConversions._
 
 class ExtensionConstraintsSuite extends FunSuite {
@@ -49,7 +50,7 @@ class ExtensionConstraintsSuite extends FunSuite {
     val iDomain = new java.util.LinkedList[Integer]
     for(i <- 1 until 5)
       iDomain.add(i)
-    println(iDomain)
+
     cn.AddIntVariable("I", iDomain)
 
     cn.addValuesToValuesSet("myConst", List("A1", "B1", "C1"))

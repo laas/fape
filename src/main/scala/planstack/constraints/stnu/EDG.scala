@@ -1,10 +1,10 @@
 package planstack.constraints.stnu
 
-import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
-import planstack.graph.printers.NodeEdgePrinter
+import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.core.impl.matrix.SimpleLabeledDirectedIIMatrix
+import planstack.graph.printers.NodeEdgePrinter
 
 /** Objects implementing this interface can be passed to an EDG instance
   * to react to events occurring in an EDG such as edge addition, negative cycle ...

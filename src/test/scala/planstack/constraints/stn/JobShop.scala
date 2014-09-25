@@ -73,7 +73,6 @@ object JobShop {
     println("Runtime: %d".format(t - s))
 
     val runtime = Runtime.getRuntime()
-    import runtime.{ totalMemory, freeMemory, maxMemory }
     System.out.println(mem2String)
   }
 

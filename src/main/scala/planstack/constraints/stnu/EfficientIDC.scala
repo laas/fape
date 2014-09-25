@@ -1,10 +1,11 @@
 package planstack.constraints.stnu
 
-import scala.collection.mutable.ListBuffer
-import planstack.graph.printers.NodeEdgePrinter
-import planstack.graph.core.{LabeledEdge, LabeledDigraph, SimpleLabeledDigraph}
 import planstack.graph.GraphFactory
+import planstack.graph.core.LabeledDigraph
+import planstack.graph.printers.NodeEdgePrinter
+
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 
 /*** NOT FINISHED. This implementation of EfficientIDC is not finished yet. */

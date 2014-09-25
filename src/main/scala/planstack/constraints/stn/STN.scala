@@ -1,8 +1,7 @@
 package planstack.constraints.stn
 
-import StnPredef._
+import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 import planstack.graph.printers.GraphDotPrinter
-import planstack.graph.core.{Edge, LabeledEdge, LabeledDigraph}
 
 /**
  *
@@ -102,11 +101,7 @@ abstract class STN[ID](
 
   /**
    * Adds a constraint to the STN specifying that v - u <= w.
-   *
-   * @param u
-   * @param v
-   * @param w
-   * @return
+   * @return True id the resulting STN is consistent.
    */
   override def addConstraint(u:Int, v:Int, w:Int) : Boolean = {
     addConstraintFast(u, v, w, None)

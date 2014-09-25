@@ -1,6 +1,6 @@
 package planstack.constraints.stnu
 
-import org.scalatest.{FunSuite, FunSpec}
+import org.scalatest.FunSuite
 
 class Main extends FunSuite {
 

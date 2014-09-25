@@ -2,7 +2,6 @@ package planstack.constraints.bindings;
 
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
-import scala.Tuple2;
 import scala.collection.JavaConversions;
 
 import java.util.*;

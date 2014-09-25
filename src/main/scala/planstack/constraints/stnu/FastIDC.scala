@@ -1,8 +1,8 @@
 package planstack.constraints.stnu
 
-import scala.collection.mutable.ListBuffer
-import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+
+import scala.collection.mutable.ListBuffer
 
 class FastIDC[ID](val edg : EDG, val todo : ListBuffer[E], protected var isConsistent : Boolean) extends ISTNU[ID] with EDGListener {
 

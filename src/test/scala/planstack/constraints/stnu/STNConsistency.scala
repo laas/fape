@@ -1,7 +1,7 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
-import planstack.constraints.stn.{STNIncBellmanFord, ISTN}
+import planstack.constraints.stn.{ISTN, STNIncBellmanFord}
 
 class STNConsistency extends FunSuite {
 

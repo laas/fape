@@ -3,11 +3,8 @@ package planstack.constraints.stn;
 
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.printers.NodeEdgePrinter;
-import scala.Array;
 import scala.Tuple2;
 import scala.collection.JavaConversions;
-import scala.collection.Seq;
-import scala.collection.mutable.ListBuffer;
 
 import java.util.Collection;
 import java.util.HashMap;

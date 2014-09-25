@@ -2,11 +2,12 @@ package planstack.constraints.bindings
 
 
 
-import collection.JavaConversions._
-import org.scalatest.{FunSuite, FunSpec}
+import org.scalatest.FunSuite
+
+import scala.collection.JavaConversions._
 
 class ValuesSetSuite extends FunSuite {
-  def S(vals : Integer*) : java.util.Set[Integer] = asJavaSet(vals.toSet)
+  def S(vals : Integer*) : java.util.Set[Integer] = setAsJavaSet(vals.toSet)
 
   val ext1 = new ExtensionConstraint(false)
 

@@ -2,6 +2,7 @@ package planstack.constraints.stn
 
 import org.scalatest.FunSuite
 import planstack.constraints.CSP
+
 import scala.collection.JavaConversions._
 
 class ConstraintRemovalSuite extends FunSuite {

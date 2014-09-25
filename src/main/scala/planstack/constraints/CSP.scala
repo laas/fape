@@ -1,6 +1,6 @@
 package planstack.constraints
 
-import planstack.constraints.bindings.{IntBindingListener, ConservativeConstraintNetwork}
+import planstack.constraints.bindings.{ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stn.STNManager
 
 /**

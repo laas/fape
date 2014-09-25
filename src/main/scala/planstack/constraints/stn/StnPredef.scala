@@ -2,7 +2,6 @@ package planstack.constraints.stn
 
 import planstack.graph.core
 import planstack.graph.core.LabeledDigraph
-import planstack.graph.Predef._
 
 object StnPredef {
 

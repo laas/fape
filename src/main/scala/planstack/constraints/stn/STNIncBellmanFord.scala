@@ -1,10 +1,10 @@
 package planstack.constraints.stn
 
+import planstack.constraints.stn.StnPredef._
+import planstack.graph.core.{LabeledDigraph, LabeledEdge}
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import StnPredef._
-import planstack.graph.core.{LabeledEdge, Edge, LabeledDigraph}
-import planstack.graph.algorithms.Algos
 
 class STNIncBellmanFord[ID](
                              val q:mutable.Queue[Tuple2[Int,Int]],

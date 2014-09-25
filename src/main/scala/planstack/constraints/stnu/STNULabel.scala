@@ -1,12 +1,5 @@
 package planstack.constraints.stnu
 
-import planstack.graph.GraphFactory
-import planstack.graph.core.impl.intindexed.{DirectedSimpleLabeledIIAdjList, DirectedMultiLabeledIIAdjList}
-import planstack.graph.core.LabeledEdge
-import scala.collection.mutable.ListBuffer
-import com.sun.xml.internal.bind.v2.runtime.RuntimeUtil.ToStringAdapter
-import planstack.constraints.stn.{ISTN, STN}
-
 class STNULabel(val value : Int) {
 
   def req = this.isInstanceOf[Requirement]

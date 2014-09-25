@@ -2,15 +2,19 @@ name := "planstack-constraints"
 
 organization := "planstack"
 
-version := "0.4.3"
+version := "0.4.4"
 
 scalaVersion := "2.10.3"
+
+scalacOptions ++= Seq("-deprecation", "-feature")
+
+javacOptions += "-Xlint:unchecked"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.8"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.9"
 
 
 crossPaths := false
