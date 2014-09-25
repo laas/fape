@@ -249,11 +249,9 @@ public abstract class APlanner {
             ResourceStatement theSupport = null;
             for (ResourceStatement s : action.resourceStatements()) {
                 if (s.sv().func().name().equals(opt.unifyingResourceVariable.func().name())) {
-                    if (theSupport != null) {
-                        throw new FAPEException("Distinguishing resource events upon the same resource in one action needs to be implemented.");
-                    } else {
-                        theSupport = s;
-                    }
+                    assert theSupport == null : "Distinguishing resource events upon the same resource in one action " +
+                            "needs to be implemented.";
+                    theSupport = s;
                 }
             }
             assert theSupport != null : "Could not find a supporting resource statement in the action.";
@@ -261,15 +259,15 @@ public abstract class APlanner {
 
             //add temporal constraint
             if (opt.before) {
-                //the new action must occour before the given time point
-                next.enforceBefore(action.end(), opt.when);
+                //the supporting statement must occur before the given time point
+                next.enforceStrictlyBefore(theSupport.end(), opt.when);
             } else {
                 //vice-versa
-                next.enforceBefore(opt.when, action.start());
+                next.enforceStrictlyBefore(opt.when, theSupport.start());
             }
         } else if (o instanceof ResourceSupportingDecomposition) {
             ResourceSupportingDecomposition opt = (ResourceSupportingDecomposition) o;
-             // Apply the i^th decomposition of o.actionToDecompose, where i is given by
+            // Apply the i^th decomposition of o.actionToDecompose, where i is given by
             // o.decompositionID
 
             // Action to decomposed
@@ -288,8 +286,8 @@ public abstract class APlanner {
 
             next.applyDecomposition(dec);
 
-            //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one of the decomposed actions
-            //for now we leave it to search
+            //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one
+            // of the decomposed actions for now we leave it to search
         } else if (o instanceof TemporalConstraint) {
             TemporalConstraint tc = (TemporalConstraint) o;
             next.enforceConstraint(tc.first, tc.second, tc.min, tc.max);
