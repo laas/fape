@@ -1,12 +1,10 @@
 package planstack.graph
 
-import org.scalatest.Suite
-
-import planstack.graph._
-import planstack.graph.core.{UnlabeledGraph, MultiGraph, Graph, Edge}
+import org.scalatest.FunSuite
+import planstack.graph.core.{Edge, Graph, MultiGraph, UnlabeledGraph}
 
 
-class GraphSuite extends Suite {
+class GraphSuite extends FunSuite {
 
   val g = Graph[Int]()
   g.addVertex(1)
@@ -15,7 +13,7 @@ class GraphSuite extends Suite {
 
   assert(g.edges.length === 1)
 
-  def testGraphTypes() {
+  test("Graph Types") {
     assert(g.isInstanceOf[Graph[Int, Nothing, Edge[Int]]])
     assert(g.isInstanceOf[MultiGraph[Int, Nothing, Edge[Int]]])
     assert(g.isInstanceOf[UnlabeledGraph[Int]])

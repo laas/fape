@@ -1,10 +1,9 @@
 package planstack.graph
 
 import org.scalatest.FunSuite
-import planstack.graph
-import planstack.graph.core.impl.{MultiLabeledUndirectedAdjacencyList, UndirectedAdjacencyList}
+import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList
 import planstack.graph.core.impl.intindexed.DirectedMultiLabeledIIAdjList
-import planstack.graph.core.{LabeledGraph, LabeledEdge}
+import planstack.graph.core.{LabeledEdge, LabeledGraph}
 
 class EdgeRemovalSuite extends FunSuite {
 

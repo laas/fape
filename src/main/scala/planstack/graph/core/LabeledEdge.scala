@@ -13,9 +13,5 @@ package planstack.graph.core
   */
 class LabeledEdge[+V,+EdgeLabel](u:V, v:V, val l:EdgeLabel) extends Edge[V](u, v) {
 
-  /** Label of the edge */
-  @deprecated
-  def e = l
-
   override def toString = "(%s, %s, %s)".format (u, v, l)
 }

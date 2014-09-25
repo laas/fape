@@ -1,8 +1,9 @@
 package planstack.graph.core.impl
 
+import planstack.graph.core.{LabeledEdge, LabeledGraph, MultiGraph}
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import planstack.graph.core.{MultiGraph, LabeledEdge, LabeledGraph}
 
 
 class MultiLabeledUndirectedAdjacencyList[V, EdgeLabel](mEdges : mutable.ArrayBuffer[List[LabeledEdge[V, EdgeLabel]]],

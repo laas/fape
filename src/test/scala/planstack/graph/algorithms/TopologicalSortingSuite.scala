@@ -1,9 +1,9 @@
 package planstack.graph.algorithms
 
-import org.scalatest.Suite
+import org.scalatest.FunSuite
 import planstack.graph.core.DirectedGraph
 
-class TopologicalSortingSuite extends Suite {
+class TopologicalSortingSuite extends FunSuite {
 
   val g = DirectedGraph[Int]()
 
@@ -12,7 +12,7 @@ class TopologicalSortingSuite extends Suite {
   g.addVertex(3)
   g.addEdge(1, 2)
 
-  def testTopoSorting {
+  test("Topo Sorting") {
     val order = Algos.topologicalSorting(g)
     assert(order.length === g.numVertices, "All vertices should be in the ordering")
     assert(order.head == 1 || order.head == 3)

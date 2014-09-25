@@ -1,16 +1,13 @@
 package planstack.graph
 
-import org.scalatest.Suite
-import planstack.graph.core.{MultiGraph, Edge, LabeledEdge}
+import planstack.graph.core.{Edge, LabeledEdge, MultiGraph}
 
 
 trait MultiGraphSuite[V, EL, E <: Edge[V]] extends BaseGraphSuite[V, EL, E]{
 
   private def g = graph.asInstanceOf[MultiGraph[Int, EL, Edge[Int]]]
 
-  def testMultiType { assert(graph.isInstanceOf[MultiGraph[Int, EL, Edge[Int]]])}
-
-  def testAddEdges {
+  test("Add Edges") {
     val u = newVert()
     g.addVertex(u)
     val v = newVert()

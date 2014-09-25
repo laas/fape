@@ -1,6 +1,7 @@
 package planstack.graph.core.impl.matrix
 
 import planstack.graph.core.{LabeledEdge, SimpleLabeledDigraph}
+
 import scala.reflect.ClassTag
 
 class SimpleLabeledDirectedIIMatrix[EL >: Null : ClassTag](

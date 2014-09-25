@@ -1,8 +1,9 @@
 package planstack.graph.core.impl
 
+import planstack.graph.core._
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import planstack.graph.core._
 
 
 class SimpleLabeledDirectedAdjacencyList[V, EL](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[V,EL]]],

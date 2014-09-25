@@ -1,6 +1,7 @@
 package planstack.graph.core.impl.intindexed
 
 import planstack.graph.core._
+
 import scala.collection.mutable
 
 class DirectedMultiLabeledIIAdjList[EL](mOutEdges : mutable.ArrayBuffer[List[LabeledEdge[Int,EL]]],

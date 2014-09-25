@@ -1,6 +1,5 @@
 package planstack.graph
 
-import org.scalatest.Suite
 import planstack.graph.core.{LabeledEdge, LabeledGraph}
 
 
@@ -8,6 +7,6 @@ trait LabeledGraphSuite[V,EdgeLabel] extends BaseGraphSuite[V, EdgeLabel, Labele
 
   private def g = graph.asInstanceOf[LabeledGraph[V,EdgeLabel]]
 
-  def testLabeledType { assert(graph.isInstanceOf[LabeledGraph[V,EdgeLabel]])}
+  test("LabeledType") { assert(graph.isInstanceOf[LabeledGraph[V,EdgeLabel]])}
 
 }

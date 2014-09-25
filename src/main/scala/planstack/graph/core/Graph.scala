@@ -1,7 +1,8 @@
 package planstack.graph.core
 
-import scala.collection.JavaConversions._
 import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
+
+import scala.collection.JavaConversions._
 
 /** Base Trait defining a graph.
   *

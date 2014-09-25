@@ -1,7 +1,8 @@
 package planstack.graph.core.impl
 
+import planstack.graph.core.{Edge, UndirectedGraph}
+
 import scala.collection.mutable
-import planstack.graph.core.{UndirectedGraph, Edge}
 
 abstract class UndirectedAdjacencyList[V, EL, E <: Edge[V]](val mEdges : mutable.ArrayBuffer[List[E]],
                                               val mIndexes : mutable.Map[V, Int],

@@ -1,7 +1,7 @@
 package planstack.graph
 
-import planstack.graph.printers.GraphDotPrinter
 import planstack.graph.core.Graph
+import planstack.graph.printers.GraphDotPrinter
 
 object Main {
 

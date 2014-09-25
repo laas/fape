@@ -1,15 +1,14 @@
 package planstack.graph
 
 
-import org.scalatest.Suite
-import planstack.graph.core.{SimpleLabeledDigraph, LabeledEdge}
-import planstack.graph.core.impl.{MultiLabeledUndirectedAdjacencyList, MultiLabeledDirectedAdjacencyList, SimpleLabeledDirectedAdjacencyList}
+import planstack.graph.core.impl.{MultiLabeledDirectedAdjacencyList, MultiLabeledUndirectedAdjacencyList, SimpleLabeledDirectedAdjacencyList}
+import planstack.graph.core.{LabeledEdge, SimpleLabeledDigraph}
 
 
 class SimpleLabeledAdjListSuite extends LabeledGraphSuite[Int, Int] with SimpleGraphSuite[Int, Int, LabeledEdge[Int, Int]]{
   val graph = new SimpleLabeledDirectedAdjacencyList[Int,Int]()
 
-  def testCompleteType {
+  test("CompleteType") {
     assert(graph.isInstanceOf[SimpleLabeledDigraph[Int,Int]])
   }
 }

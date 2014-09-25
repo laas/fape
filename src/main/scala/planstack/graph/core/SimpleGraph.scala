@@ -1,7 +1,6 @@
 package planstack.graph.core
 
 import planstack.graph.Predef._
-import scala.Some
 
 /** Representation of a simple graph (graph having at most one edge between two vertices).
   *

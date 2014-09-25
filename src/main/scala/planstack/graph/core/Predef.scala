@@ -1,6 +1,6 @@
 package planstack.graph.core
 
-import planstack.graph.core.impl.{SimpleLabeledDirectedAdjacencyList, MultiLabeledDirectedAdjacencyList, SimpleUnlabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList}
+import planstack.graph.core.impl.{MultiLabeledDirectedAdjacencyList, MultiUnlabeledDirectedAdjacencyList, SimpleLabeledDirectedAdjacencyList, SimpleUnlabeledDirectedAdjacencyList}
 
 
 /** A directed graph with labeled edges */

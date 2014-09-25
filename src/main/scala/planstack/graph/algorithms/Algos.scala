@@ -1,8 +1,8 @@
 package planstack.graph.algorithms
 
-import planstack.graph._
+import planstack.graph.core.{DirectedGraph, Edge, LabeledDigraph}
+
 import scala.collection.mutable
-import planstack.graph.core.{LabeledEdge, LabeledDigraph, Edge, DirectedGraph}
 
 
 object Algos {
@@ -10,7 +10,7 @@ object Algos {
     type Marks = Value
     val marked, touched, untouched = Value
   }
-  import Marks._
+  import planstack.graph.algorithms.Algos.Marks._
 
   def topologicalSorting[V,EL,E <: Edge[V]](g:DirectedGraph[V,EL,E]) : List[V] = {
     var topo = List[V]()

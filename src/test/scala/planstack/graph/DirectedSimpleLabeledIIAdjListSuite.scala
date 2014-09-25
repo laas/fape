@@ -1,7 +1,7 @@
 package planstack.graph
 
-import planstack.graph.core.{Graph, LabeledEdge}
 import planstack.graph.core.impl.intindexed.DirectedSimpleLabeledIIAdjList
+import planstack.graph.core.{Graph, LabeledEdge}
 
 class DirectedSimpleLabeledIIAdjListSuite
   extends BaseGraphSuite[Int,Int,LabeledEdge[Int,Int]]

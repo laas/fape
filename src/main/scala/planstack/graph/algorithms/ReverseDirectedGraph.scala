@@ -1,6 +1,6 @@
 package planstack.graph.algorithms
 
-import planstack.graph.core.{LabeledEdge, Graph, DirectedGraph, Edge}
+import planstack.graph.core.{DirectedGraph, Edge, Graph, LabeledEdge}
 
 class ReverseDirectedGraph[V, EL](val dg : DirectedGraph[V, Nothing, Edge[V]]) extends DirectedGraph[V, Nothing, Edge[V]] {
   type E = Edge[V]

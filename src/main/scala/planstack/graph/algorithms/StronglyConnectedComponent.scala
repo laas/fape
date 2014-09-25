@@ -1,10 +1,10 @@
 package planstack.graph.algorithms
 
-import planstack.graph.core.{SimpleUnlabeledDigraph, UnlabeledDigraph, Edge, DirectedGraph}
-import scala.collection.mutable
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
-import planstack.graph.printers.GraphDotPrinter
+import planstack.graph.core.{DirectedGraph, Edge, SimpleUnlabeledDigraph}
+
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 class StronglyConnectedComponent[V](dag : DirectedGraph[V, Nothing, Edge[V]]) {
 

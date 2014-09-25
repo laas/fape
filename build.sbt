@@ -2,9 +2,11 @@ name := "planstack-graph"
 
 organization := "planstack"
 
-version := "0.3.8"
+version := "0.3.9"
 
 scalaVersion := "2.10.3"
+
+scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 

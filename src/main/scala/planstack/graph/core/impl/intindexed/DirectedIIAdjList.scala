@@ -1,6 +1,7 @@
 package planstack.graph.core.impl.intindexed
 
 import planstack.graph.core.{DirectedGraph, Edge}
+
 import scala.collection.mutable
 
 abstract class DirectedIIAdjList[EL, E <: Edge[Int]](val mOutEdges : mutable.ArrayBuffer[List[E]],

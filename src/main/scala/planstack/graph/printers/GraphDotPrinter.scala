@@ -1,7 +1,8 @@
 package planstack.graph.printers
 
-import scala.collection.mutable
 import planstack.graph.core._
+
+import scala.collection.mutable
 
 /** Simple translator from [[planstack.graph.core.Graph]] to the DOT syntax of graphviz.
   *
