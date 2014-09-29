@@ -2,86 +2,99 @@ package planstack.constraints.stn
 
 import org.scalatest.FunSuite
 import planstack.constraints.CSP
+import planstack.constraints.stnu.FullSTN
 
 import scala.collection.JavaConversions._
 
 class ConstraintRemovalSuite extends FunSuite {
 
+  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
 
-  test("Removal by var IDs") {
-    val stn = new STNIncBellmanFord()
-    var clone = stn.cc()
+    test("[" + stn.getClass.getSimpleName + "] Removal by var IDs") {
+      var clone = stn.cc()
 
-    def checkCloneEqSTN {
-      assert((0 to stn.size-1).forall(i => stn.forwardDist(i) == clone.forwardDist(i)))
-      assert((0 to stn.size-1).forall(i => stn.backwardDist(i) == clone.backwardDist(i)))
+      def checkCloneEqSTN(stn1:ISTN[String], stn2:ISTN[String]) {
+        assert(stn1.size == stn2.size)
+        assert(stn1.consistent)
+        assert(stn2.consistent)
+        assert((0 to stn1.size - 1).forall(i => stn1.earliestStart(i) == stn2.earliestStart(i)))
+        assert((0 to stn1.size - 1).forall(i => stn1.latestStart(i) == stn2.latestStart(i)))
+      }
+      val u = stn.addVar()
+      val v = stn.addVar()
+      val w = stn.addVar()
+
+      stn.addConstraint(stn.start, u, 0)
+      stn.addConstraint(u, stn.start, 0)
+
+
+
+      clone = stn.cc()
+      clone.checkConsistencyFromScratch()
+      checkCloneEqSTN(stn, clone)
+
+      stn.addConstraint(u, v, 5)
+      stn.addConstraint(v, u, -5)
+
+      clone = stn.cc()
+      clone.checkConsistencyFromScratch()
+      checkCloneEqSTN(stn, clone)
+
+
+      clone = stn.cc()
+      stn.addConstraintWithID(u, w, 10, "a")
+      stn.removeConstraintsWithID("a")
+      checkCloneEqSTN(stn, clone)
     }
-    val u = stn.addVar()
-    val v = stn.addVar()
-    val w = stn.addVar()
-
-
-
-    clone = stn.cc()
-    clone.checkConsistencyFromScratch()
-    checkCloneEqSTN
-
-    stn.addConstraint(u, v, 5)
-    stn.addConstraint(u, v, -5)
-
-    clone = stn.cc()
-    clone.checkConsistencyFromScratch()
-    checkCloneEqSTN
-
-
-    clone = stn.cc()
-    stn.addConstraint(u,w, 10)
-    stn.removeConstraint(u, w)
-    checkCloneEqSTN
   }
 
-  test("Removal by constraint ID") {
-    val stn = new STNIncBellmanFord[String]()
+  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
 
-    val a = stn.addVar()
-    val b = stn.addVar()
-    val c = stn.addVar()
+    test("[" + stn.getClass.getSimpleName + "] Removal by constraint ID") {
 
-    stn.enforceInterval(stn.start, a, 0, 0)
-    stn.enforceInterval(a, b, 1, 4)
-    stn.enforceInterval(b, c, 1, 4)
-    stn.addConstraintWithID(a, c, 5, "rm")
-    stn.addConstraintWithID(c, a, -4, "rm")
+      val a = stn.addVar()
+      val b = stn.addVar()
+      val c = stn.addVar()
 
-    assert(stn.consistent)
-    assert(stn.earliestStart(c) == 4)
-    assert(stn.latestStart(c) == 5)
+      stn.enforceInterval(stn.start, a, 0, 0)
+      stn.enforceInterval(a, b, 1, 4)
+      stn.enforceInterval(b, c, 1, 4)
+      stn.addConstraintWithID(a, c, 5, "rm")
+      stn.addConstraintWithID(c, a, -4, "rm")
 
-    stn.removeConstraintsWithID("rm")
+      assert(stn.consistent)
+      assert(stn.earliestStart(c) == 4)
+      assert(stn.latestStart(c) == 5)
 
-    assert(stn.consistent)
-    assert(stn.earliestStart(c) == 2)
-    assert(stn.latestStart(c) == 8)
+      stn.removeConstraintsWithID("rm")
 
-    stn.addConstraintWithID(c, a, -9, "rm2")
-    assert(!stn.consistent)
+      assert(stn.consistent)
+      assert(stn.earliestStart(c) == 2)
+      assert(stn.latestStart(c) == 8)
 
-    stn.removeConstraintsWithID("rm2")
-    assert(stn.consistent)
-    assert(stn.earliestStart(c) == 2)
-    assert(stn.latestStart(c) == 8)
+      stn.addConstraintWithID(c, a, -9, "rm2")
+      assert(!stn.consistent)
+
+      stn.removeConstraintsWithID("rm2")
+      assert(stn.consistent)
+      assert(stn.earliestStart(c) == 2)
+      assert(stn.latestStart(c) == 8)
+    }
   }
 
-  test("Removal by constraint ID of a constraint that was dominating an other.") {
-    val stn = new STNIncBellmanFord[String]()
+  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
 
-    stn.addConstraintWithID(stn.start, stn.end, 10, "first")
-    stn.addConstraintWithID(stn.start, stn.end, 12, "first")
-    stn.addConstraintWithID(stn.start, stn.end, 15, "second")
+    test("["+stn.getClass.getSimpleName+ "] Removal by constraint ID of a constraint that was dominating an other.") {
+      val stn = new STNIncBellmanFord[String]()
 
-    assert(stn.latestStart(stn.end) == 10)
-    stn.removeConstraintsWithID("first")
-    assert(stn.latestStart(stn.end) == 15)
+      stn.addConstraintWithID(stn.start, stn.end, 10, "first")
+      stn.addConstraintWithID(stn.start, stn.end, 12, "first")
+      stn.addConstraintWithID(stn.start, stn.end, 15, "second")
+
+      assert(stn.latestStart(stn.end) == 10)
+      stn.removeConstraintsWithID("first")
+      assert(stn.latestStart(stn.end) == 15)
+    }
   }
 
   test("Removal with pending mixed constraints") {

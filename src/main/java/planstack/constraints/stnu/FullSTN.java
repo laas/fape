@@ -2,7 +2,11 @@ package planstack.constraints.stnu;
 
 import planstack.constraints.stn.ISTN;
 import scala.Tuple2;
+import scala.Tuple4;
 import scala.collection.Seq;
+import sun.awt.image.ImageWatched;
+
+import java.util.LinkedList;
 
 /**
  * Simple Temporal Network, provides effective representation and copy constructor, methods for acessing,
@@ -55,6 +59,8 @@ public class FullSTN<ID> implements ISTN<ID> {
      */
     protected int edge_a[], edge_b[], last_inc, capacity, top, ends_count;
 
+    protected LinkedList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
+
     private boolean consistent;
     /**
      * -infinity
@@ -65,68 +71,46 @@ public class FullSTN<ID> implements ISTN<ID> {
     /**
      * size of increment
      */
-    protected static int inf, sup, inc;
-    static int precalc[][], precalc_size = 1000;
+    protected static final int
+            inf = -2000000000,
+            sup = 2000000000,
+            inc = 1000000000;
 
-    /**
-     *
-     */
-    void report(){
-        for(int i = 0; i < this.top; i++)
-            for(int j=i+1; j < this.top; j++)
-                if(ga(i,j) != inf || gb(i,j) != sup)
-                {
-                    Integer gaa = ga(i,j), gbb = gb(i,j);
-                    String goa,gob;
-                    goa = (gaa == inf)?"inf":gaa.toString();
-                    gob = (gbb == sup)?"sup":gbb.toString();
-                    System.out.println(i+"->"+j+": ["+goa+", "+gob+"]");
-                }
+    static int precalc[][] = null, precalc_size = 1000;
 
-
-
-    }
     /**
      * constructs new network (intended to run once per Finder invokation)
      */
     protected FullSTN(){
-        inf = -2000000000; //aka -maxint with tolerance
-        sup = 2000000000;
-        inc = 1000000000;
-        top = 0;
-        edge_a = new int[45];
-        edge_b = new int[45];
-        capacity = 10;
-        last_inc = 45;
-        consistent = true;
-        add_v(); //start
-        add_v(); //end
-        propagate(start(), end(), 0, sup);
+        init(10);
     }
 
-    protected FullSTN(int initial_capacity){
-        inf = -2000000000; //aka -maxint with tolerance
-        sup = 2000000000;
-        inc = 1000000000;
+    public FullSTN(int initial_capacity){
+        init(initial_capacity);
+    }
+
+    protected void init(int capacity) {
+        if(precalc == null)
+            precalc_inic();
+        allConstraints = new LinkedList<>();
         top = 0;
-        edge_a = new int[initial_capacity * initial_capacity / 2];
-        edge_b = new int[initial_capacity * initial_capacity / 2];
-        capacity = initial_capacity;
-        last_inc = initial_capacity * initial_capacity / 2;
+        edge_a = new int[capacity * capacity / 2];
+        edge_b = new int[capacity * capacity / 2];
+        this.capacity = capacity;
+        last_inc = capacity * capacity / 2;
         consistent = true;
         add_v(); //start
         add_v(); //end
-        propagate(start(), end(), 0, sup);
+        enforceBefore(start(), end());
     }
 
     /**
      * copy-constructor, prealocates space for new edges, if needed
      * @param s
      */
-    protected FullSTN(FullSTN s){
+    protected FullSTN(FullSTN<ID> s){
+        this.allConstraints = new LinkedList<>(s.allConstraints);
         this.capacity = s.capacity;
-        //this.sup = s.sup;
-        //this.inf = s.inf;
         this.top = s.top;
         this.ends_count = s.ends_count;
         this.last_inc = s.last_inc;
@@ -179,7 +163,7 @@ public class FullSTN<ID> implements ISTN<ID> {
      * @param tp2 time point
      */
     protected void eless(int tp1, int tp2){
-        propagate(tp1, tp2, 0, sup);
+        enforceBefore(tp1, tp2);
     }
     /**
      * returns the lower bound on time between time point var1 and var2, uses symmetry of the network
@@ -188,7 +172,8 @@ public class FullSTN<ID> implements ISTN<ID> {
      * @return lower bound on time between time point var1 and var2
      */
     protected int ga(int var1, int var2){
-        if(var1 < var2) return (- gb(var2,var1));
+        if(var1 == var2) return 0;
+        else if(var1 < var2) return (- gb(var2,var1));
         else return edge_a[FullSTN.precalc[var1][var2]];
     }
     /**
@@ -198,7 +183,8 @@ public class FullSTN<ID> implements ISTN<ID> {
      * @return lower bound on time between time point var1 and var2
      */
     protected int gb(int var1, int var2){
-        if(var1 < var2) return (- ga(var2,var1));
+        if(var1 == var2) return 0;
+        else if(var1 < var2) return (- ga(var2,var1));
         else return edge_b[FullSTN.precalc[var1][var2]];
     }
     /**
@@ -356,8 +342,8 @@ public class FullSTN<ID> implements ISTN<ID> {
     @Override
     public int addVar() {
         int u = this.add_v();
-        propagate(start(), u, 0, sup);
-        propagate(u, end(), inf, 0);
+        enforceBefore(start(), u);
+        enforceBefore(u, end());
         return u;
     }
 
@@ -368,13 +354,16 @@ public class FullSTN<ID> implements ISTN<ID> {
 
     @Override
     public boolean addConstraint(int u, int v, int w) {
+        allConstraints.add(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, null));
         propagate(u, v, inf, w);
         return consistent();
     }
 
     @Override
-    public boolean addConstraintWithID(int u, int v, int w, Object o) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public boolean addConstraintWithID(int u, int v, int w, ID o) {
+        allConstraints.add(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, o));
+        propagate(u, v, inf, w);
+        return consistent();
     }
 
     @Override
@@ -384,22 +373,35 @@ public class FullSTN<ID> implements ISTN<ID> {
 
     @Override
     public boolean checkConsistencyFromScratch() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int size = this.top;
+        LinkedList<Tuple4<Integer,Integer,Integer,ID>> constraints = this.allConstraints;
+        init(size);
+        // add all timepoints except start and end that are defined in init
+        for(int i=2 ; i<size ; i++)
+            addVar();
+        for(Tuple4<Integer,Integer,Integer,ID> c : constraints) {
+            if(c._4() != null)
+                addConstraintWithID(c._1(), c._2(), c._3(), c._4());
+            else
+                addConstraint(c._1(), c._2(), c._3());
+        }
+        return checkConsistency();
     }
 
     @Override
     public void enforceBefore(int u, int v) {
-        propagate(u, v, 0, sup);
+        addConstraint(v, u, 0);
     }
 
     @Override
     public void enforceStrictlyBefore(int u, int v) {
-        propagate(u, v, 1, sup);
+        addConstraint(v, u, -1);
     }
 
     @Override
     public void enforceInterval(int u, int v, int min, int max) {
-        propagate(u, v, min, max);
+        addConstraint(u, v, max);
+        addConstraint(v, u, -min);
     }
 
     @Override
@@ -438,8 +440,14 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public boolean removeConstraintsWithID(Object o) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public boolean removeConstraintsWithID(ID id) {
+        LinkedList<Tuple4<Integer, Integer, Integer, ID>> filtered = new LinkedList<>();
+        for(Tuple4<Integer, Integer, Integer, ID> c : allConstraints) {
+            if(c._4() == null || !c._4().equals(id))
+                filtered.add(c);
+        }
+        allConstraints = filtered;
+        return checkConsistencyFromScratch();
     }
 
     @Override
@@ -448,7 +456,7 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public ISTN<ID> cc() {
+    public FullSTN<ID> cc() {
         return new FullSTN<>(this);
     }
 

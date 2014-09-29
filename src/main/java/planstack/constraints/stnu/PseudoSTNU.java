@@ -23,9 +23,6 @@ public class PseudoSTNU<TPRef> {
         ids = new HashMap<>();
         contingents = new LinkedList<>();
         requirements = new LinkedList<>();
-        if (FullSTN.precalc == null) {
-            FullSTN.precalc_inic();
-        }
         start = stn.add_v();
         end = stn.add_v();
         if (start != 0) {
