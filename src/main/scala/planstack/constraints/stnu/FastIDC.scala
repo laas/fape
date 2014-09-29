@@ -4,8 +4,11 @@ import planstack.graph.printers.NodeEdgePrinter
 
 import scala.collection.mutable.ListBuffer
 
-class FastIDC[ID](val edg : EDG, val todo : ListBuffer[E], protected var isConsistent : Boolean) extends ISTNU[ID] with EDGListener {
-
+class FastIDC[ID](val edg : EDG,
+                  val todo : ListBuffer[E],
+                  protected var isConsistent : Boolean)
+  extends ISTNU[ID] with EDGListener
+{
   def this() = this(new EDG, ListBuffer[E](), true)
 
   def this(toCopy : FastIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)

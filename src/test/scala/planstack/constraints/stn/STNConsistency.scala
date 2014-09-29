@@ -1,14 +1,12 @@
-package planstack.constraints.stnu
+package planstack.constraints.stn
 
 import org.scalatest.FunSuite
-import planstack.constraints.stn.{ISTN, STNIncBellmanFord}
 
 class STNConsistency extends FunSuite {
 
-  for(stn <- List[ISTN[Int]](new STNIncBellmanFord[Int](), new FastIDC[Int])) {
+  for(stn <- Predef.getAllISTN[Int]) {
 
-    // example from `Incremental Dynamic Controllability Revisited` fig. 3
-    test("STN inconsistency: "+stn.getClass.getName) {
+    test("["+stn.getClass.getSimpleName+"] STN inconsistency: ") {
 
       val A = stn.addVar()
       val B = stn.addVar()

@@ -2,9 +2,11 @@ package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
 
+import planstack.constraints.stn.Predef._
+
 class IDCSuite extends FunSuite {
 
-  for(idc <- DynamicControllability.controllers) {
+  for(idc <- getAllISTNU[String]) {
 
     test("Pseudo controllable: "+idc.getClass.getName) {
       val A = idc.addVar()
@@ -30,7 +32,7 @@ class IDCSuite extends FunSuite {
     }
   }
 
-  for(idc <- DynamicControllability.controllers) {
+  for(idc <- getAllISTNU[String]) {
 
     test("Not pseudo controllable: "+idc.getClass.getName) {
       val A = idc.addVar()

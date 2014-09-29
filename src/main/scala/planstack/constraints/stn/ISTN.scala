@@ -1,6 +1,6 @@
 package planstack.constraints.stn
 
-trait ISTN[ID] {
+abstract class ISTN[ID] {
 
   /** Id of the Start time point. No time points in the STN should happen before this one. */
   def start = 0
@@ -50,9 +50,14 @@ trait ISTN[ID] {
    * @param u
    * @param v
    */
-  def enforceBefore(u:Int, v:Int) {
+  final def enforceBefore(u:Int, v:Int) {
     addConstraint(v, u, 0)
   }
+
+  final def enforceMinDelay(u:Int, v:Int, d:Int) { addConstraint(v, u, -d) }
+  final def enforceMaxDelay(u:Int, v:Int, d:Int) { addConstraint(u, v, d) }
+  final def enforceMinDelayWithID(u:Int, v:Int, d:Int, id:ID) { addConstraintWithID(v, u, -d, id) }
+  final def enforceMaxDelayWithID(u:Int, v:Int, d:Int, id:ID) { addConstraintWithID(u, v, d, id) }
 
   /**
    * Enforces that the time point u must happens strictly before time point v
@@ -61,7 +66,7 @@ trait ISTN[ID] {
    * @param u
    * @param v
    */
-  def enforceStrictlyBefore(u:Int, v:Int) {
+  final def enforceStrictlyBefore(u:Int, v:Int) {
     addConstraint(v, u, -1)
   }
 
@@ -72,9 +77,9 @@ trait ISTN[ID] {
    * @param min
    * @param max
    */
-  def enforceInterval(u:Int, v:Int, min:Int, max:Int) {
-    addConstraint(u, v, max)
-    addConstraint(v, u, -min)
+  final def enforceInterval(u:Int, v:Int, min:Int, max:Int) {
+    enforceMinDelay(u, v, min)
+    enforceMaxDelay(u, v, max)
   }
 
   /**
@@ -101,7 +106,7 @@ trait ISTN[ID] {
    * Makespan of the STN (ie the earliest start of End)
    * @return
    */
-  def makespan = earliestStart(end)
+  final def makespan = earliestStart(end)
 
   /**
    * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.
@@ -115,29 +120,16 @@ trait ISTN[ID] {
   def isConstraintPossible(u:Int, v:Int, w:Int) : Boolean
 
 
-  def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
+  final def canBeBefore(u:Int, v:Int) : Boolean = isConstraintPossible(v, u, 0)
 
+  final def canBeStrictlyBefore(u:Int, v:Int) = isConstraintPossible(v, u, -1)
 
-  /**
-   * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
-   * Performs a consistency check from scratch (expensive try to use removeCOnstraints if you are to remove
-   * more than one constraint)
-   * @param u
-   * @param v
-   * @return True if the STN is consistent after removal
-   */
-  def removeConstraint(u:Int, v:Int) : Boolean
+  final def isMinDelayPossible(u:Int, v:Int, d:Int) = isConstraintPossible(v, u, -d)
+
+  final def isMaxDelayPossible(u:Int, v:Int, d:Int) = isConstraintPossible(u, v, d)
 
   /** Removes all constraints that were recorded with the given ID */
   def removeConstraintsWithID(id:ID) : Boolean
-
-  /**
-   * For all pairs, remove the corresponding directed edge in the constraint graph. After all of every pair are removed,
-   * a consistency check is performed from scratch.
-   * @param edges
-   * @return true if the STN is consistent after removal
-   */
-  def removeConstraints(edges:Pair[Int,Int]*) :Boolean
 
   /**
    * Returns a complete clone of the STN.

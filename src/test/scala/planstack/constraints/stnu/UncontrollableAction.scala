@@ -1,24 +1,26 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
+import planstack.constraints.stn.Predef._
 
 class UncontrollableAction extends FunSuite {
 
-  test("Uncontrollable action") {
-    val idc = new FastIDC
+  for(idc <- getAllISTNU[String]) {
+    test("Uncontrollable action") {
 
-    val start = idc.addVar()
-    val end = idc.addVar()
-    val event = idc.addVar()
+      val start = idc.addVar()
+      val end = idc.addVar()
+      val event = idc.addVar()
 
-    idc.addContingent(start, end, 50, 60)
-    idc.enforceInterval(event, end, 5, 15)
+      idc.addContingent(start, end, 50, 60)
+      idc.enforceInterval(event, end, 5, 15)
 
-    assert(idc.consistent)
+      assert(idc.consistent)
 
-    idc.enforceInterval(event, end, 6, 15)
+      idc.enforceInterval(event, end, 6, 15)
 
-    assert(!idc.consistent)
+      assert(!idc.consistent)
+    }
   }
 
 }

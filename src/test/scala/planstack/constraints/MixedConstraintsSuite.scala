@@ -31,13 +31,13 @@ class MixedConstraintsSuite extends FunSuite {
     csp.bindings.restrictIntDomain("d",iDomain)
     assert(csp.varsToConstraints.isEmpty)
 
-    assert(csp.stn.IsConsistent())
-    csp.stn.EnforceMinDelay("A","B",2)
-    assert(csp.stn.IsConsistent())
-    csp.stn.EnforceMinDelay("A","B",4)
-    assert(csp.stn.IsConsistent())
-    csp.stn.EnforceMinDelay("A","B",5)
-    assert(!csp.stn.IsConsistent())
+    assert(csp.stn.isConsistent())
+    csp.stn.enforceMinDelay("A","B",2)
+    assert(csp.stn.isConsistent())
+    csp.stn.enforceMinDelay("A","B",4)
+    assert(csp.stn.isConsistent())
+    csp.stn.enforceMinDelay("A","B",5)
+    assert(!csp.stn.isConsistent())
   }
 
   test("is Propagated Right Away On Singleton Domain (Max)") {
@@ -54,10 +54,10 @@ class MixedConstraintsSuite extends FunSuite {
     // should be propagated already
     assert(csp.varsToConstraints.isEmpty)
 
-    csp.stn.EnforceMinDelay("A","B",4)
-    assert(csp.stn.IsConsistent())
-    csp.stn.EnforceMinDelay("A","B",5)
-    assert(!csp.stn.IsConsistent())
+    csp.stn.enforceMinDelay("A","B",4)
+    assert(csp.stn.isConsistent())
+    csp.stn.enforceMinDelay("A","B",5)
+    assert(!csp.stn.isConsistent())
   }
 
   test("is Propagated Right Away On Singleton Domain (Min)") {
@@ -74,10 +74,10 @@ class MixedConstraintsSuite extends FunSuite {
     // should be propagated already
     assert(csp.varsToConstraints.isEmpty)
 
-    csp.stn.EnforceMaxDelay("A","B",4)
-    assert(csp.stn.IsConsistent())
-    csp.stn.EnforceMaxDelay("A","B",3)
-    assert(!csp.stn.IsConsistent())
+    csp.stn.enforceMaxDelay("A","B",4)
+    assert(csp.stn.isConsistent())
+    csp.stn.enforceMaxDelay("A","B",3)
+    assert(!csp.stn.isConsistent())
   }
 
 

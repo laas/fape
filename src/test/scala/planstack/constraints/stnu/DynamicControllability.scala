@@ -3,19 +3,12 @@ package planstack.constraints.stnu
 import org.scalatest.FunSuite
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.constraints.stn.Predef._
 
-object DynamicControllability {
-
-  /** Defines which stnu implementations to use.  */
-  def controllers =
-    new FastIDC ::
-//    new EfficientIDC() ::
-    Nil
-}
 
 class DynamicControllability extends FunSuite {
 
-  for(idc <- DynamicControllability.controllers) {
+  for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
     test("DC violation, cycle of negative edges: "+idc.getClass.getName) {
@@ -53,7 +46,7 @@ class DynamicControllability extends FunSuite {
 
 
 
-  for(idc <- DynamicControllability.controllers) {
+  for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
     test("DC on the cooking dinner example. Incremental version: "+idc.getClass.getName) {
@@ -113,7 +106,7 @@ class DynamicControllability extends FunSuite {
     }
   }
 
-  for(idc <- DynamicControllability.controllers) {
+  for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
     test("DC on the cooking dinner example. Non-Incremental version: "+idc.getClass.getName) {

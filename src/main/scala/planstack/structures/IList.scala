@@ -52,4 +52,6 @@ class IList[T](protected val l : List[T]) extends java.lang.Iterable[T] {
     new IList(p1 :: l)
 
   def get(i: Int): T = l(i)
+
+  override def toString = l.toString()
 }

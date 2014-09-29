@@ -13,9 +13,9 @@ import planstack.constraints.stn.STNManager
  * @tparam ID Type of identifiers for constraints in the STN.
  */
 class CSP[VarRef, TPRef, ID](
-                          val bindings : ConservativeConstraintNetwork[VarRef],
-                          val stn : STNManager[TPRef,ID],
-                          protected[constraints] var varsToConstraints : Map[VarRef, List[Tuple4[TPRef,TPRef,Option[ID],(Int=>Int)]]]
+                          val bindings: ConservativeConstraintNetwork[VarRef],
+                          val stn: STNManager[TPRef,ID],
+                          protected[constraints] var varsToConstraints: Map[VarRef, List[Tuple4[TPRef,TPRef,Option[ID],(Int=>Int)]]]
                           )
   extends IntBindingListener[VarRef]
 {
@@ -23,7 +23,7 @@ class CSP[VarRef, TPRef, ID](
 
   def this() = this(new ConservativeConstraintNetwork[VarRef](), new STNManager[TPRef,ID](), Map())
 
-  def this(toCopy : CSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.DeepCopy(), toCopy.varsToConstraints)
+  def this(toCopy : CSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 
   def futureConstraint(u:TPRef,v:TPRef,id:ID,f:(Int=>Int)) =
     Tuple4[TPRef,TPRef,ID,(Int=>Int)](u, v, id, f)
@@ -40,7 +40,7 @@ class CSP[VarRef, TPRef, ID](
       onBinded(d, bindings.domainOfIntVar(d).get(0))
   }
 
-  /** Add a constraint u < v + d */
+  /** Add a constraint u +d >= v */
   def addMaxDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
     varsToConstraints =
       if(varsToConstraints.contains(d))
@@ -75,7 +75,7 @@ class CSP[VarRef, TPRef, ID](
   }
 
   def removeConstraintsWithID(id:ID) = {
-    // remove all pending cosntraints with this ID
+    // remove all pending constraints with this ID
     for((k,v) <- varsToConstraints) {
       // todo: move to scala 2.11 and use contains
       varsToConstraints = varsToConstraints.updated(k, v.filter(tup => !tup._3.exists(candidate => candidate == id)))
@@ -87,12 +87,15 @@ class CSP[VarRef, TPRef, ID](
     if(varsToConstraints contains variable) {
       for ((u, v, optID, f) <- varsToConstraints(variable)) {
         optID match {
-          case Some(id) => stn.EnforceMaxDelayWithID(u, v, f(value), id)
-          case None => stn.EnforceMaxDelay(u, v, f(value))
+          case Some(id) => stn.enforceMaxDelayWithID(u, v, f(value), id)
+          case None => stn.enforceMaxDelay(u, v, f(value))
         }
       }
       // remove the entries of this variable from the table
       varsToConstraints = varsToConstraints - variable
     }
   }
+
+  /** Returns true if both the binding constraint network and the STN are consistent */
+  def isConsistent = bindings.isConsistent && stn.isConsistent
 }

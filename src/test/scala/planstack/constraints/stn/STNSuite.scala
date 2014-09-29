@@ -5,7 +5,7 @@ import planstack.constraints.stnu.FullSTN
 
 class STNSuite extends FunSuite {
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
     test("[" + stn.getClass.getSimpleName + "] start and end creation") {
       assert(stn.size == 2)
     }
@@ -34,7 +34,7 @@ class STNSuite extends FunSuite {
     }
   }
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
 
     test("[" + stn.getClass.getSimpleName + "] STN cloning") {
       val u = stn.addVar()
@@ -56,7 +56,7 @@ class STNSuite extends FunSuite {
     }
   }
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
 
     test("[" + stn.getClass.getSimpleName + "] Earliest start") {
       val u = stn.addVar()

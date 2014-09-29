@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 
 class ConstraintRemovalSuite extends FunSuite {
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
 
     test("[" + stn.getClass.getSimpleName + "] Removal by var IDs") {
       var clone = stn.cc()
@@ -48,7 +48,7 @@ class ConstraintRemovalSuite extends FunSuite {
     }
   }
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
 
     test("[" + stn.getClass.getSimpleName + "] Removal by constraint ID") {
 
@@ -82,7 +82,7 @@ class ConstraintRemovalSuite extends FunSuite {
     }
   }
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- Predef.getAllISTN[String]) {
 
     test("["+stn.getClass.getSimpleName+ "] Removal by constraint ID of a constraint that was dominating an other.") {
       val stn = new STNIncBellmanFord[String]()
@@ -107,12 +107,12 @@ class ConstraintRemovalSuite extends FunSuite {
     csp.stn.recordTimePoint("u")
     csp.stn.recordTimePoint("v")
     csp.addMinDelayWithID("u","v","d", "myID")
-    assert(csp.stn.GetEarliestStartTime("v") <= 1)
+    assert(csp.stn.getEarliestStartTime("v") <= 1)
     csp.removeConstraintsWithID("myID")
     csp.bindings.restrictIntDomain("d", List[Integer](3))
 
     // even with d binded, the constraint should not be propagated since it was removed
-    assert(csp.stn.GetEarliestStartTime("v") <= 1)
+    assert(csp.stn.getEarliestStartTime("v") <= 1)
   }
 
 }

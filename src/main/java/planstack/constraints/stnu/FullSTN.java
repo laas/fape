@@ -23,7 +23,7 @@ import scala.collection.Seq;
  * too many points we need to remember for backtracking.
  * @author Filip Dvořák
  */
-public class FullSTN<ID> implements ISTN<ID> {
+public class FullSTN<ID> extends ISTN<ID> {
 
     /**
      *
@@ -312,11 +312,6 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public int start() {
-        return 0;
-    }
-
-    @Override
     public boolean consistent() {
         return consistent;
     }
@@ -371,22 +366,6 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public void enforceBefore(int u, int v) {
-        addConstraint(v, u, 0);
-    }
-
-    @Override
-    public void enforceStrictlyBefore(int u, int v) {
-        addConstraint(v, u, -1);
-    }
-
-    @Override
-    public void enforceInterval(int u, int v, int min, int max) {
-        addConstraint(u, v, max);
-        addConstraint(v, u, -min);
-    }
-
-    @Override
     public void writeToDotFile(String file) {
         // TODO
     }
@@ -402,23 +381,8 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public int makespan() {
-        return ga(start(), end());
-    }
-
-    @Override
     public boolean isConstraintPossible(int u, int v, int w) {
         return edge_consistent(u, v, inf, w);
-    }
-
-    @Override
-    public boolean canBeBefore(int u, int v) {
-        return pless(u, v);
-    }
-
-    @Override
-    public boolean removeConstraint(int u, int v) {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -433,17 +397,7 @@ public class FullSTN<ID> implements ISTN<ID> {
     }
 
     @Override
-    public boolean removeConstraints(Seq<Tuple2<Object, Object>> edges) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public FullSTN<ID> cc() {
         return new FullSTN<>(this);
-    }
-
-    @Override
-    public int end() {
-        return 1;
     }
 }
