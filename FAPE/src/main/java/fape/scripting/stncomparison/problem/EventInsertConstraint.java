@@ -66,7 +66,7 @@ public class EventInsertConstraint extends Event {
         int top = n.stn.size()-2;
         if (top > 2) {
             Constraint c = innerRG(rg, top);            
-            n.EnforceConstraint(new TPRef(c.a+2), new TPRef(c.b+2), c.min, c.max);
+            n.enforceConstraint(new TPRef(c.a+2), new TPRef(c.b+2), c.min, c.max);
         }
     }
 

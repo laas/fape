@@ -29,7 +29,7 @@ public class EventCopy extends Event {
 
     @Override
     public void Apply(STNManager n, Random rg, STNScenario s) {
-        STNManager o = n.DeepCopy();
+        STNManager o = n.deepCopy();
     }
 
 }

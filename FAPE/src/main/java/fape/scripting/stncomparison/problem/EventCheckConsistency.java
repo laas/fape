@@ -32,7 +32,7 @@ public class EventCheckConsistency extends Event  {
 
     @Override
     public void Apply(STNManager n, Random rg, STNScenario s) {
-        if(!n.IsConsistent()){
+        if(!n.isConsistent()){
             throw new FAPEException("inconsistent");
         }        
     }

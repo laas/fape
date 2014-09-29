@@ -138,11 +138,7 @@ public class State implements Reporter {
      * consistent), False otherwise.
      */
     public boolean isConsistent() {
-        // note that this order is important so that binded constraint can be propagated into the stn
-        boolean consistency = csp.bindings().isConsistent();
-        consistency &= csp.stn().IsConsistent();
-        consistency &= resMan.isConsistent(this);
-        return consistency;
+        return csp.isConsistent() && resMan.isConsistent(this);
     }
 
     /**
@@ -391,7 +387,7 @@ public class State implements Reporter {
      */
     public void insert(Action act) {
         recordTimePoints(act);
-        csp.stn().EnforceBefore(pb.earliestExecution(), act.start());
+        enforceBefore(pb.earliestExecution(), act.start());
         taskNet.insert(act);
         apply(act);
 
@@ -412,10 +408,10 @@ public class State implements Reporter {
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
                 csp.addMinDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
-                csp.stn().EnforceMinDelayWithID(act.start(), act.end(), act.minDuration().d(), act.id());
+                csp.stn().enforceMinDelayWithID(act.start(), act.end(), act.minDuration().d(), act.id());
             }
         } else {
-            csp.stn().EnforceMinDelayWithID(act.start(), act.end(), 1, act.id());
+            csp.stn().enforceMinDelayWithID(act.start(), act.end(), 1, act.id());
         }
 
         if(act.maxDuration() != null) {
@@ -434,12 +430,11 @@ public class State implements Reporter {
                 csp.addMaxDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
                 assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
-                csp.stn().EnforceMaxDelayWithID(act.start(), act.end(), act.maxDuration().d(), act.id());
+                csp.stn().enforceMaxDelayWithID(act.start(), act.end(), act.maxDuration().d(), act.id());
             }
         }
 
-        csp.bindings().isConsistent();
-        csp.stn().IsConsistent();
+        csp.isConsistent();
     }
 
     /**
@@ -450,7 +445,7 @@ public class State implements Reporter {
     private void recordTimePoints(TemporalInterval interval) {
         csp.stn().recordTimePoint(interval.start());
         csp.stn().recordTimePoint(interval.end());
-        csp.stn().EnforceBefore(interval.start(), interval.end());
+        csp.stn().enforceBefore(interval.start(), interval.end());
     }
 
     /**
@@ -466,11 +461,8 @@ public class State implements Reporter {
             csp.stn().recordTimePoint(pb.start());
             csp.stn().recordTimePoint(pb.end());
             csp.stn().recordTimePoint(pb.earliestExecution());
-            csp.stn().EnforceBefore(pb.start(), pb.earliestExecution());
-
-            // TODO this voodoo to make pb.start == stn.start && pb.end == stn.end
-            csp.stn().stn.enforceInterval(csp.stn().ids.get(pb.start()), csp.stn().stn.start(), 0, 0);
-            csp.stn().stn.enforceInterval(csp.stn().ids.get(pb.end()), csp.stn().stn.end(), 0, 0);
+            csp.stn().enforceBefore(pb.start(), pb.earliestExecution());
+            csp.stn().setTime(pb.start(), 0);
         }
         for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
             apply(pb.modifiers().get(i));
@@ -610,11 +602,11 @@ public class State implements Reporter {
         switch (tc.op()) {
             case "<":
                 // tp1 < tp2 + x => tp1 --[-x, inf] --> tp2
-                csp.stn().EnforceMinDelay(tp1, tp2, -tc.plus());
+                csp.stn().enforceMinDelay(tp1, tp2, -tc.plus());
                 break;
             case "=":
                 // tp1 --- [x, x] ---> tp2
-                csp.stn().EnforceConstraint(tp2, tp1, tc.plus(), tc.plus());
+                csp.stn().enforceConstraint(tp2, tp1, tc.plus(), tc.plus());
         }
     }
 
@@ -629,8 +621,8 @@ public class State implements Reporter {
         recordTimePoints(dec);
 
         // interval of the decomposition is equal to the one of the containing action.
-        csp.stn().EnforceConstraint(dec.start(), dec.container().start(), 0, 0);
-        csp.stn().EnforceConstraint(dec.end(), dec.container().end(), 0, 0);
+        csp.stn().enforceConstraint(dec.start(), dec.container().start(), 0, 0);
+        csp.stn().enforceConstraint(dec.end(), dec.container().end(), 0, 0);
 
         taskNet.insert(dec, dec.container());
 
@@ -789,24 +781,24 @@ public class State implements Reporter {
 
     /*** Wrapper around STN ******/
 
-    public void enforceBefore(TPRef a, TPRef b) { csp.stn().EnforceBefore(a, b); }
+    public void enforceBefore(TPRef a, TPRef b) { csp.stn().enforceBefore(a, b); }
 
-    public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().EnforceStrictlyBefore(a, b); }
+    public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().enforceStrictlyBefore(a, b); }
 
-    public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().CanBeBefore(a, b); }
+    public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().canBeBefore(a, b); }
 
-    public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().CanBeStrictlyBefore(a, b); }
+    public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().canBeStrictlyBefore(a, b); }
 
-    public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().EnforceConstraint(a, b, min, max); }
+    public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().enforceConstraint(a, b, min, max); }
 
     public boolean removeActionDurationOf(ActRef id) {
         return csp.removeConstraintsWithID(id);
     }
 
-    public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().EnforceMinDelay(a, b, delay); }
+    public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
-    public long getEarliestStartTime(TPRef a) { return csp.stn().GetEarliestStartTime(a); }
-    public long getLatestStartTime(TPRef a) { return csp.stn().GetLatestStartTime(a); }
+    public long getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
+    public long getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) {
         csp.stn().exportToDotFile(filename, new STNNodePrinter(this));
