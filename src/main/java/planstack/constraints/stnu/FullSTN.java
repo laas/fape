@@ -1,12 +1,10 @@
 package planstack.constraints.stnu;
 
 import planstack.constraints.stn.ISTN;
+import planstack.structures.IList;
 import scala.Tuple2;
 import scala.Tuple4;
 import scala.collection.Seq;
-import sun.awt.image.ImageWatched;
-
-import java.util.LinkedList;
 
 /**
  * Simple Temporal Network, provides effective representation and copy constructor, methods for acessing,
@@ -39,44 +37,29 @@ public class FullSTN<ID> implements ISTN<ID> {
             }
         }
     }
-    /**
-     * lower bounds on time relations
-     */
-    /**
-     * upper bounds on time relations
-     */
-    /**
-     * value of the last increment of the number of edges in the network
-     */
-    /**
-     * current capacity of the network (in edges)
-     */
-    /**
-     * ID of the latest time point inserted
-     */
-    /**
-     * number of state variables using the network
-     */
-    protected int edge_a[], edge_b[], last_inc, capacity, top, ends_count;
 
-    protected LinkedList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
+    /** lower bound on time relations */
+    protected int edge_a[];
+    /** upper bound on time relations */
+    protected int edge_b[];
+    /** value of the last increment of the number of edges in the network */
+    protected int last_inc;
+    /** current capacity of the network (in number of time points) */
+    protected int capacity;
+    /** id of the latest time point inserted */
+    protected int top;
+
+    protected IList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
 
     private boolean consistent;
-    /**
-     * -infinity
-     */
-    /**
-     * +infinity
-     */
-    /**
-     * size of increment
-     */
-    protected static final int
-            inf = -2000000000,
-            sup = 2000000000,
-            inc = 1000000000;
 
-    static int precalc[][] = null, precalc_size = 1000;
+    /** -infinity */
+    protected static final int inf = -2000000000;
+    /** +infinity */
+    protected static final int sup = 2000000000;
+
+    static int precalc[][] = null;
+    static final int precalc_size = 1000;
 
     /**
      * constructs new network (intended to run once per Finder invokation)
@@ -92,7 +75,7 @@ public class FullSTN<ID> implements ISTN<ID> {
     protected void init(int capacity) {
         if(precalc == null)
             precalc_inic();
-        allConstraints = new LinkedList<>();
+        allConstraints = new IList<>();
         top = 0;
         edge_a = new int[capacity * capacity / 2];
         edge_b = new int[capacity * capacity / 2];
@@ -109,10 +92,9 @@ public class FullSTN<ID> implements ISTN<ID> {
      * @param s
      */
     protected FullSTN(FullSTN<ID> s){
-        this.allConstraints = new LinkedList<>(s.allConstraints);
+        this.allConstraints = s.allConstraints;
         this.capacity = s.capacity;
         this.top = s.top;
-        this.ends_count = s.ends_count;
         this.last_inc = s.last_inc;
         this.consistent = s.consistent;
 
@@ -354,14 +336,14 @@ public class FullSTN<ID> implements ISTN<ID> {
 
     @Override
     public boolean addConstraint(int u, int v, int w) {
-        allConstraints.add(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, null));
+        allConstraints = allConstraints.with(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, null));
         propagate(u, v, inf, w);
         return consistent();
     }
 
     @Override
     public boolean addConstraintWithID(int u, int v, int w, ID o) {
-        allConstraints.add(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, o));
+        allConstraints = allConstraints.with(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, o));
         propagate(u, v, inf, w);
         return consistent();
     }
@@ -374,7 +356,7 @@ public class FullSTN<ID> implements ISTN<ID> {
     @Override
     public boolean checkConsistencyFromScratch() {
         int size = this.top;
-        LinkedList<Tuple4<Integer,Integer,Integer,ID>> constraints = this.allConstraints;
+        IList<Tuple4<Integer,Integer,Integer,ID>> constraints = this.allConstraints;
         init(size);
         // add all timepoints except start and end that are defined in init
         for(int i=2 ; i<size ; i++)
@@ -441,10 +423,10 @@ public class FullSTN<ID> implements ISTN<ID> {
 
     @Override
     public boolean removeConstraintsWithID(ID id) {
-        LinkedList<Tuple4<Integer, Integer, Integer, ID>> filtered = new LinkedList<>();
+        IList<Tuple4<Integer, Integer, Integer, ID>> filtered = new IList<>();
         for(Tuple4<Integer, Integer, Integer, ID> c : allConstraints) {
             if(c._4() == null || !c._4().equals(id))
-                filtered.add(c);
+                filtered = filtered.with(c);
         }
         allConstraints = filtered;
         return checkConsistencyFromScratch();
