@@ -11,6 +11,7 @@ import planstack.graph.printers.NodeEdgePrinter
   */
 trait EDGListener {
   def edgeAdded(e : LabeledEdge[Int, STNULabel])
+  def inconsistencyDetected()
   def cycleDetected()
   def squeezingDetected()
 }
@@ -23,7 +24,8 @@ class EDG(
     var squeezed : Boolean,
     protected[stnu] var listener : EDGListener) {
 
-  def this(edg : EDG, listener:EDGListener = null) = this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
+  def this(edg : EDG, listener:EDGListener = null) =
+    this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
 
   def this(listener:EDGListener = null) = this(
     new DirectedSimpleLabeledIIAdjList[Contingent](),
@@ -58,17 +60,26 @@ class EDG(
     contingents.addVertex()
   }
 
-  def allEdges = requirements.edges() ++ contingents.edges() ++ conditionals.edges()
-
-  /*
-  def squeezed = !contingents.edges().forall(cont => {
-    requirements.edge(cont.u, cont.v) match {
-      case Some(req) => {
-        req.l.value >= cont.l.value
+  protected[stnu] def apsp() = {
+    def dist(i:Int, j:Int) =
+      if(i == j)  0
+      else requirements.edge(i, j) match {
+        case Some(req) => req.l.value
+        case None => Int.MaxValue
       }
-      case None => true
-    }
-  })*/
+    def plus(a:Int, b:Int) =
+      if(a == Int.MaxValue) a
+      else if(b == Int.MaxValue) b
+      else a + b
+
+    for(k <- 0 until size)
+      for(i <- 0 until size)
+        for(j <- 0 until size)
+          if(dist(i,j) > plus(dist(i,k),dist(k,j)))
+            addEdge(new E(i, j, new Requirement(plus(dist(i,k),dist(k,j)))))
+  }
+
+  def allEdges = requirements.edges() ++ contingents.edges() ++ conditionals.edges()
 
   def tightens(e : E) : Boolean = {
     e.l match {
@@ -81,7 +92,8 @@ class EDG(
       case cont:Contingent => {
         contingents.edge(e.u, e.v) match {
           case None => true
-          case Some(prev) => if(prev.l.value == e.l.value) false
+          case Some(prev) =>
+            if(prev.l.value == e.l.value) false
             else throw new RuntimeException("Error: tightening/relaxing a contingent constraint.")
         }
       }
@@ -98,14 +110,14 @@ class EDG(
       // this edge is not tightening, nothing to add
       Nil
     } else {
-      if(e.l.req)
+      if(e.l.req) {
         requirements.addEdge(e.asInstanceOf[LabeledEdge[Int, Requirement]])
-      else if(e.l.cond)
+      } else if(e.l.cond)
         conditionals.addEdge(e.asInstanceOf[LabeledEdge[Int, Conditional]])
       else if(e.l.cont)
         contingents.addEdge(e.asInstanceOf[LabeledEdge[Int, Contingent]])
       else
-        throw new RuntimeException("Error: Unknown contraint type.")
+        throw new RuntimeException("Error: Unknown constraint type.")
 
 
       edgeAdded(e)
@@ -116,6 +128,8 @@ class EDG(
   }
 
   def edgeAdded(e : E) {
+    if(!(e.u != e.v || e.l.req && e.l.value == 0))
+      println("BREAK")
     if(e.l.negative)
       ccgraph.addEdge(e.u, e.v)
 
@@ -129,6 +143,13 @@ class EDG(
         case Some(cont) => squeezed |= cont.l.value > e.l.value
         case None =>
       }
+      if(e.u == e.v && e.l.value < 0)
+        listener.inconsistencyDetected()
+
+      val vuVal = requirements.edgeValue(e.v,e.u)
+      if(vuVal != null && e.l.value < -vuVal.value)
+        // adding an edge with lower upper bound than lower bound
+        listener.inconsistencyDetected()
     }
 
     if(listener != null) {
@@ -173,7 +194,7 @@ class EDG(
     val A = e.u
     val B = e.v
     if(e.l.posReq) {
-      for(C <- contingents.children(B)) {
+      for(C <- contingents.children(B) ; if A != B && A != C && B != C) {
         (contingents.edge(B, C), contingents.edge(C, B)) match {
           case (Some(bc), Some(cb)) => {
             if(bc.l.negative && cb.l.positive) {
@@ -194,7 +215,7 @@ class EDG(
     if(e.l.cond && e.l.negative) {
       val B = e.l.asInstanceOf[Conditional].node
       val outEdges = contingents.outEdges(C)
-      for(D <- contingents.children(C)) {
+      for(D <- contingents.children(C) ; if D != C ; if A != B && A != C && B != C) {
         if(contingents.edges(C, D).nonEmpty && contingents.edges(D, C).nonEmpty) {
           val cd = contingents.edges(C, D).head
           val dc = contingents.edges(D, C).head
@@ -214,7 +235,7 @@ class EDG(
     val C = e.u
     if(e.l.cond && e.l.negative) {
       val B = e.l.asInstanceOf[Conditional].node
-      for(D <- requirements.parents(C)) {
+      for(D <- requirements.parents(C) ; if D != C ; if A != B && A != C && B != C) {
         val dc = requirements.edges(D, C).head
         if(D != B && dc.l.positive) {
           toAdd = new E(D, A, new Conditional(B, dc.l.value+e.l.value)) :: toAdd
@@ -230,7 +251,7 @@ class EDG(
     val A = e.u
     val B = e.v
     if(e.l.req && e.l.positive) {
-      for(C <- 0 until requirements.numVertices) {
+      for(C <- 0 until requirements.numVertices ; if A != B && A != C && B != C) {
         val BCvalue = requirements.edgeValue(B, C)
         if(BCvalue != null && BCvalue.negative) {
           toAdd = new E(A, C, new Requirement(e.l.value + BCvalue.value)) :: toAdd
@@ -249,7 +270,7 @@ class EDG(
       for(condBC <- conditionals.outEdges(B)) {
         val C = condBC.v
         val D = condBC.l.node
-        if(condBC.l.negative && D != A) {
+        if(A != B && A != C && B != C &&condBC.l.negative && D != A) {
           toAdd = new E(A, C, new Conditional(D, e.l.value+condBC.l.value)) :: toAdd
         }
       }
@@ -265,10 +286,12 @@ class EDG(
     if(e.l.req && e.l.negative) {
       for(contBC <- contingents.outEdges(B) ; if contBC.l.negative) {
         val C = contBC.v
-        contingents.edge(C, B) match {
-          case None =>
-          case Some(contCB) =>
-            toAdd = new E(C, A, new Requirement(-contBC.l.value + e.l.value)) :: toAdd
+        if (A != B && A != C && B != C) {
+          contingents.edge(C, B) match {
+            case None =>
+            case Some(contCB) =>
+              toAdd = new E(C, A, new Requirement(-contBC.l.value + e.l.value)) :: toAdd
+          }
         }
       }
     }
@@ -283,7 +306,8 @@ class EDG(
     if(e.l.req && e.l.negative) {
       for(reqCB <- requirements.inEdges(B) ; if reqCB.l.positive) {
         val C = reqCB.u
-        toAdd = new E(C, A, new Requirement(reqCB.l.value + e.l.value)) :: toAdd
+        if(A != B && A != C && B != C)
+          toAdd = new E(C, A, new Requirement(reqCB.l.value + e.l.value)) :: toAdd
       }
     }
 
@@ -297,7 +321,9 @@ class EDG(
     val C = e.u
     if(e.l.cond) {
       val B = e.l.node
-      for(reqBA <- contingents.edges(B, A) ; if e.l.value >= reqBA.l.value) {
+      for(reqBA <- contingents.edges(B, A) ;
+          if e.l.value >= reqBA.l.value ;
+          if A != B && A != C && B != C) {
         toAdd = new E(C, A, new Requirement(e.l.value)) :: toAdd
         if(!toRemove.contains(e))
           toRemove = e :: toRemove
@@ -312,7 +338,9 @@ class EDG(
     val C = e.u
     if(e.l.cond) {
       val B = e.l.node
-      for(reqBA <- contingents.edges(B, A) ; if e.l.value < reqBA.l.value) {
+      for(reqBA <- contingents.edges(B, A) ;
+          if e.l.value < reqBA.l.value ;
+          if A != B && A != C && B != C) {
         toAdd = new E(C, A, new Requirement(reqBA.l.value)) :: toAdd
       }
     }
