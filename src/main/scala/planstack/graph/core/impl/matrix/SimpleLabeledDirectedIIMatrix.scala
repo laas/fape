@@ -5,26 +5,24 @@ import planstack.graph.core.{LabeledEdge, SimpleLabeledDigraph}
 import scala.reflect.ClassTag
 
 class SimpleLabeledDirectedIIMatrix[EL >: Null : ClassTag](
-    var capacity : Int,
+    protected var capacity : Int,
     var numVertices : Int,
-    var matrix : Array[Array[EL]])
-  extends SimpleLabeledDigraph[Int, EL] {
+    protected var matrix : Array[Array[EL]])
+  extends SimpleLabeledDigraph[Int, EL]
+{
+  /** size increment when the matrix needs to grow */
+  private final val inc = 10
 
   def this() = this(
-    153,
+    10,
     0,
-    new Array[Array[EL]](153)
+    new Array[Array[EL]](10)
   )
 
-//  var capacity = 10
-//  var numVertices = 0
-//
-//  var matrix = new Array[Array[EL]](capacity)
+  // init matrix with the given capacity
   if(matrix(0) == null)
     for(i <- 0 until capacity)
       matrix(i) = new Array[EL](capacity)
-
-  assert(matrix(0)(0) == null)
 
   def inEdges(v: Int): Seq[LabeledEdge[Int, EL]] =
     for(u <- vertices ; if edgeValue(u, v) !=  null) yield {
@@ -32,9 +30,8 @@ class SimpleLabeledDirectedIIMatrix[EL >: Null : ClassTag](
     }
 
   def outEdges(u: Int): Seq[LabeledEdge[Int, EL]] =
-    for(v <- vertices ; if edgeValue(u, v) !=  null) yield {
+    for(v <- vertices ; if edgeValue(u, v) !=  null) yield
       new LabeledEdge[Int, EL](u, v, edgeValue(u, v))
-    }
 
   override def edge(u:Int, v:Int) : Option[LabeledEdge[Int, EL]] = {
     if(edgeValue(u, v) == null)
@@ -47,11 +44,22 @@ class SimpleLabeledDirectedIIMatrix[EL >: Null : ClassTag](
 
   /** Adds a new Vertex to the graph */
   def addVertex(v: Int): Int = {
-    assert(numVertices == v)
-    if(numVertices < capacity)
-      numVertices += 1
-    else
-      throw new RuntimeException("need to grow")
+    assert(numVertices == v, "Each new vertex id should be strictly incremented. If possible use addVertex()")
+
+    if(numVertices == capacity) {
+      // need to grow
+      val oldMat = matrix
+      // creates columns with increased capacity
+      matrix = new Array[Array[EL]](capacity+inc)
+      // create lines with increased capacity
+      for(i <- 0 until capacity+inc)
+        matrix(i) = new Array[EL](capacity + inc)
+      // copy old lines into new ones
+      for(i <- 0 until capacity)
+        Array.copy(oldMat(i), 0, matrix(i), 0, capacity)
+      capacity += inc
+    }
+    numVertices += 1
     numVertices-1
   }
 
