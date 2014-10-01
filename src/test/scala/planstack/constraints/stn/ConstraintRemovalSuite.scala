@@ -10,7 +10,7 @@ class ConstraintRemovalSuite extends FunSuite {
 
   for(stn <- Predef.getAllISTN[String]) {
 
-    test("[" + stn.getClass.getSimpleName + "] Removal by var IDs") {
+    test("[" + stn.getClass.getSimpleName + "] Simple Removal by constraint IDs") {
       var clone = stn.cc()
 
       def checkCloneEqSTN(stn1:ISTN[String], stn2:ISTN[String]) {
@@ -85,7 +85,6 @@ class ConstraintRemovalSuite extends FunSuite {
   for(stn <- Predef.getAllISTN[String]) {
 
     test("["+stn.getClass.getSimpleName+ "] Removal by constraint ID of a constraint that was dominating an other.") {
-      val stn = new STNIncBellmanFord[String]()
 
       stn.addConstraintWithID(stn.start, stn.end, 10, "first")
       stn.addConstraintWithID(stn.start, stn.end, 12, "first")

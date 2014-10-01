@@ -13,9 +13,9 @@ class FastIDC[ID](val edg : EDG,
 
   def this(toCopy : FastIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)
 
-
+  // record ourself as the listener of any event in the EDG
+  assert(edg.listener == null, "Error: already a listener on this EDG")
   edg.listener = this
-  assert(edg.listener == this)
 
   if(size == 0) {
     val myStart = addVar()
@@ -80,8 +80,7 @@ class FastIDC[ID](val edg : EDG,
       else if(e.l.negative)
         return false
     }
-    val additionAndRemovals : List[(List[E],List[E])]=
-      edg.D1(e) :: edg.D2(e) :: edg.D3(e) :: edg.D4(e) ::edg.D5(e) :: edg.D6(e) ::edg.D7(e) :: edg.D8(e) :: edg.D9(e) :: Nil
+    val additionAndRemovals = edg.derivationsFastIDC(e)
 
     for((toAdd,toRemove) <- additionAndRemovals) {
       for(edge <- toAdd) {
@@ -151,4 +150,6 @@ class FastIDC[ID](val edg : EDG,
 
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = ???
+
+  override def inconsistencyDetected(): Unit = isConsistent = false
 }

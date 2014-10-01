@@ -211,6 +211,8 @@ class EfficientIDC[ID](val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU[
 
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = ???
+
+  override def inconsistencyDetected(): Unit = ???
 }
 
 object EfficientIDC {

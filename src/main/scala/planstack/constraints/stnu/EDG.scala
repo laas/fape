@@ -128,8 +128,6 @@ class EDG(
   }
 
   def edgeAdded(e : E) {
-    if(!(e.u != e.v || e.l.req && e.l.value == 0))
-      println("BREAK")
     if(e.l.negative)
       ccgraph.addEdge(e.u, e.v)
 
@@ -189,7 +187,10 @@ class EDG(
     addEdge(e)
   }
 
-  def D1(e : E) : (List[E], List[E]) = {
+  def derivationsFastIDC(e : E) : List[(List[E], List[E])] =
+    D1(e) :: D2(e) :: D3(e) :: D4(e) :: D5(e) :: D6(e) :: D7(e) :: D8(e) :: D9(e) :: Nil
+
+  protected[stnu] def D1(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.u
     val B = e.v
@@ -208,7 +209,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D2(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D2(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.v
     val C = e.u
@@ -229,7 +230,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D3(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D3(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.v
     val C = e.u
@@ -246,7 +247,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D4(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D4(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.u
     val B = e.v
@@ -262,7 +263,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D5(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D5(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.u
     val B = e.v
@@ -279,7 +280,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D6(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D6(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.v
     val B = e.u
@@ -299,7 +300,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D7(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D7(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.v
     val B = e.u
@@ -314,7 +315,7 @@ class EDG(
     (toAdd, Nil)
   }
 
-  def D8(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D8(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     var toRemove = List[E]()
     val A = e.v
@@ -332,7 +333,7 @@ class EDG(
     (toAdd, toRemove)
   }
 
-  def D9(e : E) : (List[E], List[E]) = {
+  protected[stnu] def D9(e : E) : (List[E], List[E]) = {
     var toAdd = List[E]()
     val A = e.v
     val C = e.u
@@ -346,6 +347,43 @@ class EDG(
     }
     (toAdd, Nil)
   }
+
+
+  def classicalDerivations(e : E) =
+    PR1(e) :: PR2(e) :: unorderedRed(e) :: SR1(e) :: contingentReg(e) :: unconditionalRed(e) :: generalRed(e) :: Nil
+
+  protected[stnu] def PR1(e : E) : (List[E], List[E]) = D6(e)
+
+  protected[stnu] def PR2(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.u
+    val B = e.v
+    if(e.l.posReq) {
+      for (contCB <- contingents.inEdges(B)) {
+        val C = contCB.u
+        if (A != B && A != C && B != C) {
+          toAdd = new E(A, C, new Requirement(e.l.value - contCB.l.value)) :: toAdd
+        }
+      }
+    }
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def unorderedRed(e : E) : (List[E], List[E]) = D1(e)
+
+  protected[stnu] def SR1(e : E) : (List[E], List[E]) = {
+    val (add3, rm3) = D3(e)
+    val (add5, rm5) = D5(e)
+    (add3 ++ add5, rm3 ++ rm5)
+  }
+
+  protected[stnu] def SR2(e : E) : (List[E], List[E]) = throw new RuntimeException("This rule is useless")
+
+  protected[stnu] def contingentReg(e : E) : (List[E], List[E]) = D2(e)
+
+  protected[stnu] def unconditionalRed(e : E) : (List[E], List[E]) = D8(e)
+
+  protected[stnu] def generalRed(e : E) : (List[E], List[E]) = D9(e)
 
   def exportToDot(file:String, printer:NodeEdgePrinter[Int, STNULabel, LabeledEdge[Int,STNULabel]]) {
     val g = GraphFactory.getLabeledDigraph[Int, STNULabel]

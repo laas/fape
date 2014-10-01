@@ -3,8 +3,8 @@ package planstack.constraints.stnu
 class STNULabel(val value : Int) {
 
   def req = this.isInstanceOf[Requirement]
-  def posReq = this.isInstanceOf[Requirement] && value >= 0
-  def negReq = this.isInstanceOf[Requirement] && value < 0
+  def posReq = req && positive
+  def negReq = req && negative
   def cont = this.isInstanceOf[Contingent]
   def cond = this.isInstanceOf[Conditional]
   def negative = value < 0

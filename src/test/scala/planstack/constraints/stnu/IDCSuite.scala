@@ -8,7 +8,7 @@ class IDCSuite extends FunSuite {
 
   for(idc <- getAllISTNU[String]) {
 
-    test("Pseudo controllable: "+idc.getClass.getName) {
+    test("["+idc.getClass.getSimpleName+"] Pseudo controllable.") {
       val A = idc.addVar()
       val B = idc.addVar()
       val C = idc.addVar()
@@ -34,7 +34,7 @@ class IDCSuite extends FunSuite {
 
   for(idc <- getAllISTNU[String]) {
 
-    test("Not pseudo controllable: "+idc.getClass.getName) {
+    test("["+idc.getClass.getSimpleName+"]Not pseudo controllable.") {
       val A = idc.addVar()
       val B = idc.addVar()
       val C = idc.addVar()

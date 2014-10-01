@@ -62,9 +62,11 @@ class STNSuite extends FunSuite {
       val u = stn.addVar()
       val v = stn.addVar()
 
+      assert(stn.consistent)
       assert(stn.earliestStart(u) == 0)
 
       stn.enforceInterval(u, v, 10, 20)
+      assert(stn.consistent)
       assert(stn.earliestStart(u) == 0)
       assert(stn.earliestStart(v) == 10)
       assert(stn.makespan == 10)

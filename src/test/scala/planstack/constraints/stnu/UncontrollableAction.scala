@@ -6,7 +6,7 @@ import planstack.constraints.stn.Predef._
 class UncontrollableAction extends FunSuite {
 
   for(idc <- getAllISTNU[String]) {
-    test("Uncontrollable action") {
+    test("[" + idc.getClass.getSimpleName + "] Uncontrollable action") {
 
       val start = idc.addVar()
       val end = idc.addVar()

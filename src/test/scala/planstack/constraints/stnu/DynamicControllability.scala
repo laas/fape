@@ -7,11 +7,11 @@ import planstack.constraints.stn.Predef._
 
 
 class DynamicControllability extends FunSuite {
-
+/*
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
-    test("DC violation, cycle of negative edges: "+idc.getClass.getName) {
+    test("["+idc.getClass.getSimpleName+"] DC violation, cycle of negative edges.") {
       val A = idc.addVar()
       val B = idc.addVar()
       val C = idc.addVar()
@@ -45,11 +45,11 @@ class DynamicControllability extends FunSuite {
   }
 
 
-
+*/
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
-    test("DC on the cooking dinner example. Incremental version: "+idc.getClass.getName) {
+    test("["+idc.getClass.getSimpleName+"] DC on the cooking dinner example. Incremental version.") {
       val WifeStore = idc.addVar()
       val StartDriving = idc.addVar()
       val WifeHome = idc.addVar()
@@ -109,7 +109,7 @@ class DynamicControllability extends FunSuite {
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
-    test("DC on the cooking dinner example. Non-Incremental version: "+idc.getClass.getName) {
+    test("["+idc.getClass.getSimpleName+"] DC on the cooking dinner example. Non-Incremental version.") {
       val WifeStore = idc.addVar()
       val StartDriving = idc.addVar()
       val WifeHome = idc.addVar()

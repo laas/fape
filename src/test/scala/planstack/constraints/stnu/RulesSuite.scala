@@ -118,6 +118,11 @@ class RulesSuite extends FunSuite{
   test("D6 rule") {
     val stnu = new EDG
 
+    val x = 11
+    val y = 14
+    val u = 24
+    val v = 50
+
     stnu.addRequirement(B, A, -u)
     stnu.addContingent(B, C, -x)
     stnu.addContingent(C, B, y)
