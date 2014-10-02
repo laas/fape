@@ -3,15 +3,18 @@ package planstack.constraints.stnu
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledDigraph
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.structures.IList
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 
 /*** NOT FINISHED. This implementation of EfficientIDC is not finished yet. */
-class EfficientIDC[ID](val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU[ID] with EDGListener {
+class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends ISTNU[ID] with EDGListener[ID]
+{
+  type E = Edge[ID]
 
-  def this() = this(new EDG, ListBuffer[Int]())
+  def this() = this(new EDG[ID], ListBuffer[Int]())
 
   def this(toCopy : EfficientIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone())
 
@@ -48,7 +51,7 @@ class EfficientIDC[ID](val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU[
    * Write a dot serialisation of the graph to file
    * @param file
    */
-  def writeToDotFile(file: String): Unit = edg.exportToDot(file, new NodeEdgePrinter[Int, STNULabel, E])
+  def writeToDotFile(file: String): Unit = edg.exportToDot(file, new NodeEdgePrinter[Int, STNULabel[ID], E])
 
   /**
    * Returns the earliest start time of time point u with respect to the start time point of the STN
@@ -203,16 +206,20 @@ class EfficientIDC[ID](val edg : EDG, val todo : ListBuffer[Int]) extends ISTNU[
 
   def squeezingDetected() { isConsistent = false }
 
-  /** Adds a constraint to the STN specifying that v - u <= w.
-    * The constraint is associated with an ID than can be later used to remove the constraint.
-    * @return True if the STN tightened due to this operation.
-    */
-  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
-
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = ???
 
   override def inconsistencyDetected(): Unit = ???
+
+  /** Remove a variable and all constraints that were applied on it; */
+  override def removeVar(u: Int): Boolean = ???
+
+  override def addRequirementWithID(from: Int, to: Int, value: Int, id: ID): Boolean = ???
+
+  override def addContingentWithID(from: Int, to: Int, lb: Int, ub: Int, id: ID): Boolean = ???
+
+  /** Returns a collection of all time points in this STN */
+  override def events: IList[Int] = ???
 }
 
 object EfficientIDC {
@@ -225,7 +232,7 @@ object EfficientIDC {
     })
     queue += ((start, 0))
 
-    while(!queue.isEmpty) {
+    while(queue.nonEmpty) {
       val label = queue.dequeue()
       if(!marked.contains(label._1)) {
         marked += label._1

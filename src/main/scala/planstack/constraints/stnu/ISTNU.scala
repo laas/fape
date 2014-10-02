@@ -10,11 +10,17 @@ trait ISTNU[ID] extends ISTN[ID] {
    */
   def size: Int
 
-  def addConstraint(u: Int, v: Int, w: Int): Boolean = addRequirement(u, v, w)
+  final def addConstraint(u: Int, v: Int, w: Int): Boolean =
+    addRequirement(u, v, w)
+
+  final def addConstraintWithID(from:Int, to:Int, value:Int, id:ID) : Boolean =
+    addRequirementWithID(from, to, value, id)
+
 
   def addRequirement(from:Int, to:Int, value:Int) : Boolean
+  def addRequirementWithID(from:Int, to:Int, value:Int, id:ID) : Boolean
   def addContingent(from:Int, to:Int, lb:Int, ub:Int) : Boolean
-  def addConditional(from:Int, to:Int, on:Int, value:Int) : Boolean
+  def addContingentWithID(from:Int, to:Int, lb:Int, ub:Int, id:ID) : Boolean
 
   /**
    * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.
@@ -26,24 +32,6 @@ trait ISTNU[ID] extends ISTN[ID] {
    * @return
    */
   def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = ???
-
-  /**
-   * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
-   * Performs a consistency check from scratch (expensive try to use removeCOnstraints if you are to remove
-   * more than one constraint)
-   * @param u
-   * @param v
-   * @return True if the STN is consistent after removal
-   */
-  def removeConstraint(u: Int, v: Int): Boolean = ???
-
-  /**
-   * For all pairs, remove the corresponding directed edge in the constraint graph. After all of every pair are removed,
-   * a consistency check is performed from scratch.
-   * @param edges
-   * @return true if the STN is consistent after removal
-   */
-  def removeConstraints(edges: (Int, Int)*): Boolean = ???
 
   /**
    * Returns a complete clone of the STN.

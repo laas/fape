@@ -2,7 +2,7 @@ package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
 
-class ConcreteEDGForTesting extends EDG {
+class ConcreteEDGForTesting[ID] extends EDG[ID] {
   val start = addVar()
   val end = addVar()
 }

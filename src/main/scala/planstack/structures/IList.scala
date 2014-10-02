@@ -5,7 +5,7 @@ import java.util
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
-class IList[T](protected val l : List[T]) extends java.lang.Iterable[T] {
+class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable[T] {
 
   def this() = this(Nil)
   def this(l : IList[T]) = this(l.l)
@@ -34,6 +34,9 @@ class IList[T](protected val l : List[T]) extends java.lang.Iterable[T] {
 
   def without(p1: scala.Any): IList[T] =
     new IList(l.filter(e => !(p1 == e)))
+
+  def filter(f: T => Boolean) : IList[T] =
+    new IList[T](l.filter(f))
 
   def contains(p1: scala.Any): Boolean =
     l.contains(p1)

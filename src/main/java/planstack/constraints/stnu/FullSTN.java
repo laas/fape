@@ -4,7 +4,9 @@ import planstack.constraints.stn.ISTN;
 import planstack.structures.IList;
 import scala.Tuple2;
 import scala.Tuple4;
-import scala.collection.Seq;
+import scala.collection.*;
+
+import java.util.LinkedList;
 
 /**
  * Simple Temporal Network, provides effective representation and copy constructor, methods for acessing,
@@ -325,6 +327,15 @@ public class FullSTN<ID> extends ISTN<ID> {
     }
 
     @Override
+    public IList<Object> events() {
+        LinkedList<Object> events = new LinkedList<>();
+        for(int i=0 ; i<size() ; i++) {
+            events.add(i);
+        }
+        return new IList<>(events);
+    }
+
+    @Override
     public int size() {
         return this.top;
     }
@@ -394,6 +405,11 @@ public class FullSTN<ID> extends ISTN<ID> {
         }
         allConstraints = filtered;
         return checkConsistencyFromScratch();
+    }
+
+    @Override
+    public boolean removeVar(int u) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override

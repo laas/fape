@@ -1,27 +1,40 @@
 package planstack.constraints.stnu
 
-class STNULabel(val value : Int) {
+class STNULabel[ID](val value : Int) {
 
-  def req = this.isInstanceOf[Requirement]
+  def req = this.isInstanceOf[Requirement[ID]]
   def posReq = req && positive
   def negReq = req && negative
-  def cont = this.isInstanceOf[Contingent]
-  def cond = this.isInstanceOf[Conditional]
+  def cont = this.isInstanceOf[Contingent[ID]]
+  def cond = this.isInstanceOf[Conditional[ID]]
   def negative = value < 0
   def positive = value >= 0
   def node : Int = throw new RuntimeException("This label has no conditional node: "+this)
+  def optID : Option[ID] = None
 }
 
-class Requirement(value : Int) extends STNULabel(value) {
+class Requirement[ID](value : Int) extends STNULabel[ID](value) {
   override def toString = "req: "+value
 }
 
-class Contingent(value : Int) extends STNULabel(value) {
+class RequirementWithID[ID](value: Int, val _id: ID) extends Requirement[ID](value) {
+  override def optID = Some(_id)
+}
+
+class Contingent[ID](value : Int) extends STNULabel[ID](value) {
   override def toString = "cont: "+value
 }
 
-class Conditional(override val node : Int, value : Int) extends  STNULabel(value) {
+class ContingentWithID[ID](value: Int, val _id: ID) extends Contingent[ID](value) {
+  override def optID = Some(_id)
+}
+
+class Conditional[ID](override val node : Int, value : Int) extends  STNULabel[ID](value) {
   override def toString = "<%s, %d>".format(node, value)
+}
+
+class ConditionalWithID[ID](node: Int, value: Int, _id: ID) extends Conditional[ID](node, value) {
+  override def optID = Some(_id)
 }
 
 

@@ -1,12 +1,16 @@
 package planstack.constraints.stnu
 
+import planstack.structures.IList
+
 class MMV[ID](
-    val edg : EDG,
-    private var modified : List[E],
+    val edg : EDG[ID],
+    private var modified : List[Edge[ID]],
     protected var _consistent : Boolean)
-  extends ISTNU[ID] with EDGListener
+  extends ISTNU[ID] with EDGListener[ID]
 {
-  def this() = this(new EDG(), Nil, true)
+  type E = Edge[ID]
+
+  def this() = this(new EDG[ID](), Nil, true)
 
   def this(toCopy:MMV[ID]) = this(new EDG(toCopy.edg), toCopy.modified, toCopy._consistent)
 
@@ -138,14 +142,18 @@ class MMV[ID](
 
   def squeezingDetected(): Unit = _consistent = false
 
-  /** Adds a constraint to the STN specifying that v - u <= w.
-    * The constraint is associated with an ID than can be later used to remove the constraint.
-    * @return True if the STN tightened due to this operation.
-    */
-  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
-
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = ???
 
   override def inconsistencyDetected(): Unit = _consistent = false
+
+  override def addRequirementWithID(from: Int, to: Int, value: Int, id: ID): Boolean = ???
+
+  override def addContingentWithID(from: Int, to: Int, lb: Int, ub: Int, id: ID): Boolean = ???
+
+  /** Remove a variable and all constraints that were applied on it; */
+  override def removeVar(u: Int): Boolean = ???
+
+  /** Returns a collection of all time points in this STN */
+  override def events: IList[Int] = ???
 }

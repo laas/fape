@@ -2,17 +2,20 @@ package planstack.constraints.stn
 
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 import planstack.graph.printers.GraphDotPrinter
+import planstack.structures.IList
+import planstack.structures.Converters._
+
 
 /**
  *
  * @param g A directed simple graph with integer edge labels.
  * @param consistent True if the STN is consistent, false otherwise
- *
+ * @param emptySpots Event index that are not occupied (because a variable was removed)
  */
-abstract class STN[ID](
-                        val g : LabeledDigraph[Int,Int],
-                        protected var notIntegrated : List[LabeledEdge[Int,Int]],
-                        var consistent : Boolean)
+abstract class STN[ID](val g : LabeledDigraph[Int,Int],
+                       protected var notIntegrated : List[LabeledEdge[Int,Int]],
+                       var consistent : Boolean,
+                       var emptySpots : Set[Int])
   extends ISTN[ID]
 {
 
@@ -44,8 +47,16 @@ abstract class STN[ID](
    * @return
    */
   def addVarUnsafe() : Int = {
-    g.addVertex(g.numVertices)
+    if(emptySpots.isEmpty) {
+      g.addVertex(g.numVertices)
+    } else {
+      val v = emptySpots.head
+      emptySpots = emptySpots.tail
+      v
+    }
   }
+
+  override def events : IList[Int] = (0 until size).filter(emptySpots.contains(_))
 
   /**
    * Return the number of time points in the STN
@@ -155,49 +166,9 @@ abstract class STN[ID](
     tmpSTN.consistent
   }
 
-  /**
-   * WARNING: Removes constraint from network but do _not_ update the distances. Make sure to always
-   * make a checkConsistencyFromScratch after that.
-   * @param u
-   * @param v
-   */
-  @Deprecated
-  def removeConstraintUnsafe(u:Int,v:Int) {
-    g.deleteEdges(u, v)
-  }
-
-
-  /**
-   * Remove the edge (u,v) in the constraint graph. The edge (v,u) is not removed.
-   * Performs a consistency check from scratch (expensive try to use removeCOnstraints if you are to remove
-   * more than one constraint)
-   * @param u
-   * @param v
-   * @return True if the STN is consistent after removal
-   */
-  @Deprecated
-  def removeConstraint(u:Int, v:Int) : Boolean = {
-    removeConstraintUnsafe(u, v)
-    checkConsistencyFromScratch()
-  }
-
-  /**
-   * For all pairs, remove the corresponding directed edge in the constraint graph. After all of every pair are removed,
-   * a consistency check is performed from scratch.
-   * @param edges
-   * @return true if the STN is consistent after removal
-   */
-  @Deprecated
-  def removeConstraints(edges:Pair[Int,Int]*) = {
-    edges.foreach(e => removeConstraintUnsafe(e._1, e._2))
-    checkConsistencyFromScratch()
-  }
-
 
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = {
-    val e = new LabeledEdgeWithID(1,1,1,"st")
-
     // function matching edges with the given id
     def hasID(e:LabeledEdge[Int,Int]) = e match {
       case eID:LabeledEdgeWithID[Int,Int,ID] => eID.id == id
@@ -214,6 +185,18 @@ abstract class STN[ID](
     for(e <- notIntegrated.reverse)
       if(getWeight(e.u, e.v) > e.l)
         g.addEdge(e)
+
+    checkConsistencyFromScratch()
+  }
+
+  override def removeVar(tp:Int): Boolean = {
+    // match all edges in/out of tp
+    def isOnVar(e:LabeledEdge[Int,Int]) : Boolean = e.u == tp || e.v == tp
+
+    g.deleteEdges(isOnVar)
+    notIntegrated = notIntegrated.filter(e => !isOnVar(e))
+
+    emptySpots = emptySpots + tp
 
     checkConsistencyFromScratch()
   }

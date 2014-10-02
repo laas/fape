@@ -1,5 +1,7 @@
 package planstack.constraints.stn
 
+import planstack.structures.IList
+
 abstract class ISTN[ID] {
 
   /** Id of the Start time point. No time points in the STN should happen before this one. */
@@ -16,6 +18,9 @@ abstract class ISTN[ID] {
    * @return ID of the created time point
    */
   def addVar() : Int
+
+  /** Returns a collection of all time points in this STN */
+  def events : IList[Int]
 
   /**
    * Return the number of time points in the STN
@@ -130,6 +135,9 @@ abstract class ISTN[ID] {
 
   /** Removes all constraints that were recorded with the given ID */
   def removeConstraintsWithID(id:ID) : Boolean
+
+  /** Remove a variable and all constraints that were applied on it; */
+  def removeVar(u:Int) : Boolean
 
   /**
    * Returns a complete clone of the STN.

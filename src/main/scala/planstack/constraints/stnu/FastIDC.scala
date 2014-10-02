@@ -1,17 +1,25 @@
 package planstack.constraints.stnu
 
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.structures.IList
 
 import scala.collection.mutable.ListBuffer
 
-class FastIDC[ID](val edg : EDG,
-                  val todo : ListBuffer[E],
-                  protected var isConsistent : Boolean)
-  extends ISTNU[ID] with EDGListener
-{
-  def this() = this(new EDG, ListBuffer[E](), true)
+import planstack.structures.Converters._
 
-  def this(toCopy : FastIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent)
+class FastIDC[ID](protected var edg : EDG[ID],
+                  val todo : ListBuffer[Edge[ID]],
+                  protected var isConsistent : Boolean,
+                  protected var emptySpots : Set[Int],
+                  protected var allConstraints : List[Edge[ID]])
+  extends ISTNU[ID] with EDGListener[ID]
+{
+  type E = Edge[ID]
+
+  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List())
+
+  def this(toCopy : FastIDC[ID]) =
+    this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots, toCopy.allConstraints)
 
   // record ourself as the listener of any event in the EDG
   assert(edg.listener == null, "Error: already a listener on this EDG")
@@ -42,21 +50,26 @@ class FastIDC[ID](val edg : EDG,
    * Write a dot serialisation of the graph to file
    * @param file
    */
-  def writeToDotFile(file: String): Unit = edg.exportToDot(file, new NodeEdgePrinter[Int, STNULabel, E])
+  def writeToDotFile(file: String): Unit = edg.exportToDot(file, new NodeEdgePrinter[Int, STNULabel[ID], E])
 
   /**
    * Returns the earliest start time of time point u with respect to the start time point of the STN
    * @param u
    * @return
    */
-  def earliestStart(u: Int): Int = ???
+  def earliestStart(u: Int): Int =
+    if(u == start) 0
+    else { edg.apsp() ; -edg.requirements.edgeValue(u, start).value }
 
   /**
    * Returns the latest start time of time point u with respect to the start TP of the STN
    * @param u
    * @return
    */
-  def latestStart(u: Int): Int = ???
+  def latestStart(u: Int): Int =
+    if(u == 0) 0
+    else if(edg.requirements.edgeValue(start,u) == null) Int.MaxValue
+    else { edg.apsp() ; edg.requirements.edgeValue(start,u).value }
 
   /**
    * Return the number of time points in the STN
@@ -99,14 +112,33 @@ class FastIDC[ID](val edg : EDG,
   }
 
   def addRequirement(from: Int, to: Int, value: Int): Boolean = {
-    edg.addRequirement(from, to, value).nonEmpty
+    val e = new E(from, to, new Requirement[ID](value))
+    allConstraints = e :: allConstraints
+    edg.addEdge(e).nonEmpty
+  }
+
+  def addRequirementWithID(from:Int, to:Int, value:Int, id:ID) : Boolean = {
+    val e = new E(from, to, new RequirementWithID[ID](value, id))
+    allConstraints = e :: allConstraints
+    edg.addEdge(e).nonEmpty
   }
 
   def addContingent(from: Int, to: Int, lb: Int, ub:Int): Boolean = {
-    (edg.addContingent(from, to, ub) ++ edg.addContingent(to, from, -lb)).nonEmpty
+    val eCont1 = new E(from, to, new Contingent[ID](ub))
+    val eCont2 = new E(to, from, new Contingent[ID](-lb))
+    val eReq1 = new E(from, to, new Requirement[ID](ub))
+    val eReq2 = new E(to, from, new Requirement[ID](-lb))
+    allConstraints = eCont1 :: eCont2 :: eReq1 :: eReq2 :: allConstraints
+    (edg.addEdge(eCont1) ++ edg.addEdge(eCont2) ++ edg.addEdge(eReq1) ++ edg.addEdge(eReq2)).nonEmpty
   }
 
-  def addConditional(from: Int, to: Int, on: Int, value: Int): Boolean = {
+  def addContingentWithID(from:Int, to:Int, lb:Int, ub:Int, id:ID) : Boolean = {
+    val added = edg.addContingent(from, to, ub, Some(id)) ++ edg.addContingent(to, from, -lb, Some(id))
+    allConstraints = allConstraints ++ added
+    added.nonEmpty
+  }
+
+  protected def addConditional(from: Int, to: Int, on: Int, value: Int): Boolean = {
     edg.addConditional(from, to, on, value).nonEmpty
   }
 
@@ -142,14 +174,34 @@ class FastIDC[ID](val edg : EDG,
 
   def squeezingDetected() { isConsistent = false }
 
-  /** Adds a constraint to the STN specifying that v - u <= w.
-    * The constraint is associated with an ID than can be later used to remove the constraint.
-    * @return True if the STN tightened due to this operation.
-    */
-  override def addConstraintWithID(u: Int, v: Int, w: Int, id: ID): Boolean = ???
-
   /** Removes all constraints that were recorded with the given ID */
-  override def removeConstraintsWithID(id: ID): Boolean = ???
+  override def removeConstraintsWithID(id: ID): Boolean = {
+    allConstraints = allConstraints.filter((e:E) => e.l.optID match {
+      case Some(constraintID) => id != constraintID
+      case None => true
+    })
+    val prevSize = edg.size
+
+    // empty every thing
+    edg = new EDG[ID](this)
+    isConsistent = true
+    todo.clear()
+
+    for(i <- 0 until edg.size)
+      edg.addVar()
+    for(e <- allConstraints) {
+      if(e.l.cont) edg.addContingent(e.u, e.v, e.l.value)
+      else if(e.l.req) edg.addRequirement(e.u, e.v, e.l.value)
+      else throw new RuntimeException("An edge was recorded that is neither contingent or a requirement")
+    }
+    checkConsistencyFromScratch()
+  }
 
   override def inconsistencyDetected(): Unit = isConsistent = false
+
+  /** Returns a collection of all time points in this STN */
+  override def events: IList[Int] = (0 until size).filter(!emptySpots.contains(_))
+
+  /** Remove a variable and all constraints that were applied on it; */
+  override def removeVar(u: Int): Boolean = ???
 }

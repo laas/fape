@@ -6,5 +6,5 @@ package object stnu {
   /**
    * Edge type in an EDG.
    */
-  type E = LabeledEdge[Int, STNULabel]
+  type Edge[ID] = LabeledEdge[Int, STNULabel[ID]]
 }

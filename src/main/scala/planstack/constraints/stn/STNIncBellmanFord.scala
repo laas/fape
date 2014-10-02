@@ -12,8 +12,9 @@ class STNIncBellmanFord[ID](
                              val backwardDist:ArrayBuffer[Weight],
                              sup_g: LabeledDigraph[Int,Int],
                              notIntegrated : List[LabeledEdge[Int,Int]],
+                             emptySpots : Set[Int],
                              sup_consistent:Boolean)
-  extends STN[ID](sup_g, notIntegrated, sup_consistent) {
+  extends STN[ID](sup_g, notIntegrated, sup_consistent, emptySpots) {
 
 //  var updatedVars = List[Int]()
 
@@ -23,6 +24,7 @@ class STNIncBellmanFord[ID](
     new ArrayBuffer[Weight](0),
     NewGraph(),
     List(),
+    Set(),
     true)
 
 
@@ -162,7 +164,7 @@ class STNIncBellmanFord[ID](
   }
 
   def cc() : STNIncBellmanFord[ID] = {
-    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc, notIntegrated, consistent)
+    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc, notIntegrated, emptySpots, consistent)
   }
 
   def distancesToString = {

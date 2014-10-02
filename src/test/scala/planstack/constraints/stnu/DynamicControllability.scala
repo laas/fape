@@ -7,7 +7,7 @@ import planstack.constraints.stn.Predef._
 
 
 class DynamicControllability extends FunSuite {
-/*
+
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
@@ -45,7 +45,7 @@ class DynamicControllability extends FunSuite {
   }
 
 
-*/
+
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
@@ -55,26 +55,6 @@ class DynamicControllability extends FunSuite {
       val WifeHome = idc.addVar()
       val StartCooking = idc.addVar()
       val DinnerReady = idc.addVar()
-
-      val printer = new NodeEdgePrinter[Int, STNULabel, LabeledEdge[Int,STNULabel]] {
-        override def printNode(n:Int) = n match {
-          case WifeStore => "Wife Store"
-          case StartDriving => "Start Driving"
-          case WifeHome => "Wife Home"
-          case StartCooking => "Start Cooking"
-          case DinnerReady => "Dinner Ready"
-          case 0 => "start"
-          case 1 => "end"
-          case _ => n.toString
-        }
-        override def printEdge(el : STNULabel) = {
-          if(el.cond) "<%s, %d>".format(printNode(el.node), el.value)
-          else el.toString
-        }
-        override def excludeNode(n:Int) = n == 1 || n == 0
-      }
-
-
 
 //      idc.addContingent(WifeStore, StartDriving, 30, 60)
 //      assert(idc.consistent)
@@ -115,26 +95,6 @@ class DynamicControllability extends FunSuite {
       val WifeHome = idc.addVar()
       val StartCooking = idc.addVar()
       val DinnerReady = idc.addVar()
-
-      val printer = new NodeEdgePrinter[Int, STNULabel, LabeledEdge[Int,STNULabel]] {
-        override def printNode(n:Int) = n match {
-          case WifeStore => "Wife Store"
-          case StartDriving => "Start Driving"
-          case WifeHome => "Wife Home"
-          case StartCooking => "Start Cooking"
-          case DinnerReady => "Dinner Ready"
-          case 0 => "start"
-          case 1 => "end"
-          case _ => n.toString
-        }
-        override def printEdge(el : STNULabel) = {
-          if(el.cond) "<%s, %d>".format(printNode(el.node), el.value)
-          else el.toString
-        }
-        override def excludeNode(n:Int) = n == 1 || n == 0
-      }
-
-
 
       idc.addContingent(WifeStore, StartDriving, 30, 60)
 

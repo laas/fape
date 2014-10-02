@@ -4,13 +4,13 @@ import org.scalatest.FunSuite
 import planstack.graph.core.LabeledEdge
 
 class TighteningEDGSuite extends FunSuite {
-  type E = LabeledEdge[Int, STNULabel]
+  type E = LabeledEdge[Int, STNULabel[Int]]
   val A = 0
   val B = 1
   val C = 2
   val D = 3
 
-  val edg = new ConcreteEDGForTesting
+  val edg = new ConcreteEDGForTesting[Int]
 
   edg.addContingent(A, B, 10)
   edg.addContingent(B, A, -8)
