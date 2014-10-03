@@ -100,7 +100,7 @@ class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends IS
 
     if(e.l.posReq) {
       ddg.addEdge(e.v, e.u, e.l.value)
-    } else if(e.l.cont && e.l.req) {
+    } else if(e.l.cont && e.l.req) { // todo: this is never true
       ddg.addEdge(e.u, e.v, -e.l.value)
     } else if(e.l.negReq && ddg.edges(e.v, e.u).nonEmpty) {
       // this negative requirement potentially removed an positive requirement from the EDG
@@ -209,7 +209,7 @@ class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends IS
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = ???
 
-  override def inconsistencyDetected(): Unit = ???
+  override def inconsistencyDetected(): Unit = { isConsistent = false }
 
   /** Remove a variable and all constraints that were applied on it; */
   override def removeVar(u: Int): Boolean = ???

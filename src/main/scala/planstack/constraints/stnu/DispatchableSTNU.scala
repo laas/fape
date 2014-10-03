@@ -129,6 +129,22 @@ class Dispatcher[ID](protected var controllables : Set[Int],
     ) yield (n, t)
   }
 
+  override def checkConsistency() = {
+    if(todo.nonEmpty) {
+      super.checkConsistency()
+      edg.apsp()
+      isConsistent
+    } else {
+      super.checkConsistency()
+    }
+  }
+
+  override def checkConsistencyFromScratch() = {
+    super.checkConsistencyFromScratch()
+    edg.apsp()
+    isConsistent
+  }
+
   def propagate(): Unit = {
     edg.apsp()
     checkConsistencyFromScratch()
@@ -172,10 +188,10 @@ class Dispatcher[ID](protected var controllables : Set[Int],
     var currentTIme = 0
     while(executed.size != size && currentTIme < 200) {
 //      controllables.filter(!executed.contains(_)).foreach(enforceMinDelay(start,_,currentTIme))
-      propagate()
+      checkConsistency()
       assert(isConsistent)
-      println("t="+currentTIme)
-      printAll(currentTIme)
+//      println("t="+currentTIme)
+//      printAll(currentTIme)
 
       enabled = enabled ++ events.filter(isEnabled(_))
       for((n,t)               <- contingentEvents(currentTIme)) {
@@ -192,6 +208,15 @@ class Dispatcher[ID](protected var controllables : Set[Int],
       currentTIme += 1
     }
   }
+
+  override def earliestStart(u: Int): Int =
+    if(u == start) 0
+    else -edg.requirements.edgeValue(u, start).value
+
+  override def latestStart(u: Int): Int =
+    if(u == 0) 0
+    else if(edg.requirements.edgeValue(start,u) == null) Int.MaxValue
+    else edg.requirements.edgeValue(start,u).value
 }
 
 object Main extends App {

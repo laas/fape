@@ -8,7 +8,6 @@ import scala.collection.JavaConverters._
 class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable[T] {
 
   def this() = this(Nil)
-  def this(l : IList[T]) = this(l.l)
   def this(l : java.lang.Iterable[T]) = this(l.asScala.toList)
 
   class IListIterator[X](private var l : List[X]) extends util.Iterator[X] {
@@ -22,6 +21,8 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
 
     override def remove(): Unit = ???
   }
+
+  def asScala = l
 
 
   def size(): Int = l.size

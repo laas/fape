@@ -62,7 +62,7 @@ abstract class STN[ID](val g : LabeledDigraph[Int,Int],
    * Return the number of time points in the STN
    * @return
    */
-  def size = g.numVertices
+  def size = g.numVertices - emptySpots.size
 
   /**
    * Returns the weight of an edge in the STN. If no such edge is present, an infinite weight will be returned.

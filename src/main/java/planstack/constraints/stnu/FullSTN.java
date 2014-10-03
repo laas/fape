@@ -2,6 +2,7 @@ package planstack.constraints.stnu;
 
 import planstack.constraints.stn.ISTN;
 import planstack.structures.IList;
+import planstack.structures.ISet;
 import scala.Tuple2;
 import scala.Tuple4;
 import scala.collection.*;
@@ -52,6 +53,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     protected int top;
 
     protected IList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
+    protected ISet<Integer> emptySpots;
 
     private boolean consistent;
 
@@ -78,6 +80,7 @@ public class FullSTN<ID> extends ISTN<ID> {
         if(precalc == null)
             precalc_inic();
         allConstraints = new IList<>();
+        emptySpots = new ISet<>();
         top = 0;
         edge_a = new int[capacity * capacity / 2];
         edge_b = new int[capacity * capacity / 2];
@@ -95,6 +98,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      */
     protected FullSTN(FullSTN<ID> s){
         this.allConstraints = s.allConstraints;
+        this.emptySpots = s.emptySpots;
         this.capacity = s.capacity;
         this.top = s.top;
         this.last_inc = s.last_inc;
@@ -272,40 +276,46 @@ public class FullSTN<ID> extends ISTN<ID> {
             sb(v1, v2, bb);
 
             // propagation to all connected edges
-            for(k = 0; k < top; k++)
-                if(v1 != k && v2 != k){
-                    aa = lim_plus(ga(k,v1), ga(v1,v2)); //K->V1 + V1->V2
-                    bb = lim_plus(gb(k,v1), gb(v1,v2));
-                    aa = Math.max(aa, ga(k,v2)); //(K->V1 + V1->V2) /\ (K->V2)
-                    bb = Math.min(bb, gb(k,v2));
-                    if(ga(k,v2) != aa || gb(k,v2) != bb){//change of interval occured
+            for(k = 0; k < top; k++) {
+                if(emptySpots.contains(k)) break;
+                if (v1 != k && v2 != k) {
+                    aa = lim_plus(ga(k, v1), ga(v1, v2)); //K->V1 + V1->V2
+                    bb = lim_plus(gb(k, v1), gb(v1, v2));
+                    aa = Math.max(aa, ga(k, v2)); //(K->V1 + V1->V2) /\ (K->V2)
+                    bb = Math.min(bb, gb(k, v2));
+                    if (ga(k, v2) != aa || gb(k, v2) != bb) {//change of interval occured
                         I[I_top++] = k;
-                        sa(k,v2,aa);
-                        sb(k,v2,bb);
+                        sa(k, v2, aa);
+                        sb(k, v2, bb);
                     }
-                    aa = lim_plus(ga(v1,v2), ga(v2,k)); //V1->V2 + V2->K
-                    bb = lim_plus(gb(v1,v2), gb(v2,k));
-                    aa = Math.max(aa, ga(v1,k)); //(V1->V2 + V2->K) /\ (V1->K)
-                    bb = Math.min(bb, gb(v1,k));
-                    if(ga(v1,k) != aa || gb(v1,k) != bb){//change of interval occured
+                    aa = lim_plus(ga(v1, v2), ga(v2, k)); //V1->V2 + V2->K
+                    bb = lim_plus(gb(v1, v2), gb(v2, k));
+                    aa = Math.max(aa, ga(v1, k)); //(V1->V2 + V2->K) /\ (V1->K)
+                    bb = Math.min(bb, gb(v1, k));
+                    if (ga(v1, k) != aa || gb(v1, k) != bb) {//change of interval occured
                         J[J_top++] = k;
-                        sa(v1,k,aa);
-                        sb(v1,k,bb);
+                        sa(v1, k, aa);
+                        sb(v1, k, bb);
                     }
                 }
+            }
 
-            for(i = 0; i < I_top; i++)
-                for(j = 0; j < J_top; j++)
-                    if(I[i]!=J[j]){
-                        aa = lim_plus(ga(I[i],v1), ga(v1,J[j])); //I->V1 + V1->J
-                        bb = lim_plus(gb(I[i],v1), gb(v1,J[j]));
-                        aa = Math.max(aa, ga(I[i],J[j])); //(I->V1 + V1->J) /\ (I->J)
-                        bb = Math.min(bb, gb(I[i],J[j]));
-                        if(ga(I[i],J[j]) != aa || gb(I[i],J[j]) != bb){
-                            sa(I[i],J[j],aa);
-                            sb(I[i],J[j],bb);
+            for(i = 0; i < I_top; i++) {
+                if(emptySpots.contains(i)) break;
+                for (j = 0; j < J_top; j++) {
+                    if(emptySpots.contains(j)) break;
+                    if (I[i] != J[j]) {
+                        aa = lim_plus(ga(I[i], v1), ga(v1, J[j])); //I->V1 + V1->J
+                        bb = lim_plus(gb(I[i], v1), gb(v1, J[j]));
+                        aa = Math.max(aa, ga(I[i], J[j])); //(I->V1 + V1->J) /\ (I->J)
+                        bb = Math.min(bb, gb(I[i], J[j]));
+                        if (ga(I[i], J[j]) != aa || gb(I[i], J[j]) != bb) {
+                            sa(I[i], J[j], aa);
+                            sb(I[i], J[j], bb);
                         }
                     }
+                }
+            }
         }
     }
 
@@ -320,7 +330,13 @@ public class FullSTN<ID> extends ISTN<ID> {
 
     @Override
     public int addVar() {
-        int u = this.add_v();
+        int u;
+        if(emptySpots.isEmpty())
+            u = this.add_v();
+        else {
+            u = emptySpots.head();
+            emptySpots = emptySpots.without(u);
+        }
         enforceBefore(start(), u);
         enforceBefore(u, end());
         return u;
@@ -330,14 +346,15 @@ public class FullSTN<ID> extends ISTN<ID> {
     public IList<Object> events() {
         LinkedList<Object> events = new LinkedList<>();
         for(int i=0 ; i<size() ; i++) {
-            events.add(i);
+            if(!emptySpots.contains(i))
+                events.add(i);
         }
         return new IList<>(events);
     }
 
     @Override
     public int size() {
-        return this.top;
+        return this.top - emptySpots.size();
     }
 
     @Override
@@ -362,11 +379,14 @@ public class FullSTN<ID> extends ISTN<ID> {
     @Override
     public boolean checkConsistencyFromScratch() {
         int size = this.top;
+        ISet<Integer> emptySpotsCC = emptySpots;
         IList<Tuple4<Integer,Integer,Integer,ID>> constraints = this.allConstraints;
         init(size);
         // add all timepoints except start and end that are defined in init
         for(int i=2 ; i<size ; i++)
-            addVar();
+            addVar();//TODO
+        // restore empty spots
+        emptySpots = emptySpotsCC;
         for(Tuple4<Integer,Integer,Integer,ID> c : constraints) {
             if(c._4() != null)
                 addConstraintWithID(c._1(), c._2(), c._3(), c._4());
@@ -409,7 +429,14 @@ public class FullSTN<ID> extends ISTN<ID> {
 
     @Override
     public boolean removeVar(int u) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        IList<Tuple4<Integer, Integer, Integer, ID>> filtered = new IList<>();
+        for(Tuple4<Integer, Integer, Integer, ID> c : allConstraints) {
+            if(c._1() != u && c._2() != u)
+                filtered = filtered.with(c);
+        }
+        emptySpots = emptySpots.with(u);
+        allConstraints = filtered;
+        return checkConsistencyFromScratch();
     }
 
     @Override

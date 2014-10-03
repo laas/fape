@@ -32,17 +32,16 @@ class FastIDC[ID](protected var edg : EDG[ID],
     assert(myEnd == end)
   }
 
-  def consistent : Boolean = {
+  def consistent : Boolean = checkConsistency()
+
+
+  def checkConsistency(): Boolean =  {
     while(isConsistent && todo.nonEmpty)
       isConsistent &= fastIDC(todo.remove(0))
-
     isConsistent
   }
 
-
-  def checkConsistency(): Boolean = consistent
-
-  def checkConsistencyFromScratch(): Boolean = { todo ++= edg.allEdges ; consistent }
+  def checkConsistencyFromScratch(): Boolean = { todo ++= edg.allEdges ; checkConsistency() }
 
 
 
@@ -57,19 +56,14 @@ class FastIDC[ID](protected var edg : EDG[ID],
    * @param u
    * @return
    */
-  def earliestStart(u: Int): Int =
-    if(u == start) 0
-    else { edg.apsp() ; -edg.requirements.edgeValue(u, start).value }
+  def earliestStart(u: Int): Int = ???
 
   /**
    * Returns the latest start time of time point u with respect to the start TP of the STN
    * @param u
    * @return
    */
-  def latestStart(u: Int): Int =
-    if(u == 0) 0
-    else if(edg.requirements.edgeValue(start,u) == null) Int.MaxValue
-    else { edg.apsp() ; edg.requirements.edgeValue(start,u).value }
+  def latestStart(u: Int): Int = ???
 
   /**
    * Return the number of time points in the STN
