@@ -17,7 +17,6 @@ import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import fape.util.TimeAmount;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ParseResult;
 
@@ -177,17 +176,17 @@ public class Actor {
                 if (planNeedsRepair) {
                     if(FAPE.execLogging) System.out.println("Repairing Plan");
                     planNeedsRepair = false;
-                    mPlanner.Repair(new TimeAmount(repairTime));
+                    mPlanner.Repair(System.currentTimeMillis() + repairTime);
                     if(mPlanner.planState == Planner.EPlanState.CONSISTENT) {
                         now = (int) (System.currentTimeMillis() / 1000);
                         mPlanner.SetEarliestExecution((int) (now - timeZero));
-                        mPlanner.Repair(new TimeAmount(500));
+                        mPlanner.Repair(System.currentTimeMillis() + 500);
                     }
 
                     if(mPlanner.planState != APlanner.EPlanState.CONSISTENT) {
                         if(FAPE.execLogging) System.out.println("Repair Failed. Replanning");
                         mPlanner.SetEarliestExecution(now - timeZero);
-                        mPlanner.Replan(3000);
+                        mPlanner.Replan(System.currentTimeMillis() + 3000);
                     }
 
                     if(isInitPlan && mPlanner.planState == Planner.EPlanState.CONSISTENT) {
@@ -205,7 +204,7 @@ public class Actor {
                     prevOpen = mPlanner.OpenedStates;
                 }
                 if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
-                    List<AtomicAction> scheduledActions = mPlanner.Progress(new TimeAmount(now - timeZero + progressStep/1000));
+                    List<AtomicAction> scheduledActions = mPlanner.Progress(now - timeZero + progressStep/1000);
                     actionsToDispatch.addAll(scheduledActions);
                 }
                 List<AtomicAction> remove = new LinkedList<>();

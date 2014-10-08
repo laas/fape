@@ -11,7 +11,6 @@ import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-import fape.util.TimeAmount;
 import fape.util.Utils;
 import planstack.anml.parser.ANMLFactory;
 
@@ -255,7 +254,7 @@ public class Planning {
                         boolean timeOut = false;
                         try {
                             planningStart = System.currentTimeMillis();
-                            timeOut = !planner.Repair(new TimeAmount(1000 * maxtime));
+                            timeOut = !planner.Repair(planningStart + 1000 * maxtime);
                         } catch (Exception e) {
                             e.printStackTrace();
                             System.err.println("Planning finished for " + anmlFile + " with failure.");
@@ -300,11 +299,7 @@ public class Planning {
                 }
             }
         }
-        /**
-         * let's do not close the writer, although it is a good behavior,
-         * closing the "System.out" mutes the rest of the output of the planner
-         * :) /Filip
-         */
-        //writer.close();
+        if (!config.getString("output").equals("stdout"))
+            writer.close();
     }
 }

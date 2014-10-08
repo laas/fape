@@ -9,7 +9,6 @@ import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
-import fape.util.TimeAmount;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ParseResult;
@@ -62,8 +61,8 @@ public class PGPlanner extends APlanner {
     }
 
     @Override
-    public State search(TimeAmount forhowLong) {
-        return aStar(forhowLong);
+    public State search(long deadline) {
+        return aStar(deadline);
     }
 
     @Override

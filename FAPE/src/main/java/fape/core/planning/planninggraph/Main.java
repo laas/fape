@@ -8,7 +8,6 @@ import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
-import fape.util.TimeAmount;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ANMLFactory;
@@ -132,7 +131,7 @@ public class Main {
             }
         }
 
-        State res = planner.search(new TimeAmount(90000));
+        State res = planner.search(System.currentTimeMillis() + 90000);
         if(res != null) {
             Plan plan = new Plan(res);
             plan.exportToDot("plan.dot");

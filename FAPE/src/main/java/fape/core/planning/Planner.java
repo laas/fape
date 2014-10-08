@@ -18,7 +18,6 @@ import fape.core.planning.search.Flaw;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.util.Pair;
-import fape.util.TimeAmount;
 
 import java.util.Comparator;
 import java.util.List;
@@ -45,8 +44,8 @@ public class Planner extends APlanner {
     }
 
     @Override
-    public State search(TimeAmount forHowLong) {
-        return aStar(forHowLong);
+    public State search(long deadline) {
+        return aStar(deadline);
     }
 
     @Override

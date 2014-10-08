@@ -250,11 +250,13 @@ public class Printer {
     }
 
     public static TPRef correspondingTimePoint(State st, int stnId) {
+        // TODO
+        throw new FAPEException("Find a new way map timepoint with IDs.");/*
         for(Map.Entry<TPRef,Integer> entry : st.csp.stn().ids.entrySet()) {
             if(entry.getValue().equals(stnId))
                 return entry.getKey();
         }
-        return null;
+        return null;*/
     }
 
     public static TemporalInterval containingInterval(State st, TPRef tp) {

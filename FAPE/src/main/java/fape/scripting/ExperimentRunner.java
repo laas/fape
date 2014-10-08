@@ -12,7 +12,6 @@ package fape.scripting;
 
 import fape.core.execution.Executor;
 import fape.core.planning.Planner;
-import fape.util.TimeAmount;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -78,7 +77,7 @@ public class ExperimentRunner {
 
             boolean timeOut = false;
             try {
-                timeOut = ! p.Repair(new TimeAmount(maxRuntime));
+                timeOut = ! p.Repair(start + maxRuntime);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Planning finished for " + anml + " with failure.");

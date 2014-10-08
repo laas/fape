@@ -18,7 +18,6 @@ import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import fape.util.TimeAmount;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
@@ -639,10 +638,10 @@ public abstract class APlanner {
      * Implementation of search. An easy thing to do to forward this call to the
      * aStar method.
      *
-     * @param forhowLong Max time the planner is allowed to run.
+     * @param deadline Absolute time (in ms) at which the planner must stop.
      * @return A solution state if the planner found one. null otherwise.
      */
-    public abstract State search(TimeAmount forhowLong);
+    public abstract State search(long deadline);
 
     /**
      * Provides a comparator that is used to sort flaws. THe first flaw will be
@@ -701,16 +700,7 @@ public abstract class APlanner {
 
     public static boolean optimal = false;
 
-    protected State aStar(TimeAmount forHowLong) {
-        ///Planner.logging = true;
-        // first start by checking all the consistencies and propagating necessary constraints
-        // those are irreversible operations, we do not make any decisions on them
-        //State st = GetCurrentState();
-        //
-        //st.bindings.PropagateNecessary(st);
-        //st.tdb.Propagate(st);
-        long deadLine = System.currentTimeMillis() + forHowLong.val;
-        //initializace heuristic
+    protected State aStar(long deadLine) {
         /**
          * search
          */
@@ -821,9 +811,9 @@ public abstract class APlanner {
      * starts plan repair, records the best plan, produces the best plan after
      * <b>forHowLong</b> miliseconds or null, if no plan was found
      */
-    public boolean Repair(TimeAmount forHowLong) {
+    public boolean Repair(long deadline) {
         KeepBestStateOnly();
-        best = search(forHowLong);
+        best = search(deadline);
         if (best == null) {
             return false;
         }
@@ -906,14 +896,14 @@ public abstract class APlanner {
      * Returns either AtomicActions that were instantiated with corresponding start times, or
      * null, if not solution was found in the given time
      */
-    public List<AtomicAction> Progress(TimeAmount howFarToProgress) {
+    public List<AtomicAction> Progress(long howFarToProgress) {
         State myState = best;
         Plan plan = new Plan(myState);
 
         List<AtomicAction> ret = new LinkedList<>();
         for (Action a : plan.GetNextActions()) {
             long startTime = myState.getEarliestStartTime(a.start());
-            if (startTime > howFarToProgress.val) {
+            if (startTime > howFarToProgress) {
                 continue;
             }
             if (a.status() != ActionStatus.PENDING) {
@@ -963,7 +953,7 @@ public abstract class APlanner {
     /**
      * restarts the planning problem into its initial state
      */
-    public boolean Replan(int forHowLong) {
+    public boolean Replan(long deadline) {
         State st = new State(pb);
 
         for(ActionExecution ae : executedAction.values()) {
@@ -981,7 +971,7 @@ public abstract class APlanner {
         best = st;
         queue.clear();
         queue.add(st);
-        return Repair(new TimeAmount(forHowLong));
+        return Repair(deadline);
     }
 
     /**
