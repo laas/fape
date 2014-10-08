@@ -13,6 +13,7 @@ import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.parser.ANMLFactory;
+import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
 import java.util.Collections;
@@ -59,68 +60,82 @@ public class Planning {
                 "FAPE planners",
                 "Solves ANML problems",
                 new Parameter[]{
-                    new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
-                    new Switch("quiet", 'q', "quiet", "Planner won't print the final plan."),
-                    new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
-                            + "Mainly consists in time consuming checks."),
-                    new FlaggedOption("plannerID")
-                    .setStringParser(JSAP.STRING_PARSER)
-                    .setShortFlag('p')
-                    .setLongFlag("planner")
-                    .setDefault("base")
-                    .setList(true)
-                    .setListSeparator(',')
-                    .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                            + " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
-                            + " - base+dtg: Same as base but uses DTG to select action resolvers.\n"
-                            + " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n"
-                            + " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n"
-                            + "         be aware that it does not handle all anml problems.\n"
-                            + " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n"
-                            + "            is provided by an action. It cheks (using RPG) for every ground action\n"
-                            + "            supporting the consmer and enforce a n-ary constraint on the action's\n"
-                            + "            parameters to make sure they fit at least one of the ground action.\n"
-                            + " - taskcond: The actions in decompositions are replaced with task conditions that\n"
-                            + "         are fulfilled through search be linking with other actions in the plan\n"
-                            + " - all:  will run every possible planner.\n"),
-                    new FlaggedOption("maxtime")
-                    .setStringParser(JSAP.INTEGER_PARSER)
-                    .setShortFlag('t')
-                    .setLongFlag("timeout")
-                    .setDefault("60")
-                    .setHelp("Time in seconds after which a planner times out."),
-                    new FlaggedOption("repetitions")
-                    .setStringParser(JSAP.INTEGER_PARSER)
-                    .setShortFlag('n')
-                    .setLongFlag(JSAP.NO_LONGFLAG)
-                    .setDefault("1")
-                    .setHelp("Number of times to repeat all planning activities"),
-                    new FlaggedOption("strategies")
-                    .setStringParser(JSAP.STRING_PARSER)
-                    .setShortFlag(JSAP.NO_SHORTFLAG)
-                    .setLongFlag("strats")
-                    .setList(true)
-                    .setListSeparator(',')
-                    .setDefault("|")
-                    .setHelp("This is used to define search strategies. A search strategy consists of "
-                            + "one or more flaw selection strategy and one or more state selection strategy. "
-                            + "Ex: the argument 'lcf>lfr|dfs' would give for flaws: lcf (LeastCommitingFirst), using "
-                            + "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). "
-                            + "For more information on search strategies, look at the fape.core.planning.search.strategies "
-                            + "package. If several strategies are given (separated by commas), they will all be attempted."),
-                    new FlaggedOption("output")
-                    .setStringParser(JSAP.STRING_PARSER)
-                    .setShortFlag('o')
-                    .setLongFlag("output")
-                    .setDefault("stdout")
-                    .setHelp("File to which the CSV formatted output will be written"),
-                    new UnflaggedOption("anml-file")
-                    .setStringParser(JSAP.STRING_PARSER)
-                    .setDefault("problems/handover.anml")
-                    .setRequired(false)
-                    .setGreedy(true)
-                    .setHelp("ANML problem files on which to run the planners. If it is set "
-                            + "to a directory, all files ending with .anml will be considered.")
+                        new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
+                        new Switch("quiet", 'q', "quiet", "Planner won't print the final plan."),
+                        new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
+                                + "Mainly consists in time consuming checks."),
+                        new FlaggedOption("plannerID")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('p')
+                                .setLongFlag("planner")
+                                .setDefault("base")
+                                .setList(true)
+                                .setListSeparator(',')
+                                .setHelp("Defines which planner implementation to use. Possible values are:\n"
+                                        + " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
+                                        + " - base+dtg: Same as base but uses DTG to select action resolvers.\n"
+                                        + " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n"
+                                        + " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n"
+                                        + "         be aware that it does not handle all anml problems.\n"
+                                        + " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n"
+                                        + "            is provided by an action. It cheks (using RPG) for every ground action\n"
+                                        + "            supporting the consmer and enforce a n-ary constraint on the action's\n"
+                                        + "            parameters to make sure they fit at least one of the ground action.\n"
+                                        + " - taskcond: The actions in decompositions are replaced with task conditions that\n"
+                                        + "         are fulfilled through search be linking with other actions in the plan\n"
+                                        + " - all:  will run every possible planner.\n"),
+                        new FlaggedOption("maxtime")
+                                .setStringParser(JSAP.INTEGER_PARSER)
+                                .setShortFlag('t')
+                                .setLongFlag("timeout")
+                                .setDefault("60")
+                                .setHelp("Time in seconds after which a planner times out."),
+                        new FlaggedOption("repetitions")
+                                .setStringParser(JSAP.INTEGER_PARSER)
+                                .setShortFlag('n')
+                                .setLongFlag(JSAP.NO_LONGFLAG)
+                                .setDefault("1")
+                                .setHelp("Number of times to repeat all planning activities"),
+                        new FlaggedOption("strategies")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("strats")
+                                .setList(true)
+                                .setListSeparator(',')
+                                .setDefault("|")
+                                .setHelp("This is used to define search strategies. A search strategy consists of "
+                                        + "one or more flaw selection strategy and one or more state selection strategy. "
+                                        + "Ex: the argument 'lcf>lfr|dfs' would give for flaws: lcf (LeastCommitingFirst), using "
+                                        + "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). "
+                                        + "For more information on search strategies, look at the fape.core.planning.search.strategies "
+                                        + "package. If several strategies are given (separated by commas), they will all be attempted."),
+                        new FlaggedOption("output")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('o')
+                                .setLongFlag("output")
+                                .setDefault("stdout")
+                                .setHelp("File to which the CSV formatted output will be written"),
+                        new UnflaggedOption("anml-file")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setDefault("problems/handover.anml")
+                                .setRequired(false)
+                                .setGreedy(true)
+                                .setHelp("ANML problem files on which to run the planners. If it is set "
+                                        + "to a directory, all files ending with .anml will be considered."),
+                        new FlaggedOption("stnu-consistency")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("stnu")
+                                .setRequired(false)
+                                .setDefault("stn")
+                                .setHelp("Selects which type of STNU controllability should be checked while searching for a solution. "
+                                        +"Note that dynamic controllability will be checked when a plan is found regardless of this option. "
+                                        +"This is simply used to define which algorithm is used while searching, with an impact on earliness "
+                                        +"of failures and computation time. Accepted options are:\n"
+                                        +"  - 'stn': simply enforces requirement constraints.\n"
+                                        +"  - 'pseudo': enforces pseudo controllability.\n"
+                                        +"  - 'dynamic': enforces dynamic controllability.")
+
 
                 }
         );
@@ -142,6 +157,14 @@ public class Planning {
 
         String[] configFiles = config.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
+
+        Controllability controllability;
+        switch (config.getString("stnu-consistency")) {
+            case "stn": controllability = Controllability.STN_CONSISTENCY; break;
+            case "pseudo": controllability = Controllability.PSEUDO_CONTROLLABILITY; break;
+            case "dynamic": controllability = Controllability.DYNAMIC_CONTROLLABILITY; break;
+            default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
+        }
 
         for (String path : configFiles) {
             File f = new File(path);
@@ -223,6 +246,7 @@ public class Planning {
                         if (!planStrat.isEmpty()) {
                             planner.planSelStrategies = planStrat.split(">");
                         }
+                        planner.controllability = controllability;
 
                         planner.Init();
                         try {

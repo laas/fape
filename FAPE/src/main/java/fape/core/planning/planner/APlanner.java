@@ -30,6 +30,7 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
+import planstack.constraints.stnu.Controllability;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -92,10 +93,10 @@ public abstract class APlanner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
+    public Controllability controllability = Controllability.STN_CONSISTENCY;
+
     public final AnmlProblem pb = new AnmlProblem(useActionConditions());
     LiftedDTG dtg = null;
-
-    public List<Resource> resourcePrototype = new LinkedList<>();
 
     /**
      * Used to build comparators for flaws. Default to a least commiting first.
@@ -443,7 +444,7 @@ public abstract class APlanner {
      */
     public void Init() {
         queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new State(pb));
+        queue.add(new State(pb, controllability));
         best = queue.peek();
     }
 
@@ -954,7 +955,7 @@ public abstract class APlanner {
      * restarts the planning problem into its initial state
      */
     public boolean Replan(long deadline) {
-        State st = new State(pb);
+        State st = new State(pb, controllability);
 
         for(ActionExecution ae : executedAction.values()) {
             Action a = ae.createNewGroundAction();

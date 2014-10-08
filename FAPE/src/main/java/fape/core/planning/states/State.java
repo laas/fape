@@ -27,7 +27,8 @@ import fape.util.Reporter;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
-import planstack.constraints.CSP;
+import planstack.constraints.*;
+import planstack.constraints.stnu.Controllability;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -64,7 +65,7 @@ public class State implements Reporter {
      */
     protected final TemporalDatabaseManager tdb;
 
-    protected final CSP<VarRef,TPRef,ActRef> csp;
+    protected final MetaCSP<VarRef,TPRef,ActRef> csp;
 
     protected final TaskNetworkManager taskNet;
 
@@ -96,11 +97,11 @@ public class State implements Reporter {
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
      */
-    public State(AnmlProblem pb) {
+    public State(AnmlProblem pb, Controllability controllability) {
         this.pb = pb;
         depth = 0;
         tdb = new TemporalDatabaseManager();
-        csp = new CSP<>();
+        csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
@@ -121,7 +122,7 @@ public class State implements Reporter {
         pb = st.pb;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
-        csp = new CSP<>(st.csp);
+        csp = new MetaCSP<>(st.csp);
         tdb = st.tdb.DeepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
@@ -139,21 +140,6 @@ public class State implements Reporter {
      */
     public boolean isConsistent() {
         return csp.isConsistent() && resMan.isConsistent(this);
-    }
-
-    /**
-     * @return the sum of all actions cost.
-     */
-    public float GetCurrentCost() {
-        return this.taskNet.GetAllActions().size() * 10;
-    }
-
-    /**
-     * @return A rough estimation of the search distance to a state with no
-     * consumer
-     */
-    public float GetGoalDistance() {
-        return this.consumers.size();
     }
 
     public String Report() {
@@ -394,44 +380,57 @@ public class State implements Reporter {
         // creates constraints associated with the action duration.
         // all those constraints are given the action's reference as ID to allow for later removal.
         if(act.minDuration() != null) {
+            assert act.maxDuration() != null : "Error: a min duration without a max duration.";
+
+            // variables in the CSP representing the min/max value of the duration.
+            VarRef min, max;
+
+            // create domain/constraints for the min variable
             if(act.minDuration().isFunction()) {
                 // create a constraint defined in extension sv(a1,...,an) = tmp
                 // add a constraint act.start +tmp < act.end
                 // the last one will be propagated in the CSP when tmp is binded in the CSP
                 ParameterizedStateVariable sv = act.minDuration().sv();
                 assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-                assert sv.func().valueType() == "integer" : "Cannot parameterize an action duration with a non-integer function.";
-                VarRef intValue = new VarRef();
-                csp.bindings().AddIntVariable(intValue);
+                assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
+                min = new VarRef();
+                csp.bindings().AddIntVariable(min);
                 List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
-                varsOfExtConst.add(intValue);
+                varsOfExtConst.add(min);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
-                csp.addMinDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
-                csp.stn().enforceMinDelayWithID(act.start(), act.end(), act.minDuration().d(), act.id());
+                // create a var with a singleton domain
+                min = new VarRef();
+                List<Integer> domain = new LinkedList<>();
+                domain.add(act.minDuration().d());
+                csp.bindings().AddIntVariable(min, domain);
             }
-        } else {
-            csp.stn().enforceMinDelayWithID(act.start(), act.end(), 1, act.id());
-        }
 
-        if(act.maxDuration() != null) {
+            // create domain/constraints for the max variable
             if(act.maxDuration().isFunction()) {
                 // create a constraint defined in extension sv(a1,...,an) = tmp
                 // add a constraint act.start +tmp > act.end
                 // the last one will be propagated in the STN when tmp is binded in the CSP
                 ParameterizedStateVariable sv = act.maxDuration().sv();
                 assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-                assert sv.func().valueType() == "integer" : "Cannot parameterize an action duration with a non-integer function.";
-                VarRef intValue = new VarRef();
-                csp.bindings().AddIntVariable(intValue);
+                assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
+                max = new VarRef();
+                csp.bindings().AddIntVariable(max);
                 List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
-                varsOfExtConst.add(intValue);
+                varsOfExtConst.add(max);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
-                csp.addMaxDelayWithID(act.start(), act.end(), intValue, act.id());
             } else {
-                assert !act.maxDuration().isFunction() : "Parameterized durations are not supported yet.";
-                csp.stn().enforceMaxDelayWithID(act.start(), act.end(), act.maxDuration().d(), act.id());
+                // create a var with a singleton domain
+                max = new VarRef();
+                List<Integer> domain = new LinkedList<>();
+                domain.add(act.maxDuration().d());
+                csp.bindings().AddIntVariable(max, domain);
             }
+
+            csp.addContingentConstraintWithID(act.start(), act.end(), min, max, act.id());
+        } else {
+            assert act.maxDuration() == null : "Error: max duration was defined without a min duration.";
+            csp.stn().enforceMinDelayWithID(act.start(), act.end(), 1, act.id());
         }
 
         csp.isConsistent();
@@ -453,8 +452,6 @@ public class State implements Reporter {
      * sequence of StateModifiers that depict the current status of the problem.
      * This method simply applies all modifiers that were not previously
      * applied.
-     *
-     * @return True if the resulting state is consistent, False otherwise.
      */
     public void update() {
         if (problemRevision == -1) {
