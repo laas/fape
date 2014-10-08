@@ -1,5 +1,6 @@
 package planstack.constraints.stn
 
+import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.structures.IList
 
 abstract class ISTN[ID] {
@@ -21,6 +22,8 @@ abstract class ISTN[ID] {
 
   /** Returns a collection of all time points in this STN */
   def events : IList[Int]
+
+  def constraints : IList[(Int, Int, Int, ElemStatus, Option[ID])]
 
   /**
    * Return the number of time points in the STN

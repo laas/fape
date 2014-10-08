@@ -1,5 +1,7 @@
 package planstack.constraints.stnu
 
+import planstack.constraints.stnu.Controllability._
+import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.structures.IList
 
 class MMV[ID](
@@ -156,4 +158,19 @@ class MMV[ID](
 
   /** Returns a collection of all time points in this STN */
   override def events: IList[Int] = ???
+
+  override def controllability: Controllability = PSEUDO_CONTROLLABILITY
+
+  /** Adds a controllable variable. Only those variable can be executed */
+  override def addDispatchable(): Int = ???
+
+  /** Adds a contingent variable */
+  override def addContingentVar(): Int = ???
+
+  override def constraints: IList[(Int, Int, Int, ElemStatus, Option[ID])] = ???
+
+  override def isContingent(v: Int): Boolean = ???
+
+  /** Returns true if a variable is dispatchable */
+  override def isDispatchable(v: Int): Boolean = ???
 }

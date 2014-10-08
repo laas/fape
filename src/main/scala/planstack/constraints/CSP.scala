@@ -2,6 +2,7 @@ package planstack.constraints
 
 import planstack.constraints.bindings.{ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stn.STNManager
+import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
 
 /**
  *
@@ -14,14 +15,14 @@ import planstack.constraints.stn.STNManager
  */
 class CSP[VarRef, TPRef, ID](
                           val bindings: ConservativeConstraintNetwork[VarRef],
-                          val stn: STNManager[TPRef,ID],
+                          val stn: GenSTNUManager[TPRef,ID],
                           protected[constraints] var varsToConstraints: Map[VarRef, List[Tuple4[TPRef,TPRef,Option[ID],(Int=>Int)]]]
                           )
   extends IntBindingListener[VarRef]
 {
   bindings.setListener(this)
 
-  def this() = this(new ConservativeConstraintNetwork[VarRef](), new STNManager[TPRef,ID](), Map())
+  def this() = this(new ConservativeConstraintNetwork[VarRef](), new STNUManager[TPRef,ID](), Map())
 
   def this(toCopy : CSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 

@@ -1,6 +1,7 @@
 package planstack.constraints.stnu
 
 import planstack.constraints.stn.ISTN
+import planstack.constraints.stnu.Controllability._
 
 trait ISTNU[ID] extends ISTN[ID] {
 
@@ -9,6 +10,19 @@ trait ISTNU[ID] extends ISTN[ID] {
    * @return
    */
   def size: Int
+
+  def controllability : Controllability
+
+  /** Adds a Dispatchable variable. Only those variable can be executed */
+  def addDispatchable() : Int
+
+  /** Adds a contingent variable */
+  def addContingentVar() : Int
+
+  def isContingent(v : Int) : Boolean
+
+  /** Returns true if a variable is dispatchable */
+  def isDispatchable(v : Int) : Boolean
 
   final def addConstraint(u: Int, v: Int, w: Int): Boolean =
     addRequirement(u, v, w)
@@ -31,7 +45,11 @@ trait ISTNU[ID] extends ISTN[ID] {
    * @param w
    * @return
    */
-  def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = ???
+  def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = {
+    val clone = this.cc()
+    clone.addConstraint(u, v, w)
+    clone.checkConsistency()
+  }
 
   /**
    * Returns a complete clone of the STN.

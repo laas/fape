@@ -1,15 +1,11 @@
 package planstack.constraints.stnu
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import planstack.structures.Converters._
 
 trait DispatchableSTNU[ID] extends ISTNU[ID] {
 
-  /** Adds a controllable variable. Only those variable can be executed */
-  def addControllableVar() : Int
-
-  /** Adds a contingent variable */
-  def addContingentVar() : Int
 
   /** Mark a controllable var as executed at a given time */
   def executeVar(n:Int, atTime:Int)
@@ -18,37 +14,33 @@ trait DispatchableSTNU[ID] extends ISTNU[ID] {
   def occurred(n:Int, atTime:Int)
 
   def dispatchableEvents(atTime:Int) : Iterable[Int]
-
-
-
 }
 
 
 
-class Dispatcher[ID](protected var controllables : Set[Int],
-                     protected var contingentVars : Set[Int])
-  extends FastIDC[ID] with DispatchableSTNU[ID]
+class Dispatcher[ID](edg : EDG[ID],
+                     todo : ListBuffer[Edge[ID]],
+                     isConsistent : Boolean,
+                     emptySpots : Set[Int],
+                     allConstraints : List[Edge[ID]],
+                     dispatchableVars : Set[Int],
+                     contingentVars : Set[Int],
+                     protected var enabled : Set[Int],
+                     protected var executed : Set[Int])
+  extends FastIDC[ID](edg, todo, isConsistent, emptySpots, allConstraints, dispatchableVars, contingentVars)
+  with DispatchableSTNU[ID]
 {
 
-  def addControllableVar() = {
-    val v = addVar()
-    controllables = controllables + v
-    v
-  }
+  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
 
-  override def addContingentVar() = {
-    val v = addVar()
-    contingentVars = contingentVars + v
-    v
-  }
-
-  var enabled = Set[Int]()
-  var executed = Set[Int]()
+  def this(toCopy : Dispatcher[ID]) =
+    this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
+      toCopy.allConstraints, toCopy.dispatchableVars, toCopy.contingentVars, toCopy.enabled, toCopy.executed)
 
   def executeVar(u:Int, atTime:Int): Unit = {
     println("Executing   "+hr(u)+"   at time   "+atTime)
     assert(!isExecuted(u))
-    assert(controllables.contains(u))
+    assert(dispatchableVars.contains(u))
     assert(latestStart(u) >= atTime)
     assert(isEnabled(u))
     this.enforceInterval(start, u, atTime, atTime)
@@ -77,7 +69,7 @@ class Dispatcher[ID](protected var controllables : Set[Int],
     if(isExecuted(u))
       return false
     for(e <- edg.outNegReq(u)) {
-      if((isContingent(e.v) || controllables.contains(e.v)) && !executed.contains(e.v)) {
+      if((isContingent(e.v) || dispatchableVars.contains(e.v)) && !executed.contains(e.v)) {
         return false
       }
       for(e <- edg.conditionals.outEdges(u)) {
@@ -101,24 +93,6 @@ class Dispatcher[ID](protected var controllables : Set[Int],
 
   def removeWaitsOn(u:Int) = {
     edg.conditionals.deleteEdges((e:E) => e.l.cond && e.l.node == u)
-  }
-
-  private def isContingent(n:Int) = {
-    if (contingentVars.contains(n)) {
-      true
-    } else {
-      assert(!edg.contingents.inEdges(n).exists((e: E) => e.l.positive))
-      false
-    }
-  }
-
-  private def isConstrollable(n:Int) = {
-    if(controllables.contains(n)) {
-      assert(!isContingent(n))
-      true
-    } else {
-      false
-    }
   }
 
   def contingentEvents(t:Int) : Iterable[(Int,Int)] = {
@@ -177,7 +151,7 @@ class Dispatcher[ID](protected var controllables : Set[Int],
   override def dispatchableEvents(atTime:Int): Iterable[Int] = {
     checkConsistency()
     edg.apsp()
-    val executables = controllables.filter(n =>
+    val executables = dispatchableVars.filter(n =>
       enabled.contains(n) && !executed.contains(n) && isLive(n, atTime))
     executables
   }
@@ -217,15 +191,17 @@ class Dispatcher[ID](protected var controllables : Set[Int],
     if(u == 0) 0
     else if(edg.requirements.edgeValue(start,u) == null) Int.MaxValue
     else edg.requirements.edgeValue(start,u).value
+
+  override def cc(): Dispatcher[ID] = new Dispatcher[ID](this)
 }
 
 object Main extends App {
-  val idc = new Dispatcher[String](Set(),Set())
+  val idc = new Dispatcher[String]()
 
-  val WifeStore = idc.addControllableVar()
+  val WifeStore = idc.addDispatchable()
   val StartDriving = idc.addContingentVar()
   val WifeHome = idc.addContingentVar()
-  val StartCooking = idc.addControllableVar()
+  val StartCooking = idc.addDispatchable()
   val DinnerReady = idc.addContingentVar()
   val v1 = idc.addVar()
   val v2 = idc.addVar()

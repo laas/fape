@@ -8,6 +8,9 @@ abstract class GenSTNManager[TPRef,ID] {
   /** Records a new time point in the STN. Returns its ID (which might change) */
   def recordTimePoint(tp:TPRef) : Int
 
+  /** Remove a timepoint and all associated constraints from the STN */
+  def removeTimePoint(tp:TPRef)
+
   /** Set the distance from the global start of the STN to tp to time */
   def setTime(tp:TPRef, time:Int)
 
@@ -58,7 +61,7 @@ abstract class GenSTNManager[TPRef,ID] {
   def getLatestStartTime(u:TPRef) : Int
 
   /** Returns true if the STN is consistent (might trigger a propagation */
-  def isConsistent : Boolean
+  def isConsistent() : Boolean
 
   /** Makes an independent clone of this STN. */
   def deepCopy() : GenSTNManager[TPRef,ID]

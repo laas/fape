@@ -8,7 +8,7 @@ class PseudoSTNUSuite extends FunSuite {
   for(stnu <- getAllSTNUManager[String,String]) {
     test("["+stnu.getClass.getSimpleName+"] Pseudo consistency") {
 
-      assert(stnu.checksPseudoConsistency)
+      assert(stnu.checksPseudoControllability)
 
       stnu.recordTimePoint("a")
       stnu.recordTimePoint("b")

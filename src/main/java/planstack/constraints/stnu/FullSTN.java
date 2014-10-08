@@ -3,11 +3,11 @@ package planstack.constraints.stnu;
 import planstack.constraints.stn.ISTN;
 import planstack.structures.IList;
 import planstack.structures.ISet;
-import scala.Tuple2;
-import scala.Tuple4;
+import scala.*;
 import scala.collection.*;
 
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Simple Temporal Network, provides effective representation and copy constructor, methods for acessing,
@@ -352,6 +352,27 @@ public class FullSTN<ID> extends ISTN<ID> {
         return new IList<>(events);
     }
 
+    @Override
+    public IList<Tuple5<Object, Object, Object, Enumeration.Value, Option<ID>>> constraints() {
+        IList<Tuple5<Object, Object, Object, Enumeration.Value, Option<ID>>> list = new IList<>();
+        for(Tuple4<Integer,Integer,Integer,ID> cons : allConstraints) {
+            Tuple5<Object, Object, Object, Enumeration.Value, Option<ID>> current;
+            if(cons._4() != null)
+                current = new Tuple5<>((Object) cons._1(), (Object) cons._2(), (Object) cons._3(), ElemStatus.CONTROLLABLE(), (Option<ID>) new Some<>(cons._4()));
+            else
+                current = new Tuple5<>((Object) cons._1(), (Object) cons._2(), (Object) cons._3(), ElemStatus.CONTROLLABLE(), (Option<ID>) None$.empty());
+            list = list.with(current);
+        }
+        return list;
+    }
+
+    /*
+        @Override
+        public IList<Tuple5<Object, Object, Object, Enumeration.Value>> constraints() {
+            List<Tuple5<Object, Object, Object, Enumeration.Value>> all = new LinkedList<>();
+
+        }
+    */
     @Override
     public int size() {
         return this.top - emptySpots.size();

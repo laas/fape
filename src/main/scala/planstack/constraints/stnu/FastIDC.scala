@@ -1,25 +1,33 @@
 package planstack.constraints.stnu
 
+import planstack.constraints.stn.LabeledEdgeWithID
+import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.printers.NodeEdgePrinter
 import planstack.structures.IList
 
 import scala.collection.mutable.ListBuffer
 
 import planstack.structures.Converters._
+import Controllability._
 
-class FastIDC[ID](protected var edg : EDG[ID],
-                  val todo : ListBuffer[Edge[ID]],
-                  protected var isConsistent : Boolean,
-                  protected var emptySpots : Set[Int],
-                  protected var allConstraints : List[Edge[ID]])
+class FastIDC[ID](protected[stnu] var edg : EDG[ID],
+                  protected[stnu] val todo : ListBuffer[Edge[ID]],
+                  protected[stnu] var isConsistent : Boolean,
+                  protected[stnu] var emptySpots : Set[Int],
+                  protected[stnu] var allConstraints : List[Edge[ID]],
+                  protected[stnu] var dispatchableVars : Set[Int],
+                  protected[stnu] var contingentVars : Set[Int])
   extends ISTNU[ID] with EDGListener[ID]
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List())
+  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set())
 
   def this(toCopy : FastIDC[ID]) =
-    this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots, toCopy.allConstraints)
+    this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
+      toCopy.allConstraints, toCopy.dispatchableVars, toCopy.contingentVars)
+
+  def controllability = DYNAMIC_CONTROLLABILTY
 
   // record ourself as the listener of any event in the EDG
   assert(edg.listener == null, "Error: already a listener on this EDG")
@@ -32,6 +40,18 @@ class FastIDC[ID](protected var edg : EDG[ID],
     assert(myEnd == end)
   }
 
+  override def addDispatchable() = {
+    val v = addVar()
+    dispatchableVars = dispatchableVars + v
+    v
+  }
+
+  override def addContingentVar() = {
+    val v = addVar()
+    contingentVars = contingentVars + v
+    v
+  }
+
   def consistent : Boolean = checkConsistency()
 
 
@@ -42,8 +62,6 @@ class FastIDC[ID](protected var edg : EDG[ID],
   }
 
   def checkConsistencyFromScratch(): Boolean = { todo ++= edg.allEdges ; checkConsistency() }
-
-
 
   /**
    * Write a dot serialisation of the graph to file
@@ -198,4 +216,19 @@ class FastIDC[ID](protected var edg : EDG[ID],
 
   /** Remove a variable and all constraints that were applied on it; */
   override def removeVar(u: Int): Boolean = ???
+
+  private def optID(e:E) : Option[ID] = e match {
+    case e:LabeledEdgeWithID[Any,Any,ID] => Some(e.id)
+    case _ => None
+  }
+  override def constraints : IList[(Int, Int, Int, ElemStatus, Option[ID])] = allConstraints.map((e:E) => {
+    if(e.l.cont) (e.u, e.v, e.l.value, CONTINGENT, optID(e))
+    else if(e.l.req) (e.u, e.v, e.l.value, CONTROLLABLE, optID(e))
+    else throw new RuntimeException("This constraints should not be recorded: "+e)
+  })
+
+  override def isContingent(v: Int): Boolean = contingentVars.contains(v)
+
+  /** Returns true if a variable is dispatchable */
+  override def isDispatchable(v: Int): Boolean = dispatchableVars.contains(v)
 }

@@ -1,20 +1,28 @@
 package planstack.constraints.stnu
 
 import planstack.constraints.stn.ISTN
+import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+import Controllability._
+import planstack.structures.IList
+import ElemStatus._
+import planstack.structures.Converters._
 
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
 class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
                                   protected var contingents : List[TConstraint[TPRef,ID]],
-                                  protected var id : Map[TPRef, Int])
+                                  protected var id : Map[TPRef, Int],
+                                  protected var controllableTPs : Set[TPRef],
+                                  protected var contingentTPs : Set[TPRef])
   extends GenSTNUManager[TPRef,ID]
 {
-  def this() = this(new FullSTN[ID](), List(), Map())
-  def this(toCopy:PseudoSTNUManager[TPRef,ID]) = this(toCopy.stn.cc(), toCopy.contingents, toCopy.id)
+  def this() = this(new FullSTN[ID](), List(), Map(), Set(), Set())
+  def this(toCopy:PseudoSTNUManager[TPRef,ID]) = this(toCopy.stn.cc(), toCopy.contingents, toCopy.id,
+    toCopy.controllableTPs, toCopy.contingentTPs)
 
-  override def checksPseudoConsistency = true
+  override def controllability = PSEUDO_CONTROLLABILITY
 
   override def enforceContingent(u: TPRef, v: TPRef, min: Int, max: Int): Unit = {
     contingents = new TConstraint(u, v, min, max, None.asInstanceOf[Option[ID]]) :: contingents
@@ -52,6 +60,16 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
     id(tp)
   }
 
+  override def addContingentTimePoint(tp : TPRef) : Int = {
+    contingentTPs = contingentTPs + tp
+    recordTimePoint(tp)
+  }
+
+  override def addControllableTimePoint(tp : TPRef) : Int = {
+    controllableTPs = controllableTPs + tp
+    recordTimePoint(tp)
+  }
+
   override def getEarliestStartTime(u: TPRef): Int = stn.earliestStart(id(u))
 
   override protected def addConstraint(u: TPRef, v: TPRef, w: Int): Unit = stn.addConstraint(id(u), id(v), w)
@@ -61,4 +79,20 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
   override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean = stn.isConstraintPossible(id(u), id(v), w)
 
   override def setTime(tp:TPRef, time:Int) { stn.enforceInterval(stn.start, id(tp), time, time) }
+
+  override def timepoints : IList[(TPRef, ElemStatus)] =
+    for(tp <- id.keys) yield
+      if(controllableTPs.contains(tp)) (tp, CONTROLLABLE)
+      else if(contingentTPs.contains(tp)) (tp, CONTINGENT)
+      else (tp, NO_FLAG)
+
+  override def constraints : IList[(TPRef, TPRef, Int, ElemStatus, Option[ID])] = {
+    val ref = id.map(_.swap)
+    stn.constraints.map((x:Tuple5[Int,Int,Int,ElemStatus,Option[ID]]) => (ref(x._1), ref(x._2), x._3, x._4, x._5))
+  }
+
+  override def removeTimePoint(tp:TPRef): Unit = {
+    stn.removeVar(id(tp))
+    id = id - tp
+  }
 }

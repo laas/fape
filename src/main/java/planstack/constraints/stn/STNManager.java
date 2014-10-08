@@ -44,6 +44,12 @@ public class STNManager<TPRef, ID> extends GenSTNManager<TPRef, ID>{
     }
 
     @Override
+    public void removeTimePoint(TPRef tp) {
+        stn.removeVar(id(tp));
+        ids.remove(tp);
+    }
+
+    @Override
     public void setTime(TPRef tp, int time) {
         stn.enforceInterval(stn.start(), id(tp), time, time);
     }
