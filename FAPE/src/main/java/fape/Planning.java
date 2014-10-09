@@ -64,6 +64,7 @@ public class Planning {
                         new Switch("quiet", 'q', "quiet", "Planner won't print the final plan."),
                         new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
                                 + "Mainly consists in time consuming checks."),
+                        new Switch("actions-chart", JSAP.NO_SHORTFLAG, "gui", "Planner will show the actions on a time chart."),
                         new FlaggedOption("plannerID")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
@@ -154,6 +155,7 @@ public class Planning {
 
         APlanner.logging = config.getBoolean("verbose");
         APlanner.debugging = config.getBoolean("debug");
+        Plan.showChart = config.getBoolean("actions-chart");
 
         String[] configFiles = config.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();

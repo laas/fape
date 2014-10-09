@@ -215,8 +215,13 @@ public class State implements Reporter {
      *
      * @param actRef Reference of the action to update.
      */
-    public void setActionFailed(ActRef actRef) {
+    public void setActionFailed(ActRef actRef, int failureTime) {
         Action toRemove = taskNet.GetAction(actRef);
+        // remove the duration constraints of the action
+        removeActionDurationOf(toRemove.id());
+        // insert new constraint specifying the end time of the action
+        enforceConstraint(pb.start(), toRemove.end(), failureTime, failureTime);
+
         toRemove.setStatus(ActionStatus.FAILED);
 
         for (LogStatement s : toRemove.logStatements()) {

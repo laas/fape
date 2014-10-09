@@ -64,7 +64,7 @@ public class Actor {
     boolean planNeedsRepair = false;
 
     List<AtomicAction> actionsToDispatch = new LinkedList<>();
-    LinkedList<ActRef> failures = new LinkedList<>();
+    LinkedList<Pair<ActRef, Integer>> failures = new LinkedList<>();
     LinkedList<Pair<ActRef, Integer>> successes = new LinkedList<>();
     boolean planReady = false;
 
@@ -100,9 +100,9 @@ public class Actor {
 
     }
 
-    public synchronized void ReportFailure(ActRef actionID) {
+    public synchronized void ReportFailure(ActRef actionID, int endTIme) {
         planNeedsRepair = true;
-        failures.add(actionID);
+        failures.add(new Pair<>(actionID, endTIme));
         AtomicAction act = null;
         for (AtomicAction a : actionsBeingExecuted) {
             if (a.id == actionID) {
@@ -160,7 +160,8 @@ public class Actor {
                 if (!failures.isEmpty()) {
                     if(FAPE.execLogging) System.out.println("Including "+failures.size()+" failures");
                     while (!failures.isEmpty()) {
-                        mPlanner.FailAction(failures.pop());
+                        Pair<ActRef, Integer> failure = failures.pop();
+                        mPlanner.FailAction(failure.value1, failure.value2);
                     }
                     planNeedsRepair = true;
                 }
@@ -231,6 +232,7 @@ public class Actor {
                     if(mPlanner.planState == Planner.EPlanState.INCONSISTENT
                             || mPlanner.planState == Planner.EPlanState.INFESSIBLE
                             || mPlanner.planState == Planner.EPlanState.TIMEOUT) {
+                        System.out.print("Planner status: "+mPlanner.planState);
                         mState = EActorState.STOPPED;
                         break;
                     }

@@ -50,7 +50,7 @@ public class ExecutorPRS extends Executor {
                         } else {
                             TinyLogger.LogInfo("No ANML block attached to this failure message");
                         }
-                        mActor.ReportFailure(actionID);
+                        mActor.ReportFailure(actionID, realEndTime);
                         break;
                     default:
                         throw new FAPEException("Unknown result: " + result.name());

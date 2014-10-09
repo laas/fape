@@ -17,6 +17,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
+import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.TinyLogger;
 import org.omg.CORBA.TIMEOUT;
@@ -375,11 +376,11 @@ public abstract class APlanner {
      *
      * @param actionRef The action that failed.
      */
-    public void FailAction(ActRef actionRef) {
+    public void FailAction(ActRef actionRef, int endTime) {
         KeepBestStateOnly();
         assert best != null;
         State st = GetCurrentState();
-        st.setActionFailed(actionRef);
+        st.setActionFailed(actionRef, endTime);
         executedAction.get(actionRef).setFailed();
     }
 
@@ -412,6 +413,8 @@ public abstract class APlanner {
      * actions to be delayed
      */
     public void SetEarliestExecution(int earliestExecution) {
+        if(Plan.showChart)
+            ActionsChart.setCurrentTime(earliestExecution);
         this.currentTime = earliestExecution;
         KeepBestStateOnly();
         State s = GetCurrentState();
@@ -710,20 +713,26 @@ public abstract class APlanner {
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
                 this.planState = EPlanState.TIMEOUT;
-                break;
+                return null;
             }
             if (queue.isEmpty()) {
                 if (!APlanner.optimal) {
                     TinyLogger.LogInfo("No plan found.");
                     this.planState = EPlanState.INFESSIBLE;
-                    break;
-                } else if (GetFlaws(best).isEmpty()) {
+                    return null;
+                } else if(best.isConsistent() && GetFlaws(best).isEmpty()) {
                     this.planState = EPlanState.CONSISTENT;
                     return best;
+                } else {
+                    this.planState = EPlanState.INFESSIBLE;
+                    return null;
                 }
             }
             //get the best state and continue the search
             State st = queue.remove();
+
+            if(!st.isConsistent())
+                break;
             OpenedStates++;
 
             if (APlanner.debugging) {
@@ -818,14 +827,17 @@ public abstract class APlanner {
 
 
         do {
+            planState = EPlanState.INCONSISTENT;
+
             best = search(deadline);
+            assert best == null || best.isConsistent() : "Search returned an inconsistent plan.";
 
             if (planState == EPlanState.TIMEOUT && best == null)
                 return false;
             else if (planState == EPlanState.INFESSIBLE) {
                 assert best == null;
                 return false;
-            } else {
+            } else if(planState == EPlanState.CONSISTENT) {
                 assert best != null;
                 // it seems consistent, check if it is dynamically controllable
                 Plan plan = new Plan(best);
@@ -916,16 +928,24 @@ public abstract class APlanner {
      * null, if not solution was found in the given time
      */
     public List<AtomicAction> Progress(long currentTime) {
+        this.SetEarliestExecution((int) currentTime);
+        this.Repair(System.currentTimeMillis() + 500);
         State myState = best;
+        if(best == null)
+            return new LinkedList<>();
+
         Plan plan = new Plan(myState);
 
+        if(Plan.showChart)
+            ActionsChart.setCurrentTime((int) currentTime);
 
 
         List<AtomicAction> ret = new LinkedList<>();
         for (Action a : plan.getExecutableActions((int) currentTime)) {
             long startTime = myState.getEarliestStartTime(a.start());
-            assert startTime >= currentTime;
-            assert a.status() != ActionStatus.PENDING;
+            assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
+            assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower that "+
+                    "current time: "+currentTime;
             long latestEnd = myState.getLatestStartTime(a.end());
             AtomicAction aa = new AtomicAction(a, startTime, plan.getMinDuration(a), plan.getMaxDuration(a), best);
             ret.add(aa);
@@ -1016,14 +1036,4 @@ public abstract class APlanner {
 
         return true;
     }
-
-    public State extractCurrentState(int now) {
-        State tmp = new State(best);
-        for(Action a : tmp.getAllActions()) {
-            if(a.status() == ActionStatus.PENDING)
-                tmp.setActionFailed(a.id());
-        }
-        return tmp;
-    }
-
 }

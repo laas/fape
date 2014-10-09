@@ -5,6 +5,7 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.util.ActionsChart;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.DispatchableSTNU;
@@ -19,6 +20,8 @@ import scala.collection.JavaConversions;
 import java.util.*;
 
 public class Plan {
+
+    public static boolean showChart = true;
 
     class PlanPrinter extends NodeEdgePrinter<Action, Object, Edge<Action>> {
         @Override
@@ -46,6 +49,40 @@ public class Plan {
 
             // record that this time point is the start of this action
             actions.put(a.start(), a);
+        }
+        if(showChart)
+            showChart();
+    }
+
+    public void showChart() {
+        List<Action> acts = new LinkedList<>(st.getAllActions());
+        Collections.sort(acts, new Comparator<Action>() {
+            @Override
+            public int compare(Action a1, Action a2) {
+                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+            }
+        });
+
+        for(Action a : acts) {
+            int start = (int) st.getEarliestStartTime(a.start());
+            int earliestEnd = (int) st.getEarliestStartTime(a.end());
+            String name = Printer.action(st, a);
+            switch (a.status()) {
+                case EXECUTED:
+                    ActionsChart.addExecutedAction(name, start, earliestEnd);
+                    break;
+                case EXECUTING:
+                    ActionsChart.addPendingAction(name, start, dispatcher.getMinContingentDelay(a.start(), a.end()),
+                            dispatcher.getMaxContingentDelay(a.start(), a.end()));
+                    break;
+                case PENDING:
+                    ActionsChart.addPendingAction(name, start, dispatcher.getMinContingentDelay(a.start(), a.end()),
+                            dispatcher.getMaxContingentDelay(a.start(), a.end()));
+                    break;
+                case FAILED:
+                    ActionsChart.addFailedAction(name, start, earliestEnd);
+                    break;
+            }
         }
     }
 
