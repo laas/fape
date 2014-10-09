@@ -19,6 +19,7 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import fape.util.TinyLogger;
+import org.omg.CORBA.TIMEOUT;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.LVarRef;
@@ -708,7 +709,7 @@ public abstract class APlanner {
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
-                this.planState = EPlanState.INCONSISTENT;
+                this.planState = EPlanState.TIMEOUT;
                 break;
             }
             if (queue.isEmpty()) {
@@ -814,11 +815,28 @@ public abstract class APlanner {
      */
     public boolean Repair(long deadline) {
         KeepBestStateOnly();
-        best = search(deadline);
-        if (best == null) {
-            return false;
-        }
-        //dfs(forHowLong);
+
+
+        do {
+            best = search(deadline);
+
+            if (planState == EPlanState.TIMEOUT && best == null)
+                return false;
+            else if (planState == EPlanState.INFESSIBLE) {
+                assert best == null;
+                return false;
+            } else {
+                assert best != null;
+                // it seems consistent, check if it is dynamically controllable
+                Plan plan = new Plan(best);
+                if (!plan.isConsistent()) {
+                    planState = EPlanState.INCONSISTENT;
+                    search(deadline);
+                } else {
+                    planState = EPlanState.CONSISTENT;
+                }
+            }
+        } while(planState != EPlanState.CONSISTENT);
 
         //we empty the queue now and leave only the best state there
         KeepBestStateOnly();
@@ -897,30 +915,21 @@ public abstract class APlanner {
      * Returns either AtomicActions that were instantiated with corresponding start times, or
      * null, if not solution was found in the given time
      */
-    public List<AtomicAction> Progress(long howFarToProgress) {
+    public List<AtomicAction> Progress(long currentTime) {
         State myState = best;
         Plan plan = new Plan(myState);
 
+
+
         List<AtomicAction> ret = new LinkedList<>();
-        for (Action a : plan.GetNextActions()) {
+        for (Action a : plan.getExecutableActions((int) currentTime)) {
             long startTime = myState.getEarliestStartTime(a.start());
-            if (startTime > howFarToProgress) {
-                continue;
-            }
-            if (a.status() != ActionStatus.PENDING) {
-                continue;
-            }
-            assert !a.maxDuration().isFunction() : "Actions with parameterized duration are not supported yet.";
-            AtomicAction aa = new AtomicAction(a, startTime, a.maxDuration().d(), best);
+            assert startTime >= currentTime;
+            assert a.status() != ActionStatus.PENDING;
+            long latestEnd = myState.getLatestStartTime(a.end());
+            AtomicAction aa = new AtomicAction(a, startTime, plan.getMinDuration(a), plan.getMaxDuration(a), best);
             ret.add(aa);
         }
-
-        Collections.sort(ret, new Comparator<AtomicAction>() {
-            @Override
-            public int compare(AtomicAction o1, AtomicAction o2) {
-                return (int) (o1.mStartTime - o2.mStartTime);
-            }
-        });
 
         // for all selecting actions, we set them as being executed and we bind their start time point
         // to the one we requested.

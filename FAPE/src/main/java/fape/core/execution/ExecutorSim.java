@@ -6,13 +6,12 @@ public class ExecutorSim extends Executor {
 
     @Override
     public void executeAtomicActions(AtomicAction acts) {
-        System.out.println("Executing: "+acts+ " start: "+acts.mStartTime+", dur:"+acts.duration);
+        System.out.println("Executing: "+acts+ " start: "+acts.mStartTime+", dur: ["+acts.minDuration+","+acts.maxDuration+"]");
         int randomNum = (int)(Math.random()*100);
 
-        if(randomNum > 10) {
-            mActor.ReportSuccess(acts.id, (int) acts.mStartTime + acts.duration);
+        if(randomNum < 90) {
+            mActor.ReportSuccess(acts.id, (int) acts.mStartTime + acts.maxDuration);
         } else {
-            System.out.println("FAIL");
             mActor.ReportFailure(acts.id);
         }
     }

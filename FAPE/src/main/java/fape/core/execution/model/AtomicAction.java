@@ -30,14 +30,16 @@ public class AtomicAction {
      * Creates a new actomic action.
      * @param action The concrete action to serve as a base.
      * @param startTime The start time of the action.
-     * @param duration The expected duration of the action.
+     * @param minDuration The minimal expected duration of the action.
+     * @param maxDuration THe maximal expected duration
      * @param st State in which the action appears. It is used to translate global variables to actual problem instances.
      */
-    public AtomicAction(Action action, long startTime, int duration, State st) {
+    public AtomicAction(Action action, long startTime, int minDuration, int maxDuration, State st) {
         id = action.id();
         name = action.name();
         mStartTime = startTime;
-        this.duration = duration;
+        this.minDuration = minDuration;
+        this.maxDuration = maxDuration;
         params = new LinkedList<>();
         for(VarRef arg : action.args()) {
             List<String> possibleValues = new LinkedList<>(st.domainOf(arg));
@@ -45,13 +47,8 @@ public class AtomicAction {
             params.add(possibleValues.get(0));
         }
     }
-    /*
-    private static int idCounter = 0;
-    public int mID = idCounter++;*/
-    
-    public enum EResult{
-        SUCCESS, FAILURE
-    }
+
+    public enum EResult{ SUCCESS, FAILURE }
 
     /**
      * Time at which the action execution has to start.
@@ -64,9 +61,12 @@ public class AtomicAction {
     public final ActRef id;
 
     /**
-     * Expected duration of the action. If unknown, it should the maximum expected duration.
+     * Minimal expected duration
      */
-    public final int duration;
+    public final int minDuration;
+
+    /** Maximal expected duration */
+    public final int maxDuration;
 
     /**
      * Name of the action.

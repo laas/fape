@@ -29,6 +29,7 @@ import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import planstack.constraints.*;
 import planstack.constraints.stnu.Controllability;
+import planstack.constraints.stnu.STNUDispatcher;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -65,7 +66,7 @@ public class State implements Reporter {
      */
     protected final TemporalDatabaseManager tdb;
 
-    protected final MetaCSP<VarRef,TPRef,ActRef> csp;
+    protected final MetaCSP<VarRef,TPRef,GlobalRef> csp;
 
     protected final TaskNetworkManager taskNet;
 
@@ -372,8 +373,14 @@ public class State implements Reporter {
      * @param act Action to insert.
      */
     public void insert(Action act) {
-        recordTimePoints(act);
-        enforceBefore(pb.earliestExecution(), act.start());
+        csp.stn().addControllableTimePoint(act.start());
+        csp.stn().addContingentTimePoint(act.end());
+
+        // make sure that this action is executed after earliest execution.
+        // this constraint is flagged with the start of the action time point which can be used for removal
+        // (when an action is executed)
+        csp.stn().enforceMinDelayWithID(pb.earliestExecution(), act.start(), 0, act.start());
+
         taskNet.insert(act);
         apply(act);
 
@@ -455,11 +462,10 @@ public class State implements Reporter {
      */
     public void update() {
         if (problemRevision == -1) {
-            csp.stn().recordTimePoint(pb.start());
-            csp.stn().recordTimePoint(pb.end());
+            csp.stn().recordTimePointAsStart(pb.start());
+            csp.stn().recordTimePointAsEnd(pb.end());
             csp.stn().recordTimePoint(pb.earliestExecution());
             csp.stn().enforceBefore(pb.start(), pb.earliestExecution());
-            csp.stn().setTime(pb.start(), 0);
         }
         for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
             apply(pb.modifiers().get(i));
@@ -590,7 +596,6 @@ public class State implements Reporter {
      *
      * @param mod StateModifier in which the constraint appears.
      * @param tc The TemporalConstraint to insert.
-     * @return True if the resulting state is consistent, False otherwise.
      */
     private void apply(StateModifier mod, TemporalConstraint tc) {
         TPRef tp1 = tc.tp1();
@@ -801,6 +806,12 @@ public class State implements Reporter {
         csp.stn().exportToDotFile(filename, new STNNodePrinter(this));
     }
 
+    public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
+
+    public STNUDispatcher<TPRef,GlobalRef> getDispatchableSTNU() {
+        return new STNUDispatcher<>(csp.stn());
+    }
+
 
     /********* Wrapper around the task network **********/
 
@@ -893,7 +904,7 @@ public class State implements Reporter {
 
     public void setActionExecuting(Action a, int startTime) {
         setActionExecuting(a.id());
-        removeActionDurationOf(a.id());
+        csp.stn().removeConstraintsWithID(a.start());
         enforceConstraint(pb.start(), a.start(), (int) startTime, (int) startTime);
     }
 

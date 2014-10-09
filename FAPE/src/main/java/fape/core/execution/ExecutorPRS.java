@@ -79,7 +79,7 @@ public class ExecutorPRS extends Executor {
         String msg = "(FAPE-action "
                 + acts.id + " "
                 + acts.mStartTime + " "
-                + (acts.mStartTime + acts.duration)
+                + (acts.mStartTime + acts.maxDuration)
                 + " "
                 + acts.GetDescription()
                 + ")\n";

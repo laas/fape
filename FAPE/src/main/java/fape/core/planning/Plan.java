@@ -5,18 +5,18 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionStatus;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.constraints.stnu.DispatchableSTNU;
+import planstack.constraints.stnu.STNUDispatcher;
 import planstack.graph.core.Edge;
 import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList;
 import planstack.graph.printers.NodeEdgePrinter;
+import planstack.structures.IList;
 import scala.collection.JavaConversions;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Plan {
 
@@ -27,19 +27,32 @@ public class Plan {
         }
     }
     final State st;
+    final STNUDispatcher<TPRef, GlobalRef> dispatcher;
+    final Map<TPRef, Action> actions = new HashMap<>();
     final UnlabeledDigraph<LogStatement> eventsDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
     final UnlabeledDigraph<Action> actionDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
 
     public Plan(State st) {
+        assert st.isConsistent() : "Cannot build a plan from an inconsistent state.";
         this.st = st;
 
-        for(TemporalDatabase db : st.getDatabases()) {
-            buildDependencies(db);
-        }
+        this.dispatcher = st.getDispatchableSTNU();
 
-        for(Edge<LogStatement> e :eventsDependencies.jEdges()) {
-            addActionDependency(e.u(), e.v());
+        for(Action a : st.getAllActions()) {
+            if(a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.EXECUTING || a.status() == ActionStatus.FAILED)
+                dispatcher.setHappened(a.start());
+            if(a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.FAILED)
+                dispatcher.setHappened(a.end());
+
+            // record that this time point is the start of this action
+            actions.put(a.start(), a);
         }
+    }
+
+    public State getState() { return st; }
+
+    public boolean isConsistent() {
+        return st.isConsistent() && dispatcher.isConsistent();
     }
 
     /**
@@ -93,6 +106,25 @@ public class Plan {
         for(int i=0 ; i<db.chain.size()-1 ; i++) {
             addDependency(db.GetChainComponent(i), db.GetChainComponent(i+1));
         }
+    }
+
+    public Collection<Action> getExecutableActions(int atTime) {
+        IList<TPRef> toDispatch = dispatcher.getDispatchable(atTime);
+        List<Action> dispatchable = new LinkedList<>();
+        for(TPRef tp : toDispatch) {
+            assert actions.containsKey(tp) : "This time point does not seem to be an action start: "+tp;
+            assert actions.get(tp).status() == ActionStatus.PENDING : "An action selected for execution is not pending.";
+            dispatchable.add(actions.get(tp));
+        }
+        return dispatchable;
+    }
+
+    public int getMaxDuration(Action act) {
+        return dispatcher.getMaxContingentDelay(act.start(), act.end());
+    }
+
+    public int getMinDuration(Action act) {
+        return dispatcher.getMinContingentDelay(act.start(), act.end());
     }
 
 

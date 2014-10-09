@@ -1,5 +1,6 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.Plan;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;

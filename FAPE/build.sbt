@@ -8,9 +8,9 @@ crossPaths := false
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-constraints" % "0.4.5"
+libraryDependencies += "planstack" % "planstack-constraints" % "0.5.0"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.9"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.11"
 
 libraryDependencies += "planstack" % "planstack-anml" % "0.6.6"
 

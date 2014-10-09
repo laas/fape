@@ -85,6 +85,7 @@ public class Actor {
     List<AtomicAction> actionsBeingExecuted = new LinkedList<>();
 
     public synchronized void ReportSuccess(ActRef actionID, int realEndTime) {
+
         planNeedsRepair = true;
         successfulActions.add(idToSignature.get(actionID));
         AtomicAction act = null;
@@ -93,6 +94,7 @@ public class Actor {
                 act = a;
             }
         }
+        System.out.println("   Success: "+act+" end:"+realEndTime);
         actionsBeingExecuted.remove(act);
         successes.add(new Pair<>(actionID, realEndTime));
 
@@ -107,6 +109,7 @@ public class Actor {
                 act = a;
             }
         }
+        System.out.println("   Failure: "+act);
         actionsBeingExecuted.remove(act);
     }
 
@@ -204,29 +207,30 @@ public class Actor {
                     prevOpen = mPlanner.OpenedStates;
                 }
                 if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.hasPendingActions()) {
-                    List<AtomicAction> scheduledActions = mPlanner.Progress(now - timeZero + progressStep/1000);
+                    List<AtomicAction> scheduledActions = mPlanner.Progress(now - timeZero);
                     actionsToDispatch.addAll(scheduledActions);
                 }
                 List<AtomicAction> remove = new LinkedList<>();
                 for (AtomicAction a : actionsToDispatch) {
                     if (a.mStartTime + timeZero < now && !successfulActions.contains(idToSignature.get(a.id)) && !dispatchedActions.contains(a.id)) {
                         idToSignature.put(a.id, a.GetDescription());
-                        mExecutor.executeAtomicActions(a);
                         dispatchedActions.add(a.id);
                         actionsBeingExecuted.add(a);
+                        mExecutor.executeAtomicActions(a);
                         remove.add(a);
                     }
                 }
                 actionsToDispatch.removeAll(remove);
                 remove.clear();
-                actionsBeingExecuted.removeAll(remove);
 
                 if(mPlanner.planState != Planner.EPlanState.UNINITIALIZED) {
                     if(mPlanner.planState == Planner.EPlanState.CONSISTENT && mPlanner.numUnfinishedActions() == 0) {
                         mState = EActorState.ENDING;
                         break;
                     }
-                    if(mPlanner.planState == Planner.EPlanState.INCONSISTENT || mPlanner.planState == Planner.EPlanState.INFESSIBLE) {
+                    if(mPlanner.planState == Planner.EPlanState.INCONSISTENT
+                            || mPlanner.planState == Planner.EPlanState.INFESSIBLE
+                            || mPlanner.planState == Planner.EPlanState.TIMEOUT) {
                         mState = EActorState.STOPPED;
                         break;
                     }
