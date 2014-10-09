@@ -27,7 +27,7 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
     this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
       toCopy.allConstraints, toCopy.dispatchableVars, toCopy.contingentVars)
 
-  def controllability = DYNAMIC_CONTROLLABILTY
+  def controllability = DYNAMIC_CONTROLLABILITY
 
   // record ourself as the listener of any event in the EDG
   assert(edg.listener == null, "Error: already a listener on this EDG")
@@ -71,17 +71,15 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
 
   /**
    * Returns the earliest start time of time point u with respect to the start time point of the STN
-   * @param u
-   * @return
+   * This operation is O(V*E). Do not use in any time-critical part.
    */
-  def earliestStart(u: Int): Int = ???
+  def earliestStart(u: Int): Int = -edg.minDist(u, start)
 
   /**
    * Returns the latest start time of time point u with respect to the start TP of the STN
-   * @param u
-   * @return
+   * This operation is O(V*E). Do not use in any time-critical part.
    */
-  def latestStart(u: Int): Int = ???
+  def latestStart(u: Int): Int = edg.minDist(start, u)
 
   /**
    * Return the number of time points in the STN
@@ -136,12 +134,9 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
   }
 
   def addContingent(from: Int, to: Int, lb: Int, ub:Int): Boolean = {
-    val eCont1 = new E(from, to, new Contingent[ID](ub))
-    val eCont2 = new E(to, from, new Contingent[ID](-lb))
-    val eReq1 = new E(from, to, new Requirement[ID](ub))
-    val eReq2 = new E(to, from, new Requirement[ID](-lb))
-    allConstraints = eCont1 :: eCont2 :: eReq1 :: eReq2 :: allConstraints
-    (edg.addEdge(eCont1) ++ edg.addEdge(eCont2) ++ edg.addEdge(eReq1) ++ edg.addEdge(eReq2)).nonEmpty
+    val added = edg.addContingent(from, to, ub, None) ++ edg.addContingent(to, from, -lb, None)
+    allConstraints = allConstraints ++added
+    added.nonEmpty
   }
 
   def addContingentWithID(from:Int, to:Int, lb:Int, ub:Int, id:ID) : Boolean = {
@@ -150,6 +145,12 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
     added.nonEmpty
   }
 
+  override protected[stnu] def addContingent(from: Int, to: Int, d: Int): Unit =
+    allConstraints = allConstraints ++ edg.addContingent(from, to, d, None)
+
+  override protected[stnu] def addContingentWithID(from: Int, to: Int, d: Int, id: ID): Unit =
+    allConstraints = allConstraints ++ edg.addContingent(from, to, d, Some(id))
+
   protected def addConditional(from: Int, to: Int, on: Int, value: Int): Boolean = {
     edg.addConditional(from, to, on, value).nonEmpty
   }
@@ -157,10 +158,8 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
 
   def edgeAdded(e: E): Unit = {
     todo += e
-    for(neighbour <- edg.allEdges) {
-      if(neighbour.u == e.u || neighbour.u == e.v || neighbour.v == e.u || neighbour.v == e.v)
-        todo += neighbour
-    }
+    for(neighbour <- edg.edgesOn(e.u)) todo += neighbour
+    for(neighbour <- edg.edgesOn(e.v)) todo += neighbour
   }
 
   /** Returns true if the given requirement edge is present in the STNU */

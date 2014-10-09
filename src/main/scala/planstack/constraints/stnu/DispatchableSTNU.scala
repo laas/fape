@@ -1,5 +1,7 @@
 package planstack.constraints.stnu
 
+import planstack.graph.core.SimpleLabeledDigraph
+
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import planstack.structures.Converters._
@@ -18,39 +20,41 @@ trait DispatchableSTNU[ID] extends ISTNU[ID] {
 
 
 
-class Dispatcher[ID](edg : EDG[ID],
-                     todo : ListBuffer[Edge[ID]],
-                     isConsistent : Boolean,
-                     emptySpots : Set[Int],
-                     allConstraints : List[Edge[ID]],
-                     dispatchableVars : Set[Int],
-                     contingentVars : Set[Int],
+class Dispatcher[ID](_edg : EDG[ID],
+                     _todo : ListBuffer[Edge[ID]],
+                     _isConsistent : Boolean,
+                     _emptySpots : Set[Int],
+                     _allConstraints : List[Edge[ID]],
+                     _dispatchableVars : Set[Int],
+                     _contingentVars : Set[Int],
                      protected var enabled : Set[Int],
                      protected var executed : Set[Int])
-  extends FastIDC[ID](edg, todo, isConsistent, emptySpots, allConstraints, dispatchableVars, contingentVars)
+  extends FastIDC[ID](_edg, _todo, _isConsistent, _emptySpots, _allConstraints, _dispatchableVars, _contingentVars)
   with DispatchableSTNU[ID]
 {
-
   def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
 
   def this(toCopy : Dispatcher[ID]) =
     this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
       toCopy.allConstraints, toCopy.dispatchableVars, toCopy.contingentVars, toCopy.enabled, toCopy.executed)
 
+  var apsp : SimpleLabeledDigraph[Int,Int] = null
+
+  def setHappened(n:Int): Unit =
+    executed = executed + n
+
   def executeVar(u:Int, atTime:Int): Unit = {
-    println("Executing   "+hr(u)+"   at time   "+atTime)
     assert(!isExecuted(u))
     assert(dispatchableVars.contains(u))
     assert(latestStart(u) >= atTime)
     assert(isEnabled(u))
     this.enforceInterval(start, u, atTime, atTime)
-    executed = executed + u
+    setHappened(u)
     enabled = enabled ++ events.filter(isEnabled(_))
-    propagate()
+    checkConsistency()
   }
 
   def occurred(u:Int, atTime:Int) = {
-    println("Occured:   "+hr(u)+"   at time   "+atTime)
     assert(!isExecuted(u))
     assert(contingentVars.contains(u))
     assert(latestStart(u) >= atTime)
@@ -58,9 +62,9 @@ class Dispatcher[ID](edg : EDG[ID],
     this.removeContingentOn(u)
     this.enforceInterval(start, u, atTime, atTime)
     removeWaitsOn(u)
-    executed = executed + u
+    setHappened(u)
     enabled = enabled ++ events.filter(isEnabled(_))
-    propagate()
+    checkConsistency()
   }
 
   def isExecuted(n:Int) = executed.contains(n)
@@ -68,16 +72,14 @@ class Dispatcher[ID](edg : EDG[ID],
   def isEnabled(u:Int): Boolean = {
     if(isExecuted(u))
       return false
-    for(e <- edg.outNegReq(u)) {
-      if((isContingent(e.v) || dispatchableVars.contains(e.v)) && !executed.contains(e.v)) {
+    for(e <- edg.outNegReq(u))
+      if((isContingent(e.v) || dispatchableVars.contains(e.v)) && !executed.contains(e.v))
         return false
-      }
-      for(e <- edg.conditionals.outEdges(u)) {
-        if(!isExecuted(e.l.node))
-          if(earliestStart(e.v) == Int.MaxValue
-            || earliestStart(e.v) - e.l.value > earliestStart(u))
-            return false
-      }
+
+    for(e <- edg.conditionals.outEdges(u)) {
+      if(!isExecuted(e.l.node))
+        if(earliestStart(e.v) == Int.MaxValue || earliestStart(e.v) - e.l.value > earliestStart(u))
+          return false
     }
     true
   }
@@ -106,7 +108,7 @@ class Dispatcher[ID](edg : EDG[ID],
   override def checkConsistency() = {
     if(todo.nonEmpty) {
       super.checkConsistency()
-      edg.apsp()
+      apsp = edg.apspGraph()
       isConsistent
     } else {
       super.checkConsistency()
@@ -115,42 +117,17 @@ class Dispatcher[ID](edg : EDG[ID],
 
   override def checkConsistencyFromScratch() = {
     super.checkConsistencyFromScratch()
-    edg.apsp()
+    apsp = edg.apspGraph()
     isConsistent
   }
-
-  def propagate(): Unit = {
-    edg.apsp()
-    checkConsistencyFromScratch()
-    edg.apsp()
-  }
-
-  def hr(n:Int) = (n match {
-    case 0 => "start"
-    case 1 => "end"
-    case 2 => "WifeStore"
-    case 3 => "StartDriving"
-    case 4 => "WifeHome"
-    case 5 => "StartCooking"
-    case 6 => "DinnerReady"
-    case x => x.toString
-  })+"("+n+")"
 
   def getExecuted = executed
   def getLive(t:Int) = events.filter(!executed.contains(_)).filter(isLive(_, t))
   def getEnabled = enabled
 
-  def printAll(t:Int) = {
-    println("    Executed: "+getExecuted.map(hr(_)))
-    println("    Enabled: "+getEnabled.map(hr(_)))
-    println("    Live: "+getLive(t).map(hr(_)))
-    for(n <- events)
-      println(hr(n)+" "+earliestStart(n)+" "+latestStart(n))
-  }
-
   override def dispatchableEvents(atTime:Int): Iterable[Int] = {
     checkConsistency()
-    edg.apsp()
+    enabled ++= events.filter(isEnabled(_))
     val executables = dispatchableVars.filter(n =>
       enabled.contains(n) && !executed.contains(n) && isLive(n, atTime))
     executables
@@ -185,12 +162,11 @@ class Dispatcher[ID](edg : EDG[ID],
 
   override def earliestStart(u: Int): Int =
     if(u == start) 0
-    else -edg.requirements.edgeValue(u, start).value
+    else -apsp.edge(u, start).get.l
 
   override def latestStart(u: Int): Int =
-    if(u == 0) 0
-    else if(edg.requirements.edgeValue(start,u) == null) Int.MaxValue
-    else edg.requirements.edgeValue(start,u).value
+    if(u == start) 0
+    else apsp.edge(start, u).get.l
 
   override def cc(): Dispatcher[ID] = new Dispatcher[ID](this)
 }

@@ -207,15 +207,11 @@ public class ConservativeConstraintNetwork<VarRef> {
             return false;
         }
 
-        if(!toProcess.isEmpty()) {
-            while(!toProcess.isEmpty()) {
-                VarRef v = toProcess.remove();
-                consistent &= revise(v);
-                checkValuesSetConstraints(v);
-                extChecked = true; // note that a propagation occurred
-            }
-        } else {
-            return consistent;
+        while(!toProcess.isEmpty()) {
+            VarRef v = toProcess.remove();
+            consistent &= revise(v);
+            checkValuesSetConstraints(v);
+            extChecked = true; // note that a propagation occurred
         }
         return consistent;
     }

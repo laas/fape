@@ -15,8 +15,8 @@ abstract class GenSTNUManager[TPRef,ID] extends GenSTNManager[TPRef,ID] {
   def addControllableTimePoint(tp : TPRef) : Int
   def addContingentTimePoint(tp : TPRef) : Int
 
-  final def checksPseudoControllability : Boolean = controllability >= PSEUDO_CONTROLLABILITY
-  final def checksDynamicControllability : Boolean = controllability >= DYNAMIC_CONTROLLABILTY
+  final def checksPseudoControllability : Boolean = controllability.ordinal() >= PSEUDO_CONTROLLABILITY.ordinal()
+  final def checksDynamicControllability : Boolean = controllability.ordinal() >= DYNAMIC_CONTROLLABILITY.ordinal()
 
   def controllability : Controllability
 

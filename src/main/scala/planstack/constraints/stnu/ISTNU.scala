@@ -35,6 +35,8 @@ trait ISTNU[ID] extends ISTN[ID] {
   def addRequirementWithID(from:Int, to:Int, value:Int, id:ID) : Boolean
   def addContingent(from:Int, to:Int, lb:Int, ub:Int) : Boolean
   def addContingentWithID(from:Int, to:Int, lb:Int, ub:Int, id:ID) : Boolean
+  protected[stnu] def addContingent(from:Int, to:Int, d:Int)
+  protected[stnu] def addContingentWithID(from:Int, to:Int, d:Int, id:ID)
 
   /**
    * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.

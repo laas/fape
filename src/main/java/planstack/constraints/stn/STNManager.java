@@ -3,6 +3,10 @@ package planstack.constraints.stn;
 
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.printers.NodeEdgePrinter;
+import scala.None;
+import scala.None$;
+import scala.Option;
+import scala.Some;
 
 import java.util.HashMap;
 
@@ -15,6 +19,8 @@ public class STNManager<TPRef, ID> extends GenSTNManager<TPRef, ID>{
 
     public final ISTN<ID> stn;
     public final HashMap<TPRef, Integer> ids;
+    private Option<TPRef> start;
+    private Option<TPRef> end;
 
     /**
      * Creates a new empty STN
@@ -22,11 +28,15 @@ public class STNManager<TPRef, ID> extends GenSTNManager<TPRef, ID>{
     public STNManager() {
         stn = new STNIncBellmanFord<ID>();
         ids = new HashMap<>();
+        start = None$.empty();
+        end = None$.empty();
     }
 
     public STNManager(STNManager<TPRef,ID> toCopy) {
         stn = toCopy.stn.cc();
         ids = new HashMap<>(toCopy.ids);
+        start = toCopy.start;
+        end = toCopy.end;
     }
 
     /**
@@ -41,6 +51,34 @@ public class STNManager<TPRef, ID> extends GenSTNManager<TPRef, ID>{
         ids.put(tp, stn.addVar());
 
         return ids.get(tp);
+    }
+
+    @Override
+    public int recordTimePointAsStart(TPRef tp) {
+        assert !ids.containsKey(tp) : "TimePoint " + tp + " is already recorded.";
+        assert start.isEmpty() : "A start time point is already recorded.";
+        ids.put(tp, stn.start());
+        end = new Some<>(tp);
+        return stn.start();
+    }
+
+    @Override
+    public int recordTimePointAsEnd(TPRef tp) {
+        assert !ids.containsKey(tp) : "TimePoint " + tp + " is already recorded.";
+        assert end.isEmpty() : "A end time point is already recorded.";
+        ids.put(tp, stn.end());
+        end = new Some<>(tp);
+        return stn.end();
+    }
+
+    @Override
+    public Option<TPRef> getStartTimePoint() {
+        return start;
+    }
+
+    @Override
+    public Option<TPRef> getEndTimePoint() {
+        return end;
     }
 
     @Override

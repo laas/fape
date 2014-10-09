@@ -1,6 +1,5 @@
 package planstack.constraints.stnu
 
-import planstack.constraints.stnu.Controllability.Controllability
 import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledDigraph
@@ -237,6 +236,10 @@ class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends IS
 
   /** Returns true if a variable is dispatchable */
   override def isDispatchable(v: Int): Boolean = ???
+
+  override protected[stnu] def addContingent(from: Int, to: Int, d: Int): Unit = ???
+
+  override protected[stnu] def addContingentWithID(from: Int, to: Int, d: Int, id: ID): Unit = ???
 }
 
 object EfficientIDC {

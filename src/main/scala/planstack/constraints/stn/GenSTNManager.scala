@@ -8,6 +8,16 @@ abstract class GenSTNManager[TPRef,ID] {
   /** Records a new time point in the STN. Returns its ID (which might change) */
   def recordTimePoint(tp:TPRef) : Int
 
+  /** Record this time point as the global start of the STN */
+  def recordTimePointAsStart(tp:TPRef) : Int
+
+  /** Unifies this time point with the global end of the STN */
+  def recordTimePointAsEnd(tp:TPRef) : Int
+
+  def getStartTimePoint : Option[TPRef]
+
+  def getEndTimePoint : Option[TPRef]
+
   /** Remove a timepoint and all associated constraints from the STN */
   def removeTimePoint(tp:TPRef)
 

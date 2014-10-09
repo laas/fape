@@ -15,12 +15,14 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
                                   protected var contingents : List[TConstraint[TPRef,ID]],
                                   protected var id : Map[TPRef, Int],
                                   protected var controllableTPs : Set[TPRef],
-                                  protected var contingentTPs : Set[TPRef])
+                                  protected var contingentTPs : Set[TPRef],
+                                  protected var start : Option[TPRef],
+                                  protected var end : Option[TPRef])
   extends GenSTNUManager[TPRef,ID]
 {
-  def this() = this(new FullSTN[ID](), List(), Map(), Set(), Set())
+  def this() = this(new FullSTN[ID](), List(), Map(), Set(), Set(), None, None)
   def this(toCopy:PseudoSTNUManager[TPRef,ID]) = this(toCopy.stn.cc(), toCopy.contingents, toCopy.id,
-    toCopy.controllableTPs, toCopy.contingentTPs)
+    toCopy.controllableTPs, toCopy.contingentTPs, toCopy.start, toCopy.end)
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
@@ -52,7 +54,8 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
     stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u), id(c.v), c.max) && stn.isMaxDelayPossible(id(c.u), id(c.v), c.min))
   }
 
-  override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit = ???
+  override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
+    println("Warning: this STNUManager can not be exported to a dot file")
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!id.contains(tp), "Time point is already recorded.")
@@ -95,4 +98,27 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
     stn.removeVar(id(tp))
     id = id - tp
   }
+
+
+  /** Record this time point as the global start of the STN */
+  override def recordTimePointAsStart(tp: TPRef): Int = {
+    assert(start.isEmpty, "This STN already has a start timepoint recorded.")
+    assert(!id.contains(tp), "Timepoint is already recorded.")
+    id += ((tp, stn.start))
+    start = Some(tp)
+    stn.start
+  }
+
+  /** Unifies this time point with the global end of the STN */
+  override def recordTimePointAsEnd(tp: TPRef): Int = {
+    assert(end.isEmpty, "This STN already has a end timepoint recorded.")
+    assert(!id.contains(tp), "Timepoint is already recorded.")
+    id += ((tp, stn.end))
+    end = Some(tp)
+    stn.end
+  }
+
+  override def getEndTimePoint: Option[TPRef] = end
+
+  override def getStartTimePoint: Option[TPRef] = start
 }

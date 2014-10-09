@@ -53,7 +53,7 @@ class MMV[ID](
 
   def checkConsistencyFromScratch(): Boolean = {
     while(modified.nonEmpty) {
-      edg.apsp()
+      // edg.apsp() TODO
       var queue = modified
       modified = Nil
       while(queue.nonEmpty) {
@@ -173,4 +173,8 @@ class MMV[ID](
 
   /** Returns true if a variable is dispatchable */
   override def isDispatchable(v: Int): Boolean = ???
+
+  override protected[stnu] def addContingent(from: Int, to: Int, d: Int): Unit = ???
+
+  override protected[stnu] def addContingentWithID(from: Int, to: Int, d: Int, id: ID): Unit = ???
 }

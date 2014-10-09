@@ -1,7 +1,7 @@
 package planstack.constraints.stn
 
 import org.scalatest.FunSuite
-import planstack.constraints.CSP
+import planstack.constraints.MetaCSP
 import planstack.constraints.stnu.FullSTN
 
 import scala.collection.JavaConversions._
@@ -97,7 +97,7 @@ class ConstraintRemovalSuite extends FunSuite {
   }
 
   test("Removal with pending mixed constraints") {
-    val csp = new CSP[String,String,String]
+    val csp = new MetaCSP[String,String,String]
     csp.bindings.addPossibleValue(3)
     csp.bindings.addPossibleValue(1)
     csp.bindings.addPossibleValue(2)

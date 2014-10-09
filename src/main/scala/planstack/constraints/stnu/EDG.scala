@@ -1,10 +1,13 @@
 package planstack.constraints.stnu
 
+import planstack.constraints.stn.Weight
 import planstack.graph.GraphFactory
-import planstack.graph.core.LabeledEdge
+import planstack.graph.core.{SimpleLabeledDigraph, LabeledEdge}
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
-import planstack.graph.core.impl.matrix.SimpleLabeledDirectedIIMatrix
+import planstack.graph.core.impl.matrix.{FullIntIntDigraph, SimpleLabeledDirectedIIMatrix}
 import planstack.graph.printers.NodeEdgePrinter
+
+import scala.collection.parallel.mutable
 
 /** Objects implementing this interface can be passed to an EDG instance
   * to react to events occurring in an EDG such as edge addition, negative cycle ...
@@ -62,26 +65,11 @@ class EDG[ID](
     contingents.addVertex()
   }
 
-  protected[stnu] def apsp() = {
-    def dist(i:Int, j:Int) =
-      if(i == j)  0
-      else requirements.edge(i, j) match {
-        case Some(req) => req.l.value
-        case None => Int.MaxValue
-      }
-    def plus(a:Int, b:Int) =
-      if(a == Int.MaxValue) a
-      else if(b == Int.MaxValue) b
-      else a + b
-
-    for(k <- 0 until size)
-      for(i <- 0 until size)
-        for(j <- 0 until size)
-          if(dist(i,j) > plus(dist(i,k),dist(k,j)))
-            addEdge(new E(i, j, new Requirement(plus(dist(i,k),dist(k,j)))))
-  }
-
   def allEdges = requirements.edges() ++ contingents.edges() ++ conditionals.edges()
+
+  def edgesOn(tp:Int) =
+    requirements.inEdges(tp) ++ requirements.outEdges(tp) ++ contingents.inEdges(tp) ++
+      contingents.outEdges(tp) ++ conditionals.inEdges(tp) ++ conditionals.outEdges(tp)
 
   def tightens(e : E) : Boolean = {
     e.l match {
@@ -415,5 +403,62 @@ class EDG[ID](
   protected[stnu] def hasRequirement(from:Int, to:Int, value:Int) = requirements.edge(from, to) match {
     case None => false
     case Some(req) => req.l.value == value
+  }
+
+  /** Bellman ford algorithm, returns the minimal distance between from and to.
+    *  Each call is O(VE) */
+  protected[stnu] def minDist(from:Int, to:Int): Int = {
+    val forwardDist = scala.collection.mutable.Map[Int,Weight]()
+    // set all distances to inf except for the origin
+    for(v <- 0 until size) {
+      val initialDist =
+        if(v == from) new Weight(0)
+        else Weight.InfWeight
+      forwardDist(v) = initialDist
+    }
+
+    // O(n*e): recomputes check all edges n times. (necessary because the graph is cyclic with negative values
+    var i = 0
+    var updated = true
+    while(i < size && updated) {
+      updated = false
+      i += 1
+      for(e <- requirements.edges()) {
+        if(forwardDist(e.u) + e.l.value < forwardDist(e.v)) {
+          forwardDist(e.v) = forwardDist(e.u) + e.l.value
+          updated = true
+        }
+      }
+    }
+
+    if(forwardDist(to).inf)
+      Int.MaxValue
+    else
+      forwardDist(to).w
+  }
+
+  protected[stnu] def apspGraph() : SimpleLabeledDigraph[Int,Int] = {
+    val matrix = new FullIntIntDigraph(size, Int.MaxValue)
+    for(i <- 0 until size)
+      matrix.addVertex()
+    for(e <- requirements.edges())
+      matrix.addEdge(e.u, e.v, e.l.value)
+
+    def dist(i:Int, j:Int) =
+      if(i == j)  0
+      else matrix.edgeValue(i, j)
+
+    def plus(a:Int, b:Int) =
+      if(a == Int.MaxValue) a
+      else if(b == Int.MaxValue) b
+      else a + b
+
+    for(k <- 0 until size)
+      for(i <- 0 until size)
+        for(j <- 0 until size)
+          if(dist(i,j) > plus(dist(i,k),dist(k,j)))
+            matrix.addEdge(i, j, plus(dist(i,k),dist(k,j)))
+
+    matrix
   }
 }
