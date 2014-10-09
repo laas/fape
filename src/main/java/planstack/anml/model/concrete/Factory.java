@@ -3,14 +3,9 @@ package planstack.anml.model.concrete;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 
 import java.util.List;
-
-import scala.None;
-import scala.None$;
-import scala.collection.JavaConversions;
 
 /**
  * This class provides static factory method for creating concrete objects from abstract ones.

@@ -1,9 +1,8 @@
 package planstack.anml.model.abs
 
-import planstack.anml.model.abs.statements.{AbstractResourceStatement, AbstractLogStatement, AbstractStatement}
 import planstack.anml.model._
+import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.parser
-import planstack.anml.parser.NumExpr
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable

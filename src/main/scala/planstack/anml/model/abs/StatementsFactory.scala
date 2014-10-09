@@ -3,11 +3,8 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
-import planstack.anml.model.concrete.{EmptyVarRef, VarRef}
-import planstack.anml.parser.{NumExpr, FuncExpr, VarExpr}
+import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
 import planstack.anml.{ANMLException, parser}
-
-import scala.collection.mutable.ArrayBuffer
 
 object StatementsFactory {
 

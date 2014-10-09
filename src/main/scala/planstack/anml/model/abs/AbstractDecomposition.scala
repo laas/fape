@@ -1,6 +1,6 @@
 package planstack.anml.model.abs
 
-import planstack.anml.model.abs.statements.{AbstractResourceStatement, AbstractLogStatement, AbstractStatement}
+import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.{AnmlProblem, LVarRef, PartialContext}
 import planstack.anml.parser
 

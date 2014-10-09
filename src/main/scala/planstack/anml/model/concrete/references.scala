@@ -16,6 +16,7 @@ import planstack.anml.model.concrete.GlobalRef._
   * @param id Unique id of the reference.
   */
 class GlobalRef(val id:T) {
+  require(id<next, "Error: ids should be strictly growing to avoid overlapping.")
   def this() = this(getNext)
 
   def isEmpty = id == NullID
@@ -74,6 +75,7 @@ object EmptyVarRef extends VarRef(NullID)
   * @param id Unique id of the reference.
   */
 class TPRef(id:T) extends GlobalRef(id) {
+  /** Creates a new reference with a unique (not given yet) ID) */
   def this() = this(getNext)
 }
 

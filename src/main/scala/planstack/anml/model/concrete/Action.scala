@@ -4,7 +4,7 @@ import java.util
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.{AbstractDuration, AbstractAction, AbstractActionRef}
+import planstack.anml.model.abs.{AbstractAction, AbstractActionRef, AbstractDuration}
 import planstack.anml.model.concrete.statements.{BindingConstraint, Statement}
 
 import scala.collection.JavaConversions._
