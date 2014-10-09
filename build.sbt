@@ -2,7 +2,7 @@ name := "planstack-constraints"
 
 organization := "planstack"
 
-version := "0.5.0"
+version := "0.5.1"
 
 scalaVersion := "2.10.3"
 
@@ -14,7 +14,7 @@ libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.5.0"
+libraryDependencies += "planstack" % "planstack-graph" % "0.3.11"
 
 
 crossPaths := false

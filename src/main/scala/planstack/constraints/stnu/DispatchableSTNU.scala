@@ -72,9 +72,13 @@ class Dispatcher[ID](_edg : EDG[ID],
   def isEnabled(u:Int): Boolean = {
     if(isExecuted(u))
       return false
-    for(e <- edg.outNegReq(u))
-      if((isContingent(e.v) || dispatchableVars.contains(e.v)) && !executed.contains(e.v))
+
+    for(e <- apsp.outEdges(u)) {
+      if (e.l <= 0 && isContingent(e.v) && !executed.contains(e.v))
         return false
+      if (e.l < 0 && dispatchableVars.contains(e.v) && !executed.contains(e.v))
+        return false
+    }
 
     for(e <- edg.conditionals.outEdges(u)) {
       if(!isExecuted(e.l.node))
