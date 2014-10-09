@@ -13,6 +13,8 @@ class SimpleLabeledDirectedIIMatrix[EL >: Null : ClassTag](
   /** size increment when the matrix needs to grow */
   private final val inc = 10
 
+  def this(initialCapacity:Int) = this(initialCapacity, 0, new Array[Array[EL]](initialCapacity))
+
   def this() = this(
     10,
     0,
