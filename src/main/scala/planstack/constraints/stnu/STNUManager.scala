@@ -14,6 +14,7 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
   extends GenSTNUManager[TPRef,ID]
 {
   def this() = this(new FastIDC[ID](), Map(), None, None)
+//  def this() = this(new MMV[ID](), Map(), None, None)
 
   implicit def TPRef2stnID(tp : TPRef) : Int = id(tp)
 
@@ -30,7 +31,7 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
   override def getLatestStartTime(u: TPRef): Int = stnu.latestStart(u)
 
   /** Returns true if the STN is consistent (might trigger a propagation */
-  override def isConsistent: Boolean = stnu.consistent
+  override def isConsistent(): Boolean = stnu.consistent
 
   /** Removes all constraints that were recorded with this id */
   override def removeConstraintsWithID(id: ID): Boolean = stnu.removeConstraintsWithID(id)

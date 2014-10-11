@@ -16,6 +16,19 @@ trait DispatchableSTNU[ID] extends ISTNU[ID] {
   def occurred(n:Int, atTime:Int)
 
   def dispatchableEvents(atTime:Int) : Iterable[Int]
+
+  def isExecuted(n:Int) : Boolean
+
+  def isEnabled(n:Int) : Boolean
+
+  def setExecuted(n:Int)
+
+  def isLive(u:Int, currentTime:Int) : Boolean =
+    earliestStart(u) <= currentTime
+
+  def maxContingentDelay(from:Int, to:Int) : Option[Int]
+  def minContingentDelay(from:Int, to:Int) : Option[Int]
+
 }
 
 
@@ -40,7 +53,7 @@ class Dispatcher[ID](_edg : EDG[ID],
 
   var apsp : SimpleLabeledDigraph[Int,Int] = null
 
-  def setHappened(n:Int): Unit =
+  override def setExecuted(n:Int): Unit =
     executed = executed + n
 
   def executeVar(u:Int, atTime:Int): Unit = {
@@ -49,7 +62,7 @@ class Dispatcher[ID](_edg : EDG[ID],
     assert(latestStart(u) >= atTime)
     assert(isEnabled(u))
     this.enforceInterval(start, u, atTime, atTime)
-    setHappened(u)
+    setExecuted(u)
     enabled = enabled ++ events.filter(isEnabled(_))
     checkConsistency()
   }
@@ -62,14 +75,14 @@ class Dispatcher[ID](_edg : EDG[ID],
     this.removeContingentOn(u)
     this.enforceInterval(start, u, atTime, atTime)
     removeWaitsOn(u)
-    setHappened(u)
+    setExecuted(u)
     enabled = enabled ++ events.filter(isEnabled(_))
     checkConsistency()
   }
 
-  def isExecuted(n:Int) = executed.contains(n)
+  override def isExecuted(n:Int) = executed.contains(n)
 
-  def isEnabled(u:Int): Boolean = {
+  override def isEnabled(u:Int): Boolean = {
     if(isExecuted(u))
       return false
 
@@ -88,16 +101,13 @@ class Dispatcher[ID](_edg : EDG[ID],
     true
   }
 
-  def isLive(u:Int, currentTime:Int) : Boolean =
-    earliestStart(u) <= currentTime
-
-  def removeContingentOn(n:Int): Unit = {
+  protected def removeContingentOn(n:Int): Unit = {
     edg.contingents.deleteEdges((e:E) => {
       e.v == n && e.l.positive || e.u == n && e.l.negative
     })
   }
 
-  def removeWaitsOn(u:Int) = {
+  protected def removeWaitsOn(u:Int) = {
     edg.conditionals.deleteEdges((e:E) => e.l.cond && e.l.node == u)
   }
 
@@ -173,6 +183,16 @@ class Dispatcher[ID](_edg : EDG[ID],
     else apsp.edge(start, u).get.l
 
   override def cc(): Dispatcher[ID] = new Dispatcher[ID](this)
+
+  override def maxContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(from, to) match {
+    case Some(e) => Some(e.l.value)
+    case None => None
+  }
+
+  override def minContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(to, from) match {
+    case Some(e) => Some(-e.l.value)
+    case None => None
+  }
 }
 
 object Main extends App {

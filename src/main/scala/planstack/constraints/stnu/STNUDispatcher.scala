@@ -8,7 +8,7 @@ import planstack.structures.Converters._
 import scala.collection.JavaConverters._
 
 class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
-  val dispatcher = new Dispatcher[ID]
+  val dispatcher :DispatchableSTNU[ID] = new Dispatcher[ID]
 
   val ids : Map[TPRef,Int] =
     (for((tp, flag) <- from.timepoints) yield flag match {
@@ -38,7 +38,7 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   def isConsistent = dispatcher.checkConsistency()
 
   def setHappened(tp:TPRef): Unit = {
-    dispatcher.setHappened(tp)
+    dispatcher.setExecuted(tp)
   }
 
   def getDispatchable(time:Int) : IList[TPRef] = {
@@ -47,15 +47,16 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   }
 
   def getMaxContingentDelay(from:TPRef, to:TPRef) : Int = {
-    dispatcher.edg.contingents.edge(from, to) match {
-      case Some(e) => e.l.value
+
+    dispatcher.maxContingentDelay(from, to) match {
+      case Some(e) => e
       case None => throw new RuntimeException("No contingent delay between those two time points")
     }
   }
 
   def getMinContingentDelay(from:TPRef, to:TPRef) : Int = {
-    dispatcher.edg.contingents.edge(to, from) match {
-      case Some(e) => -e.l.value
+    dispatcher.minContingentDelay(to, from) match {
+      case Some(e) => -e
       case None => throw new RuntimeException("No contingent delay between those two time points")
     }
   }

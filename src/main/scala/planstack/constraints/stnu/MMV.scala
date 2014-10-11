@@ -11,17 +11,21 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
               protected[stnu] var allConstraints : List[Edge[ID]],
               protected[stnu] var dispatchableVars : Set[Int],
               protected[stnu] var contingentVars : Set[Int],
-              protected[stnu] var emptySpots : Set[Int])
-  extends ISTNU[ID] with EDGListener[ID]
+              protected[stnu] var emptySpots : Set[Int],
+              protected[stnu] var enabled : Set[Int],
+              protected[stnu] var executed : Set[Int])
+  extends ISTNU[ID]
+  with EDGListener[ID]
+  with DispatchableSTNU[ID]
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID](checkCycles = false), Nil, true, List(), Set(), Set(), Set())
+  def this() = this(new EDG[ID](checkCycles = false), Nil, true, List(), Set(), Set(), Set(), Set(), Set())
 
   /** Create a new MMV with exactly the same vars and edges than the given one */
   def this(toCopy:MMV[ID]) =
     this(new EDG(toCopy.edg), toCopy.modified, toCopy._consistent, toCopy.allConstraints,
-      toCopy.dispatchableVars, toCopy.contingentVars, toCopy.emptySpots)
+      toCopy.dispatchableVars, toCopy.contingentVars, toCopy.emptySpots, toCopy.enabled, toCopy.executed)
 
   // record ourself as the listener of any event in the EDG
   assert(edg.listener == null, "Error: already a listener on this EDG")
@@ -216,4 +220,85 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
 
   /** Returns true if a variable is dispatchable */
   override def isDispatchable(v: Int): Boolean = dispatchableVars.contains(v)
+
+  def executeVar(u:Int, atTime:Int): Unit = {
+    assert(!isExecuted(u))
+    assert(dispatchableVars.contains(u))
+    assert(latestStart(u) >= atTime)
+    assert(isEnabled(u))
+    this.enforceInterval(start, u, atTime, atTime)
+    setExecuted(u)
+    enabled = enabled ++ events.filter(isEnabled(_))
+    checkConsistency()
+  }
+
+  def occurred(u:Int, atTime:Int) = {
+    assert(!isExecuted(u))
+    assert(contingentVars.contains(u))
+    assert(latestStart(u) >= atTime)
+    assert(enabled.contains(u))
+    this.removeContingentOn(u)
+    this.enforceInterval(start, u, atTime, atTime)
+    removeWaitsOn(u)
+    setExecuted(u)
+    enabled = enabled ++ events.filter(isEnabled(_))
+    checkConsistency()
+  }
+
+  protected def removeContingentOn(n:Int): Unit = {
+    edg.contingents.deleteEdges((e:E) => {
+      e.v == n && e.l.positive || e.u == n && e.l.negative
+    })
+  }
+
+  protected def removeWaitsOn(u:Int) = {
+    edg.conditionals.deleteEdges((e:E) => e.l.cond && e.l.node == u)
+  }
+
+  override def isEnabled(u:Int): Boolean = {
+    if(isExecuted(u))
+      return false
+
+    for(e <- edg.requirements.outEdges(u)) {
+      if (e.l.value <= 0 && isContingent(e.v) && !executed.contains(e.v))
+        return false
+      if (e.l.value < 0 && dispatchableVars.contains(e.v) && !executed.contains(e.v))
+        return false
+    }
+
+    for(e <- edg.conditionals.outEdges(u)) {
+      if(!isExecuted(e.l.node))
+        if(earliestStart(e.v) == Int.MaxValue || earliestStart(e.v) - e.l.value > earliestStart(u))
+          return false
+    }
+    true
+  }
+
+  override def isExecuted(n: Int): Boolean = executed.contains(n)
+
+  override def minContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(to, from) match {
+    case Some(e) => Some(-e.l.value)
+    case None => None
+  }
+
+  override def maxContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(from, to) match {
+    case Some(e) => Some(e.l.value)
+    case None => None
+  }
+
+  override def dispatchableEvents(atTime: Int): Iterable[Int] = {
+    checkConsistency()
+    enabled ++= events.filter(isEnabled(_))
+    val executables = dispatchableVars.filter(n =>
+      enabled.contains(n) && !executed.contains(n) && isLive(n, atTime))
+    executables
+  }
+
+  override def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = {
+    edg.requirements.edge(v, u) match {
+      case Some(e) => e.l.value + w >= 0 // should not create a negative cycle
+      case None => true
+    }
+  }
+  override def setExecuted(n: Int): Unit = executed = executed + n
 }
