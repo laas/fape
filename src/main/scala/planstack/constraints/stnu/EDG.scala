@@ -30,7 +30,13 @@ class EDG[ID](val checkCycles : Boolean,
   type E = Edge[ID]
 
   def this(edg : EDG[ID], listener:EDGListener[ID] = null) =
-    this(edg.checkCycles, edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
+    this(edg.checkCycles,
+      edg.contingents.cc(),
+      edg.requirements.cc(),
+      edg.conditionals.cc(),
+      if(edg.checkCycles) edg.ccgraph.cc() else null,
+      edg.squeezed,
+      listener)
 
   def this(checkCycles:Boolean) = this(
     checkCycles,
@@ -206,7 +212,6 @@ class EDG[ID](val checkCycles : Boolean,
       for(i <- 0 until size)
         for(j <- 0 until size)
           if(dist(i,j) > plus(dist(i,k),dist(k,j))) {
-            println("%s, %s, %s, %s, %s, %s".format(i, j, k, dist(i,j), dist(i,k), dist(k,j)))
             addEdge(new E(i, j, new Requirement(plus(dist(i, k), dist(k, j)))))
           }
   }

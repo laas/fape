@@ -17,8 +17,9 @@ class ConstraintRemovalSuite extends FunSuite {
         assert(stn1.size == stn2.size)
         assert(stn1.consistent)
         assert(stn2.consistent)
-        assert((0 to stn1.size - 1).forall(i => stn1.earliestStart(i) == stn2.earliestStart(i)))
-        assert((0 to stn1.size - 1).forall(i => stn1.latestStart(i) == stn2.latestStart(i)))
+        stn1.events.foreach(i => println(""+i+" "+stn1.earliestStart(i)+" "+stn2.earliestStart(i)))
+        assert(stn1.events.forall(i => stn1.earliestStart(i) == stn2.earliestStart(i)))
+        assert(stn1.events.forall(i => stn1.latestStart(i) == stn2.latestStart(i)))
       }
       val u = stn.addVar()
       val v = stn.addVar()
@@ -26,8 +27,7 @@ class ConstraintRemovalSuite extends FunSuite {
 
       stn.addConstraint(stn.start, u, 0)
       stn.addConstraint(u, stn.start, 0)
-
-
+      stn.checkConsistency()
 
       clone = stn.cc()
       clone.checkConsistencyFromScratch()
@@ -35,6 +35,7 @@ class ConstraintRemovalSuite extends FunSuite {
 
       stn.addConstraint(u, v, 5)
       stn.addConstraint(v, u, -5)
+      stn.checkConsistency()
 
       clone = stn.cc()
       clone.checkConsistencyFromScratch()
