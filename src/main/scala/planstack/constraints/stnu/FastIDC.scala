@@ -21,7 +21,7 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set())
+  def this() = this(new EDG[ID](checkCycles = true), ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set())
 
   def this(toCopy : FastIDC[ID]) =
     this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
@@ -194,7 +194,9 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
     val prevSize = edg.size
 
     // empty every thing
-    edg = new EDG[ID](this)
+    edg = new EDG[ID](checkCycles = true)
+    edg.listener = this
+
     isConsistent = true
     todo.clear()
 

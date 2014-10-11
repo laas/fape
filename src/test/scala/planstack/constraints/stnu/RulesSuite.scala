@@ -15,7 +15,7 @@ class RulesSuite extends FunSuite{
   val v = 50
 
   test("D1 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addRequirement(A, B, 10)
     stnu.addContingent(B, C, -4)
@@ -36,7 +36,7 @@ class RulesSuite extends FunSuite{
   }
 
    test("D2 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addConditional(C, A, B, -y)
     stnu.addContingent(C, D, -u)
@@ -57,7 +57,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D3 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addConditional(C, A, B, -y)
     stnu.addRequirement(D, C, v)
@@ -77,7 +77,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D4 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addRequirement(A, B, v)
     stnu.addRequirement(B, C, -x)
@@ -96,7 +96,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D5 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addRequirement(A, B, v)
     stnu.addConditional(B, C, D, -x)
@@ -116,7 +116,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D6 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     val x = 11
     val y = 14
@@ -141,7 +141,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D7 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     stnu.addRequirement(B, A, -u)
     stnu.addRequirement(C, B, y)
@@ -160,7 +160,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D8 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     val u = 10
     val x = 12
@@ -185,7 +185,7 @@ class RulesSuite extends FunSuite{
   }
 
   test("D9 rule") {
-    val stnu = new EDG
+    val stnu = new EDG(checkCycles = true)
 
     val u = 10
     val x = 8
@@ -204,5 +204,66 @@ class RulesSuite extends FunSuite{
     assert(added.v == A)
     assert(added.l.req)
     assert(added.l.value == -x)
+  }
+
+  test("Precede reduction 1") {
+    val stnu = new EDG(checkCycles = true)
+
+    val A = 0
+    val B = 1
+    val C = 2
+    val x = 5
+    val y = 10
+    val u = 15
+    val v = 20
+
+    stnu.addContingent(A, B, y)
+    stnu.addContingent(B, A, -x)
+    stnu.addRequirement(C, B, v)
+    stnu.addRequirement(B, C, -u)
+
+    val focus = stnu.outNegReq(B).tail.head
+    assert(focus.u == B && focus.v == C && focus.l.value == -u)
+
+    val out = stnu.PR1(focus)
+    assert(out._1.nonEmpty)
+    assert(out._2.isEmpty)
+    val added = out._1.head
+
+    assert(added.u == A)
+    assert(added.v == C)
+    assert(added.l.req)
+    assert(added.l.value == x-u)
+  }
+
+  test("Precede reduction 2") {
+    val stnu = new EDG(checkCycles = true)
+
+    val A = 0
+    val B = 1
+    val C = 2
+    val x = 5
+    val y = 10
+    val u = 15
+    val v = 20
+
+    stnu.addContingent(A, B, y)
+    stnu.addContingent(B, A, -x)
+    stnu.addRequirement(C, B, v)
+    stnu.addRequirement(B, C, -u)
+
+    val focus = stnu.inPosReq(B).tail.head
+    assert(focus.u == C && focus.v == B && focus.l.value == v)
+
+    val out = stnu.PR2(focus)
+    assert(out._1.nonEmpty)
+    assert(out._2.isEmpty)
+    val added = out._1.head
+
+    println(added)
+    assert(added.u == C)
+    assert(added.v == A)
+    assert(added.l.req)
+    assert(added.l.value == v-y)
   }
 }

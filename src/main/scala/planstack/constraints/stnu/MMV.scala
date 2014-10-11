@@ -4,15 +4,14 @@ import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.structures.IList
 
-class MMV[ID](
-    val edg : EDG[ID],
-    private var modified : List[Edge[ID]],
-    protected var _consistent : Boolean)
+class MMV[ID](val edg : EDG[ID],
+              private var modified : List[Edge[ID]],
+              protected var _consistent : Boolean)
   extends ISTNU[ID] with EDGListener[ID]
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID](), Nil, true)
+  def this() = this(new EDG[ID](checkCycles = false), Nil, true)
 
   def this(toCopy:MMV[ID]) = this(new EDG(toCopy.edg), toCopy.modified, toCopy._consistent)
 
@@ -52,39 +51,19 @@ class MMV[ID](
   def checkConsistency(): Boolean = checkConsistencyFromScratch()
 
   def checkConsistencyFromScratch(): Boolean = {
-    while(modified.nonEmpty) {
-      // edg.apsp() TODO
+    while(_consistent && modified.nonEmpty) {
+      edg.apsp()
       var queue = modified
       modified = Nil
-      while(queue.nonEmpty) {
+      while(_consistent && queue.nonEmpty) {
         val e = queue.head
         queue = queue.tail
 
-        var finished = false
-        while(!finished) {
-          var noNewEdges = true
-          for (e <- edg.allEdges; if noNewEdges) {
-            val additionAndRemovals: List[(List[E], List[E])] =
-              edg.classicalDerivations(e)
-            for ((toAdd, toRemove) <- additionAndRemovals) {
-              for (edge <- toAdd)
-                if(edg.addEdge(edge).nonEmpty)
-                  noNewEdges = false
-            }
-            if(noNewEdges) finished = true
-          }
-        }
-        /*
-        val additionAndRemovals : List[(List[E],List[E])]=
-//          edg.derivationsFastIDC(e)
-          edg.classicalDerivations(e)
-        var i = 0
+        val additionAndRemovals : List[(List[E],List[E])] = edg.classicalDerivations(e)
         for((toAdd,toRemove) <- additionAndRemovals) {
-          i += 1
-          println("D"+i)
           for (edge <- toAdd)
             edg.addEdge(edge)
-        }*/
+        }
       }
     }
     _consistent
@@ -139,7 +118,7 @@ class MMV[ID](
 
   def edgeAdded(e: E): Unit = modified = e :: modified
 
-  def cycleDetected(): Unit = _consistent = false
+  def cycleDetected(): Unit = throw new RuntimeException("EDG should not be looking for cycles")
     //assert(!_consistent, "Should have been already detected through inconsistency.")
 
   def squeezingDetected(): Unit = _consistent = false
@@ -159,7 +138,7 @@ class MMV[ID](
   /** Returns a collection of all time points in this STN */
   override def events: IList[Int] = ???
 
-  override def controllability: Controllability = PSEUDO_CONTROLLABILITY
+  override def controllability: Controllability = DYNAMIC_CONTROLLABILITY
 
   /** Adds a controllable variable. Only those variable can be executed */
   override def addDispatchable(): Int = ???

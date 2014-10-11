@@ -19,26 +19,26 @@ trait EDGListener[ID] {
   def squeezingDetected()
 }
 
-class EDG[ID](
-    val contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
-    val requirements : SimpleLabeledDirectedIIMatrix[Requirement[ID]],
-    val conditionals : DirectedMultiLabeledIIAdjList[Conditional[ID]],
-    val ccgraph : CCGraph,
-    var squeezed : Boolean,
-    protected[stnu] var listener : EDGListener[ID])
+class EDG[ID](val checkCycles : Boolean,
+              val contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
+              val requirements : SimpleLabeledDirectedIIMatrix[Requirement[ID]],
+              val conditionals : DirectedMultiLabeledIIAdjList[Conditional[ID]],
+              val ccgraph : CCGraph,
+              var squeezed : Boolean,
+              protected[stnu] var listener : EDGListener[ID] = null)
 {
   type E = Edge[ID]
 
   def this(edg : EDG[ID], listener:EDGListener[ID] = null) =
-    this(edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
+    this(edg.checkCycles, edg.contingents.cc(), edg.requirements.cc(), edg.conditionals.cc(), edg.ccgraph.cc(), edg.squeezed, listener)
 
-  def this(listener:EDGListener[ID] = null) = this(
+  def this(checkCycles:Boolean) = this(
+    checkCycles,
     new DirectedSimpleLabeledIIAdjList[Contingent[ID]](),
     new SimpleLabeledDirectedIIMatrix[Requirement[ID]](),
     new DirectedMultiLabeledIIAdjList[Conditional[ID]](),
-    new CCGraph,
-    false,
-    listener
+    if(checkCycles) new CCGraph else null,
+    false
   )
 
   def inConditionals(n : Int) = conditionals.inEdges(n).filter(_.l.cond)
@@ -118,7 +118,7 @@ class EDG[ID](
   }
 
   def edgeAdded(e : E) {
-    if(e.l.negative)
+    if(checkCycles && e.l.negative)
       ccgraph.addEdge(e.u, e.v)
 
     if(e.l.cont) {
@@ -135,7 +135,7 @@ class EDG[ID](
     }
 
     if(listener != null) {
-      if(!ccgraph.acyclic)
+      if(checkCycles && !ccgraph.acyclic)
         listener.cycleDetected()
 
       if(squeezed)
@@ -189,6 +189,32 @@ class EDG[ID](
     addEdge(e)
   }
 
+  /** Computes the all pair shortest path inside the Requirements graph */
+  protected[stnu] def apsp() = {
+    def dist(i:Int, j:Int) =
+      if(i == j)  0
+      else requirements.edge(i, j) match {
+        case Some(req) => req.l.value
+        case None => Int.MaxValue
+      }
+    def plus(a:Int, b:Int) =
+      if(a == Int.MaxValue) a
+      else if(b == Int.MaxValue) b
+      else a + b
+
+    for(k <- 0 until size)
+      for(i <- 0 until size)
+        for(j <- 0 until size)
+          if(dist(i,j) > plus(dist(i,k),dist(k,j))) {
+            println("%s, %s, %s, %s, %s, %s".format(i, j, k, dist(i,j), dist(i,k), dist(k,j)))
+            addEdge(new E(i, j, new Requirement(plus(dist(i, k), dist(k, j)))))
+          }
+  }
+
+  /** All derivations made with FastIDC's derivations with e as a focus edges.
+    *
+    * Returns a tuple (edges to add, edges to remove).
+    */
   def derivationsFastIDC(e : E) : List[(List[E], List[E])] =
     D1(e) :: D2(e) :: D3(e) :: D4(e) :: D5(e) :: D6(e) :: D7(e) :: D8(e) :: D9(e) :: Nil
 
@@ -351,7 +377,10 @@ class EDG[ID](
     (toAdd, Nil)
   }
 
-
+  /** All derivations made with FastIDC's derivations with e as a focus edges.
+    *
+    * Returns a tuple (edges to add, edges to remove).
+    */
   def classicalDerivations(e : E) =
     PR1(e) :: PR2(e) :: unorderedRed(e) :: SR1(e) :: contingentReg(e) :: unconditionalRed(e) :: generalRed(e) :: Nil
 
@@ -361,8 +390,10 @@ class EDG[ID](
     var toAdd = List[E]()
     val A = e.u
     val B = e.v
-    if(e.l.posReq) {
-      for (contCB <- contingents.inEdges(B)) {
+    val reqBA = requirements.edgeValue(B, A)
+    // AB must be positive and BA negative (A before B)
+    if(e.l.posReq && reqBA != null && reqBA.value <= 0) {
+      for (contCB <- contingents.inEdges(B) ; if contCB.l.positive) {
         val C = contCB.u
         if (A != B && A != C && B != C) {
           toAdd = new E(A, C, new Requirement(e.l.value - contCB.l.value)) :: toAdd

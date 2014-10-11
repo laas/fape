@@ -7,13 +7,13 @@ object Predef {
   def getAllISTN[ID] : List[ISTN[ID]] = List(
     new STNIncBellmanFord[ID](),
     new FastIDC[ID](),
-    new FullSTN[ID](10)
-//    new MMV[ID]()
+    new FullSTN[ID](10),
+    new MMV[ID]()
   )
 
   def getAllISTNU[ID] : List[ISTNU[ID]] = List(
-    new FastIDC[ID]()
-//    new MMV[ID]()
+//    new FastIDC[ID](),
+    new MMV[ID]()
   //new EfficientIDC[ID]
   )
 

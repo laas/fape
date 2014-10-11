@@ -15,7 +15,7 @@ class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends IS
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID], ListBuffer[Int]())
+  def this() = this(new EDG[ID](checkCycles = true), ListBuffer[Int]())
 
   def this(toCopy : EfficientIDC[ID]) = this(new EDG(toCopy.edg), toCopy.todo.clone())
 

@@ -56,24 +56,23 @@ class DynamicControllability extends FunSuite {
       val StartCooking = idc.addVar()
       val DinnerReady = idc.addVar()
 
-//      idc.addContingent(WifeStore, StartDriving, 30, 60)
-//      assert(idc.consistent)
-
+      idc.addContingent(WifeStore, StartDriving, 30, 60)
+      assert(idc.consistent)
 
       idc.addContingent(StartDriving, WifeHome, 35, 40)
       assert(idc.consistent)
 
-      idc.addRequirement(WifeHome, DinnerReady, 5)
+      idc.addContingent(StartCooking, DinnerReady, 25, 30)
       assert(idc.consistent)
 
+      idc.addRequirement(WifeHome, DinnerReady, 5)
+      assert(idc.consistent)
 
       idc.addRequirement(DinnerReady, WifeHome, 5)
       assert(idc.consistent)
 
 //      idc.edg.exportToDot("before.dot", printer)
 
-      idc.addContingent(StartCooking, DinnerReady, 25, 30)
-      assert(idc.consistent)
 
 //      idc.edg.exportToDot("incremental.dot", printer)
 //      val full = idc.cc()
@@ -81,6 +80,13 @@ class DynamicControllability extends FunSuite {
 //      full.edg.exportToDot("full.dot", printer)
 
       // make sure the cooking starts at the right time
+//      val cc1 = idc.cc()
+//      cc1.addRequirement(StartDriving, StartCooking, 9)
+//      assert(!cc1.consistent)
+//
+//      val cc2 = idc.cc()
+//      cc2.addRequirement(StartCooking, StartDriving, -11)
+//      assert(!cc2.consistent)
       assert(idc.hasRequirement(StartDriving, StartCooking, 10))
       assert(idc.hasRequirement(StartCooking, StartDriving, -10))
     }

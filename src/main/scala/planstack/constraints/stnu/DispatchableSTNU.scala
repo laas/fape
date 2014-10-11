@@ -32,7 +32,7 @@ class Dispatcher[ID](_edg : EDG[ID],
   extends FastIDC[ID](_edg, _todo, _isConsistent, _emptySpots, _allConstraints, _dispatchableVars, _contingentVars)
   with DispatchableSTNU[ID]
 {
-  def this() = this(new EDG[ID], ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
+  def this() = this(new EDG[ID](checkCycles = true), ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
 
   def this(toCopy : Dispatcher[ID]) =
     this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
