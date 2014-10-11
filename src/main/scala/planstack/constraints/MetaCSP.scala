@@ -82,7 +82,7 @@ class MetaCSP[VarRef, TPRef, ID](
   }
 
   def addMinDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](v, u, None, d, (x:Int)=> -x)
+    val pending = new PendingRequirement[VarRef,TPRef,ID](v, u, Some(id), d, (x:Int)=> -x)
     varsToConstraints =
       if(varsToConstraints.contains(d))
         varsToConstraints.updated(d, pending :: varsToConstraints(d))
