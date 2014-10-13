@@ -17,7 +17,7 @@ class ConstraintRemovalSuite extends FunSuite {
         assert(stn1.size == stn2.size)
         assert(stn1.consistent)
         assert(stn2.consistent)
-        stn1.events.foreach(i => println(""+i+" "+stn1.earliestStart(i)+" "+stn2.earliestStart(i)))
+//        stn1.events.foreach(i => println(""+i+" "+stn1.earliestStart(i)+" "+stn2.earliestStart(i)))
         assert(stn1.events.forall(i => stn1.earliestStart(i) == stn2.earliestStart(i)))
         assert(stn1.events.forall(i => stn1.latestStart(i) == stn2.latestStart(i)))
       }

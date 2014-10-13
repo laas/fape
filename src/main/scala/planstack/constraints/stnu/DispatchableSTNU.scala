@@ -26,8 +26,8 @@ trait DispatchableSTNU[ID] extends ISTNU[ID] {
   def isLive(u:Int, currentTime:Int) : Boolean =
     earliestStart(u) <= currentTime
 
-  def maxContingentDelay(from:Int, to:Int) : Option[Int]
-  def minContingentDelay(from:Int, to:Int) : Option[Int]
+  def maxDelay(from:Int, to:Int) : Option[Int]
+  def minDelay(from:Int, to:Int) : Option[Int]
 
 }
 
@@ -45,7 +45,7 @@ class Dispatcher[ID](_edg : EDG[ID],
   extends FastIDC[ID](_edg, _todo, _isConsistent, _emptySpots, _allConstraints, _dispatchableVars, _contingentVars)
   with DispatchableSTNU[ID]
 {
-  def this() = this(new EDG[ID](checkCycles = true), ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
+  def this() = this(new EDG[ID](checkCycles = false), ListBuffer[Edge[ID]](), true, Set(), List(), Set(), Set(), Set(), Set())
 
   def this(toCopy : Dispatcher[ID]) =
     this(new EDG(toCopy.edg), toCopy.todo.clone(), toCopy.consistent, toCopy.emptySpots,
@@ -184,13 +184,13 @@ class Dispatcher[ID](_edg : EDG[ID],
 
   override def cc(): Dispatcher[ID] = new Dispatcher[ID](this)
 
-  override def maxContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(from, to) match {
-    case Some(e) => Some(e.l.value)
+  override def maxDelay(from: Int, to: Int): Option[Int] = apsp.edge(from, to) match {
+    case Some(e) => Some(e.l)
     case None => None
   }
 
-  override def minContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(to, from) match {
-    case Some(e) => Some(-e.l.value)
+  override def minDelay(from: Int, to: Int): Option[Int] = apsp.edge(to, from) match {
+    case Some(e) => Some(-e.l)
     case None => None
   }
 }

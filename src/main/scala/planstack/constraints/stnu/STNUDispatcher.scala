@@ -14,6 +14,8 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     (for((tp, flag) <- from.timepoints) yield flag match {
       case CONTINGENT => (tp, dispatcher.addContingentVar())
       case CONTROLLABLE => (tp, dispatcher.addDispatchable())
+      case START => (tp, dispatcher.start)
+      case END => (tp, dispatcher.end)
       case _ => (tp, dispatcher.addVar())
     }).toMap
 
@@ -22,18 +24,22 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   implicit def tp2id(tp:TPRef) : Int = ids(tp)
   implicit def id2tp(id:Int) : TPRef = tps(id)
 
-  for((from, to, d, status, optID) <- from.constraints) {
-    status match {
-      case CONTINGENT => optID match {
-        case Some(id) => dispatcher.addContingentWithID(from, to, d, id)
-        case None => dispatcher.addConstraint(from, to, d)
-      }
-      case _ => optID match {
-        case Some(id) => dispatcher.addConstraintWithID(from, to, d, id)
-        case None => dispatcher.addConstraint(from, to, d)
-      }
+  for((from, to, d, status, optID) <- from.constraints ; if status == CONTINGENT) {
+    optID match {
+      case Some(id) => dispatcher.addContingentWithID(from, to, d, id)
+      case None => dispatcher.addContingent(from, to, d)
     }
   }
+
+  for((from, to, d, status, optID) <- from.constraints ; if status == ElemStatus.CONTROLLABLE) {
+    optID match {
+      case Some(id) => dispatcher.addConstraintWithID(from, to, d, id)
+      case None => dispatcher.addConstraint(from, to, d)
+    }
+  }
+
+  dispatcher.checkConsistencyFromScratch()
+
 
   def isConsistent = dispatcher.checkConsistency()
 
@@ -46,17 +52,16 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     new IList[TPRef](dispatcher.dispatchableEvents(time).map(id => id2tp(id)).toList)
   }
 
-  def getMaxContingentDelay(from:TPRef, to:TPRef) : Int = {
-
-    dispatcher.maxContingentDelay(from, to) match {
+  def getMaxDelay(from:TPRef, to:TPRef) : Int = {
+    dispatcher.maxDelay(from, to) match {
       case Some(e) => e
       case None => throw new RuntimeException("No contingent delay between those two time points")
     }
   }
 
-  def getMinContingentDelay(from:TPRef, to:TPRef) : Int = {
-    dispatcher.minContingentDelay(to, from) match {
-      case Some(e) => -e
+  def getMinDelay(from:TPRef, to:TPRef) : Int = {
+    dispatcher.minDelay(from, to) match {
+      case Some(e) => e
       case None => throw new RuntimeException("No contingent delay between those two time points")
     }
   }

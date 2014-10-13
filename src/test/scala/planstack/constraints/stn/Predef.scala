@@ -12,7 +12,7 @@ object Predef {
   )
 
   def getAllISTNU[ID] : List[ISTNU[ID]] = List(
-//    new FastIDC[ID](),
+    new FastIDC[ID](),
     new MMV[ID]()
   //new EfficientIDC[ID]
   )

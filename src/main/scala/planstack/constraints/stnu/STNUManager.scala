@@ -13,8 +13,8 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
                             protected var end : Option[TPRef])
   extends GenSTNUManager[TPRef,ID]
 {
-  def this() = this(new FastIDC[ID](), Map(), None, None)
-//  def this() = this(new MMV[ID](), Map(), None, None)
+//  def this() = this(new FastIDC[ID](), Map(), None, None)
+  def this() = this(new MMV[ID](), Map(), None, None)
 
   implicit def TPRef2stnID(tp : TPRef) : Int = id(tp)
 
@@ -73,7 +73,9 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
 
   override def timepoints : IList[(TPRef, ElemStatus)] =
     for(tp <- id.keys) yield
-      if(stnu.isDispatchable(tp)) (tp, CONTROLLABLE)
+      if(TPRef2stnID(tp) == stnu.start) (tp, START)
+      else if(TPRef2stnID(tp) == stnu.end) (tp, END)
+      else if(stnu.isDispatchable(tp)) (tp, CONTROLLABLE)
       else if(stnu.isContingent(tp)) (tp, CONTINGENT)
       else (tp, NO_FLAG)
 

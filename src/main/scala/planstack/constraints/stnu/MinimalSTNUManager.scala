@@ -27,7 +27,9 @@ class MinimalSTNUManager[TPRef,ID](val stn:ISTN[ID],
 
   override def timepoints: IList[(TPRef, ElemStatus)] =
     for (tp <- ids.keys) yield
-      if (dispatchableVars.contains(tp)) (tp, CONTROLLABLE)
+      if(ref2id(tp) == stn.start) (tp, START)
+      else if(ref2id(tp) == stn.end) (tp, END)
+      else if (dispatchableVars.contains(tp)) (tp, CONTROLLABLE)
       else if (contingentVars.contains(tp)) (tp, CONTINGENT)
       else (tp, NO_FLAG)
 

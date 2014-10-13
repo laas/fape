@@ -85,13 +85,21 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
 
   override def timepoints : IList[(TPRef, ElemStatus)] =
     for(tp <- id.keys) yield
-      if(controllableTPs.contains(tp)) (tp, CONTROLLABLE)
+      if(id(tp) == stn.start) (tp, START)
+      else if(id(tp) == stn.end) (tp, END)
+      else if(controllableTPs.contains(tp)) (tp, CONTROLLABLE)
       else if(contingentTPs.contains(tp)) (tp, CONTINGENT)
       else (tp, NO_FLAG)
 
   override def constraints : IList[(TPRef, TPRef, Int, ElemStatus, Option[ID])] = {
     val ref = id.map(_.swap)
-    stn.constraints.map((x:Tuple5[Int,Int,Int,ElemStatus,Option[ID]]) => (ref(x._1), ref(x._2), x._3, x._4, x._5))
+    var ret = new IList[(TPRef, TPRef, Int, ElemStatus, Option[ID])](
+      stn.constraints.map((x:Tuple5[Int,Int,Int,ElemStatus,Option[ID]]) => (ref(x._1), ref(x._2), x._3, x._4, x._5)))
+    for(cont <- contingents) {
+      ret = ret.`with`(cont.u, cont.v, cont.max, CONTINGENT, cont.optID)
+      ret = ret.`with`(cont.v, cont.u, -cont.min, CONTINGENT, cont.optID)
+    }
+    ret
   }
 
   override def removeTimePoint(tp:TPRef): Unit = {

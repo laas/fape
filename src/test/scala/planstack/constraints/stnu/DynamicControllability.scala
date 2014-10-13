@@ -11,7 +11,7 @@ class DynamicControllability extends FunSuite {
   for(idc <- getAllISTNU[String]) {
 
     // example from `Incremental Dynamic Controllability Revisited` fig. 2
-    test("["+idc.getClass.getSimpleName+"] DC violation, cycle of negative edges.") {
+    test("[" + idc.getClass.getSimpleName + "] DC violation, cycle of negative edges.") {
       val A = idc.addVar()
       val B = idc.addVar()
       val C = idc.addVar()
@@ -123,6 +123,48 @@ class DynamicControllability extends FunSuite {
       // make sure the cooking starts at the right time
       assert(idc.hasRequirement(StartDriving, StartCooking, 10))
       assert(idc.hasRequirement(StartCooking, StartDriving, -10))
+    }
+  }
+
+
+  for(stn <- getAllISTNU[String]) {
+
+    // example from `Incremental Dynamic Controllability Revisited` fig. 2
+    test("[" + stn.getClass.getSimpleName + "] Not DC on a plan-like STNU") {
+      val a = stn.addDispatchable()
+      val b = stn.addContingentVar()
+      val c = stn.addVar()
+      val d = stn.addVar()
+      val e = stn.addDispatchable()
+      val f = stn.addContingentVar()
+      val g = stn.addVar()
+      val h = stn.addVar()
+      val s = stn.start
+
+      stn.enforceBefore(s, a)
+      stn.enforceInterval(s, h, 22, 22)
+
+      stn.enforceInterval(b, c, 0, 0)
+      stn.enforceStrictlyBefore(c, d)
+      stn.enforceInterval(d, e, 0, 0)
+
+      stn.enforceInterval(f, g, 0, 0)
+      stn.enforceStrictlyBefore(g, h)
+      stn.checkConsistency()
+
+      stn.addContingent(a, b, 10)
+      stn.addContingent(b, a, -5)
+      stn.addContingent(e, f, 15)
+      stn.addContingent(f, e, -10)
+
+      /*
+      stn.addContingent(a, b, 5, 10)
+      stn.addContingent(e, f, 10, 15)
+*/
+      //this is a corner case where contingent constraints are added later than the other constraints
+      assert(!stn.checkConsistency())
+
+
     }
   }
 }

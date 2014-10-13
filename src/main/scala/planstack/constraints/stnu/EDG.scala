@@ -492,8 +492,11 @@ class EDG[ID](val checkCycles : Boolean,
     for(k <- 0 until size)
       for(i <- 0 until size)
         for(j <- 0 until size)
-          if(dist(i,j) > plus(dist(i,k),dist(k,j)))
-            matrix.addEdge(i, j, plus(dist(i,k),dist(k,j)))
+          if(dist(i,j) > plus(dist(i,k),dist(k,j))) {
+            matrix.addEdge(i, j, plus(dist(i, k), dist(k, j)))
+            if(plus(dist(i,j), dist(j,i))<0)
+              listener.cycleDetected()
+          }
 
     matrix
   }

@@ -1,11 +1,17 @@
 package planstack.constraints.stnu
 
+import planstack.constraints.stn.LabeledEdgeWithID
 import planstack.constraints.stnu.Controllability._
-import planstack.constraints.stnu.ElemStatus.ElemStatus
+import planstack.constraints.stnu.ElemStatus._
+import planstack.graph.core.LabeledEdge
+import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
+import planstack.graph.core.impl.matrix.FullIntIntDigraph
 import planstack.structures.IList
 import planstack.structures.Converters._
 
-class MMV[ID](protected[stnu] var edg : EDG[ID],
+class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
+              var requirements : FullIntIntDigraph,
+              var conditionals : DirectedMultiLabeledIIAdjList[Conditional[ID]],
               private var modified : List[Edge[ID]],
               protected var _consistent : Boolean,
               protected[stnu] var allConstraints : List[Edge[ID]],
@@ -15,21 +21,23 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
               protected[stnu] var enabled : Set[Int],
               protected[stnu] var executed : Set[Int])
   extends ISTNU[ID]
-  with EDGListener[ID]
   with DispatchableSTNU[ID]
 {
   type E = Edge[ID]
 
-  def this() = this(new EDG[ID](checkCycles = false), Nil, true, List(), Set(), Set(), Set(), Set(), Set())
+  // if set to true, IFPC will be invoked every time a requirement is explicitly added
+  private var enabledIFPC = true
+
+  def this() = this(new DirectedSimpleLabeledIIAdjList[Contingent[ID]](),
+    new FullIntIntDigraph(Int.MaxValue),
+    new DirectedMultiLabeledIIAdjList[Conditional[ID]](),
+    Nil, true, List(), Set(), Set(), Set(), Set(), Set())
 
   /** Create a new MMV with exactly the same vars and edges than the given one */
   def this(toCopy:MMV[ID]) =
-    this(new EDG(toCopy.edg), toCopy.modified, toCopy._consistent, toCopy.allConstraints,
+    this(toCopy.contingents.cc(),toCopy.requirements.cc(), toCopy.conditionals.cc(),
+      toCopy.modified, toCopy._consistent, toCopy.allConstraints,
       toCopy.dispatchableVars, toCopy.contingentVars, toCopy.emptySpots, toCopy.enabled, toCopy.executed)
-
-  // record ourself as the listener of any event in the EDG
-  assert(edg.listener == null, "Error: already a listener on this EDG")
-  edg.listener = this
 
   // create start and end time points
   if(size == 0) {
@@ -38,6 +46,8 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
     assert(myStart == start)
     assert(myEnd == end)
   }
+
+  private final def dist(i:Int, j:Int) = requirements.edgeValue(i, j)
 
   def consistent = {
     checkConsistency()
@@ -49,7 +59,9 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
    * @return ID of the created time point
    */
   def addVar(): Int =  {
-    val n = edg.addVar()
+    requirements.addVertex()
+    conditionals.addVertex()
+    val n = contingents.addVertex()
     if(n != start && n != end) {
       this.enforceBefore(start, n)
       this.enforceBefore(n, end)
@@ -60,24 +72,42 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
     n
   }
 
-  def checkConsistency(): Boolean = checkConsistencyFromScratch()
+  def checkConsistency(): Boolean = {
+    while(_consistent && modified.nonEmpty) {
+      val e = modified.head
+      modified = modified.tail
+
+      val additionAndRemovals : List[(List[E],List[E])] = classicalDerivations(e)
+        for((toAdd,toRemove) <- additionAndRemovals) {
+          for (edge <- toAdd)
+            addEdge(edge)
+        }
+    }
+    _consistent
+  }
 
   def checkConsistencyFromScratch(): Boolean = {
+    modified = Nil
+    modified = modified ++ requirements.edges().map(e => new E(e.u, e.v, new Requirement[ID](e.l)))
+    modified = modified ++ contingents.edges()
+    modified = modified ++ conditionals.edges()
+    enabledIFPC = false
     while(_consistent && modified.nonEmpty) {
-      edg.apsp()
+      apsp()
       var queue = modified
       modified = Nil
       while(_consistent && queue.nonEmpty) {
         val e = queue.head
         queue = queue.tail
 
-        val additionAndRemovals : List[(List[E],List[E])] = edg.classicalDerivations(e)
+        val additionAndRemovals : List[(List[E],List[E])] = classicalDerivations(e)
         for((toAdd,toRemove) <- additionAndRemovals) {
           for (edge <- toAdd)
-            edg.addEdge(edge)
+            addEdge(edge)
         }
       }
     }
+    enabledIFPC = true
     _consistent
   }
 
@@ -93,7 +123,7 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
    * @return
    */
   def earliestStart(u: Int): Int =
-    -edg.requirements.edgeValue(u, start).value
+    -requirements.edgeValue(u, start)
 
   /**
    * Returns the latest start time of time point u with respect to the start TP of the STN
@@ -101,50 +131,63 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
    * @return
    */
   def latestStart(u: Int): Int = {
-    if(edg.requirements.edgeValue(start, u) == null)
-      Int.MaxValue
-    else
-      edg.requirements.edgeValue(start, u).value
+    requirements.edgeValue(start, u)
   }
 
   /**
    * Return the number of time points in the STN
    * @return
    */
-  def size: Int = edg.size - emptySpots.size
+  def size: Int = requirements.numVertices - emptySpots.size
 
-    def addRequirement(from: Int, to: Int, value: Int): Boolean = {
+  def addRequirement(from: Int, to: Int, value: Int): Boolean = {
     val e = new E(from, to, new Requirement[ID](value))
     allConstraints = e :: allConstraints
-    edg.addEdge(e).nonEmpty
+    addEdge(e).nonEmpty
   }
 
   def addRequirementWithID(from:Int, to:Int, value:Int, id:ID) : Boolean = {
     val e = new E(from, to, new RequirementWithID[ID](value, id))
     allConstraints = e :: allConstraints
-    edg.addEdge(e).nonEmpty
+    addEdge(e).nonEmpty
   }
 
   def addContingent(from: Int, to: Int, lb: Int, ub:Int): Boolean = {
-    val added = edg.addContingent(from, to, ub, None) ++ edg.addContingent(to, from, -lb, None)
+    val added = addContingent(from, to, ub, None) ++ addContingent(to, from, -lb, None)
     allConstraints = allConstraints ++added
     added.nonEmpty
   }
 
   def addContingentWithID(from:Int, to:Int, lb:Int, ub:Int, id:ID) : Boolean = {
-    val added = edg.addContingent(from, to, ub, Some(id)) ++ edg.addContingent(to, from, -lb, Some(id))
+    val added = addContingent(from, to, ub, Some(id)) ++ addContingent(to, from, -lb, Some(id))
     allConstraints = allConstraints ++ added
     added.nonEmpty
   }
 
+  private def addContingent(from:Int, to:Int, value:Int, optID:Option[ID]) : List[E] = {
+    val eCont = optID match {
+      case Some(id) => new E(from, to, new ContingentWithID[ID](value, id))
+      case None => new E(from, to, new Contingent[ID](value))
+    }
+    val eReq = optID match {
+      case Some(id) => new E(from, to, new RequirementWithID[ID](value, id))
+      case None => new E(from, to, new Requirement(value))
+    }
+    addEdge(eCont) ++ addEdge(eReq) //TODO
+  }
+
   override protected[stnu] def addContingent(from: Int, to: Int, d: Int): Unit =
-    allConstraints = allConstraints ++ edg.addContingent(from, to, d, None)
+    allConstraints = allConstraints ++ addContingent(from, to, d, None)
 
   override protected[stnu] def addContingentWithID(from: Int, to: Int, d: Int, id: ID): Unit =
-    allConstraints = allConstraints ++ edg.addContingent(from, to, d, Some(id))
+    allConstraints = allConstraints ++ addContingent(from, to, d, Some(id))
 
   protected def addConditional(from: Int, to: Int, on: Int, value: Int): Boolean = {
-    edg.addConditional(from, to, on, value).nonEmpty
+    while(!requirements.contains(from) || !requirements.contains(to) || !requirements.contains(on)) {
+      addVar()
+    }
+    val e = new E(from, to, new Conditional(on, value))
+    addEdge(e).nonEmpty
   }
 
 
@@ -156,14 +199,10 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
 
   /** Returns true if the given requirement edge is present in the STNU */
   protected[stnu] def hasRequirement(from: Int, to: Int, value: Int): Boolean =
-    edg.hasRequirement(from, to, value)
-
-  def edgeAdded(e: E): Unit = modified = e :: modified
+    requirements.edgeValue(from, to) == value
 
   def cycleDetected(): Unit = throw new RuntimeException("EDG should not be looking for cycles")
     //assert(!_consistent, "Should have been already detected through inconsistency.")
-
-  def squeezingDetected(): Unit = _consistent = false
 
   /** Removes all constraints that were recorded with the given ID */
   override def removeConstraintsWithID(id: ID): Boolean = {
@@ -171,32 +210,28 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
       case Some(constraintID) => id != constraintID
       case None => true
     })
-    val prevSize = edg.size
+    val prevSize = requirements.numVertices
 
-    // empty every thing
-    edg = new EDG[ID](checkCycles = false)
-    edg.listener = this
+    requirements = new FullIntIntDigraph(MMV.inf)
+    contingents = new DirectedSimpleLabeledIIAdjList[Contingent[ID]]()
+    conditionals = new DirectedMultiLabeledIIAdjList[Conditional[ID]]()
 
     _consistent = true
     modified = Nil
 
-    for(i <- 0 until edg.size)
-      edg.addVar()
-    for(e <- allConstraints) {
-      if(e.l.cont) edg.addContingent(e.u, e.v, e.l.value)
-      else if(e.l.req) edg.addRequirement(e.u, e.v, e.l.value)
-      else throw new RuntimeException("An edge was recorded that is neither contingent or a requirement")
-    }
+    for(i <- 0 until prevSize)
+      addVar()
+    for(e <- allConstraints)
+      addEdge(e)
+
     checkConsistencyFromScratch()
   }
-
-  override def inconsistencyDetected(): Unit = _consistent = false
 
   /** Remove a variable and all constraints that were applied on it; */
   override def removeVar(u: Int): Boolean = ???
 
   /** Returns a collection of all time points in this STN */
-  override def events: IList[Int] = (0 until edg.size).filter(!emptySpots.contains(_))
+  override def events: IList[Int] = (0 until requirements.numVertices).filter(!emptySpots.contains(_))
 
   override def controllability: Controllability = DYNAMIC_CONTROLLABILITY
 
@@ -214,7 +249,16 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
     i
   }
 
-  override def constraints: IList[(Int, Int, Int, ElemStatus, Option[ID])] = ???
+  private def optID(e:E) : Option[ID] = e match {
+    case e:LabeledEdgeWithID[Any,Any,ID] => Some(e.id)
+    case _ => None
+  }
+
+  override def constraints: IList[(Int, Int, Int, ElemStatus, Option[ID])] = allConstraints.map((e:E) => {
+    if(e.l.cont) (e.u, e.v, e.l.value, CONTINGENT, optID(e))
+    else if(e.l.req) (e.u, e.v, e.l.value, CONTROLLABLE, optID(e))
+    else throw new RuntimeException("This constraints should not be recorded: "+e)
+  })
 
   override def isContingent(v: Int): Boolean = contingentVars.contains(v)
 
@@ -246,29 +290,29 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
   }
 
   protected def removeContingentOn(n:Int): Unit = {
-    edg.contingents.deleteEdges((e:E) => {
+    contingents.deleteEdges((e:E) => {
       e.v == n && e.l.positive || e.u == n && e.l.negative
     })
   }
 
   protected def removeWaitsOn(u:Int) = {
-    edg.conditionals.deleteEdges((e:E) => e.l.cond && e.l.node == u)
+    conditionals.deleteEdges((e:E) => e.l.cond && e.l.node == u)
   }
 
   override def isEnabled(u:Int): Boolean = {
     if(isExecuted(u))
       return false
 
-    for(e <- edg.requirements.outEdges(u)) {
-      if (e.l.value <= 0 && isContingent(e.v) && !executed.contains(e.v))
+    for(e <- requirements.outEdges(u)) {
+      if (e.l <= 0 && isContingent(e.v) && !executed.contains(e.v))
         return false
-      if (e.l.value < 0 && dispatchableVars.contains(e.v) && !executed.contains(e.v))
+      if (e.l < 0 && dispatchableVars.contains(e.v) && !executed.contains(e.v))
         return false
     }
 
-    for(e <- edg.conditionals.outEdges(u)) {
+    for(e <- conditionals.outEdges(u)) {
       if(!isExecuted(e.l.node))
-        if(earliestStart(e.v) == Int.MaxValue || earliestStart(e.v) - e.l.value > earliestStart(u))
+        if(earliestStart(e.v) >= MMV.inf || earliestStart(e.v) - e.l.value > earliestStart(u))
           return false
     }
     true
@@ -276,15 +320,9 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
 
   override def isExecuted(n: Int): Boolean = executed.contains(n)
 
-  override def minContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(to, from) match {
-    case Some(e) => Some(-e.l.value)
-    case None => None
-  }
+  override def minDelay(from: Int, to: Int): Option[Int] = Some(-requirements.edgeValue(to, from))
 
-  override def maxContingentDelay(from: Int, to: Int): Option[Int] = edg.contingents.edge(from, to) match {
-    case Some(e) => Some(e.l.value)
-    case None => None
-  }
+  override def maxDelay(from: Int, to: Int): Option[Int] = Some(requirements.edgeValue(from, to))
 
   override def dispatchableEvents(atTime: Int): Iterable[Int] = {
     checkConsistency()
@@ -294,11 +332,296 @@ class MMV[ID](protected[stnu] var edg : EDG[ID],
     executables
   }
 
-  override def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = {
-    edg.requirements.edge(v, u) match {
-      case Some(e) => e.l.value + w >= 0 // should not create a negative cycle
-      case None => true
+  override def isConstraintPossible(u: Int, v: Int, w: Int): Boolean =
+    requirements.edgeValue(v, u) + w >= 0 // should not create a negative cycle
+
+  override def setExecuted(n: Int): Unit = executed = executed + n
+
+
+  def tightens(e : E) : Boolean = {
+    e.l match {
+      case req:Requirement[ID] => {
+        req.value < requirements.edgeValue(e.u, e.v)
+      }
+      case cont:Contingent[ID] => {
+        contingents.edge(e.u, e.v) match {
+          case None => true
+          case Some(prev) =>
+            if(prev.l.value == e.l.value) false
+            else throw new RuntimeException("Error: tightening/relaxing a contingent constraint.")
+        }
+      }
+      case cond:Conditional[ID] => {
+        conditionals.edges(e.u, e.v).forall(prev => prev.l.node != cond.node || cond.value < prev.l.value)
+      }
     }
   }
-  override def setExecuted(n: Int): Unit = executed = executed + n
+
+  private def addEdge(e : E) : List[E] = {
+    if(!tightens(e)) {
+      // this edge is not tightening, nothing to add
+      Nil
+    } else {
+      if(e.l.req) {
+        requirements.addEdge(e.u, e.v, e.l.value)
+        if(enabledIFPC)
+          IFPC(e.u, e.v, e.l.value)
+      } else if(e.l.cond)
+        conditionals.addEdge(e.asInstanceOf[LabeledEdge[Int, Conditional[ID]]])
+      else if(e.l.cont)
+        contingents.addEdge(e.asInstanceOf[LabeledEdge[Int, Contingent[ID]]])
+      else
+        throw new RuntimeException("Error: Unknown constraint type.")
+
+      edgeAdded(e)
+
+      // return the added edges
+      List(e)
+    }
+  }
+
+  private def edgeAdded(e : E) {
+    assert(e.l.value < MMV.inf, "Infinite edge added : "+e)
+    if(e.l.cont && dist(e.u, e.v) < e.l.value) {
+      _consistent = false
+    } else if(e.l.req) {
+      contingents.edge(e.u, e.v) match {
+        case Some(cont) if cont.l.value > e.l.value => {
+          _consistent = false
+        }
+        case _ =>
+      }
+    }
+
+
+    if(e.u == e.v && e.l.value < 0)
+      _consistent = false
+
+    val vuVal = requirements.edgeValue(e.v,e.u)
+    if(plus(e.l.value, vuVal) < 0)
+    // adding an edge with lower upper bound than lower bound
+      _consistent = false
+
+    modified = e :: modified
+//    checkConsistency()
+  }
+
+  private final def plus(a:Int, b:Int) =
+    if(a >= MMV.inf) Int.MaxValue
+    else if(b >= MMV.inf) Int.MaxValue
+    else a + b
+
+    /** Computes the all pair shortest path inside the Requirements graph */
+  protected[stnu] def apsp() = {
+    for(k <- 0 until size)
+      for(i <- 0 until size)
+        for(j <- 0 until size)
+          if(dist(i,j) > plus(dist(i,k),dist(k,j))) {
+            addEdge(new E(i, j, new Requirement(plus(dist(i, k), dist(k, j)))))
+          }
+  }
+
+  protected[stnu] def IFPC(a:Int, b:Int, d:Int): Unit = {
+    var I = List[Int]()
+    var J = List[Int]()
+
+    for(k <- events ; if k != a && k != b) {
+      val kab = plus(dist(k, a), dist(a, b))
+      if (dist(k, b) > kab) {
+        requirements.addEdge(k, b, kab)
+        edgeAdded(new E(k, b, new Requirement[ID](kab)))
+        I = k :: I
+      }
+      val abk = plus(dist(a, b), dist(b, k))
+      if (dist(a, k) > abk) {
+        requirements.addEdge(a, k, abk)
+        edgeAdded(new E(a, k, new Requirement[ID](abk)))
+        J = k :: J
+      }
+    }
+    for(i <- I ; j <- J ; if i != j) {
+      val iaj = plus(dist(i, a), dist(a, j))
+      if(dist(i, j) > iaj) {
+        requirements.addEdge(i, j, iaj)
+        edgeAdded(new E(i, j, new Requirement[ID](iaj)))
+      }
+    }
+  }
+
+  /** All derivations made with FastIDC's derivations with e as a focus edges.
+    *
+    * Returns a tuple (edges to add, edges to remove).
+    */
+  def classicalDerivations(e : E) =
+    if(e.l.req && e.l.value >= MMV.inf)
+      Nil
+    else
+      PR1(e) :: PR2(e) :: unorderedRed(e) :: SR1(e) :: contingentReg(e) :: unconditionalRed(e) :: generalRed(e) :: Nil
+
+  protected[stnu] def PR1(e : E) : (List[E], List[E]) = D6(e)
+
+  protected[stnu] def PR2(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.u
+    val B = e.v
+    val reqBA = requirements.edgeValue(B, A)
+    // AB must be positive and BA negative (A before B)
+    if(e.l.posReq && reqBA <= 0) {
+      for (contCB <- contingents.inEdges(B) ; if contCB.l.positive) {
+        val C = contCB.u
+        if (A != B && A != C && B != C) {
+          toAdd = new E(A, C, new Requirement(e.l.value - contCB.l.value)) :: toAdd
+        }
+      }
+    }
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def unorderedRed(e : E) : (List[E], List[E]) = D1(e)
+
+  protected[stnu] def SR1(e : E) : (List[E], List[E]) = {
+    val (add3, rm3) = D3(e)
+    val (add5, rm5) = D5(e)
+    (add3 ++ add5, rm3 ++ rm5)
+  }
+
+  protected[stnu] def SR2(e : E) : (List[E], List[E]) = throw new RuntimeException("This rule is useless")
+
+  protected[stnu] def contingentReg(e : E) : (List[E], List[E]) = D2(e)
+
+  protected[stnu] def unconditionalRed(e : E) : (List[E], List[E]) = D8(e)
+
+  protected[stnu] def generalRed(e : E) : (List[E], List[E]) = D9(e)
+
+  protected[stnu] def D1(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.u
+    val B = e.v
+    if(e.l.posReq) {
+      for(C <- contingents.children(B) ; if A != B && A != C && B != C) {
+        (contingents.edge(B, C), contingents.edge(C, B)) match {
+          case (Some(bc), Some(cb)) => {
+            if(bc.l.negative && cb.l.positive) {
+              toAdd = new E(A, C, new Conditional(B, e.l.value - cb.l.value)) :: toAdd
+            }
+          }
+          case _ =>
+        }
+      }
+    }
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def D2(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.v
+    val C = e.u
+    if(e.l.cond && e.l.negative) {
+      val B = e.l.node
+      val outEdges = contingents.outEdges(C)
+      for(D <- contingents.children(C) ; if D != C ; if A != B && A != C && B != C) {
+        if(contingents.edges(C, D).nonEmpty && contingents.edges(D, C).nonEmpty) {
+          val cd = contingents.edges(C, D).head
+          val dc = contingents.edges(D, C).head
+          if(dc.l.positive && cd.l.negative) {
+            toAdd = new E(D, A, new Conditional(B, -cd.l.value + e.l.value)) :: toAdd
+          }
+        }
+      }
+    }
+
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def D3(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.v
+    val C = e.u
+    if(e.l.cond && e.l.negative) {
+      val B = e.l.node
+      for(D <- requirements.parents(C) ; if D != C ; if A != B && A != C && B != C) {
+        val dc = requirements.edges(D, C).head
+        if(D != B && dc.l >= 0 && dc.l < MMV.inf) {
+          toAdd = new E(D, A, new Conditional(B, dc.l + e.l.value)) :: toAdd
+        }
+      }
+    }
+
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def D5(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.u
+    val B = e.v
+    if(e.l.req && e.l.positive) {
+      for(condBC <- conditionals.outEdges(B)) {
+        val C = condBC.v
+        val D = condBC.l.node
+        if(A != B && A != C && B != C &&condBC.l.negative && D != A) {
+          toAdd = new E(A, C, new Conditional(D, e.l.value+condBC.l.value)) :: toAdd
+        }
+      }
+    }
+
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def D6(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.v
+    val B = e.u
+    if(e.l.req && e.l.negative) {
+      for(contBC <- contingents.outEdges(B) ; if contBC.l.negative) {
+        val C = contBC.v
+        if (A != B && A != C && B != C) {
+          contingents.edge(C, B) match {
+            case None =>
+            case Some(contCB) =>
+              toAdd = new E(C, A, new Requirement(-contBC.l.value + e.l.value)) :: toAdd
+          }
+        }
+      }
+    }
+
+    (toAdd, Nil)
+  }
+
+  protected[stnu] def D8(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    var toRemove = List[E]()
+    val A = e.v
+    val C = e.u
+    if(e.l.cond && e.l.negative) {
+      val B = e.l.node
+      for(reqBA <- contingents.edges(B, A) ;
+          if reqBA.l.negative ;
+          if e.l.value >= reqBA.l.value ;
+          if A != B && A != C && B != C) {
+        toAdd = new E(C, A, new Requirement(e.l.value)) :: toAdd
+        if(!toRemove.contains(e))
+          toRemove = e :: toRemove
+      }
+    }
+    (toAdd, toRemove)
+  }
+
+  protected[stnu] def D9(e : E) : (List[E], List[E]) = {
+    var toAdd = List[E]()
+    val A = e.v
+    val C = e.u
+    if(e.l.cond) {
+      val B = e.l.node
+      for(reqBA <- contingents.edges(B, A) ;
+          if e.l.value < reqBA.l.value ;
+          if A != B && A != C && B != C) {
+        toAdd = new E(C, A, new Requirement(reqBA.l.value)) :: toAdd
+      }
+    }
+    (toAdd, Nil)
+  }
+}
+
+object MMV {
+  final val inf = 2000000000
 }

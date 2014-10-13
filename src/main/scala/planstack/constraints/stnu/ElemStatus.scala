@@ -8,6 +8,8 @@ object ElemStatus extends Enumeration {
 
   /** Time points that are controllable but will not be dispatched */
   val NO_FLAG = Value
+  val START = Value
+  val END = Value
   val CONTROLLABLE = Value
   val CONTINGENT = Value
 
