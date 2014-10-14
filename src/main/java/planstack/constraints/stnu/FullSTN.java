@@ -63,7 +63,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     protected static final int sup = 2000000000;
 
     static int precalc[][] = null;
-    static final int precalc_size = 1000;
+    static final int precalc_size = 10000;
 
     /**
      * constructs new network (intended to run once per Finder invokation)

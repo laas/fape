@@ -62,4 +62,8 @@ trait ISTNU[ID] extends ISTN[ID] {
   /** Returns true if the given requirement edge is present in the STNU */
   protected[stnu] def hasRequirement(from: Int, to:Int, value:Int) : Boolean
 
+  /** Returns Some((min, max)) if there is a contingent constraint from --[min,max]--> to.
+    * Returns None otherwise.
+    */
+  def getContingentDelay(from:Int, to:Int) : Option[(Int,Int)]
 }

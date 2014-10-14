@@ -110,4 +110,9 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
   override def getEndTimePoint: Option[TPRef] = end
 
   override def getStartTimePoint: Option[TPRef] = start
+
+  override def contingentDelay(from:TPRef, to:TPRef) = stnu.getContingentDelay(from, to) match {
+    case Some((min, max)) => Some((min:Integer, max:Integer))
+    case None => None
+  }
 }

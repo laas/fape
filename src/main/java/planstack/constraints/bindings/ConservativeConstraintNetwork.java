@@ -497,7 +497,7 @@ public class ConservativeConstraintNetwork<VarRef> {
         }
 
         exts.get(setID).addValues(vals);
-        assert !extChecked : "Error: adding values to constraints in extension while propagation already occurred.";
+//        assert !extChecked : "Error: adding values to constraints in extension while propagation already occurred.";
     }
 
     /**

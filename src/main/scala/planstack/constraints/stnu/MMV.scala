@@ -448,6 +448,16 @@ class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
     }
   }
 
+  /** Returns Some((min, max)) if there is a contingent constraint from --[min,max]--> to.
+    * Returns None otherwise.
+    */
+  override def getContingentDelay(from: Int, to: Int): Option[(Int, Int)] =
+    (contingents.edge(to, from), contingents.edge(from, to)) match {
+      case (Some(min), Some(max)) => Some((-min.l.value, max.l.value))
+      case (None, None) => None
+      case _ => throw new RuntimeException("This contingent constraint does not seem symmetrical.")
+    }
+
   /** All derivations made with FastIDC's derivations with e as a focus edges.
     *
     * Returns a tuple (edges to add, edges to remove).

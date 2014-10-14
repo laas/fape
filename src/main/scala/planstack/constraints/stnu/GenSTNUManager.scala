@@ -18,6 +18,12 @@ abstract class GenSTNUManager[TPRef,ID] extends GenSTNManager[TPRef,ID] {
   final def checksPseudoControllability : Boolean = controllability.ordinal() >= PSEUDO_CONTROLLABILITY.ordinal()
   final def checksDynamicControllability : Boolean = controllability.ordinal() >= DYNAMIC_CONTROLLABILITY.ordinal()
 
+  /** If there is a contingent constraint [min, max] between those two timepoints, it returns
+    * Some((min, max).
+    * Otherwise, None is returned.
+    */
+  def contingentDelay(from:TPRef, to:TPRef) : Option[(Integer, Integer)]
+
   def controllability : Controllability
 
   /** Makes an independent clone of this STN. */

@@ -129,4 +129,19 @@ class MinimalSTNUManager[TPRef,ID](val stn:ISTN[ID],
   override def getEndTimePoint: Option[TPRef] = end
 
   override def getStartTimePoint: Option[TPRef] = start
+
+  /** If there is a contingent constraint [min, max] between those two timepoints, it returns
+    * Some((min, max).
+    * Otherwise, None is returned.
+    */
+  override def contingentDelay(from: TPRef, to: TPRef): Option[(Integer, Integer)] = {
+    val min = contingents.find(c => c._1 == to && c._2 == from).map(-_._3)
+    val max = contingents.find(c => c._1 == from && c._2 == to).map(_._3)
+    if(min.nonEmpty && max.nonEmpty)
+      Some((min.get :Integer, max.get :Integer))
+    else if(min.isEmpty && max.isEmpty)
+      None
+    else
+      throw new RuntimeException("Contingent constraint does not look symmetrical")
+  }
 }

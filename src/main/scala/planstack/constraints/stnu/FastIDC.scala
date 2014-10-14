@@ -232,4 +232,14 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
 
   /** Returns true if a variable is dispatchable */
   override def isDispatchable(v: Int): Boolean = dispatchableVars.contains(v)
+
+  /** Returns Some((min, max)) if there is a contingent constraint from --[min,max]--> to.
+    * Returns None otherwise.
+    */
+  override def getContingentDelay(from: Int, to: Int): Option[(Int, Int)] =
+    (edg.contingents.edge(to, from), edg.contingents.edge(from, to)) match {
+      case (Some(min), Some(max)) => Some((-min.l.value, max.l.value))
+      case (None, None) => None
+      case _ => throw new RuntimeException("This contingent constraint does not seem symmetrical.")
+    }
 }

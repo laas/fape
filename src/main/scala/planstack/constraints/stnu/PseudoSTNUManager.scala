@@ -129,4 +129,12 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
   override def getEndTimePoint: Option[TPRef] = end
 
   override def getStartTimePoint: Option[TPRef] = start
+
+  /** If there is a contingent constraint [min, max] between those two timepoints, it returns
+    * Some((min, max).
+    * Otherwise, None is returned.
+    */
+  override def contingentDelay(from: TPRef, to: TPRef): Option[(Integer, Integer)] =
+    contingents.find(c => c.u == from && c.v == to).map(c => (c.min:Integer, c.max:Integer))
+
 }

@@ -240,6 +240,11 @@ class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends IS
   override protected[stnu] def addContingent(from: Int, to: Int, d: Int): Unit = ???
 
   override protected[stnu] def addContingentWithID(from: Int, to: Int, d: Int, id: ID): Unit = ???
+
+  /** Returns Some((min, max)) if there is a contingent constraint from --[min,max]--> to.
+    * Returns None otherwise.
+    */
+  override def getContingentDelay(from: Int, to: Int): Option[(Int, Int)] = ???
 }
 
 object EfficientIDC {
