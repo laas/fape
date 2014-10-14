@@ -90,7 +90,7 @@ public class FAPE {
             problemFile = args[0];
             a = new Actor();
             p = new Planner();
-            p.controllability = Controllability.DYNAMIC_CONTROLLABILITY;
+            p.controllability = Controllability.PSEUDO_CONTROLLABILITY;
 
             Planner.actionResolvers = true;
             if(config.getBoolean("local-sim"))
