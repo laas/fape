@@ -317,12 +317,12 @@ public class Planning {
                             State sol = planner.GetCurrentState();
 
                             System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
+                            System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
 
                             Plan plan = new Plan(sol);
-                            plan.exportToDot("plan.dot");
                             sol.exportTemporalNetwork("stn.dot");
                             sol.exportTaskNetwork("task-network.dot");
-                            System.out.println("Look at plan.dot for a complete plan.");
+                            System.out.println("Look at stn.dot and task-network.dot for more details.");
                         }
                     }
                 }

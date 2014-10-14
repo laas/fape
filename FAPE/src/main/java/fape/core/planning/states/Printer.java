@@ -96,6 +96,40 @@ public class Printer {
         return ret + "):"+act.id();
     }
 
+    public static String actionsInState(final State st) {
+        StringBuilder sb = new StringBuilder();
+        List<Action> acts = new LinkedList<>(st.getAllActions());
+        Collections.sort(acts, new Comparator<Action>() {
+            @Override
+            public int compare(Action a1, Action a2) {
+                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+            }
+        });
+
+        for(Action a : acts) {
+            int start = (int) st.getEarliestStartTime(a.start());
+            int earliestEnd = (int) st.getEarliestStartTime(a.end());
+            String name = Printer.action(st, a);
+            switch (a.status()) {
+                case EXECUTED:
+                    sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
+                    break;
+                case EXECUTING:
+                case PENDING:
+                    if(st.getDurationBounds(a).nonEmpty()) {
+                        int min = st.getDurationBounds(a).get()._1();
+                        int max = st.getDurationBounds(a).get()._2();
+                        sb.append(String.format("%s \t\tearliest-start: %s\tduration in [%s, %s]\n", name, start, min, max));
+                    } else {
+                        sb.append(String.format("%s \t\tearliest-start: %s\tmin-duration: %s\n", name, start, earliestEnd-start));
+                    }
+                    break;
+                case FAILED:
+            }
+        }
+        return sb.toString();
+    }
+
     public static String taskCondition(State st, ActionCondition act) {
         if(act == null)
             return "null";

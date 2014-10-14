@@ -10,6 +10,7 @@
  */
 package fape.core.planning.tasknetworks;
 
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
@@ -19,7 +20,10 @@ import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
+import planstack.graph.core.Edge;
+import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.core.UnlabeledDigraph;
+import planstack.graph.printers.NodeEdgePrinter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -416,7 +420,42 @@ public class TaskNetworkManager implements Reporter {
         return null;
     }
 
-    public void exportToDot(State st, String filename) {
-        network.exportToDotFile(filename);
+
+
+    public void exportToDot(final State st, String filename) {
+        class TNPrinter extends NodeEdgePrinter<TNNode, Object, Edge<TNNode>> {
+            @Override
+            public String printNode(TNNode n) {
+                assert n.isAction();
+                return Printer.action(st, n.asAction());
+            }
+        }
+
+        SimpleUnlabeledDigraph<TNNode> g = GraphFactory.getSimpleUnlabeledDigraph();
+        for(TNNode n : network.jVertices())
+            if(n.isAction())
+                g.addVertex(n);
+
+        for(TNNode n : network.jVertices()) {
+            if (n.isAction()) {
+                for(TNNode child : network.jChildren(n)) {
+                    if(child.isAction()) {
+                        g.addEdge(n, child);
+                    } else {
+                        for(TNNode grandChild : network.jChildren(child)) {
+                            if(grandChild.isAction()) {
+                                g.addEdge(n, grandChild);
+                            } else {
+                                for(TNNode grandGrandChild : network.jChildren(grandChild)) {
+                                    assert grandGrandChild.isAction();
+                                    g.addEdge(n, grandGrandChild);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        g.exportToDotFile(filename, new TNPrinter());
     }
 }
