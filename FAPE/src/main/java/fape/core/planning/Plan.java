@@ -21,7 +21,11 @@ import java.util.*;
 
 public class Plan {
 
+    /** if set to true, planned actions will be displayed in a graphical window */
     public static boolean showChart = true;
+
+    /** if true, building a Plan will create a dispatchable STNU */
+    public static boolean makeDispatchable = false;
 
     class PlanPrinter extends NodeEdgePrinter<Action, Object, Edge<Action>> {
         @Override
@@ -30,7 +34,7 @@ public class Plan {
         }
     }
     final State st;
-    final STNUDispatcher<TPRef, GlobalRef> dispatcher;
+    STNUDispatcher<TPRef, GlobalRef> dispatcher;
     final Map<TPRef, Action> actions = new HashMap<>();
     final UnlabeledDigraph<LogStatement> eventsDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
     final UnlabeledDigraph<Action> actionDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
@@ -39,16 +43,18 @@ public class Plan {
         assert st.isConsistent() : "Cannot build a plan from an inconsistent state.";
         this.st = st;
 
-        this.dispatcher = st.getDispatchableSTNU();
+        if(makeDispatchable) {
+            this.dispatcher = st.getDispatchableSTNU();
 
-        for(Action a : st.getAllActions()) {
-            if(a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.EXECUTING || a.status() == ActionStatus.FAILED)
-                dispatcher.setHappened(a.start());
-            if(a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.FAILED)
-                dispatcher.setHappened(a.end());
+            for (Action a : st.getAllActions()) {
+                if (a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.EXECUTING || a.status() == ActionStatus.FAILED)
+                    dispatcher.setHappened(a.start());
+                if (a.status() == ActionStatus.EXECUTED || a.status() == ActionStatus.FAILED)
+                    dispatcher.setHappened(a.end());
 
-            // record that this time point is the start of this action
-            actions.put(a.start(), a);
+                // record that this time point is the start of this action
+                actions.put(a.start(), a);
+            }
         }
         if(showChart)
             showChart();
@@ -72,12 +78,14 @@ public class Plan {
                     ActionsChart.addExecutedAction(name, start, earliestEnd);
                     break;
                 case EXECUTING:
-                    ActionsChart.addPendingAction(name, start, dispatcher.getMinContingentDelay(a.start(), a.end()),
-                            dispatcher.getMaxContingentDelay(a.start(), a.end()));
-                    break;
                 case PENDING:
-                    ActionsChart.addPendingAction(name, start, dispatcher.getMinContingentDelay(a.start(), a.end()),
-                            dispatcher.getMaxContingentDelay(a.start(), a.end()));
+                    if(st.getDurationBounds(a).nonEmpty()) {
+                        int min = st.getDurationBounds(a).get()._1();
+                        int max = st.getDurationBounds(a).get()._2();
+                        ActionsChart.addPendingAction(name, start, min, max);
+                    } else {
+                        ActionsChart.addPendingAction(name, start, earliestEnd - start, earliestEnd-start);
+                    }
                     break;
                 case FAILED:
                     ActionsChart.addFailedAction(name, start, earliestEnd);
@@ -89,7 +97,7 @@ public class Plan {
     public State getState() { return st; }
 
     public boolean isConsistent() {
-        return st.isConsistent() && dispatcher.isConsistent();
+        return st.isConsistent() && (!makeDispatchable || dispatcher.isConsistent());
     }
 
     /**
@@ -146,6 +154,8 @@ public class Plan {
     }
 
     public Collection<Action> getExecutableActions(int atTime) {
+        assert makeDispatchable && dispatcher != null :
+                "Cannot compute executable actions without the 'makeDispatchable' option turned on.";
         IList<TPRef> toDispatch = dispatcher.getDispatchable(atTime);
         List<Action> dispatchable = new LinkedList<>();
         for(TPRef tp : toDispatch) {
@@ -157,11 +167,13 @@ public class Plan {
     }
 
     public int getMaxDuration(Action act) {
-        return dispatcher.getMaxContingentDelay(act.start(), act.end());
+        assert makeDispatchable && dispatcher != null : "makeDispatchable option is turned off";
+        return dispatcher.getMaxDelay(act.start(), act.end());
     }
 
     public int getMinDuration(Action act) {
-        return dispatcher.getMinContingentDelay(act.start(), act.end());
+        assert makeDispatchable && dispatcher != null : "makeDispatchable option is turned off";
+        return dispatcher.getMinDelay(act.start(), act.end());
     }
 
 

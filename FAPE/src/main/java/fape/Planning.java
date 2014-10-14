@@ -29,9 +29,6 @@ public class Planning {
      * Tries to infer which file contains the domain definition of this problem.
      * If the problem takes a form "domainName.xxxx.pb.anml", then the
      * corresponding domain file would be "domainName.dom.anml"
-     *
-     * @param problemFile
-     * @return
      */
     public static String domainFile(String problemFile) {
         File f = new File(problemFile);
@@ -65,6 +62,9 @@ public class Planning {
                         new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
                                 + "Mainly consists in time consuming checks."),
                         new Switch("actions-chart", JSAP.NO_SHORTFLAG, "gui", "Planner will show the actions on a time chart."),
+                        new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "FAPE will build a dispatchable Plan. "+
+                                "This is step mainly involves building a dynamically controllable STNU that is used to check " +
+                                "which actions can be dispatched."),
                         new FlaggedOption("plannerID")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
@@ -73,18 +73,17 @@ public class Planning {
                                 .setList(true)
                                 .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + " - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
-                                        + " - base+dtg: Same as base but uses DTG to select action resolvers.\n"
-                                        + " - base+dtg+abs: Same as base+dtg but uses abstraction hierarchies to order flaws.\n"
-                                        + " - rpg:  Planner that uses relaxed planning graphs for domain analysis.\n"
-                                        + "         be aware that it does not handle all anml problems.\n"
-                                        + " - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter \n"
-                                        + "            is provided by an action. It cheks (using RPG) for every ground action\n"
-                                        + "            supporting the consmer and enforce a n-ary constraint on the action's\n"
-                                        + "            parameters to make sure they fit at least one of the ground action.\n"
-                                        + " - taskcond: The actions in decompositions are replaced with task conditions that\n"
-                                        + "         are fulfilled through search be linking with other actions in the plan\n"
-                                        + " - all:  will run every possible planner.\n"),
+                                        + "   - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
+                                        + "   - base+dtg: Same as base but uses DTG to select action resolvers.\n"
+                                        + "   - rpg:  Planner that uses relaxed planning graphs for domain analysis. "
+                                        + "Be aware that it does not handle all anml problems.\n"
+                                        + "   - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter "
+                                        + "is provided by an action. It cheks (using RPG) for every ground action "
+                                        + "supporting the consmer and enforce a n-ary constraint on the action's "
+                                        + "parameters to make sure they fit at least one of the ground action.\n"
+                                        + "   - taskcond: The actions in decompositions are replaced with task conditions that "
+                                        + "are fulfilled through search be linking with other actions in the plan\n"
+                                        + "   - all:  will run every possible planner.\n"),
                         new FlaggedOption("maxtime")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -122,7 +121,8 @@ public class Planning {
                                 .setRequired(false)
                                 .setGreedy(true)
                                 .setHelp("ANML problem files on which to run the planners. If it is set "
-                                        + "to a directory, all files ending with .anml will be considered."),
+                                        + "to a directory, all files ending with .anml will be considered. "
+                                        + "If a file of the form xxxxx.yy.pb.anml, the file xxxxx.dom.anml will be loaded first."),
                         new FlaggedOption("stnu-consistency")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -135,9 +135,7 @@ public class Planning {
                                         +"of failures and computation time. Accepted options are:\n"
                                         +"  - 'stn': simply enforces requirement constraints.\n"
                                         +"  - 'pseudo': enforces pseudo controllability.\n"
-                                        +"  - 'dynamic': enforces dynamic controllability.")
-
-
+                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.")
                 }
         );
 
@@ -156,6 +154,7 @@ public class Planning {
         APlanner.logging = config.getBoolean("verbose");
         APlanner.debugging = config.getBoolean("debug");
         Plan.showChart = config.getBoolean("actions-chart");
+        Plan.makeDispatchable = config.getBoolean("dispatchable");
 
         String[] configFiles = config.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -277,21 +276,25 @@ public class Planning {
                             System.exit(1);
                         }
 
-                        boolean timeOut = false;
+                        boolean failure = false;
                         try {
                             planningStart = System.currentTimeMillis();
-                            timeOut = !planner.Repair(planningStart + 1000 * maxtime);
+                            failure = !planner.Repair(planningStart + 1000 * maxtime);
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.err.println("Planning finished for " + anmlFile + " with failure.");
-                            //throw new FAPEException("Repair failure.");
+                            System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
                         }
                         long end = System.currentTimeMillis();
                         float total = (end - start) / 1000f;
                         String time;
                         String planningTime = Float.toString((end - planningStart) / 1000f);
-                        if (timeOut) {
-                            time = "timeout";
+                        if (failure) {
+                            if(planner.planState == APlanner.EPlanState.TIMEOUT)
+                                time = "timeout";
+                            else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
+                                time = "infeasible";
+                            else
+                                time = "unknown problem";
                         } else {
                             time = Float.toString(total);
                         }
@@ -304,13 +307,13 @@ public class Planning {
                                 + anmlFile + ", "
                                 + planner.OpenedStates + ", "
                                 + planner.GeneratedStates + ", "
-                                + (timeOut ? "-" : planner.GetCurrentState().depth) + ", "
+                                + (failure ? "-" : planner.GetCurrentState().depth) + ", "
                                 + Utils.print(planner.flawSelStrategies, ">") + ", "
                                 + Utils.print(planner.planSelStrategies, ">")
                                 + "\n");
                         writer.flush();
 
-                        if (!timeOut && !config.getBoolean("quiet")) {
+                        if (!failure && !config.getBoolean("quiet")) {
                             State sol = planner.GetCurrentState();
 
                             System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));

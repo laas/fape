@@ -6,7 +6,6 @@ import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.resources.Resource;
 import fape.core.planning.search.*;
 import fape.core.planning.search.resolvers.*;
 import fape.core.planning.search.resolvers.TemporalConstraint;
@@ -20,7 +19,6 @@ import fape.exceptions.FAPEException;
 import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.TinyLogger;
-import org.omg.CORBA.TIMEOUT;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.LVarRef;
@@ -433,7 +431,7 @@ public abstract class APlanner {
      * All possible state of the planner.
      */
     public enum EPlanState {
-        TIMEOUT, CONSISTENT, INCONSISTENT, INFESSIBLE, UNINITIALIZED
+        TIMEOUT, CONSISTENT, INCONSISTENT, INFEASIBLE, UNINITIALIZED
     }
     /**
      * what is the current state of the plan
@@ -718,13 +716,13 @@ public abstract class APlanner {
             if (queue.isEmpty()) {
                 if (!APlanner.optimal) {
                     TinyLogger.LogInfo("No plan found.");
-                    this.planState = EPlanState.INFESSIBLE;
+                    this.planState = EPlanState.INFEASIBLE;
                     return null;
                 } else if(best.isConsistent() && GetFlaws(best).isEmpty()) {
                     this.planState = EPlanState.CONSISTENT;
                     return best;
                 } else {
-                    this.planState = EPlanState.INFESSIBLE;
+                    this.planState = EPlanState.INFEASIBLE;
                     return null;
                 }
             }
@@ -834,7 +832,7 @@ public abstract class APlanner {
 
             if (planState == EPlanState.TIMEOUT && best == null)
                 return false;
-            else if (planState == EPlanState.INFESSIBLE) {
+            else if (planState == EPlanState.INFEASIBLE) {
                 assert best == null;
                 return false;
             } else if(planState == EPlanState.CONSISTENT) {
@@ -842,6 +840,7 @@ public abstract class APlanner {
                 // it seems consistent, check if it is dynamically controllable
                 Plan plan = new Plan(best);
                 if (!plan.isConsistent()) {
+                    System.err.println("Returned state is not consistent or not DC. We keep searching.");
                     planState = EPlanState.INCONSISTENT;
                     search(deadline);
                 } else {
@@ -1031,7 +1030,7 @@ public abstract class APlanner {
 
         st.update();
         if (propagate && !st.isConsistent()) {
-            this.planState = EPlanState.INFESSIBLE;
+            this.planState = EPlanState.INFEASIBLE;
         }
 
         return true;

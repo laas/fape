@@ -168,7 +168,13 @@ public class Actor {
                 if (!newEventBuffer.isEmpty()) {
                     if(FAPE.execLogging) System.out.println("Including "+newEventBuffer.size()+" new events");
                     while (!newEventBuffer.isEmpty()) {
-                        mPlanner.ForceFact(newEventBuffer.pop(), true);
+                        ParseResult event = newEventBuffer.pop();
+                        if(newEventBuffer.isEmpty())
+                            // insert and propagate constraints
+                            mPlanner.ForceFact(event, true);
+                        else
+                            // do not propagate constraints yet
+                            mPlanner.ForceFact(event, false);
                     }
                     planNeedsRepair = true;
                 }
@@ -230,7 +236,7 @@ public class Actor {
                         break;
                     }
                     if(mPlanner.planState == Planner.EPlanState.INCONSISTENT
-                            || mPlanner.planState == Planner.EPlanState.INFESSIBLE
+                            || mPlanner.planState == Planner.EPlanState.INFEASIBLE
                             || mPlanner.planState == Planner.EPlanState.TIMEOUT) {
                         System.out.print("Planner status: "+mPlanner.planState);
                         mState = EActorState.STOPPED;

@@ -30,6 +30,7 @@ import planstack.anml.model.concrete.statements.*;
 import planstack.constraints.*;
 import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.STNUDispatcher;
+import scala.Option;
 import scala.Tuple2;
 
 import java.util.Collection;
@@ -286,8 +287,15 @@ public class State implements Reporter {
                 // more than one statement, remove only this statement
                 comp.contents.remove(s);
             }
+        } else if(s instanceof Assignment) {
+            theDatabase.chain.remove(comp);
+            if(theDatabase.chain.isEmpty()) {
+                this.tdb.vars.remove(theDatabase);
+            }
+            assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
+            this.consumers.add(theDatabase);
         } else {
-            throw new FAPEException("Unknown event type.");
+            throw new FAPEException("Unknown event type: "+s);
         }
     }
 
@@ -815,6 +823,10 @@ public class State implements Reporter {
 
     public STNUDispatcher<TPRef,GlobalRef> getDispatchableSTNU() {
         return new STNUDispatcher<>(csp.stn());
+    }
+
+    public Option<Tuple2<Integer,Integer>> getDurationBounds(Action a) {
+        return csp.stn().contingentDelay(a.start(), a.end());
     }
 
 

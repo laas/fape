@@ -6,7 +6,10 @@ import fape.core.execution.Executor;
 import fape.core.execution.ExecutorPRS;
 import fape.core.execution.ExecutorSim;
 import fape.core.execution.Listener;
+import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.planner.APlanner;
+import planstack.constraints.stnu.Controllability;
 
 /*
 * Author:  Filip Dvořák <filip.dvorak@runbox.com>
@@ -75,6 +78,7 @@ public class FAPE {
 
         Planner.debugging = config.getBoolean("debug");
         Planner.logging = config.getBoolean("verbose-planner");
+        Plan.makeDispatchable = true;
         execLogging = !config.getBoolean("quiet");
 
         Actor a = null;
@@ -86,6 +90,7 @@ public class FAPE {
             problemFile = args[0];
             a = new Actor();
             p = new Planner();
+            p.controllability = Controllability.DYNAMIC_CONTROLLABILITY;
 
             Planner.actionResolvers = true;
             if(config.getBoolean("local-sim"))
@@ -112,6 +117,5 @@ public class FAPE {
             // ask executor to abort (to make sure any socket/thread is closed)
             if(e != null) e.abort();
         }
-
     }
 }
