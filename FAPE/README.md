@@ -1,45 +1,47 @@
-# FAPE
+# FAPE: Flexible Planning and Acting Environment
 
-## Build
 
-FAPE comes with a maven build file `pom.xml` that should be understood by most
-IDE. Furthermore, you can use maven2 directly to build the project:
+## Building FAPE
+
+Build process supports both SBT (build.sbt) and maven2 (pom.xml).
+We recommend that you use SBT since it will be used as well for some
+of FAPE's dependencies.
+Instructions for installing SBT can be found [here](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html).
+
+Before building FAPE you should make sure that you have compiled its dependencies (instructions can be found in the `planstack` folder at the root of this repository.
+
+    # Build the project with SBT
+    sbt compile
 
     # Build the project with Maven
     mvn compile
 
 
-    # Build the project
-    sbt compile
+
+### IDE support
+
+Most IDEs should understand the `pom.xml` file. We recommend to use [IntelliJ-IDEA](http://www.jetbrains.com/idea/download/) since it has the best scala support (needed for some FAPE's dependencies). You can generate a project configuration of IntelliJ by running the following sbt command: `sbt gen-idea`.
 
 
 ## Run
 
 The main entry for pure planning is the class fape.Planning.
 
-    # Execute the Planner class with "problems/handover.anml" as argument.
-    mvn exec:java -Dexec.mainClass="fape.Planning" -Dexec.args="problems/handover.anml"
+    # Run the planner in its default configuration to solve the given
+    # handover problem.
+    sbt "runMain fape.Planning ../domains/handover/handover.1.pb.anml --gui"
+
+    # display command line options
+    sbt "runMain fape.Planning --help"
+
+    # You can do the same with maven:
+    mvn exec:java -Dexec.mainClass="fape.Planning" -Dexec.args="../domains/handover/handover.1.pb.anml --gui"
     mvn exec:java -Dexec.mainClass="fape.Planning" -Dexec.args="--help"
     
-    # With SBT
-    sbt "runMain fape.Planning problems/handover.anml"
-    sbt "runMain fape.Planning --help"
-    
 
-There is currently two planners that differs on what they use for domain
-analysis. To compare them on one problem:
 
-    sbt "runMain fape.Planning --quiet --planner base,rpg problems/handover.anml problems/Dream3.anml"
-
-Remember that java can be very slow to warm up. You can specify how many times
+Remember that the JVM can be very slow to warm up. You can specify how many times
 you want a planner to run on the same problem by using the -n option. The
-following command line will run the rpg planner (that using relax planning
-graphs) 50 times on the domain problems/handover.anml:
+following command line will run the planner 50 times on the given problem.
 
-    sbt "runMain fape.Planning --quiet -n 50 --planner rpg problems/handover.anml"
-
-## Dependencies
-
-FAPE uses some external dependencies for ANML parsing, Simple Temporal
-Networks and graphs.
-Those can be found here : [](https://github.com/planstack)
+    sbt "runMain fape.Planning --quiet -n 50 ../domains/handover/handover.1.pb.anml"
