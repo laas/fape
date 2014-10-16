@@ -69,7 +69,7 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
                                 .setLongFlag("planner")
-                                .setDefault("base")
+                                .setDefault("base+dtg")
                                 .setList(true)
                                 .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
