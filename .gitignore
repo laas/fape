@@ -5,8 +5,9 @@ out
 .idea*
 project/
 target/
-/fape/problems/generated
-/fape/problems/testCases
+planstack/graph
+planstack/anml
+planstack/constraints
 *.log
 *.aux
 *~

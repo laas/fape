@@ -1,0 +1,20 @@
+This folder is dedicated to cloning and building the libraries that FAPE uses.
+
+Running `./update.sh` should clone the different repositories and
+build them in place. The resulting jars are copied into the local ivy2 
+repositories (from where they can be used to compile FAPE).
+
+
+# Graph
+A scala graph library. Those are used in multiple places in FAPE.
+The focus of this graph library is to allow cheap copy operation to maintain
+nearly identical versions of a graph with very low memory overhead.
+
+# Constraints:
+A library for constraints processing.
+It implements a simplistic binding manager as well as several algorithm
+for STN and STNU constraint propagation and consistency checking.
+
+# Anml
+An ANML parser built with scala's combinator parsers
+
