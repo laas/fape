@@ -1,6 +1,9 @@
 // -*-c++-*-
 
-/**
+/** WARNING: only guaranted to work with the 'taskcond' planner.
+ *           Others planners might seem to work but they will be
+ *           dependent on the order in which flaws are processed.
+ *
  * This domain shows a basic reasonning on the mental state of another robot.
  * A robot (bob) must move an object around without the other one (max)
  * noticing.
@@ -53,19 +56,37 @@ action Pick(Agent a, Item i, NavLocation l) {
     // two possible decomposition to represent the fact that this action is
     // either seen (changes the belief of the other agent) or not
     :decomposition{
-        // agent is not here during the pick, no change in beliefs
-        constant NavLocation other_pos;
-        other_pos != l;
-        [all] other_agent.loc == other_pos;
+        // temporal annotation specifies that UnseenPick must start and end
+        // at the same times than Pick
+        [all] UnseenPick(other_agent, l);
     };
     :decomposition{
-        // agetn is here ofr at least 1 second during the pick,
-        // it seen and its belief is updated
-        [all] contains other_agent.loc == l;
-        [all] thinks_at(other_agent, i) := a;
+        // temporal annotation specifies that UnseenPick must start and end
+        // at the same times than Pick
+        [all] SeenPick(other_agent, a, i, l);
     };
 };
 
+action SeenPick(Agent me, Agent actor, Item i, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid only if the agent is at the picking place at some point during
+    // the pick
+    [all] contains me.loc == l;
+    // update the belief of the agent
+    [all] thinks_at(me, i) := actor;
+};
+
+
+action UnseenPick(Agent me, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid if I'm not in the room where the pick happened
+    // for the whole duration of the action.
+    constant NavLocation my_pos;
+    my_pos != l;
+    [all] me.loc == my_pos;
+};
 
 /*********************************************/
 
@@ -80,15 +101,27 @@ action Drop(Agent a, Item i, NavLocation l) {
     constant Agent other_agent;
     other_agent != a;
   
-    :decomposition{
-        [all] contains other_agent.loc == l;
-        [all] thinks_at(other_agent, i) := l;
+    :decomposition{  
+        [all] UnseenDrop(other_agent, l);
     };
     :decomposition{
-        constant NavLocation other_pos;
-        other_pos != l;
-        [all] other_agent.loc == other_pos;
+        [all] SeenDrop(other_agent, a, i, l);
     };
+};
+
+action SeenDrop(Agent me, Agent actor, Item i, NavLocation l) {
+    motivated;
+    [all] contains me.loc == l;
+    [all] thinks_at(me, i) := l;
+};
+
+
+action UnseenDrop(Agent me, NavLocation l) {
+    motivated;
+
+    constant NavLocation my_pos;
+    my_pos != l;
+    [all] me.loc == my_pos;
 };
 
 
@@ -96,7 +129,9 @@ action Drop(Agent a, Item i, NavLocation l) {
 
 
 
-instance NavLocation A, D, B, C;
+
+
+instance NavLocation A, B, C, D;
 // warning: the model for seen/unseen only works with two agents
 instance Agent bob, max;
 instance Item cup;
@@ -137,12 +172,13 @@ nav_dur_max(D,C) := 39;
     thinks_at(max, cup) := A;
 };
 
+
 // before time 80, the object must be in a given location
 // and max must think it is in another one.
 constant NavLocation final_loc;
 constant NavLocation expected_final_loc;
 final_loc != expected_final_loc;
 [80] {
-     at(cup) == final_loc;
-     thinks_at(max, cup) == expected_final_loc;
+    at(cup) == final_loc;
+    thinks_at(max, cup) == expected_final_loc;
 };
