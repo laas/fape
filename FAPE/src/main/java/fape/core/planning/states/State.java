@@ -562,6 +562,9 @@ public class State implements Reporter {
      * @param s Statement to insert
      */
     private void apply(ResourceStatement s) {
+        // Resources management is too buggy to allow people using it.
+        throw new RuntimeException("Resource statements are not supported.");
+        /*
         recordTimePoints(s);
 
         Resource r = ResourceManager.generateResourcePrototype((NumFunction) s.sv().func());
@@ -584,6 +587,7 @@ public class State implements Reporter {
         r.stateVariable = s.sv();
 
         resMan.AddResourceEvent(r, this);
+        */
     }
 
     /**
