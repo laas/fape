@@ -1,0 +1,174 @@
+// -*-c++-*-
+
+// WARNING: will only work with the taskcond planner
+
+
+// This example shows the some inter-actions constraints in a task hierachy for international travel.
+
+// There is three layer of action for moving around cities and contries.
+
+// ByPlane, ByBus and ByCar are three actions that put the requirements for moving between places.
+//  for instance, one might need to rent a car.
+// The motivated keyword in those actions forces them to be part of a Go action.
+
+// The Go action is the on that produces the main and shared effect of actions ByPlane, ByBus
+// and ByCar: the location is changed.
+// Through the motivated keyword, we enforce that Go must part of a LocalTravel or IntTravel action.
+
+// IntTravel and LocalTravel manage the necessities of changing country.
+// LocalTravel is used if the two places are in the same country. Otherwise, IntTravel is used.
+// IntTravel comes with a task conditions requiring that a visa has been retrieved prior to departure.
+
+// The reason for this complex action hierarchy is to show how plans are produced when using
+// task conditions.
+// Here if insert a Go action into a plan (e.g. to solve a condition "at == NY"), it will later
+// be refined with ByBus, ByPlane or ByCar. So we don't commit to the transportation mean before we
+// need it.
+// Then since Go has the motivated keyword, a LocalTravel or IntTravel action will be inserted
+// depending on its parameters. If necessary they will take care of changing the current country,
+// and make sure we have a visa.
+
+
+type Country;
+type Place with {
+    constant Country country();
+};
+
+constant Country nationality();
+
+predicate has_visa(Country c);
+variable Country in;
+variable Place at;
+variable boolean hasCar;
+variable Place carLocation;
+
+
+action GetVisa(Country c) {
+    [all] contains ask : AskVisa(c);
+    [all] contains ret : RetrieveVisa(c);
+    end(ask) < start(ret) -20;
+};
+
+action AskVisa(Country c) {
+    duration := 5;
+    motivated;
+};
+action RetrieveVisa(Country c) {
+    duration := 5;
+    motivated;
+};
+
+
+action LocalTravel(Country c, Place a, Place b) {
+    a.country == c;
+    b.country == c;
+
+    [all] in == c;
+    [all] Go(a, b);
+};
+
+action IntTravel(Country a, Country b, Place pa, Place pb) {
+    pa.country != pb.country;
+    [all] { 
+        in == a :-> b;
+    };
+
+    [all] Go(pa, pb);
+
+    // we should have a visa for this trip before leaving
+  getVisa : GetVisa(b);
+    end(getVisa) < start;
+};
+
+action Go(Place a, Place b) {
+    // must be part of IntTravel or local travel
+    motivated;
+
+    // lasts 10 time units, TODO: make it dependent on places and transportation mode
+  duration := 10;
+
+    [all] at == a :-> b;
+
+    :decomposition{ [all] ByBus(a, b); };
+    :decomposition{ [all] ByPlane(a, b); };
+    :decomposition{ [all] ByCar(a, b); };
+};
+
+action ByBus(Place a, Place b) {
+    motivated;
+    can_go_by_bus(a, b) == true;
+};
+action ByPlane(Place a, Place b) {
+    motivated;
+    can_go_by_plane(a, b);
+};
+action ByCar(Place a, Place b) { 
+    motivated;
+    can_go_by_car(a, b);
+    [all] hasCar == true;
+    [all] carLocation == a :-> b;
+};
+
+action RentCar(Place p) {
+    duration := 1;
+    [all] at == p;
+    [end] hasCar == false :-> true;
+    [end] carLocation := p;
+
+    // if I rent a car, I must return it at the same place
+    ret : ReturnCar(p); 
+    end < start(ret);
+};
+
+action ReturnCar(Place p) {
+    duration := 1;
+    motivated;
+
+    [all] at == p;
+    [end] hasCar == true :-> false;
+    [start] carLocation == p;
+};
+
+
+constant boolean can_go_by_car(Place a, Place b);
+constant boolean can_go_by_bus(Place a, Place b);
+constant boolean can_go_by_plane(Place a, Place b);
+
+can_go_by_car(Toulouse, Paris) := true;
+can_go_by_car(Paris, Toulouse) := true;
+
+can_go_by_bus(Boston, NY) := true;
+can_go_by_bus(NY, Boston) := true;
+can_go_by_plane(Toulouse, NY) := true;
+can_go_by_plane(NY, Toulouse) := true;
+can_go_by_plane(Boston, Paris) := true;
+can_go_by_plane(Paris, Boston) := true;
+can_go_by_plane(Boston, NY) := true;
+can_go_by_plane(NY, Boston) := true;
+
+
+
+instance Country France, US;
+instance Place Paris, Toulouse, Boston, NY;
+
+Paris.country := France;
+Toulouse.country := France;
+Boston.country := US;
+NY.country := US;
+
+
+
+
+[start] {
+  hasCar := false;
+  at := Toulouse;
+  in := France;
+};
+
+[all] contains { 
+    at == NY;
+    in == US;
+    at == Paris;
+    at == Boston;
+};
+
