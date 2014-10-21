@@ -24,7 +24,7 @@ javaOptions in run += "-ea"
 
 javacOptions ++= Seq("-source", "1.7")
 
-mainClass in (Compile, run) := Some("fape.core.planning.Planner")
+mainClass in (Compile, run) := Some("fape.Planning")
 
 fork in run := true
 

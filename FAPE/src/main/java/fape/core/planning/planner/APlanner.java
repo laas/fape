@@ -685,19 +685,26 @@ public abstract class APlanner {
             return false;
 
         // if db1 cannot start before db2 ends
-        for(TPRef start1 : db1.getFirstTimePoints())
-            for(TPRef end2 : db2.getLastTimePoints())
-                if(!st.canBeBefore(start1, end2))
-                    return false;
-
+        boolean db1AfterDB2 = true;
+        for(TPRef start1 : db1.getFirstTimePoints()) {
+            for (TPRef end2 : db2.getLastTimePoints()) {
+                if (st.canBeBefore(start1, end2)) {
+                    db1AfterDB2 = false;
+                    break;
+                }
+            }
+        }
         // if db2 cannot start before db1 ends
+        boolean db2AfterDB1 = true;
         for(TPRef end1 : db1.getLastTimePoints())
             for(TPRef start2 : db2.getFirstTimePoints())
-                if(!st.canBeBefore(start2, end1))
-                    return false;
+                if(st.canBeBefore(start2, end1)) {
+                    db2AfterDB1 = false;
+                    break;
+                }
 
-        // they can overlap and they are unifiable
-        return true;
+        // true if they can overlap
+        return !(db1AfterDB2 || db2AfterDB1);
 
     }
 
