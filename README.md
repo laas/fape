@@ -1,5 +1,15 @@
- 
+% FAPE: User Manual
+% Arthur Bit-Monnot
+%
 
+<!--
+Note: you can use Pandoc to generate this document:
+# pandoc --standalone --listing -N -o README.pdf README.md
+
+Otherwise it should be readable as plain text as well.
+-->
+
+<!-- This is simply to put the ANML blocks into boxes when generating the PDF -->
 \lstset{language=c++}
 \lstset{basicstyle=\ttfamily\small,breaklines=true}
 \lstset{morekeywords={action,start,end,all,contains,decomposition}}
@@ -7,10 +17,20 @@
 \lstset{keywordstyle=\bfseries}
 
 
+This document will give a brief introduction to FAPE.
+Its objective is merely to give pointers and some keys on what is currently supported in FAPE and give a rough idea of how things work internally.
+
+Until a more detailed and formal description of the planner is written, we hope it will allow you to start playing around with FAPE without to much pain.
+We are aware that this document stays very high level and that it won't answer all question that might arise when using (or worse, contributing to) FAPE. Please ask any question you have, I will be glad to answer it!
+
+
+
 # ANML
 
 The objective of this section to describe which subset of ANML is supported in FAPE, assuming the reader already knows the language.
 If you are not familiar with ANML, you should first have a look at the ANML manual.
+
+Several examples of valid ANML domains are given in the `domains/` directory.
 
 ## Types
 
@@ -27,7 +47,7 @@ If you are not familiar with ANML, you should first have a look at the ANML manu
       variable NavLocation location;
     };
     
-    // Defines a type Item and a function "Location Item.location(Item ?)"
+    // Defines a type Item and a function "Location Item.location(Item)"
     type Item with {
       variable Location location;
     };
@@ -244,8 +264,185 @@ It is also possible to give temporal constraints between actions appearing in a 
 
 ## Binding constraints
 
-Constraints can be expressed 
+Constraints can be expressed between variables and invariant functions.
+
+    constant Country country_of(City c);
+    instance Contry France, US, Germany;
+
+    country_of(Paris) == country_of(Toulouse);
+    country_of(Chicago) != country_of(Paris);
+
+    // creates a variable "a_country" and constrains it
+    // to be different to Paris' country
+    constant Country a_country;
+    country_of(Paris) != a_country;
 
 ## Resources
 
 Resources are not supported yet. An initial implementation is currently in the source repository but is not stable enough for daily usage.
+
+
+
+# FAPE: Planner
+
+The FAPE planner is a temporal planner reasoning in plan space. As such, it mainly reasons with flaws/resolvers to reach a solution plan.
+As long as there is no task conditions in the domain, FAPE will act as a plan space planner and will try to solve the current open goals and threats in its plan.
+
+It uses a lifted representation and timelines as a time oriented view of the evolution of state variables.
+
+Temporal constraints are managed in an STN extended for the integration of contingent constraints (e.g. the uncertain duration of an action). This STNU framework can be used, while planning different types of consistency: (i) STN consistency (ii) pseudo-controllability (iii) dynamic-controllability.
+
+A binding constraint manager is used to enforce the equality and difference constraints between variables (e.g. parameters of actions).
+
+To put things short: without task conditions, FAPE is a temporal planner, searching in plan-space.
+
+
+## Subtasks
+
+ANML allows to define subtasks. The following will be true iff there is an action Pick parameterized with bob, red_cup and kitchen in the given interval.
+
+    [all] contains Pick(Bob, red_cup, kitchen);
+
+FAPE currently has two ways of dealing with such task conditions: one inheriting from the HTN way and one from the classical planning way.
+
+### HTN Way
+
+The HTN way is to insert an action with the given parameters in the partial-plan whenever a task condition appears.
+Like in HTN, one needs to provide a root action from which the others would be derived.
+
+In addition to that, actions might be inserted as standalone resolvers (e.g. to solve an open goal flaw). Hence actions in the plan are not necessarily in the tree derived from the root action.
+To avoid that, the `motivated` keyword for an action enforce that an action must appear as a task condition of a higher-level action (i.e. it can not be inserted as a standalone resolver).
+
+Making all actions motivated and giving a root action will result in a HTN-like search, expending a search tree from the root action.
+
+This setting is the default. It corresponds to the option `-p base+dtg`
+
+
+### Task conditions
+
+The other way supported in FAPE is to consider a subtask statement as a task condition.
+
+It is considered true if there is an action whose time-points and parameters can be unified with those of the task condition.
+
+Hence an opened task condition is a flaw which can be solved by adding a support link between this task condition and an action (which is either added or already in the plan).
+Also, a unique action might support several task conditions.
+
+    predicate hasCar();
+    [start] hasCar := false;
+    
+    action RentCar() {
+      get : GetCar();
+      ret : ReturnCar();
+      end(get) < start(ret);
+    };
+
+    action GetCar() {
+      motivated;
+      hasCar == false :-> true;
+    };
+
+    action ReturnCar() {
+      motivated;
+      hasCar == true :-> false;
+    };
+
+
+Lets assume we have the above ANML domain and an empty partial-plan with an open-goal `hasCar == true`.
+
+ - The only resolver for this flaw is to insert an action `GetCar()` supporting the condition.
+ - However `GetCar` is marked as `motivated`: it must be a subtask of some other task.
+   This is a flaw for which the only resolver is to:
+     - add an action `RentCar()`
+     - Add a support link stating that the `GetCar` condition in `RentCar()` is supported
+       by our instance of `GetCar()`
+ - Our instance of `RentCar` still has another unsupported task condition: `ReturnCar`.
+   Since there is no instance of a `ReturnCar` action in the plan, the only resolver for this
+   flaw is to add an instance of `ReturnCar()` and set it as supporting the task condition.
+   If an instance of `ReturnCar` was already in the partial-plan, an alternative resolver
+   would have been to set this instance as supporting the task condition.
+
+The behaviour is enabled with option `-p taskcond`.
+
+Its is the richer way of combining hierarchies with traditional goals. However it still lacks good formalization and adapted search strategies.
+
+
+## Goals
+
+Any condition appearing in the domain is considered as a goal.
+Indeed, when added to the partial it will result in a flaw that must be solved to enforce
+plan consistency.
+
+    // example of goals
+
+    // at the end of the plan, the PR2 must be in the kitchen
+    [end] PR2.at == Kitchen;
+
+    // for at least one time unit between times 30 and 50,
+    // the coffee cup must be on the table.
+    [30,50] contains location(coffee_cup) == dining_table;
+
+
+Similarly, subtasks in the domain definition will result (depending on the option -p) in
+the addition of an action (that must be decomposed and/or have some conditions) or in the addition of an opened task conditions.
+
+    // example of objective tasks
+    
+    // the PR2 must clean the table
+    CleanTable(PR2);
+
+    // the PR2 must give the cup before time 100
+    [start, 100] contains Give(PR2, Arthur, cup);
+
+    // any robot must transport the coffee cup from the kitchen to the dining room
+    constant Robot r;
+    Transport(r, coffee_cup, kitchen, dining_room);
+
+
+
+## Search and scalability
+
+### Search: algorithm and strategies
+
+FAPE uses the PSP (Plan Space Planning) algorithm as a search.
+
+    PSP(p):
+      flaws <- getFlaws(p)
+      if flaws is empty
+        return p // solution plan
+
+      select any flaw f in flaws
+      resolvers <- GetResolvers(f, p)
+
+      if resolvers is empty
+        return failure
+
+      non-deterministically choose a resolver r
+      return PSP( Apply(r, p) )
+    
+The two decisions to be made in this algorithm are:
+
+ - which flaw to solve in the current partial plan
+ - which partial plan (or which resolver) to consider for the next iteration.
+
+Those are respectively call *flaw selection strategy* and *plan selection strategy*.
+The one used in FAPE come from the venerable heuristic of lifted plan-space planning.
+
+The default *flaw selection strategy* is a least committing first: the chosen flaw is the one with least number of resolvers.
+
+The default *plan selection strategy* considers the number of flaws and the number of actions in the plan (lower is better). This results in a best first search in the space of partial plans.
+
+Other strategies are implemented in the package `core.planning.search.strategies`. Those can be tested through the `--strats` option.
+
+### Scalability
+
+You may have noticed that the above strategies are not informed: they only look at the current partial plan without making a guess at the distance towards the goal (the number flaws is only a very weak information since much more will arise). As a consequence, the scalability of FAPE is very limited in the number of actions.
+
+Some domain independent heuristics are considered for the future.
+Meanwhile you can:
+
+ - carefully design a hierarchical domain to guide the search
+ - write a domain-dependant heuristic
+
+
+
+**Efficiency:** Note that the JVM (and especially scala bytecode) can be very slow to warm up. If It seems like the planner take an incredibly large time to process few states, try to warm it up first (the option `-n` allows to set a number of repetitions for the run).
