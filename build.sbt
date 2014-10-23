@@ -2,7 +2,7 @@ name := "planstack-anml"
 
 organization := "planstack"
 
-version := "0.6.6"
+version := "0.6.7"
 
 scalaVersion := "2.10.3"
 

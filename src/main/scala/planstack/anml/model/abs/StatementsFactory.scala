@@ -64,7 +64,10 @@ object StatementsFactory {
           // state variable alone. Make sure it is a boolean make it a persistence condition at true
           val sv = asStateVariable(s.term, context, pb)
           assert(sv.func.valueType == "boolean", "Non-boolean function as a single term statement: "+s)
-          List(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id)))
+          if(sv.func.isConstant)
+            List(new AbstractEqualityConstraint(sv, LVarRef("true"), LStatementRef(s.id)))
+          else
+            List(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id)))
         } else {
           // it should be an action, but we can't check since this action might not have been parsed yet
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
@@ -173,7 +176,7 @@ object StatementsFactory {
         assert(o1.op == "==" && o2.op == ":->", "This statement is not a valid transition: "+statement)
         assert(e2.isInstanceOf[VarExpr], "Compound expression in the middle of a transition: " + statement)
         assert(e3.isInstanceOf[VarExpr], "Compound expression in the right side of a transition: " + statement)
-        assert(isStateVariable(e1, context, pb))
+        assert(isStateVariable(e1, context, pb), "Left term does not seem to be a state variable: "+e1)
         val sv = asStateVariable(e1, context, pb)
         val v1 = LVarRef(e2.functionName)
         val v2 = LVarRef(e3.functionName)
