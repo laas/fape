@@ -527,7 +527,7 @@ public class ConservativeConstraintNetwork<VarRef> {
      * @param setID ID of the extension cosntraint to respect.
      */
     public void addValuesSetConstraint(List<VarRef> variables, String setID) {
-        assert exts.containsKey(setID);
+        assert exts.containsKey(setID) : "No values known for constraint: "+setID;
         assert !exts.get(setID).values.isEmpty();
         assert exts.get(setID).values.get(0).size() == variables.size();
         assert exts.get(setID).isLastVarInteger == isIntegerVar(variables.get(variables.size()-1));
