@@ -12,7 +12,7 @@ libraryDependencies += "planstack" % "planstack-constraints" % "0.5.4"
 
 libraryDependencies += "planstack" % "planstack-graph" % "0.3.11"
 
-libraryDependencies += "planstack" % "planstack-anml" % "0.6.6"
+libraryDependencies += "planstack" % "planstack-anml" % "0.6.7"
 
 libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
 

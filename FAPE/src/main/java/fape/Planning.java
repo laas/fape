@@ -69,20 +69,22 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
                                 .setLongFlag("planner")
-                                .setDefault("base+dtg")
+                                .setDefault("htn")
                                 .setList(true)
                                 .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + "   - base: Main FAPE planner that supports any domain. Uses a fully lifted representation.\n"
-                                        + "   - base+dtg: Same as base but uses DTG to select action resolvers.\n"
-                                        + "   - rpg:  Planner that uses relaxed planning graphs for domain analysis. "
-                                        + "Be aware that it does not handle all anml problems.\n"
-                                        + "   - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter "
-                                        + "is provided by an action. It cheks (using RPG) for every ground action "
-                                        + "supporting the consmer and enforce a n-ary constraint on the action's "
-                                        + "parameters to make sure they fit at least one of the ground action.\n"
-                                        + "   - taskcond: The actions in decompositions are replaced with task conditions that "
+                                        + "  - htn: subtasks will be replaced with a matching action directly inserted in the plan\n"
+                                        + "  - taskcond: The actions in decompositions are replaced with task conditions that "
                                         + "are fulfilled through search be linking with other actions in the plan\n"
+                                        + "  \n"
+                                        + " The following options are EXPERIMENTAL, they won't work on every domain:\n"
+                                        + "   - base: Most basic planner that supports any domain. Uses a fully lifted representation.\n"
+                                        + "   - rpg:  Planner that uses relaxed planning graphs for domain analysis. "
+                                        + "Be aware that (i) it does not handle all anml problems (ii) rpg is miles away from being optimized.\n"
+                                        + "   - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter "
+                                        + "is provided by an action. It checks (using RPG) for every ground action "
+                                        + "supporting the consumer and enforce a n-ary constraint on the action's "
+                                        + "parameters to make sure they fit at least one of the ground action.\n"
                                         + "   - all:  will run every possible planner.\n"),
                         new FlaggedOption("maxtime")
                                 .setStringParser(JSAP.INTEGER_PARSER)
@@ -115,14 +117,6 @@ public class Planning {
                                 .setLongFlag("output")
                                 .setDefault("stdout")
                                 .setHelp("File to which the CSV formatted output will be written"),
-                        new UnflaggedOption("anml-file")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setDefault("problems/handover.anml")
-                                .setRequired(false)
-                                .setGreedy(true)
-                                .setHelp("ANML problem files on which to run the planners. If it is set "
-                                        + "to a directory, all files ending with .anml will be considered. "
-                                        + "If a file of the form xxxxx.yy.pb.anml, the file xxxxx.dom.anml will be loaded first."),
                         new FlaggedOption("stnu-consistency")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -135,7 +129,15 @@ public class Planning {
                                         +"of failures and computation time. Accepted options are:\n"
                                         +"  - 'stn': simply enforces requirement constraints.\n"
                                         +"  - 'pseudo': enforces pseudo controllability.\n"
-                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.")
+                                        +"  - 'dynamic': [experimental] enforces dynamic controllability."),
+                        new UnflaggedOption("anml-file")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setRequired(true)
+                                .setGreedy(true)
+                                .setHelp("ANML problem files on which to run the planners. If it is set "
+                                        + "to a directory, all files ending with .anml will be considered. "
+                                        + "If a file of the form xxxxx.yy.pb.anmlis given, the file xxxxx.dom.anml will be loaded first.")
+
                 }
         );
 
@@ -206,6 +208,7 @@ public class Planning {
                             case "base":
                                 planners.add(new Planner());
                                 break;
+                            case "htn":
                             case "base+dtg":
                                 planners.add(new BaseDTG());
                                 break;

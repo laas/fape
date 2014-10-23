@@ -11,7 +11,7 @@ public class BaseDTG extends Planner {
 
     @Override
     public String shortName() {
-        return "base+dtg";
+        return "htn";
     }
 
     @Override
