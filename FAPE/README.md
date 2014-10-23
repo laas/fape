@@ -8,13 +8,14 @@ We recommend that you use SBT since it will be used as well for some
 of FAPE's dependencies.
 Instructions for installing SBT can be found [here](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html).
 
-Before building FAPE you should make sure that you have compiled its dependencies (instructions can be found in the `planstack` folder at the root of this repository.
+Before building FAPE you should make sure that you have compiled its dependencies (instructions can be found in the `planstack` folder at the root of this repository).
 
     # Build the project with SBT
     sbt compile
 
     # Build the project with Maven
     mvn compile
+
 
 
 
@@ -48,3 +49,10 @@ following command line will run the planner 50 times on the given problem.
 
 Exploring the available domains in `../domains/` and looking at the different options
 listed in the help should be a good start for learning about FAPE.
+
+
+
+IMPORTANT: FAPE extensivily uses assertions to make sure everything go as
+expected. So please make sure that the JVM has assertions enabled when
+running FAPE (JVM option -ea).
+This is already activated for the SBT configuration file.
