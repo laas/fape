@@ -11,8 +11,9 @@ Otherwise it should be readable as plain text as well.
 
 <!-- This is simply to put the ANML blocks into boxes when generating the PDF -->
 \lstset{language=c++}
-\lstset{basicstyle=\ttfamily\small,breaklines=true}
-\lstset{morekeywords={action,start,end,all,contains,decomposition}}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true}
+\lstset{morekeywords={action,start,end,all,contains,decomposition,
+constant,instance,function,variable}}
 \lstset{frame=single}
 \lstset{keywordstyle=\bfseries}
 
@@ -20,8 +21,8 @@ Otherwise it should be readable as plain text as well.
 This document will give a brief introduction to FAPE.
 Its objective is merely to give pointers and some keys on what is currently supported in FAPE and give a rough idea of how things work internally.
 
-Until a more detailed and formal description of the planner is written, we hope it will allow you to start playing around with FAPE without to much pain.
-We are aware that this document stays very high level and that it won't answer all question that might arise when using (or worse, contributing to) FAPE. Please ask any question you have, I will be glad to answer it!
+Until a more detailed and formal description of the planner is written, we hope it will allow you to start using FAPE without to much pain.
+We are aware that this document stays very high level and that it won't answer all question that might arise when using (or worse, contributing to) FAPE. Please ask any question you have, I will be glad to answer it.
 
 
 
@@ -37,7 +38,8 @@ Several examples of valid ANML domains are given in the `domains/` directory.
     // Defines a type with no parent and no attributes
     type Location;
     
-    // Defines a type NavLocation that is a subclass of Location
+    // Defines a type NavLocation that is a subtype of Location
+    // only single inheritance is supported
     type NavLocation < Location;
     
     // Defines a type Robot that is a subclass of Location
@@ -51,6 +53,7 @@ Several examples of valid ANML domains are given in the `domains/` directory.
     type Item with {
       variable Location location;
     };
+
 
 
 ## Functions
@@ -81,13 +84,12 @@ change over time:
     constant boolean connected(Location a, Location b);
 
 
-A facility is provided to define functions in type. The two following ANML
+A facility is provided to define functions in types. The two following ANML
 blocks are equivalent:
 
     type Robot with {
         function boolean canGo(Location l);
     };
-
 
     type Robot;
     function boolean Robot.canGo(Robot r, Location l);
@@ -150,7 +152,7 @@ statement must be included in the interval:
     [start, end] contains s;
       // start(s) >= start && end(s) <= end
 
-**WARNING**: in its current implementation, the `contains` keyword differs from the mainline ANML definition since it does *not* require the condition to be false before and after the interval. In fact, the above statement is equivalent to `[start,end] contains [1] s`;
+**WARNING**: in its current implementation, the `contains` keyword differs from the mainline ANML definition since it does *not* require the condition to be false before and after the interval. In fact, the above statement is equivalent to `[start,end] contains [0] s;` (but this notation is not supported in FAPE)
 
 
 ## Actions
@@ -211,11 +213,16 @@ There is no restriction to what can be written in decomposition. Hence it can be
 - conditional effects
 - a controllable choice over the effects of an action. We discourage this practice, since it will not be apparent in the plan.
 
+The following example shows subtasks in decompositions. Those are described in the next sub-section.
 
 
         action Pick(Robot r, Item i) {
-          :decomposition{ [all] PickWithLeftGripper(r, i); };
-          :decomposition{ [all] PickWithRightGripper(r, i); };
+          :decomposition{
+            [all] PickWithLeftGripper(r, i);
+          };
+          :decomposition{
+            [all] PickWithRightGripper(r, i);
+          };
         };
         
         action Go(Vehicle v, Loc from, Loc to) {
@@ -231,6 +238,33 @@ There is no restriction to what can be written in decomposition. Hence it can be
         };
 
 
+## Action conditions
+
+The last example showed a usage of actions as condition appearing in the decomposition of another one.
+This condition is satisfied if there is an action with the same name and parameters satisfying all temporal constraints on the action condition time points.
+
+    [10,90] Go(PR2, Kitchen, Bedroom);
+
+The above condition will be satisfied iff there is an action `Go` with the parameters `(PR2, Kitchen, Bedroom)` that starts exactly at 10 and ends exactly at 90.
+
+**WARNING:** this differs from the mainline ANML definition because the considered time-points for temporal constraints are those of the action itself.
+
+    // this will be satisfied if there is an Go with this
+    // parameters that starts and end within the
+    // interval [10,90]
+    [10, 90] contains Go(PR2, Kitchen, Bedroom;
+
+
+
+    // this action must have exactly the same duration as the
+    // one of the ConcreteGo action on which it is conditioned 
+    action AbstractGo(Loc a, Loc b) {
+      [all] ContreteGo(a, b);
+    };
+
+    action ConcreteGo(Loc a, Loc b) {
+      duration :in [min_travel_time(a,b), max_travel_time(a,b)];
+    };
 
 ## Temporal Constraints
 
@@ -254,7 +288,7 @@ The interval must be given a local ID:
     end(idB) = end -60;
 
 
-It is also possible to give temporal constraints between actions appearing in a decomposition. The `ordered` and `unordered` keywords are not supported but can be replaced by temporal constraints as in the following example.
+It is also possible to give temporal constraints between actions conditions. The `ordered` and `unordered` keywords are not supported but can be replaced by temporal constraints as in the following example.
 
     action PickAndPlace(Robot r, Item i) {
       pickID : Pick(r, i);
@@ -294,7 +328,7 @@ Temporal constraints are managed in an STN extended for the integration of conti
 
 A binding constraint manager is used to enforce the equality and difference constraints between variables (e.g. parameters of actions).
 
-To put things short: without task conditions, FAPE is a temporal planner, searching in plan-space.
+To put things short: without task conditions, FAPE is a lifted temporal planner, searching in plan-space.
 
 
 ## Subtasks
@@ -303,19 +337,72 @@ ANML allows to define subtasks. The following will be true iff there is an actio
 
     [all] contains Pick(Bob, red_cup, kitchen);
 
-FAPE currently has two ways of dealing with such task conditions: one inheriting from the HTN way and one from the classical planning way.
+FAPE currently has two ways of dealing with such task conditions: one inheriting from the HTN way and one where those are treated as real conditions (similar to open goals).
 
-### HTN Way
+### The HTN Way
 
 The HTN way is to insert an action with the given parameters in the partial-plan whenever a task condition appears.
 Like in HTN, one needs to provide a root action from which the others would be derived.
 
 In addition to that, actions might be inserted as standalone resolvers (e.g. to solve an open goal flaw). Hence actions in the plan are not necessarily in the tree derived from the root action.
-To avoid that, the `motivated` keyword for an action enforce that an action must appear as a task condition of a higher-level action (i.e. it can not be inserted as a standalone resolver).
+To avoid that, the `motivated` keyword for an action enforces that an action must appear as a task condition of a higher-level action (i.e. it can not be inserted as a standalone resolver).^[The motivated keyword does *not* imply any temporal constraints.]
 
 Making all actions motivated and giving a root action will result in a HTN-like search, expending a search tree from the root action.
 
-This setting is the default. It corresponds to the option `-p base+dtg`
+This setting is the default. It corresponds to the option `-p htn`
+
+
+Unless really sure of what you do, you should avoid having both motivated actions and goals expressed as statements over state variable.
+
+The intended way of using FAPE in this setting is:
+
+ - with one or more root actions
+ - motivated actions should be derivable from those root action and will be the skeleton of the plan.
+ - non-motivated action are used to handle corner-cases that were not described in the task network.
+
+The following example shows a very simple hierarchical domain where the skeleton of the plan will derived from Transport. Note that Pick and Drop are motivated and hence can not appear outside of Transport.
+However the Move action will be freely inserted in the plan to tackle open-goals flaws on the location of the robot.
+
+    type Location;
+    type NavLocation < Location;
+    type Robot < Location with {
+      function NavLocation at();
+    };
+    type Item with {
+      function Location at();
+    };
+
+    action Transport(Robot r, Item i, NavLocation a, NavLocation b) {
+      [all] contains {
+        pick : Pick(r, i, a);
+        drop : Drop(r, i, b);
+      };
+      end(pick) < start(drop);
+    };
+
+    action Drop(Robot r, Item i, NavLocation l) {
+      motivated;
+      [all] r.at == l;
+      [all] i.at == r :-> l;
+    };
+
+    action Pick(Robot r, Item i, NavLocation l) {
+      motivated;
+      [all] r.at == l;
+      [all] i.at == l :-> r;
+    };
+
+    action Move(Robot r, NavLocation from, NavLocation to) {
+      [all] r.at == from :-> to;
+    };
+
+    // instances and initial value ....
+
+    // goal
+    Transport(PR2, coffee_cup, Kitchen, Bedroom);
+
+However, replacing the `Transport` goal by `[end] coffee_up.at == Bedroom` would fail because
+the only resolver would be to insert a Drop action but since Drop is motivated it can not be inserted in the plan (it has to be derived from an action already present in the plan).
 
 
 ### Task conditions
@@ -403,21 +490,27 @@ the addition of an action (that must be decomposed and/or have some conditions) 
 
 ### Search: algorithm and strategies
 
-FAPE uses the PSP (Plan Space Planning) algorithm as a search.
+FAPE uses the PSP (Plan Space Planning) algorithm for search:
 
-    PSP(p):
+    queue <- { initial plan }
+
+    while true:
+      if queue is empty
+        return failure
+
+      p <- pop a partial plan in queue
+
       flaws <- getFlaws(p)
+      
       if flaws is empty
         return p // solution plan
 
       select any flaw f in flaws
-      resolvers <- GetResolvers(f, p)
+      for resolver in GetResolvers(f, p)
+        child <- Apply(resolver, p)
+        if child is consistent
+          queue <- queue U { child }
 
-      if resolvers is empty
-        return failure
-
-      non-deterministically choose a resolver r
-      return PSP( Apply(r, p) )
     
 The two decisions to be made in this algorithm are:
 
@@ -425,7 +518,7 @@ The two decisions to be made in this algorithm are:
  - which partial plan (or which resolver) to consider for the next iteration.
 
 Those are respectively call *flaw selection strategy* and *plan selection strategy*.
-The one used in FAPE come from the venerable heuristic of lifted plan-space planning.
+The ones used in FAPE come from the venerable heuristics for lifted plan-space planning.
 
 The default *flaw selection strategy* is a least committing first: the chosen flaw is the one with least number of resolvers.
 
