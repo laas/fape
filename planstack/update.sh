@@ -15,7 +15,7 @@ if [ ! -d "anml" ]; then
 fi
 
 # for each repository, pull for latest changes, build and publish 
-# to local ivy store (should be accessible for building other projects)
+# to local ivy store (should be accessible for building other SBT projects)
 
 cd graph
 git pull

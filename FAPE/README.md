@@ -45,3 +45,6 @@ you want a planner to run on the same problem by using the -n option. The
 following command line will run the planner 50 times on the given problem.
 
     sbt "runMain fape.Planning --quiet -n 50 ../domains/handover/handover.1.pb.anml"
+
+Exploring the available domains in `../domains/` and looking at the different options
+listed in the help should be a good start for learning about FAPE.

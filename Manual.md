@@ -538,4 +538,13 @@ Meanwhile you can:
 
 
 
-**Efficiency:** Note that the JVM (and especially scala bytecode) can be very slow to warm up. If It seems like the planner take an incredibly large time to process few states, try to warm it up first (the option `-n` allows to set a number of repetitions for the run).
+**Efficiency:** Note that the JVM (and especially scala bytecode) can be very slow to warm up. If It seems like the planner takes an incredibly large time to process few states, try to warm it up first (the option `-n` allows to set a number of repetitions for the run).
+
+
+# Final note
+
+FAPE is still in a beta state. There might be some bugs left so, if you run into something weird, ask me about it! You will save time and it will allow me to fix the bug or update the documentation.
+I'm looking forward to any kind of feedback, so please feel free to harass me =) (arthur.bit-monnot@laas.fr)
+
+
+

@@ -23,7 +23,7 @@ constant boolean navigable(NavLocation a, NavLocation b);
 constant boolean passable(NavLocation a, NavLocation b);
 
 action Move(Robot r, NavLocation a, NavLocation b) {
-  duration :in [10,20];
+  duration :in [15,20];
 
     navigable(a, b) == true;
     [all] r.location == a :-> b;
