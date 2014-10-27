@@ -1,28 +1,76 @@
 package planstack.constraints.stnu
 
+import planstack.graph.GraphFactory
+import planstack.graph.core.LabeledEdge
+import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
 import planstack.structures.IList
 
 import scala.language.implicitConversions
 import ElemStatus._
 import planstack.structures.Converters._
-import scala.collection.JavaConverters._
 
 class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   val dispatcher :DispatchableSTNU[ID] = new Dispatcher[ID]
 
+  /** Timepoints that must stay in the STN (dispatchable, contingents and stn's start end */
+  val fixedTps = (for((tp, flag) <- from.timepoints if flag != ElemStatus.NO_FLAG) yield tp).toSet
+
+  /** Graph with edges from the fixed timepoints to the rigid ones */
+  val g = getRigidRelationsGraph()
+
+  /** rigids timepoints are the one in a rigid relation with the fixed ones. */
+  val rigids = g.vertices.filter(!fixedTps.contains(_))
+
+  /** Other timepoints: neither rigid nor fixed, those are controllable but not actions start (not explicitly
+    * flagged as dispatchable) */
+  val others = from.timepoints.map(_._1).filter(!g.vertices.contains(_))
+
+
+  /**
+   * If one/two timepoints of the constraint are in a rigid constraint with a fixed one,
+   * the constraint is modified to be on the fixed timepoints.
+   */
+  def finalConstraint(c : (TPRef, TPRef, Int, ElemStatus, Option[ID])): (TPRef, TPRef, Int, ElemStatus, Option[ID]) = {
+    // given tp, if there is a rigid constraint x -- d --> tp,
+    // it returns (x, d).
+    // otherwise, it returns (tp, 0)
+    def distToRigid(tp:TPRef, initDist : Int = 0): (TPRef, Int) = {
+      if(fixedTps.contains(tp) || others.contains(tp))
+        (tp, initDist)
+      else {
+        val e = g.inEdges(tp).head
+        distToRigid(e.u, initDist + e.l)
+      }
+    }
+
+    // we have a constraint a -- x --> b where a and b have
+    // other rigid constraints tp1 -- d1 --> a  and  tp2 -- d2 --> b
+    // it is replaced with tp1 -- d1 + x - d2 --> tp2
+    // note that we could have (result of dist) tp1 = a and d1 =0 or
+    // tp2=b and d2=0 which does not change the validity
+    val (tp1, d1) = distToRigid(c._1)
+    val (tp2, d2) = distToRigid(c._2)
+
+    (tp1, tp2, d1 + c._3 - d2, c._4, c._5)
+  }
+
+  val finalConstraints = from.constraints.map(finalConstraint(_))
+
+  /** For all non-rigid timepoints, they are added to the STN */
   val ids : Map[TPRef,Int] =
-    (for((tp, flag) <- from.timepoints) yield flag match {
+    (for((tp, flag) <- from.timepoints ; if !rigids.contains(tp)) yield flag match {
       case CONTINGENT => (tp, dispatcher.addContingentVar())
       case CONTROLLABLE => (tp, dispatcher.addDispatchable())
       case START => (tp, dispatcher.start)
       case END => (tp, dispatcher.end)
-      case _ => (tp, dispatcher.addVar())
+      case _ => (tp, dispatcher.addVar()) // other timepoints that were not rigidly constrained
     }).toMap
 
   val tps = ids.map(_.swap)
 
   implicit def tp2id(tp:TPRef) : Int = ids(tp)
   implicit def id2tp(id:Int) : TPRef = tps(id)
+
 
   for((from, to, d, status, optID) <- from.constraints ; if status == CONTINGENT) {
     optID match {
@@ -31,11 +79,64 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     }
   }
 
-  for((from, to, d, status, optID) <- from.constraints ; if status == ElemStatus.CONTROLLABLE) {
+  for((from, to, d, status, optID) <- finalConstraints ; if status == ElemStatus.CONTROLLABLE) {
     optID match {
       case Some(id) => dispatcher.addConstraintWithID(from, to, d, id)
       case None => dispatcher.addConstraint(from, to, d)
     }
+  }
+
+
+  /** Builds a graph with edges from fixed to rigid or rigid to rigid.
+    * The distance is the one of the rigid constraint between the two timepoints.
+    *
+    * This is currently the bottleneck, mainly because of the simple digraph where edges are filtered out
+    * whenever a new one is added.
+    */
+  private def getRigidRelationsGraph() = {
+    var rigids = fixedTps
+    var addedToRigids = true
+
+    val rigidsRelations = GraphFactory.getSimpleLabeledDigraph[TPRef, Int]
+    for(tp <- fixedTps) rigidsRelations.addVertex(tp)
+
+    while (addedToRigids) {
+      addedToRigids = false
+      val g = GraphFactory.getSimpleLabeledDigraph[TPRef, Int]()
+      var dist = Map[TPRef, Map[TPRef, Int]]()
+
+      for (tp <- fixedTps)
+        g.addVertex(tp)
+
+      for ((from, to, d, status, optID) <- from.constraints
+           if rigids.contains(from) && !rigids.contains(to) || !rigids.contains(from) && rigids.contains(to)) {
+
+        if (!g.contains(from)) g.addVertex(from)
+        if (!g.contains(to)) g.addVertex(to)
+
+        g.edge(from, to) match {
+          case Some(e) if e.l < d => // edge is already stronger
+          case _ => g.addEdge(from, to, d)
+        }
+
+        g.edge(to, from) match {
+          case Some(e) if e.l == -d => {
+            rigids = rigids + from + to
+            addedToRigids = true
+            if (rigidsRelations.contains(from)) {
+              rigidsRelations.addVertex(to)
+              rigidsRelations.addEdge(from, to, d)
+            } else {
+              assert(rigidsRelations.contains(to))
+              rigidsRelations.addVertex(from)
+              rigidsRelations.addEdge(to, from, -d)
+            }
+          }
+          case _ =>
+        }
+      }
+    }
+    rigidsRelations
   }
 
   dispatcher.checkConsistencyFromScratch()
@@ -64,6 +165,26 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
       case Some(e) => e
       case None => throw new RuntimeException("No contingent delay between those two time points")
     }
+  }
+
+  /** A debugging output that shows all timepoints and the category they were put in. */
+  def print(printer : NodeEdgePrinter[TPRef, Object, planstack.graph.core.Edge[TPRef]]): Unit = {
+    val p = new GraphDotPrinter[TPRef,Int,LabeledEdge[TPRef,Int]](g, printer.printNode, x => x.toString, _ => false, _ => false)
+    p.print2Dot("rigid-relations.dot")
+
+    val others = from.timepoints.map(_._1).filter(!g.vertices.contains(_))
+    val rigid = g.vertices.filter(!fixedTps.contains(_))
+
+    println("\nFixed")
+    for(tp <- fixedTps) println(printer.printNode(tp))
+
+    println("\nRigid")
+    for(tp <- rigid) println(printer.printNode(tp))
+
+    println("\nOthers")
+    for(tp <- others) println(printer.printNode(tp))
+
+    println("%s  %s  %s".format(fixedTps.size, rigid.size, others.size))
   }
 
 }
