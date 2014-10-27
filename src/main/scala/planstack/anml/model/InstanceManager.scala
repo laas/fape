@@ -128,7 +128,12 @@ class InstanceManager {
     if(types(typeName).methods.contains(methodName)) {
       typeName :: methodName :: Nil
     } else if(types(typeName).parent.nonEmpty) {
-      getQualifiedFunction(types(typeName).parent, methodName)
+      try {
+        getQualifiedFunction(types(typeName).parent, methodName)
+      } catch {
+        case _:ANMLException => // make sure we raise the correct type
+          throw new ANMLException("Unable to find a method \"%s\" for type \"%s\".".format(methodName, typeName))
+      }
     } else {
       throw new ANMLException("Unable to find a method \"%s\" for type \"%s\".".format(methodName, typeName))
     }
