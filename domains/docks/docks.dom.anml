@@ -1,0 +1,108 @@
+// -*-c++-*-
+
+type ContainerPosition; // Container, Robots & Cranes
+type RobotLoc; // Docks & Roads
+
+
+type Container < ContainerPosition with {
+    variable ContainerPosition pos;
+    variable Pile pile;
+};
+
+type Robot < ContainerPosition with {
+    variable RobotLoc loc;
+    predicate empty();
+//    variable Container cargo;
+};
+
+type Crane < ContainerPosition with {
+//    variable Container grip;
+    predicate empty();
+    constant Dock attached;
+};
+
+type Pile with {
+    variable Container top;
+    variable boolean empty;
+    constant Dock attached;
+};
+
+type Dock < RobotLoc with {
+    predicate empty();
+//    variable Robot content;
+};
+
+type Road < RobotLoc;
+
+instance Container pallet; // nil container
+instance Pile noPile; // when a container is not in a pile
+
+
+
+constant boolean adjacent(Dock d, Road r);
+
+
+action leave(Robot r, Dock d, Road w){
+    [all] r.loc == d :-> w;
+    [all] d.empty == false :-> true;
+    adjacent(d,w);
+};
+
+action enter(Robot r, Dock d, Road w) {
+    [all] r.loc == w :-> d;
+    [all] d.empty == true :-> false;
+    adjacent(d,w);
+};
+
+action navigate(Robot r, Road w1, Road w2) {
+    [all] r.loc == w1 :-> w2;
+};
+
+action pickup(Crane k, Container c, Robot r) {
+    c != pallet;
+    
+    [all] k.empty == true :-> false;
+    [all] c.pos == r :-> k;
+    [all] r.empty == false :-> true;
+    constant Dock dock;
+    k.attached == dock;
+    [all] r.loc == dock;
+};
+
+action putdown(Crane k, Container c, Robot r) {
+    c != pallet;
+    
+    [all] k.empty == false :-> true;
+    [all] c.pos == k :-> r;
+    [all] r.empty == true :-> false;
+    constant Dock d;
+    k.attached == d;
+    [all] r.loc == d;
+};
+
+action stack(Crane k, Container c, Pile p) {
+    c != pallet;
+    
+    constant Container prevTop;
+    
+    [all] p.top == prevTop :-> c;
+    [all] k.empty == false :-> true;
+    [all] c.pos == k :-> prevTop;
+    [all] c.pile == noPile :-> p;
+    
+    constant Dock d;
+    k.attached == p.attached;
+};
+
+action unstack(Crane k, Container c, Pile p) {
+    c != pallet;
+    constant Container under;
+    
+    [all] p.top == c :-> under;
+    [all] k.empty == true :-> false;
+    [all] c.pos == under :-> k;
+    [all] c.pile == p :-> noPile;
+
+    constant Dock d;
+    k.attached == p.attached;
+};
