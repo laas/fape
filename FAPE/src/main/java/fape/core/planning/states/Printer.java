@@ -270,6 +270,21 @@ public class Printer {
         return sb.toString();
     }
 
+    public static String timepoint(State st, TPRef tp) {
+        if(tp == st.pb.start())
+            return "Start";
+        else if(tp == st.pb.end())
+            return "End";
+        else if(tp == st.pb.earliestExecution())
+            return "Earliest Exec";
+
+        TemporalInterval in = containingInterval(st, tp);
+        if(in == null)
+            return "unknown: "+tp;
+        else
+            return tpToString(tp, containingInterval(st, tp));
+    }
+
     private static boolean intervalContains(TPRef tp, TemporalInterval in) {
         return tp == in.start() || tp == in.end();
     }

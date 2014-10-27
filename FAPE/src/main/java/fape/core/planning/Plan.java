@@ -39,7 +39,7 @@ public class Plan {
     final UnlabeledDigraph<LogStatement> eventsDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
     final UnlabeledDigraph<Action> actionDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
 
-    public Plan(State st) {
+    public Plan(final State st) {
         assert st.isConsistent() : "Cannot build a plan from an inconsistent state.";
         this.st = st;
 
@@ -55,6 +55,16 @@ public class Plan {
                 // record that this time point is the start of this action
                 actions.put(a.start(), a);
             }
+
+            // Uncomment for the debugging output of
+            /*
+            class Printer extends NodeEdgePrinter<TPRef, Object, Edge<TPRef>> {
+                public String printNode(TPRef tp) {
+                    return fape.core.planning.states.Printer.timepoint(st, tp);
+                }
+            }
+            dispatcher.print(new Printer());
+            */
         }
         if(showChart)
             showChart();
