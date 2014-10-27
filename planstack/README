@@ -8,9 +8,10 @@ The only requirement is to have SBT (Simple Build Tool).
 Instructions for installing SBT can be found at
 http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html
 
+
 # Graph
 
-git://trac.laas.fr/git/robots/fape-graphs
+git://git.openrobots.org/robots/fape/fape-graphs.git
 
 A scala graph library. Those are used in multiple places in FAPE.
 The focus of this graph library is to allow cheap copy operation to maintain
@@ -19,7 +20,7 @@ nearly identical versions of a graph with very low memory overhead.
 
 # Constraints:
 
-git://trac.laas.fr/git/robots/fape-constraints
+git://git.openrobots.org/robots/fape/fape-constraints.git
 
 A library for constraints processing.
 It implements a simplistic binding manager as well as several algorithm
@@ -27,7 +28,7 @@ for STN and STNU constraint propagation and consistency checking.
 
 # Anml
 
-git://trac.laas.fr/git/robots/fape-anml
+git://git.openrobots.org/robots/fape/fape-anml.git
 
 An ANML parser built with scala's combinator parsers.
 
