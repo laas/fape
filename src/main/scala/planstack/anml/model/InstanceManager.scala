@@ -47,7 +47,7 @@ class InstanceManager {
     * @param parent Name of the parent type. If empty (""), no parent is set for this type.
     */
   def addType(name:String, parent:String) {
-    assert(!types.contains(name))
+    assert(!types.contains(name), "Error: type "+name+" is already recorded.")
 
     types(name) = new Type(name, parent)
     typeHierarchy.addVertex(name)
