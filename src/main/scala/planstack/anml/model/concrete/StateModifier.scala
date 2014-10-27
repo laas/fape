@@ -99,6 +99,39 @@ trait StateModifier {
       }
     }
   }
+
+  /** extracts all timepoints in this actions. This include start/end and all timepoints
+    * of nested statements, actions and action conditions. */
+  protected def timepoints() = {
+    var tps = Map[TPRef, String]()
+    tps += ((container.start, "start"))
+    tps += ((container.end, "end"))
+    for(s <- statements ++ actions ++ actionConditions) {
+      tps += ((s.start, "start(%s)".format(s)))
+      tps += ((s.end, "end(%s)".format(s)))
+    }
+
+    tps
+  }
+
+  /** Returns a human readable list of rigid relations detected in this state modifier.
+    * Not used yet. */
+  protected def rigids() = {
+    val rigidTps = scala.collection.mutable.Set(container.start, container.end)
+
+    val equalities = temporalConstraints.filter(_.op == "=")
+    val rigids = equalities
+      .filter(tc => rigidTps.contains(tc.tp1) || rigidTps.contains(tc.tp2))
+      .map(tc => {
+      if (rigidTps contains tc.tp1)
+        (tc.tp1, tc.tp2, tc.plus)
+      else
+        (tc.tp2, tc.tp1, -tc.plus)
+
+    })
+    val tps = timepoints()
+    rigids.map(t => (tps(t._1), tps(t._2), t._3))
+  }
 }
 
 class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
