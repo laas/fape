@@ -181,8 +181,12 @@ object StatementsFactory {
         val v1 = LVarRef(e2.functionName)
         val v2 = LVarRef(e3.functionName)
         val tipe = sv.func.valueType
-        assert(pb.instances.subTypes(tipe).contains(context.getType(v1)))
-        assert(pb.instances.subTypes(tipe).contains(context.getType(v2)))
+        assert(pb.instances.subTypes(tipe).contains(context.getType(v1)),
+          "Type: "+context.getType(v1)+" is not a subtype of "+tipe+
+            " which is the type of the state variable. In statement: "+statement)
+        assert(pb.instances.subTypes(tipe).contains(context.getType(v2)),
+          "Type: "+context.getType(v2)+" is not a subtype of "+tipe+
+            " which is the type of the state variable. In statement: "+statement)
         List(new AbstractTransition(sv, v1, v2, LStatementRef(id)))
       }
     }
