@@ -541,6 +541,54 @@ Meanwhile you can:
 **Efficiency:** Note that the JVM (and especially scala bytecode) can be very slow to warm up. If It seems like the planner takes an incredibly large time to process few states, try to warm it up first (the option `-n` allows to set a number of repetitions for the run).
 
 
+## Temporal uncertainty handling
+
+Temporal planning under uncertainty is of course of interest to us since we do 
+not have the exact duration of actions at planning time.
+Some of our contingent time-points are observable (e.g. end of an action) which makes 
+enforcing dynamic controllability the natural thing to do.
+Of course some events might not be observable.
+
+Support for temporal uncertainty is still quite limited. We only support 
+contingent constraints between the start and end of an action (assuming that 
+the end of the action is observable).
+Contingency over non-observable events is naturally supported in ANML with the 
+change-over-an-interval notation (this can be seen as a locally strongly 
+controllable STNU).
+
+    // an action with uncertain duration
+    action Move(Loc a, Loc b) {
+      duration :in [15,20];
+      ...
+    };
+
+What we currently support:
+ - uncertain duration of actions (that's the only place where explicit 
+contingent constraint are allowed)
+ - enforcing pseudo controllability during search (there is a implementation 
+for enforcing DC during search but it is not working yet)
+ - checking that the plan is dynamically controllable (and keep searching 
+otherwise)
+ - dispatching the plan (using the dispatching algorithm for dynamically 
+controllable STNU)
+
+This guarantees that the plan is executable if:
+ - we observe the observable contingent events (verified since we are currently 
+limiting ourselves to the end of actions)
+ - those happen within the predefined bounds
+
+Things you can try in the main class `fape.Planning`:
+
+ - the option `--stnu` gives you control over which type of controllability you 
+enforce during search (dynamic is still experimental)
+ - the option `--dispatchable` will check that the plan is dynamically 
+controllable and make it dispatchable.
+
+In the main class `fape.FAPE` with option `--sim`, you can try to dispatch a plan 
+and simulate random durations and failure (which will trigger plan 
+repair/replanning). This environment is still extremely limited, the one we 
+use at LAAS relies on OpenPRS and is still under research/development.
+
 # Final note
 
 FAPE is still in a beta state. There might be some bugs left so, if you run into something weird, ask me about it! You will save time and it will allow me to fix the bug or update the documentation.
