@@ -297,9 +297,7 @@ public abstract class APlanner {
             Action act = Factory.getInstantiatedAction(pb, ((NewTaskSupporter) o).abs, ac.args());
             next.insert(act);
 
-            // enforce equality of time points
-            next.enforceConstraint(ac.start(), act.start(), 0, 0);
-            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+            // enforce equality of time points and add support to task network
             next.addSupport(ac, act);
         } else if(o instanceof ExistingTaskSupporter) {
             ActionCondition ac = ((ExistingTaskSupporter) o).condition;
@@ -309,9 +307,7 @@ public abstract class APlanner {
             for (int i = 0; i < ac.args().size(); i++) {
                 next.addUnificationConstraint(act.args().get(i), ac.args().get(i));
             }
-            //enforce equality of time points
-            next.enforceConstraint(ac.start(), act.start(), 0, 0);
-            next.enforceConstraint(ac.end(), act.end(), 0, 0);
+            //enforce equality of time points and add support to task network
             next.addSupport(ac, act);
         } else if(o instanceof MotivatedSupport) {
             assert useActionConditions() : "Error: looking for motivated support in a planner that does not use action conditions.";
@@ -344,11 +340,7 @@ public abstract class APlanner {
             for (int i = 0; i < ac.args().size(); i++) {
                 next.addUnificationConstraint(ms.toSupport.args().get(i), ac.args().get(i));
             }
-            //enforce equality of time points
-            next.enforceConstraint(ac.start(), ms.toSupport.start(), 0, 0);
-            next.enforceConstraint(ac.end(), ms.toSupport.end(), 0, 0);
-
-            // finally, add the support ling in the task network
+            //enforce equality of time points and add the support in the task network
             next.addSupport(ac, ms.toSupport);
         } else {
             throw new FAPEException("Unknown option.");

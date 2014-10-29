@@ -55,3 +55,4 @@ p31.attached := d3;
 [end] c1.pile == p2;
 [end] c2.pile == p2;
 [end] c3.pile == p12;
+

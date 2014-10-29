@@ -1,9 +1,6 @@
 package fape.core.planning.states;
 
-import fape.core.planning.search.Threat;
-import fape.core.planning.search.UnboundVariable;
-import fape.core.planning.search.UndecomposedAction;
-import fape.core.planning.search.UnsupportedTaskCond;
+import fape.core.planning.search.*;
 import fape.core.planning.search.resolvers.*;
 import fape.core.planning.search.resolvers.Decomposition;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
@@ -47,9 +44,10 @@ public class Printer {
             return "Undecomposed: "+action(st, ((UndecomposedAction) o).action);
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
-        else if(o instanceof UnsupportedTaskCond) {
-            return "UnsuppoertedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
-        }
+        else if(o instanceof UnsupportedTaskCond)
+            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
+        else if(o instanceof UnsupportedDatabase)
+            return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedDatabase) o).consumer);
 
         // Resolvers
         else if(o instanceof TemporalSeparation)

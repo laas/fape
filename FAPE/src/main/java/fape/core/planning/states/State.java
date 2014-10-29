@@ -32,6 +32,7 @@ import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.STNUDispatcher;
 import scala.Option;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -386,16 +387,13 @@ public class State implements Reporter {
      * @param act Action to insert.
      */
     public void insert(Action act) {
-        csp.stn().addControllableTimePoint(act.start());
-        csp.stn().addContingentTimePoint(act.end());
+        taskNet.insert(act);
+        apply(act);
 
         // make sure that this action is executed after earliest execution.
         // this constraint is flagged with the start of the action time point which can be used for removal
         // (when an action is executed)
         csp.stn().enforceMinDelayWithID(pb.earliestExecution(), act.start(), 0, act.start());
-
-        taskNet.insert(act);
-        apply(act);
 
         // creates constraints associated with the action duration.
         // all those constraints are given the action's reference as ID to allow for later removal.
@@ -461,10 +459,12 @@ public class State implements Reporter {
      * network manager. It also adds a constraint specifying that start must
      * happen before end.
      */
+    @Deprecated
     private void recordTimePoints(TemporalInterval interval) {
-        csp.stn().recordTimePoint(interval.start());
-        csp.stn().recordTimePoint(interval.end());
-        csp.stn().enforceBefore(interval.start(), interval.end());
+        throw new FAPEException("Should not be called, time points are now recorded directly when applying a state modifier.");
+//        csp.stn().recordTimePoint(interval.start());
+//        csp.stn().recordTimePoint(interval.end());
+//        csp.stn().enforceBefore(interval.start(), interval.end());
     }
 
     /**
@@ -492,7 +492,8 @@ public class State implements Reporter {
      * @param s Statement to insert
      */
     private void apply(LogStatement s) {
-        recordTimePoints(s);
+        csp.stn().enforceBefore(s.start(), s.end());
+
         assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
 
         TemporalDatabase db = new TemporalDatabase(s);
@@ -637,11 +638,11 @@ public class State implements Reporter {
      * @param dec Decomposition to insert
      */
     public void applyDecomposition(Decomposition dec) {
-        recordTimePoints(dec);
-
-        // interval of the decomposition is equal to the one of the containing action.
-        csp.stn().enforceConstraint(dec.start(), dec.container().start(), 0, 0);
-        csp.stn().enforceConstraint(dec.end(), dec.container().end(), 0, 0);
+//        recordTimePoints(dec);
+//
+//        interval of the decomposition is equal to the one of the containing action.
+//        csp.stn().enforceConstraint(dec.start(), dec.container().start(), 0, 0);
+//        csp.stn().enforceConstraint(dec.end(), dec.container().end(), 0, 0);
 
         taskNet.insert(dec, dec.container());
 
@@ -654,6 +655,39 @@ public class State implements Reporter {
      * @param mod StateModifier to apply
      */
     private void apply(StateModifier mod) {
+
+        // get all timepoints to be declared (in categories real, virtual and pending-virtual)
+        // add the time points tight away, the constraints will be add last as they might apply on
+        // time points not included yet (e.g. start/end of nested actions)
+        TemporalObjects timedObjects = mod.getTemporalObjects();
+
+        for (Tuple2<TPRef, String> tp : timedObjects.timePoints()) {
+            if(tp._1().id() == 115) {
+                System.out.println("BREAK1");
+            }
+            switch (tp._2()) {
+                case "dispatchable":
+                    csp.stn().addControllableTimePoint(tp._1());
+                    break;
+                case "contingent":
+                    csp.stn().addContingentTimePoint(tp._1());
+                    break;
+                case "controllable":
+                    csp.stn().recordTimePoint(tp._1());
+                    break;
+                default:
+                    throw new FAPEException("Unknown time point tipe: " + tp._2());
+            }
+        }
+
+        for(Tuple3<TPRef,TPRef,Integer> virtual : timedObjects.virtualTimePoints()) {
+            csp.stn().addVirtualTimePoint(virtual._1(), virtual._2(), virtual._3());
+        }
+
+        for(TPRef pendingVirt : timedObjects.pendingVirtuals())
+            csp.stn().addPendingVirtualTimePoint(pendingVirt);
+
+
         // for every instance declaration, create a new CSP Var with itself as domain
         for (String instance : mod.instances()) {
             csp.bindings().addPossibleValue(instance);
@@ -680,7 +714,8 @@ public class State implements Reporter {
             apply(mod, bc);
 
         for(ActionCondition ac : mod.actionConditions()) {
-            recordTimePoints(ac);
+            csp.stn().enforceBefore(ac.start(), ac.end());
+
             if(mod instanceof Decomposition)
                 taskNet.insert(ac, (Decomposition) mod);
             else if(mod instanceof Action)
@@ -689,7 +724,8 @@ public class State implements Reporter {
                 taskNet.insert(ac);
         }
 
-        for (TemporalConstraint tc : mod.temporalConstraints()) {
+        // apply all remaining temporal constraints (those not represented with rigid time points)
+        for (TemporalConstraint tc : timedObjects.nonRigidConstraints()) {
             apply(mod, tc);
         }
     }
@@ -846,7 +882,15 @@ public class State implements Reporter {
 
     public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
 
-    public void addSupport(ActionCondition cond, Action act) { taskNet.addSupport(cond, act); }
+    /**
+     *  Unifies the time points of the action condition and those of the action, and add
+     * the support link in the task network.
+     */
+    public void addSupport(ActionCondition cond, Action act) {
+        csp.stn().enforceConstraint(cond.start(), act.start(), 0, 0);
+        csp.stn().enforceConstraint(cond.end(), act.end(), 0, 0);
+        taskNet.addSupport(cond, act);
+    }
 
     public int getNumActions() { return taskNet.getNumActions(); }
 
