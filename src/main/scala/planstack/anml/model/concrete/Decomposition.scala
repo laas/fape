@@ -11,7 +11,8 @@ import scala.collection.JavaConversions._
 class Decomposition(
     val context:Context,
     val container:Action)
-  extends StateModifier with TemporalInterval {
+  extends StateModifier// with TemporalInterval
+{
 
 
   val statements = new util.LinkedList[Statement]()
@@ -21,7 +22,7 @@ class Decomposition(
   val actionConditions = new util.LinkedList[ActionCondition]()
 
   assert(context.interval == null)
-  context.setInterval(this)
+  context.setInterval(container)
 
   def vars = seqAsJavaList(context.varsToCreate)
 }

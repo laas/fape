@@ -2,13 +2,13 @@ name := "planstack-anml"
 
 organization := "planstack"
 
-version := "0.6.7"
+version := "0.6.8"
 
 scalaVersion := "2.10.3"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.2"
+libraryDependencies += "planstack" % "planstack-graph" % "0.4.0"
 
 crossPaths := false
 

@@ -7,8 +7,12 @@ import planstack.anml.model.abs.statements.{AbstractBindingConstraint, AbstractL
 import planstack.anml.model.abs.{AbstractActionRef, AbstractTemporalConstraint}
 import planstack.anml.model.concrete.statements.{BindingConstraint, LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
+import planstack.structures.IList
+import planstack.structures.Converters._
 
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 /** A state modifier decribes modifications to be made to plan.
   *
@@ -65,7 +69,7 @@ trait StateModifier {
     */
   def instances : java.util.List[String] = Nil
 
-  def temporalConstraints : java.util.List[TemporalConstraint]
+  protected def temporalConstraints : java.util.List[TemporalConstraint]
 
   def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem): Unit = {
     for(absStatement <- absStatements) {
@@ -100,39 +104,76 @@ trait StateModifier {
     }
   }
 
-  /** extracts all timepoints in this actions. This include start/end and all timepoints
-    * of nested statements, actions and action conditions. */
-  protected def timepoints() = {
-    var tps = Map[TPRef, String]()
-    tps += ((container.start, "start"))
-    tps += ((container.end, "end"))
-    for(s <- statements ++ actions ++ actionConditions) {
-      tps += ((s.start, "start(%s)".format(s)))
-      tps += ((s.end, "end(%s)".format(s)))
-    }
+  /** Builds an object containing all temporal operations (time point creations and constraints) that must be applied
+    * by this state modifier.
+    */
+  def getTemporalObjects: TemporalObjects = {
+    // we can make virtual the time points of actions and those of the container
+    val fixedTPs = (
+      for(interval:TemporalInterval <- container :: actions.asScala.toList) yield
+        List(interval.start,interval.end)
+      ).flatten.toSet
 
-    tps
-  }
-
-  /** Returns a human readable list of rigid relations detected in this state modifier.
-    * Not used yet. */
-  protected def rigids() = {
-    val rigidTps = scala.collection.mutable.Set(container.start, container.end)
 
     val equalities = temporalConstraints.filter(_.op == "=")
-    val rigids = equalities
-      .filter(tc => rigidTps.contains(tc.tp1) || rigidTps.contains(tc.tp2))
-      .map(tc => {
-      if (rigidTps contains tc.tp1)
-        (tc.tp1, tc.tp2, tc.plus)
-      else
-        (tc.tp2, tc.tp1, -tc.plus)
+    val rigidsRawConstraints =
+      equalities
+        .filter(tc => fixedTPs.contains(tc.tp1) || fixedTPs.contains(tc.tp2)) // at least one must be fixed
+        .filter(tc => !fixedTPs.contains(tc.tp1) || !fixedTPs.contains(tc.tp2)) // at least one must not be fixed
 
-    })
-    val tps = timepoints()
-    rigids.map(t => (tps(t._1), tps(t._2), t._3))
+    // a list of (virt, real, dist(virt, real))
+    val rigids = rigidsRawConstraints.map(tc => {
+      if (fixedTPs contains tc.tp2)
+        (tc.tp1, tc.tp2, -tc.plus :Integer)
+      else
+        (tc.tp2, tc.tp1, tc.plus :Integer)
+    }).asScala
+
+    val virtualTimePoints = rigids.map(_._1)
+
+    val tps = new ListBuffer[(TPRef, String)]
+    val pendingVirtuals = new ListBuffer[TPRef]
+
+    this match {
+      case _:Action => {
+        tps.append((container.start, "dispatchable"))
+        tps.append((container.end, "contingent"))
+      }
+      case _ => //start/end are those of the containing action or of the problem
+    }
+
+    // statements and action conditions are regular time point (if they are not virtual)
+    for(s <- statements ++ actionConditions) {
+      if(!virtualTimePoints.contains(s.start)) tps.append((s.start, "controllable"))
+      if(!virtualTimePoints.contains(s.end)) tps.append((s.end, "controllable"))
+    }
+//    Let action conditions be regular time points for now
+//    for(tc <- actionConditions) {
+//      pendingVirtuals.append(tc.start, tc.end)
+//    }
+
+
+    val nonRigidConstraints = temporalConstraints.filter(c => !rigidsRawConstraints.contains(c))
+
+    new TemporalObjects(tps.toList, rigids.toList, pendingVirtuals, nonRigidConstraints)
   }
 }
+
+/**
+ * This object sums all time points and constraints in a state modifier.
+ * Note that some constraints might apply on time points not defined here
+ * (e.g. start of a nested action or global start of the problem).
+ *
+ * @param timePoints Non virtual time points that chould be recorded.
+ * @param virtualTimePoints Virtual time points, those are defined wrt to another time point. It comes as a tuple
+ *                          (virt, real, d) where real is a non-virtual timepoint d is the distance from virt to real
+ * @param pendingVirtuals Timepoints that will be tied later on to another timepoint.
+ * @param nonRigidConstraints All constraints that are not represented as a virtual time point and its rigid relations.
+ */
+class TemporalObjects(val timePoints: IList[Pair[TPRef, String]],
+                      val virtualTimePoints: IList[(TPRef, TPRef, Integer)],
+                      val pendingVirtuals: IList[TPRef],
+                      val nonRigidConstraints: IList[TemporalConstraint])
 
 class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
 

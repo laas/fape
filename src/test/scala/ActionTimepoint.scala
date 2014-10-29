@@ -34,8 +34,8 @@ class ActionTimepoint extends FunSuite {
       pb.addAnmlBlocks(res)
       println(pb)
       val doo = Factory.getStandaloneAction(pb, pb.getAction("Do"))
-      println(doo.timepoints().mkString("\n"))
-      println(doo.rigids().mkString("\n"))
+//      println(doo.timepoints().mkString("\n"))
+//      println(doo.rigids().mkString("\n"))
     }
     case x => {
       println(x)
