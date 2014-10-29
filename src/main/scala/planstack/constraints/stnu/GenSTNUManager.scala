@@ -52,10 +52,12 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
   }
 
   final def addControllableTimePoint(tp : TPRef) : Int = {
+    assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
     dispatchableTPs += tp
     recordTimePoint(tp)
   }
   final def addContingentTimePoint(tp : TPRef) : Int = {
+    assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
     contingentTPs += tp
     recordTimePoint(tp)
   }
@@ -96,18 +98,21 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
 
   /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
   def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) {
-    assert(!isVirtual(virt), "There is already a virtual time point "+virt)
+    assert(hasTimePoint(real), "This virtual time points points to a non-recored TP. Maybe use pendingVirtual.")
+    assert(!hasTimePoint(virt), "There is already a time point "+virt)
     virtualTPs = virtualTPs.updated(virt, Some((real, -dist)))
   }
 
   /** Records a virtual time point that is still partially defined.
     * All constraints on this time point will only be processed when defined with method*/
   def addPendingVirtualTimePoint(virt: TPRef): Unit = {
+    assert(!hasTimePoint(virt), "There is already a time point "+virt)
     virtualTPs = virtualTPs.updated(virt, None)
   }
 
   /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
   def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
+    assert(hasTimePoint(real), "This virtual time points points to a non-recorded TP. Maybe use pendingVirtual.")
     assert(isPendingVirtual(virt), "This method is only applicable to pending virtual timepoints.")
     virtualTPs = virtualTPs.updated(virt, Some((real, -dist)))
     for(c <- rawConstraints if c.u == virt || c.v == virt) {
@@ -115,6 +120,23 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
         commit(c)
     }
   }
+
+  override protected final def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean = {
+    val (source, sourceDist) =
+      if (isVirtual(u)) virtualTPs(u).get
+      else (u, 0)
+    val (dest, destDist) =
+      if (isVirtual(v)) virtualTPs(v).get
+      else (v, 0)
+
+    assert(hasTimePoint(source) && !isVirtual(source))
+    assert(hasTimePoint(dest) && !isVirtual(dest))
+
+    isConstraintPossible(id(source), id(dest), sourceDist + w - destDist)
+  }
+
+  /** Is this constraint possible in the underlying stnu ? */
+  protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean
 
   private final def commit(c : Const): Unit = {
     assert(!isPendingVirtual(c.u) && !isPendingVirtual(c.v), "One of the time points is a pending virtual")
@@ -153,10 +175,10 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
 
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */
-  def timepoints : IList[(TPRef, ElemStatus)] =
+  final def timepoints : IList[(TPRef, ElemStatus)] =
     (for (tp <- id.keys) yield
-      if(start.nonEmpty && id(tp) == start.get) (tp, START)
-      else if(end.nonEmpty && id(tp) == end.get) (tp, END)
+      if(start.nonEmpty && tp == start.get) (tp, START)
+      else if(end.nonEmpty && tp == end.get) (tp, END)
       else if (dispatchableTPs.contains(tp)) (tp, CONTROLLABLE)
       else if (contingentTPs.contains(tp)) (tp, CONTINGENT)
       else (tp, NO_FLAG)

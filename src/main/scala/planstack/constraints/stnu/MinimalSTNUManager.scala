@@ -52,7 +52,7 @@ class MinimalSTNUManager[TPRef,ID](val stn:ISTN[ID],
   override def isConsistent: Boolean = stn.consistent
 
 
-  override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean =
+  override protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean =
     stn.isConstraintPossible(u, v, w)
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =

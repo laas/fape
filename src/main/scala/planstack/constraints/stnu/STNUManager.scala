@@ -31,7 +31,7 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
   /** Returns true if the STN is consistent (might trigger a propagation */
   override def isConsistent(): Boolean = stnu.consistent
 
-  override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean = stnu.isConstraintPossible(u, v, w)
+  override protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = stnu.isConstraintPossible(u, v, w)
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
     stnu.writeToDotFile(filename)

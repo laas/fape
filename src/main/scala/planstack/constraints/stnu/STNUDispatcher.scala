@@ -13,7 +13,11 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   val dispatcher :DispatchableSTNU[ID] = new Dispatcher[ID]
 
   /** Timepoints that must stay in the STN (dispatchable, contingents and stn's start end */
-  val fixedTps = (for((tp, flag) <- from.timepoints if flag != ElemStatus.NO_FLAG) yield tp).toSet
+  val fixedTps =
+    (for((tp, flag) <- from.timepoints
+         if flag != ElemStatus.NO_FLAG && flag != ElemStatus.RIGID) yield
+      tp
+    ).toSet
 
   /** Graph with edges from the fixed timepoints to the rigid ones */
   val g = getRigidRelationsGraph()

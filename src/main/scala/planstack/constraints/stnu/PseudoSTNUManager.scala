@@ -45,7 +45,7 @@ class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
     id(tp)
   }
 
-  override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean = stn.isConstraintPossible(id(u), id(v), w)
+  override protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = stn.isConstraintPossible(u, v, w)
 
   override def removeTimePoint(tp:TPRef): Unit = {
     stn.removeVar(id(tp))
