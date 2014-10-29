@@ -5,7 +5,7 @@ import planstack.constraints.stn.Predef._
 
 class PseudoSTNUSuite extends FunSuite {
 
-  for(stnu <- getAllSTNUManager[String,String]) {
+  for(stnu <- getAllSTNUManager[String,String] if stnu.checksPseudoControllability) {
     test("["+stnu.getClass.getSimpleName+"] Pseudo consistency") {
 
       assert(stnu.checksPseudoControllability)

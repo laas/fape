@@ -30,7 +30,7 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
    * If one/two timepoints of the constraint are in a rigid constraint with a fixed one,
    * the constraint is modified to be on the fixed timepoints.
    */
-  def finalConstraint(c : (TPRef, TPRef, Int, ElemStatus, Option[ID])): (TPRef, TPRef, Int, ElemStatus, Option[ID]) = {
+  def finalConstraint(c : Constraint[TPRef,ID]): Constraint[TPRef,ID] = {
     // given tp, if there is a rigid constraint x -- d --> tp,
     // it returns (x, d).
     // otherwise, it returns (tp, 0)
@@ -48,10 +48,11 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     // it is replaced with tp1 -- d1 + x - d2 --> tp2
     // note that we could have (result of dist) tp1 = a and d1 =0 or
     // tp2=b and d2=0 which does not change the validity
-    val (tp1, d1) = distToRigid(c._1)
-    val (tp2, d2) = distToRigid(c._2)
+    val (tp1, d1) = distToRigid(c.u)
+    val (tp2, d2) = distToRigid(c.v)
 
-    (tp1, tp2, d1 + c._3 - d2, c._4, c._5)
+    new Constraint[TPRef,ID](tp1, tp2, d1 + c.d - d2, c.tipe, c.optID)
+//    (tp1, tp2, d1 + c._3 - d2, c._4, c._5)
   }
 
   val finalConstraints = from.constraints.map(finalConstraint(_))
@@ -63,7 +64,7 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
       case CONTROLLABLE => (tp, dispatcher.addDispatchable())
       case START => (tp, dispatcher.start)
       case END => (tp, dispatcher.end)
-      case _ => (tp, dispatcher.addVar()) // other timepoints that were not rigidly constrained
+      case _ => (tp, dispatcher.addVar()) // other time points that were not rigidly constrained
     }).toMap
 
   val tps = ids.map(_.swap)
@@ -72,17 +73,17 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   implicit def id2tp(id:Int) : TPRef = tps(id)
 
 
-  for((from, to, d, status, optID) <- from.constraints ; if status == CONTINGENT) {
-    optID match {
-      case Some(id) => dispatcher.addContingentWithID(from, to, d, id)
-      case None => dispatcher.addContingent(from, to, d)
+  for(c <- from.constraints ; if c.tipe == CONTINGENT) {
+    c.optID match {
+      case Some(id) => dispatcher.addContingentWithID(c.u, c.v, c.d, id)
+      case None => dispatcher.addContingent(c.u, c.v, c.d)
     }
   }
 
-  for((from, to, d, status, optID) <- finalConstraints ; if status == ElemStatus.CONTROLLABLE) {
-    optID match {
-      case Some(id) => dispatcher.addConstraintWithID(from, to, d, id)
-      case None => dispatcher.addConstraint(from, to, d)
+  for(c <- finalConstraints ; if c.tipe == ElemStatus.CONTROLLABLE) {
+    c.optID match {
+      case Some(id) => dispatcher.addConstraintWithID(c.u, c.v, c.d, id)
+      case None => dispatcher.addConstraint(c.u, c.v, c.d)
     }
   }
 
@@ -94,11 +95,16 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     * whenever a new one is added.
     */
   private def getRigidRelationsGraph() = {
-    var rigids = fixedTps
+    var rigids = fixedTps ++ from.timepoints.filter(_._2 == RIGID).map(_._1)
     var addedToRigids = true
 
     val rigidsRelations = GraphFactory.getSimpleLabeledDigraph[TPRef, Int]
-    for(tp <- fixedTps) rigidsRelations.addVertex(tp)
+    for(tp <- rigids) rigidsRelations.addVertex(tp)
+    for(c <- from.constraints if c.tipe == RIGID) {
+      assert(fixedTps.contains(c.u))
+      assert(rigids.contains(c.v))
+      rigidsRelations.addEdge(c.u, c.v, c.d)
+    }
 
     while (addedToRigids) {
       addedToRigids = false
@@ -108,28 +114,30 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
       for (tp <- fixedTps)
         g.addVertex(tp)
 
-      for ((from, to, d, status, optID) <- from.constraints
-           if rigids.contains(from) && !rigids.contains(to) || !rigids.contains(from) && rigids.contains(to)) {
+      for (c <- from.constraints
+           if c.tipe != RIGID // was already added
+           if rigids.contains(c.u) && !rigids.contains(c.v)
+             || !rigids.contains(c.u) && rigids.contains(c.v)) {
 
-        if (!g.contains(from)) g.addVertex(from)
-        if (!g.contains(to)) g.addVertex(to)
+        if (!g.contains(c.u)) g.addVertex(c.u)
+        if (!g.contains(c.v)) g.addVertex(c.v)
 
-        g.edge(from, to) match {
-          case Some(e) if e.l < d => // edge is already stronger
-          case _ => g.addEdge(from, to, d)
+        g.edge(c.u, c.v) match {
+          case Some(e) if e.l < c.d => // edge is already stronger
+          case _ => g.addEdge(c.u, c.v, c.d)
         }
 
-        g.edge(to, from) match {
-          case Some(e) if e.l == -d => {
-            rigids = rigids + from + to
+        g.edge(c.v, c.u) match {
+          case Some(e) if e.l == -c.d => {
+            rigids = rigids + c.u + c.v
             addedToRigids = true
-            if (rigidsRelations.contains(from)) {
-              rigidsRelations.addVertex(to)
-              rigidsRelations.addEdge(from, to, d)
+            if (rigidsRelations.contains(c.u)) {
+              rigidsRelations.addVertex(c.v)
+              rigidsRelations.addEdge(c.u, c.v, c.d)
             } else {
-              assert(rigidsRelations.contains(to))
-              rigidsRelations.addVertex(from)
-              rigidsRelations.addEdge(to, from, -d)
+              assert(rigidsRelations.contains(c.v))
+              rigidsRelations.addVertex(c.u)
+              rigidsRelations.addEdge(c.v, c.u, -c.d)
             }
           }
           case _ =>

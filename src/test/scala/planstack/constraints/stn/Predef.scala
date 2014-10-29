@@ -18,12 +18,14 @@ object Predef {
   )
 
   def getAllSTNUManager[TPRef,ID] : List[GenSTNUManager[TPRef,ID]] = List(
+    new MinimalSTNUManager[TPRef,ID](),
     new PseudoSTNUManager[TPRef,ID](),
     new STNUManager[TPRef,ID]()
   )
 
   def getAllSTNManager[TPRef,ID] : List[GenSTNManager[TPRef,ID]] = List(
     new STNManager[TPRef,ID](),
+    new MinimalSTNUManager[TPRef,ID](),
     new PseudoSTNUManager[TPRef,ID](),
     new STNUManager[TPRef,ID]()
   )

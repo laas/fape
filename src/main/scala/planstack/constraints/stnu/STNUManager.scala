@@ -8,35 +8,28 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
-                            protected var id : Map[TPRef,Int],
-                            protected var start : Option[TPRef],
-                            protected var end : Option[TPRef])
-  extends GenSTNUManager[TPRef,ID]
+                            _dispatchableVars : Set[TPRef],
+                            _contingentVars : Set[TPRef],
+                            _ids : Map[TPRef,Int],
+                            _virtuals : Map[TPRef, Option[(TPRef,Int)]],
+                            _rawConstraints : List[Constraint[TPRef,ID]],
+                            _start : Option[TPRef],
+                            _end : Option[TPRef])
+  extends GenSTNUManager[TPRef,ID](_virtuals, _ids, _dispatchableVars, _contingentVars, _rawConstraints, _start, _end)
 {
-//  def this() = this(new FastIDC[ID](), Map(), None, None)
-  def this() = this(new MMV[ID](), Map(), None, None)
+  // could use FastIDC as well
+  def this() = this(new MMV[ID](), Set(), Set(), Map(), Map(), List(), None, None)
 
   implicit def TPRef2stnID(tp : TPRef) : Int = id(tp)
 
   override def controllability = stnu.controllability
 
-  override def enforceContingent(u: TPRef, v: TPRef, min: Int, max: Int): Unit = stnu.addContingent(u, v, min, max)
-
-  override def enforceContingentWithID(u: TPRef, v: TPRef, min: Int, max: Int, id: ID): Unit = stnu.addContingentWithID(u, v, min, max, id)
-
   /** Makes an independent clone of this STN. */
-  override def deepCopy(): STNUManager[TPRef, ID] = new STNUManager[TPRef,ID](stnu.cc(), id, start, end)
-
-  /** Returns the maximal time from the start of the STN to u */
-  override def getLatestStartTime(u: TPRef): Int = stnu.latestStart(u)
+  override def deepCopy(): STNUManager[TPRef, ID] =
+    new STNUManager[TPRef,ID](stnu.cc(), dispatchableTPs, contingentTPs, id, virtualTPs, rawConstraints, start, end)
 
   /** Returns true if the STN is consistent (might trigger a propagation */
   override def isConsistent(): Boolean = stnu.consistent
-
-  /** Removes all constraints that were recorded with this id */
-  override def removeConstraintsWithID(id: ID): Boolean = stnu.removeConstraintsWithID(id)
-
-  override protected def addConstraint(u: TPRef, v: TPRef, w: Int): Unit = stnu.addConstraint(u, v, w)
 
   override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean = stnu.isConstraintPossible(u, v, w)
 
@@ -48,40 +41,6 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
     assert(!id.contains(tp))
     id += ((tp, stnu.addVar()))
     id(tp)
-  }
-
-
-  override def addControllableTimePoint(tp: TPRef): Int =  {
-    assert(!id.contains(tp))
-    id += ((tp, stnu.addDispatchable()))
-    id(tp)
-  }
-
-  override def addContingentTimePoint(tp: TPRef): Int = {
-    assert(!id.contains(tp))
-    id += ((tp, stnu.addContingentVar()))
-    id(tp)
-  }
-
-  /** Set the distance from the global start of the STN to tp to time */
-  override def setTime(tp: TPRef, time: Int): Unit = stnu.enforceInterval(stnu.start, tp, time, time)
-
-  /** Returns the minimal time from the start of the STN to u */
-  override def getEarliestStartTime(u: TPRef): Int = stnu.earliestStart(u)
-
-  override protected def addConstraintWithID(u: TPRef, v: TPRef, w: Int, id: ID): Unit = stnu.addConstraintWithID(u, v, w, id)
-
-  override def timepoints : IList[(TPRef, ElemStatus)] =
-    for(tp <- id.keys) yield
-      if(TPRef2stnID(tp) == stnu.start) (tp, START)
-      else if(TPRef2stnID(tp) == stnu.end) (tp, END)
-      else if(stnu.isDispatchable(tp)) (tp, CONTROLLABLE)
-      else if(stnu.isContingent(tp)) (tp, CONTINGENT)
-      else (tp, NO_FLAG)
-
-  override def constraints : IList[(TPRef, TPRef, Int, ElemStatus, Option[ID])] = {
-    val ref = id.map(_.swap)
-    stnu.constraints.map((x:Tuple5[Int,Int,Int,ElemStatus, Option[ID]]) => (ref(x._1), ref(x._2), x._3, x._4, x._5))
   }
 
   override def removeTimePoint(tp:TPRef): Unit = {
@@ -107,12 +66,31 @@ class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
     stnu.end
   }
 
-  override def getEndTimePoint: Option[TPRef] = end
-
-  override def getStartTimePoint: Option[TPRef] = start
 
   override def contingentDelay(from:TPRef, to:TPRef) = stnu.getContingentDelay(from, to) match {
     case Some((min, max)) => Some((min:Integer, max:Integer))
     case None => None
   }
+
+  override protected def commitContingent(u: Int, v: Int, d: Int, optID: Option[ID]): Unit =
+    optID match {
+      case Some(id) => stnu.addContingentWithID(u, v, d, id)
+      case None => stnu.addContingent(u, v, d)
+    }
+
+  override protected def commitConstraint(u: Int, v: Int, w: Int, optID: Option[ID]): Unit =
+    optID match {
+      case Some(id) => stnu.addConstraintWithID(u, v, w, id)
+      case None => stnu.addConstraint(u, v, w)
+    }
+
+  /** Returns the latest time for the time point with id u */
+  override protected def latestStart(u: Int): Int = stnu.latestStart(u)
+
+  /** should remove a constraint from the underlying STNU */
+  override protected def performRemoveConstraintWithID(id: ID): Boolean =
+    stnu.removeConstraintsWithID(id)
+
+  /** Returns the earliest time for the time point with id u */
+  override protected def earliestStart(u: Int): Int = stnu.earliestStart(u)
 }

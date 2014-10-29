@@ -12,5 +12,6 @@ object ElemStatus extends Enumeration {
   val END = Value
   val CONTROLLABLE = Value
   val CONTINGENT = Value
+  val RIGID = Value
 
 }
