@@ -662,9 +662,6 @@ public class State implements Reporter {
         TemporalObjects timedObjects = mod.getTemporalObjects();
 
         for (Tuple2<TPRef, String> tp : timedObjects.timePoints()) {
-            if(tp._1().id() == 115) {
-                System.out.println("BREAK1");
-            }
             switch (tp._2()) {
                 case "dispatchable":
                     csp.stn().addControllableTimePoint(tp._1());
