@@ -2,7 +2,7 @@ name := "planstack-graph"
 
 organization := "planstack"
 
-version := "0.3.12"
+version := "0.4.0"
 
 scalaVersion := "2.10.3"
 
