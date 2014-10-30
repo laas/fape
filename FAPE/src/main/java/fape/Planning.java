@@ -323,6 +323,7 @@ public class Planning {
                             System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
 
                             Plan plan = new Plan(sol);
+                            plan.exportToDot("plan.dot");
                             sol.exportTemporalNetwork("stn.dot");
                             sol.exportTaskNetwork("task-network.dot");
                             System.out.println("Look at stn.dot and task-network.dot for more details.");

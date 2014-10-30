@@ -219,6 +219,10 @@ public class Plan {
      * @param fileName File to which the output will be written.
      */
     public void exportToDot(String fileName) {
+        for(TemporalDatabase db : st.getDatabases())
+            buildDependencies(db);
+        for(Edge<LogStatement> e :eventsDependencies.jEdges())
+            addActionDependency(e.u(), e.v());
         actionDependencies.exportToDotFile(fileName, new PlanPrinter());
     }
 }
