@@ -1,0 +1,12 @@
+#!/bin/bash
+
+out=null
+
+for in in *.gpp;
+do
+out="${in//.gpp/}"
+out_flat="${out//docks/docks-flat}"
+out_hier="${out//docks/docks-hier}"
+gpp -o ../$out_flat $in
+gpp -o ../$out_hier $in -DHIER
+done 

@@ -42,6 +42,7 @@ instance Pile noPile; // when a container is not in a pile
 constant boolean adjacent(Dock d, Road r);
 
 
+
 action leave(Robot r, Dock d, Road w){
     [all] r.loc == d :-> w;
     [all] d.empty == false :-> true;
@@ -106,3 +107,63 @@ action unstack(Crane k, Container c, Pile p) {
     constant Dock d;
     k.attached == p.attached;
 };
+
+
+
+
+
+/** INSTANCES **/
+
+instance Robot r1, r2, r3;
+instance Dock d1, d2, d3;
+instance Crane k1, k2, k31;
+instance Container c1, c2, c3;
+instance Road w;
+instance Pile p11, p12, p2, p31;
+
+adjacent(d1, w) := true;
+adjacent(d2, w) := true;
+adjacent(d3, w) := true;
+k1.attached := d1;
+k2.attached := d2;
+k31.attached := d3;
+p11.attached := d1;
+p12.attached := d1;
+p2.attached := d2;
+p31.attached := d3;
+
+/** STATE **/
+
+[start] {
+  k1.empty := true;
+  k2.empty := true;
+  k31.empty := true;
+
+  d1.empty := false; // has r1
+  d2.empty := true;
+  d3.empty := true;
+    
+  r1.loc := d1;
+  r2.loc := w;
+  r2.empty := true;
+  r3.loc := w;
+  r3.empty := true;
+    
+  c1.pos := r1;
+  c1.pile := noPile;
+
+  c2.pos := pallet;
+  c2.pile := p11;
+  p11.top := c2;
+
+  c3.pos := pallet;
+  c3.pile := p31;
+  p31.top := c3;
+    
+  r1.empty := false;
+
+  p12.top := pallet;
+  p2.top := pallet;
+};
+
+

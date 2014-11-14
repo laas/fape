@@ -1,0 +1,8 @@
+// problem for the dock-worker example.
+// Look at docks.dom.anml for the domain specification
+
+
+//[end] c1.pile == p2;
+[end] c2.pile == p2;
+[end] c3.pile == p12;
+
