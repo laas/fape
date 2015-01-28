@@ -49,7 +49,7 @@ public class Actor {
      * @param e
      * @param p
      */
-    public synchronized void bind(Executor e, Planner p) {
+    public synchronized void bind(Executor e, APlanner p) {
         mExecutor = e;
         mPlanner = p;
     }
@@ -59,7 +59,7 @@ public class Actor {
     long progressStep = 5000;
     int currentDelay = 0;
     Executor mExecutor;
-    Planner mPlanner;
+    APlanner mPlanner;
 
     boolean planNeedsRepair = false;
 

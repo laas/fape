@@ -9,6 +9,7 @@ import fape.core.execution.Listener;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PlannerFactory;
 import planstack.constraints.stnu.Controllability;
 
 /*
@@ -82,15 +83,18 @@ public class FAPE {
         execLogging = !config.getBoolean("quiet");
 
         Actor a = null;
-        Planner p = null;
+        APlanner p = null;
         Executor e = null;
         Listener l = null;
         String problemFile = "";
         try {
             problemFile = args[0];
             a = new Actor();
-            p = new Planner();
-            p.controllability = Controllability.PSEUDO_CONTROLLABILITY;
+            p = PlannerFactory.getPlanner(
+                    PlannerFactory.defaultPlanner,
+                    PlannerFactory.defaultPlanSelStrategies,
+                    PlannerFactory.defaultFlawSelStrategies,
+                    Controllability.PSEUDO_CONTROLLABILITY);
 
             Planner.actionResolvers = true;
             if(config.getBoolean("local-sim"))

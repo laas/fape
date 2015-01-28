@@ -10,9 +10,12 @@ import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
+import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.concrete.ActRef;
 import planstack.anml.parser.ParseResult;
+import planstack.constraints.stnu.Controllability;
 
 import java.util.*;
 
@@ -30,7 +33,19 @@ public class PGPlanner extends APlanner {
     AbstractionHierarchy hierarchy = null; //TODO why?
     LiftedDTG dtg = null;
 
+    public PGPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
 
+        groundPB = new GroundProblem(this.pb);
+        pg = new RelaxedPlanningGraph(groundPB);
+        pg.build();
+        hierarchy = new AbstractionHierarchy(this.pb);
+        dtg = new LiftedDTG(pb);
+    }
+
+    public PGPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(controllability, planSelStrategies, flawSelStrategies);
+    }
 
     @Override
     public boolean ForceFact(ParseResult anml, boolean propagate) {

@@ -41,10 +41,36 @@ import java.util.*;
  * planning such as alterations of search states, inclusions of ANML blocks ...
  *
  * Classes that inherit from it only have to implement the abstract methods to
- * provide a search policy. Overriding methods can also be done to override the
+ * provide a search policy. Overriding methods can also be done to change the
  * default behaviour.
  */
 public abstract class APlanner {
+
+    public APlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+        this.pb = initialState.pb;
+        assert pb.usesActionConditions() == this.useActionConditions() :
+                "Difference between problem and planner in the handling action conditions";
+        this.planSelStrategies = planSelStrategies;
+        this.flawSelStrategies = flawSelStrategies;
+        this.executedAction = actionsExecutions;
+        this.controllability = initialState.controllability;
+        this.dtg = new LiftedDTG(this.pb);
+        queue = new PriorityQueue<>(100, this.stateComparator());
+        queue.add(new State(pb, controllability));
+        best = queue.peek();
+    }
+
+    public APlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
+        this.planSelStrategies = planSelStrategies;
+        this.flawSelStrategies = flawSelStrategies;
+        this.controllability = controllability;
+        this.executedAction = new HashMap<>();
+        this.pb = new AnmlProblem(useActionConditions());
+        this.dtg = new LiftedDTG(this.pb);
+        this.queue = new PriorityQueue<>(100, this.stateComparator());
+        queue.add(new State(pb, controllability));
+        best = queue.peek();
+    }
 
     public class ActionExecution {
         final ActRef id;
@@ -81,9 +107,10 @@ public abstract class APlanner {
         }
     }
 
-    public Map<ActRef, ActionExecution> executedAction = new HashMap<>();
+    public final Map<ActRef, ActionExecution> executedAction;
     public int currentTime = 0;
 
+    @Deprecated //might not work in a general scheme were pultiple planner instances are intantiated
     public static APlanner currentPlanner = null;
 
     public static boolean debugging = true;
@@ -93,20 +120,20 @@ public abstract class APlanner {
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
 
-    public Controllability controllability = Controllability.STN_CONSISTENCY;
+    public final Controllability controllability;
 
-    public final AnmlProblem pb = new AnmlProblem(useActionConditions());
+    public final AnmlProblem pb;
     LiftedDTG dtg = null;
 
     /**
      * Used to build comparators for flaws. Default to a least commiting first.
      */
-    public String[] flawSelStrategies = {"lcf"};
+    public final String[] flawSelStrategies;
 
     /**
      * Used to build comparators for partial plans.
      */
-    public String[] planSelStrategies = {"soca"};
+    public final String[] planSelStrategies;
 
     /**
      * A short identifier for the planner.
@@ -129,7 +156,7 @@ public abstract class APlanner {
     /**
      *
      */
-    public PriorityQueue<State> queue;
+    public final PriorityQueue<State> queue;
 
     /**
      * applies a resolver to the state
@@ -432,15 +459,6 @@ public abstract class APlanner {
 
     //current best state
     private State best = null;
-
-    /**
-     * initializes the data structures of the planning problem
-     */
-    public void Init() {
-        queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new State(pb, controllability));
-        best = queue.peek();
-    }
 
     /**
      * @return The current best state. Null if no consistent state was found.

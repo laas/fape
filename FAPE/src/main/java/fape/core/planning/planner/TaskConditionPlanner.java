@@ -1,6 +1,13 @@
 package fape.core.planning.planner;
 
 
+import fape.core.planning.states.State;
+import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.ActRef;
+import planstack.constraints.stnu.Controllability;
+
+import java.util.Map;
+
 /**
  * THis planner reasons on task decomposition. When an action has a subtask, instead of inserting
  * an action right away, it adds an ActionCondition to the task network.
@@ -10,6 +17,14 @@ package fape.core.planning.planner;
  * to the action is added in the task network.
  */
 public class TaskConditionPlanner extends BaseDTG {
+
+    public TaskConditionPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    }
+
+    public TaskConditionPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(controllability, planSelStrategies, flawSelStrategies);
+    }
 
     @Override
     public String shortName() {

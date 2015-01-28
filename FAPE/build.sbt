@@ -45,3 +45,7 @@ pomExtra :=
       </plugin>
     </plugins>
 </build>
+
+packSettings
+
+packMain := Map("fape-planner" -> "fape.Planning", "fape-actor" -> "fape.FAPE")

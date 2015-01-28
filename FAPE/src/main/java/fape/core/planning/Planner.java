@@ -18,9 +18,13 @@ import fape.core.planning.search.Flaw;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.util.Pair;
+import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.ActRef;
+import planstack.constraints.stnu.Controllability;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The base line planner that stick to a lifted representation and supports the whole range of anml problems.
@@ -37,6 +41,14 @@ public class Planner extends APlanner {
             return o1.value2.size() - o2.value2.size();
         }
     };
+
+    public Planner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    }
+
+    public Planner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(controllability, planSelStrategies, flawSelStrategies);
+    }
 
     @Override
     public String shortName() {

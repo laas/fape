@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.preprocessing.ActionLandmarksFinder;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.search.resolvers.SupportingAction;
@@ -91,7 +92,7 @@ public class Main {
         }
         */
 
-        PGPlanner planner = new PGPlanner();
+        PGPlanner planner = (PGPlanner) PlannerFactory.getPlanner("rpg");
         Planner.logging = false;
         Planner.debugging = false;
         planner.Init();

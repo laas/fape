@@ -12,6 +12,8 @@ package fape.scripting;
 
 import fape.core.execution.Executor;
 import fape.core.planning.Planner;
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PlannerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -69,8 +71,7 @@ public class ExperimentRunner {
 
             String anml = a.getAbsolutePath();
 
-            Planner p = new Planner();
-            p.Init();
+            APlanner p = PlannerFactory.getDefaultPlanner();
             p.ForceFact(Executor.ProcessANMLfromFile(anml), true);
 
             long start = System.currentTimeMillis();

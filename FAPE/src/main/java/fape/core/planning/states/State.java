@@ -91,6 +91,8 @@ public class State implements Reporter {
 
     public final AnmlProblem pb;
 
+    public final Controllability controllability;
+
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
@@ -102,6 +104,7 @@ public class State implements Reporter {
      */
     public State(AnmlProblem pb, Controllability controllability) {
         this.pb = pb;
+        this.controllability = controllability;
         depth = 0;
         tdb = new TemporalDatabaseManager();
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
@@ -123,6 +126,7 @@ public class State implements Reporter {
      */
     public State(State st) {
         pb = st.pb;
+        this.controllability = st.controllability;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);

@@ -6,13 +6,17 @@ import fape.core.planning.planninggraph.GroundAction;
 import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
+import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.constraints.stnu.Controllability;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Extension of PGPlanner that add constraint on every causal link whose supporter
@@ -24,6 +28,14 @@ import java.util.List;
  * added to the state.
  */
 public class PGExtPlanner extends PGPlanner {
+
+    public PGExtPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    }
+
+    public PGExtPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(controllability, planSelStrategies, flawSelStrategies);
+    }
 
     @Override
     public String shortName() { return "rpg_ext"; }
