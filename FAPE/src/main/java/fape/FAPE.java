@@ -105,7 +105,6 @@ public class FAPE {
             a.bind(e, p);
             e.bind(a);
 
-            p.Init();
             if (Planning.domainFile(problemFile) != null) {
                 // add the domain and do not propagate since the problem is still incomplete
                 a.PushEvent(Executor.ProcessANMLfromFile(Planning.domainFile(problemFile)));

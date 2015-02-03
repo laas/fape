@@ -48,6 +48,15 @@ public class AtomicAction {
         }
     }
 
+    public AtomicAction(ActRef id, String name, List<String> params, long startTime, int minDuration, int maxDuration) {
+        this.id = id;
+        this.name = name;
+        this.params = params;
+        this.mStartTime = startTime;
+        this.minDuration = minDuration;
+        this.maxDuration = maxDuration;
+    }
+
     public enum EResult{ SUCCESS, FAILURE }
 
     /**

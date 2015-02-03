@@ -56,7 +56,7 @@ public abstract class APlanner {
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new State(pb, controllability));
+        queue.add(initialState);
         best = queue.peek();
     }
 
@@ -72,40 +72,7 @@ public abstract class APlanner {
         best = queue.peek();
     }
 
-    public class ActionExecution {
-        final ActRef id;
-        final AbstractAction abs;
-        long startTime;
-        long endTime;
-        List<String> args;
-        ActionStatus status;
 
-
-        public ActionExecution(Action a, List<String> args, long startTime) {
-            this.id = a.id();
-            this.abs = a.abs();
-            this.startTime = startTime;
-            this.args = args;
-            this.status = ActionStatus.EXECUTING;
-        }
-
-        public void setSuccess(long endTime) {
-            this.endTime = endTime;
-            this.status = ActionStatus.EXECUTED;
-        }
-
-        public void setFailed() {
-            this.status = ActionStatus.FAILED;
-        }
-
-        public Action createNewGroundAction() {
-            List<VarRef> argVars = new LinkedList<>();
-            for(String arg : args) {
-                argVars.add(pb.instances().referenceOf(arg));
-            }
-            return Factory.getInstantiatedAction(pb, abs, argVars, id);
-        }
-    }
 
     public final Map<ActRef, ActionExecution> executedAction;
     public int currentTime = 0;
@@ -1003,7 +970,7 @@ public abstract class APlanner {
         State st = new State(pb, controllability);
 
         for(ActionExecution ae : executedAction.values()) {
-            Action a = ae.createNewGroundAction();
+            Action a = ae.createNewGroundAction(pb);
             if(ae.status == ActionStatus.EXECUTING || ae.status == ActionStatus.EXECUTED) {
                 st.insert(a);
                 st.setActionExecuting(a, (int) ae.startTime);

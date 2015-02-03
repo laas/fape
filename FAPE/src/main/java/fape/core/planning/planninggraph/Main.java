@@ -95,7 +95,6 @@ public class Main {
         PGPlanner planner = (PGPlanner) PlannerFactory.getPlanner("rpg");
         Planner.logging = false;
         Planner.debugging = false;
-        planner.Init();
         // long start = System.currentTimeMillis();
         planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.dom.anml"), false);
         planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.2.pb.anml"), true);

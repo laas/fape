@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.Plan;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;

@@ -12,6 +12,7 @@ package fape.core.planning;
 
 
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.Flaw;

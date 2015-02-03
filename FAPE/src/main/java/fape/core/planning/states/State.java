@@ -141,6 +141,10 @@ public class State implements Reporter {
         }
     }
 
+    public State cc() {
+        return new State(this);
+    }
+
     /**
      * @return True if the state is consistent (ie. stn and bindings
      * consistent), False otherwise.
