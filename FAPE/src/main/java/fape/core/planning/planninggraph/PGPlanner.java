@@ -1,6 +1,5 @@
 package fape.core.planning.planninggraph;
 
-import fape.core.planning.Plan;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
@@ -11,7 +10,6 @@ import fape.core.planning.search.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
-import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.ActRef;
@@ -75,11 +73,6 @@ public class PGPlanner extends APlanner {
     @Override
     public ActionSupporterFinder getActionSupporterFinder() {
         return dtg;
-    }
-
-    @Override
-    public State search(long deadline) {
-        return aStar(deadline);
     }
 
     @Override

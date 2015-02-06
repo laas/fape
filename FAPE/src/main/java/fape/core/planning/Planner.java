@@ -19,7 +19,6 @@ import fape.core.planning.search.Flaw;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.util.Pair;
-import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.ActRef;
 import planstack.constraints.stnu.Controllability;
 
@@ -54,11 +53,6 @@ public class Planner extends APlanner {
     @Override
     public String shortName() {
         return "base";
-    }
-
-    @Override
-    public State search(long deadline) {
-        return aStar(deadline);
     }
 
     @Override

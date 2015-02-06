@@ -123,7 +123,7 @@ public abstract class APlanner {
     /**
      *
      */
-    public final PriorityQueue<State> queue;
+    protected final PriorityQueue<State> queue;
 
     /**
      * applies a resolver to the state
@@ -616,12 +616,45 @@ public abstract class APlanner {
 
     /**
      * Implementation of search. An easy thing to do to forward this call to the
-     * aStar method.
+     * depthBoundedAStar method.
      *
      * @param deadline Absolute time (in ms) at which the planner must stop.
      * @return A solution state if the planner found one. null otherwise.
      */
-    public abstract State search(long deadline);
+    public State search(final long deadline) {
+        return search(deadline, Integer.MAX_VALUE, false);
+    }
+
+    /**
+     *
+     * @param deadline Absolute time (in ms) at which the planner must stop.
+     * @param maxDepth Will discard any partial plan which depth is greater than that.
+     *                 Note that the depth of a partial plan is computed with respect to
+     *                 initial state (i.e. repairing a state starts with a depth > 0)
+     * @param incrementalDeepening If set to true, the planner will increase the maximum
+     *                             allowed depth from 1 until maxDepth until a plan is found
+     *                             or the planner times out.
+     * @return A solution plan if the planner founds one. null otherwise.
+     *         Also check the "planState" field for more detailed information.
+     */
+    public State search(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
+        List<State> toRestore = new LinkedList<>(queue);
+
+        int currentMaxDepth;
+        if(incrementalDeepening)
+            currentMaxDepth = 1;
+        else
+            currentMaxDepth = maxDepth;
+
+        State solution = null;
+        while(currentMaxDepth <= maxDepth && solution == null && planState != EPlanState.TIMEOUT) {
+            queue.clear();
+            queue.addAll(toRestore);
+            solution = depthBoundedAStar(deadline, currentMaxDepth);
+            currentMaxDepth += 1;
+        }
+        return solution;
+    }
 
     /**
      * Provides a comparator that is used to sort flaws. THe first flaw will be
@@ -687,7 +720,7 @@ public abstract class APlanner {
 
     public static boolean optimal = false;
 
-    protected State aStar(long deadLine) {
+    protected State depthBoundedAStar(final long deadLine, final int maxDepth) {
         /**
          * search
          */
@@ -745,6 +778,10 @@ public abstract class APlanner {
                     continue;
                 }
             }
+
+            if(st.depth == maxDepth) //we are not interested in its children
+                continue;
+
             //continue the search
             LinkedList<Pair<Flaw, List<Resolver>>> opts = new LinkedList<>();
             for (Flaw flaw : flaws) {
@@ -801,17 +838,32 @@ public abstract class APlanner {
     }
 
     /**
-     * starts plan repair, records the best plan, produces the best plan after
-     * <b>forHowLong</b> miliseconds or null, if no plan was found
+     * Keeps the current best plan and tries to repair it until the absolute deadline.
+     * @param deadline Absolute deadline in ms (to compare with currentTimeMillis())
+     * @return True if a consistent state was found, false otherwise.
      */
+    @Deprecated // we should build a planner with one state and search from that
     public boolean Repair(long deadline) {
-        KeepBestStateOnly();
+        return Repair(deadline, Integer.MAX_VALUE, false);
+    }
 
+    /**
+     * Cleans up the queue of everything except the best state and starts searching from this one.
+     *
+     * @param deadline Absolute deadline in ms (to compare with currentTimeMillis())
+     * @param maxDepth Maximum depth of a solution any state beyond that will be discarded.
+     *                 Note that the current best state might have a depth > 0.
+     * @param incrementalDeepening Gradually increments the maximum depth until maxDepth is reached.
+     * @return True if a solution is found, False otherwise.
+     */
+    @Deprecated  // we should build a planner with one state and search from that
+    public boolean Repair(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
+        KeepBestStateOnly();
 
         do {
             planState = EPlanState.INCONSISTENT;
 
-            best = search(deadline);
+            best = search(deadline, maxDepth, incrementalDeepening);
             assert best == null || best.isConsistent() : "Search returned an inconsistent plan.";
 
             if (planState == EPlanState.TIMEOUT && best == null)
@@ -826,7 +878,7 @@ public abstract class APlanner {
                 if (!plan.isConsistent()) {
                     System.err.println("Returned state is not consistent or not DC. We keep searching.");
                     planState = EPlanState.INCONSISTENT;
-                    search(deadline);
+                    search(deadline); //TODO: here incremental deepening is abandoned, this whole part should be in search
                 } else {
                     planState = EPlanState.CONSISTENT;
                 }

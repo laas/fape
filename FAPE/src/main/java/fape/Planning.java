@@ -82,12 +82,23 @@ public class Planning {
                                         + "is provided by an action. It checks (using RPG) for every ground action "
                                         + "supporting the consumer and enforce a n-ary constraint on the action's "
                                         + "parameters to make sure they fit at least one of the ground action.\n"),
-                        new FlaggedOption("maxtime")
+                        new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
                                 .setLongFlag("timeout")
                                 .setDefault("60")
                                 .setHelp("Time in seconds after which a planner times out."),
+                        new FlaggedOption("max-depth")
+                                .setStringParser(JSAP.INTEGER_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("max-depth")
+                                .setDefault("999999")
+                                .setHelp("Maximum depth of a solution plan. Any partial plan beyond this depth "
+                                        +"will be ignored."),
+                        new Switch("inc-deep",
+                                JSAP.NO_SHORTFLAG,
+                                "inc-deep",
+                                "Planner will use incremental deepening."),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -125,14 +136,14 @@ public class Planning {
                                         +"of failures and computation time. Accepted options are:\n"
                                         +"  - 'stn': simply enforces requirement constraints.\n"
                                         +"  - 'pseudo': enforces pseudo controllability.\n"
-                                        +"  - 'dynamic': [experimental] enforces dynamic controllability."),
+                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.\n"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setRequired(true)
                                 .setGreedy(true)
                                 .setHelp("ANML problem files on which to run the planners. If it is set "
                                         + "to a directory, all files ending with .anml will be considered. "
-                                        + "If a file of the form xxxxx.yy.pb.anmlis given, the file xxxxx.dom.anml will be loaded first.")
+                                        + "If a file of the form xxxxx.yy.pb.anml is given, the file xxxxx.dom.anml will be loaded first.\n")
 
                 }
         );
@@ -187,7 +198,7 @@ public class Planning {
         // output format
         writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
 
-        int repetitions = config.getInt("repetitions");
+        final int repetitions = config.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
@@ -217,7 +228,9 @@ public class Planning {
 
                 }
 
-                int maxtime = config.getInt("maxtime");
+                final int maxtime = config.getInt("max-time");
+                final int maxDepth = config.getInt("max-depth");
+                final boolean incrementalDeepening = config.getBoolean("inc-deep");
                 long planningStart = 0;
 
                 while(!planners.isEmpty()) {
@@ -258,7 +271,7 @@ public class Planning {
                     boolean failure = false;
                     try {
                         planningStart = System.currentTimeMillis();
-                        failure = !planner.Repair(planningStart + 1000 * maxtime);
+                        failure = !planner.Repair(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
