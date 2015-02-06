@@ -3,7 +3,6 @@
 /FAPE/dist/
 out
 .idea*
-project/
 target/
 planstack/graph
 planstack/anml

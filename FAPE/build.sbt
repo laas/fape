@@ -1,18 +1,8 @@
-name := "fape"
+name := "fape-planning"
 
-version := "0.1"
+organization := "fr.laas.fape"
 
-scalaVersion := "2.10.3"
-
-crossPaths := false
-
-resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
-
-libraryDependencies += "planstack" % "planstack-constraints" % "0.5.5"
-
-libraryDependencies += "planstack" % "planstack-graph" % "0.3.11"
-
-libraryDependencies += "planstack" % "planstack-anml" % "0.6.8"
+version := "0.1.0"
 
 libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
 
@@ -27,9 +17,6 @@ javacOptions ++= Seq("-source", "1.7")
 mainClass in (Compile, run) := Some("fape.Planning")
 
 fork in run := true
-
-javacOptions += "-g"
-
 
 pomExtra :=
 <build>
@@ -46,6 +33,3 @@ pomExtra :=
     </plugins>
 </build>
 
-packSettings
-
-packMain := Map("fape-planner" -> "fape.Planning", "fape-actor" -> "fape.FAPE")
