@@ -1,7 +1,6 @@
 package planstack.constraints.stn
 
 import planstack.constraints.stn.StnPredef._
-import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 import planstack.structures.IList
 

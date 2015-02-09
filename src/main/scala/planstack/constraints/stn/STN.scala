@@ -1,5 +1,6 @@
 package planstack.constraints.stn
 
+import planstack.constraints.stnu.ElemStatus
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 import planstack.graph.printers.GraphDotPrinter
@@ -203,7 +204,7 @@ abstract class STN[ID](val g : LabeledDigraph[Int,Int],
   }
 
   private def optID(e:LabeledEdge[Any,Any]) : Option[ID] = e match {
-    case e:LabeledEdgeWithID[Any,Any,Any] => Some(e.id.asInstanceOf[ID])
+    case e: LabeledEdgeWithID[_,_,ID] => Some(e.id)
     case _ => None
   }
   override def constraints: IList[(Int, Int, Int, ElemStatus, Option[ID])] =

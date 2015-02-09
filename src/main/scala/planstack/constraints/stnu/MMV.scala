@@ -250,7 +250,7 @@ class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
   }
 
   private def optID(e:E) : Option[ID] = e match {
-    case e:LabeledEdgeWithID[Any,Any,ID] => Some(e.id)
+    case e:LabeledEdgeWithID[_,_,ID] => Some(e.id)
     case _ => None
   }
 

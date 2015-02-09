@@ -1,7 +1,6 @@
 package planstack.constraints.stnu
 
 import planstack.constraints.stn.ISTN
-import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 import Controllability._

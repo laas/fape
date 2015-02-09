@@ -1,6 +1,5 @@
 package planstack.constraints.stnu
 
-import planstack.constraints.stnu.ElemStatus.ElemStatus
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledDigraph
 import planstack.graph.printers.NodeEdgePrinter

@@ -1,6 +1,6 @@
 package planstack.constraints.stn
 
-import planstack.constraints.stnu.ElemStatus.ElemStatus
+import planstack.constraints.stnu.ElemStatus
 import planstack.structures.IList
 
 abstract class ISTN[ID] {

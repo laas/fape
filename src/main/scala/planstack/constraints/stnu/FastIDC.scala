@@ -218,8 +218,9 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
   /** Remove a variable and all constraints that were applied on it; */
   override def removeVar(u: Int): Boolean = ???
 
+
   private def optID(e:E) : Option[ID] = e match {
-    case e:LabeledEdgeWithID[Any,Any,ID] => Some(e.id)
+    case e:LabeledEdgeWithID[_,_,ID] => Some(e.id)
     case _ => None
   }
   override def constraints : IList[(Int, Int, Int, ElemStatus, Option[ID])] = allConstraints.map((e:E) => {
