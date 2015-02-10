@@ -4,7 +4,7 @@
 
 <!--
 Note: you can use Pandoc to generate this document:
-# pandoc --standalone --listing -N -o README.pdf README.md
+# pandoc --standalone --listing -N -o Manual.pdf Manual.md
 
 Otherwise it should be readable as plain text as well.
 -->
