@@ -7,6 +7,7 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.*;
+import fape.core.planning.search.conflicts.*;
 import fape.core.planning.search.resolvers.*;
 import fape.core.planning.search.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
@@ -91,6 +92,18 @@ public abstract class APlanner {
 
     public final AnmlProblem pb;
     LiftedDTG dtg = null;
+
+    /**
+     * Those are used to extract all flaws from a state.
+     * The GetFlaws method will typically use all of those
+     * to generate the flaws that need to be solved in a given state.
+     */
+    protected final FlawFinder[] flawFinders = {
+            new OpenGoalFinder(),
+            new UndecomposedActionFinder(),
+            new UnmotivatedActionFinder(),
+            new UnsupportedTaskConditionFinder()
+    };
 
     /**
      * Used to build comparators for flaws. Default to a least commiting first.
@@ -576,18 +589,11 @@ public abstract class APlanner {
      */
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
-        for (TemporalDatabase consumer : st.consumers) {
-            flaws.add(new UnsupportedDatabase(consumer));
-        }
-        for (Action refinable : st.getOpenLeaves()) {
-            flaws.add(new UndecomposedAction(refinable));
-        }
-        for (ActionCondition ac : st.getOpenTaskConditions()) {
-            flaws.add(new UnsupportedTaskCond(ac));
-        }
-        for (Action unmotivated : st.getUnmotivatedActions()) {
-            flaws.add(new UnmotivatedAction(unmotivated));
-        }
+        for(FlawFinder fd : flawFinders)
+            flaws.addAll(fd.getFlaws(st));
+
+        // TODO: move the following to the new FlawFinder interface
+
         //find the resource flaws
         flaws.addAll(st.resourceFlaws());
 
