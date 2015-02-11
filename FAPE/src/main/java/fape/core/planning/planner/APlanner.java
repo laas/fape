@@ -90,8 +90,8 @@ public abstract class APlanner {
     protected final FlawFinder[] flawFinders = {
             new OpenGoalFinder(),
             new UndecomposedActionFinder(),
-            new UnmotivatedActionFinder(),
-            new UnsupportedTaskConditionFinder()
+            new UnsupportedTaskConditionFinder(),
+            new UnmotivatedActionFinder()
     };
 
     /**
