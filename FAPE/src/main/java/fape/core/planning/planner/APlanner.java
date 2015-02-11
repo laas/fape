@@ -463,123 +463,6 @@ public abstract class APlanner {
 
     }
 
-    public final List<Resolver> GetResolvers(State st, Flaw f) {
-        List<Resolver> candidates;
-        if (f instanceof UnsupportedDatabase) {
-            candidates = GetSupporters(((UnsupportedDatabase) f).consumer, st);
-        } else if (f instanceof UndecomposedAction) {
-            UndecomposedAction ua = (UndecomposedAction) f;
-            candidates = new LinkedList<>();
-            for (int decompositionID = 0; decompositionID < ua.action.decompositions().size(); decompositionID++) {
-                candidates.add(new fape.core.planning.search.resolvers.Decomposition(ua.action, decompositionID));
-            }
-        } else if (f instanceof Threat) {
-            candidates = GetResolvers(st, (Threat) f);
-        } else if (f instanceof UnboundVariable) {
-            candidates = GetResolvers(st, (UnboundVariable) f);
-        } else if (f instanceof ResourceFlaw) {
-            candidates = ((ResourceFlaw) f).resolvers;
-        } else if(f instanceof UnsupportedTaskCond) {
-            candidates = GetResolvers(st, (UnsupportedTaskCond) f);
-        } else if(f instanceof UnmotivatedAction) {
-            candidates = GetResolvers(st, (UnmotivatedAction) f);
-        } else {
-            throw new FAPEException("Unknown flaw type: " + f);
-        }
-
-        return st.retainValidOptions(f, candidates);
-    }
-
-    public final List<Resolver> GetResolvers(State st, UnboundVariable uv) {
-        List<Resolver> bindings = new LinkedList<>();
-        for (String value : st.domainOf(uv.var)) {
-            bindings.add(new VarBinding(uv.var, value));
-        }
-        return bindings;
-    }
-
-    public final List<Resolver> GetResolvers(State st, Threat f) {
-        List<Resolver> options = new LinkedList<>();
-
-        if(st.canBeStrictlyBefore(f.db1.getLastTimePoints().getFirst(), f.db2.getFirstTimePoints().getFirst()))
-            options.add(new TemporalSeparation(f.db1, f.db2));
-        if(st.canBeStrictlyBefore(f.db2.getLastTimePoints().getFirst(), f.db1.getFirstTimePoints().getFirst()))
-            options.add(new TemporalSeparation(f.db2, f.db1));
-        for (int i = 0; i < f.db1.stateVariable.jArgs().size(); i++) {
-            if(st.separable(f.db1.stateVariable.jArgs().get(i), f.db2.stateVariable.jArgs().get(i)))
-                options.add(new BindingSeparation(
-                        f.db1.stateVariable.jArgs().get(i),
-                        f.db2.stateVariable.jArgs().get(i)));
-        }
-        return options;
-    }
-
-    /**
-     * Resolvers for an action conditions of finding or inserting an action that can be
-     * unified with the action condition.
-     */
-    public final List<Resolver> GetResolvers(State st, UnsupportedTaskCond utc) {
-        List<Resolver> resolvers = new LinkedList<>();
-
-        // inserting a new action is always a resolver.
-        resolvers.add(new NewTaskSupporter(utc.actCond, utc.actCond.abs()));
-
-        for(Action act : st.getAllActions()) {
-            if(act.abs() == utc.actCond.abs()) {
-                boolean unifiable = true;
-                for(int i=0 ; i<act.args().size() ; i++) {
-                    unifiable &= st.unifiable(act.args().get(i), utc.actCond.args().get(i));
-                }
-                unifiable &= st.canBeBefore(act.start(), utc.actCond.start());
-                unifiable &= st.canBeBefore(utc.actCond.start(), act.start());
-                unifiable &= st.canBeBefore(act.end(), utc.actCond.end());
-                unifiable &= st.canBeBefore(utc.actCond.end(), act.end());
-                if(unifiable)
-                    resolvers.add(new ExistingTaskSupporter(utc.actCond, act));
-            }
-        }
-        return resolvers;
-    }
-
-    public List<Resolver> GetResolvers(State st, UnmotivatedAction ua) {
-        List<Resolver> resolvers = new LinkedList<>();
-        // action that must be matched with a task conditions
-        Action act = ua.act;
-
-        // any task condition unifiable with act
-        for(ActionCondition ac : st.getOpenTaskConditions()) {
-            boolean unifiable = true;
-            if(ac.abs() != act.abs())
-                break;
-            for(int i=0 ; i<act.args().size() ; i++) {
-                unifiable &= st.unifiable(act.args().get(i), ac.args().get(i));
-            }
-            unifiable &= st.canBeBefore(act.start(), ac.start());
-            unifiable &= st.canBeBefore(ac.start(), act.start());
-            unifiable &= st.canBeBefore(act.end(), ac.end());
-            unifiable &= st.canBeBefore(ac.end(), act.end());
-            if(unifiable)
-                resolvers.add(new ExistingTaskSupporter(ac, act));
-        }
-
-        ActionDecompositions preproc = new ActionDecompositions(pb);
-
-        // resolvers: any any action we add to the plan and that might provide (through decomposition)
-        // a task condition
-        for(Tuple3<AbstractAction, Integer, LActRef> insertion : preproc.supporterForMotivatedAction(act)) {
-            resolvers.add(new MotivatedSupport(act, insertion._1(), insertion._2(), insertion._3()));
-        }
-
-        // resolvers: any action in the plan that can be refined to a task condition
-        for(Action a : st.getOpenLeaves()) {
-            for (Tuple2<Integer, LActRef> insertion : preproc.supporterForMotivatedAction(a, act)) {
-                resolvers.add(new MotivatedSupport(act, a, insertion._1(), insertion._2()));
-            }
-        }
-
-        return resolvers;
-    }
-
     /**
      * Finds all flaws of a given state. Currently, threats and unbound
      * variables are considered only if no other flaws are present.
@@ -590,7 +473,7 @@ public abstract class APlanner {
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
         for(FlawFinder fd : flawFinders)
-            flaws.addAll(fd.getFlaws(st));
+            flaws.addAll(fd.getFlaws(st, this));
 
         // TODO: move the following to the new FlawFinder interface
 
@@ -791,7 +674,7 @@ public abstract class APlanner {
             //continue the search
             LinkedList<Pair<Flaw, List<Resolver>>> opts = new LinkedList<>();
             for (Flaw flaw : flaws) {
-                opts.add(new Pair<>(flaw, GetResolvers(st, flaw)));
+                opts.add(new Pair<>(flaw, flaw.getResolvers(st, this)));
             }
 
             //do some sorting here - min domain
@@ -894,73 +777,6 @@ public abstract class APlanner {
         //we empty the queue now and leave only the best state there
         KeepBestStateOnly();
         return true;
-    }
-
-    /**
-     * Finds all resolvers for an unsupported temporal database.
-     * This includes causal links from an other database and actions insertions.
-     */
-    public List<Resolver> GetSupporters(TemporalDatabase db, State st) {
-        //here we need to find several types of supporters
-        //1) chain parts that provide the value we need
-        //2) actions that provide the value we need and can be added
-        //3) tasks that can decompose into an action we need
-        List<Resolver> ret = new LinkedList<>();
-
-        //get chain connections
-        for (TemporalDatabase b : st.getDatabases()) {
-            if (db == b || !st.Unifiable(db, b)) {
-                continue;
-            }
-            // if the database has a single persistence we try to integrate it with other persistences.
-            // except if the state variable is constant, in which case looking only for the assignments saves search effort.
-            if (db.HasSinglePersistence() && !db.stateVariable.func().isConstant()) {
-                //we are looking for chain integration too
-                int ct = 0;
-                for (ChainComponent comp : b.chain) {
-                    if (comp.change && st.unifiable(comp.GetSupportValue(), db.GetGlobalConsumeValue())
-                            && st.canBeBefore(comp.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                        ret.add(new SupportingDatabase(b.mID, ct));
-                    }
-                    ct++;
-                }
-
-                // Otherwise, check for databases containing a change whose support value can
-                // be unified with our consume value.
-            } else if (st.unifiable(b.GetGlobalSupportValue(), db.GetGlobalConsumeValue())
-                    && !b.HasSinglePersistence()
-                    && st.canBeBefore(b.getSupportTimePoint(), db.getConsumeTimePoint())) {
-                ret.add(new SupportingDatabase(b.mID));
-            }
-        }
-
-        // adding actions
-        // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions
-        //find actions that help me with achieving my value through some decomposition in the task network
-        //they are those that I can find in the virtual decomposition tree
-        //first get the action names from the abstract dtgs
-        ActionSupporterFinder supporters = getActionSupporterFinder();
-        ActionDecompositions decompositions = new ActionDecompositions(pb);
-        Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(st, db);
-
-        for (Action leaf : st.getOpenLeaves()) {
-            for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
-                ret.add(new fape.core.planning.search.resolvers.Decomposition(leaf, decID));
-            }
-        }
-
-        //now we can look for adding the actions ad-hoc ...
-        if (APlanner.actionResolvers) {
-            for (AbstractAction aa : potentialSupporters) {
-                // only considere action that are not marked motivated.
-                // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
-                if (useActionConditions() || !aa.mustBeMotivated()) {
-                    ret.add(new SupportingAction(aa));
-                }
-            }
-        }
-
-        return ret;
     }
 
     /**

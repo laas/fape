@@ -11,8 +11,11 @@
 
 package fape.core.planning.search;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.states.State;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,5 +24,14 @@ import java.util.List;
  * @author FD
  */
 public class ResourceFlaw extends Flaw {
-    public List<Resolver> resolvers = new LinkedList<>();
+    //this.resolvers = new LinkedList<>();
+
+    public ResourceFlaw() {
+        throw new UnsupportedOperationException("Resources are not supported yet.");
+    }
+
+    @Override
+    public List<Resolver> getResolvers(State st, APlanner planner) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

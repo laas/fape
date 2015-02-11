@@ -909,6 +909,8 @@ public class State implements Reporter {
 
     public Collection<String> domainOf(VarRef var) { return csp.bindings().domainOf(var); }
 
+    public int domainSizeOf(VarRef var) { return csp.bindings().domainSize(var); }
+
     public void addUnificationConstraint(VarRef a, VarRef b) { csp.bindings().AddUnificationConstraint(a, b); }
 
     public void addUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {

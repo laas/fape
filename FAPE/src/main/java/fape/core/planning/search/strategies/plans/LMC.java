@@ -14,6 +14,9 @@ import fape.core.planning.heuristics.lmcut.LMCut;
 import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.GroundProblem;
+import fape.core.planning.search.Flaw;
+import fape.core.planning.search.UnsupportedDatabase;
+import fape.core.planning.search.conflicts.OpenGoalFinder;
 import fape.core.planning.search.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -98,9 +101,11 @@ public class LMC implements PartialPlanComparator {
 
         HashMap<String, Slice> goalSlice = new HashMap<>(), initSlice = new HashMap<>();
 
-        for (TemporalDatabase b : st.consumers) {
+        for (Flaw f : (new OpenGoalFinder()).getFlaws(st, APlanner.currentPlanner)) {
+            assert f instanceof UnsupportedDatabase;
+            TemporalDatabase b = ((UnsupportedDatabase) f).consumer;
             boolean hasSimpleResolution = false;
-            List<Resolver> ops = APlanner.currentPlanner.GetSupporters(b, st);
+            List<Resolver> ops = f.getResolvers(st, APlanner.currentPlanner); //APlanner.currentPlanner.GetSupporters(b, st);
             for (Resolver o : ops) {
                 if (o.representsCausalLinkAddition()) {
                     hasSimpleResolution = true;

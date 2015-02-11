@@ -75,6 +75,7 @@ public class PGPlanner extends APlanner {
         return dtg;
     }
 
+    /** TODO: This should be implemented by overriding the OpenGoalFinder.
     @Override
     public List<Resolver> GetSupporters(TemporalDatabase db, State st) {
         // use the inherited GtSupporter method
@@ -98,6 +99,7 @@ public class PGPlanner extends APlanner {
         return supportOptions;
         //return super.GetSupporters(db, st);
     }
+    */
 
     public List<SupportingAction> rpgActionSupporters(TemporalDatabase db, State st) {
         List<SupportingAction> supporters = new LinkedList<>();

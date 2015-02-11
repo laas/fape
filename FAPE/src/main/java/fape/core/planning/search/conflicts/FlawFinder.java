@@ -1,5 +1,7 @@
 package fape.core.planning.search.conflicts;
 
+import fape.core.planning.Planner;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.Flaw;
 import fape.core.planning.states.State;
 
@@ -13,5 +15,14 @@ import java.util.List;
  */
 public interface FlawFinder {
 
-    abstract public List<Flaw> getFlaws(State st);
+    /**
+     * Returns the flaws present in the current state. Each instance of flaw finder will return a partial
+     * view of the flaws (depending of the ones it is looking for).
+     *
+     * @param st State in which it should look for flaws
+     * @param planner Planner from which the method is invoked. It is used to retrieve options as well
+     *                problem knowledge (typically coming from preprocessing).
+     * @return All flaws this finder found.
+     */
+    abstract public List<Flaw> getFlaws(State st, APlanner planner);
 }
