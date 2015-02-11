@@ -23,9 +23,9 @@ public class SeqFlawComparator implements FlawComparator {
     }
 
     @Override
-    public int compare(Pair<Flaw, List<Resolver>> flawListPair, Pair<Flaw, List<Resolver>> flawListPair2) {
+    public int compare(Flaw f1, Flaw f2) {
         for(FlawComparator comp : comparators) {
-            int res = comp.compare(flawListPair, flawListPair2);
+            int res = comp.compare(f1, f2);
             if(res != 0) {
                 return res;
             }

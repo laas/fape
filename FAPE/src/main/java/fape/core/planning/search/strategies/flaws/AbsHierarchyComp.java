@@ -1,6 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
@@ -26,6 +27,7 @@ import java.util.Map;
 public class AbsHierarchyComp implements FlawComparator {
 
     private final State state;
+    private final APlanner planner;
     private AbstractionHierarchy hierarchy;
 
     /**
@@ -34,23 +36,23 @@ public class AbsHierarchyComp implements FlawComparator {
      */
     static Map<AnmlProblem, Pair<Integer, AbstractionHierarchy>> hierarchies = new HashMap<>();
 
-    public AbsHierarchyComp(State st) {
+    public AbsHierarchyComp(State st, APlanner planner) {
         this.state = st;
+        this.planner = planner;
         if(!hierarchies.containsKey(st.pb) || hierarchies.get(st.pb).value1 != st.pb.modifiers().size()) {
             hierarchies.put(st.pb, new Pair<>(st.pb.modifiers().size(), new AbstractionHierarchy(st.pb)));
         }
         this.hierarchy = hierarchies.get(st.pb).value2;
     }
 
-    private int priority(Pair<Flaw, List<Resolver>> flawAndResolvers) {
-        Flaw flaw = flawAndResolvers.value1;
-        List<Resolver> options = flawAndResolvers.value2;
+    private int priority(Flaw flaw) {
+        final int numResolvers = flaw.getNumResolvers(state, planner);
         int level;
 
-        if(options.size() == 0) {
+        if(numResolvers == 0) {
             // Dead end end, make sure it comes out first.
             return -2;
-        } else if(options.size() == 1) {
+        } else if(numResolvers == 1) {
             // Only one option, make sure it comes right after dead-ends.
             return -1;
         } else if(flaw instanceof UnsupportedDatabase) {
@@ -73,7 +75,7 @@ public class AbsHierarchyComp implements FlawComparator {
 
 
     @Override
-    public int compare(Pair<Flaw, List<Resolver>> o1, Pair<Flaw, List<Resolver>> o2) {
+    public int compare(Flaw o1, Flaw o2) {
         return priority(o1) - priority(o2);
     }
 

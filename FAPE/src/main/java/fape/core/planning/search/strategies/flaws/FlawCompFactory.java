@@ -1,5 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
+import fape.core.planning.Planner;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 
@@ -17,18 +19,19 @@ public class FlawCompFactory {
      * previous strategy resulted in a tie.
      *
      * @param st State for which to create the comparator.
+     * @param planner The planner from which this method is invoked (used to look for options).
      * @param comparators A sequence of string describing the strategy.
      * @return A comparator for flaws issued from the state.
      */
-    public static FlawComparator get(State st, String... comparators) {
+    public static FlawComparator get(State st, APlanner planner,  String... comparators) {
         List<FlawComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {
                 case "abs":
-                    compList.add(new AbsHierarchyComp(st));
+                    compList.add(new AbsHierarchyComp(st, planner));
                     break;
                 case "lcf":
-                    compList.add(new LeastCommitingFirst());
+                    compList.add(new LeastCommitingFirst(st, planner));
                     break;
                 case "rfp":
                     compList.add(new ResourceFlawPreference());

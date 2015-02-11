@@ -24,14 +24,14 @@ import java.util.List;
 public class ResourceFlawPreference implements FlawComparator {
 
     @Override
-    public int compare(Pair<Flaw, List<Resolver>> f1, Pair<Flaw, List<Resolver>> f2) {
-        if(f1.value1 instanceof ResourceFlaw){
-            if(f2.value1 instanceof ResourceFlaw){
+    public int compare(Flaw f1, Flaw f2) {
+        if(f1 instanceof ResourceFlaw){
+            if(f2 instanceof ResourceFlaw){
                 return 0;
             }else{
                 return -1;
             }
-        }else if(f2.value1 instanceof ResourceFlaw){
+        }else if(f2 instanceof ResourceFlaw){
             return 1;
         }else{
             return 0;

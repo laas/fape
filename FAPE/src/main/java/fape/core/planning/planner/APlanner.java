@@ -322,8 +322,8 @@ public abstract class APlanner {
      * @param st State in which the flaws appear.
      * @return The comparator to use for ordering.
      */
-    public final Comparator<Pair<Flaw, List<Resolver>>> flawComparator(State st) {
-        return FlawCompFactory.get(st, flawSelStrategies);
+    public final Comparator<Flaw> flawComparator(State st) {
+        return FlawCompFactory.get(st, this, flawSelStrategies);
     }
 
     /**
@@ -441,38 +441,33 @@ public abstract class APlanner {
             if(st.depth == maxDepth) //we are not interested in its children
                 continue;
 
-            //continue the search
-            LinkedList<Pair<Flaw, List<Resolver>>> opts = new LinkedList<>();
-            for (Flaw flaw : flaws) {
-                opts.add(new Pair<>(flaw, flaw.getResolvers(st, this)));
-            }
-
             //do some sorting here - min domain
             //Collections.sort(opts, optionsComparatorMinDomain);
-            Collections.sort(opts, this.flawComparator(st));
+            Collections.sort(flaws, this.flawComparator(st));
 
-            if (opts.isEmpty()) {
+            if (flaws.isEmpty()) {
                 throw new FAPEException("Error: no flaws but state was not found to be a solution.");
             }
 
-            if (opts.getFirst().value2.isEmpty()) {
-                TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", opts.getFirst().value1);
-                //dead end
+            //we just take the first flaw and its resolvers
+            Flaw f = flaws.get(0);
+            List<Resolver> resolvers = f.getResolvers(st, this);
+
+            if (resolvers.isEmpty()) {
+                // dead end, keep going
+                TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
                 continue;
             }
 
-            //we just take the first option here as a tie breaker by min-domain
-            Pair<Flaw, List<Resolver>> opt = opts.getFirst();
+            TinyLogger.LogInfo(st, " Flaw: %s", f);
 
-            TinyLogger.LogInfo(st, " Flaw: %s", opt.value1);
+            // Append the possibles fixed state to the queue
+            for (Resolver res : resolvers) {
+                TinyLogger.LogInfo(st, "   Res: %s", res);
 
-            for (Resolver o : opt.value2) {
-
-                TinyLogger.LogInfo(st, "   Res: %s", o);
-
-                State next = new State(st);
-                TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, o);
-                boolean success = applyResolver(next, o);
+                State next = st.cc();
+                TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, res);
+                boolean success = applyResolver(next, res);
 
                 if (success) {
                     queue.add(next);
