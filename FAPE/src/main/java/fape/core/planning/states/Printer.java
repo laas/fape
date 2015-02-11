@@ -2,7 +2,7 @@ package fape.core.planning.states;
 
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
-import fape.core.planning.search.flaws.resolvers.Decomposition;
+import fape.core.planning.search.flaws.resolvers.DecomposeAction;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -51,14 +51,14 @@ public class Printer {
 
         // Resolvers
         else if(o instanceof TemporalSeparation)
-            return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).first)+" && "
-                    +inlineTemporalDatabase(st, ((TemporalSeparation) o).second);
+            return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).firstDbID)+" && "
+                    +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
         else if(o instanceof SupportingAction)
             return "SupportingAction: "+((SupportingAction) o).act.name();
         else if(o instanceof SupportingDatabase)
-            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).temporalDatabase));
-        else if(o instanceof Decomposition)
-            return "Decompose: no "+((Decomposition) o).decID;
+            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).supporterID));
+        else if(o instanceof DecomposeAction)
+            return "Decompose: no "+((DecomposeAction) o).decID;
         else if(o instanceof VarBinding)
             return "VarBinding: "+((VarBinding) o).var.id()+"="+((VarBinding) o).value;
         else if(o instanceof BindingSeparation)
@@ -246,6 +246,10 @@ public class Printer {
         }
 
         return sb.toString();
+    }
+
+    public static String inlineTemporalDatabase(State st, int dbID) {
+        return inlineTemporalDatabase(st, st.GetDatabase(dbID));
     }
 
     public static String inlineTemporalDatabase(State st, TemporalDatabase db) {

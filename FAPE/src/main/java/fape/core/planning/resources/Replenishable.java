@@ -101,7 +101,7 @@ public class Replenishable extends Resource {
                         (amount > 0 && resStatement instanceof AbstractConsumeResource))) { //vice-versa
                     candidates.add(act);
                     ResourceSupportingAction o = new ResourceSupportingAction();
-                    o.action = act;
+                    o.absAction = act;
                     o.when = when;
                     o.before = !after;
                     o.unifyingResourceVariable = var;

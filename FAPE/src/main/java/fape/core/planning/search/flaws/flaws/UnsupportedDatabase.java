@@ -3,10 +3,7 @@ package fape.core.planning.search.flaws.flaws;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.search.flaws.resolvers.Decomposition;
-import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.search.flaws.resolvers.SupportingAction;
-import fape.core.planning.search.flaws.resolvers.SupportingDatabase;
+import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -55,7 +52,7 @@ public class UnsupportedDatabase extends Flaw {
                 for (ChainComponent comp : b.chain) {
                     if (comp.change && st.unifiable(comp.GetSupportValue(), consumer.GetGlobalConsumeValue())
                             && st.canBeBefore(comp.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                        resolvers.add(new SupportingDatabase(b.mID, ct));
+                        resolvers.add(new SupportingDatabase(b.mID, ct, consumer));
                     }
                     ct++;
                 }
@@ -65,7 +62,7 @@ public class UnsupportedDatabase extends Flaw {
             } else if (st.unifiable(b.GetGlobalSupportValue(), consumer.GetGlobalConsumeValue())
                     && !b.HasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                resolvers.add(new SupportingDatabase(b.mID));
+                resolvers.add(new SupportingDatabase(b.mID, consumer));
             }
         }
 
@@ -80,7 +77,7 @@ public class UnsupportedDatabase extends Flaw {
 
         for (Action leaf : st.getOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
-                resolvers.add(new Decomposition(leaf, decID));
+                resolvers.add(new SupportingActionDecomposition(leaf, decID, consumer));
             }
         }
 
@@ -90,7 +87,7 @@ public class UnsupportedDatabase extends Flaw {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if (planner.useActionConditions() || !aa.mustBeMotivated()) {
-                    resolvers.add(new SupportingAction(aa));
+                    resolvers.add(new SupportingAction(aa, consumer));
                 }
             }
         }

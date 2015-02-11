@@ -11,7 +11,12 @@
 
 package fape.core.planning.search.flaws.resolvers;
 
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.states.State;
+import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.Decomposition;
+import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.TPRef;
 
 /**
@@ -28,4 +33,24 @@ public class ResourceSupportingDecomposition extends Resolver {
     public boolean hasDecomposition() { return true; }
     @Override
     public Action actionToDecompose() { return resourceMotivatedActionToDecompose; }
+
+    @Override
+    public boolean apply(State st, APlanner planner) {
+        assert false : "TODO: check correctness.";
+        // Apply the i^th decomposition of o.actionToDecompose, where i is given by
+        // o.decompositionID
+
+        // Abstract version of the decomposition
+        AbstractDecomposition absDec = resourceMotivatedActionToDecompose.decompositions().get(decompositionID);
+
+        // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
+        Decomposition dec = Factory.getDecomposition(st.pb, resourceMotivatedActionToDecompose, absDec);
+
+        st.applyDecomposition(dec);
+
+        //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one
+        // of the decomposed actions for now we leave it to search
+
+        return true;
+    }
 }

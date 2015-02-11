@@ -807,7 +807,7 @@ public class State implements Reporter {
             return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
         } else if (opt instanceof SupportingDatabase) {
             // DB supporters are limited to those coming from an action descending from dec.
-            TemporalDatabase db = GetDatabase(((SupportingDatabase) opt).temporalDatabase);
+            TemporalDatabase db = GetDatabase(((SupportingDatabase) opt).supporterID);
 
             // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc;

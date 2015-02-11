@@ -115,7 +115,7 @@ public class PGPlanner extends APlanner {
             for(int i=0 ; i<act.args().size() ; i++) {
                 values.put(act.args().get(i), supporter.value2.get(i));
             }
-            supporters.add(new SupportingAction(act, values));
+            supporters.add(new SupportingAction(act, values, db));
         }
         return supporters;
     }

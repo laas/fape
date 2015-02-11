@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.flaws.resolvers.Decomposition;
+import fape.core.planning.search.flaws.resolvers.DecomposeAction;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
@@ -43,7 +43,7 @@ public class UndecomposedAction extends Flaw {
 
         resolvers = new LinkedList<>();
         for (int decompositionID = 0; decompositionID < action.decompositions().size(); decompositionID++) {
-            resolvers.add(new Decomposition(action, decompositionID));
+            resolvers.add(new DecomposeAction(action, decompositionID));
         }
 
         return resolvers;

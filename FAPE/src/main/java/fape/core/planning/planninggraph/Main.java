@@ -126,8 +126,8 @@ public class Main {
                 for(int i=0 ; i<act.args().size() ; i++) {
                     values.put(act.args().get(i), abstractAct.value2.get(i));
                 }
-                Resolver supportOption = new SupportingAction(act, values);
-                planner.ApplyOption(planner.GetCurrentState(), supportOption, null);
+//                Resolver supportOption = new SupportingAction(act, values); INSERT ACTION MANUALLY
+//                planner.ApplyOption(planner.GetCurrentState(), supportOption, null);
             }
         }
 

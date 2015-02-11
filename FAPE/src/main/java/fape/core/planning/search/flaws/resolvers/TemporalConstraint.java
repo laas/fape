@@ -10,12 +10,12 @@
  */
 package fape.core.planning.search.flaws.resolvers;
 
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 
 /**
- * represents a single temporal constraints between two timepoints
- *
- * @author FD
+ * Enforces a temporal constraints between two time points.
  */
 public class TemporalConstraint extends Resolver {
 
@@ -27,5 +27,11 @@ public class TemporalConstraint extends Resolver {
         this.second = second;
         this.min = min;
         this.max = max;
+    }
+
+    @Override
+    public boolean apply(State st, APlanner planner) {
+        st.enforceConstraint(first, second, min, max);
+        return true;
     }
 }

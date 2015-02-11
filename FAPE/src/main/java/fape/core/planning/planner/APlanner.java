@@ -8,7 +8,6 @@ import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.*;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
-import fape.core.planning.search.flaws.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -20,13 +19,8 @@ import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.LVarRef;
-import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.ResourceStatement;
-import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
 
@@ -132,225 +126,6 @@ public abstract class APlanner {
      *
      */
     protected final PriorityQueue<State> queue;
-
-    /**
-     * applies a resolver to the state
-     *
-     * TODO: rewrite to a polymorphic switch instead of checking nulls in variables
-     *
-     * @param next State which we need to apply the changes
-     * @param o Resolver to apply
-     * @param consumer if non null, this is the database that must be supported by the resolver.
-     * @return True if the resulting state is consistent.
-     */
-    public boolean ApplyOption(State next, Resolver o, TemporalDatabase consumer) {
-        TemporalDatabase supporter = null;
-        ChainComponent precedingComponent = null;
-        if (o instanceof SupportingDatabase) {
-            supporter = next.GetDatabase(((SupportingDatabase) o).temporalDatabase);
-            if (((SupportingDatabase) o).precedingChainComponent != -1) {
-                precedingComponent = supporter.GetChainComponent(((SupportingDatabase) o).precedingChainComponent);
-            }
-        }
-
-        TinyLogger.LogInfo(next, "     [%s] Adding %s",next.mID, o);
-
-        //now we can happily apply all the options
-        if (supporter != null && precedingComponent != null) {
-
-            assert consumer != null : "Consumer was not passed as an argument";
-            // this is database merge of one persistence into another
-            assert consumer.chain.size() == 1 && !consumer.chain.get(0).change : "This is restricted to databases containing single persistence only";
-
-            assert precedingComponent.change;
-            causalLinkAdded(next, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
-
-            next.insertDatabaseAfter(supporter, consumer, precedingComponent);
-
-        } else if (supporter != null) {
-
-            assert consumer != null : "Consumer was not passed as an argument";
-
-            ChainComponent supportingStatement = supporter.getSupportingComponent();
-
-            assert supportingStatement != null && supportingStatement.change;
-            causalLinkAdded(next, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
-
-            // database concatenation
-            next.insertDatabaseAfter(supporter, consumer, supporter.chain.getLast());
-
-        } else if (o instanceof SupportingAction) {
-
-            assert consumer != null : "Consumer was not passed as an argument";
-
-            Action action = Factory.getStandaloneAction(pb, ((SupportingAction) o).act);
-            next.insert(action);
-
-            if(((SupportingAction) o).values != null)
-                // restrict domain of given variables to the given set of variables.
-                for (LVarRef lvar : ((SupportingAction) o).values.keySet()) {
-                    next.restrictDomain(action.context().getGlobalVar(lvar), ((SupportingAction) o).values.get(lvar));
-                }
-
-            // create the binding between consumer and the new statement in the action that supports it
-            TemporalDatabase supportingDatabase = null;
-            for (Statement s : action.statements()) {
-                if (s instanceof LogStatement && next.canBeEnabler((LogStatement) s, consumer)) {
-                    assert supportingDatabase == null : "Error: several statements might support the database";
-                    supportingDatabase = next.getDBContaining((LogStatement) s);
-                }
-            }
-            if (supportingDatabase == null) {
-                return false;
-            } else {
-                Resolver opt = new SupportingDatabase(supportingDatabase.mID);
-                return ApplyOption(next, opt, consumer);
-            }
-
-        } else if (o instanceof fape.core.planning.search.flaws.resolvers.Decomposition) {
-            // Apply the i^th decomposition of o.actionToDecompose, where i is given by
-            // o.decompositionID
-
-            // Action to decomposed
-            Action decomposedAction = o.actionToDecompose();
-
-            // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.flaws.resolvers.Decomposition) o).decID);
-
-            // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
-
-            // remember that the consuming db has to be supporting by a descendant of this decomposition.
-            if (consumer != null) {
-                next.addSupportConstraint(consumer.GetChainComponent(0), dec);
-            }
-
-            next.applyDecomposition(dec);
-
-        } else if (o instanceof TemporalSeparation) {
-            for (LogStatement first : ((TemporalSeparation) o).first.chain.getLast().contents) {
-                for (LogStatement second : ((TemporalSeparation) o).second.chain.getFirst().contents) {
-                    next.enforceStrictlyBefore(first.end(), second.start());
-                }
-            }
-        } else if (o instanceof BindingSeparation) {
-            next.addSeparationConstraint(((BindingSeparation) o).a, ((BindingSeparation) o).b);
-        } else if (o instanceof VarBinding) {
-            List<String> values = new LinkedList<>();
-            values.add(((VarBinding) o).value);
-            next.restrictDomain(((VarBinding) o).var, values);
-        } else if (o instanceof StateVariableBinding) {
-            next.addUnificationConstraint(((StateVariableBinding) o).one, ((StateVariableBinding) o).two);
-        } else if (o instanceof ResourceSupportingAction) {
-            ResourceSupportingAction opt = (ResourceSupportingAction) o;
-            Action action = Factory.getStandaloneAction(pb, opt.action);
-            //add the actual action
-            next.insert(action);
-
-            //unify the state variables supporting the resource
-            ResourceStatement theSupport = null;
-            for (ResourceStatement s : action.resourceStatements()) {
-                if (s.sv().func().name().equals(opt.unifyingResourceVariable.func().name())) {
-                    assert theSupport == null : "Distinguishing resource events upon the same resource in one action " +
-                            "needs to be implemented.";
-                    theSupport = s;
-                }
-            }
-            assert theSupport != null : "Could not find a supporting resource statement in the action.";
-            next.addUnificationConstraint(theSupport.sv(), opt.unifyingResourceVariable);
-
-            //add temporal constraint
-            if (opt.before) {
-                //the supporting statement must occur before the given time point
-                next.enforceStrictlyBefore(theSupport.end(), opt.when);
-            } else {
-                //vice-versa
-                next.enforceStrictlyBefore(opt.when, theSupport.start());
-            }
-        } else if (o instanceof ResourceSupportingDecomposition) {
-            ResourceSupportingDecomposition opt = (ResourceSupportingDecomposition) o;
-            // Apply the i^th decomposition of o.actionToDecompose, where i is given by
-            // o.decompositionID
-
-            // Action to decomposed
-            Action decomposedAction = opt.resourceMotivatedActionToDecompose;
-
-            // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.decompositions().get(((ResourceSupportingDecomposition) o).decompositionID);
-
-            // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
-
-            // remember that the consuming db has to be supporting by a descendant of this decomposition.
-            if (consumer != null) {
-                next.addSupportConstraint(consumer.GetChainComponent(0), dec);
-            }
-
-            next.applyDecomposition(dec);
-
-            //TODO(fdvorak): here we should add the binding between the statevariable of supporting resource event in one
-            // of the decomposed actions for now we leave it to search
-        } else if (o instanceof TemporalConstraint) {
-            TemporalConstraint tc = (TemporalConstraint) o;
-            next.enforceConstraint(tc.first, tc.second, tc.min, tc.max);
-        } else if(o instanceof NewTaskSupporter) {
-            ActionCondition ac = ((NewTaskSupporter) o).condition;
-            // create new action with the same arguments
-            Action act = Factory.getInstantiatedAction(pb, ((NewTaskSupporter) o).abs, ac.args());
-            next.insert(act);
-
-            // enforce equality of time points and add support to task network
-            next.addSupport(ac, act);
-        } else if(o instanceof ExistingTaskSupporter) {
-            ActionCondition ac = ((ExistingTaskSupporter) o).condition;
-            Action act = ((ExistingTaskSupporter) o).act;
-
-            // add equality constraint between all args
-            for (int i = 0; i < ac.args().size(); i++) {
-                next.addUnificationConstraint(act.args().get(i), ac.args().get(i));
-            }
-            //enforce equality of time points and add support to task network
-            next.addSupport(ac, act);
-        } else if(o instanceof MotivatedSupport) {
-            assert useActionConditions() : "Error: looking for motivated support in a planner that does not use action conditions.";
-            MotivatedSupport ms = (MotivatedSupport) o;
-
-            // action that will be decomposed. Either it is already in the plan or we add it now
-            Action act;
-            if(ms.act == null) {
-                act = Factory.getStandaloneAction(pb, ms.abs);
-                next.insert(act);
-            } else {
-                act = ms.act;
-            }
-
-            ActionCondition ac;
-            if(ms.decID == -1) {
-                // the action condition is directly in the main body
-                ac = act.context().actionConditions().apply(ms.actRef);
-            } else {
-                // we need to make one decomposition
-                // decompose the action with the given decomposition ID
-                AbstractDecomposition absDec = act.decompositions().get(ms.decID);
-                Decomposition dec = Factory.getDecomposition(pb, act, absDec);
-                next.applyDecomposition(dec);
-
-                // Get the action condition we wanted
-                ac = dec.context().actionConditions().apply(ms.actRef);
-            }
-            // add equality constraint between all args
-            for (int i = 0; i < ac.args().size(); i++) {
-                next.addUnificationConstraint(ms.toSupport.args().get(i), ac.args().get(i));
-            }
-            //enforce equality of time points and add the support in the task network
-            next.addSupport(ac, ms.toSupport);
-        } else {
-            throw new FAPEException("Unknown option.");
-        }
-
-        // if the propagation failed and we have achieved an inconsistent state
-        return next.isConsistent();
-    }
 
     /**
      * This method is invoked whenever a causal link is added and offers a way
@@ -696,18 +471,9 @@ public abstract class APlanner {
                 TinyLogger.LogInfo(st, "   Res: %s", o);
 
                 State next = new State(st);
-                boolean success = false;
-                if (opt.value1 instanceof Threat
-                        || opt.value1 instanceof UnboundVariable
-                        || opt.value1 instanceof UndecomposedAction
-                        || opt.value1 instanceof ResourceFlaw
-                        || opt.value1 instanceof UnsupportedTaskCond
-                        || opt.value1 instanceof UnmotivatedAction) {
-                    success = ApplyOption(next, o, null);
-                } else {
-                    success = ApplyOption(next, o, next.GetDatabase(((UnsupportedDatabase) opt.value1).consumer.mID));
-                }
-                //TinyLogger.LogInfo(next.Report());
+                TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, o);
+                boolean success = applyResolver(next, o);
+
                 if (success) {
                     queue.add(next);
                     GeneratedStates++;
@@ -719,6 +485,19 @@ public abstract class APlanner {
 
         }
         return null;
+    }
+
+    /**
+     * Applies a resolver to the given state. This state will be modified to integrate the resolver.
+     *
+     * @param st State to modify
+     * @param resolver Resolver to apply
+     * @return True if the resolver was successfully applied and the resulting state is consistent.
+     *         False otherwise.
+     */
+    public boolean applyResolver(State st, Resolver resolver) {
+        return resolver.apply(st, this) &&
+                st.isConsistent();
     }
 
     /**

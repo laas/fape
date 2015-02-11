@@ -11,17 +11,25 @@
 
 package fape.core.planning.search.flaws.resolvers;
 
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.states.State;
 import planstack.anml.model.ParameterizedStateVariable;
 
 /**
- *
- * @author FD
+ * Unifies both state variables. This is done in unifying all their parameters.
  */
 public class StateVariableBinding extends Resolver {
 
+    public final ParameterizedStateVariable a, b;
+
     public StateVariableBinding(ParameterizedStateVariable a, ParameterizedStateVariable b) {
-        one = a;
-        two = b;
+        this.a = a;
+        this.b = b;
     }
-    public ParameterizedStateVariable one, two;
+
+    @Override
+    public boolean apply(State st, APlanner planner) {
+        st.addUnificationConstraint(a, b);
+        return true;
+    }
 }
