@@ -1,8 +1,8 @@
 package fape.core.planning.states;
 
-import fape.core.planning.search.*;
-import fape.core.planning.search.resolvers.*;
-import fape.core.planning.search.resolvers.Decomposition;
+import fape.core.planning.search.flaws.flaws.*;
+import fape.core.planning.search.flaws.resolvers.*;
+import fape.core.planning.search.flaws.resolvers.Decomposition;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;

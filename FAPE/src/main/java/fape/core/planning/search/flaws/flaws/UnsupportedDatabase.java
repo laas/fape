@@ -1,11 +1,12 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.SupportingAction;
-import fape.core.planning.search.resolvers.SupportingDatabase;
+import fape.core.planning.search.flaws.resolvers.Decomposition;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.SupportingAction;
+import fape.core.planning.search.flaws.resolvers.SupportingDatabase;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -79,7 +80,7 @@ public class UnsupportedDatabase extends Flaw {
 
         for (Action leaf : st.getOpenLeaves()) {
             for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
-                resolvers.add(new fape.core.planning.search.resolvers.Decomposition(leaf, decID));
+                resolvers.add(new Decomposition(leaf, decID));
             }
         }
 

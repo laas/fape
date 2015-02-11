@@ -9,23 +9,23 @@
  * permission of the author.
  */
 
-package fape.core.planning.search.resolvers;
+package fape.core.planning.search.flaws.resolvers;
 
-import planstack.anml.model.concrete.Action;
+import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.TPRef;
 
 /**
  *
  * @author FD
  */
-public class ResourceSupportingDecomposition extends Resolver {
-    public Action resourceMotivatedActionToDecompose;
-    public int decompositionID;
+public class ResourceSupportingAction extends Resolver {
+    public AbstractAction action;
     public boolean before;
     public TPRef when;
+    public ParameterizedStateVariable unifyingResourceVariable;
 
-    @Override
-    public boolean hasDecomposition() { return true; }
-    @Override
-    public Action actionToDecompose() { return resourceMotivatedActionToDecompose; }
+    public boolean hasActionInsertion() {
+        return true;
+    }
 }

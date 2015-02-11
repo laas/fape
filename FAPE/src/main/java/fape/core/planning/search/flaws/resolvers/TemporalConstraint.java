@@ -8,7 +8,7 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.core.planning.search.resolvers;
+package fape.core.planning.search.flaws.resolvers;
 
 import planstack.anml.model.concrete.TPRef;
 

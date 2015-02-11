@@ -1,8 +1,7 @@
-package fape.core.planning.search.conflicts;
+package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.Flaw;
+import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.State;
 
 import java.util.List;

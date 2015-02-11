@@ -1,8 +1,8 @@
-package fape.core.planning.search.conflicts;
+package fape.core.planning.search.flaws.finders;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.Flaw;
-import fape.core.planning.search.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 

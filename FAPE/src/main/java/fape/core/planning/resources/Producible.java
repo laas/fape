@@ -11,7 +11,7 @@
 
 package fape.core.planning.resources;
 
-import fape.core.planning.search.ResourceFlaw;
+import fape.core.planning.search.flaws.flaws.ResourceFlaw;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 

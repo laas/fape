@@ -1,8 +1,8 @@
-package fape.core.planning.search.conflicts;
+package fape.core.planning.search.flaws.finders;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.Flaw;
-import fape.core.planning.search.UndecomposedAction;
+import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.UndecomposedAction;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
 

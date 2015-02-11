@@ -11,10 +11,10 @@
 package fape.core.planning.resources;
 
 import fape.core.planning.preprocessing.ActionDecompositions;
-import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.ResourceSupportingAction;
-import fape.core.planning.search.resolvers.ResourceSupportingDecomposition;
+import fape.core.planning.search.flaws.flaws.ResourceFlaw;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.ResourceSupportingAction;
+import fape.core.planning.search.flaws.resolvers.ResourceSupportingDecomposition;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;

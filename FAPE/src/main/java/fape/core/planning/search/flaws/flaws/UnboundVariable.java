@@ -1,12 +1,11 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.VarBinding;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.VarBinding;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

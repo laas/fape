@@ -1,10 +1,10 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionDecompositions;
-import fape.core.planning.search.resolvers.ExistingTaskSupporter;
-import fape.core.planning.search.resolvers.MotivatedSupport;
-import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
+import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
+import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
@@ -13,7 +13,6 @@ import planstack.anml.model.concrete.ActionCondition;
 import scala.Tuple2;
 import scala.Tuple3;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

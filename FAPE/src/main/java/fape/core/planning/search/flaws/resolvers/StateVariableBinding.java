@@ -9,23 +9,19 @@
  * permission of the author.
  */
 
-package fape.core.planning.search.resolvers;
+package fape.core.planning.search.flaws.resolvers;
 
 import planstack.anml.model.ParameterizedStateVariable;
-import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.TPRef;
 
 /**
  *
  * @author FD
  */
-public class ResourceSupportingAction extends Resolver {
-    public AbstractAction action;
-    public boolean before;
-    public TPRef when;
-    public ParameterizedStateVariable unifyingResourceVariable;
+public class StateVariableBinding extends Resolver {
 
-    public boolean hasActionInsertion() {
-        return true;
+    public StateVariableBinding(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        one = a;
+        two = b;
     }
+    public ParameterizedStateVariable one, two;
 }

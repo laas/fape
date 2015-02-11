@@ -1,13 +1,12 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.resolvers.BindingSeparation;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.TemporalSeparation;
+import fape.core.planning.search.flaws.resolvers.BindingSeparation;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.TemporalSeparation;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

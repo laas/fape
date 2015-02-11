@@ -1,10 +1,9 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 
-import java.util.Collection;
 import java.util.List;
 
 

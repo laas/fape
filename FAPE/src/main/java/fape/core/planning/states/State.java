@@ -11,11 +11,10 @@
 package fape.core.planning.states;
 
 import fape.core.planning.resources.Replenishable;
-import fape.core.planning.resources.Resource;
 import fape.core.planning.resources.ResourceManager;
-import fape.core.planning.search.*;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.SupportingDatabase;
+import fape.core.planning.search.flaws.flaws.*;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.SupportingDatabase;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.temporaldatabases.ChainComponent;

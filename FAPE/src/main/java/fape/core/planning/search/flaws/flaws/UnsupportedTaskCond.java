@@ -1,14 +1,13 @@
-package fape.core.planning.search;
+package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.resolvers.ExistingTaskSupporter;
-import fape.core.planning.search.resolvers.NewTaskSupporter;
-import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
+import fape.core.planning.search.flaws.resolvers.NewTaskSupporter;
+import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 

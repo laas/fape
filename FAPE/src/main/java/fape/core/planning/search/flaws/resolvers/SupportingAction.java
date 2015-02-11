@@ -1,4 +1,4 @@
-package fape.core.planning.search.resolvers;
+package fape.core.planning.search.flaws.resolvers;
 
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;

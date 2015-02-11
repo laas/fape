@@ -10,10 +10,10 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.search.Flaw;
-import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.resolvers.Resolver;
-import fape.core.planning.search.resolvers.StateVariableBinding;
+import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.ResourceFlaw;
+import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.StateVariableBinding;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;

@@ -11,8 +11,8 @@
 package fape.core.planning.resources;
 
 import fape.core.planning.resources.solvers.MCS;
-import fape.core.planning.search.ResourceFlaw;
-import fape.core.planning.search.resolvers.Resolver;
+import fape.core.planning.search.flaws.flaws.ResourceFlaw;
+import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 

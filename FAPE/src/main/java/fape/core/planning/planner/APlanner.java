@@ -3,13 +3,12 @@ package fape.core.planning.planner;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
-import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.search.*;
-import fape.core.planning.search.conflicts.*;
-import fape.core.planning.search.resolvers.*;
-import fape.core.planning.search.resolvers.TemporalConstraint;
+import fape.core.planning.search.flaws.finders.*;
+import fape.core.planning.search.flaws.flaws.*;
+import fape.core.planning.search.flaws.resolvers.*;
+import fape.core.planning.search.flaws.resolvers.TemporalConstraint;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -21,9 +20,7 @@ import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.LActRef;
 import planstack.anml.model.LVarRef;
-import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.Decomposition;
@@ -32,8 +29,6 @@ import planstack.anml.model.concrete.statements.ResourceStatement;
 import planstack.anml.model.concrete.statements.Statement;
 import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
-import scala.Tuple2;
-import scala.Tuple3;
 
 import java.util.*;
 
@@ -212,7 +207,7 @@ public abstract class APlanner {
                 return ApplyOption(next, opt, consumer);
             }
 
-        } else if (o instanceof fape.core.planning.search.resolvers.Decomposition) {
+        } else if (o instanceof fape.core.planning.search.flaws.resolvers.Decomposition) {
             // Apply the i^th decomposition of o.actionToDecompose, where i is given by
             // o.decompositionID
 
@@ -220,7 +215,7 @@ public abstract class APlanner {
             Action decomposedAction = o.actionToDecompose();
 
             // Abstract version of the decomposition
-            AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.resolvers.Decomposition) o).decID);
+            AbstractDecomposition absDec = decomposedAction.decompositions().get(((fape.core.planning.search.flaws.resolvers.Decomposition) o).decID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
             Decomposition dec = Factory.getDecomposition(pb, decomposedAction, absDec);
