@@ -310,6 +310,8 @@ public abstract class APlanner {
             queue.clear();
             queue.addAll(toRestore);
             solution = depthBoundedAStar(deadline, currentMaxDepth);
+            if(currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
+                break;
             currentMaxDepth += 1;
         }
         return solution;
@@ -380,9 +382,6 @@ public abstract class APlanner {
     public static boolean optimal = false;
 
     protected State depthBoundedAStar(final long deadLine, final int maxDepth) {
-        /**
-         * search
-         */
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
