@@ -45,6 +45,7 @@ public class PGPlanner extends APlanner {
         super(controllability, planSelStrategies, flawSelStrategies);
     }
 
+    /*
     @Override
     public boolean ForceFact(ParseResult anml, boolean propagate) {
         super.ForceFact(anml, propagate);
@@ -62,6 +63,7 @@ public class PGPlanner extends APlanner {
 
         return true;
     }
+    */
 
 
     @Override

@@ -213,6 +213,7 @@ public abstract class APlanner {
     /**
      * @return The current best state. Null if no consistent state was found.
      */
+    @Deprecated
     public State GetCurrentState() {
         return best;
     }
@@ -607,7 +608,7 @@ public abstract class APlanner {
 
     /**
      * restarts the planning problem into its initial state
-     */
+     *
     public boolean Replan(long deadline) {
         State st = new State(pb, controllability);
 
@@ -628,6 +629,7 @@ public abstract class APlanner {
         queue.add(st);
         return Repair(deadline);
     }
+     */
 
     /**
      * Enforces given facts into the plan (possibly breaking it) this is an
@@ -638,7 +640,7 @@ public abstract class APlanner {
      * @param propagate If true, a propagation will be done in the constraint networks.
      *                  This should be avoided if the domain is not completely described yet.
      * @return True if the planner is applicable to resulting anml problem.
-     */
+     *
     public boolean ForceFact(ParseResult anml, boolean propagate) {
         //read everything that is contained in the ANML block
         if (logging) {
@@ -661,4 +663,5 @@ public abstract class APlanner {
 
         return true;
     }
+    */
 }

@@ -468,7 +468,7 @@ public class State implements Reporter {
      */
     @Deprecated
     private void recordTimePoints(TemporalInterval interval) {
-        throw new FAPEException("Should not be called, time points are now recorded directly when applying a state modifier.");
+        throw new FAPEException("Should not be called, time points are now recorded directly when applying a state chronicle.");
 //        csp.stn().recordTimePoint(interval.start());
 //        csp.stn().recordTimePoint(interval.end());
 //        csp.stn().enforceBefore(interval.start(), interval.end());
@@ -477,7 +477,7 @@ public class State implements Reporter {
     /**
      * Applies all pending modifications of the problem. A problem comes with a
      * sequence of StateModifiers that depict the current status of the problem.
-     * This method simply applies all modifiers that were not previously
+     * This method simply applies all chronicles that were not previously
      * applied.
      */
     public void update() {
@@ -487,8 +487,8 @@ public class State implements Reporter {
             csp.stn().recordTimePoint(pb.earliestExecution());
             csp.stn().enforceBefore(pb.start(), pb.earliestExecution());
         }
-        for (int i = problemRevision + 1; i < pb.modifiers().size(); i++) {
-            apply(pb.modifiers().get(i));
+        for (int i = problemRevision + 1; i < pb.chronicles().size(); i++) {
+            apply(pb.chronicles().get(i));
             problemRevision = i;
         }
     }
@@ -518,7 +518,7 @@ public class State implements Reporter {
      * @param mod Modifier in which the constraint appears.
      * @param bc BindingConstraint to be enforced.
      */
-    public void apply(StateModifier mod, BindingConstraint bc) {
+    public void apply(Chronicle mod, BindingConstraint bc) {
         if (bc instanceof AssignmentConstraint) {
             AssignmentConstraint c = (AssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
@@ -604,7 +604,7 @@ public class State implements Reporter {
      * @param mod StateModifier in which the statement appears
      * @param s Statement to insert
      */
-    private void apply(StateModifier mod, Statement s) {
+    private void apply(Chronicle mod, Statement s) {
         if (s instanceof LogStatement) {
             apply((LogStatement) s);
         } else if (s instanceof ResourceStatement) {
@@ -622,7 +622,7 @@ public class State implements Reporter {
      * @param mod StateModifier in which the constraint appears.
      * @param tc The TemporalConstraint to insert.
      */
-    private void apply(StateModifier mod, TemporalConstraint tc) {
+    private void apply(Chronicle mod, TemporalConstraint tc) {
         TPRef tp1 = tc.tp1();
         TPRef tp2 = tc.tp2();
 
@@ -640,7 +640,7 @@ public class State implements Reporter {
     /**
      * Applies the given decomposition to the current state. It mainly consists
      * in inserting the decomposition's timepoints and link them to the
-     * containing action. Then the state modifier is applied.
+     * containing action. Then the chronicle is applied.
      *
      * @param dec Decomposition to insert
      */
@@ -661,7 +661,7 @@ public class State implements Reporter {
      *
      * @param mod StateModifier to apply
      */
-    private void apply(StateModifier mod) {
+    private void apply(Chronicle mod) {
 
         // get all timepoints to be declared (in categories real, virtual and pending-virtual)
         // add the time points tight away, the constraints will be add last as they might apply on

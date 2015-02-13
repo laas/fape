@@ -26,11 +26,4 @@ public class BaseDTGAbsHier extends BaseDTG {
     public String shortName() {
         return "base+dtg+abs";
     }
-
-    @Override
-    public boolean ForceFact(ParseResult anml, boolean propagate) {
-        super.ForceFact(anml, propagate);
-        this.hierarchy = new AbstractionHierarchy(this.pb);
-        return true;
-    }
 }

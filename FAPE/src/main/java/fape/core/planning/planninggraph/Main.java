@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.preprocessing.ActionLandmarksFinder;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -9,9 +10,11 @@ import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
+import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.parser.ANMLFactory;
+import planstack.constraints.stnu.Controllability;
 
 import java.util.*;
 
@@ -92,12 +95,14 @@ public class Main {
         }
         */
 
-        PGPlanner planner = (PGPlanner) PlannerFactory.getPlanner("rpg");
         Planner.logging = false;
         Planner.debugging = false;
         // long start = System.currentTimeMillis();
-        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.dom.anml"), false);
-        planner.ForceFact(ANMLFactory.parseAnmlFromFile("problems/handover.2.pb.anml"), true);
+        AnmlProblem pb = new AnmlProblem(false);
+        pb.extendWithAnmlFile("problems/handover.dom.anml");
+        pb.extendWithAnmlFile("problems/handover.2.pb.anml");
+        State iniState = new State(pb, Controllability.STN_CONSISTENCY);
+        PGPlanner planner = (PGPlanner) PlannerFactory.getPlannerFromInitialState("rpg", iniState, PlannerFactory.defaultPlanSelStrategies, PlannerFactory.defaultFlawSelStrategies);
 
         ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
         for(TemporalDatabase db : planner.GetCurrentState().consumers) {

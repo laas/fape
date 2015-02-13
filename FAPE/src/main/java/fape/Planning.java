@@ -9,6 +9,7 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Utils;
+import planstack.anml.model.AnmlProblem;
 import planstack.anml.parser.ANMLFactory;
 import planstack.constraints.stnu.Controllability;
 
@@ -19,8 +20,6 @@ import java.util.List;
 import java.util.Queue;
 
 public class Planning {
-
-    public static String currentPlanner = "";
 
     /**
      * Tries to infer which file contains the domain definition of this problem.
@@ -46,6 +45,24 @@ public class Planning {
             return domain.getPath();
         } else {
             return null;
+        }
+    }
+
+    static class PlannerConf {
+        final String plannerID;
+        final String[] planStrat;
+        final String[] flawStrat;
+        final Controllability controllability;
+
+        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability) {
+            this.plannerID = plannerID;
+            this.planStrat = planStrat;
+            this.flawStrat = flawStrat;
+            this.controllability = controllability;
+        }
+
+        public boolean usesActionConditions() {
+            return this.plannerID.equals("taskcond");
         }
     }
 
@@ -203,7 +220,7 @@ public class Planning {
 
             for (String anmlFile : anmlFiles) {
 
-                Queue<APlanner> planners = new LinkedList<>();
+                Queue<PlannerConf> planners = new LinkedList<>();
 
                 // creates all planners that will be tested for this problem
                 for (String strategy : config.getStringArray("strategies")) {
@@ -223,7 +240,7 @@ public class Planning {
 
                     String[] plannerIDs = config.getStringArray("plannerID");
                     for (String plannerID : plannerIDs)
-                        planners.add(PlannerFactory.getPlanner(plannerID, planStrat, flawStrat, controllability));
+                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability));
 
 
                 }
@@ -238,43 +255,37 @@ public class Planning {
 
                     long start = System.currentTimeMillis();
 
-                    APlanner planner = planners.remove();
-                    APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
-                    currentPlanner = planner.shortName();
+                    PlannerConf conf = planners.remove();
 
+                    final AnmlProblem pb = new AnmlProblem(conf.usesActionConditions());
                     try {
                         // if the anml has a corresponding domain definition, load it first
                         if (Planning.domainFile(anmlFile) != null) {
                             // add the domain and do not propagate since the problem is still incomplete
-                            planner.ForceFact(ANMLFactory.parseAnmlFromFile(domainFile(anmlFile)), false);
+                            pb.extendWithAnmlFile(domainFile(anmlFile));
                         }
+                        pb.extendWithAnmlFile(anmlFile);
 
-                        boolean isPlannerUsable = planner.ForceFact(ANMLFactory.parseAnmlFromFile(anmlFile), true);
-                        if (!isPlannerUsable) {
-                            writer.write(
-                                    i + ", "
-                                    + planner.shortName() + ", "
-                                    + "unusable, "
-                                    + anmlFile + ", "
-                                    + "-, -, -, "
-                                    + Utils.print(planner.flawSelStrategies, ":") + ", "
-                                    + Utils.print(planner.planSelStrategies, ":") + "\n");
-                            writer.flush();
-                            continue;
-                        }
+
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Problem with ANML file: " + anmlFile);
                         System.exit(1);
                     }
+                    final State iniState = new State(pb, conf.controllability);
+                    final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.planStrat, conf.flawStrat);
+                    APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
 
-                    boolean failure = false;
+                    boolean failure;
+                    State sol;
                     try {
                         planningStart = System.currentTimeMillis();
-                        failure = !planner.Repair(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
+                        sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
+                        failure = sol == null;
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
+                        continue;
                     }
                     long end = System.currentTimeMillis();
                     float total = (end - start) / 1000f;
@@ -282,11 +293,11 @@ public class Planning {
                     String planningTime = Float.toString((end - planningStart) / 1000f);
                     if (failure) {
                         if(planner.planState == APlanner.EPlanState.TIMEOUT)
-                            time = "timeout";
+                            time = "TIMEOUT";
                         else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
-                            time = "infeasible";
+                            time = "INFEASIBLE";
                         else
-                            time = "unknown problem";
+                            time = "UNKNOWN PROBLEM";
                     } else {
                         time = Float.toString(total);
                     }
@@ -299,15 +310,13 @@ public class Planning {
                             + anmlFile + ", "
                             + planner.OpenedStates + ", "
                             + planner.GeneratedStates + ", "
-                            + (failure ? "-" : planner.GetCurrentState().depth) + ", "
+                            + (failure ? "-" : sol.depth) + ", "
                             + Utils.print(planner.flawSelStrategies, ":") + ", "
                             + Utils.print(planner.planSelStrategies, ":")
                             + "\n");
                     writer.flush();
 
                     if (!failure && !config.getBoolean("quiet")) {
-                        State sol = planner.GetCurrentState();
-
                         System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
                         System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
 

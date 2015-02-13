@@ -4,7 +4,7 @@ import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.StateModifier;
+import planstack.anml.model.concrete.Chronicle;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
@@ -62,7 +62,7 @@ public class GroundProblem {
             }
         }
 
-        for(StateModifier mod : liftedPb.modifiers()) {
+        for(Chronicle mod : liftedPb.chronicles()) {
             for(LogStatement s : mod.logStatements()) {/*
                 boolean isOnStart = false;
                 boolean isOnEnd = false;

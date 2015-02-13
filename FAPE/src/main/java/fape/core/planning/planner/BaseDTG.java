@@ -30,13 +30,6 @@ public class BaseDTG extends Planner {
     }
 
     @Override
-    public boolean ForceFact(ParseResult anml, boolean propagate) {
-        super.ForceFact(anml, propagate);
-        dtg = new LiftedDTG(pb);
-        return true;
-    }
-
-    @Override
     public ActionSupporterFinder getActionSupporterFinder() {
         return dtg;
     }
