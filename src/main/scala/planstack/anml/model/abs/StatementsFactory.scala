@@ -82,72 +82,82 @@ object StatementsFactory {
             assert(e2.isInstanceOf[NumExpr], "Non numerical expression at the right side of a resource statement.")
             val rightValue = e2.asInstanceOf[NumExpr].value
             op.op match {
-              case ":use" => List(new AbstractUseResource(sv, rightValue, LStatementRef(id)))
-              case ":produce" => List(new AbstractProduceResource(sv, rightValue, LStatementRef(id)))
-              case ":lend" => List(new AbstractLendResource(sv, rightValue, LStatementRef(id)))
-              case ":consume" => List(new AbstractConsumeResource(sv, rightValue, LStatementRef(id)))
+              case ":use" =>
+                List(new AbstractUseResource(sv, rightValue, LStatementRef(id)))
+              case ":produce" =>
+                List(new AbstractProduceResource(sv, rightValue, LStatementRef(id)))
+              case ":lend" =>
+                List(new AbstractLendResource(sv, rightValue, LStatementRef(id)))
+              case ":consume" =>
+                List(new AbstractConsumeResource(sv, rightValue, LStatementRef(id)))
               case ":=" => List(new AbstractSetResource(sv, rightValue, LStatementRef(id)))
-              case op if(Set("<","<=",">",">=").contains(op)) => List(new AbstractRequireResource(sv, op, rightValue, LStatementRef(id)))
-              case x => throw new ANMLException("Operator "+x+" is not valid in the resource statement: "+statement)
+              case op if Set("<","<=",">",">=").contains(op) =>
+                List(new AbstractRequireResource(sv, op, rightValue, LStatementRef(id)))
+              case x =>
+                throw new ANMLException("Operator "+x+" is not valid in the resource statement: "+statement)
             }
           } else {
             if(sv.func.isConstant) {
               // those are binding constraints (on constant functions)
-              if(e2.isInstanceOf[NumExpr]) {
-                assert(sv.func.valueType == "integer")
-                assert(op.op == ":=")
-                val value = e2.asInstanceOf[NumExpr].value.toInt
-                List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id)))
-              } else if(e2.isInstanceOf[VarExpr]) {
-                // f(a, b) == c  and f(a, b) != c
-                val variable = LVarRef(e2.functionName)
-                op.op match {
-                  case "==" => List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id)))
-                  case "!=" => List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id)))
-                  case ":=" => List(new AbstractAssignmentConstraint(sv, variable, LStatementRef(id)))
-                  case x => throw new ANMLException("Wrong operator in statement: "+statement)
+              e2 match {
+                case e2: NumExpr => {
+                  assert(sv.func.valueType == "integer")
+                  assert(op.op == ":=")
+                  val value = e2.asInstanceOf[NumExpr].value.toInt
+                  List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id)))
                 }
-              } else {
-                //  f(a, b) == g(d, e)  and  f(a, b) != g(d, e)
-                assert(isStateVariable(e2, context, pb))
-                val rightSv = asStateVariable(e2, context, pb)
-                assert(rightSv.func.isConstant)
+                case e2: VarExpr => {
+                  // f(a, b) == c  and f(a, b) != c
+                  val variable = LVarRef(e2.functionName)
+                  op.op match {
+                    case "==" => List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id)))
+                    case "!=" => List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id)))
+                    case ":=" => List(new AbstractAssignmentConstraint(sv, variable, LStatementRef(id)))
+                    case x => throw new ANMLException("Wrong operator in statement: " + statement)
+                  }
+                }
+                case e2: FuncExpr => {
+                  //  f(a, b) == g(d, e)  and  f(a, b) != g(d, e)
+                  assert(isStateVariable(e2, context, pb))
+                  val rightSv = asStateVariable(e2, context, pb)
+                  assert(rightSv.func.isConstant)
 
-                if(op.op == "==") {
-                  // f(a, b) == g(d, e)
-                  val sharedType =
-                    if (sv.func.valueType == rightSv.func.valueType)
-                      sv.func.valueType
-                    else if (pb.instances.subTypes(sv.func.valueType).contains(rightSv.func.valueType))
-                      rightSv.func.valueType
-                    else if (pb.instances.subTypes(rightSv.func.valueType).contains(sv.func.valueType))
-                      sv.func.valueType
-                    else
-                      throw new ANMLException("The two state variables have incompatible types: " + sv + " -- " + rightSv)
+                  if (op.op == "==") {
+                    // f(a, b) == g(d, e)
+                    val sharedType =
+                      if (sv.func.valueType == rightSv.func.valueType)
+                        sv.func.valueType
+                      else if (pb.instances.subTypes(sv.func.valueType).contains(rightSv.func.valueType))
+                        rightSv.func.valueType
+                      else if (pb.instances.subTypes(rightSv.func.valueType).contains(sv.func.valueType))
+                        sv.func.valueType
+                      else
+                        throw new ANMLException("The two state variables have incompatible types: " + sv + " -- " + rightSv)
 
-                  val variable = new LVarRef()
-                  context.addUndefinedVar(variable, sharedType)
-                  List(
-                    new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
-                    new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
-                  )
-                } else {
-                  assert(op.op == "!=", "Unsupported operator in statement: "+statement)
-                  val v1 = new LVarRef()
-                  context.addUndefinedVar(v1, sv.func.valueType)
-                  val v2 = new LVarRef()
-                  context.addUndefinedVar(v2, rightSv.func.valueType)
-                  List(
-                    new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
-                    new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),
-                    new AbstractVarInequalityConstraint(v1, v2, new LStatementRef())
-                  )
+                    val variable = new LVarRef()
+                    context.addUndefinedVar(variable, sharedType)
+                    List(
+                      new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
+                      new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
+                    )
+                  } else {
+                    assert(op.op == "!=", "Unsupported operator in statement: " + statement)
+                    val v1 = new LVarRef()
+                    context.addUndefinedVar(v1, sv.func.valueType)
+                    val v2 = new LVarRef()
+                    context.addUndefinedVar(v2, rightSv.func.valueType)
+                    List(
+                      new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
+                      new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),
+                      new AbstractVarInequalityConstraint(v1, v2, new LStatementRef())
+                    )
+                  }
                 }
               }
             } else {
               assert(e2.isInstanceOf[VarExpr], "Compound expression at the right side of a statement: " + statement)
               val variable = LVarRef(e2.functionName)
-              assert(pb.instances.subTypes(sv.func.valueType).contains(context.getType(variable)),
+              assert(pb.instances.isValueAcceptableForType(variable, sv.func.valueType, context),
                 "In the statement: " + statement + ", " + context.getType(variable) + "is not a subtype of " + sv.func.valueType)
 
               //logical statement
@@ -181,10 +191,10 @@ object StatementsFactory {
         val v1 = LVarRef(e2.functionName)
         val v2 = LVarRef(e3.functionName)
         val tipe = sv.func.valueType
-        assert(pb.instances.subTypes(tipe).contains(context.getType(v1)),
+        assert(pb.instances.isValueAcceptableForType(v1, tipe, context),
           "Type: "+context.getType(v1)+" is not a subtype of "+tipe+
             " which is the type of the state variable. In statement: "+statement)
-        assert(pb.instances.subTypes(tipe).contains(context.getType(v2)),
+        assert(pb.instances.isValueAcceptableForType(v2, tipe, context),
           "Type: "+context.getType(v2)+" is not a subtype of "+tipe+
             " which is the type of the state variable. In statement: "+statement)
         List(new AbstractTransition(sv, v1, v2, LStatementRef(id)))

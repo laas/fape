@@ -26,6 +26,8 @@ class InstanceManager {
   addInstance("true", "boolean")
   addInstance("false", "boolean")
   addType("object", "")
+  addType("typeOfUnknown", "")
+  addInstance("unknown", "typeOfUnknown")
 
 
   /** Creates a new instance of a certain type.
@@ -113,6 +115,18 @@ class InstanceManager {
   private def instancesOfTypeRec(tipe:String) : List[String] = {
     instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
   }
+
+  /**
+   * Checks if the type an accept the given value. This is true if
+   *  - the value's type is subtype of typ
+   *  - the value is "unknown" (always aceptable value)
+   * @param value Value to be checked.
+   * @param typ Type that should accept the value.
+   * @param context Context in which the value is declared (used to retrieve its type.
+   * @return True if the value is acceptable.
+   */
+  def isValueAcceptableForType(value:LVarRef, typ:String, context: AbstractContext) : Boolean =
+    subTypes(typ).contains(context.getType(value)) || value.id == "unknown"
 
   /** Returns all instances of the given type */
   def jInstancesOfType(tipe:String) = seqAsJavaList(instancesOfType(tipe))
