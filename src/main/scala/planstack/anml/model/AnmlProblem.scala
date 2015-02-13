@@ -27,11 +27,11 @@ import scala.collection.JavaConversions._
   *  scope to global ones.
   *
   *
-  * Further more an ANML problem consists of a list of [[planstack.anml.model.concrete.StateModifier]]
+  * Further more an ANML problem consists of a list of [[planstack.anml.model.concrete.Chronicle]]
   * representing everything that must be added to plan solving this problem.
   * A first one is added in the constructor containing predefined instances of the problem (such as true and false).
   * Every time an `addAnml(...)` method it called, the problem's components are updated accordingly and a new
-  * [[planstack.anml.model.concrete.StateModifier]] is added to represent the changes in the problems.
+  * [[planstack.anml.model.concrete.Chronicle]] is added to represent the changes in the problems.
   *
   * @param usesActionConditions If set to true, the ANML problem will use ActionCondition instead of Action for representing subtasks.
   */
@@ -66,23 +66,23 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
   val abstractActions = new java.util.LinkedList[AbstractAction]()
 
   /**
-   * All [[planstack.anml.model.concrete.StateModifier]] that need to be applied to a state for it to reprent this problem.
-   * There is one modifier encoding the default definitions of an ANML problem (such as the instances true and false of type
-   * boolean). One modifier is added by update of the problem (as a result of the invocation of `addAnml(...)`.
+   * All [[planstack.anml.model.concrete.Chronicle]] that need to be applied to a state for it to represent this problem.
+   * There is one chronicle encoding the default definitions of an ANML problem (such as the instances true and false of type
+   * boolean). One chronicle is added by update of the problem (as a result of the invocation of `addAnml(...)`.
    */
-  val modifiers = new java.util.LinkedList[StateModifier]()
+  val chronicles = new java.util.LinkedList[Chronicle]()
 
-  // create an initial modifier containing the predefined instances (true and false)
+  // create an initial chronicle containing the predefined instances (true and false)
   {
-    val originalSM = new BaseStateModifier(this)
+    val initialChronicle = new BaseChronicle(this)
 
-    // add predifined isntance to context and to StateModifier
+    // add predefined instance to context and to StateModifier
     for((name, tipe) <- instances.instances) {
-      originalSM.instances += name
+      initialChronicle.instances += name
       context.addVar(new LVarRef(name), tipe, instances.referenceOf(name))
     }
 
-    modifiers += originalSM
+    chronicles += initialChronicle
   }
 
   /**
@@ -103,30 +103,30 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
-   * those are encoded as a StateModifier and added to `modifiers`
+   * those are encoded as a StateModifier and added to `chronicles`
    * @param anml Output of the ANML parser for the ANML block.
    */
   def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
 
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
-   * those are encoded as a StateModifier and added to `modifiers`
+   * those are encoded as a Chronicle and added to `chronicles`
    * @param blocks A sequence of ANML blocks.
    */
   def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
-    // modifier that containing all alterations to be made to a plan as a consequence of this ANML block
-    val modifier = new BaseStateModifier(this)
+    // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
+    val chronicle = new BaseChronicle(this)
 
     // add all type declarations to the instance manager.
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
     })
 
-    // add all instance declaration to the instance manager and to the modifier
+    // add all instance declaration to the instance manager and to the chronicle
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe)
-      modifier.instances += instanceDecl.name
+      chronicle.instances += instanceDecl.name
       // all instances are added to the context
       context.addVar(new LVarRef(instanceDecl.name), instanceDecl.tipe, instances.referenceOf(instanceDecl.name))
     })
@@ -140,7 +140,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
         // declare as a variable since it as no argument and is constant.
         val newVar = new VarRef()
         context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, newVar)
-        modifier.vars += ((funcDecl.tipe, newVar))
+        chronicle.vars += ((funcDecl.tipe, newVar))
       } else {
         // either non-constant or with arguments
         functions.addFunction(funcDecl)
@@ -160,7 +160,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
       val abs = AbstractAction(actionDecl, this)
       abstractActions += abs
 
-      // if the action is a seed, add it to the modifier to make sure it appears in the initial plan.
+      // if the action is a seed, add it to the chronicle to make sure it appears in the initial plan.
       if(abs.name == "Seed" || abs.name == "seed") {
         throw new ANMLException("Seed action is depreciated.")
       }
@@ -169,15 +169,15 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
       val absStatements = StatementsFactory(tempStatement, this.context, this)
-      modifier.addAll(absStatements, context, this)
+      chronicle.addAll(absStatements, context, this)
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
       val abs = AbstractTemporalConstraint(constraint)
-      modifier.temporalConstraints += TemporalConstraint(this, context, abs)
+      chronicle.temporalConstraints += TemporalConstraint(this, context, abs)
     })
 
-    modifiers += modifier
+    chronicles += chronicle
   }
 
 }

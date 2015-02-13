@@ -31,7 +31,7 @@ class Action(
     val context:Context,
     val id:ActRef,
     val parentAction:Option[Action])
-  extends StateModifier with TemporalInterval {
+  extends Chronicle with TemporalInterval {
 
   assert(context.interval == null)
   context.setInterval(this)

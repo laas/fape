@@ -14,7 +14,7 @@ import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
-/** A state modifier decribes modifications to be made to plan.
+/** A chronicle decribes modifications to be made to plan.
   *
   * Notable classes implementing it are [[planstack.anml.model.concrete.Action]]
   * and [[planstack.anml.model.concrete.Decomposition]].
@@ -22,15 +22,15 @@ import scala.collection.mutable.ListBuffer
   * in [[planstack.anml.model.AnmlProblem]].
   *
   * Components:
-  *  - `vars`: global variables that need to be declared for applying the modifier.
+  *  - `vars`: global variables that need to be declared for applying the chronicle.
   *  - `statements`: individual statements depicting a condition of a change on a state variable. Those
   *    come from the effects/preconditions of actions, conditions on decomposition or exogeneous events.
   *  - `actions`: actions to be inserted in the plan. Note that actions are StateModifiers themselves.
   *
   */
-trait StateModifier {
+trait Chronicle {
 
-  /** A temporal interval in which the modifier is applied. For instance, if this StateModifier refers to
+  /** A temporal interval in which the chronicle is applied. For instance, if this chronicle refers to
     * an action, the container would refer to the [start, end] interval of this action.
     * ANML temporal annotations such as [start] refer to this temporal interval.
     * Note that time points might appear outside this interval, for instance with the annotations
@@ -105,7 +105,7 @@ trait StateModifier {
   }
 
   /** Builds an object containing all temporal operations (time point creations and constraints) that must be applied
-    * by this state modifier.
+    * by this chronicle
     */
   def getTemporalObjects: TemporalObjects = {
     // we can make virtual the time points of actions and those of the container
@@ -175,7 +175,7 @@ class TemporalObjects(val timePoints: IList[Pair[TPRef, String]],
                       val pendingVirtuals: IList[TPRef],
                       val nonRigidConstraints: IList[TemporalConstraint])
 
-class BaseStateModifier(val container: TemporalInterval) extends StateModifier {
+class BaseChronicle(val container: TemporalInterval) extends Chronicle {
 
   val statements = new util.LinkedList[Statement]()
   val bindingConstraints = new util.LinkedList[BindingConstraint]()

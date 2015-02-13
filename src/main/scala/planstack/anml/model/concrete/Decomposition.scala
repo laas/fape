@@ -11,7 +11,7 @@ import scala.collection.JavaConversions._
 class Decomposition(
     val context:Context,
     val container:Action)
-  extends StateModifier// with TemporalInterval
+  extends Chronicle
 {
 
 
