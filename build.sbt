@@ -1,8 +1,8 @@
-name := "planstack-anml"
+name := "anml-parser"
 
-organization := "planstack"
+organization := "fr.laas.fape"
 
-version := "0.6.8"
+version := "0.7.0"
 
 resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
 

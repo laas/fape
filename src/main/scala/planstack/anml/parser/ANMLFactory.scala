@@ -49,14 +49,4 @@ object ANMLFactory {
       case err => throw new ANMLException("Unable to parse ANML:\n" + err.toString)
     }
   }
-
-  def main(args :Array[String]) {
-    if(args.size < 1) 
-      println("Please, provide at least one filename as argument");
-    else {
-      val res = parseAnmlFromFile(args(0))
-      val pb = new AnmlProblem(usesActionConditions = true)
-      pb.addAnml(res)
-    }
-  }
 }

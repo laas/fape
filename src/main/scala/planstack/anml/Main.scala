@@ -23,18 +23,7 @@ object Main extends App {
 //  }
 
   val pb = new AnmlProblem(usesActionConditions = true)
-
-
-  parseAll(anml, new FileReader("resources/test.anml")) match {
-    case Success(res, _) => {
-//      println(res)
-      pb.addAnmlBlocks(res)
-    }
-    case x => {
-      println(x)
-      throw new ANMLException("Problem")
-    }
-  }
+  pb.extendWithAnmlFile("resources/text.anml")
 
 //  val ref = new AbstractActionRef("Move", List("R0", "L0", "L1"), "")
 //  val act = Action(pb, ref, DummyVariableFactory)

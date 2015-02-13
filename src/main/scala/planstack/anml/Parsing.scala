@@ -12,10 +12,8 @@ object Parsing extends App {
       args(0)
   println("Parsing: "+file)
 
-  val res = ANMLFactory.parseAnmlFromFile(file)
-
   val pb = new AnmlProblem(usesActionConditions = true)
-  pb.addAnml(res)
+  pb.extendWithAnmlFile(file)
 
   val breakPoint = true
 }

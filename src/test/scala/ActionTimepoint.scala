@@ -24,23 +24,7 @@ class ActionTimepoint extends FunSuite {
     """.stripMargin
 
   test("none") {
-
     val pb = new AnmlProblem(usesActionConditions = true)
-
-
-    parseAll(anml, dom) match {
-    case Success(res, _) => {
-      println(res)
-      pb.addAnmlBlocks(res)
-      println(pb)
-      val doo = Factory.getStandaloneAction(pb, pb.getAction("Do"))
-//      println(doo.timepoints().mkString("\n"))
-//      println(doo.rigids().mkString("\n"))
-    }
-    case x => {
-      println(x)
-//      throw new ANMLException("Problem")
-    }
-  }
+    pb.extendWithAnmlText(dom)
   }
 }

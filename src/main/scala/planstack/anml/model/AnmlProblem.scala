@@ -2,7 +2,7 @@ package planstack.anml.model
 
 import planstack.anml.model.abs.{AbstractAction, AbstractTemporalConstraint, StatementsFactory}
 import planstack.anml.model.concrete._
-import planstack.anml.parser.ParseResult
+import planstack.anml.parser.{ANMLFactory, ParseResult}
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -102,18 +102,38 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
   }
 
   /**
+   * Extends this problem with the ANML found in the file.
+   * If any updates need to be made to a search state as a consequence,
+   * those are encoded as a Chronicle and added to `chronicles`
+   * @param filename File in which the anml text can be found.
+   */
+  def extendWithAnmlFile(filename: String) : Unit = {
+    addAnml(ANMLFactory.parseAnmlFromFile(filename))
+  }
+
+  /**
+   * Extends this problem with the ANML found in the string.
+   * If any updates need to be made to a search state as a consequence,
+   * those are encoded as a Chronicle and added to `chronicles`
+   * @param anml An anml string.
+   */
+  def extendWithAnmlText(anml: String) : Unit = {
+    addAnml(ANMLFactory.parseAnmlString(anml))
+  }
+
+  /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
-   * those are encoded as a StateModifier and added to `chronicles`
+   * those are encoded as a Chronicle and added to `chronicles`
    * @param anml Output of the ANML parser for the ANML block.
    */
-  def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
+  private def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
 
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
    * @param blocks A sequence of ANML blocks.
    */
-  def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
+  private def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
     // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
     val chronicle = new BaseChronicle(this)
@@ -155,7 +175,6 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
       })
     })
 
-
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
       val abs = AbstractAction(actionDecl, this)
       abstractActions += abs
@@ -165,7 +184,6 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
         throw new ANMLException("Seed action is depreciated.")
       }
     })
-
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
       val absStatements = StatementsFactory(tempStatement, this.context, this)
@@ -178,6 +196,63 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     })
 
     chronicles += chronicle
+  }
+
+  /**
+   * Creates a chronicle from the ANML found in the file.
+   * The context (instances, action, functions, ...) of this chronicle is the
+   * one defined in this problem. However the problem will not be updated.
+   * Hence any declaration of action, type, function or instance will fail.
+   * @return The chronicle representing the ANML text.
+   */
+  def getChronicleFromFile(filename: String) : Chronicle =
+    getChronicle(ANMLFactory.parseAnmlFromFile(filename).blocks)
+
+  /**
+   * Creates a chronicle from the ANML found in the string.
+   * The context (instances, action, functions, ...) of this chronicle is the
+   * one defined in this problem. However the problem will not be updated.
+   * Hence any declaration of action, type, function or instance will fail.
+   * @return The chronicle representing the ANML text.
+   */
+  def getChronicleFromAnmlText(anml: String) : Chronicle =
+    getChronicle(ANMLFactory.parseAnmlString(anml).blocks)
+
+  private def getChronicle(blocks:Seq[parser.AnmlBlock]) : Chronicle = {
+    val chron = new BaseChronicle(this)
+
+    // this context is declared locally to avoid polluting the problem's context
+    val localContext = new Context(Some(this.context))
+
+    // first process variable definitions to make them available (in local context)
+    // to all other statements
+    for(block <- blocks.filter(_.isInstanceOf[parser.Function])) block match {
+      // this is a variable that we should be able to use locally
+      case func: parser.Function if func.args.isEmpty && func.isConstant =>
+        val newVar = new VarRef()
+        localContext.addVar(LVarRef(func.name), func.tipe, newVar)
+        chron.vars += ((func.tipe, newVar))
+
+      // complete function definition, would change the problem.
+      case _ =>
+        throw new ANMLException("Declaration of functions is not allow as it would modify the problem.")
+    }
+
+    for(block <- blocks.filter(!_.isInstanceOf[parser.Function])) block match {
+      case ts: parser.TemporalStatement =>
+        val absStatements = StatementsFactory(ts, localContext, this)
+        chron.addAll(absStatements, localContext, this)
+
+      case tc: parser.TemporalConstraint =>
+        val abs = AbstractTemporalConstraint(tc)
+        chron.temporalConstraints += TemporalConstraint(this, localContext, abs)
+
+      case _ =>
+        throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
+          "change the problem definition: "+block)
+    }
+
+    chron
   }
 
 }
