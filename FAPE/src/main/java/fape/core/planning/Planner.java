@@ -42,8 +42,8 @@ public class Planner extends APlanner {
         }
     };
 
-    public Planner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
-        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    public Planner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(initialState, planSelStrategies, flawSelStrategies);
     }
 
     public Planner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {

@@ -105,8 +105,8 @@ public class Main {
         PGPlanner planner = (PGPlanner) PlannerFactory.getPlannerFromInitialState("rpg", iniState, PlannerFactory.defaultPlanSelStrategies, PlannerFactory.defaultFlawSelStrategies);
 
         ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
-        for(TemporalDatabase db : planner.GetCurrentState().consumers) {
-            DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalConsumeValue(), planner.GetCurrentState(), planner.groundPB);
+        for(TemporalDatabase db : iniState.consumers) {
+            DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalConsumeValue(), iniState, planner.groundPB);
 /*
             DisjunctiveAction da = l.getActionLandmarks(df);
             for(DisjunctiveFluent disPrecond : l.preconditions(da)) {

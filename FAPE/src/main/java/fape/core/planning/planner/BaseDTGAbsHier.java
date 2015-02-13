@@ -13,8 +13,8 @@ public class BaseDTGAbsHier extends BaseDTG {
 
     AbstractionHierarchy hierarchy = null;
 
-    public BaseDTGAbsHier(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
-        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    public BaseDTGAbsHier(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(initialState, planSelStrategies, flawSelStrategies);
         this.hierarchy = new AbstractionHierarchy(this.pb);
     }
 

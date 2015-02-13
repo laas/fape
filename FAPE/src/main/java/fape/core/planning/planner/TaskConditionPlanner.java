@@ -18,8 +18,8 @@ import java.util.Map;
  */
 public class TaskConditionPlanner extends BaseDTG {
 
-    public TaskConditionPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
-        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    public TaskConditionPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(initialState, planSelStrategies, flawSelStrategies);
     }
 
     public TaskConditionPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {

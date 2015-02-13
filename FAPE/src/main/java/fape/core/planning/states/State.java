@@ -10,6 +10,9 @@
  */
 package fape.core.planning.states;
 
+import fape.core.execution.model.AtomicAction;
+import fape.core.planning.Plan;
+import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.flaws.*;
@@ -21,14 +24,18 @@ import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
 import fape.exceptions.FAPEException;
+import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.statements.*;
+import planstack.anml.parser.ANMLFactory;
 import planstack.constraints.*;
 import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.STNUDispatcher;
+import planstack.structures.IList;
 import scala.Option;
 import scala.Tuple2;
 import scala.Tuple3;
@@ -198,46 +205,6 @@ public class State implements Reporter {
             }
         }
         return null;
-    }
-
-    /**
-     * Marks an action as being currently executed.
-     *
-     * @param actRef Reference of the action to update.
-     */
-    private void setActionExecuting(ActRef actRef) {
-        taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTING);
-    }
-
-    /**
-     * Marks an action as executed (ie. was carried out with success).
-     *
-     * @param actRef Reference to the action to update.
-     */
-    private void setActionSuccess(ActRef actRef) {
-        taskNet.GetAction(actRef).setStatus(ActionStatus.EXECUTED);
-    }
-
-    /**
-     * Marks an action as failed. All statement of the action are removed from
-     * this state.
-     *
-     * @param actRef Reference of the action to update.
-     */
-    public void setActionFailed(ActRef actRef, int failureTime) {
-        Action toRemove = taskNet.GetAction(actRef);
-        // remove the duration constraints of the action
-        removeActionDurationOf(toRemove.id());
-        // insert new constraint specifying the end time of the action
-        enforceConstraint(pb.start(), toRemove.end(), failureTime, failureTime);
-
-        toRemove.setStatus(ActionStatus.FAILED);
-
-        for (LogStatement s : toRemove.logStatements()) {
-            // ignore statements on constant functions that are handled through constraints
-            if(!s.sv().func().isConstant())
-                removeStatement(s);
-        }
     }
 
     /**
@@ -459,19 +426,6 @@ public class State implements Reporter {
         }
 
         csp.isConsistent();
-    }
-
-    /**
-     * Records the start and end timepoint of the given interval in the temporal
-     * network manager. It also adds a constraint specifying that start must
-     * happen before end.
-     */
-    @Deprecated
-    private void recordTimePoints(TemporalInterval interval) {
-        throw new FAPEException("Should not be called, time points are now recorded directly when applying a state chronicle.");
-//        csp.stn().recordTimePoint(interval.start());
-//        csp.stn().recordTimePoint(interval.end());
-//        csp.stn().enforceBefore(interval.start(), interval.end());
     }
 
     /**
@@ -856,8 +810,8 @@ public class State implements Reporter {
 
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
-    public long getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
-    public long getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
+    public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
+    public int getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
 
     public void exportTemporalNetwork(String filename) {
         csp.stn().exportToDotFile(filename, new STNNodePrinter(this));
@@ -973,19 +927,137 @@ public class State implements Reporter {
     public Collection<Flaw> resourceFlaws() { return resMan.GatherFlaws(this); }
 
 
-    public void setActionExecuting(Action a, int startTime) {
-        setActionExecuting(a.id());
+
+    /***************** Execution related methods **************************/
+
+    /**
+     * Marks an action as being executed. It forces it start time to the one given in parameter.
+     */
+    public void setActionExecuting(ActRef actRef, int startTime) {
+        Action a = getAction(actRef);
         csp.stn().removeConstraintsWithID(a.start());
         enforceConstraint(pb.start(), a.start(), (int) startTime, (int) startTime);
+        a.setStatus(ActionStatus.EXECUTING);
     }
 
-    public void setActionSuccess(Action a, int endTime) {
-        setActionSuccess(a.id());
+    /**
+     * Marks an action as successfully executed. It forces its end time to the one given.
+     */
+    public void setActionSuccess(ActRef actRef, int endTime) {
+        Action a = getAction(actRef);
         // remove the duration constraints of the action
         removeActionDurationOf(a.id());
         // insert new constraint specifying the end time of the action
         enforceConstraint(pb.start(), a.end(), endTime, endTime);
-
+        a.setStatus(ActionStatus.EXECUTED);
     }
 
+
+    /**
+     * Marks an action as failed. All statement of the action are removed from
+     * this state.
+     *
+     * @param actRef Reference of the action to update.
+     */
+    public void setActionFailed(ActRef actRef, int failureTime) {
+        Action toRemove = taskNet.GetAction(actRef);
+        // remove the duration constraints of the action
+        removeActionDurationOf(toRemove.id());
+        // insert new constraint specifying the end time of the action
+        enforceConstraint(pb.start(), toRemove.end(), failureTime, failureTime);
+
+        toRemove.setStatus(ActionStatus.FAILED);
+
+        for (LogStatement s : toRemove.logStatements()) {
+            // ignore statements on constant functions that are handled through constraints
+            if(!s.sv().func().isConstant())
+                removeStatement(s);
+        }
+    }
+
+    /**
+     * Pushes the earliest execution time point forward in time. This causes all pending actions
+     * to be pushed after it.
+     * @param earliestExecution Absolute value for the earliest execution time point.
+     */
+    public void setEarliestExecution(int earliestExecution) {
+        enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
+
+        if(Plan.showChart)
+            ActionsChart.setCurrentTime((int) earliestExecution);
+    }
+
+    /**
+     * Returns all actions that are dispatchable at "currentTime".
+     * This also updates the earliest execution to the currentTime and propagates the temporal constraints.
+     * This might make the state inconsistent (in which case an empty list of actions is returned).
+     * @return List of dispatchable actions.
+     */
+    public IList<AtomicAction> getDispatchableActions(int currentTime) {
+        IList<AtomicAction> toDispatch = new IList<>();
+        assert isConsistent() : "Trying to get dispatchable actions from an inconsistent state.";
+        setEarliestExecution(currentTime);
+
+        if(!isConsistent()) {
+            // propagation made the plan inconsistent
+            System.err.println("Error: propagation (during dispatching) made the state inconsistent.");
+            return toDispatch;
+        }
+
+        Plan plan = new Plan(this);
+
+        for (Action a : plan.getExecutableActions((int) currentTime)) {
+            long startTime = getEarliestStartTime(a.start());
+            assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
+            assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower than "+
+                    "current time: "+currentTime;
+            AtomicAction aa = new AtomicAction(a, startTime, plan.getMinDuration(a), plan.getMaxDuration(a), this);
+            toDispatch = toDispatch.with(aa);
+        }
+
+        return toDispatch;
+    }
+
+    /**
+     * Builds from scratch a new state based on the problem only. This state will also contains
+     * all executing or executed actions since they are now part of the problem.
+     *
+     * This state should be readily usable for replanning.
+     *
+     * @return A new state containing only the problem definition and executing/executed actions.
+     */
+    public State getCleanState() {
+        State st = new State(pb, controllability);
+
+        for(Action oldAction : getAllActions()) {
+
+            if(oldAction.status() == ActionStatus.EXECUTING || oldAction.status() == ActionStatus.EXECUTED) {
+                // we need to insert it in the new state
+
+                // make a copy with the same ID and parameters
+                List<VarRef> params = new LinkedList<>();
+                for(VarRef arg : oldAction.args()) {
+                    List<String> possibleValues = new LinkedList<>(st.domainOf(arg));
+                    assert possibleValues.size() == 1 : "Argument "+arg+" of action "+oldAction+" has more than one possible value.";
+                    params.add(pb.instances().referenceOf(possibleValues.get(0)));
+                }
+                Action copy = Factory.getInstantiatedAction(pb, oldAction.abs(), params, oldAction.id());
+
+                st.insert(copy);
+                st.setActionExecuting(copy.id(), getEarliestStartTime(oldAction.start()));
+
+
+                if(oldAction.status() == ActionStatus.EXECUTED) {
+                    st.setActionSuccess(copy.id(), getEarliestStartTime(oldAction.end()));
+                }
+            }
+
+        }
+        // set earliest start
+        st.enforceDelay(pb.start(), pb.earliestExecution(), getEarliestStartTime(pb.earliestExecution()));
+        // propagate
+        st.isConsistent();
+
+        return st;
+    }
 }

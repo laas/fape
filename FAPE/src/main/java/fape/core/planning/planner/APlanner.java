@@ -27,8 +27,8 @@ import planstack.constraints.stnu.Controllability;
 import java.util.*;
 
 /**
- * Base for any planner in FAPE. It defines all basic operations useful for
- * planning such as alterations of search states, inclusions of ANML blocks ...
+ * Base for any planner in FAPE.
+ * It is responsible for detecting and solving flaws and search procedures.
  *
  * Classes that inherit from it only have to implement the abstract methods to
  * provide a search policy. Overriding methods can also be done to change the
@@ -36,38 +36,32 @@ import java.util.*;
  */
 public abstract class APlanner {
 
-    public APlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
+    public APlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
         this.pb = initialState.pb;
         assert pb.usesActionConditions() == this.useActionConditions() :
                 "Difference between problem and planner in the handling action conditions";
         this.planSelStrategies = planSelStrategies;
         this.flawSelStrategies = flawSelStrategies;
-        this.executedAction = actionsExecutions;
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(initialState);
-        best = queue.peek();
     }
 
+    @Deprecated // we should always build from a state (maybe add a constructor from a problem)
     public APlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
         this.planSelStrategies = planSelStrategies;
         this.flawSelStrategies = flawSelStrategies;
         this.controllability = controllability;
-        this.executedAction = new HashMap<>();
         this.pb = new AnmlProblem(useActionConditions());
         this.dtg = new LiftedDTG(this.pb);
         this.queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(new State(pb, controllability));
-        best = queue.peek();
     }
 
 
 
-    public final Map<ActRef, ActionExecution> executedAction;
-    public int currentTime = 0;
-
-    @Deprecated //might not work in a general scheme were pultiple planner instances are intantiated
+    @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;
 
     public static boolean debugging = true;
@@ -139,100 +133,15 @@ public abstract class APlanner {
     }
 
     /**
-     * Removes the action results from the system.
-     *
-     * @param actionRef The action that failed.
-     */
-    public void FailAction(ActRef actionRef, int endTime) {
-        KeepBestStateOnly();
-        assert best != null;
-        State st = GetCurrentState();
-        st.setActionFailed(actionRef, endTime);
-        executedAction.get(actionRef).setFailed();
-    }
-
-    /**
-     * Set the action ending to the its real end time. It removes the duration
-     * constraints between the starts and the end of the action (as given by the
-     * duration anml variable). Adds a new constraint [realEndTime, realEndtime]
-     * between the global start and the end of action time points.
-     *
-     * @param actionID Id of the action that finished.
-     * @param realEndTime Observed end time.
-     */
-    public void AddActionEnding(ActRef actionID, int realEndTime) {
-        KeepBestStateOnly();
-        State st = GetCurrentState();
-        Action a = st.getAction(actionID);
-        st.setActionSuccess(a, realEndTime);
-        executedAction.get(actionID).setSuccess(realEndTime);
-    }
-
-    public void setActionExecuting(AtomicAction aa) {
-        State st = GetCurrentState();
-        Action a = st.getAction(aa.id);
-        st.setActionExecuting(a, (int) aa.mStartTime);
-        executedAction.put(aa.id, new ActionExecution(a, aa.params, aa.mStartTime));
-    }
-
-    /**
-     * Pushes the earliest execution time point forward. Causes all pending
-     * actions to be delayed
-     */
-    public void SetEarliestExecution(int earliestExecution) {
-        if(Plan.showChart)
-            ActionsChart.setCurrentTime(earliestExecution);
-        this.currentTime = earliestExecution;
-        KeepBestStateOnly();
-        State s = GetCurrentState();
-        if(s != null) {
-            s.enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
-            // If the STN is not consistent after this addition, the the current plan is not feasible.
-            // Full replan is necessary
-            if (!s.isConsistent()) {
-                this.best = null;
-                this.queue.clear();
-            }
-        }
-    }
-
-    /**
      * All possible state of the planner.
      */
     public enum EPlanState {
-        TIMEOUT, CONSISTENT, INCONSISTENT, INFEASIBLE, UNINITIALIZED
+        TIMEOUT, CONSISTENT, INCONSISTENT, INFEASIBLE
     }
     /**
      * what is the current state of the plan
      */
-    public EPlanState planState = EPlanState.UNINITIALIZED;
-
-    //current best state
-    private State best = null;
-
-    /**
-     * @return The current best state. Null if no consistent state was found.
-     */
-    @Deprecated
-    public State GetCurrentState() {
-        return best;
-    }
-
-    /**
-     * Remove all states in the queues except for the best one (which is stored
-     * in best). This is to be used when updating the problem to make sure we
-     * don't keep any outdated states.
-     */
-    public void KeepBestStateOnly() {
-        queue.clear();
-
-        if (best == null) {
-            TinyLogger.LogInfo("No known best state.");
-        } else {
-            queue.add(best);
-        }
-
-    }
+    public EPlanState planState = EPlanState.INCONSISTENT;
 
     /**
      * Finds all flaws of a given state. Currently, threats and unbound
@@ -311,6 +220,19 @@ public abstract class APlanner {
             queue.clear();
             queue.addAll(toRestore);
             solution = depthBoundedAStar(deadline, currentMaxDepth);
+
+            if(solution != null) {
+                // here we check that the plan is indeed a solution
+                // it might not be the case if are looking for DC plans (Plan.makeDispatchable)
+                // and the STNU does not check dynamic controllability
+                Plan plan = new Plan(solution);
+                if (!plan.isConsistent()) {
+                    System.err.println("Returned state is not consistent or not DC. We keep searching.");
+                    planState = EPlanState.INCONSISTENT;
+                    solution = null;
+                }
+            }
+
             if(currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
                 break;
             currentMaxDepth += 1;
@@ -380,8 +302,6 @@ public abstract class APlanner {
 
     }
 
-    public static boolean optimal = false;
-
     protected State depthBoundedAStar(final long deadLine, final int maxDepth) {
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
@@ -390,18 +310,10 @@ public abstract class APlanner {
                 return null;
             }
             if (queue.isEmpty()) {
-                if (!APlanner.optimal) {
-                    TinyLogger.LogInfo("No plan found.");
-                    this.planState = EPlanState.INFEASIBLE;
-                    return null;
-                } else if(best.isConsistent() && GetFlaws(best).isEmpty()) {
-                    this.planState = EPlanState.CONSISTENT;
-                    return best;
-                } else {
-                    this.planState = EPlanState.INFEASIBLE;
-                    return null;
-                }
+                this.planState = EPlanState.INFEASIBLE;
+                return null;
             }
+
             //get the best state and continue the search
             State st = queue.remove();
 
@@ -419,23 +331,11 @@ public abstract class APlanner {
             if (flaws.isEmpty()) {
                 if(Planner.debugging)
                     st.assertConstraintNetworkGroundAndConsistent();
-                if (!APlanner.optimal) {
-                    this.planState = EPlanState.CONSISTENT;
-                    TinyLogger.LogInfo("Plan found:");
-                    TinyLogger.LogInfo(st);
-                    return st;
-                }else{
-                    best = st;
-                    //remove all suboptimal candidates from the queue
-                    List<State> remove = new LinkedList<>();
-                    for(State s:queue){
-                        if(LMC.singleton.cost(s) <= LMC.singleton.cost(best)){
-                            remove.add(s);
-                        }
-                    }
-                    queue.removeAll(remove);
-                    continue;
-                }
+
+                this.planState = EPlanState.CONSISTENT;
+                TinyLogger.LogInfo("Plan found:");
+                TinyLogger.LogInfo(st);
+                return st;
             }
 
             if(st.depth == maxDepth) //we are not interested in its children
@@ -495,173 +395,4 @@ public abstract class APlanner {
                 st.isConsistent();
     }
 
-    /**
-     * Keeps the current best plan and tries to repair it until the absolute deadline.
-     * @param deadline Absolute deadline in ms (to compare with currentTimeMillis())
-     * @return True if a consistent state was found, false otherwise.
-     */
-    @Deprecated // we should build a planner with one state and search from that
-    public boolean Repair(long deadline) {
-        return Repair(deadline, Integer.MAX_VALUE, false);
-    }
-
-    /**
-     * Cleans up the queue of everything except the best state and starts searching from this one.
-     *
-     * @param deadline Absolute deadline in ms (to compare with currentTimeMillis())
-     * @param maxDepth Maximum depth of a solution any state beyond that will be discarded.
-     *                 Note that the current best state might have a depth > 0.
-     * @param incrementalDeepening Gradually increments the maximum depth until maxDepth is reached.
-     * @return True if a solution is found, False otherwise.
-     */
-    @Deprecated  // we should build a planner with one state and search from that
-    public boolean Repair(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
-        KeepBestStateOnly();
-
-        do {
-            planState = EPlanState.INCONSISTENT;
-
-            best = search(deadline, maxDepth, incrementalDeepening);
-            assert best == null || best.isConsistent() : "Search returned an inconsistent plan.";
-
-            if (planState == EPlanState.TIMEOUT && best == null)
-                return false;
-            else if (planState == EPlanState.INFEASIBLE) {
-                assert best == null;
-                return false;
-            } else if(planState == EPlanState.CONSISTENT) {
-                assert best != null;
-                // it seems consistent, check if it is dynamically controllable
-                Plan plan = new Plan(best);
-                if (!plan.isConsistent()) {
-                    System.err.println("Returned state is not consistent or not DC. We keep searching.");
-                    planState = EPlanState.INCONSISTENT;
-                    search(deadline); //TODO: here incremental deepening is abandoned, this whole part should be in search
-                } else {
-                    planState = EPlanState.CONSISTENT;
-                }
-            }
-        } while(planState != EPlanState.CONSISTENT);
-
-        //we empty the queue now and leave only the best state there
-        KeepBestStateOnly();
-        return true;
-    }
-
-    /**
-     * Progresses in the plan up for howFarToProgress.
-     * Returns either AtomicActions that were instantiated with corresponding start times, or
-     * null, if not solution was found in the given time
-     */
-    public List<AtomicAction> Progress(long currentTime) {
-        this.SetEarliestExecution((int) currentTime);
-        this.Repair(System.currentTimeMillis() + 500);
-        State myState = best;
-        if(best == null)
-            return new LinkedList<>();
-
-        Plan plan = new Plan(myState);
-
-        if(Plan.showChart)
-            ActionsChart.setCurrentTime((int) currentTime);
-
-
-        List<AtomicAction> ret = new LinkedList<>();
-        for (Action a : plan.getExecutableActions((int) currentTime)) {
-            long startTime = myState.getEarliestStartTime(a.start());
-            assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
-            assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower that "+
-                    "current time: "+currentTime;
-            long latestEnd = myState.getLatestStartTime(a.end());
-            AtomicAction aa = new AtomicAction(a, startTime, plan.getMinDuration(a), plan.getMaxDuration(a), best);
-            ret.add(aa);
-        }
-
-        // for all selecting actions, we set them as being executed and we bind their start time point
-        // to the one we requested.
-
-        for(AtomicAction aa : ret) {
-            setActionExecuting(aa);
-        }
-
-        return ret;
-    }
-
-    public int numUnfinishedActions() {
-        int cnt = 0;
-        for (Action a : best.getAllActions()) {
-            if (!a.decomposable() && (a.status() == ActionStatus.PENDING || a.status() == ActionStatus.EXECUTING)) {
-                cnt++;
-            }
-        }
-        return cnt;
-    }
-
-    public boolean hasPendingActions() {
-        for (Action a : best.getAllActions()) {
-            if (a.status() == ActionStatus.PENDING) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * restarts the planning problem into its initial state
-     *
-    public boolean Replan(long deadline) {
-        State st = new State(pb, controllability);
-
-        for(ActionExecution ae : executedAction.values()) {
-            Action a = ae.createNewGroundAction(pb);
-            if(ae.status == ActionStatus.EXECUTING || ae.status == ActionStatus.EXECUTED) {
-                st.insert(a);
-                st.setActionExecuting(a, (int) ae.startTime);
-            }
-            if(ae.status == ActionStatus.EXECUTED) {
-                st.setActionSuccess(a, (int) ae.endTime);
-            }
-        }
-        st.enforceDelay(pb.start(), pb.earliestExecution(), currentTime);
-        st.isConsistent();
-        best = st;
-        queue.clear();
-        queue.add(st);
-        return Repair(deadline);
-    }
-     */
-
-    /**
-     * Enforces given facts into the plan (possibly breaking it) this is an
-     * incremental step, if there was something already defined, the name
-     * collisions are considered to be intentional
-     *
-     * @param anml An ANML AST to be integrated in the planner.
-     * @param propagate If true, a propagation will be done in the constraint networks.
-     *                  This should be avoided if the domain is not completely described yet.
-     * @return True if the planner is applicable to resulting anml problem.
-     *
-    public boolean ForceFact(ParseResult anml, boolean propagate) {
-        //read everything that is contained in the ANML block
-        if (logging) {
-            TinyLogger.LogInfo("Forcing new fact into best state.");
-        }
-
-        KeepBestStateOnly();
-
-        //TODO: apply ANML to more states and choose the best after the application
-        pb.addAnml(anml);
-        this.dtg = new LiftedDTG(this.pb);
-
-        // apply revisions to best state and check if it is consistent
-        State st = GetCurrentState();
-
-        st.update();
-        if (propagate && !st.isConsistent()) {
-            this.planState = EPlanState.INFEASIBLE;
-        }
-
-        return true;
-    }
-    */
 }

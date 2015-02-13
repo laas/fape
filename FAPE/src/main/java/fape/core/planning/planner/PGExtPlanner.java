@@ -29,8 +29,8 @@ import java.util.Map;
  */
 public class PGExtPlanner extends PGPlanner {
 
-    public PGExtPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
-        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    public PGExtPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(initialState, planSelStrategies, flawSelStrategies);
     }
 
     public PGExtPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {

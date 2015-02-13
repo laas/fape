@@ -31,8 +31,8 @@ public class PGPlanner extends APlanner {
     AbstractionHierarchy hierarchy = null; //TODO why?
     LiftedDTG dtg = null;
 
-    public PGPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies, Map<ActRef, ActionExecution> actionsExecutions) {
-        super(initialState, planSelStrategies, flawSelStrategies, actionsExecutions);
+    public PGPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+        super(initialState, planSelStrategies, flawSelStrategies);
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
