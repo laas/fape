@@ -610,6 +610,12 @@ public class State implements Reporter {
         apply(dec);
     }
 
+    public void applyChronicle(Chronicle chron) {
+        assert chron instanceof BaseChronicle : "Other chronicles should have specialized methods.";
+
+        apply(chron);
+    }
+
     /**
      * Applies all modifications stated in a StateModifier in this this State
      *
@@ -1007,7 +1013,7 @@ public class State implements Reporter {
         Plan plan = new Plan(this);
 
         for (Action a : plan.getExecutableActions((int) currentTime)) {
-            long startTime = getEarliestStartTime(a.start());
+            int startTime = getEarliestStartTime(a.start());
             assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
             assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower than "+
                     "current time: "+currentTime;
@@ -1037,7 +1043,7 @@ public class State implements Reporter {
                 // make a copy with the same ID and parameters
                 List<VarRef> params = new LinkedList<>();
                 for(VarRef arg : oldAction.args()) {
-                    List<String> possibleValues = new LinkedList<>(st.domainOf(arg));
+                    List<String> possibleValues = new LinkedList<>(domainOf(arg));
                     assert possibleValues.size() == 1 : "Argument "+arg+" of action "+oldAction+" has more than one possible value.";
                     params.add(pb.instances().referenceOf(possibleValues.get(0)));
                 }

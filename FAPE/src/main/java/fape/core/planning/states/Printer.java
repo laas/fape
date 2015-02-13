@@ -113,6 +113,14 @@ public class Printer {
                     sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
                     break;
                 case EXECUTING:
+                    if(st.getDurationBounds(a).nonEmpty()) {
+                        int min = st.getDurationBounds(a).get()._1();
+                        int max = st.getDurationBounds(a).get()._2();
+                        sb.append(String.format("%s \t\tstarted: %s\tduration in [%s, %s]  [EXECUTING]\n", name, start, min, max));
+                    } else {
+                        sb.append(String.format("%s \t\tstarted: %s\tmin-duration: %s  [EXECUTING]\n", name, start, earliestEnd-start));
+                    }
+                    break;
                 case PENDING:
                     if(st.getDurationBounds(a).nonEmpty()) {
                         int min = st.getDurationBounds(a).get()._1();

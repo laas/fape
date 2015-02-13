@@ -34,7 +34,7 @@ public class AtomicAction {
      * @param maxDuration THe maximal expected duration
      * @param st State in which the action appears. It is used to translate global variables to actual problem instances.
      */
-    public AtomicAction(Action action, long startTime, int minDuration, int maxDuration, State st) {
+    public AtomicAction(Action action, int startTime, int minDuration, int maxDuration, State st) {
         id = action.id();
         name = action.name();
         mStartTime = startTime;
@@ -48,7 +48,7 @@ public class AtomicAction {
         }
     }
 
-    public AtomicAction(ActRef id, String name, List<String> params, long startTime, int minDuration, int maxDuration) {
+    public AtomicAction(ActRef id, String name, List<String> params, int startTime, int minDuration, int maxDuration) {
         this.id = id;
         this.name = name;
         this.params = params;
@@ -62,7 +62,7 @@ public class AtomicAction {
     /**
      * Time at which the action execution has to start.
      */
-    public final long mStartTime;
+    public final int mStartTime;
 
     /**
      * Reference to the concrete action in the plan.
