@@ -2,7 +2,7 @@ name := "fape-planning"
 
 organization := "fr.laas.fape"
 
-version := "0.1.0"
+version := "0.1.1"
 
 libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
 
@@ -11,8 +11,6 @@ libraryDependencies += "jfree" % "jfreechart" % "1.0.13"
 javaOptions in run += "-Xmx3000m"
 
 javaOptions in run += "-ea"
-
-javacOptions ++= Seq("-source", "1.7")
 
 mainClass in (Compile, run) := Some("fape.Planning")
 

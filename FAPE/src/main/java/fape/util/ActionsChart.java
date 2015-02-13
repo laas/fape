@@ -1,5 +1,7 @@
 package fape.util;
 
+import fape.core.planning.states.Printer;
+import fape.core.planning.states.State;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -9,9 +11,11 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.renderer.category.LevelRenderer;
 import org.jfree.chart.renderer.category.StackedBarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
+import planstack.anml.model.concrete.Action;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.*;
 
 public class ActionsChart {
 
@@ -125,5 +129,42 @@ public class ActionsChart {
         plotframe.setSize(640,430);
         plotframe.setVisible(true);
         plotframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    static public void displayState(final State st) {
+        init();
+        bardataset.clear();
+        java.util.List<Action> acts = new LinkedList<>(st.getAllActions());
+        Collections.sort(acts, new Comparator<Action>() {
+            @Override
+            public int compare(Action a1, Action a2) {
+                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+            }
+        });
+        setCurrentTime(st.getEarliestStartTime(st.pb.earliestExecution()));
+
+        for(Action a : acts) {
+            int start = st.getEarliestStartTime(a.start());
+            int earliestEnd = st.getEarliestStartTime(a.end());
+            String name = Printer.action(st, a);
+            switch (a.status()) {
+                case EXECUTED:
+                    ActionsChart.addExecutedAction(name, start, earliestEnd);
+                    break;
+                case EXECUTING:
+                case PENDING:
+                    if(st.getDurationBounds(a).nonEmpty()) {
+                        int min = st.getDurationBounds(a).get()._1();
+                        int max = st.getDurationBounds(a).get()._2();
+                        ActionsChart.addPendingAction(name, start, min, max);
+                    } else {
+                        ActionsChart.addPendingAction(name, start, earliestEnd - start, earliestEnd-start);
+                    }
+                    break;
+                case FAILED:
+                    ActionsChart.addFailedAction(name, start, earliestEnd);
+                    break;
+            }
+        }
     }
 }

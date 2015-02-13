@@ -67,41 +67,7 @@ public class Plan {
             */
         }
         if(showChart)
-            showChart();
-    }
-
-    public void showChart() {
-        List<Action> acts = new LinkedList<>(st.getAllActions());
-        Collections.sort(acts, new Comparator<Action>() {
-            @Override
-            public int compare(Action a1, Action a2) {
-                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
-            }
-        });
-
-        for(Action a : acts) {
-            int start = (int) st.getEarliestStartTime(a.start());
-            int earliestEnd = (int) st.getEarliestStartTime(a.end());
-            String name = Printer.action(st, a);
-            switch (a.status()) {
-                case EXECUTED:
-                    ActionsChart.addExecutedAction(name, start, earliestEnd);
-                    break;
-                case EXECUTING:
-                case PENDING:
-                    if(st.getDurationBounds(a).nonEmpty()) {
-                        int min = st.getDurationBounds(a).get()._1();
-                        int max = st.getDurationBounds(a).get()._2();
-                        ActionsChart.addPendingAction(name, start, min, max);
-                    } else {
-                        ActionsChart.addPendingAction(name, start, earliestEnd - start, earliestEnd-start);
-                    }
-                    break;
-                case FAILED:
-                    ActionsChart.addFailedAction(name, start, earliestEnd);
-                    break;
-            }
-        }
+            ActionsChart.displayState(st);
     }
 
     public State getState() { return st; }
