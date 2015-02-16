@@ -1,8 +1,8 @@
-name := "planstack-graph"
+name := "graphs"
 
-organization := "planstack"
+organization := "fr.laas.fape"
 
-version := "0.4.0"
+version := "0.4.1"
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 

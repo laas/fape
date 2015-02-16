@@ -15,8 +15,8 @@ trait UndirectedGraph[V, EL, E <: Edge[V]] extends Graph[V,EL,E] {
    * @param v
    * @return
    */
-  def edges(u:V, v:V): Seq[E] = edges(u).filter(e => e.u == v || e.v == v)
-  //TODO: This is wrong if we are looking for edges (u,u)
+  def edges(u:V, v:V): Seq[E] =
+    edges(u).filter(e => e.u == u && e.v == v || e.u == v && e.v == u)
 
   def degree(v:V) = edges(v).length
 
