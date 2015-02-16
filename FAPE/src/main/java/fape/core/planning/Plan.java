@@ -152,33 +152,6 @@ public class Plan {
         return dispatcher.getMinDelay(act.start(), act.end());
     }
 
-
-    public Collection<Action> GetNextActions() {
-        List<Action> executableActions = new LinkedList<>();
-        for(Action a : actionDependencies.jVertices()) {
-            boolean executable = true;
-            if(a.status() != ActionStatus.PENDING) {
-                executable = false;
-                continue;
-            }
-            for(Action pred : JavaConversions.asJavaCollection(actionDependencies.parents(a))) {
-                if(pred.status() != ActionStatus.EXECUTED) {
-                    executable = false;
-                    break;
-                }
-            }
-            if(executable) {
-                executableActions.add(a);
-            }
-        }
-        return executableActions;
-    }
-
-    public boolean completelyExecuted() {
-        //for(Action a : JavaConversions.asJavaCollection(actionDependencies.vertices())) {
-        return true;
-    }
-
     /**
      * Write a representation of the plan to the dot format.
      * To compile <code>dot plan.dot -Tps > plan.ps</code>
