@@ -17,6 +17,9 @@ import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.structures.IList;
+import planstack.structures.Pair;
+import scala.Tuple2;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -85,14 +88,6 @@ public class TemporalDatabase {
      */
     public boolean isConsumer() {
         return chain.getFirst().contents.getFirst().needsSupport();
-    }
-
-    /**
-     *
-     * @param event
-     */
-    public void AddEvent(LogStatement event) {
-        chain.add(new ChainComponent(event));
     }
 
     /**
@@ -208,5 +203,33 @@ public class TemporalDatabase {
             }
             wasPreviousTransition = cc.change;
         }
+    }
+
+    public IList<Pair<LogStatement, LogStatement>> allCausalLinks() {
+        IList<Pair<LogStatement, LogStatement>> cls = new IList<>();
+        for(int i=0 ; i<chain.size() ; i++) {
+            ChainComponent supCC = chain.get(i);
+
+            if(!supCC.change) //supporter must be a change
+                continue;
+
+            assert supCC.contents.size() == 1;
+            LogStatement sup = supCC.contents.getFirst();
+
+            if(i+1<chain.size()) {
+                for(LogStatement cons : chain.get(i+1).contents) {
+                    cls = cls.with(new Pair<>(sup, cons));
+                }
+            }
+
+            if(i+2 < chain.size() && !chain.get(i+1).change) {
+                assert chain.get(i+2).change;
+                for(LogStatement cons : chain.get(i+2).contents) {
+                    cls = cls.with(new Pair<>(sup, cons));
+                }
+            }
+        }
+
+        return cls;
     }
 }

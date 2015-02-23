@@ -36,6 +36,9 @@ public class FlawCompFactory {
                 case "rfp":
                     compList.add(new ResourceFlawPreference());
                     break;
+                case "hf":
+                    compList.add(new HierarchicalFirstComp(st, planner));
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }

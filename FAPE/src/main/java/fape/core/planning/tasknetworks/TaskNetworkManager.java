@@ -18,12 +18,14 @@ import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Decomposition;
+import planstack.anml.model.concrete.statements.IntegerAssignmentConstraint;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.Edge;
 import planstack.graph.core.SimpleUnlabeledDigraph;
 import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.printers.NodeEdgePrinter;
+import planstack.structures.Pair;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -351,6 +353,47 @@ public class TaskNetworkManager implements Reporter {
         } else {
             return isDescendantOf(network.parents(n1).head(), n2);
         }
+    }
+
+    public Pair<Action, Integer> leastCommonAncestor(Action a1, Action a2) {
+        List<Action> parents = new LinkedList<>();
+        TNNode cur = new TNNode(a1);
+        parents.add(a1);
+        while(cur != null) {
+            if(network.parents(cur).nonEmpty()) {
+                assert network.parents(cur).size() == 1;
+                cur = network.parents(cur).head();
+                if(cur.isAction())
+                    parents.add(cur.asAction());
+            } else {
+                cur = null;
+            }
+        }
+
+        cur = new TNNode(a2);
+        Action commonAncestor = null;
+        int depth = -1;
+        while(cur != null && commonAncestor == null) {
+            if(cur.isAction()) {
+                depth += 1;
+                if(parents.contains(cur.asAction())) {
+                    commonAncestor = cur.asAction();
+                    break;
+                }
+            }
+            if(network.parents(cur).nonEmpty()) {
+                assert network.parents(cur).size() == 1;
+                cur = network.parents(cur).head();
+
+            } else {
+                cur = null;
+            }
+        }
+
+        if(commonAncestor != null)
+            return new Pair<>(commonAncestor, depth);
+        else
+            return null;
     }
 
     /**

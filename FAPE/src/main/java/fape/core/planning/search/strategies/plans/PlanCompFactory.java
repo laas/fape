@@ -37,6 +37,9 @@ public class PlanCompFactory {
                 case "actions-10-cons-3":
                     compList.add(new Actions10Consumers3());
                     break;
+                case "hcl":
+                    compList.add(new HierarchicalCausalLinks());
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }

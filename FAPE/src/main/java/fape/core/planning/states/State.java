@@ -76,7 +76,7 @@ public class State implements Reporter {
 
     protected final MetaCSP<VarRef,TPRef,GlobalRef> csp;
 
-    protected final TaskNetworkManager taskNet;
+    public final TaskNetworkManager taskNet;
 
     protected final ResourceManager resMan;
 

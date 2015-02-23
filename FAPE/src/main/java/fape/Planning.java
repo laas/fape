@@ -302,20 +302,6 @@ public class Planning {
                         time = Float.toString(total);
                     }
 
-                    writer.write(
-                            i + ", "
-                            + planner.shortName() + ", "
-                            + time + ", "
-                            + planningTime + ", "
-                            + anmlFile + ", "
-                            + planner.OpenedStates + ", "
-                            + planner.GeneratedStates + ", "
-                            + (failure ? "-" : sol.depth) + ", "
-                            + Utils.print(planner.flawSelStrategies, ":") + ", "
-                            + Utils.print(planner.planSelStrategies, ":")
-                            + "\n");
-                    writer.flush();
-
                     if (!failure && !config.getBoolean("quiet")) {
                         System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
                         System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
@@ -326,6 +312,20 @@ public class Planning {
                         sol.exportTaskNetwork("task-network.dot");
                         System.out.println("Look at stn.dot and task-network.dot for more details.");
                     }
+
+                    writer.write(
+                            i + ", "
+                                    + planner.shortName() + ", "
+                                    + time + ", "
+                                    + planningTime + ", "
+                                    + anmlFile + ", "
+                                    + planner.OpenedStates + ", "
+                                    + planner.GeneratedStates + ", "
+                                    + (failure ? "-" : sol.depth) + ", "
+                                    + Utils.print(planner.flawSelStrategies, ":") + ", "
+                                    + Utils.print(planner.planSelStrategies, ":")
+                                    + "\n");
+                    writer.flush();
                 }
 
             }
