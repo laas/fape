@@ -1015,17 +1015,7 @@ public class State implements Reporter {
         }
 
         Plan plan = new Plan(this);
-
-        for (Action a : plan.getExecutableActions((int) currentTime)) {
-            int startTime = getEarliestStartTime(a.start());
-            assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
-            assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower than "+
-                    "current time: "+currentTime;
-            AtomicAction aa = new AtomicAction(a, startTime, plan.getMinDuration(a), plan.getMaxDuration(a), this);
-            toDispatch = toDispatch.with(aa);
-        }
-
-        return toDispatch;
+        return plan.getDispatchableActions(currentTime);
     }
 
     /**

@@ -1,6 +1,7 @@
 package fape.core.planning;
 
 
+import fape.core.execution.model.AtomicAction;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
@@ -129,7 +130,7 @@ public class Plan {
         }
     }
 
-    public Collection<Action> getExecutableActions(int atTime) {
+    private Collection<Action> getExecutableActions(int atTime) {
         assert makeDispatchable && dispatcher != null :
                 "Cannot compute executable actions without the 'makeDispatchable' option turned on.";
         IList<TPRef> toDispatch = dispatcher.getDispatchable(atTime);
@@ -140,6 +141,29 @@ public class Plan {
             dispatchable.add(actions.get(tp));
         }
         return dispatchable;
+    }
+
+    /**
+     * Returns all actions that are dispatchable at "currentTime".
+     * This also updates the earliest execution to the currentTime and propagates the temporal constraints.
+     * This might make the state inconsistent (in which case an empty list of actions is returned).
+     * @return List of dispatchable actions.
+     */
+    public IList<AtomicAction> getDispatchableActions(int currentTime) {
+        IList<AtomicAction> toDispatch = new IList<>();
+        assert isConsistent() : "Trying to get dispatchable actions from an inconsistent state.";
+        st.setEarliestExecution(currentTime);
+
+        for (Action a : getExecutableActions((int) currentTime)) {
+            int startTime = st.getEarliestStartTime(a.start());
+            assert a.status() == ActionStatus.PENDING : "Action "+a+" is not pending but "+a.status();
+            assert startTime >= currentTime : "Cannot start an action at a time "+startTime+" lower than "+
+                    "current time: "+currentTime;
+            AtomicAction aa = new AtomicAction(a, startTime, getMinDuration(a), getMaxDuration(a), st);
+            toDispatch = toDispatch.with(aa);
+        }
+
+        return toDispatch;
     }
 
     public int getMaxDuration(Action act) {
@@ -163,5 +187,15 @@ public class Plan {
         for(Edge<LogStatement> e :eventsDependencies.jEdges())
             addActionDependency(e.u(), e.v());
         actionDependencies.exportToDotFile(fileName, new PlanPrinter());
+    }
+
+    /**
+     * Returns true if the end time point of the action is in the enabled set.
+     * This means that all wait constraints are fulfilled (but the time point
+     * is not necessary live).
+     */
+    public boolean isEndable(ActRef actRef) {
+        Action a = st.getAction(actRef);
+        return dispatcher.isEnabled(a.end());
     }
 }
