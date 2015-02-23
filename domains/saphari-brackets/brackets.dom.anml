@@ -1,0 +1,207 @@
+
+type Location;
+
+type SurfLocation < Location;
+
+type Element with {
+  variable Location at;
+  variable boolean glued;
+};
+
+type Glue < Element;
+type Bracket < Element;
+
+type Agent < Location with {
+  variable SurfLocation at;
+  variable boolean holds;
+};   
+
+type Human < Agent;
+type Robot < Agent;
+
+type Surface with {
+  constant SurfLocation attachedTo;
+  variable State state;
+  variable boolean highlighted;
+};
+
+type State; // current state of a surface
+
+
+action TransportTo(Robot r, Element i, SurfLocation s) {
+  motivated;  
+  :decomposition {
+     constant SurfLocation from;
+     pick : Pick(r, i, from);
+     place : Place(r, i, s);
+     start = start(pick);
+     end = end(place);
+  };
+};
+
+action GoTo(Agent a, SurfLocation to) {
+       duration :in [8, 10];
+       [all] a.at := to;
+};
+
+action HandOver(Robot r, Human h, Element e, SurfLocation l) {
+       end < start + 20;
+       l != away;
+       [all] {
+             r.at == l;
+             h.at == l;
+             e.glued == false;
+       };
+       [start+10, end-1] contains Take(h, r, e, l);
+};
+
+action Take(Human h, Robot r, Element e, SurfLocation l) {
+       motivated;
+       duration :in [5,7];
+       [all] e.at == r :-> h;
+       [all] r.holds == true :-> false;
+       [all] h.holds == false :-> true;
+};
+	
+action Pick(Agent a, Element e, SurfLocation l) {
+       duration :in [5,7];
+       [all] {
+             a.at == l;
+             e.at == l :-> a;
+             a.holds == false :-> true;
+       };
+};
+	
+action Place(Agent a, Element e, SurfLocation l) {
+       duration :in [7, 12];
+       [all] {
+             a.at == l;
+             e.at == a :-> l;
+             a.holds == true :-> false;    
+       };
+};
+
+action ProcessSurface(Human h, Robot r, Surface s, Glue g) {
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       constant Bracket b;
+
+       cleanID : Clean(h, s);
+       glueID : Glue(h, s, g);
+       attachID : AttachBracket(h, b, s);
+       pointID : Point(r, s);
+
+       // those are not needed but make presentation clearer
+       start = start(cleanID);
+       end = end(attachID);
+       start(pointID) = start(glueID) -1;
+//       end(pointID) = end(glueID) + 1;
+
+       end(cleanID) < start(glueID);
+       end(glueID) < start(attachID);
+};
+
+action Clean(Human h, Surface s) {
+       motivated;
+       duration :in [19, 22];
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       [all] {
+             h.at == loc;
+             s.state == default :-> clean;               
+       };
+};
+	
+action Glue(Human h, Surface s, Glue g) {
+       motivated;
+       duration :in [17, 21];
+       s != stock_table;
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       [all] {
+             h.at == loc;
+             g.at == h;
+             s.state == clean :-> glued;
+             s.highlighted == true;
+       };
+};
+	
+action AttachBracket(Human h, Bracket b, Surface s) {
+       motivated;
+       duration :in [16, 21];
+       s != stock_table;
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       [all] {
+             h.at == loc;
+             h.holds == true :-> false;
+             b.at == h :-> loc;
+             s.state == glued :-> complete;
+             b.glued == false :-> true;
+       };
+};
+
+action Point(Robot r, Surface s) {
+       motivated;
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       [all] r.at == loc;
+       [all] r.holds == false;
+       [start] s.highlighted == false :-> true;
+       [end] s.highlighted == true :-> false;
+};
+
+
+
+
+
+
+
+
+instance State default, clean, glued, complete;
+
+instance Human operator1, operator2;
+instance Robot PR2, PR3;
+
+instance Bracket b1, b2, b3;
+instance Glue glue, glue2;
+
+instance SurfLocation wl1, wl2, wl3, stock_table;
+instance Surface as1, as2, as3;
+
+instance SurfLocation away;
+
+[start] {
+PR2.at := away;
+operator1.at := away;
+PR3.at := away;
+operator2.at := away;
+PR2.holds := false;
+PR3.holds := false;
+operator1.holds := false;
+operator2.holds := false;
+
+b1.at := wl1;
+b2.at := stock_table;
+b3.at := stock_table;
+glue.at := stock_table;
+glue2.at := wl1;
+
+b1.glued := false;
+b2.glued := false;
+b3.glued := false;
+glue.glued := false;
+glue2.glued := false;
+
+as1.state := default;
+as2.state := default;
+as3.state := default;
+as1.highlighted := false;
+as2.highlighted := false;
+as3.highlighted := false;
+};
+
+as1.attachedTo := wl1;
+as2.attachedTo := wl2;
+as3.attachedTo := wl3;
+
