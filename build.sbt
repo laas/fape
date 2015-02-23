@@ -1,13 +1,33 @@
-name := "fape-all"
+name := "fape-planning"
 
-lazy val fape = Project(id = "fape-planning",
-                            base = file("FAPE")) dependsOn(anml, constraints, graphs)
+organization := "fr.laas.fape"
 
-lazy val graphs = Project("graphs", file("planstack/graph"))
+version := "0.1.1"
 
-lazy val constraints = Project("constraints", file("planstack/constraints")) dependsOn(graphs)
+libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
 
-lazy val anml = Project("anml", file("planstack/anml"))
+libraryDependencies += "jfree" % "jfreechart" % "1.0.13"
 
+javaOptions in run += "-Xmx3000m"
 
+javaOptions in run += "-ea"
+
+mainClass in (Compile, run) := Some("fape.Planning")
+
+fork in run := true
+
+pomExtra :=
+<build>
+  <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+    </plugins>
+</build>
 
