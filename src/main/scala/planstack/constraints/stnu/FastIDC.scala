@@ -229,7 +229,7 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
     else throw new RuntimeException("This constraints should not be recorded: "+e)
   })
 
-  override def isContingent(v: Int): Boolean = contingentVars.contains(v)
+  override def isContingent(v: Int): Boolean = contingentVars.contains(v) //TODO: should be ture iff incoming contingent edge
 
   /** Returns true if a variable is dispatchable */
   override def isDispatchable(v: Int): Boolean = dispatchableVars.contains(v)

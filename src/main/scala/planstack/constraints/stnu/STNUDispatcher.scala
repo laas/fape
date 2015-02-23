@@ -34,7 +34,7 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
    * If one/two timepoints of the constraint are in a rigid constraint with a fixed one,
    * the constraint is modified to be on the fixed timepoints.
    */
-  def finalConstraint(c : Constraint[TPRef,ID]): Constraint[TPRef,ID] = {
+  private def finalConstraint(c : Constraint[TPRef,ID]): Constraint[TPRef,ID] = {
     // given tp, if there is a rigid constraint x -- d --> tp,
     // it returns (x, d).
     // otherwise, it returns (tp, 0)
@@ -163,6 +163,10 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
   def getDispatchable(time:Int) : IList[TPRef] = {
     val t:Integer = time
     new IList[TPRef](dispatcher.dispatchableEvents(time).map(id => id2tp(id)).toList)
+  }
+
+  def isEnabled(tp: TPRef) : Boolean = {
+    dispatcher.isEnabled(tp)
   }
 
   def getMaxDelay(from:TPRef, to:TPRef) : Int = {

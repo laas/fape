@@ -87,7 +87,7 @@ class Dispatcher[ID](_edg : EDG[ID],
       return false
 
     for(e <- apsp.outEdges(u)) {
-      if (e.l <= 0 && isContingent(e.v) && !executed.contains(e.v))
+      if (e.v != u && e.l <= 0 && isContingent(e.v) && !executed.contains(e.v))
         return false
       if (e.l < 0 && dispatchableVars.contains(e.v) && !executed.contains(e.v))
         return false
