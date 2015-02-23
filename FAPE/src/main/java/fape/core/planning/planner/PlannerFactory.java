@@ -67,6 +67,6 @@ public class PlannerFactory {
     }
 
     public static APlanner getPlanner(String name, State state) {
-        throw new UnsupportedOperationException(); //TODO
+        return getPlannerFromInitialState(name, state, defaultPlanSelStrategies, defaultFlawSelStrategies);
     }
 }
