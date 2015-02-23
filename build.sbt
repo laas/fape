@@ -2,17 +2,20 @@ name := "fape-planning"
 
 organization := "fr.laas.fape"
 
-version := "0.1.1"
+version := "0.2-SNAPSHOT"
 
-libraryDependencies += "com.martiansoftware" % "jsap" % "2.1"
+libraryDependencies ++= Seq(
+  "com.martiansoftware" % "jsap" % "2.1",
+  "jfree" % "jfreechart" % "1.0.13",
+  "fr.laas.fape" % "graphs" % "0.8-SNAPSHOT",
+  "fr.laas.fape" % "anml-parser" % "0.8-SNAPSHOT",
+  "fr.laas.fape" % "constraints" % "0.8-SNAPSHOT"
+)
 
-libraryDependencies += "jfree" % "jfreechart" % "1.0.13"
 
 javaOptions in run += "-Xmx3000m"
 
 javaOptions in run += "-ea"
-
-mainClass in (Compile, run) := Some("fape.Planning")
 
 fork in run := true
 
