@@ -10,6 +10,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.renderer.category.LevelRenderer;
 import org.jfree.chart.renderer.category.StackedBarRenderer;
+import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
 import planstack.anml.model.concrete.Action;
 
@@ -33,7 +34,7 @@ public class ActionsChart {
         timeMarker.setLabel("currentTime");
 
         barchart = ChartFactory.createStackedBarChart(
-                "Planned actions",      //Title
+                "",      //Title
                 "Actions",             // X-axis Label
                 "Time",               // Y-axis Label
                 bardataset,             // Dataset
@@ -52,18 +53,18 @@ public class ActionsChart {
         plot.addRangeMarker(timeMarker);
 
         StackedBarRenderer rend = (StackedBarRenderer) plot.getRenderer();
+        rend.setBarPainter(new StandardBarPainter());
         rend.setSeriesPaint(0, new Color(0, 0, 0, 0)); //Transparent for start
-        rend.setSeriesPaint(1, Color.gray);
-        rend.setSeriesPaint(2, Color.lightGray);
+        rend.setSeriesPaint(1, new Color(0, 0, 0));//31, 73, 125));
+        rend.setSeriesPaint(2, new Color(140, 140, 140));
         rend.setSeriesPaint(3, Color.green);
         rend.setSeriesPaint(4, Color.red);
+        rend.setShadowVisible(false);
 
-        barchart.getTitle().setPaint(Color.BLUE);    // Set the colour of the title
-//        barchart.setBackgroundPaint(Color.BLACK);    // Set the background colour of the chart
+        barchart.setBackgroundPaint(Color.WHITE);    // Set the background colour of the chart
         CategoryPlot cp = barchart.getCategoryPlot();  // Get the Plot object for a bar graph
-//        cp.setBackgroundPaint(Color.BLACK);       // Set the plot background colour
-        cp.setRangeGridlinePaint(Color.RED);      // Set the colour of the plot gridlines
-
+        cp.setBackgroundPaint(Color.WHITE);       // Set the plot background colour
+        cp.setRangeGridlinePaint(Color.GRAY);      // Set the colour of the plot gridlines
         showchart(barchart, "FAPE: Actions");
 
         initialized = true;
@@ -95,29 +96,6 @@ public class ActionsChart {
         timeMarker.setValue(currentTime);
     }
 
-    public static void main(String[] args) {
-        addPendingAction("Go(from,to,PR2", 10, 5, 7);
-        addPendingAction("Pick(PR2, Cup, Kitchen)", 15, 7, 9);
-        addPendingAction("1Go(from,to,PR2", 10, 5, 7);
-        addPendingAction("1Pick(PR2, Cup, Kitchen)", 15, 7, 9);
-        addPendingAction("2Go(from,to,PR2", 10, 5, 7);
-        addPendingAction("2Pick(PR2, Cup, Kitchen)", 15, 7, 9);
-        addPendingAction("3Go(from,to,PR2", 10, 5, 7);
-        addPendingAction("3Pick(PR2, Cup, Kitchen)", 15, 7, 9);
-
-
-
-        try {
-            Thread.sleep(2000);
-        } catch (Exception e) {}
-        bardataset.setValue(20,"start" ,"Go(Ra, L1, L2)" );
-        addPendingAction("Go(from,to,PR2", 12, 5, 7);
-        addExecutedAction("2Go(from,to,PR2", 11, 25);
-        addFailedAction("3Go(from,to,PR2", 13, 19);
-
-        setCurrentTime(20);
-    }
-
     public static void showchart(JFreeChart chart,String title){
         JFrame plotframe=new JFrame();
         ChartPanel cp=new ChartPanel(chart);
@@ -133,7 +111,8 @@ public class ActionsChart {
 
     static public void displayState(final State st) {
         init();
-        bardataset.clear();
+
+        
         java.util.List<Action> acts = new LinkedList<>(st.getAllActions());
         Collections.sort(acts, new Comparator<Action>() {
             @Override
