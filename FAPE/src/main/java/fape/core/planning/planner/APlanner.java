@@ -64,8 +64,8 @@ public abstract class APlanner {
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;
 
-    public static boolean debugging = true;
-    public static boolean logging = true;
+    public static boolean debugging = false;
+    public static boolean logging = false;
     public static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
     public int GeneratedStates = 1; //count the initial state
