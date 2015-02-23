@@ -3,6 +3,7 @@ package fape.core.planning.preprocessing;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -74,8 +75,19 @@ public class LiftedDTG implements ActionSupporterFinder{
 
     public Set<AbstractAction> getActionsSupporting(FluentType f) {
         Set<AbstractAction> supporters = new HashSet<>();
-        for(LabeledEdge<FluentType, AbstractAction> inEdge : JavaConversions.asJavaList(dag.inEdges(f))) {
-            supporters.add(inEdge.l());
+
+        try {
+            for(LabeledEdge<FluentType, AbstractAction> inEdge : JavaConversions.asJavaList(dag.inEdges(f))) {
+                supporters.add(inEdge.l());
+            }
+        } catch (NoSuchElementException e) {
+            // type is not recorded
+            e.printStackTrace();
+            System.err.println("Unable to find a type: "+f.toString());
+            System.err.println("Possible signatures are: ");
+            for(FluentType ft : JavaConversions.asJavaIterable(dag.vertices()))
+                System.err.println("   "+ft.toString());
+            throw new FAPEException("Unable to find type: "+f+". See error output.");
         }
         return supporters;
     }
