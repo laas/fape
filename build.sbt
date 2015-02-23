@@ -1,16 +1,14 @@
-name := "planstack-constraints"
+name := "constraints"
 
-organization := "planstack"
+organization := "fr.laas.fape"
 
-version := "0.5.5"
+version := "0.8-SNAPSHOT"
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
 
-resolvers += "planstack-maven" at "http://planstack.github.io/repository/maven"
-
-libraryDependencies += "planstack" % "planstack-graph" % "[0.4.0,0.5)"
+libraryDependencies += "fr.laas.fape" % "graphs" % "0.8-SNAPSHOT"
 
 crossPaths := false
 
