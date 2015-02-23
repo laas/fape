@@ -644,10 +644,6 @@ public class State implements Reporter {
             }
         }
 
-        for(Tuple3<TPRef,TPRef,Integer> virtual : timedObjects.virtualTimePoints()) {
-            csp.stn().addVirtualTimePoint(virtual._1(), virtual._2(), virtual._3());
-        }
-
         for(TPRef pendingVirt : timedObjects.pendingVirtuals())
             csp.stn().addPendingVirtualTimePoint(pendingVirt);
 
@@ -666,17 +662,25 @@ public class State implements Reporter {
             csp.bindings().AddVariable(declaration._2(), domain, declaration._1());
         }
 
-        for (Statement ts : mod.statements()) {
-            apply(mod, ts);
-        }
+        for(BindingConstraint bc : mod.bindingConstraints())
+            apply(mod, bc);
 
         for (Action act : mod.actions()) {
             insert(act);
         }
 
-        for(BindingConstraint bc : mod.bindingConstraints())
-            apply(mod, bc);
 
+        // last: virtual time points might refer to start/end of nested actions
+        for(Tuple3<TPRef,TPRef,Integer> virtual : timedObjects.virtualTimePoints()) {
+            csp.stn().addVirtualTimePoint(virtual._1(), virtual._2(), virtual._3());
+        }
+
+        // apply all remaining temporal constraints (those not represented with rigid time points)
+        for (TemporalConstraint tc : timedObjects.nonRigidConstraints()) {
+            apply(mod, tc);
+        }
+
+        // needs time points to be defined
         for(ActionCondition ac : mod.actionConditions()) {
             csp.stn().enforceBefore(ac.start(), ac.end());
 
@@ -688,9 +692,9 @@ public class State implements Reporter {
                 taskNet.insert(ac);
         }
 
-        // apply all remaining temporal constraints (those not represented with rigid time points)
-        for (TemporalConstraint tc : timedObjects.nonRigidConstraints()) {
-            apply(mod, tc);
+        // needs its timepoints to be defined
+        for (Statement ts : mod.statements()) {
+            apply(mod, ts);
         }
     }
 
