@@ -222,7 +222,9 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     val chron = new BaseChronicle(this)
 
     // this context is declared locally to avoid polluting the problem's context
+    // they have the same interval so start/end map to the ones of the problem
     val localContext = new Context(Some(this.context))
+    localContext.setInterval(this.context.interval)
 
     // first process variable definitions to make them available (in local context)
     // to all other statements

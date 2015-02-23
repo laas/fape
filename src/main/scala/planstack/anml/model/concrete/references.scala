@@ -50,7 +50,7 @@ object EmptyActRef extends ActRef(NullID)
   * binding constraints).
   * @param id Unique id of the reference.
   */
-class VarRef(id:T) extends GlobalRef(id) {
+class VarRef(id:T) extends GlobalRef(id) { //TODO: this should be typed
   def this() = this(getNext)
 }
 

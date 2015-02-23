@@ -39,6 +39,7 @@ object TimepointRef {
           case ref :LocalRef => context.getIntervalWithID(ref)
           case _ => throw new ANMLException("Unable to extract interval from context:"+abs)
         }
+        assert(interval != null, "This context does not seem to be defining an interval.")
         abs.extractor match {
           case "start" => interval.start
           case "end" => interval.end

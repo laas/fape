@@ -138,7 +138,7 @@ class InstanceManager {
     * @return
     */
   def getQualifiedFunction(typeName:String, methodName:String) : List[String] = {
-    assert(types.contains(typeName))
+    assert(types.contains(typeName), s"Type $typeName does not seem to exist.")
     if(types(typeName).methods.contains(methodName)) {
       typeName :: methodName :: Nil
     } else if(types(typeName).parent.nonEmpty) {
