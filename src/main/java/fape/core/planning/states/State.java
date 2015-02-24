@@ -870,7 +870,7 @@ public class State implements Reporter {
 
     /******** Wrapper around the constraint network ***********/
 
-    public Collection<String> domainOf(VarRef var) { return csp.bindings().domainOf(var); }
+    public List<String> domainOf(VarRef var) { return csp.bindings().domainOf(var); }
 
     public int domainSizeOf(VarRef var) { return csp.bindings().domainSize(var); }
 

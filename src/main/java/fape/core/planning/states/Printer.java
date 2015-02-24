@@ -94,6 +94,18 @@ public class Printer {
         return ret + "):"+act.id();
     }
 
+    public static String groundedAction(State st, Action act) {
+        String ret = act.name()+"(";
+        for(int i=0 ; i<act.args().size() ; i++) {
+            VarRef arg = act.args().get(i);
+            assert st.domainSizeOf(arg) == 1 : "Action "+action(st, act)+ "is not grounded.";
+            ret += st.domainOf(arg).get(0);
+            if(i < act.args().size()-1)
+                ret += ",";
+        }
+        return ret + ")";
+    }
+
     public static String actionsInState(final State st) {
         StringBuilder sb = new StringBuilder();
         List<Action> acts = new LinkedList<>(st.getAllActions());
