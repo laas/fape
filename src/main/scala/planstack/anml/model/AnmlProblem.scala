@@ -1,10 +1,14 @@
 package planstack.anml.model
 
+import java.io.File
+
 import planstack.anml.model.abs.{AbstractAction, AbstractTemporalConstraint, StatementsFactory}
 import planstack.anml.model.concrete._
 import planstack.anml.parser.{ANMLFactory, ParseResult}
 import planstack.anml.{ANMLException, parser}
 
+
+import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 
 /** Description of an ANML problem.
@@ -103,11 +107,23 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
   /**
    * Extends this problem with the ANML found in the file.
+   * It the file name is formatted as xxxxxx.yyy.pb.anml, it will load the file
+   * xxxxxx.dom.anml as well.
    * If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
    * @param filename File in which the anml text can be found.
    */
   def extendWithAnmlFile(filename: String) : Unit = {
+    if(filename.endsWith(".pb.anml")) {
+      val f = new File(filename)
+      f.getName.split("\\.").toList match {
+        case base :: num :: "pb" :: "anml" :: Nil =>
+          addAnml(ANMLFactory.parseAnmlFromFile(new File(f.getParentFile, base+".dom.anml").getAbsolutePath))
+        case _ =>
+          throw new ANMLException("Error: file name does not follow the convention: "+filename+"."+
+           "It should be in the form domainName.xxx.pb.anml and have an associated domainName.dom.anml file.")
+      }
+    }
     addAnml(ANMLFactory.parseAnmlFromFile(filename))
   }
 
