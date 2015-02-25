@@ -1,0 +1,8 @@
+tms is a benchmarck inspired from http://tlpgp.free.fr/benchmarks.html
+
+Quickly, this domain represent the use of kilns to bake some ceramic pieces, we can have some different piece which differs by the time they needed to be baked and diffenrent kilns which differ by the time they can be used 
+
+The output of problemGenerator.py are flat problem and a hiérarchic problem with 3 types of pieces, you can indicate the number of each piece( ex : python problemGenerator.py 3 3 3)(by default 1 1 1)
+Open it and you can change others parameters like the different times or the goal (by default :bakedStructure(p0_0,p1_0) == true;)
+
+We can notice Fape can quickly find a plan to one goal of the type "bakedStructure(p0_0,p1_0) == true;" but can't if there are two goals of this type ( where all the pieces are différents)
