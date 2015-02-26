@@ -53,8 +53,6 @@ public class Printer {
         else if(o instanceof TemporalSeparation)
             return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).firstDbID)+" && "
                     +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
-        else if(o instanceof SupportingAction)
-            return "SupportingAction: "+((SupportingAction) o).act.name();
         else if(o instanceof SupportingDatabase)
             return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).supporterID));
         else if(o instanceof DecomposeAction)

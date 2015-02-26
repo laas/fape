@@ -9,10 +9,12 @@ import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.SymFunction;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractTransition;
+import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.VarRef;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
@@ -25,7 +27,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 
     final AnmlProblem problem;
 
-    MultiLabeledDigraph<FluentType, AbstractAction> dag = GraphFactory.getMultiLabeledDigraph();
+    MultiLabeledDigraph<FluentType, SupportingAction> dag = GraphFactory.getMultiLabeledDigraph();
 
 
     public LiftedDTG(AnmlProblem pb) {
@@ -51,7 +53,23 @@ public class LiftedDTG implements ActionSupporterFinder{
                                 dag.addVertex(prec);
                             if(!dag.contains(eff))
                                 dag.addVertex(eff);
-                            dag.addEdge(prec, eff, aa);
+                            dag.addEdge(prec, eff, new SupportingAction(aa));
+                        }
+                    }
+                }
+            }
+            for(int decID=0 ; decID < aa.jDecompositions().size() ; decID++) {
+                AbstractDecomposition dec = aa.jDecompositions().get(decID);
+                for (AbstractLogStatement s : dec.jLogStatements()) {
+                    if (s instanceof AbstractTransition || s instanceof AbstractAssignment) {
+                        for (FluentType prec : getPreconditions(aa, s)) {
+                            for (FluentType eff : getEffects(aa, s)) {
+                                if (!dag.contains(prec))
+                                    dag.addVertex(prec);
+                                if (!dag.contains(eff))
+                                    dag.addVertex(eff);
+                                dag.addEdge(prec, eff, new SupportingAction(aa, decID));
+                            }
                         }
                     }
                 }
@@ -60,7 +78,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 //        dag.exportToDotFile("dtg.dot");
     }
 
-    public Collection<AbstractAction> getActionsSupporting(State st, TemporalDatabase db) {
+    public Collection<SupportingAction> getActionsSupporting(State st, TemporalDatabase db) {
         assert db.isConsumer() : "Error: this database doesn't need support: "+db;
 
         String predicate = db.stateVariable.func().name();
@@ -73,11 +91,11 @@ public class LiftedDTG implements ActionSupporterFinder{
 
     }
 
-    public Set<AbstractAction> getActionsSupporting(FluentType f) {
-        Set<AbstractAction> supporters = new HashSet<>();
+    public Set<SupportingAction> getActionsSupporting(FluentType f) {
+        Set<SupportingAction> supporters = new HashSet<>();
 
         try {
-            for(LabeledEdge<FluentType, AbstractAction> inEdge : JavaConversions.asJavaList(dag.inEdges(f))) {
+            for(LabeledEdge<FluentType, SupportingAction> inEdge : JavaConversions.asJavaList(dag.inEdges(f))) {
                 supporters.add(inEdge.l());
             }
         } catch (NoSuchElementException e) {

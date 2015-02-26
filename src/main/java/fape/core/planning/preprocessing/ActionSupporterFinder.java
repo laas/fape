@@ -14,5 +14,5 @@ public interface ActionSupporterFinder {
      * @param db DB that needs enablers
      * @return Actions containing at least one statement that might enable the database.
      */
-    public Collection<AbstractAction> getActionsSupporting(State st, TemporalDatabase db);
+    public Collection<SupportingAction> getActionsSupporting(State st, TemporalDatabase db);
 }
