@@ -74,7 +74,7 @@ public class State implements Reporter {
      */
     protected final TemporalDatabaseManager tdb;
 
-    protected final MetaCSP<VarRef,TPRef,GlobalRef> csp;
+    public final MetaCSP<VarRef,TPRef,GlobalRef> csp;
 
     public final TaskNetworkManager taskNet;
 

@@ -1,4 +1,4 @@
-name := "fape-planning"
+name := "planning"
 
 organization := "fr.laas.fape"
 

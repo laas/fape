@@ -163,6 +163,11 @@ public class Printer {
         return st.csp.bindings().domainAsString(var);
     }
 
+    public static String bindedVariable(State st, VarRef var) {
+        assert st.domainSizeOf(var) == 1;
+        return st.domainOf(var).get(0);
+    }
+
     public static String statement(State st, LogStatement s) {
         String ret = stateVariable(st, s.sv());
         if(s instanceof Persistence) {
@@ -180,6 +185,14 @@ public class Printer {
         String ret = sv.func().name() + "(";
         for(VarRef arg : sv.jArgs()) {
             ret += variable(st, arg);
+        }
+        return ret + ")";
+    }
+
+    public static String groundStateVariable(State st, ParameterizedStateVariable sv) {
+        String ret = sv.func().name() + "(";
+        for(VarRef arg : sv.jArgs()) {
+            ret += bindedVariable(st, arg);
         }
         return ret + ")";
     }
