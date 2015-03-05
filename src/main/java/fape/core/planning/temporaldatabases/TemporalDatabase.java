@@ -91,6 +91,18 @@ public class TemporalDatabase {
     }
 
     /**
+     * Returns the index of the chain component containing s.
+     */
+    public int indexOfContainer(LogStatement s) {
+        for(int ct = 0; ct < chain.size(); ct++) {
+            if (chain.get(ct).contains(s)) {
+                return ct;
+            }
+        }
+        throw new FAPEException("This statement is not present in the database.");
+    }
+
+    /**
      * @return
      */
     public TemporalDatabase DeepCopy() {
@@ -110,6 +122,7 @@ public class TemporalDatabase {
      * @return All time points from the last component.
      */
     public LinkedList<TPRef> getLastTimePoints() {
+        assert !chain.isEmpty() : "Database is empty.";
         LinkedList<TPRef> tps = new LinkedList<>();
         for(LogStatement s : chain.getLast().contents) {
             tps.add(s.end());
@@ -121,6 +134,7 @@ public class TemporalDatabase {
      * @return All time points from the first component.
      */
     public LinkedList<TPRef> getFirstTimePoints() {
+        assert !chain.isEmpty() : "Database is empty";
         LinkedList<TPRef> tps = new LinkedList<>();
         for(LogStatement s : chain.getFirst().contents) {
             tps.add(s.start());
@@ -129,6 +143,7 @@ public class TemporalDatabase {
     }
 
     public TPRef getConsumeTimePoint() {
+        assert !chain.isEmpty() : "Database is empty.";
         return chain.getFirst().getConsumeTimePoint();
     }
 

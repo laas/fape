@@ -12,7 +12,6 @@ package fape.core.planning.states;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
-import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.flaws.*;
@@ -31,7 +30,6 @@ import planstack.anml.model.*;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.statements.*;
-import planstack.anml.parser.ANMLFactory;
 import planstack.constraints.*;
 import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.STNUDispatcher;
@@ -207,6 +205,28 @@ public class State implements Reporter {
         return null;
     }
 
+    public void breakCausalLink(LogStatement supporter, LogStatement consumer) {
+        TemporalDatabase db = tdb.getDBContaining(supporter);
+        assert db == tdb.getDBContaining(consumer) : "The statements are not in the same database.";
+
+        int index = db.indexOfContainer(consumer);
+        TemporalDatabase newDB = new TemporalDatabase(consumer.sv());
+        //add all extra chain components to the new database
+
+        List<ChainComponent> toRemove = new LinkedList<>();
+        for (int i = index; i < db.chain.size(); i++) {
+            ChainComponent origComp = db.chain.get(i);
+            toRemove.add(origComp);
+            ChainComponent pc = origComp.DeepCopy();
+            newDB.chain.add(pc);
+        }
+        db.chain.removeAll(toRemove);
+        assert !db.chain.isEmpty();
+        assert !newDB.chain.isEmpty();
+        this.consumers.add(newDB);
+        this.tdb.vars.add(newDB);
+    }
+
     /**
      * Remove a statement from the state. It does so by identifying the temporal
      * database in which the statement appears and removing it from the
@@ -218,14 +238,8 @@ public class State implements Reporter {
         TemporalDatabase theDatabase = tdb.getDBContaining(s);
 
         // First find which component contains s
-        ChainComponent comp = null; // component containing the statement
-        int ct; // index of the component in the chain
-        for (ct = 0; ct < theDatabase.chain.size(); ct++) {
-            if (theDatabase.chain.get(ct).contains(s)) {
-                comp = theDatabase.chain.get(ct);
-                break;
-            }
-        }
+        final int ct = theDatabase.indexOfContainer(s);
+        final ChainComponent comp = theDatabase.chain.get(ct);
 
         assert comp != null && theDatabase.chain.get(ct) == comp;
 
@@ -248,12 +262,18 @@ public class State implements Reporter {
                 this.tdb.vars.add(newDB);
                 theDatabase.chain.remove(comp);
                 theDatabase.chain.removeAll(remove);
+                assert !newDB.chain.isEmpty();
             } else {
                 assert comp.contents.size() == 1;
                 //this was the last element so we can just remove it and we are done
                 theDatabase.chain.remove(comp);
             }
 
+            if(theDatabase.chain.isEmpty()) {
+                tdb.vars.remove(theDatabase);
+                if (consumers.contains(theDatabase))
+                    consumers.remove(theDatabase);
+            }
         } else if (s instanceof Persistence) {
             if (comp.contents.size() == 1) {
                 // only one statement, remove the whole component
@@ -262,16 +282,27 @@ public class State implements Reporter {
                 // more than one statement, remove only this statement
                 comp.contents.remove(s);
             }
+            if(theDatabase.chain.isEmpty()) {
+                tdb.vars.remove(theDatabase);
+                if (consumers.contains(theDatabase))
+                    consumers.remove(theDatabase);
+            }
+
         } else if(s instanceof Assignment) {
             theDatabase.chain.remove(comp);
             if(theDatabase.chain.isEmpty()) {
                 this.tdb.vars.remove(theDatabase);
+                if (consumers.contains(theDatabase))
+                    consumers.remove(theDatabase);
+            } else {
+                assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
+                this.consumers.add(theDatabase);
             }
-            assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
-            this.consumers.add(theDatabase);
         } else {
             throw new FAPEException("Unknown event type: "+s);
         }
+        for(TemporalDatabase db : tdb.vars)
+            assert !db.chain.isEmpty();
     }
 
     /**
@@ -983,18 +1014,41 @@ public class State implements Reporter {
             if(!s.sv().func().isConstant())
                 removeStatement(s);
         }
+        for(TemporalDatabase db : tdb.vars) {
+            if(db.chain.isEmpty()) {
+                boolean breakHere = true;
+            }
+        }
     }
 
     /**
      * Pushes the earliest execution time point forward in time. This causes all pending actions
      * to be pushed after it.
-     * @param earliestExecution Absolute value for the earliest execution time point.
+     * @param currentTime Absolute value for the earliest execution time point.
      */
-    public void setEarliestExecution(int earliestExecution) {
-        enforceDelay(pb.start(), pb.earliestExecution(), earliestExecution);
+    public void setCurrentTime(int currentTime) {
+        // push earliest execution (and thus all pending actions)
+        enforceDelay(pb.start(), pb.earliestExecution(), currentTime);
+
+        // Update bounds of all executing actions
+        for(Action a : getAllActions()) {
+            if(a.status() == ActionStatus.EXECUTING) {
+                int startTime = getEarliestStartTime(a.start());
+                int minDur = getEarliestStartTime(a.end()) -startTime;
+                int maxDur = getLatestStartTime(a.end()) -startTime;
+
+                if(startTime+minDur < currentTime) {
+                    // we can narrow the uncertain duration
+                    int realMin = currentTime - startTime;
+                    int realMax = currentTime < startTime +maxDur ? maxDur : currentTime -startTime +1;
+                    removeActionDurationOf(a.id());
+                    csp.stn().enforceContingentWithID(a.start(), a.end(), realMin, realMax, a.id());
+                }
+            }
+        }
 
         if(Plan.showChart)
-            ActionsChart.setCurrentTime((int) earliestExecution);
+            ActionsChart.setCurrentTime((int) currentTime);
     }
 
     /**
@@ -1006,7 +1060,7 @@ public class State implements Reporter {
     public IList<AtomicAction> getDispatchableActions(int currentTime) {
         IList<AtomicAction> toDispatch = new IList<>();
         assert isConsistent() : "Trying to get dispatchable actions from an inconsistent state.";
-        setEarliestExecution(currentTime);
+        setCurrentTime(currentTime);
 
         if(!isConsistent()) {
             // propagation made the plan inconsistent
