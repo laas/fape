@@ -4,11 +4,16 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.exceptions.FAPEException;
+import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.TPRef;
+import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
 
@@ -23,6 +28,28 @@ public class UnsupportedDatabase extends Flaw {
     @Override
     public String toString() {
         return "Unsupported: " + consumer;
+    }
+
+    /**
+     * Returns true if the first time-point *must* occur *exactly* one time unit before the second one.
+     */
+    private boolean areNecessarilyGlued(State st, TPRef first, TPRef second) {
+        return !st.csp.stn().isConstraintPossible(first, second, 0)
+                && !st.csp.stn().isConstraintPossible(second, first, -2);
+    }
+
+    /**
+     * Returns true if the two state variables are necessarily identical.
+     * This is true if they are on the same state variable and all their arguments are equals.
+     */
+    private boolean areNecessarilyIdentical(State st, ParameterizedStateVariable sv1, ParameterizedStateVariable sv2) {
+        if(sv1.func() != sv2.func())
+            return false;
+        for(int i=0 ; i<sv1.args().size() ; i++) {
+            if(st.separable(sv1.jArgs().get(i), sv2.jArgs().get(i)))
+                return false;
+        }
+        return true;
     }
 
     @Override
@@ -61,6 +88,31 @@ public class UnsupportedDatabase extends Flaw {
                     && !b.HasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
                 resolvers.add(new SupportingDatabase(b.mID, consumer));
+            }
+        }
+
+        // checks all the given resolvers to check if one must be applied.
+        // this is true iff the supporter is non separable from the consumer:
+        //    they are necessarily on the same state variable and they cannot be temporally separated.
+        // If such a resolver if found, it means that no other resolver is applicable and only this one is returned.
+        for(Resolver res : resolvers) {
+            SupportingDatabase sdb = (SupportingDatabase) res;
+            ChainComponent supportingCC = null;
+            if(sdb.precedingChainComponent == -1) {
+                supportingCC = st.GetDatabase(sdb.supporterID).chain.getLast();
+            } else {
+                supportingCC = st.GetDatabase(sdb.supporterID).GetChainComponent(sdb.precedingChainComponent);
+            }
+            ChainComponent consumingCC = st.GetDatabase(sdb.consumerID).GetChainComponent(0);
+
+            for(LogStatement sup : supportingCC.contents) {
+                for(LogStatement cons : consumingCC.contents) {
+                    if(areNecessarilyGlued(st, sup.end(), cons.start()) && areNecessarilyIdentical(st, sup.sv(), cons.sv())) {
+                        resolvers.clear();
+                        resolvers.add(res);
+                        return resolvers;
+                    }
+                }
             }
         }
 
