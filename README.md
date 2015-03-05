@@ -8,13 +8,8 @@ We recommend that you use SBT since it will be used as well for some
 of FAPE's dependencies.
 Instructions for installing SBT can be found [here](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html).
 
-Before building FAPE you should make sure that you have cloned its dependencies (instructions can be found in the `planstack` folder at the root of this repository).
-
     # Build the project with SBT
     sbt compile
-
-    # Build the project with Maven
-    mvn compile
 
 You can generate a script to run the FAPE planner with `sbt pack`.
 This will produce an executable at `target/pack/bin/fape-planner`.
