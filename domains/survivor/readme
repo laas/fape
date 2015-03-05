@@ -1,0 +1,9 @@
+Domaines inspirés par Patrick Bechon de l'Onéra
+
+survivors_Generator_Inst.py est une traduction des domaines pddl de l'Onera en anml, il comprend des domaines "flat" et "hiérachiques", les hierachique étant difficilement trouvable par fape.
+On peut noter que les domaines hiérarchiques sont composés d'actions partiellement ou totalement instanciées .
+
+
+mySurvivorGenerator.py produit un domaine hiérachique avec des actions non instanciées mais sans la prise en compte des type "zone" est "team" comme dans les domaines de Patrick Bechon.
+
+
