@@ -1,4 +1,4 @@
-// Domain : Temporal Machine Shop, 2 Kilns, 3 types of ceramics, Time (Temporally Expressive)
+// Domain : Temporal Machine Shop Time (Temporally Expressive)
 
 type Piece with{
 	predicate baking();
@@ -21,7 +21,7 @@ constant integer bakeTime(Piece p);
 constant integer treatTime(Piece p);
 
 action fire(Kiln k){
-	duration := fireTime(k);
+	duration :in [2,fireTime(k)];
         [all] energy == true;
         [start+1] k.ready := true ;
         [end] k.ready := false;
@@ -78,7 +78,7 @@ action bakeStructureH(Piece p1, Piece p2, Kiln k){
 		b : bakeStructure(p1, p2, k);
 	};
 	end(m) < start(b);
-	start(f) < start(b);
+	start(f) < start(b)-1;
 	end(b) < end(f);
 	[start(b)] k.empty == true; 
 	[start(b)+1] k.empty := false;
