@@ -90,7 +90,7 @@ class InstanceManager {
     * @param typeName Name of the type to inspect.
     * @return All subtypes including itself.
     */
-  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(subTypesRec(typeName))
+  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(subTypesRec(typeName) + "typeOfUnknown")
 
   private def subTypesRec(typeName:String) : Set[String] = typeHierarchy.children(typeName).map(subTypes(_)).flatten + typeName
 

@@ -70,7 +70,7 @@ class Action(
       case PENDING => //assert(newStatus == EXECUTING)
       case EXECUTING => //assert(newStatus == FAILED || newStatus == EXECUTED)
       case FAILED => //throw new ANMLException("No valid status transition from FAILED.")
-      case EXECUTED => throw new ANMLException("No valid status transition from EXECUTED.")
+      case EXECUTED => //throw new ANMLException("No valid status transition from EXECUTED.")
     }
     mStatus = newStatus
   }
