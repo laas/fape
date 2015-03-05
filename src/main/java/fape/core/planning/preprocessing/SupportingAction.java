@@ -23,4 +23,18 @@ public class SupportingAction {
 
     public boolean mustBeDecomposed() { return decID != -1; }
     public int getDecID() { return decID; }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof SupportingAction) {
+            return ((SupportingAction) o).absAct.equals(this.absAct) && ((SupportingAction) o).decID == this.decID;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return this.absAct.hashCode() + decID;
+    }
 }
