@@ -53,8 +53,6 @@ public class Printer {
         else if(o instanceof TemporalSeparation)
             return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).firstDbID)+" && "
                     +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
-        else if(o instanceof SupportingAction)
-            return "SupportingAction: "+((SupportingAction) o).act.name();
         else if(o instanceof SupportingDatabase)
             return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).supporterID));
         else if(o instanceof DecomposeAction)
@@ -92,6 +90,18 @@ public class Printer {
             ret += variable(st, arg);
         }
         return ret + "):"+act.id();
+    }
+
+    public static String groundedAction(State st, Action act) {
+        String ret = act.name()+"(";
+        for(int i=0 ; i<act.args().size() ; i++) {
+            VarRef arg = act.args().get(i);
+            assert st.domainSizeOf(arg) == 1 : "Action "+action(st, act)+ "is not grounded.";
+            ret += st.domainOf(arg).get(0);
+            if(i < act.args().size()-1)
+                ret += ",";
+        }
+        return ret + ")";
     }
 
     public static String actionsInState(final State st) {
@@ -151,6 +161,11 @@ public class Printer {
         return st.csp.bindings().domainAsString(var);
     }
 
+    public static String bindedVariable(State st, VarRef var) {
+        assert st.domainSizeOf(var) == 1;
+        return st.domainOf(var).get(0);
+    }
+
     public static String statement(State st, LogStatement s) {
         String ret = stateVariable(st, s.sv());
         if(s instanceof Persistence) {
@@ -168,6 +183,14 @@ public class Printer {
         String ret = sv.func().name() + "(";
         for(VarRef arg : sv.jArgs()) {
             ret += variable(st, arg);
+        }
+        return ret + ")";
+    }
+
+    public static String groundStateVariable(State st, ParameterizedStateVariable sv) {
+        String ret = sv.func().name() + "(";
+        for(VarRef arg : sv.jArgs()) {
+            ret += bindedVariable(st, arg);
         }
         return ret + ")";
     }

@@ -9,14 +9,12 @@ import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.ActionsChart;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.constraints.stnu.DispatchableSTNU;
 import planstack.constraints.stnu.STNUDispatcher;
 import planstack.graph.core.Edge;
 import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList;
 import planstack.graph.printers.NodeEdgePrinter;
 import planstack.structures.IList;
-import scala.collection.JavaConversions;
 
 import java.util.*;
 
@@ -152,7 +150,7 @@ public class Plan {
     public IList<AtomicAction> getDispatchableActions(int currentTime) {
         IList<AtomicAction> toDispatch = new IList<>();
         assert isConsistent() : "Trying to get dispatchable actions from an inconsistent state.";
-        st.setEarliestExecution(currentTime);
+        st.setCurrentTime(currentTime);
 
         for (Action a : getExecutableActions((int) currentTime)) {
             int startTime = st.getEarliestStartTime(a.start());

@@ -1,18 +1,16 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.ActionDecompositions;
-import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.preprocessing.*;
 import fape.core.planning.search.flaws.resolvers.*;
+import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class UnsupportedDatabase extends Flaw {
 
@@ -68,26 +66,34 @@ public class UnsupportedDatabase extends Flaw {
 
         // adding actions
         // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions
-        //find actions that help me with achieving my value through some decomposition in the task network
+        //find actions that help me with achieving my value through some decomposition in the task netAbstractActionwork
         //they are those that I can find in the virtual decomposition tree
         //first get the action names from the abstract dtgs
         ActionSupporterFinder supporters = planner.getActionSupporterFinder();
         ActionDecompositions decompositions = new ActionDecompositions(st.pb);
-        Collection<AbstractAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
+
+        // a list of (abstract-action, decompositionID) of supporters
+        Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
+
+        // all actions that have an effect on the state variable
+        Set<AbstractAction> potentiallySupportingAction = new HashSet<>();
+        for(fape.core.planning.preprocessing.SupportingAction sa : potentialSupporters)
+            potentiallySupportingAction.add(sa.absAct);
+
 
         for (Action leaf : st.getOpenLeaves()) {
-            for (Integer decID : decompositions.possibleDecompositions(leaf, potentialSupporters)) {
+            for (Integer decID : decompositions.possibleDecompositions(leaf, potentiallySupportingAction)) {
                 resolvers.add(new SupportingActionDecomposition(leaf, decID, consumer));
             }
         }
 
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
-            for (AbstractAction aa : potentialSupporters) {
+            for (fape.core.planning.preprocessing.SupportingAction aa : potentialSupporters) {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
-                if (planner.useActionConditions() || !aa.mustBeMotivated()) {
-                    resolvers.add(new SupportingAction(aa, consumer));
+                if (planner.useActionConditions() || !aa.absAct.mustBeMotivated()) {
+                    resolvers.add(new SupportingAction(aa.absAct, aa.decID,  consumer));
                 }
             }
         }

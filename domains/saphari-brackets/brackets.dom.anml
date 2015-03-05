@@ -1,3 +1,4 @@
+// -*-c++-*-
 
 type Location;
 
@@ -108,7 +109,8 @@ action Clean(Human h, Surface s) {
        s.attachedTo == loc;
        [all] {
              h.at == loc;
-             s.state == default :-> clean;               
+             s.state == default :-> clean;
+             h.holds == false;
        };
 };
 	

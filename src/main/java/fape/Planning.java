@@ -21,33 +21,6 @@ import java.util.Queue;
 
 public class Planning {
 
-    /**
-     * Tries to infer which file contains the domain definition of this problem.
-     * If the problem takes a form "domainName.xxxx.pb.anml", then the
-     * corresponding domain file would be "domainName.dom.anml"
-     */
-    public static String domainFile(String problemFile) {
-        File f = new File(problemFile);
-        String name = f.getName();
-        if (name.endsWith(".pb.anml")) {
-            String[] nameParts = name.split("\\.");
-
-            if (nameParts.length != 4) {
-                throw new FAPEException("File name " + name + " is not correctly formatted. It should be in the form "
-                        + " domainName.xxx.pb.anml and have an associated domainName.dom.anml file.");
-            }
-
-            File domain = new File(f.getParentFile(), nameParts[0] + ".dom.anml");
-            if (!domain.exists()) {
-                throw new FAPEException("File " + domain + " does not exists (name derived from " + problemFile + ")");
-            }
-
-            return domain.getPath();
-        } else {
-            return null;
-        }
-    }
-
     static class PlannerConf {
         final String plannerID;
         final String[] planStrat;
@@ -259,13 +232,7 @@ public class Planning {
 
                     final AnmlProblem pb = new AnmlProblem(conf.usesActionConditions());
                     try {
-                        // if the anml has a corresponding domain definition, load it first
-                        if (Planning.domainFile(anmlFile) != null) {
-                            // add the domain and do not propagate since the problem is still incomplete
-                            pb.extendWithAnmlFile(domainFile(anmlFile));
-                        }
                         pb.extendWithAnmlFile(anmlFile);
-
 
                     } catch (Exception e) {
                         e.printStackTrace();

@@ -15,7 +15,7 @@ import java.util.*;
  * This class is used to provide information on the possible outcomes of a decomposition.
  * More specifically, it provides methods to find which decompositions of an action might produce other actions.
  *
- * In the current state, no processing is done and analyse is repeated on every method invocation.
+ * In the current state, no preprocessing is done and analyse is repeated on every method invocation.
  */
 public class ActionDecompositions {
 
