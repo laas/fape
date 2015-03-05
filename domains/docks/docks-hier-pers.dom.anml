@@ -42,7 +42,6 @@ instance Pile noPile; // when a container is not in a pile
 constant boolean adjacent(Dock d, Road r);
 
 
-#ifdef HIER
 action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
     constant Crane k1;
     constant Crane k2;
@@ -52,7 +51,6 @@ action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
       id3 : pickup(k2, c, r);
       id4 : stack(k2, c, p2);
     };
-#ifdef PERSISTENCES
     [end(id1)+1, start(id2)-1] {
         k1.empty == false;
         c.pos == k1; };
@@ -64,7 +62,6 @@ action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
     [end(id3)+1, start(id4)-1] {
         c.pos == k2;
         k2.empty == false; };
-#endif    
     start = start(id1);
     end(id1) < start(id2);
     end(id2) < start(id3);
@@ -79,16 +76,10 @@ action absTranferFromRobot(Container c, Robot r, Pile p2) {
       id1 : pickup(k2, c, r);
       id2 : stack(k2, c, p2);
     };
-#ifdef PERSITENCES
-    [end(id1)+1, start(id2)-1] {
-        c.pos == k2;
-        k2.empty == false; };
-#endif    
     start = start(id1);
     end(id1) < start(id2);
     end = end(id2);
 };
-#endif
 
 action leave(Robot r, Dock d, Road w){
     [all] r.loc == d :-> w;
@@ -107,9 +98,7 @@ action navigate(Robot r, Road w1, Road w2) {
 };
 
 action pickup(Crane k, Container c, Robot r) {
-#ifdef HIER    
     motivated;
-#endif    
     c != pallet;
     
     [all] k.empty == true :-> false;
@@ -121,9 +110,7 @@ action pickup(Crane k, Container c, Robot r) {
 };
 
 action putdown(Crane k, Container c, Robot r) {
-#ifdef HIER    
     motivated;
-#endif
     c != pallet;
     
     [all] k.empty == false :-> true;
@@ -135,9 +122,7 @@ action putdown(Crane k, Container c, Robot r) {
 };
 
 action stack(Crane k, Container c, Pile p) {
-#ifdef HIER    
     motivated;
-#endif
     c != pallet;
     
     constant Container prevTop;
@@ -152,9 +137,7 @@ action stack(Crane k, Container c, Pile p) {
 };
 
 action unstack(Crane k, Container c, Pile p) {
-#ifdef HIER    
     motivated;
-#endif
     c != pallet;
     constant Container under;
     
