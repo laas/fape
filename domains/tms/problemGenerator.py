@@ -9,34 +9,24 @@ import shutil
 import subprocess
 import sys
 
-kilns = [[1,10],[1,20]]	#[number of kilns,fire time]
-pieces = [[15,3],[7,2],[5,1]]	#[time needed to bake a piece,time needed to treat it] 
-#for now problemGeneratorflat.py is working for only 3 types of pieces
-typePiece = 3
-
+kilns = [[1,10],[1,20]]				#[number of kilns,fire time]
+pieces = [[15,3,2],[7,2,2],[5,1,2]]		#[time needed to bake a piece, time needed to treat it, number of this type piece] 
 def main():
-	n = [1,1,1]
-	if len(sys.argv) > 1:
-		n[0] = int(sys.argv[1])
-	if len(sys.argv) > 2:
-		n[1] = int(sys.argv[2])
-	if len(sys.argv) > 3:
-		n[2] = int(sys.argv[3])
 	s =0
-	for i in range(len(n)):
-		s +=n[i]
-	printProblem("tmsflat." + str(s) + ".pb.anml",n)
-	printProblem("tmshier." + str(s) + ".pb.anml",n)
+	for i in range(len(pieces)):
+		s +=pieces[i][2]
+	printProblem("tmsflat." + str(s) + ".pb.anml")
+	printProblem("tmshier." + str(s) + ".pb.anml")
 
-def printProblem(filename,n):
+def printProblem(filename):
     with open(filename, "w") as f:
         f.write("instance Kiln k" + str(kilns[0][1]) )
         for i in range(1,len(kilns)):
             f.write(", k" + str(kilns[i][1]))
         f.write(";\n")
-        for t in range(typePiece):
+        for t in range(len(pieces)):
             f.write("instance Piece p" + str(t) + "_0")
-            for i in range(1,n[t]):
+            for i in range(1,pieces[t][2]):
                 f.write(", p" + str(t) + "_" + str(i))
             f.write(";\n")
 
@@ -44,8 +34,8 @@ def printProblem(filename,n):
 				
         for i in range(0,len(kilns)):
             f.write("fireTime(k" + str(kilns[i][1]) + ") := " + str(kilns[i][1]) + ";\n")
-        for t in range(typePiece):
-            for i in range(n[t]):
+        for t in range(len(pieces)):
+            for i in range(pieces[t][2]):
                 f.write("bakeTime(p" + str(t) + "_" + str(i) + ") := " + str(pieces[t][0]) + ";\n")
                 f.write("treatTime(p" + str(t) + "_" + str(i) + ") := " + str(pieces[t][1]) + ";\n")
         f.write("[start] {\n\tenergy := true;\n")
