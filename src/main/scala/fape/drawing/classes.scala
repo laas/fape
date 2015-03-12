@@ -11,23 +11,55 @@ object ImplicitConversions {
   implicit def ts(f:Float) : String = f.toString
 }
 
-class TimedCanvas(val lines: Iterable[ChartLine]) {
-  val height = 800
-  val width = 1000
-  val labelWidth = 300
+class TimedCanvas(val lines: Iterable[ChartLine], currentTime:Option[Float] = None) {
+  def totalWidth = width + labelWidth
+  def totalHeight = height
+  val numLines = lines.size +1 // keep one for label on time grid
+  val height = 650
+  val width = 650
+
   val maxX = lines.flatMap(_.elements).map(_.maxX).max
 
-  val lineHeight : Float = height / lines.size * 0.66f
-  val spaceBetweenLines : Float = height /lines.size * 0.33f
+  val lineHeight : Float = height / numLines * 0.66f
+  val labelHeight : Int =
+    if(lineHeight > 16) 14
+    else if(lineHeight < 10) 10
+    else lineHeight.toInt
+  val spaceBetweenLines : Float = height / numLines * 0.33f
 
-  def yOfLine(l: Int) : Float = l * lineHeight + (l-1) * spaceBetweenLines
+  val labelWidth = lines.map(_.label.length(this)).max /2
+
+  def yOfLine(l: Int) : Float = (l+0.5f) * (lineHeight + spaceBetweenLines)
   def xProj(x: Float) : Float = labelWidth + x * width / maxX
   def widthProj(w: Float) : Float = w * width / maxX
 
-
   def draw : NodeSeq =
-    <svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={s"0 0 $totalWidth $totalHeight"}>
+      <style type="text/css" >
+          <![CDATA[
+          rect.pending { fill:   #000000; }
+          rect.uncertain { fill:   #bbbbbb; }
+          rect.successful { fill: #00AA00; }
+          rect.failed { fill: #AA0000; }
+          rect.sv-value { fill: #BBBBBB; }
+          line.grid { stroke: #bbb; }
+          line.current-time { stroke: #0000AA; }
+          text.time-label { fill: #BBBBBB; }
+          text.action-name { fill: #555555; }
+          rect.unknown { fill: #DDDDDD; }
+        ]]>
+        </style>
+      { // time grid: Below
+        (0 to maxX.toInt+5).filter(_ % 5 == 0).map(x =>
+          <line x1={xProj(x)} y1={0} x2={xProj(x)} y2={yOfLine(numLines-1)} class="grid"/>
+          <text x={xProj(x)} y={yOfLine(numLines-1)+lineHeight} class="time-label" style="text-anchor: middle" font-size={"12px"}>{x}</text>
+        )
+      }
       { lines.zipWithIndex.map { case (line, index) => line.draw(this, index) }}
+      { currentTime match {
+        case Some(t) => <line x1={xProj(t)} y1={0} x2={xProj(t)} y2={yOfLine(numLines-1)} class="current-time"/>
+        case None =>
+      }}
     </svg>
 }
 
@@ -35,14 +67,17 @@ class ChartLine(val label:TextLabel, val elements: Iterable[CanvasElement]) {
   def draw(canvas: TimedCanvas, atLine: Int): NodeSeq = {
     <g>
       { label.draw(canvas, atLine) }
-      { for(e <- elements) e.draw(canvas, atLine) }
+      { elements.map(_.draw(canvas, atLine)) }
     </g>
   }
 }
 
-class TextLabel(val txt:String, val clazz: String) {
+case class TextLabel(txt:String, clazz: String) {
+
+  def length(c: TimedCanvas) : Float = txt.size * c.labelHeight
+
   def draw(c: TimedCanvas, l: Int): NodeSeq =
-    <text x="295" y={c.yOfLine(l)} class={clazz} style="text-anchor: end" font-size="12px">{txt}</text>
+    <text x={c.labelWidth-5} y={c.yOfLine(l)+c.lineHeight/2} class={clazz} style="text-anchor: end" font-size={c.labelHeight}>{txt}</text>
 }
 
 trait CanvasElement {
@@ -51,11 +86,24 @@ trait CanvasElement {
   def maxX : Float
 }
 
-class RectElem(x: Float, width: Float, clazz: String, attr: List[Attribute] = Nil)
+case class RectElem(x: Float, width: Float, clazz: String)
   extends CanvasElement
 {
   override def draw(c: TimedCanvas, l: Int): NodeSeq = {
     <rect x={c.xProj(x)} y={c.yOfLine(l)} width={c.widthProj(width)} height={c.lineHeight} class={clazz}/>
   }
   override def maxX = x+width
+}
+
+case class RectTextElem(x: Float, width: Float, txt: String, clazz: String)
+  extends CanvasElement
+{
+  override def draw(c: TimedCanvas, l: Int): NodeSeq =
+    <g>
+      <rect x={c.xProj(x)} y={c.yOfLine(l)} width={c.widthProj(width)} height={c.lineHeight} class={clazz}/>
+      <text x={c.xProj(x+width/2f)} y={c.yOfLine(l)+c.lineHeight/2} font-size={c.labelHeight}
+            style="text-anchor: middle" class={"rect-text "+clazz} >{txt}</text>
+    </g>
+
+  override def maxX: Float = x+width
 }

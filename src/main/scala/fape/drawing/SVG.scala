@@ -2,8 +2,7 @@ package fape.acting.drawing
 
 import java.io.FileWriter
 
-import fape.core.planning.states.{Printer, State}
-import planstack.anml.model.concrete.ActionStatus
+import fape.drawing.{TimedCanvas, RectElem, TextLabel, ChartLine}
 
 import scala.xml.{NodeSeq, Node, Attribute}
 import scala.collection.JavaConverters._
@@ -76,90 +75,31 @@ object SVG extends App {
   )
 
 
+  def getSvg(acts: Iterable[Action], time: Int) : NodeSeq = {
+    getChart(acts, time).draw
+  }
+
+  def getChart(acts: Iterable[Action], time: Int) : TimedCanvas = {
+    val lines = acts.map (a => {
+    val label = TextLabel (a.getName, "action-name")
+    a match {
+    case Pending (name, start, min, uncertain) =>
+      new ChartLine (label, List (
+        RectElem (start, min, "pending"), RectElem (start + min + 0.1f, uncertain, "uncertain")
+      ) )
+    case Successful (_, start, dur) =>
+      new ChartLine (label, List (RectElem (start, dur, "successful") ) )
+    case Failed (_, start, dur) =>
+      new ChartLine (label, List (RectElem (start, dur, "failed") ) )
+  }
+  })
+
+    new TimedCanvas (lines, Some (time) )
+  }
+
   def print(acts: Iterable[Action], time: Int, fileName: String) {
-
-    val max = acts.foldLeft(0) {
-      case (x, Pending(name, start, min, dur)) =>
-        if(x > start+min+dur) x
-        else start+min+dur
-      case (x, Failed(_, start, dur)) =>
-        if(x > start +dur) x
-        else start+dur
-      case (x, Successful(_, start, dur)) =>
-        if(x > start+dur) x
-        else start+dur
-    }
-
-    println(max)
-    val c = new Canvas(300, max, 1000, 0, acts.size, 800)
-    val fontSize =
-      if(c.h < 10 ) c.H.toInt.toString+"px"
-      else if(c.h >16) "16px"
-      else ((c.h+c.H)/2).toInt.toString + "px"
-
-    println(c.h)
-    println(c.H)
-    println(fontSize)
-
-    def toSvg(act: Action, num: Int) : NodeSeq = {
-      def nameNode(name: String, line:Int) =
-        <text x="295" y={(c.H*(num+0.5)+c.space).toString} class="action-name" style="text-anchor: end" font-size={fontSize}>{name}</text>
-
-      act match {
-        case Pending(name, start, min, uncertain) =>
-          List(
-            new SvgRect(start, num, min, 10, "pending").draw(c),
-            new SvgRect(start + min + 0.2f, num, uncertain - 0.2f, 10, "uncertain").draw(c),
-            nameNode(name, num)
-          )
-
-        case Successful(name, start, successDur) => List(
-          new SvgRect(start, num, successDur, 10, "successful").draw(c),
-          nameNode(name, num)
-        )
-
-        case Failed(name, start, failedDur) => List(
-          new SvgRect(start, num, failedDur, 10, "failed").draw(c),
-          nameNode(name, num)
-        )
-      }
-    }
-
-    val svg =
-      <svg xmlns="http://www.w3.org/2000/svg">
-        <style type="text/css" >
-          <![CDATA[
-
-          rect.pending { fill:   #000000; }
-          rect.uncertain { fill:   #bbbbbb; }
-          rect.successful { fill: #00AA00; }
-          rect.failed { fill: #AA0000; }
-          line.grid { stroke: #bbb; }
-          line.current-time { stroke: #0000AA; }
-          text.time-label { fill: #BBBBBB; }
-          text.action-name { fill: #555555; }
-
-        ]]>
-        </style>
-        { // time grid: Below
-        (0 to max+5).filter(_ % 5 == 0).map(x => List(
-          new SvgLine(x, -0.5f, x, acts.size, "grid").draw(c),
-          <text x={c.xProj(x)} y={(c.H*(acts.size+0.8)+c.space).toString} class="time-label" style="text-anchor: middle" font-size={fontSize}>{x.toString}</text>
-        ))
-        }
-
-        { //Actions
-        acts.zipWithIndex.map(p => toSvg(p._1, p._2))
-        }
-
-        {
-        new SvgLine(time, -0.5f, time, acts.size, "current-time").draw(c)
-        }
-
-      </svg>
-
     val f = new FileWriter(fileName)
-    f.write(svg.toString())
+    f.write(getSvg(acts, time).toString())
     f.close()
   }
 
@@ -201,20 +141,35 @@ object MainSvg extends App {
   val acts = List(
     Successful("AAAAAAAAAAAa", 10, 50),
     Failed("BBBBBBBBBBBBB", 20, 15),
-    Pending("CCCCCCCCCCCC", 60, 20, 8))
+//    Pending("CCCCCCCCCCCC", 60, 20, 8),Pending("GoTo(operator2, wl2)", 1, 8, 2),
+    Pending("GoTo(PR3, stock_table)", 1, 8, 2),
+    Pending("GoTo(PR2, stock_table)", 1, 8, 2),
+    //Pending("ProcessSurface(operator2, PR3, as2)", 10, 81, 0),
+    Pending("Clean(operator2, as2)", 10, 19, 3),
+  Successful("AAAAAAAAAAAa", 10, 50),
+    Failed("BBBBBBBBBBBBBBBBiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiBBBBBBBB", 20, 15),
+//    Pending("CCCCCCCCCCCC", 60, 20, 8),Pending("GoTo(operator2, wl2)", 1, 8, 2),
+    Pending("GoTo(PR3, stock_table)", 1, 8, 2),
+//    Pending("GoTo(PR2, stock_table)", 1, 8, 2),
+//    //Pending("ProcessSurface(operator2, PR3, as2)", 10, 81, 0),
+//    Pending("Clean(operator2, as2)", 10, 19, 3),
+//  Successful("AAAAAAAAAAAa", 10, 50),
+//    Failed("BBBBBBBBBBBBB", 20, 15),
+////    Pending("CCCCCCCCCCCC", 60, 20, 8),Pending("GoTo(operator2, wl2)", 1, 8, 2),
+//    Pending("GoTo(PR3, stock_table)", 1, 8, 2),
+//    Pending("GoTo(PR2, stock_table)", 1, 8, 2),
+//    //Pending("ProcessSurface(operator2, PR3, as2)", 10, 81, 0),
+//    Pending("Clean(operator2, as2)", 10, 19, 3),
+//  Successful("AAAAAAAAAAAa", 10, 50),
+//    Failed("BBBBBBBBBBBBB", 20, 15),
+////    Pending("CCCCCCCCCCCC", 60, 20, 8),Pending("GoTo(operator2, wl2)", 1, 8, 2),
+//    Pending("GoTo(PR3, stock_table)", 1, 8, 2),
+//    Pending("GoTo(PR2, stock_table)", 1, 8, 2),
+//    //Pending("ProcessSurface(operator2, PR3, as2)", 10, 81, 0),
+//    Pending("Clean(operator2, as2)", 10, 19, 3),
+    Pending("Pick(PR3, glue, stock_table)", 10, 5, 2))
     .filterNot(a =>
       a.getName.contains("Get") || a.getName.contains("Process") || a.getName.contains("GlueAttach"))
-    .sortWith((a,b) => {
-    def priority(a:Action) = {
-      var base = 0
-      if(a.getName.contains("operator2") && !a.getName.contains("HandOver")) base += 20000
-      else if(a.getName.contains("operator1") && !a.getName.contains("HandOver")) base += 15000
-      else if(a.getName.contains("PR2")) base += 30000
-      else if(a.getName.contains("PR3")) base += 10000
-      base + a.getStart
-    }
-    priority(a) < priority(b)
-  })
 
-  SVG.print(acts, 40, "out/test.svg")
+  SVG.print(acts, 40, "test.svg")
 }
