@@ -95,7 +95,7 @@ public class ChainComponent {
     }
 
     /**
-     * @return The variable containing the value of the state variable at the end of the component.
+     * @return The variable containing the value of the state variable at the start of the component.
      */
     public VarRef GetConsumeValue() {
         return contents.getFirst().startValue();

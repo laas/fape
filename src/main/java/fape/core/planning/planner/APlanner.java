@@ -85,7 +85,8 @@ public abstract class APlanner {
             new OpenGoalFinder(),
             new UndecomposedActionFinder(),
             new UnsupportedTaskConditionFinder(),
-            new UnmotivatedActionFinder()
+            new UnmotivatedActionFinder(),
+            new AllThreatFinder()
     };
 
     /**
@@ -155,23 +156,9 @@ public abstract class APlanner {
         for(FlawFinder fd : flawFinders)
             flaws.addAll(fd.getFlaws(st, this));
 
-        // TODO: move the following to the new FlawFinder interface
 
         //find the resource flaws
         flaws.addAll(st.resourceFlaws());
-
-        if (flaws.isEmpty()) {
-            List<TemporalDatabase> dbs = st.getDatabases();
-            for (int i = 0; i < dbs.size(); i++) {
-                TemporalDatabase db1 = dbs.get(i);
-                for (int j = i + 1; j < dbs.size(); j++) {
-                    TemporalDatabase db2 = dbs.get(j);
-                    if (isThreatening(st, db1, db2)) {
-                        flaws.add(new Threat(db1, db2));
-                    }
-                }
-            }
-        }
 
         if (flaws.isEmpty()) {
             for (VarRef v : st.getUnboundVariables()) {
@@ -269,38 +256,6 @@ public abstract class APlanner {
      *
      * @return True there is a threat.
      */
-    protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
-        // if they are not both consumers, it is dealt by open goal reasoning
-        if (db1.isConsumer() || db2.isConsumer())
-            return false;
-
-        // if their state variables are not unifiable
-        if(!st.Unifiable(db1, db2))
-            return false;
-
-        // if db1 cannot start before db2 ends
-        boolean db1AfterDB2 = true;
-        for(TPRef start1 : db1.getFirstTimePoints()) {
-            for (TPRef end2 : db2.getLastTimePoints()) {
-                if (st.canBeBefore(start1, end2)) {
-                    db1AfterDB2 = false;
-                    break;
-                }
-            }
-        }
-        // if db2 cannot start before db1 ends
-        boolean db2AfterDB1 = true;
-        for(TPRef end1 : db1.getLastTimePoints())
-            for(TPRef start2 : db2.getFirstTimePoints())
-                if(st.canBeBefore(start2, end1)) {
-                    db2AfterDB1 = false;
-                    break;
-                }
-
-        // true if they can overlap
-        return !(db1AfterDB2 || db2AfterDB1);
-
-    }
 
     protected State depthBoundedAStar(final long deadLine, final int maxDepth) {
         while (true) {

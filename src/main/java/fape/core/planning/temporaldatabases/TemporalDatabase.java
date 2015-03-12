@@ -142,8 +142,10 @@ public class TemporalDatabase {
         return tps;
     }
 
+    @Deprecated
     public TPRef getConsumeTimePoint() {
         assert !chain.isEmpty() : "Database is empty.";
+        assert chain.getFirst().contents.size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
         return chain.getFirst().getConsumeTimePoint();
     }
 
@@ -158,19 +160,34 @@ public class TemporalDatabase {
     public ChainComponent getSupportingComponent() {
         for (int i = chain.size() - 1; i >= 0; i--) {
             if (chain.get(i).change) {
+                assert chain.get(i).contents.size() == 1;
                 return chain.get(i);
             }
         }
         return null;
     }
 
+    /**
+     * @return The first Logstatement of the database producing a change (i.e. an
+     * assignment or a transition). It returns null if no such element exists.
+     */
+    public LogStatement getFirstChange() {
+        for (int i = 0 ; i <= chain.size() - 1 ; i++) {
+            if (chain.get(i).change) {
+                assert chain.get(i).contents.size() == 1;
+                return chain.get(i).contents.getFirst() ;
+            }
+        }
+        return null;
+    }
+
+
     public ChainComponent GetChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
     }
 
     /**
-     * @return A global variable representing the value at the end of the
-     * temporal database
+     * @return True if there is only persistences
      */
     public boolean HasSinglePersistence() {
         return chain.size() == 1 && !chain.get(0).change;
