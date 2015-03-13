@@ -33,4 +33,10 @@ public class PlanningOptions {
      */
     public String[] planSelStrategies;
 
+    /**
+     * If true, the planner will solve trivial flaws (with one resolver) before adding the plan
+     * to the queue
+     */
+    public boolean useFastForward = false;
+
 }

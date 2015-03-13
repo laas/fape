@@ -69,6 +69,7 @@ public abstract class APlanner {
 
     public int GeneratedStates = 1; //count the initial state
     public int OpenedStates = 0;
+    public int numFastForwarded = 0;
 
     public final Controllability controllability;
 
@@ -301,8 +302,17 @@ public abstract class APlanner {
                 boolean success = applyResolver(next, res);
 
                 if (success) {
-                    queue.add(next);
-                    GeneratedStates++;
+                    if(options.useFastForward) {
+                        if(fastForward(next)) {
+                            queue.add(next);
+                            GeneratedStates++;
+                        } else {
+                            TinyLogger.LogInfo(st, "     ff: Dead-end reached for state: %s", next.mID);
+                        }
+                    } else {
+                        queue.add(next);
+                        GeneratedStates++;
+                    }
                 } else {
                     TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
                     //inconsistent state, doing nothing
@@ -311,6 +321,47 @@ public abstract class APlanner {
 
         }
         return null;
+    }
+
+    /**
+     * This function looks at flaws and resolvers in the state and fixes flaws with a single resolver.
+     * @param st
+     * @return
+     */
+    public boolean fastForward(State st) {
+        List<Flaw> flaws = GetFlaws(st);
+
+        if (flaws.isEmpty()) {
+            return true;
+        }
+
+        //do some sorting here - min domain
+        //Collections.sort(opts, optionsComparatorMinDomain);
+        Collections.sort(flaws, this.flawComparator(st));
+
+        //we just take the first flaw and its resolvers
+        Flaw f = flaws.get(0);
+        List<Resolver> resolvers = f.getResolvers(st, this);
+
+        if (resolvers.isEmpty()) {
+            // dead end, keep going
+            TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            return false;
+        }
+
+        if(resolvers.size() == 1) {
+            Resolver res = resolvers.get(0);
+            TinyLogger.LogInfo(st, "     [%s] ff: Adding %s", st.mID, res);
+            if(applyResolver(st, res)) {
+                numFastForwarded++;
+                return fastForward(st);
+            } else {
+                return false;
+            }
+        } else {
+            // nothing was done
+            return true;
+        }
     }
 
     /**

@@ -26,9 +26,10 @@ public class Planning {
         final PlanningOptions options;
         final Controllability controllability;
 
-        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability) {
+        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability, boolean fastForward) {
             this.plannerID = plannerID;
             this.options = new PlanningOptions(planStrat, flawStrat);
+            this.options.useFastForward = fastForward;
             this.controllability = controllability;
         }
 
@@ -87,6 +88,8 @@ public class Planning {
                                 JSAP.NO_SHORTFLAG,
                                 "inc-deep",
                                 "Planner will use incremental deepening."),
+                        new Switch("fast-forward", JSAP.NO_SHORTFLAG, "ff", "All trivial flaws are solved before inserting a "+
+                                "state in the queue"),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -163,6 +166,7 @@ public class Planning {
             case "dynamic": controllability = Controllability.DYNAMIC_CONTROLLABILITY; break;
             default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
         }
+        final boolean fastForward = config.getBoolean("fast-forward");
 
         for (String path : configFiles) {
             File f = new File(path);
@@ -184,7 +188,7 @@ public class Planning {
         Collections.sort(anmlFiles);
 
         // output format
-        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, sol-depth, flaw-sel, plan-sel\n");
+        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, fast-forwarded, sol-depth, flaw-sel, plan-sel\n");
 
         final int repetitions = config.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
@@ -211,9 +215,7 @@ public class Planning {
 
                     String[] plannerIDs = config.getStringArray("plannerID");
                     for (String plannerID : plannerIDs)
-                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability));
-
-
+                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward));
                 }
 
                 final int maxtime = config.getInt("max-time");
@@ -286,6 +288,7 @@ public class Planning {
                                     + anmlFile + ", "
                                     + planner.OpenedStates + ", "
                                     + planner.GeneratedStates + ", "
+                                    + planner.numFastForwarded + ", "
                                     + (failure ? "-" : sol.depth) + ", "
                                     + Utils.print(planner.options.flawSelStrategies, ":") + ", "
                                     + Utils.print(planner.options.planSelStrategies, ":")
