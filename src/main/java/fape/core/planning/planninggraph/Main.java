@@ -102,7 +102,7 @@ public class Main {
         pb.extendWithAnmlFile("problems/handover.dom.anml");
         pb.extendWithAnmlFile("problems/handover.2.pb.anml");
         State iniState = new State(pb, Controllability.STN_CONSISTENCY);
-        PGPlanner planner = (PGPlanner) PlannerFactory.getPlannerFromInitialState("rpg", iniState, PlannerFactory.defaultPlanSelStrategies, PlannerFactory.defaultFlawSelStrategies);
+        PGPlanner planner = (PGPlanner) PlannerFactory.getPlannerFromInitialState("rpg", iniState, PlannerFactory.defaultOptions());
 
         ActionLandmarksFinder l = new ActionLandmarksFinder(planner.groundPB);
         for(TemporalDatabase db : iniState.consumers) {

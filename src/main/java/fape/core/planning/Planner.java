@@ -13,6 +13,7 @@ package fape.core.planning;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.ActionExecution;
+import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
 import fape.core.planning.search.flaws.flaws.Flaw;
@@ -42,12 +43,12 @@ public class Planner extends APlanner {
         }
     };
 
-    public Planner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(initialState, planSelStrategies, flawSelStrategies);
+    public Planner(State initialState, PlanningOptions options) {
+        super(initialState, options);
     }
 
-    public Planner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(controllability, planSelStrategies, flawSelStrategies);
+    public Planner(Controllability controllability, PlanningOptions options) {
+        super(controllability, options);
     }
 
     @Override

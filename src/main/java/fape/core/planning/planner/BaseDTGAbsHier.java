@@ -13,13 +13,13 @@ public class BaseDTGAbsHier extends BaseDTG {
 
     AbstractionHierarchy hierarchy = null;
 
-    public BaseDTGAbsHier(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(initialState, planSelStrategies, flawSelStrategies);
+    public BaseDTGAbsHier(State initialState, PlanningOptions options) {
+        super(initialState, options);
         this.hierarchy = new AbstractionHierarchy(this.pb);
     }
 
-    public BaseDTGAbsHier(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(controllability, planSelStrategies, flawSelStrategies);
+    public BaseDTGAbsHier(Controllability controllability, PlanningOptions options) {
+        super(controllability, options);
     }
 
     @Override

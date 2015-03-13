@@ -36,12 +36,11 @@ import java.util.*;
  */
 public abstract class APlanner {
 
-    public APlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
+    public APlanner(State initialState, PlanningOptions options) {
+        this.options = options;
         this.pb = initialState.pb;
         assert pb.usesActionConditions() == this.useActionConditions() :
                 "Difference between problem and planner in the handling action conditions";
-        this.planSelStrategies = planSelStrategies;
-        this.flawSelStrategies = flawSelStrategies;
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
@@ -49,9 +48,8 @@ public abstract class APlanner {
     }
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
-    public APlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        this.planSelStrategies = planSelStrategies;
-        this.flawSelStrategies = flawSelStrategies;
+    public APlanner(Controllability controllability, PlanningOptions options) {
+        this.options = options;
         this.controllability = controllability;
         this.pb = new AnmlProblem(useActionConditions());
         this.dtg = new LiftedDTG(this.pb);
@@ -59,6 +57,7 @@ public abstract class APlanner {
         queue.add(new State(pb, controllability));
     }
 
+    public final PlanningOptions options;
 
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
@@ -75,29 +74,6 @@ public abstract class APlanner {
 
     public final AnmlProblem pb;
     LiftedDTG dtg = null;
-
-    /**
-     * Those are used to extract all flaws from a state.
-     * The GetFlaws method will typically use all of those
-     * to generate the flaws that need to be solved in a given state.
-     */
-    protected final FlawFinder[] flawFinders = {
-            new OpenGoalFinder(),
-            new UndecomposedActionFinder(),
-            new UnsupportedTaskConditionFinder(),
-            new UnmotivatedActionFinder(),
-            new AllThreatFinder()
-    };
-
-    /**
-     * Used to build comparators for flaws. Default to a least commiting first.
-     */
-    public final String[] flawSelStrategies;
-
-    /**
-     * Used to build comparators for partial plans.
-     */
-    public final String[] planSelStrategies;
 
     /**
      * A short identifier for the planner.
@@ -153,7 +129,7 @@ public abstract class APlanner {
      */
     public List<Flaw> GetFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
-        for(FlawFinder fd : flawFinders)
+        for(FlawFinder fd : options.flawFinders)
             flaws.addAll(fd.getFlaws(st, this));
 
 
@@ -235,7 +211,7 @@ public abstract class APlanner {
      * @return The comparator to use for ordering.
      */
     public final Comparator<Flaw> flawComparator(State st) {
-        return FlawCompFactory.get(st, this, flawSelStrategies);
+        return FlawCompFactory.get(st, this, options.flawSelStrategies);
     }
 
     /**
@@ -245,7 +221,7 @@ public abstract class APlanner {
      * @return The comparator to use for ordering the queue.
      */
     public final Comparator<State> stateComparator() {
-        return PlanCompFactory.get(planSelStrategies);
+        return PlanCompFactory.get(options.planSelStrategies);
     }
 
     /**

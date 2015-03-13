@@ -29,12 +29,12 @@ import java.util.Map;
  */
 public class PGExtPlanner extends PGPlanner {
 
-    public PGExtPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(initialState, planSelStrategies, flawSelStrategies);
+    public PGExtPlanner(State initialState, PlanningOptions options) {
+        super(initialState, options);
     }
 
-    public PGExtPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(controllability, planSelStrategies, flawSelStrategies);
+    public PGExtPlanner(Controllability controllability, PlanningOptions options) {
+        super(controllability, options);
     }
 
     @Override

@@ -22,51 +22,56 @@ public class PlannerFactory {
     public static final String[] defaultFlawSelStrategies = { "lcf" };
     public static final Controllability defaultControllabilityStrategy = Controllability.STN_CONSISTENCY;
 
-    public static APlanner getDefaultPlanner() {
-        return getPlanner(defaultPlanner, defaultPlanSelStrategies, defaultFlawSelStrategies, defaultControllabilityStrategy);
+    public static PlanningOptions defaultOptions() {
+        PlanningOptions options = new PlanningOptions(defaultPlanSelStrategies, defaultFlawSelStrategies);
+        return options;
     }
 
-    public static APlanner getPlanner(String name, String[] planSelStrategies, String[] flawSelStrategies, Controllability controllability) {
+    public static APlanner getDefaultPlanner() {
+        return getPlanner(defaultPlanner, defaultOptions(), defaultControllabilityStrategy);
+    }
+
+    public static APlanner getPlanner(String name, PlanningOptions options, Controllability controllability) {
         switch (name) {
             case "htn":
             case "base+dtg":
-                return new BaseDTG(controllability, planSelStrategies, flawSelStrategies);
+                return new BaseDTG(controllability, options);
             case "base":
-                return new Planner(controllability, planSelStrategies, flawSelStrategies);
+                return new Planner(controllability, options);
             case "rpg":
-                return new PGPlanner(controllability, planSelStrategies, flawSelStrategies);
+                return new PGPlanner(controllability, options);
             case "rpg_ext":
-                return new PGExtPlanner(controllability, planSelStrategies, flawSelStrategies);
+                return new PGExtPlanner(controllability, options);
             case "taskcond":
-                return new TaskConditionPlanner(controllability, planSelStrategies, flawSelStrategies);
+                return new TaskConditionPlanner(controllability, options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }
     }
 
-    public static APlanner getPlannerFromInitialState(String name, State state, String[] planSelStrategies, String[] flawSelStrategies) {
+    public static APlanner getPlannerFromInitialState(String name, State state, PlanningOptions options) {
          switch (name) {
             case "htn":
             case "base+dtg":
-                return new BaseDTG(state, planSelStrategies, flawSelStrategies);
+                return new BaseDTG(state, options);
             case "base":
-                return new Planner(state, planSelStrategies, flawSelStrategies);
+                return new Planner(state, options);
             case "rpg":
-                return new PGPlanner(state, planSelStrategies, flawSelStrategies);
+                return new PGPlanner(state, options);
             case "rpg_ext":
-                return new PGExtPlanner(state, planSelStrategies, flawSelStrategies);
+                return new PGExtPlanner(state, options);
             case "taskcond":
-                return new TaskConditionPlanner(state, planSelStrategies, flawSelStrategies);
+                return new TaskConditionPlanner(state, options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }
     }
 
     public static APlanner getPlanner(String name) {
-        return getPlanner(name, defaultPlanSelStrategies, defaultFlawSelStrategies, defaultControllabilityStrategy);
+        return getPlanner(name, defaultOptions(), defaultControllabilityStrategy);
     }
 
     public static APlanner getPlanner(String name, State state) {
-        return getPlannerFromInitialState(name, state, defaultPlanSelStrategies, defaultFlawSelStrategies);
+        return getPlannerFromInitialState(name, state, defaultOptions());
     }
 }

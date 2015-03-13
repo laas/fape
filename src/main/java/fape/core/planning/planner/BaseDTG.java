@@ -15,13 +15,13 @@ public class BaseDTG extends Planner {
 
     LiftedDTG dtg = null;
 
-    public BaseDTG(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(initialState, planSelStrategies, flawSelStrategies);
+    public BaseDTG(State initialState, PlanningOptions options) {
+        super(initialState, options);
         dtg = new LiftedDTG(pb);
     }
 
-    public BaseDTG(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(controllability, planSelStrategies, flawSelStrategies);
+    public BaseDTG(Controllability controllability, PlanningOptions options) {
+        super(controllability, options);
     }
 
     @Override

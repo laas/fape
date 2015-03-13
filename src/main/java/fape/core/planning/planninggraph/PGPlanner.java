@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.ActionExecution;
+import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
@@ -31,8 +32,8 @@ public class PGPlanner extends APlanner {
     AbstractionHierarchy hierarchy = null; //TODO why?
     LiftedDTG dtg = null;
 
-    public PGPlanner(State initialState, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(initialState, planSelStrategies, flawSelStrategies);
+    public PGPlanner(State initialState, PlanningOptions options) {
+        super(initialState, options);
 
         groundPB = new GroundProblem(this.pb);
         pg = new RelaxedPlanningGraph(groundPB);
@@ -41,8 +42,8 @@ public class PGPlanner extends APlanner {
         dtg = new LiftedDTG(pb);
     }
 
-    public PGPlanner(Controllability controllability, String[] planSelStrategies, String[] flawSelStrategies) {
-        super(controllability, planSelStrategies, flawSelStrategies);
+    public PGPlanner(Controllability controllability, PlanningOptions options) {
+        super(controllability, options);
     }
 
     /*

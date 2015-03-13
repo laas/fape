@@ -23,14 +23,12 @@ public class Planning {
 
     static class PlannerConf {
         final String plannerID;
-        final String[] planStrat;
-        final String[] flawStrat;
+        final PlanningOptions options;
         final Controllability controllability;
 
         public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability) {
             this.plannerID = plannerID;
-            this.planStrat = planStrat;
-            this.flawStrat = flawStrat;
+            this.options = new PlanningOptions(planStrat, flawStrat);
             this.controllability = controllability;
         }
 
@@ -240,7 +238,7 @@ public class Planning {
                         System.exit(1);
                     }
                     final State iniState = new State(pb, conf.controllability);
-                    final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.planStrat, conf.flawStrat);
+                    final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.options);
                     APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
 
                     boolean failure;
@@ -289,8 +287,8 @@ public class Planning {
                                     + planner.OpenedStates + ", "
                                     + planner.GeneratedStates + ", "
                                     + (failure ? "-" : sol.depth) + ", "
-                                    + Utils.print(planner.flawSelStrategies, ":") + ", "
-                                    + Utils.print(planner.planSelStrategies, ":")
+                                    + Utils.print(planner.options.flawSelStrategies, ":") + ", "
+                                    + Utils.print(planner.options.planSelStrategies, ":")
                                     + "\n");
                     writer.flush();
                 }
