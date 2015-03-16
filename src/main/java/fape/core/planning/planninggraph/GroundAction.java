@@ -23,6 +23,8 @@ public class GroundAction implements PGNode {
 
         this.pb = pb;
         this.act = Factory.getInstantiatedAction(pb.liftedPb, abs, params);
+//        System.out.println(act);
+//        System.out.println(act.context().varsToCreate() + "\n");
         this.params = new LinkedList<>(params);
         argMap = new HashMap<>(params.size());
         for(int i=0 ; i<params.size() ; i++) {
@@ -56,6 +58,10 @@ public class GroundAction implements PGNode {
     public boolean isValid() {
         Set<Fluent> inter = new HashSet<>(add);
         inter.retainAll(del);
+//        if(!inter.isEmpty())
+//            System.out.println("Not valid: "+this);
+//        else
+//            System.out.println("       "+this);
         return inter.isEmpty();
     }
 

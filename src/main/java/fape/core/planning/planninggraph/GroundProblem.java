@@ -1,28 +1,54 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Chronicle;
+import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.concrete.statements.Assignment;
-import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
-import planstack.anml.model.concrete.statements.Transition;
+import planstack.anml.model.concrete.statements.*;
+import planstack.anml.parser.ANMLFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GroundProblem {
 
-    final AnmlProblem liftedPb;
+    public final AnmlProblem liftedPb;
     public final GroundState initState = new GroundState();
     public final GroundState goalState = new GroundState();
 
-    final List<GroundAction> actions = new LinkedList<>();
+    final List<GroundAction> actions;
+    final List<GAction> gActions;
+
+    final List<Invariant> invariants = new LinkedList<>();
+
+    public class Invariant {
+        public final Function f;
+        public final List<InstanceRef> params;
+        public final InstanceRef value;
+
+        public Invariant(Function f, List<VarRef> params, VarRef value) {
+            this.f =  f;
+            this.params = new LinkedList<>();
+            for(VarRef v : params)
+            this.params.add((InstanceRef) v);
+            this.value = (InstanceRef) value;
+        }
+
+        public boolean matches(Function f, List<InstanceRef> params) {
+            if(f != this.f) return false;
+            assert this.params.size() == params.size();
+            for(int i=0 ; i<params.size() ; i++)
+                if(this.params.get(i) != params.get(i))
+                    return false;
+            return true;
+        }
+    }
 
     /**
      * Gets an upper bound on the number of ground actions that might appear in this problem.
@@ -42,10 +68,48 @@ public class GroundProblem {
         return total;
     }
 
+    public GroundProblem(GroundProblem pb, State st, TemporalDatabase og) {
+        this.liftedPb = pb.liftedPb;
+        this.actions = pb.actions;
+        this.gActions = pb.gActions;
+
+        for(TemporalDatabase db : st.tdb.vars) {
+            if(canIndirectlySupport(st, db, og)) {
+                DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalSupportValue(), st, pb);
+                for(Fluent f : df.fluents) {
+                    initState.fluents.add(f);
+                }
+            }
+        }
+    }
+
+    public boolean canIndirectlySupport(State st, TemporalDatabase supporter, TemporalDatabase consumer) {
+        if(supporter.HasSinglePersistence())
+            return false;
+
+        for(TPRef consumeTP : consumer.getFirstTimePoints()) {
+            if(!st.canBeBefore(supporter.getSupportTimePoint(), consumeTP))
+                return false;
+        }
+        return true;
+    }
+
     public GroundProblem(AnmlProblem liftedPb) {
         this.liftedPb = liftedPb;
+        this.actions = new LinkedList<>();
+        this.gActions = new LinkedList<>();
+
+        for(Chronicle c : liftedPb.chronicles()) {
+            for(BindingConstraint bc : c.bindingConstraints()) {
+                if(bc instanceof AssignmentConstraint) {
+                    AssignmentConstraint ac = (AssignmentConstraint) bc;
+                    invariants.add(new Invariant(ac.sv().func(), ac.sv().jArgs(), ac.variable()));
+                }
+            }
+        }
 
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
+            this.gActions.addAll(GAction.groundActions(this, liftedAct));
             // ignore methods with decompositions
             if(!liftedAct.jDecompositions().isEmpty())
                 continue;
@@ -102,8 +166,8 @@ public class GroundProblem {
         }
     }
 
-    public List<GroundAction> allActions() {
-        return actions;
+    public List<GAction> allActions() {
+        return gActions;
     }
 
     public List<List<VarRef>> possibleParams(AbstractAction a) {

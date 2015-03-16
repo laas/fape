@@ -40,6 +40,9 @@ public class PlanCompFactory {
                 case "hcl":
                     compList.add(new HierarchicalCausalLinks());
                     break;
+                case "rpgmax":
+                    compList.add(new RPGComp());
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }

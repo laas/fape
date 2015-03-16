@@ -12,7 +12,7 @@ public class RestrictedRelaxedPlanningGraph extends RelaxedPlanningGraph {
     }
 
     @Override
-    public boolean isExcluded(GroundAction ga) {
+    public boolean isExcluded(GAction ga) {
         return Utils.nonEmptyIntersection(ga.add, df.fluents);
     }
 }

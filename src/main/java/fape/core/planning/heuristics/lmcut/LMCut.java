@@ -11,6 +11,7 @@
 package fape.core.planning.heuristics.lmcut;
 
 import fape.core.planning.planninggraph.Fluent;
+import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.GroundAction;
 import fape.core.planning.planninggraph.GroundProblem;
 
@@ -62,7 +63,7 @@ public final class LMCut {
         RelaxedGroundProblem pr = new RelaxedGroundProblem();
 
         //translate from a planning graph
-        for (GroundAction g : p.allActions()) {
+        for (GAction g : p.allActions()) {
             RelaxedGroundAction r = new RelaxedGroundAction();
             r.name = g.toString();
             for (Fluent f : g.add) {

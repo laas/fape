@@ -70,7 +70,7 @@ public class State implements Reporter {
     /**
      *
      */
-    protected final TemporalDatabaseManager tdb;
+    public final TemporalDatabaseManager tdb;
 
     public final MetaCSP<VarRef,TPRef,GlobalRef> csp;
 

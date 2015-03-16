@@ -16,7 +16,29 @@ public class RelaxedPlanningGraph {
 
     public RelaxedPlanningGraph(GroundProblem pb) {
         this.pb = pb;
+    }
 
+    public int buildUntil(DisjunctiveFluent df) {
+        setInitState(pb.initState);
+        distances.put(pb.initState, 0);
+
+        int depth = 0;
+        while(!supported(df)) {
+//            System.out.println("Depth: "+depth);
+            if (expandOneLevel())
+                depth += 1;
+            else
+                return 99999;
+        }
+        return depth;
+    }
+
+    public boolean supported(DisjunctiveFluent df) {
+        for(Fluent f : df.fluents) {
+            if(graph.contains(f))
+                return true;
+        }
+        return false;
     }
 
     public void build() {
@@ -34,7 +56,7 @@ public class RelaxedPlanningGraph {
      * @param ga
      * @return True if the action is excluded from the current model.
      */
-    public boolean isExcluded(GroundAction ga) {
+    public boolean isExcluded(GAction ga) {
         return false;
     }
 
@@ -44,7 +66,7 @@ public class RelaxedPlanningGraph {
      * @param a
      * @return True if the action is applicable.
      */
-    public boolean applicable(GroundAction a) {
+    public boolean applicable(GAction a) {
         for(Fluent precondition : a.pre) {
             if(!graph.contains(precondition)) {
                 return false;
@@ -61,7 +83,7 @@ public class RelaxedPlanningGraph {
         }
     }
 
-    public void insertAction(GroundAction a) {
+    public void insertAction(GAction a) {
         assert applicable(a);
         assert !graph.contains(a);
 
@@ -77,9 +99,29 @@ public class RelaxedPlanningGraph {
         }
     }
 
+    public boolean expandOneLevel() {
+        List<GAction> toInsert = new LinkedList<>();
+        for(GAction a : pb.allActions()) {
+            if(graph.contains(a)) {
+                continue;
+            } else if(isExcluded(a)) {
+                continue;
+            } else if(applicable(a)) {
+                toInsert.add(a);
+            }
+        }
+
+        for(GAction a : toInsert) {
+            insertAction(a);
+//            System.out.println("  Inserting: "+a);
+        }
+
+        return toInsert.size() >0;
+    }
+
     public boolean expandOnce() {
         int numInsertedActions = 0;
-        for(GroundAction a : pb.allActions()) {
+        for(GAction a : pb.allActions()) {
             if(graph.contains(a)) {
                 continue;
             } else if(isExcluded(a)) {

@@ -143,9 +143,9 @@ public class ActionLandmarksFinder {
             return da;
 
         for(GroundAction ga : rpg.enablers(df).actions) {
-            if(rrpg.applicable(ga)) {
-                da.actions.add(ga);
-            }
+//            if(rrpg.applicable(ga)) { TODO: temporally removed
+//                da.actions.add(ga);
+//            }
         }
 
         return da;
