@@ -91,7 +91,6 @@ action stack(Crane k, Container c, Pile p) {
     [all] c.pos == k :-> prevTop;
     [all] c.pile == noPile :-> p;
     
-    constant Dock d;
     k.attached == p.attached;
 };
 
@@ -104,7 +103,6 @@ action unstack(Crane k, Container c, Pile p) {
     [all] c.pos == under :-> k;
     [all] c.pile == p :-> noPile;
 
-    constant Dock d;
     k.attached == p.attached;
 };
 
