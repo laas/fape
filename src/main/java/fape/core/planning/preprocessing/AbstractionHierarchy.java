@@ -1,8 +1,11 @@
 package fape.core.planning.preprocessing;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.exceptions.FAPEException;
+import org.jfree.chart.plot.AbstractPieLabelDistributor;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractAssignment;
@@ -31,24 +34,24 @@ public class AbstractionHierarchy {
     /**
      * Maps every fluent type to its group.
      */
-    final HashMap<FluentType, Integer> fluentsGroup = new HashMap<>();
+    final HashMap<Function, Integer> fluentsGroup = new HashMap<>();
 
-    private UnlabeledDigraph<FluentType> dag = GraphFactory.getSimpleUnlabeledDigraph();
+    private UnlabeledDigraph<Function> dag = GraphFactory.getSimpleUnlabeledDigraph();
 
     public AbstractionHierarchy(AnmlProblem pb) {
         this.problem = pb;
 
         // build the constraint between fluents types
         for(AbstractAction aa : problem.abstractActions()) {
-            Set<FluentType> effects = getEffects(aa);
-            Set<FluentType> preconditions = getPreconditions(aa);
+            Set<Function> effects = getEffects(aa);
+            Set<Function> preconditions = getPreconditions(aa);
             // given an effect t1 of action a
-            for(FluentType ft1 : effects) {
+            for(Function ft1 : effects) {
                 if(!dag.contains(ft1))
                     dag.addVertex(ft1);
 
                 // for any effect ft2 of the same action
-                for(FluentType ft2 : effects) {
+                for(Function ft2 : effects) {
                     if(!dag.contains(ft2))
                         dag.addVertex(ft2);
 
@@ -57,7 +60,7 @@ public class AbstractionHierarchy {
                     dag.addEdge(ft2, ft1);
                 }
                 // for any precondition of the same action
-                for(FluentType ft2 : preconditions) {
+                for(Function ft2 : preconditions) {
                     if(!dag.contains(ft2))
                         dag.addVertex(ft2);
 
@@ -68,28 +71,33 @@ public class AbstractionHierarchy {
         }
 
         // Get the strongly connected component of the constraint graph
-        StronglyConnectedComponent<FluentType> scc = new StronglyConnectedComponent<>(dag);
+        StronglyConnectedComponent<Function> scc = new StronglyConnectedComponent<>(dag);
 
         // topological sort of the strongly connected components gives us the final hierarchy
-        List<Set<FluentType>> groups = scc.jTopologicalSortOfReducedGraph();
+        List<Set<Function>> groups = scc.jTopologicalSortOfReducedGraph();
         for(int level=0 ; level<groups.size() ; level++) {
-            Set<FluentType> group = groups.get(level);
-            for(FluentType ft : group) {
+            Set<Function> group = groups.get(level);
+            for(Function ft : group) {
                 fluentsGroup.put(ft, level);
+//                System.out.println(level+"  "+ft);
             }
         }
+
+        if(APlanner.logging)
+            exportToDot("abs.dot");
     }
 
-    public int getLevel(String predicate, List<String> argTypes, String valueType) {
-        FluentType ft = new FluentType(predicate, argTypes, valueType);
-        if(!fluentsGroup.containsKey(ft))
-            throw new FAPEException("No recorded level for: " + ft);
-        else
-            return fluentsGroup.get(ft);
+    /**
+     * Return the layer of the abstraction hierarchy at chich the function is.
+     * 0 is the top level.
+     */
+    public int getLevel(Function func) {
+        assert fluentsGroup.containsKey(func) : "No recorded level for: "+func;
+        return fluentsGroup.get(func);
     }
 
-    public Set<FluentType> getEffects(AbstractAction a) {
-        Set<FluentType> allEffects = new HashSet<>();
+    public Set<Function> getEffects(AbstractAction a) {
+        Set<Function> allEffects = new HashSet<>();
         for(AbstractLogStatement ls : a.jLogStatements()) {
             List<String> argTypes = new LinkedList<>();
             String valType = null;
@@ -108,15 +116,13 @@ public class AbstractionHierarchy {
                 // this statement has no effects
                 continue;
             }
-
-            FluentType fluent = new FluentType(ls.sv().func().name(), argTypes, valType);
-            allEffects.addAll(derivedSubTypes(fluent));
+            allEffects.add(ls.sv().func());
         }
         return allEffects;
     }
 
-    public Set<FluentType> getPreconditions(AbstractAction a) {
-        Set<FluentType> allPrecond = new HashSet<>();
+    public Set<Function> getPreconditions(AbstractAction a) {
+        Set<Function> allPrecond = new HashSet<>();
         for(AbstractLogStatement s : a.jLogStatements()) {
             List<String> argTypes = new LinkedList<>();
             String valType = null;
@@ -135,38 +141,9 @@ public class AbstractionHierarchy {
                 // this statement has no effects
                 continue;
             }
-
-            FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
-            allPrecond.addAll(derivedSubTypes(fluent));
+            allPrecond.add(s.sv().func());
         }
         return allPrecond;
-    }
-
-    /**
-     * Given a fluent type ft, returns all fluent types where the arg and value
-     * types are subclasses of those of ft.
-     *
-     * This set includes ft itself.
-     * @param ft
-     * @return
-     */
-    public Set<FluentType> derivedSubTypes(FluentType ft) {
-        Set<FluentType> allFluents = new HashSet<>();
-        if(ft == null) {
-            return allFluents;
-        } else {
-            List<List<String>> argTypesSets = new LinkedList<>();
-            for(String argType : ft.argTypes) {
-                argTypesSets.add(new LinkedList<>(problem.instances().subTypes(argType)));
-            }
-
-            for(List<String> argTypeList : PGUtils.allCombinations(argTypesSets)) {
-                for(String valueType : problem.instances().subTypes(ft.valueType)) {
-                    allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
-                }
-            }
-        }
-        return allFluents;
     }
 
     public void exportToDot(String fileName) {

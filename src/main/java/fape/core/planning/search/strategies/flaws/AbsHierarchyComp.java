@@ -5,16 +5,12 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
-import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.VarRef;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,13 +54,7 @@ public class AbsHierarchyComp implements FlawComparator {
         } else if(flaw instanceof UnsupportedDatabase) {
             // open link, order them according to their level in the abstraction hierarchy
             TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
-            String predicate = consumer.stateVariable.func().name();
-            List<String> argTypes = new LinkedList<>();
-            for(VarRef argVar : consumer.stateVariable.jArgs()) {
-                argTypes.add(state.typeOf(argVar));
-            }
-            String valueType = state.typeOf(consumer.GetGlobalConsumeValue());
-            level = hierarchy.getLevel(predicate, argTypes, valueType);
+            level = hierarchy.getLevel(consumer.stateVariable.func());
         } else {
             // a flaw (which is not an open link) with at least 2 resolvers, set priority to lowest.
             level = Integer.MAX_VALUE;
