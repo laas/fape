@@ -57,7 +57,7 @@ public class AbsHierarchyComp implements FlawComparator {
             level = hierarchy.getLevel(consumer.stateVariable.func());
         } else {
             // a flaw (which is not an open link) with at least 2 resolvers, set priority to lowest.
-            level = Integer.MAX_VALUE;
+            level = 999999;
         }
 
         return level;
