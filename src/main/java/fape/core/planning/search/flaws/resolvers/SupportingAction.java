@@ -1,9 +1,11 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.TinyLogger;
+import planstack.anml.model.LStatementRef;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
@@ -18,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A resolver for an open goal. The supporting statement is in a new action to be inserted.
+ * A resolver for an open goal. The supporting statement is brought by a new action to be inserted.
  * Optionally, a decomposition ID might be provided (decID != -1). If this is the case,
  * the supporting statement will be taken from the statements of the decomposition.
  */
@@ -28,19 +30,23 @@ public class SupportingAction extends Resolver {
     public final Map<LVarRef, Collection<String>> values;
     public final int consumerID;
     public final int decID;
+    /** id of the statement used for support */
+    public final LStatementRef statementRef;
 
-    public SupportingAction(AbstractAction act, int decID, TemporalDatabase consumer) {
+    public SupportingAction(AbstractAction act, int decID, LStatementRef statementRef, TemporalDatabase consumer) {
         this.act = act;
         values = null;
         this.consumerID = consumer.mID;
         this.decID = decID;
+        this.statementRef = statementRef;
     }
 
-    public SupportingAction(AbstractAction act, int decID, Map<LVarRef, Collection<String>> values, TemporalDatabase consumer) {
+    public SupportingAction(AbstractAction act, LStatementRef statementRef, int decID, Map<LVarRef, Collection<String>> values, TemporalDatabase consumer) {
         this.act = act;
         this.values = values;
         this.consumerID = consumer.mID;
         this.decID = decID;
+        this.statementRef = statementRef;
     }
 
     @Override
@@ -78,31 +84,23 @@ public class SupportingAction extends Resolver {
                 st.restrictDomain(action.context().getGlobalVar(lvar), values.get(lvar));
             }
 
-        // create the binding between consumer and the new statement in the action that supports it
-        TemporalDatabase supportingDatabase = null;
-
-        // get potentialy supporting statements in the action or in the decomposition (if the
-        // action was marked to be decomposed)
-        List<Statement> potentialSuporters;
+        // statement that should be supporting our consumer
+        Statement supporter;
         if(decID == -1)
-            potentialSuporters = action.statements();
+            supporter = action.context().getStatement(statementRef);
         else
-            potentialSuporters = dec.statements();
+            supporter = dec.context().getStatement(statementRef);
+        assert supporter != null && supporter instanceof LogStatement;
 
-        for (Statement s : potentialSuporters) {
-            if (s instanceof LogStatement && st.canBeEnabler((LogStatement) s, consumer)) {
-                assert supportingDatabase == null : "Error: several statements might support the database";
-                supportingDatabase = st.getDBContaining((LogStatement) s);
-            }
-        }
-        if (supportingDatabase == null) {
-            // did not find any database that could support consumer, resolver was not successful
-            return false;
-        } else {
+        if(st.canBeEnabler((LogStatement) supporter, consumer)) {
+            final TemporalDatabase supportingDatabase = st.getDBContaining((LogStatement) supporter);
             // add the causal link
             Resolver opt = new SupportingDatabase(supportingDatabase.mID, consumer);
             TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
             return opt.apply(st, planner);
+        } else {
+            // turns out this statement cannot support our database.
+            return false;
         }
 
     }

@@ -55,16 +55,14 @@ public class ActionSupporters implements ActionSupporterFinder {
         for(AbstractAction act : pb.abstractActions()) {
             for (AbstractLogStatement s : act.jLogStatements()) {
                 if (s.sv().func() == f && !(s instanceof AbstractPersistence)) {
-                    assert !ret.contains(act) : "Action " + act + " has at least two statements supporting the database.";
-                    ret.add(new SupportingAction(act));
+                    ret.add(new SupportingAction(act, s.id()));
                 }
             }
             for(int decID=0 ; decID < act.jDecompositions().size() ; decID++) {
                 AbstractDecomposition dec = act.jDecompositions().get(decID);
                 for (AbstractLogStatement s : act.jLogStatements()) {
                     if (s.sv().func() == f && !(s instanceof AbstractPersistence)) {
-                        assert !ret.contains(act) : "Action " + act + " has at least two statements supporting the database.";
-                        ret.add(new SupportingAction(act, decID));
+                        ret.add(new SupportingAction(act, decID, s.id()));
                     }
                 }
             }

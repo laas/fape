@@ -53,7 +53,7 @@ public class LiftedDTG implements ActionSupporterFinder{
                                 dag.addVertex(prec);
                             if(!dag.contains(eff))
                                 dag.addVertex(eff);
-                            dag.addEdge(prec, eff, new SupportingAction(aa));
+                            dag.addEdge(prec, eff, new SupportingAction(aa, s.id()));
                         }
                     }
                 }
@@ -68,7 +68,7 @@ public class LiftedDTG implements ActionSupporterFinder{
                                     dag.addVertex(prec);
                                 if (!dag.contains(eff))
                                     dag.addVertex(eff);
-                                dag.addEdge(prec, eff, new SupportingAction(aa, decID));
+                                dag.addEdge(prec, eff, new SupportingAction(aa, decID, s.id()));
                             }
                         }
                     }

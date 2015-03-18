@@ -101,7 +101,7 @@ public class PGPlanner extends APlanner {
         return supportOptions;
         //return super.GetSupporters(db, st);
     }
-    */
+
 
     public List<SupportingAction> rpgActionSupporters(TemporalDatabase db, State st) {
         List<SupportingAction> supporters = new LinkedList<>();
@@ -121,5 +121,5 @@ public class PGPlanner extends APlanner {
             supporters.add(new SupportingAction(act, -1, values, db));
         }
         return supporters;
-    }
+    }*/
 }

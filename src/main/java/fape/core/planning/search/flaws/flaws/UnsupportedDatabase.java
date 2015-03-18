@@ -145,7 +145,7 @@ public class UnsupportedDatabase extends Flaw {
                 // only considere action that are not marked motivated.
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if (planner.useActionConditions() || !aa.absAct.mustBeMotivated()) {
-                    resolvers.add(new SupportingAction(aa.absAct, aa.decID,  consumer));
+                    resolvers.add(new SupportingAction(aa.absAct, aa.decID, aa.statementRef, consumer));
                 }
             }
         }
