@@ -1,0 +1,39 @@
+
+//Same problem as Robot Waiters: a Case for Hybrid Reasoning with Different Types of Knowledge
+
+
+instance Object fork, knife, cup;
+instance Arm arm0;
+instance Location l0_0, l0_0, l0_1, l0_2, l1_0, l1_1, l1_2, l2_0, l2_1, l2_2;
+atRight(l0_0) := l0_1;
+atRight(l0_1) := l0_2;
+atRight(l1_0) := l1_1;
+atRight(l1_1) := l1_2;
+atRight(l2_0) := l2_1;
+atRight(l2_1) := l2_2;
+[start] {
+	l0_0.empty := false;
+	l0_1.empty := false;
+	l0_2.empty := false;
+	l1_0.empty := true;
+	l1_1.empty := true;
+	l1_2.empty := true;
+	l2_0.empty := true;
+	l2_1.empty := true;
+	l2_2.empty := true;
+	fork.at := l0_0;
+	knife.at := l0_1;
+	cup.at := l0_2;
+	arm0.empty := true;
+};
+
+constant Location l01;
+constant Location l11;
+[end] fork.at == l01;
+[end] cup.at == l11;
+atRight(l01) == l11;
+constant Location l02;
+constant Location l12;
+[end] cup.at == l02;
+[end] knife.at == l12;
+atRight(l02) == l12;

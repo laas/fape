@@ -2,3 +2,4 @@
 predicate nothing();
 
 // this is the problematic line: comment with no new line after.
+predicate nothing();

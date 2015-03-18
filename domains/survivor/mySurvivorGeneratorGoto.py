@@ -42,11 +42,8 @@ def printDomain(filename):
         f.write("};\n")
 
         f.write("constant boolean hospital(Loc l);\n")
-        f.write("constant boolean adjacent (Loc l1, Loc l2);\n")
-        f.write("constant integer distance (Loc l1, Loc l2);\n")
 
-        f.write("\naction move(Robot r, Loc from, Loc to) {\n")
-        f.write("\tduration := distance(from,to);\n")
+        f.write("\naction goto(Robot r, Loc from, Loc to) {\n")
         f.write("\tfrom != to;\n")
         f.write("\t[all] r.at == from :-> to;\n")
         f.write("};\n")
@@ -77,13 +74,12 @@ def printDomain(filename):
 
         f.write("action moveSurvivor (Robot r1, Robot r2, Survivor s, Loc from, Loc to){\n")
         f.write("\tr1!=r2;\n")
-        f.write("\tduration := distance(from,to);\n")
         f.write("\t[all] {\n")
         f.write("\t\ts.stabilized == true;\n")
         f.write("\t\ts.at == from :-> to;\n")
         f.write("\t};\n")#end all
-        f.write("\t[all]  m1 : move(r1, from, to);\n")  
-        f.write("\t[all]  m2 : move(r2, from, to);\n") 
+        f.write("\t[all]  m1 : goto(r1, from, to);\n")  
+        f.write("\t[all]  m2 : goto(r2, from, to);\n") 
         f.write("\tstart(m1) = start(m2);\n") 
         f.write("};\n")#end action
 
@@ -93,7 +89,7 @@ def printDomain(filename):
         f.write("\t\thos : hospitalize(s, lh );\n")
         f.write("\t};")
         f.write("\tstart = start(stab);\n")             
-        f.write("\tend(stab) < start(hos);\n")   
+        f.write("\tend(stab) < start(hos);\n")           
         f.write("\tend = end(hos);\n")    
         f.write("};\n")#end action
 
@@ -115,20 +111,6 @@ def printProblem(filename):
                      continue;
                  f.write(", l" + str(i) + "_" + str(j) )
        f.write(";\n")
-       for i in range(loc[0]):
-             for j in range(loc[1]):
-                 if (i != 0):
-                      f.write("adjacent(l" + str(i) + "_" + str(j) + ",l" + str(i-1) + "_" + str(j) + ") := true;\n")
-                      f.write("distance(l" + str(i) + "_" + str(j) + ",l" + str(i-1) + "_" + str(j) + ") := 5;\n")
-                 if (j != 0):
-                      f.write("adjacent(l" + str(i) + "_" + str(j) + ",l" + str(i) + "_" + str(j-1) + ") := true;\n")
-                      f.write("distance(l" + str(i) + "_" + str(j) + ",l" + str(i) + "_" + str(j-1) + ") := 8;\n")
-                 if (i != loc[0]-1):
-                      f.write("adjacent(l" + str(i) + "_" + str(j) + ",l" + str(i+1) + "_" + str(j) + ") := true;\n")
-                      f.write("distance(l" + str(i) + "_" + str(j) + ",l" + str(i+1) + "_" + str(j) + ") := 5;\n")
-                 if (j != loc[1]-1):
-                      f.write("adjacent(l" + str(i) + "_" + str(j) + ",l" + str(i) + "_" + str(j+1) + ") := true;\n")
-                      f.write("distance(l" + str(i) + "_" + str(j) + ",l" + str(i) + "_" + str(j+1) + ") := 8;\n")
 
 
        for i in hospital:

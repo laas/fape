@@ -1,0 +1,7 @@
+
+predicate done();
+
+[all] contains done := true;
+[start, 30] done := true;
+
+

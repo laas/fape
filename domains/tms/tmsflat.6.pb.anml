@@ -1,0 +1,24 @@
+instance Kiln k10, k20;
+instance Piece p0_0, p0_1;
+instance Piece p1_0, p1_1;
+instance Piece p2_0, p2_1;
+[end] bakedStructure(p0_0,p1_0) == true;
+fireTime(k10) := 10;
+fireTime(k20) := 20;
+bakeTime(p0_0) := 15;
+treatTime(p0_0) := 3;
+bakeTime(p0_1) := 15;
+treatTime(p0_1) := 3;
+bakeTime(p1_0) := 7;
+treatTime(p1_0) := 2;
+bakeTime(p1_1) := 7;
+treatTime(p1_1) := 2;
+bakeTime(p2_0) := 5;
+treatTime(p2_0) := 1;
+bakeTime(p2_1) := 5;
+treatTime(p2_1) := 1;
+[start] {
+	energy := true;
+	k10.empty := true ;
+	k20.empty := true ;
+};

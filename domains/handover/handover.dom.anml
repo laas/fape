@@ -29,9 +29,10 @@ action Move(Robot r, NavLocation a, NavLocation b) {
     [all] r.location == a :-> b;
 };
 
-action Handover(Robot r1, Robot r2, Item i, NavLocation a, NavLocation b) {
+action Handover(Robot r1, Robot r2, Item i) {
   duration := 5;
-
+	constant NavLocation a;
+	constant NavLocation b; 
     passable(a, b) == true;
     [all] {
         r1.location == a;
@@ -40,8 +41,9 @@ action Handover(Robot r1, Robot r2, Item i, NavLocation a, NavLocation b) {
     };
 };
 
-action Pick(Robot r1, Item i, NavLocation a) {
+action Pick(Robot r1, Item i) {
   duration := 5;
+	constant NavLocation a;
 
     [all] {
         r1.location == a;

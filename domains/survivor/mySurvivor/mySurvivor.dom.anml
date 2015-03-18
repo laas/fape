@@ -1,0 +1,55 @@
+type Robot with {
+	variable Loc at;
+};
+type Survivor with{
+	variable Loc at;
+	variable boolean stabilized;
+	variable boolean hospitalized;
+};
+type Loc with {
+	variable boolean explored;
+};
+constant boolean hospital(Loc l);
+
+action goto(Robot r, Loc from, Loc to) {
+	from != to;
+	[all] r.at == from :-> to;
+};
+action explore(Robot r, Loc l){
+	duration := 1;
+	[all] r.at == l;
+	[end] l.explored := true;
+};
+action stabilize (Robot r, Survivor s, Loc l){
+	duration := 1;
+	motivated;
+	[all] r.at == l;
+	[all] s.at == l;
+	[end] s.stabilized := true;
+};
+action hospitalize (Survivor s,Loc l){
+	duration := 1;
+	motivated;
+	[all] s.at == l;
+	[all] s.stabilized == true;
+	hospital(l) == true;
+	[end] s.hospitalized := true;
+};
+action moveSurvivor (Robot r1, Robot r2, Survivor s, Loc from, Loc to){
+	r1!=r2;
+	[all] {
+		s.stabilized == true;
+		s.at == from :-> to;
+	};
+	[all]  m1 : goto(r1, from, to);
+	[all]  m2 : goto(r2, from, to);
+	start(m1) = start(m2);
+};
+action treatSurvivor (Robot r1, Robot r2, Survivor s, Loc ls, Loc lh){
+	[all] contains {
+		stab : stabilize (r0 , s, ls);
+		hos : hospitalize(s, lh );
+	};	start = start(stab);
+	end(stab) < start(hos);
+	end = end(hos);
+};

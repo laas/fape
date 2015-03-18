@@ -21,22 +21,24 @@ constant integer bakeTime(Piece p);
 constant integer treatTime(Piece p);
 
 action fire(Kiln k){
-	duration :in [2,fireTime(k)];
-        [all] energy == true;
-        [start+1] k.ready := true ;
-        [end] k.ready := false;
+	duration := fireTime(k);
+    [all] energy == true;
+    [start] k.ready := true ;
+    [start+1,end-1] k.ready == true; 
+	[end] k.ready := false;
 };
 
 action bake(Kiln k, Piece p){
 	duration := bakeTime(p);
 	[all] k.ready == true;
-	[start] k.empty == true;
-    [start+1] p.baking := true ;
-	[start+1] k.empty := false;
+	[start] k.empty == true :-> false;
+	[start+1,end-1] k.empty == false;
+	[end] k.empty == false :-> true;
+    [start] p.baking := true ;
+	[start+1,end-1] p.baking == true;
 	[end] {
-       	 p.baking := false ;
+       	 p.baking == true :-> false ;
        	 p.baked := true ;
-	     k.empty := true;
 	};
 };
 
