@@ -1,0 +1,3 @@
+predicate at();
+
+[start] at := true;; // two semi colons make the parser crash
