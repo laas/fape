@@ -9,6 +9,7 @@ import fape.core.planning.search.flaws.finders.*;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.State;
@@ -273,8 +274,7 @@ public abstract class APlanner {
             if(st.depth == maxDepth) //we are not interested in its children
                 continue;
 
-            //do some sorting here - min domain
-            //Collections.sort(opts, optionsComparatorMinDomain);
+            // sort the flaws, higher priority come first
             Collections.sort(flaws, this.flawComparator(st));
 
             if (flaws.isEmpty()) {

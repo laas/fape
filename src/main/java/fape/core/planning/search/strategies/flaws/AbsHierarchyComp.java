@@ -22,8 +22,6 @@ import java.util.Map;
  */
 public class AbsHierarchyComp implements FlawComparator {
 
-    private final State state;
-    private final APlanner planner;
     private AbstractionHierarchy hierarchy;
 
     /**
@@ -32,35 +30,25 @@ public class AbsHierarchyComp implements FlawComparator {
      */
     static Map<AnmlProblem, Pair<Integer, AbstractionHierarchy>> hierarchies = new HashMap<>();
 
-    public AbsHierarchyComp(State st, APlanner planner) {
-        this.state = st;
-        this.planner = planner;
+    public AbsHierarchyComp(State st) {
         if(!hierarchies.containsKey(st.pb) || hierarchies.get(st.pb).value1 != st.pb.chronicles().size()) {
             hierarchies.put(st.pb, new Pair<>(st.pb.chronicles().size(), new AbstractionHierarchy(st.pb)));
         }
         this.hierarchy = hierarchies.get(st.pb).value2;
     }
 
-    private int priority(Flaw flaw) {
-        final int numResolvers = flaw.getNumResolvers(state, planner);
-        int level;
-
-        if(flaw instanceof UnsupportedDatabase) {
-            // open link, order them according to their level in the abstraction hierarchy
-            TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
-            level = hierarchy.getLevel(consumer.stateVariable.func());
-        } else {
-            // a flaw (which is not an open link) with at least 2 resolvers, set priority to lowest.
-            level = 999999;
-        }
-
-        return level;
+    private int priority(UnsupportedDatabase og) {
+        // open goal, order them according to their level in the abstraction hierarchy
+        return hierarchy.getLevel(og.consumer.stateVariable.func());
     }
 
 
     @Override
     public int compare(Flaw o1, Flaw o2) {
-        return priority(o1) - priority(o2);
+        if(o1 instanceof UnsupportedDatabase && o2 instanceof UnsupportedDatabase)
+            return priority((UnsupportedDatabase) o1) - priority((UnsupportedDatabase) o2);
+        else
+            return 0;
     }
 
     @Override

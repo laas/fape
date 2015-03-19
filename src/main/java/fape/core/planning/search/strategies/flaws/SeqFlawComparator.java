@@ -24,6 +24,7 @@ public class SeqFlawComparator implements FlawComparator {
 
     public SeqFlawComparator(State st, APlanner planner, List<FlawComparator> comparators) {
         this.comparators = new LinkedList<>(comparators);
+        this.comparators.add(new TieBreaker());
         this.st = st;
         this.planner = planner;
     }

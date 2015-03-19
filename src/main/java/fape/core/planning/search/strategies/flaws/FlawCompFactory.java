@@ -28,7 +28,7 @@ public class FlawCompFactory {
         for (String compID : comparators) {
             switch (compID) {
                 case "abs":
-                    compList.add(new AbsHierarchyComp(st, planner));
+                    compList.add(new AbsHierarchyComp(st));
                     break;
                 case "lcf":
                     compList.add(new LeastCommitingFirst(st, planner));
@@ -38,6 +38,9 @@ public class FlawCompFactory {
                     break;
                 case "hf":
                     compList.add(new HierarchicalFirstComp(st, planner));
+                    break;
+                case "ogf":
+                    compList.add(new OpenGoalFirst());
                     break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
