@@ -45,13 +45,7 @@ public class AbsHierarchyComp implements FlawComparator {
         final int numResolvers = flaw.getNumResolvers(state, planner);
         int level;
 
-        if(numResolvers == 0) {
-            // Dead end end, make sure it comes out first.
-            return -2;
-        } else if(numResolvers == 1) {
-            // Only one option, make sure it comes right after dead-ends.
-            return -1;
-        } else if(flaw instanceof UnsupportedDatabase) {
+        if(flaw instanceof UnsupportedDatabase) {
             // open link, order them according to their level in the abstraction hierarchy
             TemporalDatabase consumer = ((UnsupportedDatabase) flaw).consumer;
             level = hierarchy.getLevel(consumer.stateVariable.func());

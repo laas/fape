@@ -43,6 +43,6 @@ public class FlawCompFactory {
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }
         }
-        return new SeqFlawComparator(compList);
+        return new SeqFlawComparator(st, planner, compList);
     }
 }
