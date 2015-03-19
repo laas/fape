@@ -55,7 +55,7 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
                                 .setLongFlag("planner")
-                                .setDefault("htn")
+                                .setDefault("taskcond")
                                 .setList(true)
                                 .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
@@ -120,7 +120,7 @@ public class Planning {
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("stnu")
                                 .setRequired(false)
-                                .setDefault("stn")
+                                .setDefault("pseudo")
                                 .setHelp("Selects which type of STNU controllability should be checked while searching for a solution. "
                                         +"Note that dynamic controllability will be checked when a plan is found regardless of this option. "
                                         +"This is simply used to define which algorithm is used while searching, with an impact on earliness "

@@ -17,10 +17,10 @@ import java.util.Map;
 
 public class PlannerFactory {
 
-    public static final String defaultPlanner = "htn";
+    public static final String defaultPlanner = "taskcond";
     public static final String[] defaultPlanSelStrategies = { "soca" };
-    public static final String[] defaultFlawSelStrategies = { "lcf" };
-    public static final Controllability defaultControllabilityStrategy = Controllability.STN_CONSISTENCY;
+    public static final String[] defaultFlawSelStrategies = { "abs", "lcf", "eogf" };
+    public static final Controllability defaultControllabilityStrategy = Controllability.PSEUDO_CONTROLLABILITY;
 
     public static PlanningOptions defaultOptions() {
         PlanningOptions options = new PlanningOptions(defaultPlanSelStrategies, defaultFlawSelStrategies);
