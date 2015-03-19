@@ -42,6 +42,9 @@ public class FlawCompFactory {
                 case "ogf":
                     compList.add(new OpenGoalFirst());
                     break;
+                case "eogf":
+                    compList.add(new EarliestOpenGoalFirst(st));
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }
