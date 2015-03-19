@@ -174,7 +174,7 @@ public class Planning {
                 File[] anmls = f.listFiles(new FileFilter() {
                     @Override
                     public boolean accept(File fi) {
-                        return fi.getName().endsWith(".anml");
+                        return fi.getName().endsWith(".anml") && !fi.getName().endsWith(".dom.anml");
                     }
                 });
                 for (File anmlFile : anmls) {
