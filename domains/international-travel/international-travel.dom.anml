@@ -34,8 +34,6 @@ type Place with {
     constant Country country();
 };
 
-constant Country nationality();
-
 predicate has_visa(Country c);
 variable Country in;
 variable Place at;
@@ -96,7 +94,7 @@ action Go(Place a, Place b) {
 
 action ByBus(Place a, Place b) {
     motivated;
-    can_go_by_bus(a, b) == true;
+    can_go_by_bus(a, b);
 };
 action ByPlane(Place a, Place b) {
     motivated;
@@ -134,41 +132,4 @@ constant boolean can_go_by_car(Place a, Place b);
 constant boolean can_go_by_bus(Place a, Place b);
 constant boolean can_go_by_plane(Place a, Place b);
 
-can_go_by_car(Toulouse, Paris) := true;
-can_go_by_car(Paris, Toulouse) := true;
-
-can_go_by_bus(Boston, NY) := true;
-can_go_by_bus(NY, Boston) := true;
-can_go_by_plane(Toulouse, NY) := true;
-can_go_by_plane(NY, Toulouse) := true;
-can_go_by_plane(Boston, Paris) := true;
-can_go_by_plane(Paris, Boston) := true;
-can_go_by_plane(Boston, NY) := true;
-can_go_by_plane(NY, Boston) := true;
-
-
-
-instance Country France, US;
-instance Place Paris, Toulouse, Boston, NY;
-
-Paris.country := France;
-Toulouse.country := France;
-Boston.country := US;
-NY.country := US;
-
-
-
-
-[start] {
-  hasCar := false;
-  at := Toulouse;
-  in := France;
-};
-
-[all] contains { 
-    at == NY;
-    in == US;
-    at == Paris;
-    at == Boston;
-};
 
