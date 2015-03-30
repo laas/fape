@@ -14,8 +14,16 @@ public class RelaxedPlanningGraph {
 
     final Map<PGNode, Integer> distances = new HashMap<>();
 
+    final List<GAction> baseActions;
+
     public RelaxedPlanningGraph(GroundProblem pb) {
         this.pb = pb;
+        this.baseActions = new LinkedList<>(pb.allActions());
+    }
+
+    public RelaxedPlanningGraph(GroundProblem pb, Collection<GAction> acts) {
+        this.pb = pb;
+        this.baseActions = new LinkedList<>(acts);
     }
 
     public int buildUntil(DisjunctiveFluent df) {
@@ -101,7 +109,7 @@ public class RelaxedPlanningGraph {
 
     public boolean expandOneLevel() {
         List<GAction> toInsert = new LinkedList<>();
-        for(GAction a : pb.allActions()) {
+        for(GAction a : baseActions) {
             if(graph.contains(a)) {
                 continue;
             } else if(isExcluded(a)) {
@@ -121,7 +129,7 @@ public class RelaxedPlanningGraph {
 
     public boolean expandOnce() {
         int numInsertedActions = 0;
-        for(GAction a : pb.allActions()) {
+        for(GAction a : baseActions) {
             if(graph.contains(a)) {
                 continue;
             } else if(isExcluded(a)) {
@@ -245,5 +253,15 @@ public class RelaxedPlanningGraph {
             }
         }
         return false;
+    }
+
+    public List<GAction> getAllActions() {
+        LinkedList<GAction> actions = new LinkedList<>();
+        for(PGNode n : graph.jVertices()) {
+            if(n instanceof GAction) {
+                actions.add((GAction) n);
+            }
+        }
+        return actions;
     }
 }

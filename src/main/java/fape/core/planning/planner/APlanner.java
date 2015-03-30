@@ -258,6 +258,10 @@ public abstract class APlanner {
                 st.exportTemporalNetwork("current-stn.dot");
             }
 
+            if(this instanceof PGReachabilityPlanner)
+                if(!(((PGReachabilityPlanner) this).checkFeasibility(st)))
+                    continue;
+
             List<Flaw> flaws = GetFlaws(st);
 
             TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);

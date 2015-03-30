@@ -62,6 +62,8 @@ public class PlannerFactory {
                 return new PGExtPlanner(state, options);
             case "taskcond":
                 return new TaskConditionPlanner(state, options);
+            case "pgr":
+                return new PGReachabilityPlanner(state, options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }

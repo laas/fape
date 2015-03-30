@@ -34,7 +34,7 @@ public class Planning {
         }
 
         public boolean usesActionConditions() {
-            return this.plannerID.equals("taskcond");
+            return this.plannerID.equals("taskcond") || this.plannerID.equals("pgr");
         }
     }
 

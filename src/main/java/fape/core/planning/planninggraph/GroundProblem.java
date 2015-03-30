@@ -1,6 +1,7 @@
 package fape.core.planning.planninggraph;
 
 import fape.core.planning.states.State;
+import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
@@ -23,7 +24,7 @@ public class GroundProblem {
     public final GroundState goalState = new GroundState();
 
     final List<GroundAction> actions;
-    final List<GAction> gActions;
+    public final List<GAction> gActions;
 
     final List<Invariant> invariants = new LinkedList<>();
 
@@ -66,6 +67,23 @@ public class GroundProblem {
             total += nemActInstances;
         }
         return total;
+    }
+
+    public GroundProblem(GroundProblem pb, State st) {
+        this.liftedPb = pb.liftedPb;
+        this.actions = pb.actions;
+        this.gActions = new LinkedList<>(pb.gActions);
+
+        for(TemporalDatabase db : st.tdb.vars) {
+            for(ChainComponent cc : db.chain) {
+                if(cc.change) {
+                    DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, cc.GetSupportValue(), st, pb);
+                    for (Fluent f : df.fluents) {
+                        initState.fluents.add(f);
+                    }
+                }
+            }
+        }
     }
 
     public GroundProblem(GroundProblem pb, State st, TemporalDatabase og) {
@@ -111,19 +129,19 @@ public class GroundProblem {
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
             this.gActions.addAll(GAction.groundActions(this, liftedAct));
             // ignore methods with decompositions
-            if(!liftedAct.jDecompositions().isEmpty())
-                continue;
-
-            List<List<VarRef>> paramsLists = possibleParams(liftedAct);
-            for(List<VarRef> params : paramsLists) {
-                GroundAction candidate = new GroundAction(liftedAct, params, this);
-
-                if(candidate.isValid()) {
-                    actions.add(candidate);
-                } else {
-                    //System.out.println("Ignored: " + candidate);
-                }
-            }
+//            if(!liftedAct.jDecompositions().isEmpty())
+//                continue;
+//
+//            List<List<VarRef>> paramsLists = possibleParams(liftedAct);
+//            for(List<VarRef> params : paramsLists) {
+//                GroundAction candidate = new GroundAction(liftedAct, params, this);
+//
+//                if(candidate.isValid()) {
+//                    actions.add(candidate);
+//                } else {
+//                    //System.out.println("Ignored: " + candidate);
+//                }
+//            }
         }
 
         for(Chronicle mod : liftedPb.chronicles()) {

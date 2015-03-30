@@ -1,11 +1,17 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PGReachabilityPlanner;
 import fape.core.planning.states.State;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.VarRef;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Inserts a new action to support an action condition.
@@ -28,6 +34,14 @@ public class NewTaskSupporter extends Resolver {
         // create a new action with the same args as the condition
         Action act = Factory.getInstantiatedAction(st.pb, abs, condition.args());
         st.insert(act);
+        if(planner instanceof PGReachabilityPlanner) {
+            PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
+            LVarRef[] vars = pgr.varsOfAction.get(act.abs().name());
+            List<VarRef> values = new LinkedList<>();
+            for(LVarRef v : vars)
+                values.add(act.context().getDefinition(v)._2());
+            st.addValuesSetConstraint(values, act.abs().name());
+        }
 
         // enforce equality of time points and add support to task network
         st.addSupport(condition, act);

@@ -1,14 +1,16 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PGReachabilityPlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
-import planstack.anml.model.concrete.Decomposition;
-import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.*;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Given an action marked as "motivated" to support, this resolvers select an action condition
@@ -76,6 +78,14 @@ public class MotivatedSupport extends Resolver {
         if(act == null) {
             act = Factory.getStandaloneAction(st.pb, abs);
             st.insert(act);
+            if(planner instanceof PGReachabilityPlanner) {
+                PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
+                LVarRef[] vars = pgr.varsOfAction.get(act.abs().name());
+                List<VarRef> values = new LinkedList<>();
+                for(LVarRef v : vars)
+                    values.add(act.context().getDefinition(v)._2());
+                st.addValuesSetConstraint(values, act.abs().name());
+            }
         }
 
         // Look for the action condition with ID actRef

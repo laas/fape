@@ -228,6 +228,7 @@ public class TaskNetworkManager implements Reporter {
             return false;
         } else {
             for(TNNode parent : network.jParents(n)) {
+                if(true) return true;
                 // it is part of an action or a decomposition
                 if(parent.isAction() || parent.isDecomposition())
                     return true;

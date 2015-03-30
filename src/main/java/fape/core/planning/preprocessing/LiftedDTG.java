@@ -1,6 +1,7 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.planninggraph.PGUtils;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
@@ -87,6 +88,7 @@ public class LiftedDTG implements ActionSupporterFinder{
             argTypes.add(st.typeOf(argVar));
         }
         String valueType = st.typeOf(db.GetGlobalConsumeValue());
+//        System.err.println(Printer.temporalDatabaseManager(st));
         return this.getActionsSupporting(new FluentType(predicate, argTypes, valueType));
 
     }

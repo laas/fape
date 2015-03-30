@@ -5,12 +5,16 @@ import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.concrete.EmptyVarRef;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.EqualityConstraint;
 import planstack.anml.model.concrete.statements.Persistence;
+import planstack.anml.parser.Instance;
+import planstack.structures.Pair;
+import scala.collection.JavaConversions;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -22,7 +26,17 @@ public class GAction implements PGNode {
     public List<Fluent> pre = new LinkedList<>();
     public List<Fluent> add = new LinkedList<>();
     public final AbstractAction abs;
-    public final String name;
+//    public final String name;
+    public final LVarRef[] vars;
+    protected final InstanceRef[] values;
+    public final int decID;
+
+    public InstanceRef valueOf(LVarRef v) {
+        for(int i=0 ; i<vars.length ; i++)
+            if(vars[i].equals(v))
+                return values[i];
+        throw new FAPEException("This local variable was not found: "+v);
+    }
 
     public GroundProblem.Invariant invariantOf(AbstractParameterizedStateVariable sv, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
         List<InstanceRef> params = new LinkedList<>();
@@ -35,9 +49,30 @@ public class GAction implements PGNode {
         return null;
     }
 
-    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
+    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
+//        if(abs.name().equals("Glue"))
+//            System.err.println("HERE");
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
+        assert decID < abs.jDecompositions().size();
+        this.decID = decID;
+
+        this.vars = new LVarRef[vars.size()];
+        this.values = new InstanceRef[vars.size()];
+        int i=0;
+        for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
+            this.vars[i] = binding.getKey();
+            this.values[i] = binding.getValue();
+            i++;
+        }
+
+        List<AbstractStatement> statements;
+        if(decID == -1) {
+            statements = abs.jTemporalStatements();
+        } else {
+            statements = new LinkedList<>(abs.jTemporalStatements());
+            statements.addAll(abs.jDecompositions().get(decID).jStatements());
+        }
 
         for(AbstractStatement as : abs.jTemporalStatements()) {
             if(as instanceof AbstractEqualityConstraint) {
@@ -63,8 +98,6 @@ public class GAction implements PGNode {
             }
         }
 
-
-
         for(AbstractLogStatement s : abs.jLogStatements()) {
             if(s instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) s;
@@ -79,22 +112,41 @@ public class GAction implements PGNode {
             }
         }
 
-        String ret = "";
-        ret += abs.name()+"(";
-        for(int i=0 ; i<abs.args().size() ; i++) {
-            ret += valueOf(abs.args().get(i), vars, pb);
-            if(i < abs.args().size()-1)
-                ret += ", ";
-        }
-        ret +=") ";
-        for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
-            ret += binding.getKey() + ":"+binding.getValue()+" ";
-        }
-        this.name = ret;
+        // with temporal actions, a lot of actions can be self suportive
+        pre.removeAll(add);
+
+//        String ret = "";
+//        ret += abs.name()+"(";
+//        for(int j=0 ; j<abs.args().size() ; j++) {
+//            ret += valueOf(abs.args().get(j), vars, pb);
+//            if(j < abs.args().size()-1)
+//                ret += ", ";
+//        }
+//        ret +=") ";
+//        for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
+//            ret += binding.getKey() + ":"+binding.getValue()+" ";
+//        }
+//        if(abs.name().equals("Point"))
+//            System.err.println("HERE");
+//        this.name = ret;
     }
 
     @Override
-    public String toString() { return name; }
+    public String toString() {
+        String ret = "";
+        ret += abs.name()+ (decID == -1 ? "" : "-"+decID) + "(";
+        for(int j=0 ; j<abs.args().size() ; j++) {
+            ret += valueOf(abs.args().get(j));
+            if(j < abs.args().size()-1)
+                ret += ", ";
+        }
+        ret +=") ";
+        for(int i=0 ; i<vars.length ; i++) {
+            if(!abs.args().contains(vars[i]))
+                ret += vars[i] +":"+ values[i]+" ";
+        }
+        return ret;
+    }
 
     public InstanceRef valueOf(LVarRef var, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
         InstanceRef ret;
@@ -151,13 +203,39 @@ public class GAction implements PGNode {
 
         List<GAction> actions = new LinkedList<>();
         for(Map<LVarRef, InstanceRef> params : paramsLists) {
-            try {
-                actions.add(new GAction(aa, params, gPb));
-            } catch (FAPEException e) {
-                //not valid
+            if(aa.jDecompositions().size() == 0) {
+                try {
+                    actions.add(new GAction(aa, -1, params, gPb));
+                } catch (FAPEException e) {}
+            } else {
+                for(int i=0 ; i<aa.jDecompositions().size() ; i++) {
+                    try {
+                        actions.add(new GAction(aa, i, params, gPb));
+                    } catch (FAPEException e) {}
+                }
             }
         }
 
         return actions;
+    }
+
+    public List<Pair<String, List<InstanceRef>>> getActionRefs() {
+        List<AbstractActionRef> refs;
+        List<Pair<String, List<InstanceRef>>> ret = new LinkedList<>();
+        if(decID == -1)
+            refs = this.abs.jActions();
+        else {
+            refs = new LinkedList<>(this.abs.jActions());
+            refs.addAll(this.abs.jDecompositions().get(decID).jActions());
+        }
+        for(AbstractActionRef ref : refs) {
+            List<InstanceRef> args = new LinkedList<>();
+            for(LVarRef v : ref.jArgs()) {
+                args.add(valueOf(v));
+            }
+            ret.add(new Pair<>(ref.name(), args));
+        }
+
+        return ret;
     }
 }

@@ -83,6 +83,7 @@ action Place(Agent a, Element e, SurfLocation l) {
 };
 
 action ProcessSurface(Human h, Robot r, Surface s, Glue g) {
+    motivated;
        constant SurfLocation loc;
        s.attachedTo == loc;
        constant Bracket b;

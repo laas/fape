@@ -1,7 +1,11 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
+<<<<<<< HEAD
 import fape.core.planning.states.Printer;
+=======
+import fape.core.planning.planner.PGReachabilityPlanner;
+>>>>>>> tmp
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.TinyLogger;
@@ -12,10 +16,12 @@ import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Statement;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +72,16 @@ public class SupportingAction extends Resolver {
 
         Action action = Factory.getStandaloneAction(st.pb, act);
         st.insert(action);
+        if(planner instanceof PGReachabilityPlanner) {
+            PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
+            LVarRef[] vars = pgr.varsOfAction.get(action.abs().name());
+            if(vars == null)
+                return false; // there was no versions of this action in the planning graph
+            List<VarRef> values = new LinkedList<>();
+            for(LVarRef v : vars)
+                values.add(action.context().getDefinition(v)._2());
+            st.addValuesSetConstraint(values, action.abs().name());
+        }
 
         Decomposition dec = null;
         if(decID != -1) { // supporter is in a decomposition
