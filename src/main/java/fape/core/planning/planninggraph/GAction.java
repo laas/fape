@@ -31,6 +31,9 @@ public class GAction implements PGNode {
     protected final InstanceRef[] values;
     public final int decID;
 
+    private static int nextID = 0;
+    public final int id;
+
     public InstanceRef valueOf(LVarRef v) {
         for(int i=0 ; i<vars.length ; i++)
             if(vars[i].equals(v))
@@ -115,20 +118,7 @@ public class GAction implements PGNode {
         // with temporal actions, a lot of actions can be self suportive
         pre.removeAll(add);
 
-//        String ret = "";
-//        ret += abs.name()+"(";
-//        for(int j=0 ; j<abs.args().size() ; j++) {
-//            ret += valueOf(abs.args().get(j), vars, pb);
-//            if(j < abs.args().size()-1)
-//                ret += ", ";
-//        }
-//        ret +=") ";
-//        for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
-//            ret += binding.getKey() + ":"+binding.getValue()+" ";
-//        }
-//        if(abs.name().equals("Point"))
-//            System.err.println("HERE");
-//        this.name = ret;
+        this.id = nextID++;
     }
 
     @Override
@@ -144,6 +134,15 @@ public class GAction implements PGNode {
         for(int i=0 ; i<vars.length ; i++) {
             if(!abs.args().contains(vars[i]))
                 ret += vars[i] +":"+ values[i]+" ";
+        }
+        return ret;
+    }
+
+    public String toASP() {
+        String ret = "";
+        ret += abs.name().toLowerCase()+ (decID == -1 ? "" : "_"+decID) + "__";
+        for(int i=0 ; i<vars.length ; i++) {
+            ret += vars[i] +"_"+ values[i]+"__";
         }
         return ret;
     }

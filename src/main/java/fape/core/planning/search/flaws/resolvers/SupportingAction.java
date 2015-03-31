@@ -1,11 +1,8 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
-<<<<<<< HEAD
 import fape.core.planning.states.Printer;
-=======
 import fape.core.planning.planner.PGReachabilityPlanner;
->>>>>>> tmp
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.TinyLogger;

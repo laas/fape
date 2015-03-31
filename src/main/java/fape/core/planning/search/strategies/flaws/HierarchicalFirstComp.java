@@ -23,17 +23,7 @@ public class HierarchicalFirstComp implements FlawComparator {
     }
 
     private int priority(Flaw flaw) {
-<<<<<<< HEAD
         if(flaw instanceof UnsupportedTaskCond)
-            return 2;
-        else if(flaw instanceof UndecomposedAction)
-=======
-        if(flaw.getNumResolvers(st, planner) == 0)
-            return -2;
-        else if(flaw.getNumResolvers(st, planner) == 1)
-            return -1;
-        else if(flaw instanceof UnsupportedTaskCond)
->>>>>>> tmp
             return 3;
         else if(flaw instanceof UndecomposedAction)
             return 2;

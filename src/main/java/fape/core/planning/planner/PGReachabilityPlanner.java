@@ -1,9 +1,6 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.planninggraph.DisjunctiveFluent;
-import fape.core.planning.planninggraph.GAction;
-import fape.core.planning.planninggraph.GroundProblem;
-import fape.core.planning.planninggraph.RelaxedPlanningGraph;
+import fape.core.planning.planninggraph.*;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
@@ -22,8 +19,10 @@ import planstack.structures.Pair;
 import scala.collection.JavaConversions;
 import sun.awt.image.ImageWatched;
 
+import java.io.PrintWriter;
 import java.lang.management.GarbageCollectorMXBean;
 import java.util.*;
+import java.util.concurrent.Future;
 
 public class PGReachabilityPlanner extends TaskConditionPlanner {
 
@@ -161,11 +160,159 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 //            }
 //        }
 
-        FlawFinder[] extendedFlawFinders = new FlawFinder[options.flawFinders.length];
-        for(int i=0 ; i<options.flawFinders.length ; i++)
-            extendedFlawFinders[i] = options.flawFinders[i];
-        extendedFlawFinders[extendedFlawFinders.length-1] = new FeasibilityChecker();
-//        options.flawFinders = extendedFlawFinders;
+        toASP(initialState);
+    }
+
+
+    public String toASP(State st) {
+        StringBuilder sb = new StringBuilder();
+        GroundProblem pb = new GroundProblem(base, st);
+
+        sb.append("\n");
+        for(GAction ga : pb.allActions()) {
+            sb.append("% "); sb.append(ga.toString()); sb.append("\n");
+            if(!ga.abs.motivated()) {
+                sb.append("deriv(");
+                sb.append(ga.toASP());
+                sb.append(").\n");
+            }
+            if(ga.pre.isEmpty()) {
+                sb.append("sup(");
+                sb.append(ga.toASP());
+                sb.append(").\n");
+            } else {
+                sb.append("sup(");
+                sb.append(ga.toASP());
+                sb.append(") :- ");
+                for (int i = 0; i < ga.pre.size(); i++) {
+                    sb.append(ga.pre.get(i).toASP());
+                    if (i == ga.pre.size() - 1)
+                        sb.append(".\n");
+                    else
+                        sb.append(", ");
+                }
+            }
+
+            for(Fluent add : ga.add) {
+                sb.append(add.toASP());
+                sb.append(" :- usable(");
+                sb.append(ga.toASP());
+                sb.append(").\n");
+            }
+            sb.append("\n");
+        }
+
+        for(GAction a : actionsInState(st, new HashSet<GAction>(pb.allActions()))) {
+            sb.append("deriv(");
+            sb.append(a.toASP());
+            sb.append(").\n");
+        }
+
+
+        sb.append("\n% Refinements\n");
+        for(GAction a : pb.allActions()) {
+            for(Pair<String, List<InstanceRef>> actRef : a.getActionRefs()) {
+                AbstractAction abs = st.pb.getAction(actRef.v1());
+                List<GAction> grounded = getGrounded(abs);
+                boolean oneFeasible = false;
+                for(GAction subTask : grounded) {
+                    for (int i = 0; i < actRef.v2().size(); i++) {
+                        if(!actRef.v2().get(i).equals(subTask.valueOf(abs.args().get(i)))) {
+                            break; // at least one arg different
+                        }
+                        if(i == actRef.v2().size()-1) {
+                            sb.append("deriv(");
+                            sb.append(subTask.toASP());
+                            sb.append(") :- deriv(");
+                            sb.append(a.toASP());
+                            sb.append(").\n");
+                        }
+                    }
+                }
+            }
+        }
+
+        for(GAction a : pb.allActions()) {
+            if(a.getActionRefs().isEmpty()) {
+                sb.append("decomposable(");
+                sb.append(a.toASP());
+                sb.append(").\n");
+            } else {
+                sb.append("decomposable(");
+                sb.append(a.toASP());
+                sb.append(") :- ");
+                Iterator<Pair<String, List<InstanceRef>>> actRefIt = a.getActionRefs().iterator();
+                while (actRefIt.hasNext()) {
+                    Pair<String, List<InstanceRef>> actRef = actRefIt.next();
+
+                    AbstractAction abs = st.pb.getAction(actRef.v1());
+                    List<GAction> grounded = getGrounded(abs);
+                    boolean oneFeasible = false;
+                    sb.append("1 { usable(");
+                    Iterator<GAction> subTasksIt = grounded.iterator();
+                    while(subTasksIt.hasNext()) {
+                        GAction subTask = subTasksIt.next();
+
+                        sb.append(subTask.toASP());
+                        if(subTasksIt.hasNext())
+                            sb.append("; ");
+                        else
+                            sb.append(")");
+
+                    }
+                    sb.append("}");
+                    if(actRefIt.hasNext())
+                        sb.append(", ");
+                    else
+                        sb.append(".\n");
+                }
+            }
+        }
+
+        sb.append("\nusable(X) :- deriv(X), sup(X), decomposable(X).\n");
+
+        StringBuilder pbSb = new StringBuilder();
+
+        pbSb.append("%% Initial task network\n");
+        for(ActionCondition ac : st.getOpenTaskConditions()) {
+            pbSb.append("% "); pbSb.append(Printer.taskCondition(st, ac)); pbSb.append("\n");
+            List<GAction> grounded = getGrounded(ac.abs());
+            for(GAction ga : grounded) {
+                for (int i = 0; i < ac.args().size(); i++) {
+                    if (!st.unifiable(ac.args().get(i), ga.valueOf(ac.abs().args().get(i)))) {
+                        break;
+                    }
+                    if(i == ac.args().size()-1) {
+                        pbSb.append("deriv(");
+                        pbSb.append(ga.toASP());
+                        pbSb.append(").\n");
+                    }
+
+                }
+            }
+        }
+
+
+
+        pbSb.append("% initial states (fluents)\n");
+        for(Fluent f : pb.initState.fluents) {
+            pbSb.append(f.toASP()+".\n");
+        }
+
+
+        pbSb.append("#show usable/1.\n");
+        try {
+            PrintWriter domPW = new PrintWriter("dom.lp", "UTF-8");
+            domPW.write(sb.toString());
+            domPW.close();
+
+            PrintWriter pbPW = new PrintWriter("pb.pl", "UTF-8");
+            pbPW.write(pbSb.toString());
+            pbPW.close();
+        } catch (Exception e) {
+            System.err.println("ERROR, file not found");
+        }
+        return sb.toString();
     }
 
     public Set<GAction> getAllActions(GroundProblem base, State st) {
