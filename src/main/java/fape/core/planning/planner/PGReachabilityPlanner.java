@@ -91,8 +91,11 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
             for(GAction ga : groundedVersions(a, st)) {
-                if(feasible(ga, acts, st))
+//                if(feasible(ga, acts, st))
+                if(acts.contains(ga)) {
                     feasibleAct = true;
+                    break;
+                }
             }
             if(!feasibleAct) {
 //                System.out.println("NOT FEASIBLE: " + a);
