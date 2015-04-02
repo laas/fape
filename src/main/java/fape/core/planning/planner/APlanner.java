@@ -12,6 +12,7 @@ import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -19,6 +20,7 @@ import fape.exceptions.FAPEException;
 import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.TinyLogger;
+import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
@@ -259,8 +261,10 @@ public abstract class APlanner {
             }
 
             if(this instanceof PGReachabilityPlanner)
-                if(!(((PGReachabilityPlanner) this).checkFeasibility(st)))
+                if(!(((PGReachabilityPlanner) this).checkFeasibility(st))) {
+                    TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
                     continue;
+                }
 
             List<Flaw> flaws = GetFlaws(st);
 
@@ -286,7 +290,15 @@ public abstract class APlanner {
             }
 
             //we just take the first flaw and its resolvers
-            Flaw f = flaws.get(0);
+            Flaw f;
+            if(options.chooseFlawManually) {
+                for(int i=0 ; i<flaws.size() ; i++)
+                    System.out.println("["+i+"] "+Printer.p(st, flaws.get(i)));
+                int choosen = Utils.readInt();
+                f = flaws.get(choosen);
+            } else {
+                f = flaws.get(0);
+            }
             List<Resolver> resolvers = f.getResolvers(st, this);
 
             if (resolvers.isEmpty()) {

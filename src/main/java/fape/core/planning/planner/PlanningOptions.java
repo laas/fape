@@ -40,4 +40,9 @@ public class PlanningOptions {
      */
     public boolean useFastForward = false;
 
+    /**
+     * If set to true, the choice of the flaw to solve next will be done on the command line.
+     */
+    public boolean chooseFlawManually = false;
+
 }

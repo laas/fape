@@ -24,6 +24,8 @@ import java.util.*;
  */
 public class Printer {
 
+    public static String p(State st, Object o) { return stateDependentPrint(st, o); }
+
     public static String stateDependentPrint(State st, Object o) {
         if(o instanceof Action)
             return action(st, (Action) o);

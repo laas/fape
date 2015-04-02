@@ -1,10 +1,30 @@
 package fape.util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 
 public class Utils {
+
+    public static int readInt() {
+        String line = null;
+        int val = 0;
+        try {
+            BufferedReader is = new BufferedReader(
+                    new InputStreamReader(System.in));
+            line = is.readLine();
+            val = Integer.parseInt(line);
+        } catch (NumberFormatException ex) {
+            System.err.println("Not a valid number: " + line);
+            return readInt();
+        } catch (IOException e) {
+            System.err.println("Unexpected IO ERROR: " + e);
+        }
+        return val;
+    }
 
     /**
      * Returns true if at least one element is present in both collection (ie. if they
