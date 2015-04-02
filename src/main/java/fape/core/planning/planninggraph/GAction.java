@@ -16,10 +16,7 @@ import planstack.anml.parser.Instance;
 import planstack.structures.Pair;
 import scala.collection.JavaConversions;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GAction implements PGNode {
 
@@ -30,6 +27,7 @@ public class GAction implements PGNode {
     public final LVarRef[] vars;
     protected final InstanceRef[] values;
     public final int decID;
+    public final ArrayList<GTaskCond> subTasks;
 
     private static int nextID = 0;
     public final int id;
@@ -53,8 +51,6 @@ public class GAction implements PGNode {
     }
 
     public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
-//        if(abs.name().equals("Glue"))
-//            System.err.println("HERE");
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
         assert decID < abs.jDecompositions().size();
@@ -119,11 +115,12 @@ public class GAction implements PGNode {
         pre.removeAll(add);
 
         this.id = nextID++;
+        this.subTasks = initSubTasks(gPb.liftedPb);
     }
 
     @Override
     public String toString() {
-        String ret = "";
+        String ret = "("+id+")";
         ret += abs.name()+ (decID == -1 ? "" : "-"+decID) + "(";
         for(int j=0 ; j<abs.args().size() ; j++) {
             ret += valueOf(abs.args().get(j));
@@ -218,9 +215,13 @@ public class GAction implements PGNode {
         return actions;
     }
 
-    public List<Pair<String, List<InstanceRef>>> getActionRefs() {
+    public ArrayList<GTaskCond> getActionRefs() {
+        return subTasks;
+    }
+
+    public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb) {
         List<AbstractActionRef> refs;
-        List<Pair<String, List<InstanceRef>>> ret = new LinkedList<>();
+        List<GTaskCond> ret = new LinkedList<>();
         if(decID == -1)
             refs = this.abs.jActions();
         else {
@@ -232,9 +233,13 @@ public class GAction implements PGNode {
             for(LVarRef v : ref.jArgs()) {
                 args.add(valueOf(v));
             }
-            ret.add(new Pair<>(ref.name(), args));
+            ret.add(new GTaskCond(pb.getAction(ref.name()), args));
         }
 
-        return ret;
+        ArrayList<GTaskCond> subTasks = new ArrayList<>(ret.size());
+        for(int i=0 ; i<ret.size() ; i++)
+            subTasks.add(ret.get(i));
+
+        return subTasks;
     }
 }

@@ -37,9 +37,18 @@ public class NewTaskSupporter extends Resolver {
         if(planner instanceof PGReachabilityPlanner) {
             PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
             LVarRef[] vars = pgr.varsOfAction.get(act.abs().name());
+            if(vars == null) {
+                System.out.println("Strange action: "+act.abs()+ " has no recorded vars.");
+                return false;
+            }
+
             List<VarRef> values = new LinkedList<>();
             for(LVarRef v : vars)
                 values.add(act.context().getDefinition(v)._2());
+            VarRef gAction = new VarRef();
+            st.csp.bindings().AddIntVariable(gAction);
+            values.add(gAction);
+            pgr.groundedActVariable.put(act.id(), gAction);
             st.addValuesSetConstraint(values, act.abs().name());
         }
 

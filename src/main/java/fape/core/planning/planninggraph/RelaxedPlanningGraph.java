@@ -19,11 +19,15 @@ public class RelaxedPlanningGraph {
     public RelaxedPlanningGraph(GroundProblem pb) {
         this.pb = pb;
         this.baseActions = new LinkedList<>(pb.allActions());
+        for(GAction a : baseActions)
+            assert a != null;
     }
 
     public RelaxedPlanningGraph(GroundProblem pb, Collection<GAction> acts) {
         this.pb = pb;
         this.baseActions = new LinkedList<>(acts);
+        for(GAction a : baseActions)
+            assert a != null;
     }
 
     public int buildUntil(DisjunctiveFluent df) {
@@ -75,6 +79,7 @@ public class RelaxedPlanningGraph {
      * @return True if the action is applicable.
      */
     public boolean applicable(GAction a) {
+        assert a != null;
         for(Fluent precondition : a.pre) {
             if(!graph.contains(precondition)) {
                 return false;
@@ -130,6 +135,7 @@ public class RelaxedPlanningGraph {
     public boolean expandOnce() {
         int numInsertedActions = 0;
         for(GAction a : baseActions) {
+            assert a != null;
             if(graph.contains(a)) {
                 continue;
             } else if(isExcluded(a)) {

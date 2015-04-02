@@ -75,6 +75,11 @@ public class ActionDecompositions {
             if(targets.contains(abs)) {
                 return true;
             }
+            for(AbstractActionRef ref : abs.jActions()) {
+                AbstractAction subAct = pb.getAction(ref.name());
+                if(targets.contains(subAct))
+                    return true;
+            }
 
             for(AbstractDecomposition nextDec : abs.jDecompositions()) {
                 if(mightContains(nextDec, targets, treated)) {

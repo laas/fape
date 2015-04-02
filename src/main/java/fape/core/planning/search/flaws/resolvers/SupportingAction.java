@@ -77,6 +77,10 @@ public class SupportingAction extends Resolver {
             List<VarRef> values = new LinkedList<>();
             for(LVarRef v : vars)
                 values.add(action.context().getDefinition(v)._2());
+            VarRef gAction = new VarRef();
+            st.csp.bindings().AddIntVariable(gAction);
+            values.add(gAction);
+            pgr.groundedActVariable.put(action.id(), gAction);
             st.addValuesSetConstraint(values, action.abs().name());
         }
 

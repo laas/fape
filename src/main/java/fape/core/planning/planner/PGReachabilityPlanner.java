@@ -11,11 +11,14 @@ import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
-import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.statements.InequalityConstraint;
+import planstack.anml.model.concrete.statements.IntegerAssignmentConstraint;
+import planstack.anml.parser.Instance;
+import planstack.constraints.bindings.ExtensionConstraint;
+import planstack.constraints.bindings.ValuesHolder;
 import planstack.structures.Pair;
+import scala.Int;
 import scala.collection.JavaConversions;
 import sun.awt.image.ImageWatched;
 
@@ -23,13 +26,18 @@ import java.io.PrintWriter;
 import java.lang.management.GarbageCollectorMXBean;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
 
 public class PGReachabilityPlanner extends TaskConditionPlanner {
 
     public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
-    final List<GAction> unfilteredActions;
+    final Set<GAction> unfilteredActions;
     final Set<GAction> filteredActions;
     final GroundProblem base;
+    public final HashMap<Integer, GAction> gactions = new HashMap<>();
+    public final HashMap<ActRef, VarRef> groundedActVariable = new HashMap<>();
+//    public final HashMap<Integer, Set<Integer>> derivabilities = new HashMap<>();
+    public final HashMap<GTaskCond, Set<Integer>> taskDerivabilities = new HashMap<>();
 //    public RelaxedPlanningGraph rpg;
 
     public class FeasibilityChecker implements FlawFinder {
@@ -61,7 +69,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                 }
             }
             if(!derivable) {
-                System.out.println("NOT DERIVABLE     " + Printer.action(st, a) + "      !!!!!!!!!!!!!!!!!!");
+//                System.out.println("NOT DERIVABLE     " + Printer.action(st, a) + "      !!!!!!!!!!!!!!!!!!");
                 return false;
 //                for (Action ac : st.getAllActions())
 //                    System.out.println(Printer.action(st, ac));
@@ -75,7 +83,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         for(TemporalDatabase cons : st.consumers) {
             DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st, pb);
             if(!pg.supported(df)) {
-                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));
+//                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));
                 return false;
             }
         }
@@ -87,14 +95,14 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                     feasibleAct = true;
             }
             if(!feasibleAct) {
-                System.out.println("NOT FEASIBLE: " + a);
+//                System.out.println("NOT FEASIBLE: " + a);
                 return false;
             }
         }
         return true;
     }
 
-    public Set<GAction> groundedVersions(Action a, State st) {
+    public Set<GAction> oldGroundedVersions(Action a, State st) {
         Set<GAction> ret = new HashSet<>();
         for(GAction ga : getGrounded(a.abs())) {
             for(int i=0 ; i<a.args().size() ; i++) {
@@ -108,31 +116,60 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         return ret;
     }
 
+    public Set<GAction> groundedVersions(Action a, State st) {
+        Set<GAction> ret = new HashSet<>();
+        assert(groundedActVariable.containsKey(a.id()));
+        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(a.id())))
+            ret.add(gactions.get(i));
+
+        return ret;
+    }
+
+
     public PGReachabilityPlanner(State initialState, PlanningOptions options) {
         super(initialState, options);
         // this Problem contains all the ground actions
         base = new GroundProblem(initialState.pb);
-        unfilteredActions = base.gActions;
-//        GroundProblem fromState = new GroundProblem(base, initialState);
-//
-//        System.out.println();
-//
-//        rpg = new RelaxedPlanningGraph(fromState);
-//        rpg.build();
-//        System.out.println("rpg before: " + rpg.getAllActions().size());
-//
-//        System.out.println("before: "+ fromState.gActions.size());
-//        Set<GAction> groundPossible = derivableFromInitialTaskNetwork(initialState, new HashSet<GAction>(rpg.getAllActions()));
-//        fromState.gActions.clear();
-//        fromState.gActions.addAll(groundPossible);
-//        System.out.println("after: " + fromState.gActions.size());
-//
-//        rpg = new RelaxedPlanningGraph(fromState);
-//        rpg.build();
-//        System.out.println("rpg after: "+rpg.getAllActions().size());
-//        for(GAction ga : rpg.getAllActions()) {
-//            System.out.println(ga);
-//        }
+        unfilteredActions = new HashSet<>(base.gActions);
+
+        for(GAction ga : unfilteredActions) {
+            initialState.csp.bindings().addPossibleValue(ga.id);
+            assert(!gactions.containsKey(ga.id));
+            gactions.put(ga.id, ga);
+        }
+        int cnt = 0;
+        for(GAction act : unfilteredActions) {
+
+            LinkedList<InstanceRef> args = new LinkedList<>();
+            for(LVarRef var : act.abs.args())
+                args.add(act.valueOf(var));
+            GTaskCond tc = new GTaskCond(act.abs, args);
+            if(!taskDerivabilities.containsKey(tc))
+                taskDerivabilities.put(tc, new HashSet<Integer>());
+            taskDerivabilities.get(tc).add(act.id);
+
+            /*
+            derivabilities.put(act.id, new HashSet<Integer>());
+            for(Pair<String, List<InstanceRef>> actRef : act.getActionRefs()) {
+                AbstractAction abs = pb.getAction(actRef.v1());
+                LVarRef[] args = new LVarRef[abs.args().size()];
+                for(int i=0 ; i<args.length ; i++) args[i] = abs.args().get(i);
+                List<GAction> grounded = getGrounded(abs);
+                for (GAction subTask : grounded) {
+                    cnt ++;
+                    for (int i = 0; i < actRef.v2().size(); i++) {
+                        if (!unfilteredActions.contains(subTask))
+                            continue;
+                        if (!actRef.v2().get(i).equals(subTask.valueOf(args[i])))
+                            break; // at least one arg different
+                        if (i == actRef.v2().size() - 1) {
+                            derivabilities.get(act.id).add(subTask.id);
+                        }
+                    }
+                }
+            }*/
+        }
+//        System.out.println(unfilteredActions.size() + " " + cnt);
 
         Set<GAction> allFeasibleActions = getAllActions(base, initialState);
 //        for(GAction ga : allFeasibleActions)
@@ -142,6 +179,40 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         base.gActions.clear();
         base.gActions.addAll(filteredActions);
 
+        for(GAction act : allFeasibleActions) {
+            LinkedList<InstanceRef> args = new LinkedList<>();
+            for(LVarRef var : act.abs.args())
+                args.add(act.valueOf(var));
+            GTaskCond tc = new GTaskCond(act.abs, args);
+            if(!taskDerivabilities.containsKey(tc))
+                taskDerivabilities.put(tc, new HashSet<Integer>());
+            taskDerivabilities.get(tc).add(act.id);
+            /*
+            derivabilities.put(act.id, new HashSet<Integer>());
+
+            for(Pair<String, List<InstanceRef>> actRef : act.getActionRefs()) {
+                AbstractAction abs = pb.getAction(actRef.v1());
+                List<GAction> grounded = getGrounded(abs);
+                for (GAction subTask : grounded) {
+                    for (int i = 0; i < actRef.v2().size(); i++) {
+                        if (!allFeasibleActions.contains(subTask))
+                            continue;
+                        if (!actRef.v2().get(i).equals(subTask.valueOf(abs.args().get(i))))
+                            break; // at least one arg different
+                        if (i == actRef.v2().size() - 1) {
+                            derivabilities.get(act.id).add(subTask.id);
+                        }
+                    }
+                }
+            }*/
+//                Set<GAction> supportedByTaskCond = supportedByTaskCond(actRef.v1(), actRef.v2());
+//                for(GAction supported : supportedByTaskCond)
+//                    if(allFeasibleActions.contains(supported)) {
+//                        derivabilities.get(act.id).add(supported.id);
+//                    }
+//            }
+        }
+
         for(GAction ga : allFeasibleActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
                 varsOfAction.put(ga.abs.name(), ga.vars);
@@ -150,8 +221,22 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
             List<String> values = new LinkedList<>();
             for(LVarRef var : varsOfAction.get(ga.abs.name()))
                 values.add(ga.valueOf(var).instance());
-            initialState.addValuesToValuesSet(ga.abs.name(), values);
+            initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
         }
+/*
+        for(Map.Entry<String, ExtensionConstraint> entry : initialState.csp.bindings().exts.entrySet()) {
+            System.out.println(entry.getKey());
+            for(List<Integer> vals : entry.getValue().values) {
+                System.out.print(" ");
+                for(int i=0 ; i<vals.size() ; i++) {
+                    if(i != vals.size()-1)
+                        System.out.print(initialState.csp.bindings().values.get(vals.get(i))+" ");
+                    else
+                        System.out.println(initialState.csp.bindings().intValues.get(vals.get(i))+":"+
+                                gactions.get(initialState.csp.bindings().intValues.get(vals.get(i))));
+                }
+            }
+        }*/
 
         // add all other actions with nothing
 //        for(AbstractAction aa : pb.abstractActions()) {
@@ -160,7 +245,10 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 //            }
 //        }
 
-        toASP(initialState);
+//        toASP(initialState);
+//        for(Map.Entry<AbstractAction, Integer> e : callCount.entrySet()) {
+//            System.out.println(e.getKey()+" "+e.getValue());
+//        }
     }
 
 
@@ -211,16 +299,15 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 
         sb.append("\n% Refinements\n");
         for(GAction a : pb.allActions()) {
-            for(Pair<String, List<InstanceRef>> actRef : a.getActionRefs()) {
-                AbstractAction abs = st.pb.getAction(actRef.v1());
-                List<GAction> grounded = getGrounded(abs);
+            for(GTaskCond actRef : a.getActionRefs()) {
+                List<GAction> grounded = getGrounded(actRef.act);
                 boolean oneFeasible = false;
                 for(GAction subTask : grounded) {
-                    for (int i = 0; i < actRef.v2().size(); i++) {
-                        if(!actRef.v2().get(i).equals(subTask.valueOf(abs.args().get(i)))) {
+                    for (int i = 0 ; i < actRef.args.length ; i++) {
+                        if(!actRef.args[i].equals(subTask.valueOf(actRef.act.args().get(i)))) {
                             break; // at least one arg different
                         }
-                        if(i == actRef.v2().size()-1) {
+                        if(i == actRef.args.length-1) {
                             sb.append("deriv(");
                             sb.append(subTask.toASP());
                             sb.append(") :- deriv(");
@@ -241,12 +328,11 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                 sb.append("decomposable(");
                 sb.append(a.toASP());
                 sb.append(") :- ");
-                Iterator<Pair<String, List<InstanceRef>>> actRefIt = a.getActionRefs().iterator();
+                Iterator<GTaskCond> actRefIt = a.getActionRefs().iterator();
                 while (actRefIt.hasNext()) {
-                    Pair<String, List<InstanceRef>> actRef = actRefIt.next();
+                    GTaskCond actRef = actRefIt.next();
 
-                    AbstractAction abs = st.pb.getAction(actRef.v1());
-                    List<GAction> grounded = getGrounded(abs);
+                    List<GAction> grounded = getGrounded(actRef.act);
                     boolean oneFeasible = false;
                     sb.append("1 { usable(");
                     Iterator<GAction> subTasksIt = grounded.iterator();
@@ -315,27 +401,81 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         return sb.toString();
     }
 
+    public Set<GAction> decomposable(Set<GAction> feasibles) {
+        Set<GAction> ret = new HashSet<>();
+        for(GAction a : feasibles) {
+            boolean applicableSubTasks[] = new boolean[a.getActionRefs().size()];
+            for(int i=0 ; i<applicableSubTasks.length ; i++)
+                applicableSubTasks[i] = false;
+
+            for(int i=0 ; i<applicableSubTasks.length ; i++) {
+                GTaskCond gtc = a.getActionRefs().get(i);
+                if(!taskDerivabilities.containsKey(gtc))
+                    break; // no action supporting task cond in this problem
+                for(Integer sub : taskDerivabilities.get(gtc)) {
+                    if(feasibles.contains(gactions.get(sub))) {
+                        applicableSubTasks[i] = true;
+                        break;
+                    }
+                }
+            }
+            boolean applicable = true;
+            for(boolean applicableSubTask : applicableSubTasks)
+                applicable = applicable && applicableSubTask;
+
+            if(applicable)
+                ret.add(a);
+        }
+        return ret;
+    }
+
     public Set<GAction> getAllActions(GroundProblem base, State st) {
         GroundProblem pb = new GroundProblem(base, st);
         RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
         rpg.build();
         Set<GAction> feasibles = new HashSet<>(rpg.getAllActions());
+        List<Integer> feasiblesIDs = new LinkedList<>();
+        for(GAction ga : feasibles)
+            feasiblesIDs.add(ga.id);
+
+        ValuesHolder dom = st.csp.bindings().intValuesAsDomain(feasiblesIDs);
+        for(Action a : st.getAllActions()) {
+            st.csp.bindings().restrictDomain(groundedActVariable.get(a.id()), dom);
+        }
+
+        Set<GAction> feasibleAndDecomposable = decomposable(feasibles);
+        assert feasibleAndDecomposable.size() <= feasibles.size();
+
+        Set<GAction> strictest = feasibleAndDecomposable;
 
         boolean improved = true;
         while (improved) {
 //            System.out.println("Orig feasible: "+feasibles.size());
-            Set<GAction> feasibleAndDerivable = derivableFromInitialTaskNetwork(st, feasibles);
-            feasibleAndDerivable.addAll(actionsInState(st, feasibles));
+            Set<GAction> andDerivable = derivableFromInitialTaskNetwork(st, strictest);
+            assert andDerivable.size() <= strictest.size();
 
-            assert feasibleAndDerivable.size() <= feasibles.size();
-            if(feasibleAndDerivable.size() == feasibles.size())
+            andDerivable.addAll(actionsInState(st, strictest));
+            assert andDerivable.size() <= strictest.size();
+
+            strictest = andDerivable;
+
+//            Set<GAction> feasibleDerivableDecomposable = new HashSet<>();
+//            for(GAction a : feasibleAndDerivable) {
+//                if(feasible(a, feasibleAndDerivable, st))
+//                    feasibleDerivableDecomposable.add(a);
+//            }
+
+//            assert feasibleDerivableDecomposable.size() <= feasibles.size();
+            if(strictest.size() == feasibles.size())
                 improved = false;
             else {
                 pb.gActions.clear();
-                pb.gActions.addAll(feasibleAndDerivable);
+                pb.gActions.addAll(andDerivable);
                 rpg = new RelaxedPlanningGraph(pb);
                 rpg.build();
                 feasibles = new HashSet<>(rpg.getAllActions());
+                assert feasibles.size() <= strictest.size();
+                strictest = feasibles;
 //                System.out.println("new derivable: "+feasibleAndDerivable.size());
             }
         }
@@ -356,21 +496,21 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
     }
 
     public boolean feasible(GAction ga, Set<GAction> rpgFeasibleActions, State st) {
+        count++;
         if(!rpgFeasibleActions.contains(ga))
             return false;
 
-        for(Pair<String, List<InstanceRef>> actRef : ga.getActionRefs()) {
-            AbstractAction abs = st.pb.getAction(actRef.v1());
-            List<GAction> grounded = getGrounded(abs);
+        for(GTaskCond actRef : ga.getActionRefs()) {
+            List<GAction> grounded = getGrounded(actRef.act);
             boolean oneFeasible = false;
             for(GAction subTask : grounded) {
                 if(!rpgFeasibleActions.contains(subTask)) // not feasible
                     continue;
-                for (int i = 0; i < actRef.v2().size(); i++) {
-                    if(!actRef.v2().get(i).equals(subTask.valueOf(abs.args().get(i)))) {
+                for (int i = 0; i < actRef.args.length; i++) {
+                    if(!actRef.args[i].equals(subTask.valueOf(actRef.act.args().get(i)))) {
                         break; // at least one arg different
                     }
-                    if(i == actRef.v2().size()-1) {
+                    if(i == actRef.args.length-1) {
                         oneFeasible = true; // rpg feasible and unfiable with subtask
                     }
                 }
@@ -382,6 +522,25 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
     }
 
     public Set<GAction> actionsInState(State st, Set<GAction> rpgFeasibleActions) {
+        Set<GAction> ret = new HashSet<>();
+        ValuesHolder current = new ValuesHolder(new LinkedList<Integer>());
+        for(Action a : st.getAllActions()) {
+            assert(groundedActVariable.containsKey(a.id()));
+            ValuesHolder toAdd = st.csp.bindings().rawDomain(groundedActVariable.get(a.id()));
+            current = current.union(toAdd);
+        }
+        for(Integer gaRawID : current.values()) {
+            Integer gaID = st.csp.bindings().intValues.get(gaRawID);
+            assert(gactions.containsKey(gaID));
+            GAction ga = gactions.get(gaID);
+            assert ga != null;
+            if(rpgFeasibleActions.contains(ga))
+                ret.add(gactions.get(gaID));
+        }
+        return ret;
+    }
+
+    public Set<GAction> OLDactionsInState(State st, Set<GAction> rpgFeasibleActions) {
         Set<GAction> ret = new HashSet<>();
         for(Action a : st.getAllActions()) {
             for(GAction ga : groundedVersions(a, st)) {
@@ -398,15 +557,16 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 //        }
         return ret;
     }
-//    int count = 0;
+    int count = 0;
 
-    public Set<GAction> derivableFromInitialTaskNetwork(State st, Set<GAction> rpgFeasibleActions) {
+
+    public Set<GAction> derivableFromInitialTaskNetwork(State st, Set<GAction> allowed) {
         Set<GAction> possible = new HashSet<>();
 
         for(AbstractAction abs : st.pb.abstractActions())
             if(!abs.motivated())
                 for(GAction ga : getGrounded(abs))
-                    if(feasible(ga, rpgFeasibleActions, st))
+                    if(allowed.contains(ga))
                         possible.add(ga);
 
         for(ActionCondition ac : st.getOpenTaskConditions()) {
@@ -416,12 +576,11 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                     if (!st.unifiable(ac.args().get(i), ga.valueOf(ac.abs().args().get(i)))) {
                         break;
                     }
-                    if(i == ac.args().size()-1 && feasible(ga, rpgFeasibleActions, st))
+                    if(i == ac.args().size()-1 && allowed.contains(ga))
                         possible.add(ga);
                 }
             }
         }
-
         Set<GAction> pendingPossible = new HashSet<>(possible);
 
         for(Action a : st.getOpenLeaves()) {
@@ -429,7 +588,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
             List<GAction> groundedVersions = new LinkedList<>();
 
             for(GAction ga : getGrounded(a.abs())) {
-                if(!feasible(ga, rpgFeasibleActions, st))
+                if(!allowed.contains(ga))
                     continue;
                 for(int i=0 ; i<a.args().size() ; i++) {
                     if(!st.unifiable(a.args().get(i), ga.valueOf(a.abs().args().get(i))))
@@ -446,9 +605,9 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                         List<InstanceRef> args = new LinkedList<>();
                         for(LVarRef v : ref.jArgs())
                             args.add(ga.valueOf(v));
-                        Set<GAction> supported = supportedByTaskCond(name, args, st);
+                        Set<GAction> supported = supportedByTaskCond(name, args);
                         for(GAction sup : supported) {
-                            if(feasible(sup, rpgFeasibleActions, st)) {
+                            if(allowed.contains(sup)) {
                                 pendingPossible.add(sup);
                                 possible.add(sup);
                             }
@@ -465,42 +624,114 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
             GAction act = pendingPossible.iterator().next();
             pendingPossible.remove(act);
 
+            for(GTaskCond gtc : act.getActionRefs()) {
+                if(!taskDerivabilities.containsKey(gtc))
+                    continue;
+                for (Integer i : taskDerivabilities.get(gtc)) {
+                    GAction derivable = gactions.get(i);
+                    if (!possible.contains(derivable) && allowed.contains(derivable)) {
+                        possible.add(derivable);
+                        pendingPossible.add(derivable);
+                    }
+                }
+            }
+/*
             for(Pair<String, List<InstanceRef>> actRef : act.getActionRefs()) {
                 AbstractAction abs = st.pb.getAction(actRef.v1());
                 List<GAction> grounded = getGrounded(abs);
-                Set<GAction> supportedByTaskCond = supportedByTaskCond(actRef.v1(), actRef.v2(), st);
+                Set<GAction> supportedByTaskCond = supportedByTaskCond(actRef.v1(), actRef.v2());
                 for(GAction supported : supportedByTaskCond)
                     if(!possible.contains(supported) && feasible(supported, rpgFeasibleActions, st)) {
                         possible.add(supported);
                         pendingPossible.add(supported);
                     }
-            }
+            }*/
         }
+//        for(GAction poss : possible)
+//            assert allowed.contains(poss);
 
 //        for(GAction ga : possible) {
 //            System.out.println(ga);
 //        }
 
+//        System.out.println(count+" "+possible.size());
+//        count = 0;
         return possible;
     }
 
-    public Set<GAction> supportedByTaskCond(String actName, List<InstanceRef> args, State st) {
-        Set<GAction> supported = new HashSet<>();
-        AbstractAction abs = st.pb.getAction(actName);
-        List<GAction> grounded = getGrounded(abs);
-        for(GAction ga : grounded) {
-//            if(possible.contains(ga))
-//                continue;
-            for (int i = 0; i < args.size(); i++) {
-                if(!args.get(i).equals(ga.valueOf(abs.args().get(i)))) {
-                    break;
-                }
-                if(i == args.size()-1) {
-                    supported.add(ga);
+    private Map<AbstractAction, Map<LVarRef, Map<VarRef, BitSet>>> as = null;
+    private Map<AbstractAction, Integer> callCount = new HashMap<>();
+
+    public Set<GAction> supportedByTaskCond(String actName, List<InstanceRef> args) {
+        /*if(as == null) {
+            as = new HashMap<>();
+            for(AbstractAction a : pb.abstractActions()) {
+                callCount.put(a, 0);
+                as.put(a, new HashMap<LVarRef, Map<VarRef, BitSet>>());
+                for(LVarRef arg : a.args())
+                    as.get(a).put(arg, new HashMap<VarRef, BitSet>());
+                for(GAction ga : getGrounded(a)) {
+                    for(LVarRef arg : a.args()) {
+                        InstanceRef val = ga.valueOf(arg);
+                        if(!as.get(a).get(arg).containsKey(val))
+                            as.get(a).get(arg).put(val, new BitSet());
+                        as.get(a).get(arg).get(val).set(ga.id);
+                    }
                 }
             }
         }
-        return supported;
+
+        AbstractAction abs = pb.getAction(actName);
+        callCount.put(abs, callCount.get(abs)+1);
+        BitSet supported = null;
+        if(args.size() == 0) {
+            supported = new BitSet();
+            for(GAction ga : getGrounded(abs))
+                supported.set(ga.id);
+        }
+
+        for(int i=0 ; i<args.size() ; i++) {
+            LVarRef var = abs.args().get(i);
+            InstanceRef val = args.get(i);
+            assert as.containsKey(abs) : "Abstract action "+abs+" is not recorded.";
+            assert as.get(abs).containsKey(var);
+            if(!as.get(abs).get(var).containsKey(val))
+                supported = new BitSet(); // no ground action of this value
+            else if(supported == null) {
+                supported = new BitSet(as.get(abs).get(var).get(val).size());
+                supported.or(as.get(abs).get(var).get(val));
+            }
+            else {
+                supported.and(as.get(abs).get(var).get(val));
+            }
+        }*/
+
+//        Set<GAction> supported = new HashSet<>();
+//        AbstractAction abs = pb.getAction(actName);
+//        List<GAction> grounded = getGrounded(abs);
+//        System.out.println(abs.name()+"  "+grounded.size());
+//        for(GAction ga : grounded) {
+////            if(possible.contains(ga))
+////                continue;
+//            for (int i = 0; i < args.size(); i++) {
+//                if(!args.get(i).equals(ga.valueOf(abs.args().get(i)))) {
+//                    break;
+//                }
+//                if(i == args.size()-1) {
+//                    supported.add(ga);
+//                }
+//            }
+//        }
+        Set<Integer> sup = taskDerivabilities.get(new GTaskCond(pb.getAction(actName), args));
+        HashSet<GAction> all = new HashSet<>();
+        if(sup == null) // no action derivable from this task cond
+            return all;
+        for(int s : sup)
+            all.add(gactions.get(s));
+//        for(int i=0 ; i<supported.size() ; i++)
+//            if(supported.get(i))
+//                all.add(gactions.get(i));
+        return all;
     }
 
     @Override

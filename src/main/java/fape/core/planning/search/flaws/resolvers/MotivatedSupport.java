@@ -84,6 +84,10 @@ public class MotivatedSupport extends Resolver {
                 List<VarRef> values = new LinkedList<>();
                 for(LVarRef v : vars)
                     values.add(act.context().getDefinition(v)._2());
+                VarRef gAction = new VarRef();
+                st.csp.bindings().AddIntVariable(gAction);
+                values.add(gAction);
+                pgr.groundedActVariable.put(act.id(), gAction);
                 st.addValuesSetConstraint(values, act.abs().name());
             }
         }
