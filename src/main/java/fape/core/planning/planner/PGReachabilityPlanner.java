@@ -4,6 +4,7 @@ import fape.core.planning.planninggraph.*;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.strategies.plans.SOCA;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -80,13 +81,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
         RelaxedPlanningGraph pg = new RelaxedPlanningGraph(pb, acts);
         pg.build();
 
-        for(TemporalDatabase cons : st.consumers) {
-            DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st, pb);
-            if(!pg.supported(df)) {
-//                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));
-                return false;
-            }
-        }
+
 
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
@@ -102,6 +97,35 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
                 return false;
             }
         }
+
+        Set<GAction> derivableOnly = derivableFromInitialTaskNetwork(st, acts);
+//        System.out.println(derivableOnly.size()+" "+acts.size());
+//        if(derivableOnly.size() == 0) {
+//            System.out.println(st.depth+"\t      "+ SOCA.f(st));
+//        } else {
+//            System.out.println("                      aaaaaaaaaaaaaaa");
+//        }
+        for(TemporalDatabase cons : st.consumers) {/*
+            DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st, pb);
+            if(!pg.supported(df)) {
+//                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));
+                return false;
+            }*/
+            GroundProblem subpb = new GroundProblem(pb, st, cons);
+            RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(subpb, derivableOnly);
+            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st));
+            if(depth > 1000) {
+//                System.out.println("CUT OFF: "+Printer.inlineTemporalDatabase(st, cons));
+                return false;
+            }
+        }
+        Set<AbstractAction> addableActions = new HashSet<>();
+        for(GAction ga : derivableOnly)
+            addableActions.add(ga.abs);
+        Set<AbstractAction> nonAddable = new HashSet<>(st.pb.abstractActions());
+        nonAddable.removeAll(addableActions);
+        st.notAddable = nonAddable;
+
         return true;
     }
 

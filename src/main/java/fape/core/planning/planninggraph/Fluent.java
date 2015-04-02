@@ -14,7 +14,7 @@ public class Fluent implements PGNode {
     int hashVal;
 
 
-    public Fluent(Function f, List<VarRef> params, VarRef value) {
+    public Fluent(Function f, List<VarRef> params, VarRef value, boolean partOfTransition) {
         this.f = f;
         this.params = new LinkedList<VarRef>(params);
         this.value = value;

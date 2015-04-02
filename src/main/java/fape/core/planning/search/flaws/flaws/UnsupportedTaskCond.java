@@ -32,7 +32,8 @@ public class UnsupportedTaskCond extends Flaw {
         resolvers = new LinkedList<>();
 
         // inserting a new action is always a resolver.
-        resolvers.add(new NewTaskSupporter(actCond, actCond.abs()));
+        if(st.isAddable(actCond.abs()))
+            resolvers.add(new NewTaskSupporter(actCond, actCond.abs()));
 
         // existing action can be a supporter if every one of its parameters
         // are unifiable with the task condition

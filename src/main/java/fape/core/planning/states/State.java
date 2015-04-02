@@ -27,6 +27,7 @@ import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.*;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.statements.*;
@@ -38,9 +39,7 @@ import scala.Option;
 import scala.Tuple2;
 import scala.Tuple3;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 //import scala.collection.immutable.HashMap;
 
 /**
@@ -77,6 +76,8 @@ public class State implements Reporter {
     public final TaskNetworkManager taskNet;
 
     protected final ResourceManager resMan;
+
+    public Set<AbstractAction> notAddable = new HashSet<>();
 
     /**
      * Keep tracks of statements that must be supported by a particular
@@ -147,6 +148,14 @@ public class State implements Reporter {
 
     public State cc() {
         return new State(this);
+    }
+
+    /**
+     * Returns true if the action can be added to the State. This is populated by reasonning on derivabilities,
+     * depending on the planner used.
+     */
+    public boolean isAddable(AbstractAction a) {
+        return !notAddable.contains(a);
     }
 
     /**
@@ -840,6 +849,32 @@ public class State implements Reporter {
     public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().enforceStrictlyBefore(a, b); }
 
     public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().canBeBefore(a, b); }
+
+    public boolean canBeBefore(Collection<TPRef> as, Collection<TPRef> bs) {
+        for(TPRef a : as) {
+            for(TPRef b : bs) {
+                if(!canBeBefore(a, b))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean canBeBefore(Collection<TPRef> as, TPRef b) {
+        for(TPRef a : as) {
+            if(!canBeBefore(a, b))
+                return false;
+        }
+        return true;
+    }
+
+    public boolean canBeBefore(TPRef a, Collection<TPRef> bs) {
+        for(TPRef b : bs) {
+            if(!canBeBefore(a, b))
+                return false;
+        }
+        return true;
+    }
 
     public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().canBeStrictlyBefore(a, b); }
 

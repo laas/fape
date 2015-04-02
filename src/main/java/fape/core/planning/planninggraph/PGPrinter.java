@@ -31,9 +31,9 @@ class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel, Edge<PGNode>> {
 
     @Override
     public String printNode(PGNode n) {
-        if(n instanceof GroundAction) {
-            GroundAction act = (GroundAction) n;
-            return act.act.name() + valuesOf(act.params) + " ->"+rpg.distance(n);
+        if(n instanceof GAction) {
+            GAction act = (GAction) n;
+            return act.toString();
         } else if(n instanceof Fluent) {
             return ((Fluent) n).f.name() + valuesOf(((Fluent) n).params).toString() + pb.valueOf(((Fluent) n).value) + " ->"+rpg.distance(n);
         } else if(n instanceof GroundState) {

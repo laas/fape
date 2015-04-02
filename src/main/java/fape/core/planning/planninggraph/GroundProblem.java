@@ -23,7 +23,6 @@ public class GroundProblem {
     public final GroundState initState = new GroundState();
     public final GroundState goalState = new GroundState();
 
-    final List<GroundAction> actions;
     public final List<GAction> gActions;
 
     final List<Invariant> invariants = new LinkedList<>();
@@ -69,41 +68,49 @@ public class GroundProblem {
         return total;
     }
 
+    Collection<Fluent> dbToFluents(TemporalDatabase db, State st) {
+        HashSet<Fluent> fluents = new HashSet<>();
+        for(ChainComponent cc : db.chain) {
+            if (cc.change) {
+                // those values can be used for persistences but not for transitions.
+                fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.GetSupportValue(), st, false));
+            }
+        }
+        // the last value can be used for transitions as well
+        if(!db.HasSinglePersistence())
+            fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.GetGlobalSupportValue(), st, true));
+        return fluents;
+    }
+
     public GroundProblem(GroundProblem pb, State st) {
         this.liftedPb = pb.liftedPb;
-        this.actions = pb.actions;
         this.gActions = new LinkedList<>(pb.gActions);
 
         for(TemporalDatabase db : st.tdb.vars) {
-            for(ChainComponent cc : db.chain) {
-                if(cc.change) {
-                    DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, cc.GetSupportValue(), st, pb);
-                    for (Fluent f : df.fluents) {
-                        initState.fluents.add(f);
-                    }
-                }
-            }
+            initState.fluents.addAll(dbToFluents(db, st));
         }
     }
 
     public GroundProblem(GroundProblem pb, State st, TemporalDatabase og) {
         this.liftedPb = pb.liftedPb;
-        this.actions = pb.actions;
         this.gActions = pb.gActions;
 
         for(TemporalDatabase db : st.tdb.vars) {
-            if(canIndirectlySupport(st, db, og)) {
-                DisjunctiveFluent df = new DisjunctiveFluent(db.stateVariable, db.GetGlobalSupportValue(), st, pb);
-                for(Fluent f : df.fluents) {
-                    initState.fluents.add(f);
+            if(db.HasSinglePersistence())
+                continue;
+            for(ChainComponent cc : db.chain) {
+                if(cc.change && canIndirectlySupport(st, cc, og)) {
+                    initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.GetSupportValue(), st, false));
                 }
             }
+            if(st.canBeBefore(db.getSupportTimePoint(), og.getFirstTimePoints()))
+                initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.GetGlobalSupportValue(), st, true));
         }
+
     }
 
-    public boolean canIndirectlySupport(State st, TemporalDatabase supporter, TemporalDatabase consumer) {
-        if(supporter.HasSinglePersistence())
-            return false;
+    public boolean canIndirectlySupport(State st, ChainComponent supporter, TemporalDatabase consumer) {
+        assert supporter.change;
 
         for(TPRef consumeTP : consumer.getFirstTimePoints()) {
             if(!st.canBeBefore(supporter.getSupportTimePoint(), consumeTP))
@@ -114,7 +121,6 @@ public class GroundProblem {
 
     public GroundProblem(AnmlProblem liftedPb) {
         this.liftedPb = liftedPb;
-        this.actions = new LinkedList<>();
         this.gActions = new LinkedList<>();
 
         for(Chronicle c : liftedPb.chronicles()) {
@@ -128,57 +134,13 @@ public class GroundProblem {
 
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
             this.gActions.addAll(GAction.groundActions(this, liftedAct));
-            // ignore methods with decompositions
-//            if(!liftedAct.jDecompositions().isEmpty())
-//                continue;
-//
-//            List<List<VarRef>> paramsLists = possibleParams(liftedAct);
-//            for(List<VarRef> params : paramsLists) {
-//                GroundAction candidate = new GroundAction(liftedAct, params, this);
-//
-//                if(candidate.isValid()) {
-//                    actions.add(candidate);
-//                } else {
-//                    //System.out.println("Ignored: " + candidate);
-//                }
-//            }
         }
 
         for(Chronicle mod : liftedPb.chronicles()) {
-            for(LogStatement s : mod.logStatements()) {/*
-                boolean isOnStart = false;
-                boolean isOnEnd = false;
-                for(TemporalConstraint constraint : mod.temporalConstraints()) {
-                    if(constraint.op().equals("=") && constraint.plus() == 0) {
-                        // this is an equality constraint
-                        if(constraint.tp1() == s.end() && constraint.tp2() == liftedPb.start() ||
-                                constraint.tp2() == s.end() && constraint.tp1() == liftedPb.start()) {
-                            isOnStart = true;
-                            break;
-                        }
-                        if(constraint.tp1() == s.start() && constraint.tp2() == liftedPb.end() ||
-                                constraint.tp2() == s.start() && constraint.tp1() == liftedPb.end()) {
-                            isOnEnd = true;
-                            break;
-                        }
-                    }
-                }
-                if(isOnStart) {
-                    assert statementToPrecondition(s, null) == null;
-                    Fluent addition = statementToAddition(s, null);
-                    if(addition != null)
-                        initState.fluents.add(addition);
-                }
-                if(isOnEnd) {
-                    Fluent precondition = statementToPrecondition(s, null);
-                    if(precondition != null)
-                        goalState.fluents.add(precondition);
-                }*/
-                Fluent addition = statementToAddition(s, null);
-                if(addition != null)
+            for(LogStatement s : mod.logStatements()) {
+                for(Fluent addition : statementToAddition(s, null))
                     initState.fluents.add(addition);
-                Fluent precondition = statementToPrecondition(s, null);
-                if(precondition != null)
+                for(Fluent precondition : statementToPrecondition(s, null))
                     goalState.fluents.add(precondition);
             }
         }
@@ -230,20 +192,23 @@ public class GroundProblem {
         }
     }
 
-    protected Fluent statementToPrecondition(LogStatement s, Map<LVarRef, VarRef> argMap) {
-        if(!(s instanceof Persistence || s instanceof Transition)) {
-            return null;
-        } else {
-            return new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue());
+    protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, VarRef> argMap) {
+        List<Fluent> fluents = new LinkedList<>();
+        if(s instanceof Transition) {
+            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), true));
+        } else if(s instanceof Persistence) {
+            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), false));
         }
+        return fluents;
     }
 
-    protected Fluent statementToAddition(LogStatement s, Map<LVarRef, VarRef> argMap) {
-        if(!(s instanceof Assignment || s instanceof Transition)) {
-            return null;
-        } else {
-            return new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue());
+    protected Collection<Fluent> statementToAddition(LogStatement s, Map<LVarRef, VarRef> argMap) {
+        List<Fluent> fluents = new LinkedList<>();
+        if(s instanceof Transition || s instanceof Assignment) {
+            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), false));
+            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), true));
         }
+        return fluents;
     }
 
     protected Collection<Fluent> statementToDeletions(LogStatement s, Map<LVarRef, VarRef> argMap) {
@@ -253,12 +218,15 @@ public class GroundProblem {
             for(String value : liftedPb.instances().instancesOfType(s.sv().func().valueType())) {
                 VarRef val = liftedPb.instances().referenceOf(value);
                 if(val != s.endValue()) {
-                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val));
+                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val, true));
+                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val, false));
                 }
             }
         } else {
-            if(s.startValue() != s.endValue())
-                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue()));
+            if(s.startValue() != s.endValue()) {
+                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), true));
+                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), false));
+            }
         }
         return fluents;
     }

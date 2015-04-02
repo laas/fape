@@ -100,14 +100,17 @@ public class GAction implements PGNode {
         for(AbstractLogStatement s : abs.jLogStatements()) {
             if(s instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) s;
-                pre.add(fluent(t.sv(), t.from(), vars, pb));
-                add.add(fluent(t.sv(), t.to(), vars, pb));
+                pre.add(fluent(t.sv(), t.from(), true, vars, pb));
+                pre.add(fluent(t.sv(), t.from(), false, vars, pb));
+                add.add(fluent(t.sv(), t.to(), true, vars, pb));
+                add.add(fluent(t.sv(), t.to(), false, vars, pb));
             } else if(s instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) s;
-                pre.add(fluent(p.sv(), p.value(), vars, pb));
+                pre.add(fluent(p.sv(), p.value(), false, vars, pb));
             } else if(s instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) s;
-                add.add(fluent(a.sv(), a.value(), vars, pb));
+                add.add(fluent(a.sv(), a.value(), false, vars, pb));
+                add.add(fluent(a.sv(), a.value(), true, vars, pb));
             }
         }
 
@@ -154,12 +157,12 @@ public class GAction implements PGNode {
         return ret;
     }
 
-    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
+    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, boolean partOfTransition, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
         List<VarRef> svParams = new LinkedList<>();
         for(LVarRef v : sv.jArgs()) {
             svParams.add(valueOf(v, vars, pb));
         }
-        return new Fluent(sv.func(), svParams, valueOf(value, vars, pb));
+        return new Fluent(sv.func(), svParams, valueOf(value, vars, pb), partOfTransition);
     }
 
     public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa) {

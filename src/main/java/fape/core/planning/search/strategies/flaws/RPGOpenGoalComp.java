@@ -37,7 +37,7 @@ public class RPGOpenGoalComp implements FlawComparator {
         if(!depths.containsKey(udb)) {
             GroundProblem pb = new GroundProblem(gpb, st, udb.consumer);
             RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
-            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.GetGlobalConsumeValue(), st, pb));
+            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.GetGlobalConsumeValue(), st));
             depths.put(udb, depth);
 //            System.out.println(""+depth+"   " +Printer.inlineTemporalDatabase(st, udb.consumer));
         }

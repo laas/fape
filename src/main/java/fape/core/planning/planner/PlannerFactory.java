@@ -40,8 +40,6 @@ public class PlannerFactory {
                 return new Planner(controllability, options);
             case "rpg":
                 return new PGPlanner(controllability, options);
-            case "rpg_ext":
-                return new PGExtPlanner(controllability, options);
             case "taskcond":
                 return new TaskConditionPlanner(controllability, options);
             default:
@@ -58,8 +56,6 @@ public class PlannerFactory {
                 return new Planner(state, options);
             case "rpg":
                 return new PGPlanner(state, options);
-            case "rpg_ext":
-                return new PGExtPlanner(state, options);
             case "taskcond":
                 return new TaskConditionPlanner(state, options);
             case "pgr":

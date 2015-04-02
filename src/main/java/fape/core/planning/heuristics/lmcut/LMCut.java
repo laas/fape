@@ -12,7 +12,6 @@ package fape.core.planning.heuristics.lmcut;
 
 import fape.core.planning.planninggraph.Fluent;
 import fape.core.planning.planninggraph.GAction;
-import fape.core.planning.planninggraph.GroundAction;
 import fape.core.planning.planninggraph.GroundProblem;
 
 import java.util.*;

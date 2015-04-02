@@ -15,7 +15,12 @@ public class DisjunctiveFluent implements Landmark {
         this.fluents = new HashSet<>(fluents);
     }
 
-    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st, GroundProblem pb) {
+    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st) {
+        this.fluents = new HashSet<>(fluentsOf(sv, value, st, false));
+    }
+
+    public static Collection<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, boolean addChangeableFluents) {
+        HashSet<Fluent> fluents = new HashSet<>();
         List<VarRef> variables = new LinkedList<>();
         for(VarRef var : sv.jArgs()) {
             if(!variables.contains(var)) {
@@ -30,14 +35,13 @@ public class DisjunctiveFluent implements Landmark {
         for(VarRef var : variables) {
             List<VarRef> values = new LinkedList<>();
             for(String val : st.domainOf(var)) {
-                values.add(pb.liftedPb.instances().referenceOf(val));
+                values.add(st.pb.instances().referenceOf(val));
             }
             valuesSets.add(values);
         }
 
         List<List<VarRef>> argList = PGUtils.allCombinations(valuesSets);
 
-        this.fluents = new HashSet<>();
         for(List<VarRef> args : argList) {
 
             List<VarRef> fluentArgs = new LinkedList<>();
@@ -58,8 +62,11 @@ public class DisjunctiveFluent implements Landmark {
             }
             VarRef varOfValue = args.get(argIndex);
 
-            fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue));
+            fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue, false));
+            if(addChangeableFluents)
+                fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue, true));
         }
+        return fluents;
     }
 
     @Override

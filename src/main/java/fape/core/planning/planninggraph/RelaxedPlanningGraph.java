@@ -58,7 +58,7 @@ public class RelaxedPlanningGraph {
         distances.put(pb.initState, 0);
 
         while(expandOnce());
-        updateDistances(pb.initState);
+//        updateDistances(pb.initState);
     }
 
     /**
@@ -179,56 +179,6 @@ public class RelaxedPlanningGraph {
             }
             return min;
         }
-    }
-
-    void updateDistances(PGNode source) {
-        assert distances.containsKey(source);
-        int d = distances.get(source);
-
-        for(PGNode child : graph.jChildren(source)) {
-            if(child instanceof GroundAction) {
-                int dChild = maxDist(graph.jParents(child));
-                if(dChild != Integer.MAX_VALUE) {
-                    distances.put(child, dChild+1);
-                    updateDistances(child);
-                }
-            } else if(child instanceof Fluent) {
-                int dChild = minDist(graph.jParents(child));
-                assert dChild != Integer.MAX_VALUE;
-                if(distance(child) > dChild) {
-                    distances.put(child, dChild);
-                    updateDistances(child);
-                }
-            }
-        }
-    }
-
-    public DisjunctiveAction enablers(DisjunctiveFluent df) {
-        DisjunctiveAction supporters = new DisjunctiveAction();
-        for(Fluent f : df.fluents) {
-            supporters.actions.addAll(enablers(f).actions);
-        }
-        return supporters;
-    }
-
-    public DisjunctiveAction enablers(Fluent f) {
-        List<GroundAction> actions = new LinkedList<>();
-
-        // fluent f is not achievable, hence an empty disjunctive action
-        if(!graph.contains(f))
-            return new DisjunctiveAction(actions);
-
-        for(PGNode n : graph.jParents(f)) {
-            if(n instanceof GroundAction) {
-                actions.add((GroundAction) n);
-            } else if(n instanceof GroundState) {
-                //actions.add(null);
-            } else {
-                throw new FAPEException("There should be no fluent parent of another fluent.");
-            }
-        }
-
-        return new DisjunctiveAction(actions);
     }
 
     /**
