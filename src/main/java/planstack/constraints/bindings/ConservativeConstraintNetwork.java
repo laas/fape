@@ -5,6 +5,7 @@ import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
 import scala.collection.JavaConversions;
 
 import java.util.*;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Implements a CSP with a very conservative strategy to allow sharing
@@ -47,7 +48,7 @@ public class ConservativeConstraintNetwork<VarRef> {
      *
      * It is shared between all instances.
      */
-    final ArrayList<String> values;
+    public final ArrayList<String> values;
 
     /**
      * Maps every value to its ID.
@@ -55,7 +56,14 @@ public class ConservativeConstraintNetwork<VarRef> {
      */
     final HashMap<String, Integer> valuesIds;
 
-    final ArrayList<Integer> intValues;
+    public final ArrayList<Integer> intValues;
+
+    /**
+     * Contains a domain that is shared between all instances of ConservativeConstraintNetworks.
+     * This domain is the default one for all new int variables.
+     */
+    private final ValuesHolder[] defaultIntDomain;
+
     final HashMap<Integer, Integer> intValuesIds;
 
     /**
@@ -69,7 +77,7 @@ public class ConservativeConstraintNetwork<VarRef> {
      * For any constraints involving two variables a and b, there needs to be an
      * edge (a, b, EXTENSION) in the constraint graph.
      */
-    final HashMap<String, ExtensionConstraint> exts;
+    public final HashMap<String, ExtensionConstraint> exts;
     HashMap<List<VarRef>, String> mappings;
 
     /**
@@ -105,6 +113,9 @@ public class ConservativeConstraintNetwork<VarRef> {
         exts = new HashMap<String, ExtensionConstraint>();
         mappings = new HashMap<>();
         extChecked = false;
+        defaultIntDomain = new ValuesHolder[1];
+        defaultIntDomain[0] = new ValuesHolder(new LinkedList<Integer>());
+        assert defaultIntDomain[0].size() == intValues.size();
     }
 
     public ConservativeConstraintNetwork(ConservativeConstraintNetwork<VarRef> base) {
@@ -120,6 +131,8 @@ public class ConservativeConstraintNetwork<VarRef> {
         mappings = new HashMap<List<VarRef>, String>(base.mappings);
         exts = base.exts;
         extChecked = base.extChecked;
+        defaultIntDomain = base.defaultIntDomain;
+        assert defaultIntDomain[0].size() == intValues.size();
     }
 
     /**
@@ -171,11 +184,12 @@ public class ConservativeConstraintNetwork<VarRef> {
                 }
 
                 ValuesHolder old = variables.apply(focusVar);
+
                 Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, restrictions);
                 if(domainRestrictions == null)
                     break;
                 variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(domainRestrictions)));
-                if(!old.equals(variables.apply(focusVar)))
+                if(old.size() != variables.apply(focusVar).size())
                     domainModified(focusVar);
             }
         }
@@ -194,6 +208,8 @@ public class ConservativeConstraintNetwork<VarRef> {
             int id = intValues.size();
             intValues.add(id, val);
             intValuesIds.put(val, id);
+            defaultIntDomain[0] = defaultIntDomain[0].add((Integer) id);
+            assert defaultIntDomain[0].size() == intValues.size();
         }
     }
 
@@ -252,15 +268,37 @@ public class ConservativeConstraintNetwork<VarRef> {
         return isConsistent;
     }
 
-    protected boolean restrictDomain(VarRef v, ValuesHolder values) {
+    /** Domain representation of a set of integer values */
+    public ValuesHolder intValuesAsDomain(Collection<Integer> intDomain) {
+        List<Integer> ids = new LinkedList<>();
+        for(Integer value : intDomain) {
+            ids.add(intValuesIds.get(value));
+        }
+        return new ValuesHolder(ids);
+    }
+
+    /** Domain representation of a set of string values */
+    public ValuesHolder stringValuesAsDomain(Collection<String> stringDomain) {
+        List<Integer> ids = new LinkedList<>();
+        for(String value : stringDomain) {
+            ids.add(valuesIds.get(value));
+        }
+        return new ValuesHolder(ids);
+    }
+
+    /**
+     *  Restricts the domain of variable to the given one.
+     *  The resulting domain will be the intersection of the existing and this one.
+     */
+    public boolean restrictDomain(VarRef v, ValuesHolder domain) {
         ValuesHolder old = variables.apply(v);
-        ValuesHolder newDom = old.intersect(values);
+        ValuesHolder newDom = old.intersect(domain);
         variables = variables.updated(v, newDom);
 
         if(newDom.isEmpty()) {
             consistent = false;
             return true;
-        } else if(!old.equals(newDom)) {
+        } else if(old.size() != newDom.size()) {
             domainModified(v);
             return true;
         } else {
@@ -272,14 +310,14 @@ public class ConservativeConstraintNetwork<VarRef> {
         assert c.l() == ConstraintType.DIFFERENCE;
 
         if(variables.apply(c.u()).size() == 1) {
-            if(vals(c.v()).contains((Integer) vals(c.u()).values.head())) {
+            if(vals(c.v()).contains((Integer) vals(c.u()).head())) {
                 boolean changed = restrictDomain(c.v(), vals(c.v()).remove(vals(c.u())));
                 assert changed;
             }
         }
 
         if(variables.apply(c.v()).size() == 1) {
-            if(vals(c.u()).contains((Integer) vals(c.v()).values.head())) {
+            if(vals(c.u()).contains((Integer) vals(c.v()).head())) {
                 boolean changed = restrictDomain(c.u(), vals(c.u()).remove(vals(c.v())));
                 assert changed;
             }
@@ -301,21 +339,13 @@ public class ConservativeConstraintNetwork<VarRef> {
     public void restrictDomain(VarRef var, Collection<String> toValues) {
         assert variables.contains(var);
         assert !isIntegerVar(var);
-        List<Integer> ids = new LinkedList<>();
-        for(String value : toValues) {
-            ids.add(valuesIds.get(value));
-        }
-        restrictDomain(var, new ValuesHolder(ids));
+        restrictDomain(var, stringValuesAsDomain(toValues));
     }
 
     public void restrictIntDomain(VarRef var, Collection<Integer> toValues) {
         assert variables.contains(var);
         assert isIntegerVar(var);
-        List<Integer> ids = new LinkedList<>();
-        for(Integer value : toValues) {
-            ids.add(intValuesIds.get(value));
-        }
-        restrictDomain(var, new ValuesHolder(ids));
+        restrictDomain(var, intValuesAsDomain(toValues));
     }
 
     public void AddVariable(VarRef var, Collection<String> domain, String type) {
@@ -323,7 +353,9 @@ public class ConservativeConstraintNetwork<VarRef> {
         assert !variables.contains(var);
         List<Integer> valueIds = new LinkedList<>();
         for(String val : domain) {
-            assert valuesIds.containsKey(val) : "Error: "+val+" is not known to the constraint network.";
+            assert valuesIds.containsKey(val) : "Error: "+val+" is not known to the constraint network. "+
+                    "Make sure no variable is defined before all of the instances are.\n"+
+                    "For instance \"instance A a1, a2, a3;\" and constant A v;\" should be in the same file.";
             valueIds.add(valuesIds.get(val));
         }
         variables = variables.updated(var, new ValuesHolder(valueIds));
@@ -337,20 +369,25 @@ public class ConservativeConstraintNetwork<VarRef> {
      * @param var Variable to record.
      */
     public void AddIntVariable(VarRef var) {
-        AddIntVariable(var, intValues);
+        addIntVariable(var, defaultIntDomain[0]);
+        assert defaultIntDomain[0].size() == intValues.size();
+    }
+
+    private void addIntVariable(VarRef var, ValuesHolder domain) {
+        assert !variables.contains(var);
+        variables = variables.updated(var, domain);
+        types.put(var, "integer");
+        domainModified(var);
+        constraints.addVertex(var);
     }
 
     public void AddIntVariable(VarRef var, Collection<Integer> domain) {
-        assert !variables.contains(var);
         List<Integer> valueIds = new LinkedList<>();
         for(Integer val : domain) {
             addPossibleValue(val);
             valueIds.add(intValuesIds.get(val));
         }
-        variables = variables.updated(var, new ValuesHolder(valueIds));
-        types.put(var, "integer");
-        domainModified(var);
-        constraints.addVertex(var);
+        addIntVariable(var, new ValuesHolder(valueIds));
     }
 
     public void AddUnificationConstraint(VarRef a, VarRef b) {
@@ -383,7 +420,7 @@ public class ConservativeConstraintNetwork<VarRef> {
 
     /** number of values in the domain of this variable */
     public Integer domainSize(VarRef var) {
-        return variables.apply(var).values.size();
+        return variables.apply(var).size();
     }
 
     /**
@@ -414,6 +451,10 @@ public class ConservativeConstraintNetwork<VarRef> {
         return domain;
     }
 
+    public ValuesHolder rawDomain(VarRef var) {
+        return variables.apply(var);
+    }
+
     /**
      * Returns the type of this variable.
      */
@@ -438,7 +479,7 @@ public class ConservativeConstraintNetwork<VarRef> {
     }
 
     public boolean unifiable(VarRef a, VarRef b) {
-        return !separated(a,b) && variables.apply(a).intersect(variables.apply(b)).values.size() != 0;
+        return !separated(a,b) && variables.apply(a).intersect(variables.apply(b)).size() != 0;
     }
 
     public boolean separable(VarRef a, VarRef b) {
@@ -453,6 +494,11 @@ public class ConservativeConstraintNetwork<VarRef> {
     }
 
     public boolean unified(VarRef a, VarRef b) {
+        if(a == b)
+            return true;
+        if(domainSize(a) == 1 && domainSize(b) == 1 && domainOf(a).get(0).equals(domainOf(b).get(0)))
+            return true;
+
         for(LabeledEdge<VarRef, ConstraintType> c : JavaConversions.asJavaCollection(constraints.edges(a, b))) {
             if(c.l() == ConstraintType.EQUALITY)
                 return true;
@@ -532,6 +578,20 @@ public class ConservativeConstraintNetwork<VarRef> {
         assert exts.get(setID).values.get(0).size() == variables.size();
         assert exts.get(setID).isLastVarInteger == isIntegerVar(variables.get(variables.size()-1));
         mappings.put(new LinkedList<VarRef>(variables), setID);
+        LinkedList<HashSet<Integer>> domains = new LinkedList<>();
+        for(int i=0 ; i< variables.size() ; i++) {
+            domains.add(new HashSet<Integer>());
+        }
+        for(List<Integer> line : exts.get(setID).values) {
+            for(int i=0 ; i<line.size() ; i++) {
+                domains.get(i).add(line.get(i));
+            }
+        }
+        for(int i=0 ; i<variables.size() ; i++) {
+            VarRef var = variables.get(i);
+            HashSet<Integer> domain = domains.get(i);
+            this.restrictDomain(var, new ValuesHolder(domain));
+        }
         for(VarRef v : variables) {
             domainModified(v);
         }
