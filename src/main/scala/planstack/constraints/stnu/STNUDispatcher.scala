@@ -105,7 +105,7 @@ class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
     val rigidsRelations = GraphFactory.getSimpleLabeledDigraph[TPRef, Int]
     for(tp <- rigids) rigidsRelations.addVertex(tp)
     for(c <- from.constraints if c.tipe == RIGID) {
-      assert(fixedTps.contains(c.u))
+      assert(fixedTps.contains(c.u) || rigids.contains(c.u)) //TODO: is it really valid ?
       assert(rigids.contains(c.v))
       rigidsRelations.addEdge(c.u, c.v, c.d)
     }

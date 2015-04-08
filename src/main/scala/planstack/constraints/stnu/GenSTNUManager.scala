@@ -141,12 +141,13 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
   private final def commit(c : Const): Unit = {
     assert(!isPendingVirtual(c.u) && !isPendingVirtual(c.v), "One of the time points is a pending virtual")
 
-    val (source, sourceDist) =
-      if (isVirtual(c.u)) virtualTPs(c.u).get
-      else (c.u, 0)
-    val (dest, destDist) =
-      if (isVirtual(c.v)) virtualTPs(c.v).get
-      else (c.v, 0)
+    /** returns the real time point attached to a virtual time point and the distance between the two */
+    def getSourceAndDist(source: TPRef, dist: Int) : (TPRef, Int) =
+      if(!isVirtual(source)) (source, dist)
+      else virtualTPs(source) match { case Some((s, d)) => getSourceAndDist(s, d + dist) }
+
+    val (source, sourceDist) = getSourceAndDist(c.u, 0)
+    val (dest, destDist) = getSourceAndDist(c.v, 0)
 
     assert(hasTimePoint(source) && !isVirtual(source))
     assert(hasTimePoint(dest) && !isVirtual(dest))
