@@ -50,6 +50,8 @@ public class Printer {
             return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
         else if(o instanceof UnsupportedDatabase)
             return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedDatabase) o).consumer);
+        else if(o instanceof UnmotivatedAction)
+            return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
 
         // Resolvers
         else if(o instanceof TemporalSeparation)

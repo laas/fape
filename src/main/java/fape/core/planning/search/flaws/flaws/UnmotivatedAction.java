@@ -5,6 +5,7 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
@@ -46,12 +47,15 @@ public class UnmotivatedAction extends Flaw {
             return resolvers;
 
         resolvers = new LinkedList<>();
+        assert(st.taskNet.getNumOpenActionConditions() == st.getOpenTaskConditions().size());
 
         // any task condition unifiable with act
         for(ActionCondition ac : st.getOpenTaskConditions()) {
             boolean unifiable = true;
             if(ac.abs() != act.abs())
-                break;
+                continue;
+
+            assert act.args().size() == ac.args().size();
             for(int i=0 ; i<act.args().size() ; i++) {
                 unifiable &= st.unifiable(act.args().get(i), ac.args().get(i));
             }
