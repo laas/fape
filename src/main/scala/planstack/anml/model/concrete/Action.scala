@@ -110,7 +110,7 @@ class Action(
   }
 
   /** Arguments (as global variables) of the action */
-  def args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
+  lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }

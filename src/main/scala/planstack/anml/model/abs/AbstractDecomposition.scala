@@ -11,6 +11,7 @@ class AbstractDecomposition(parentContext:PartialContext) {
   val context = new PartialContext(Some(parentContext))
 
   val statements = ListBuffer[AbstractStatement]()
+  def jStatements = seqAsJavaList(statements)
 
   def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractActionRef]).map(_.asInstanceOf[AbstractActionRef]))
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))

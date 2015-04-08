@@ -3,6 +3,8 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.AbstractStatement
 
+import scala.collection.JavaConverters._
+
 /** Reference to an action as it appears in a decomposition
   *
   * @param name Name of the action
@@ -11,7 +13,9 @@ import planstack.anml.model.abs.statements.AbstractStatement
   */
 class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) extends AbstractStatement(localId) {
   require(localId nonEmpty)
-  require(name nonEmpty)
+  require(name nonEmpty, s"Emptyname: args: ${args.mkString(", ")}  localid: $localId")
+
+  def jArgs : java.util.List[LVarRef] = args.asJava
 
   override def bind(context:Context, pb:AnmlProblem) = throw new UnsupportedOperationException
 

@@ -273,4 +273,16 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     chron
   }
 
+  def instance(instanceName: String) : InstanceRef = instances.referenceOf(instanceName)
+
+  /** Builds a state variable with the given function and args */
+  def stateVariable(funcName: String, args: Seq[String]) = {
+    val vars = args.map(instances.referenceOf(_))
+    val func = functions.get(funcName)
+    new ParameterizedStateVariable(func, vars.toList)
+  }
+
+  /** Builds a state variable with the given function and args */
+  def jStateVariable(funcName: String, args: java.util.List[String]) =
+    stateVariable(funcName, args.asScala)
 }

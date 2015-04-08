@@ -16,7 +16,7 @@ class InstanceManager {
   private val types = mutable.Map[String, Type]()
 
   /** Maps an instance name to a (type, GlobalReference) pair */
-  private val instancesDef = mutable.Map[String, Pair[String, VarRef]]()
+  private val instancesDef = mutable.Map[String, Pair[String, InstanceRef]]()
 
   /** Maps every type to a list of instance that are exactly of this type (doesn't contain instances of sub types */
   private val instancesByType = mutable.Map[String, List[String]]()
@@ -106,7 +106,7 @@ class InstanceManager {
     * @param name Name of the instance to lookup
     * @return The global variable reference linked to this instance
     */
-  def referenceOf(name: String) : VarRef = instancesDef(name)._2
+  def referenceOf(name: String) : InstanceRef = instancesDef(name)._2
 
   /** Lookup for all instances of this types (including all instances of any of its subtypes). */
   def instancesOfType(tipe:String) : java.util.List[String] = seqAsJavaList(instancesOfTypeRec(tipe))
