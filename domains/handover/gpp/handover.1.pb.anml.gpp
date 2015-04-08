@@ -1,0 +1,12 @@
+
+#ifndef HIER
+[end] I.location == D0;
+#endif
+
+
+#ifdef HIER
+constant Robot r3;
+constant Robot r4;
+constant NavLocation l2;
+Transport(r3, r4, l2, D0, I);
+#endif

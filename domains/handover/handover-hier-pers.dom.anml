@@ -17,7 +17,7 @@ type Item with {
 };
 
 /* Depicts if a robot can move from a to b */
-constant boolean navigable(NavLocation a, NavLocation b); 
+constant boolean navigable(NavLocation a, NavLocation b);
 
 /* Depicts if two robot can pass themselves objects from a to b */
 constant boolean passable(NavLocation a, NavLocation b);
@@ -29,10 +29,11 @@ action Move(Robot r, NavLocation a, NavLocation b) {
     [all] r.location == a :-> b;
 };
 
-action Handover(Robot r1, Robot r2, Item i) {
-  duration := 5;
-	constant NavLocation a;
-	constant NavLocation b; 
+action Handover(Robot r1, Robot r2, Item i, NavLocation a, NavLocation b) {
+        motivated;
+      duration := 5;
+    r1 != r2;
+
     passable(a, b) == true;
     [all] {
         r1.location == a;
@@ -41,9 +42,9 @@ action Handover(Robot r1, Robot r2, Item i) {
     };
 };
 
-action Pick(Robot r1, Item i) {
-  duration := 5;
-	constant NavLocation a;
+action Pick(Robot r1, Item i, NavLocation a) {
+        motivated;
+      duration := 5;
 
     [all] {
         r1.location == a;
@@ -51,9 +52,42 @@ action Pick(Robot r1, Item i) {
     };
 };
 
+action Transport(Robot r1, Robot r2, NavLocation from, NavLocation to, Item i) {
+    [all] contains {
+      pick : Pick(r1, i, from);
+      drop : Drop(r2, i, to);
+    };
+    end(pick) < start(drop);
+
+    :decomposition {
+        r1 == r2;
+    };
+    :decomposition {
+      ex : Exchange(r1, r2, i);
+        end(pick) < start(ex);
+        end(ex) < start(drop);
+    };
+};
+
+action Exchange(Robot r1, Robot r2, Item i) {
+    constant NavLocation l1;
+    constant NavLocation l2;
+    constant Robot r;
+    [all] contains {
+      h1 : Handover(r, r2, i, l1, l2);
+    };
+    :decomposition {
+        r == r1;
+    };
+    :decomposition {
+      [all] contains ex : Exchange(r1, r, i);
+        end(ex) < start(h1);
+    };
+};
 
 action Drop(Robot r1, Item i, NavLocation a) {
-  duration := 5;
+        motivated;
+      duration := 5;
 
     [all] {
         r1.location == a;
