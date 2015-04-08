@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class AllThreatFinder implements FlawFinder {
+
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 

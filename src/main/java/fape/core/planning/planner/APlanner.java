@@ -225,7 +225,7 @@ public abstract class APlanner {
      * @return The comparator to use for ordering the queue.
      */
     public final Comparator<State> stateComparator() {
-        return PlanCompFactory.get(options.planSelStrategies);
+        return PlanCompFactory.get(this, options.planSelStrategies);
     }
 
     /**

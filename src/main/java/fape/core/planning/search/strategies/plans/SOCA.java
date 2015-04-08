@@ -1,5 +1,7 @@
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.states.State;
 
 
@@ -8,8 +10,16 @@ import fape.core.planning.states.State;
  */
 public class SOCA implements PartialPlanComparator {
 
-    public static float f(State s) {
-        return s.getNumActions()*10 + s.consumers.size()*3 + s.getNumOpenLeaves()*3;
+    private final APlanner planner;
+    private final AllThreatFinder threatFinder = new AllThreatFinder();
+
+    public SOCA(APlanner planner) { this.planner = planner; }
+
+    public float f(State s) {
+        if(s.h < 0)
+            s.h = threatFinder.getFlaws(s, planner).size();
+
+        return s.getNumActions()*10 + s.consumers.size()*3 + s.getNumOpenLeaves()*3 + s.h*3;
     }
 
     @Override

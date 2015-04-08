@@ -344,6 +344,26 @@ public class State implements Reporter {
     }
 
     /**
+     * True if the state variables on which those databases apply are necessarily unified (i.e. same functions and same variables).
+     */
+    public boolean unified(TemporalDatabase a, TemporalDatabase b) {
+        return unified(a.stateVariable, b.stateVariable);
+    }
+
+    /**
+     * True iff the state variables are necessarily unified (same functions and same variables).
+     */
+    public boolean unified(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+        if(a.func() != b.func())
+            return false;
+        for(int i=0 ; i<a.jArgs().size() ; i++) {
+            if(!unified(a.jArgs().get(i), b.jArgs().get(i)))
+                return false;
+        }
+        return true;
+    }
+
+    /**
      * @return True if both TemporalDatabases might be unifiable (ie. the refer
      * to two unifiable state variables).
      */

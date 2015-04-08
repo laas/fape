@@ -48,6 +48,7 @@ public class MotivatedSupport extends Resolver {
     public final Action toSupport;
 
     public MotivatedSupport(Action toSupport, Action act, int decID, LActRef actRef) {
+        assert act != null;
         this.toSupport = toSupport;
         this.act = act;
         this.abs = null;
@@ -56,6 +57,7 @@ public class MotivatedSupport extends Resolver {
     }
 
     public MotivatedSupport(Action toSupport, AbstractAction abs, int decID, LActRef actRef) {
+        assert abs != null;
         this.toSupport = toSupport;
         this.act = null;
         this.abs = abs;
@@ -65,7 +67,10 @@ public class MotivatedSupport extends Resolver {
 
     @Override
     public String toString() {
-        return abs.toString()+":"+decID+":"+actRef;
+        if(act == null)
+            return "new: "+abs.toString()+":"+decID+":"+actRef;
+        else
+            return "existing: "+act+":"+decID+":"+actRef;
     }
 
     @Override

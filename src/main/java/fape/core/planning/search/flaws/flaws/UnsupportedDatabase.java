@@ -4,11 +4,9 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -115,6 +113,26 @@ public class UnsupportedDatabase extends Flaw {
                 }
             }
         }
+
+        // here we check to see if some resolvers are not valid because resulting in unsolvable threats
+        List<Resolver> toRemove = new LinkedList<>();
+        for(Resolver res : resolvers) {
+            TemporalDatabase supporter = st.GetDatabase(((SupportingDatabase) res).supporterID);
+            for(TemporalDatabase other : st.getDatabases()) {
+                if(other != consumer && other != supporter)
+                if(!other.HasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
+                    // other is on the same state variable and chages the value of the state variable
+                    // if it must be between the two, it will result in an unsolvable threat
+                    // hence it must can be after the end of the consumer or before the start of the
+                    if(!st.canBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
+                            && !st.canBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
+                        // will result in unsolvable threat
+                        toRemove.add(res);
+                    }
+                }
+            }
+        }
+        resolvers.removeAll(toRemove);
 
         // adding actions
         // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions

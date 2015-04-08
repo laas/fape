@@ -142,6 +142,19 @@ public class TemporalDatabase {
         return tps;
     }
 
+    /**
+     * Returns the start time point of the first change statement (assigment or transition) of the database.
+     */
+    public TPRef getFirstChangeTimePoint() {
+        assert !chain.isEmpty() : "Database is empty";
+        assert !HasSinglePersistence() : "Database has no change statements";
+        for(ChainComponent cc : chain) {
+            if(cc.change)
+                return cc.contents.getFirst().start();
+        }
+        throw new FAPEException("Error: no change statements encountered.");
+    }
+
     @Deprecated
     public TPRef getConsumeTimePoint() {
         assert !chain.isEmpty() : "Database is empty.";

@@ -1,5 +1,6 @@
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 
 import java.util.LinkedList;
@@ -7,7 +8,7 @@ import java.util.List;
 
 public class PlanCompFactory {
 
-    public static PartialPlanComparator get(String... comparators) {
+    public static PartialPlanComparator get(APlanner planner, String... comparators) {
         List<PartialPlanComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {
@@ -20,7 +21,7 @@ public class PlanCompFactory {
                 case "fex":
                     compList.add(new Fex());
                 case "soca":
-                    compList.add(new SOCA());
+                    compList.add(new SOCA(planner));
                     break;
 //                case "metric":
 //                    compList.add(new Metric());
