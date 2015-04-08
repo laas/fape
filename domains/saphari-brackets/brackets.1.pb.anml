@@ -9,8 +9,8 @@ constant Human h;
 constant Glue g;
 ProcessSurface(h, r, as1, g);
 
- constant Robot r2;
- constant Human h2;
- constant Glue g2;
- ProcessSurface(h2, r2, as2, g2);
+ // constant Robot r2;
+ // constant Human h2;
+ // constant Glue g2;
+ // ProcessSurface(h2, r2, as2, g2);
 

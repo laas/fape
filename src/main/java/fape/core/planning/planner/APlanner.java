@@ -40,6 +40,7 @@ import java.util.*;
 public abstract class APlanner {
 
     public APlanner(State initialState, PlanningOptions options) {
+        filterOptions(options);
         this.options = options;
         this.pb = initialState.pb;
         assert pb.usesActionConditions() == this.useActionConditions() :
@@ -52,6 +53,7 @@ public abstract class APlanner {
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
     public APlanner(Controllability controllability, PlanningOptions options) {
+        filterOptions(options);
         this.options = options;
         this.controllability = controllability;
         this.pb = new AnmlProblem(useActionConditions());
@@ -61,6 +63,21 @@ public abstract class APlanner {
     }
 
     public final PlanningOptions options;
+
+    /** Transforms the given options from planner independent to planner dependent.
+     *
+     * Currently it only removes unneeded flaw finders in case action conditions are not used.
+     */
+    private void filterOptions(PlanningOptions opts) {
+        if(!useActionConditions()) {
+            List<FlawFinder> flawFinders = new LinkedList<>();
+            for(FlawFinder ff : opts.flawFinders) {
+                if(!(ff instanceof UnmotivatedActionFinder) && !(ff instanceof UnsupportedTaskConditionFinder))
+                    flawFinders.add(ff);
+            }
+            opts.flawFinders = flawFinders.toArray(new FlawFinder[flawFinders.size()]);
+        }
+    }
 
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
