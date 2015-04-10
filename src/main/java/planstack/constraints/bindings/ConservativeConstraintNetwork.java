@@ -20,7 +20,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  * Domain holders objects are immutable as well and as such can be shared between
  * multiple instances. (See the ValuesHolder class).
  */
-public class ConservativeConstraintNetwork<VarRef> {
+public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> {
 
     enum ConstraintType { EQUALITY, DIFFERENCE }
 
@@ -653,6 +653,11 @@ public class ConservativeConstraintNetwork<VarRef> {
             else if(e.l() == ConstraintType.DIFFERENCE)
                 assert v1 != v2;
         }
+    }
+
+    @Override
+    public Integer intValueOfRawID(Integer valueID) {
+        return intValues.get(valueID);
     }
 
 }

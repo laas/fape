@@ -1,6 +1,6 @@
 package planstack.constraints
 
-import planstack.constraints.bindings.{ConservativeConstraintNetwork, IntBindingListener}
+import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stn.STNManager
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
 
@@ -28,7 +28,7 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @tparam ID Type of identifiers for constraints in the STN.
  */
 class MetaCSP[VarRef, TPRef, ID](
-                          val bindings: ConservativeConstraintNetwork[VarRef],
+                          val bindings: BindingCN[VarRef],
                           val stn: GenSTNUManager[TPRef,ID],
                           protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]])
   extends IntBindingListener[VarRef]
@@ -36,7 +36,8 @@ class MetaCSP[VarRef, TPRef, ID](
 
   bindings.setListener(this)
 
-  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
+  def this() = this(new BindingConstraintNetwork[VarRef](None), new MinimalSTNUManager[TPRef,ID](), Map())
+//  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
 
   def this(toCopy : MetaCSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 

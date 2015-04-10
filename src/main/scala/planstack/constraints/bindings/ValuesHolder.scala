@@ -27,6 +27,7 @@ object ValuesHolder {
 class ValuesHolder(val vals: scala.collection.Set[Int]) {
 
   def this(values: util.Collection[Integer]) = this(ValuesHolder.convert(values))
+  def this(values: Iterable[Int]) = this(values.map(_.asInstanceOf[Integer]).asJavaCollection)
 
   def values() : util.Set[Integer] = JavaConversions.setAsJavaSet(vals).asInstanceOf[java.util.Set[Integer]]
 
@@ -45,8 +46,13 @@ class ValuesHolder(val vals: scala.collection.Set[Int]) {
 
   def isEmpty : Boolean = vals.isEmpty
 
+  def nonEmpty = !isEmpty
+
   def remove(toRm: ValuesHolder) : ValuesHolder =
     new ValuesHolder(vals -- toRm.vals)
+
+  def remove(toRm: Integer) : ValuesHolder =
+    new ValuesHolder(vals - toRm)
 
   def add(value: Integer) : ValuesHolder = {
     if (vals.isInstanceOf[BitSet] && value > ValuesHolder.BITSET_MAX_SIZE)
