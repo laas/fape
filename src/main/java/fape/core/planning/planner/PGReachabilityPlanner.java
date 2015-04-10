@@ -557,7 +557,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
             current = current.union(toAdd);
         }
         for(Integer gaRawID : current.values()) {
-            Integer gaID = st.csp.bindings().intValues.get(gaRawID);
+            Integer gaID = st.csp.bindings().intValueOfRawID(gaRawID);
             assert(gactions.containsKey(gaID));
             GAction ga = gactions.get(gaID);
             assert ga != null;
