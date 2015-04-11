@@ -48,7 +48,7 @@ public class HierarchicalCausalLinks implements PartialPlanComparator {
      */
     int weightCausalLinks(State st) {
         int w = 0;
-        for(Timeline db : st.getDatabases()) {
+        for(Timeline db : st.getTimelines()) {
             for(Pair<LogStatement, LogStatement> cl : db.allCausalLinks()) {
                 w += weightOfCausalLink(cl.v1(), cl.v2(), st);
             }

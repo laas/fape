@@ -136,7 +136,7 @@ public class LMC implements PartialPlanComparator {
         }
         //now we make a slice of the initial state we are considering
         if (true || LMCut.commonInit == null) {
-            for (Timeline b : st.getDatabases()) {
+            for (Timeline b : st.getTimelines()) {
                 if (b.hasSinglePersistence()) {
                     continue;
                 }

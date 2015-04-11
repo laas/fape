@@ -180,7 +180,7 @@ public class Plan {
      * @param fileName File to which the output will be written.
      */
     public void exportToDot(String fileName) {
-        for(Timeline db : st.getDatabases())
+        for(Timeline db : st.getTimelines())
             buildDependencies(db);
         for(Edge<LogStatement> e :eventsDependencies.jEdges())
             addActionDependency(e.u(), e.v());

@@ -16,7 +16,7 @@ public class AllThreatFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 
-        List<Timeline> dbs = st.getDatabases();
+        List<Timeline> dbs = st.getTimelines();
         for (int i = 0; i < dbs.size(); i++) {
             Timeline db1 = dbs.get(i);
             for (int j = i + 1; j < dbs.size(); j++) {

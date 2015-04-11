@@ -15,20 +15,29 @@ import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.statements.LogStatement;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- *
- * @author FD
- */
 public class TimelinesManager implements Reporter {
 
 
     /**
      * All temporal timelines.
      */
-    public List<Timeline> vars = new LinkedList<>();
+    private List<Timeline> vars = new LinkedList<>();
+    private final State listener;
+
+    public TimelinesManager(TimelinesManager toCopy, State containingState) {
+        listener = containingState;
+
+        for (Timeline b : toCopy.getTimelines())
+            this.vars.add(b.deepCopy());
+    }
+
+    public TimelinesManager(State containingState) {
+        listener = containingState;
+    }
 
     /**
      * Creates a new timeline containing the Statement s and adds it to this Manager
@@ -37,6 +46,17 @@ public class TimelinesManager implements Reporter {
         Timeline db = new Timeline(s);
         vars.add(db);
         return db;
+    }
+
+    public void addTimeline(Timeline tl) {
+        for(Timeline existing : vars)
+            assert existing.mID != tl.mID : "Timeline already recorded";
+        vars.add(tl);
+    }
+
+    public void removeTimeline(Timeline tl) {
+        assert vars.contains(tl);
+        vars.remove(tl);
     }
 
     public Timeline getTimeline(int tdbID) {
@@ -54,16 +74,6 @@ public class TimelinesManager implements Reporter {
             }
         }
         throw new FAPEException("Unable to find a timeline containing the statement "+s);
-    }
-
-    public TimelinesManager deepCopy() {
-        TimelinesManager mng = new TimelinesManager();
-        mng.vars = new LinkedList<>();
-        for (Timeline b : this.vars) {
-            Timeline db = b.deepCopy();
-            mng.vars.add(db);
-        }
-        return mng;
     }
 
     /**
@@ -188,6 +198,7 @@ public class TimelinesManager implements Reporter {
         ret += "\n";
 
         return ret;
-
     }
+
+    public List<Timeline> getTimelines() { return vars; }
 }

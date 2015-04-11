@@ -85,7 +85,7 @@ public class GroundProblem {
         this.liftedPb = pb.liftedPb;
         this.gActions = new LinkedList<>(pb.gActions);
 
-        for(Timeline db : st.tdb.vars) {
+        for(Timeline db : st.tdb.getTimelines()) {
             initState.fluents.addAll(dbToFluents(db, st));
         }
     }
@@ -94,7 +94,7 @@ public class GroundProblem {
         this.liftedPb = pb.liftedPb;
         this.gActions = pb.gActions;
 
-        for(Timeline db : st.tdb.vars) {
+        for(Timeline db : st.tdb.getTimelines()) {
             if(db.hasSinglePersistence())
                 continue;
             for(ChainComponent cc : db.chain) {

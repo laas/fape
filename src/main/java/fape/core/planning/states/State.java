@@ -111,7 +111,7 @@ public class State implements Reporter {
         this.pb = pb;
         this.controllability = controllability;
         depth = 0;
-        tdb = new TimelinesManager();
+        tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
@@ -135,7 +135,7 @@ public class State implements Reporter {
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
-        tdb = st.tdb.deepCopy();
+        tdb = new TimelinesManager(st.tdb, this); //st.tdb.deepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
@@ -192,7 +192,7 @@ public class State implements Reporter {
      * @return The database with the same ID.
      */
     public Timeline getDatabase(int dbID) {
-        for (Timeline db : tdb.vars) {
+        for (Timeline db : tdb.getTimelines()) {
             if (db.mID == dbID) {
                 return db;
             }
@@ -219,7 +219,7 @@ public class State implements Reporter {
         assert db == tdb.getTimelineContaining(consumer) : "The statements are not in the same database.";
 
         int index = db.indexOfContainer(consumer);
-        Timeline newDB = new Timeline(consumer.sv());
+        Timeline newTL = new Timeline(consumer.sv());
         //add all extra chain components to the new database
 
         List<ChainComponent> toRemove = new LinkedList<>();
@@ -227,13 +227,13 @@ public class State implements Reporter {
             ChainComponent origComp = db.chain.get(i);
             toRemove.add(origComp);
             ChainComponent pc = origComp.deepCopy();
-            newDB.chain.add(pc);
+            newTL.chain.add(pc);
         }
         db.chain.removeAll(toRemove);
         assert !db.chain.isEmpty();
-        assert !newDB.chain.isEmpty();
-        this.consumers.add(newDB);
-        this.tdb.vars.add(newDB);
+        assert !newTL.chain.isEmpty();
+        this.consumers.add(newTL);
+        tdb.addTimeline(newTL);
     }
 
     /**
@@ -268,7 +268,7 @@ public class State implements Reporter {
                     newDB.chain.add(pc);
                 }
                 this.consumers.add(newDB);
-                this.tdb.vars.add(newDB);
+                tdb.addTimeline(newDB);
                 theDatabase.chain.remove(comp);
                 theDatabase.chain.removeAll(remove);
                 assert !newDB.chain.isEmpty();
@@ -279,7 +279,7 @@ public class State implements Reporter {
             }
 
             if(theDatabase.chain.isEmpty()) {
-                tdb.vars.remove(theDatabase);
+                tdb.removeTimeline(theDatabase);
                 if (consumers.contains(theDatabase))
                     consumers.remove(theDatabase);
             }
@@ -292,7 +292,7 @@ public class State implements Reporter {
                 comp.contents.remove(s);
             }
             if(theDatabase.chain.isEmpty()) {
-                tdb.vars.remove(theDatabase);
+                tdb.removeTimeline(theDatabase);
                 if (consumers.contains(theDatabase))
                     consumers.remove(theDatabase);
             }
@@ -300,7 +300,7 @@ public class State implements Reporter {
         } else if(s instanceof Assignment) {
             theDatabase.chain.remove(comp);
             if(theDatabase.chain.isEmpty()) {
-                this.tdb.vars.remove(theDatabase);
+                tdb.removeTimeline(theDatabase);
                 if (consumers.contains(theDatabase))
                     consumers.remove(theDatabase);
             } else {
@@ -310,7 +310,7 @@ public class State implements Reporter {
         } else {
             throw new FAPEException("Unknown event type: "+s);
         }
-        for(Timeline db : tdb.vars)
+        for(Timeline db : tdb.getTimelines())
             assert !db.chain.isEmpty();
     }
 
@@ -522,7 +522,7 @@ public class State implements Reporter {
         if (db.isConsumer()) {
             consumers.add(db);
         }
-        tdb.vars.add(db);
+        tdb.addTimeline(db);
     }
 
     /**
@@ -856,6 +856,14 @@ public class State implements Reporter {
         this.supportConstraints.add(new Pair<>(cc.mID, dec));
     }
 
+    protected void timelineAdded(Timeline tl) {
+
+    }
+
+    protected void timelineExtended(Timeline tl) {
+
+    }
+
     public int numFlaws() {
         return consumers.size() + taskNet.getNumOpenActionConditions() + taskNet.getNumOpenLeaves() +taskNet.getNumUnmotivatedActions();
     }
@@ -999,10 +1007,10 @@ public class State implements Reporter {
 
     /************ Wrapper around TemporalDatabaseManager **********************/
 
-    public List<Timeline> getDatabases() { return tdb.vars; }
+    public List<Timeline> getTimelines() { return tdb.getTimelines(); }
 
     public void removeTimeline(Timeline tl) {
-        tdb.vars.remove(tl);
+        tdb.removeTimeline(tl);
         if(consumers.contains(tl))
             consumers.remove(tl);
     }
@@ -1068,11 +1076,6 @@ public class State implements Reporter {
             // ignore statements on constant functions that are handled through constraints
             if(!s.sv().func().isConstant())
                 removeStatement(s);
-        }
-        for(Timeline db : tdb.vars) {
-            if(db.chain.isEmpty()) {
-                boolean breakHere = true;
-            }
         }
     }
 

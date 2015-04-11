@@ -201,7 +201,7 @@ public class Printer {
 
     public static String temporalDatabaseManager(final State st) {
         HashMap<String, List<Timeline>> groupedDBs = new HashMap<>();
-        for(Timeline tdb : st.getDatabases()) {
+        for(Timeline tdb : st.getTimelines()) {
             if(!groupedDBs.containsKey(stateVariable(st, tdb.stateVariable))) {
                 groupedDBs.put(stateVariable(st, tdb.stateVariable), new LinkedList<Timeline>());
             }
@@ -351,7 +351,7 @@ public class Printer {
                 return act;
         }
 
-        for(Timeline db : st.tdb.vars) {
+        for(Timeline db : st.tdb.getTimelines()) {
             for(ChainComponent cc : db.chain) {
                 for(LogStatement statement : cc.contents) {
                     if(intervalContains(tp, statement))

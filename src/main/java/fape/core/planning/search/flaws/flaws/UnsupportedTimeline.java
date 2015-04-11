@@ -63,7 +63,7 @@ public class UnsupportedTimeline extends Flaw {
         //3) tasks that can decompose into an action we need
 
         //get chain connections
-        for (Timeline b : st.getDatabases()) {
+        for (Timeline b : st.getTimelines()) {
             if (consumer == b || !st.unifiable(consumer, b)) {
                 continue;
             }
@@ -118,7 +118,7 @@ public class UnsupportedTimeline extends Flaw {
         List<Resolver> toRemove = new LinkedList<>();
         for(Resolver res : resolvers) {
             Timeline supporter = st.getDatabase(((SupportingTimeline) res).supporterID);
-            for(Timeline other : st.getDatabases()) {
+            for(Timeline other : st.getTimelines()) {
                 if(other != consumer && other != supporter)
                 if(!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
                     // other is on the same state variable and chages the value of the state variable
