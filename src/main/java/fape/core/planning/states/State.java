@@ -12,8 +12,10 @@ package fape.core.planning.states;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
+import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
@@ -98,6 +100,27 @@ public class State implements Reporter {
 
     public final Controllability controllability;
 
+
+    class PotentialThreat {
+        private final int id1, id2;
+        public PotentialThreat(Timeline tl1, Timeline tl2) {
+            assert tl1 != tl2;
+            if(tl1.mID < tl2.mID) {
+                id1 = tl1.mID;
+                id2 = tl2.mID;
+            } else {
+                id1 = tl2.mID;
+                id2 = tl1.mID;
+            }
+        }
+        @Override public int hashCode() { return id1 + 42*id2; }
+        @Override public boolean equals(Object o) {
+            return o instanceof PotentialThreat && id1 == ((PotentialThreat) o).id1 && id2 == ((PotentialThreat) o).id2;
+        }
+    }
+
+    final HashSet<PotentialThreat> threats;
+
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
@@ -116,6 +139,7 @@ public class State implements Reporter {
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
+        threats = new HashSet<>();
 
         supportConstraints = new LinkedList<>();
 
@@ -140,6 +164,7 @@ public class State implements Reporter {
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
         consumers = new LinkedList<>();
+        threats = new HashSet<>(st.threats);
 
         for (Timeline sb : st.consumers) {
             consumers.add(this.getDatabase(sb.mID));
@@ -215,25 +240,7 @@ public class State implements Reporter {
     }
 
     public void breakCausalLink(LogStatement supporter, LogStatement consumer) {
-        Timeline db = tdb.getTimelineContaining(supporter);
-        assert db == tdb.getTimelineContaining(consumer) : "The statements are not in the same database.";
-
-        int index = db.indexOfContainer(consumer);
-        Timeline newTL = new Timeline(consumer.sv());
-        //add all extra chain components to the new database
-
-        List<ChainComponent> toRemove = new LinkedList<>();
-        for (int i = index; i < db.chain.size(); i++) {
-            ChainComponent origComp = db.chain.get(i);
-            toRemove.add(origComp);
-            ChainComponent pc = origComp.deepCopy();
-            newTL.chain.add(pc);
-        }
-        db.chain.removeAll(toRemove);
-        assert !db.chain.isEmpty();
-        assert !newTL.chain.isEmpty();
-        this.consumers.add(newTL);
-        tdb.addTimeline(newTL);
+        tdb.breakCausalLink(supporter, consumer);
     }
 
     /**
@@ -244,74 +251,7 @@ public class State implements Reporter {
      * @param s Statement to remove.
      */
     private void removeStatement(LogStatement s) {
-        Timeline theDatabase = tdb.getTimelineContaining(s);
-
-        // First find which component contains s
-        final int ct = theDatabase.indexOfContainer(s);
-        final ChainComponent comp = theDatabase.chain.get(ct);
-
-        assert comp != null && theDatabase.chain.get(ct) == comp;
-
-        if (s instanceof Transition) {
-            if (ct + 1 < theDatabase.chain.size()) {
-                //this was not the last element, we need to create another database and make split
-
-                // the two databases share the same state variable
-                Timeline newDB = new Timeline(theDatabase.stateVariable);
-
-                //add all extra chain components to the new database
-                List<ChainComponent> remove = new LinkedList<>();
-                for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
-                    ChainComponent origComp = theDatabase.chain.get(i);
-                    remove.add(origComp);
-                    ChainComponent pc = origComp.deepCopy();
-                    newDB.chain.add(pc);
-                }
-                this.consumers.add(newDB);
-                tdb.addTimeline(newDB);
-                theDatabase.chain.remove(comp);
-                theDatabase.chain.removeAll(remove);
-                assert !newDB.chain.isEmpty();
-            } else {
-                assert comp.contents.size() == 1;
-                //this was the last element so we can just remove it and we are done
-                theDatabase.chain.remove(comp);
-            }
-
-            if(theDatabase.chain.isEmpty()) {
-                tdb.removeTimeline(theDatabase);
-                if (consumers.contains(theDatabase))
-                    consumers.remove(theDatabase);
-            }
-        } else if (s instanceof Persistence) {
-            if (comp.contents.size() == 1) {
-                // only one statement, remove the whole component
-                theDatabase.chain.remove(comp);
-            } else {
-                // more than one statement, remove only this statement
-                comp.contents.remove(s);
-            }
-            if(theDatabase.chain.isEmpty()) {
-                tdb.removeTimeline(theDatabase);
-                if (consumers.contains(theDatabase))
-                    consumers.remove(theDatabase);
-            }
-
-        } else if(s instanceof Assignment) {
-            theDatabase.chain.remove(comp);
-            if(theDatabase.chain.isEmpty()) {
-                tdb.removeTimeline(theDatabase);
-                if (consumers.contains(theDatabase))
-                    consumers.remove(theDatabase);
-            } else {
-                assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
-                this.consumers.add(theDatabase);
-            }
-        } else {
-            throw new FAPEException("Unknown event type: "+s);
-        }
-        for(Timeline db : tdb.getTimelines())
-            assert !db.chain.isEmpty();
+        tdb.removeStatement(s);
     }
 
     /**
@@ -519,9 +459,6 @@ public class State implements Reporter {
 
         Timeline db = new Timeline(s);
 
-        if (db.isConsumer()) {
-            consumers.add(db);
-        }
         tdb.addTimeline(db);
     }
 
@@ -856,12 +793,66 @@ public class State implements Reporter {
         this.supportConstraints.add(new Pair<>(cc.mID, dec));
     }
 
-    protected void timelineAdded(Timeline tl) {
 
+    public void timelineAdded(Timeline a) {
+        for(Timeline b : tdb.getTimelines()) {
+            if(!unifiable(a.stateVariable, b.stateVariable))
+                continue;
+
+            if(AllThreatFinder.isThreatening(this, a, b)) {
+                threats.add(new PotentialThreat(a, b));
+            }
+        }
+        assert !consumers.contains(a);
+        if(a.isConsumer())
+            consumers.add(a);
     }
 
-    protected void timelineExtended(Timeline tl) {
+    public void timelineExtended(Timeline tl) {
+        List<PotentialThreat> toRemove = new LinkedList<>();
+        for(PotentialThreat pt : threats)
+            if(pt.id1 == tl.mID || pt.id2 == tl.mID)
+                toRemove.add(pt);
+        threats.removeAll(toRemove);
 
+        for(Timeline b : tdb.getTimelines()) {
+            if(AllThreatFinder.isThreatening(this, tl, b)) {
+                threats.add(new PotentialThreat(tl, b));
+            }
+        }
+
+        if(tl.isConsumer() && !consumers.contains(tl))
+            consumers.add(tl);
+    }
+
+    public void timelineRemoved(Timeline tl) {
+        List<PotentialThreat> toRemove = new LinkedList<>();
+        for(PotentialThreat t : threats)
+            if(t.id1 == tl.mID || t.id2 == tl.mID)
+                toRemove.add(t);
+        threats.removeAll(toRemove);
+        if(consumers.contains(tl))
+            consumers.remove(tl);
+    }
+
+    public List<Flaw> getAllThreats() {
+        List<PotentialThreat> toRemove = new LinkedList<>();
+        List<Flaw> verifiedThreats = new LinkedList<>();
+        for(PotentialThreat pt : threats) {
+            Timeline tl1 = getDatabase(pt.id1);
+            Timeline tl2 = getDatabase(pt.id2);
+            if(AllThreatFinder.isThreatening(this, tl1, tl2)) {
+                verifiedThreats.add(new Threat(tl1, tl2));
+            } else {
+                assert !AllThreatFinder.isThreatening(this, tl2, tl1);
+                toRemove.add(pt);
+            }
+        }
+        threats.removeAll(toRemove);
+
+        // this check is quite expensive
+//        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
+        return verifiedThreats;
     }
 
     public int numFlaws() {
@@ -875,6 +866,16 @@ public class State implements Reporter {
     public void enforceBefore(TPRef a, TPRef b) { csp.stn().enforceBefore(a, b); }
 
     public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().enforceStrictlyBefore(a, b); }
+
+    public void enforceStrictlyBefore(Collection<TPRef> as, TPRef b) {
+        for(TPRef a : as)
+            enforceStrictlyBefore(a, b);
+    }
+
+    public void enforceStrictlyBefore(TPRef a, Collection<TPRef> bs) {
+        for(TPRef b : bs)
+            enforceStrictlyBefore(a, b);
+    }
 
     public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().canBeBefore(a, b); }
 
@@ -1008,12 +1009,6 @@ public class State implements Reporter {
     /************ Wrapper around TemporalDatabaseManager **********************/
 
     public List<Timeline> getTimelines() { return tdb.getTimelines(); }
-
-    public void removeTimeline(Timeline tl) {
-        tdb.removeTimeline(tl);
-        if(consumers.contains(tl))
-            consumers.remove(tl);
-    }
 
     public void insertTimelineAfter(Timeline supporter, Timeline consumer, ChainComponent precedingComponent) {
         tdb.insertTimelineAfter(this, supporter, consumer, precedingComponent);

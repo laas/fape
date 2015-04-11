@@ -14,6 +14,11 @@ import java.util.List;
 public class AllThreatFinder implements FlawFinder {
 
     public List<Flaw> getFlaws(State st, APlanner planner) {
+        return st.getAllThreats();
+    }
+
+    /** Finds all threats in a state, this can be used to check that the incremental threat resolution works a expected */
+    public static List<Flaw> getAllThreats(State st) {
         List<Flaw> flaws = new LinkedList<>();
 
         List<Timeline> dbs = st.getTimelines();
@@ -32,69 +37,32 @@ public class AllThreatFinder implements FlawFinder {
         return flaws;
     }
 
-
-    protected boolean isThreatening(State st, Timeline db1, Timeline db2) {
-     // if their state variables are not unifiable
-        if (!st.unifiable(db1, db2))
+    public static boolean isThreatening(State st, Timeline tl1, Timeline tl2) {
+        if(tl1 == tl2)
             return false;
 
+        if(!st.unifiable(tl1, tl2))
+            return false;
 
-       /* if (  !db1.hasSinglePersistence() ) {
-            for (ChainComponent db1Component : db1.chain) {
-                if ( db1Component.change ) {
-                    boolean db1AfterDB2 = true;
-                    boolean db2AfterDB1 = true;
-                    for (LogStatement db2statement : db2.chain.getLast().contents){
-                        if (st.canBeBefore(db1Component.contents.getFirst().start(), db2statement.end())) {
-                            db1AfterDB2 = false;
-                        }
-                    }
-                    for (LogStatement db2statement : db2.chain.getFirst().contents) {
-                        if (st.canBeBefore(db2statement.start(), db1Component.contents.getLast().end())) {
-                            db2AfterDB1 = false;
-                        }
-                    }
-                    return !(db1AfterDB2 || db2AfterDB1);
-                }
-            }
-        }*/
-        if ( !db1.hasSinglePersistence() & !db2.hasSinglePersistence()) {
-            boolean db1AfterDB2 = true;
-            for (TPRef start1 : db1.getFirstTimePoints()) {
-                for (TPRef end2 : db2.getLastTimePoints()) {
-                    if (st.canBeBefore(start1, end2)) {
-                        db1AfterDB2 = false;
-                        break;
-                    }
-                }
-            }
-            LinkedList<TPRef> a = new LinkedList<>();
-            for (int i = db1.chain.size() - 1; i >= 0; i--) {
-                if (db1.chain.get(i).change) {
-                    for(LogStatement s : db1.chain.getFirst().contents) {
-                        a.add(s.start());
-                    }
-                }
-            }
-            LinkedList<TPRef> b = new LinkedList<>();
-            for (int i = 0; i < db2.chain.size() - 1; i++) {
-                if (db2.chain.get(i).change) {
-                    for(LogStatement s : db2.chain.getLast().contents) {
-                        b.add(s.end());
-                    }
-                }
-            }
-            boolean db2AfterDB1 = true;
-            for (TPRef end1 : a)
-                for (TPRef start2 : b)
-                    if (st.canBeBefore(start2, end1)) {
-                        db2AfterDB1 = false;
-                        break;
-                    }
+        else if(tl1.hasSinglePersistence() && tl2.hasSinglePersistence())
+            return false;
 
-            // true if they can overlap
-            return !(db1AfterDB2 || db2AfterDB1);
+        else if(tl1.hasSinglePersistence())
+            return false;
+
+        else if(tl2.hasSinglePersistence())
+            return false;
+
+        else {
+            boolean firstNecessarilyAfterSecond =
+                    !st.canBeBefore(tl2.getFirstTimePoints(), tl1.getSupportTimePoint()) &&
+                            !st.canBeBefore(tl2.getFirstChange().start(), tl1.getLastTimePoints());
+
+            boolean secondNecessarilyAfterFirst =
+                    !st.canBeBefore(tl1.getFirstTimePoints(), tl2.getSupportTimePoint()) &&
+                            !st.canBeBefore(tl1.getFirstChange().start(), tl2.getLastTimePoints());
+
+            return !(firstNecessarilyAfterSecond || secondNecessarilyAfterFirst);
         }
-        return false;
     }
 }

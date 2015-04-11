@@ -13,7 +13,10 @@ package fape.core.planning.timelines;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
+import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
+import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -43,20 +46,24 @@ public class TimelinesManager implements Reporter {
      * Creates a new timeline containing the Statement s and adds it to this Manager
      */
     public Timeline getNewTimeline(LogStatement s) {
-        Timeline db = new Timeline(s);
-        vars.add(db);
-        return db;
+        Timeline tl = new Timeline(s);
+        addTimeline(tl);
+        return tl;
     }
 
     public void addTimeline(Timeline tl) {
         for(Timeline existing : vars)
             assert existing.mID != tl.mID : "Timeline already recorded";
         vars.add(tl);
+
+        listener.timelineAdded(tl);
     }
 
     public void removeTimeline(Timeline tl) {
         assert vars.contains(tl);
         vars.remove(tl);
+
+        listener.timelineRemoved(tl);
     }
 
     public Timeline getTimeline(int tdbID) {
@@ -140,7 +147,8 @@ public class TimelinesManager implements Reporter {
         st.addUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
         // Remove the included timeline from the system
-        st.removeTimeline(included);
+        removeTimeline(included);
+        st.timelineExtended(tdb);
     }
 
     /**
@@ -185,6 +193,100 @@ public class TimelinesManager implements Reporter {
             //}
 
         }
+    }
+
+    public void breakCausalLink(LogStatement supporter, LogStatement consumer) {
+        Timeline db = getTimelineContaining(supporter);
+        assert db == getTimelineContaining(consumer) : "The statements are not in the same database.";
+
+        int index = db.indexOfContainer(consumer);
+        Timeline newTL = new Timeline(consumer.sv());
+        //add all extra chain components to the new database
+
+        List<ChainComponent> toRemove = new LinkedList<>();
+        for (int i = index; i < db.chain.size(); i++) {
+            ChainComponent origComp = db.chain.get(i);
+            toRemove.add(origComp);
+            ChainComponent pc = origComp.deepCopy();
+            newTL.chain.add(pc);
+        }
+        db.chain.removeAll(toRemove);
+        assert !db.chain.isEmpty();
+        assert !newTL.chain.isEmpty();
+
+        addTimeline(newTL);
+        listener.timelineExtended(db);
+    }
+
+    /**
+     * Remove a statement from the state. It does so by identifying the temporal
+     * database in which the statement appears and removing it from the
+     * database. If necessary, the database is split in two.
+     *
+     * @param s Statement to remove.
+     */
+    public void removeStatement(LogStatement s) {
+        Timeline theDatabase = getTimelineContaining(s);
+
+        // First find which component contains s
+        final int ct = theDatabase.indexOfContainer(s);
+        final ChainComponent comp = theDatabase.chain.get(ct);
+
+        assert comp != null && theDatabase.chain.get(ct) == comp;
+
+        if (s instanceof Transition) {
+            if (ct + 1 < theDatabase.chain.size()) {
+                //this was not the last element, we need to create another database and make split
+
+                // the two databases share the same state variable
+                Timeline newDB = new Timeline(theDatabase.stateVariable);
+
+                //add all extra chain components to the new database
+                List<ChainComponent> remove = new LinkedList<>();
+                for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
+                    ChainComponent origComp = theDatabase.chain.get(i);
+                    remove.add(origComp);
+                    ChainComponent pc = origComp.deepCopy();
+                    newDB.chain.add(pc);
+                }
+                addTimeline(newDB);
+                theDatabase.chain.remove(comp);
+                theDatabase.chain.removeAll(remove);
+                assert !newDB.chain.isEmpty();
+            } else {
+                assert comp.contents.size() == 1;
+                //this was the last element so we can just remove it and we are done
+                theDatabase.chain.remove(comp);
+            }
+
+            if(theDatabase.chain.isEmpty()) {
+                removeTimeline(theDatabase);
+            }
+        } else if (s instanceof Persistence) {
+            if (comp.contents.size() == 1) {
+                // only one statement, remove the whole component
+                theDatabase.chain.remove(comp);
+            } else {
+                // more than one statement, remove only this statement
+                comp.contents.remove(s);
+            }
+            if(theDatabase.chain.isEmpty()) {
+                removeTimeline(theDatabase);
+            }
+
+        } else if(s instanceof Assignment) {
+            theDatabase.chain.remove(comp);
+            if(theDatabase.chain.isEmpty()) {
+                removeTimeline(theDatabase);
+            } else {
+                assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
+                listener.timelineExtended(theDatabase);
+            }
+        } else {
+            throw new FAPEException("Unknown event type: "+s);
+        }
+        for(Timeline db : getTimelines())
+            assert !db.chain.isEmpty();
     }
 
     @Override

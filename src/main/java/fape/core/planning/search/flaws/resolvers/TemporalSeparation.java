@@ -20,12 +20,16 @@ public class TemporalSeparation extends Resolver {
         final Timeline firstDB = st.getDatabase(firstDbID);
         final Timeline secondDB = st.getDatabase(secondDbID);
         assert firstDB != null && secondDB != null;
+        assert !firstDB.hasSinglePersistence() && !secondDB.hasSinglePersistence();
 
-        for (LogStatement first : firstDB.chain.getLast().contents) {
-            for (LogStatement second : secondDB.chain.getFirst().contents) {
-                st.enforceStrictlyBefore(first.end(), second.start());
-            }
-        }
-        return true;
+        st.enforceStrictlyBefore(
+                firstDB.getSupportTimePoint(),
+                secondDB.getFirstTimePoints()
+        );
+        st.enforceStrictlyBefore(
+                firstDB.getLastTimePoints(),
+                secondDB.getFirstChange().start()
+        );
+        return st.isConsistent();
     }
 }
