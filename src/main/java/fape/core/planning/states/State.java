@@ -16,12 +16,12 @@ import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.search.flaws.resolvers.SupportingDatabase;
+import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.core.planning.temporaldatabases.TemporalDatabaseManager;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
+import fape.core.planning.timelines.TimelinesManager;
 import fape.exceptions.FAPEException;
 import fape.util.ActionsChart;
 import fape.util.Pair;
@@ -69,7 +69,7 @@ public class State implements Reporter {
     /**
      *
      */
-    public final TemporalDatabaseManager tdb;
+    public final TimelinesManager tdb;
 
     public final MetaCSP<VarRef,TPRef,GlobalRef> csp;
 
@@ -91,7 +91,7 @@ public class State implements Reporter {
      * All databases that require an enabling event (ie. whose first value is
      * not an assignment).
      */
-    public final List<TemporalDatabase> consumers;
+    public final List<Timeline> consumers;
 
 
     public final AnmlProblem pb;
@@ -111,7 +111,7 @@ public class State implements Reporter {
         this.pb = pb;
         this.controllability = controllability;
         depth = 0;
-        tdb = new TemporalDatabaseManager();
+        tdb = new TimelinesManager();
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
         consumers = new LinkedList<>();
@@ -135,13 +135,13 @@ public class State implements Reporter {
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
-        tdb = st.tdb.DeepCopy();
+        tdb = st.tdb.deepCopy();
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
         consumers = new LinkedList<>();
 
-        for (TemporalDatabase sb : st.consumers) {
+        for (Timeline sb : st.consumers) {
             consumers.add(this.getDatabase(sb.mID));
         }
     }
@@ -166,19 +166,19 @@ public class State implements Reporter {
         return csp.isConsistent() && resMan.isConsistent(this);
     }
 
-    public String Report() {
+    public String report() {
         String ret = "";
         ret += "{\n";
         ret += "  state[" + mID + "]\n";
         ret += "  cons: " + csp.bindings().Report() + "\n";
-        //ret += "  stn: " + this.csp.stn().Report() + "\n";
+        //ret += "  stn: " + this.csp.stn().report() + "\n";
         ret += "  consumers: " + this.consumers.size() + "\n";
-        for (TemporalDatabase b : consumers) {
+        for (Timeline b : consumers) {
             ret += b.Report();
         }
         ret += "\n";
         ret += Printer.taskNetwork(this, taskNet);
-        //ret += "  databases: "+this.tdb.Report()+"\n";
+        //ret += "  databases: "+this.tdb.report()+"\n";
 
         ret += "}\n";
 
@@ -191,8 +191,8 @@ public class State implements Reporter {
      * @param dbID ID of the database to lookup
      * @return The database with the same ID.
      */
-    public TemporalDatabase getDatabase(int dbID) {
-        for (TemporalDatabase db : tdb.vars) {
+    public Timeline getDatabase(int dbID) {
+        for (Timeline db : tdb.vars) {
             if (db.mID == dbID) {
                 return db;
             }
@@ -215,11 +215,11 @@ public class State implements Reporter {
     }
 
     public void breakCausalLink(LogStatement supporter, LogStatement consumer) {
-        TemporalDatabase db = tdb.getDBContaining(supporter);
-        assert db == tdb.getDBContaining(consumer) : "The statements are not in the same database.";
+        Timeline db = tdb.getTimelineContaining(supporter);
+        assert db == tdb.getTimelineContaining(consumer) : "The statements are not in the same database.";
 
         int index = db.indexOfContainer(consumer);
-        TemporalDatabase newDB = new TemporalDatabase(consumer.sv());
+        Timeline newDB = new Timeline(consumer.sv());
         //add all extra chain components to the new database
 
         List<ChainComponent> toRemove = new LinkedList<>();
@@ -244,7 +244,7 @@ public class State implements Reporter {
      * @param s Statement to remove.
      */
     private void removeStatement(LogStatement s) {
-        TemporalDatabase theDatabase = tdb.getDBContaining(s);
+        Timeline theDatabase = tdb.getTimelineContaining(s);
 
         // First find which component contains s
         final int ct = theDatabase.indexOfContainer(s);
@@ -257,7 +257,7 @@ public class State implements Reporter {
                 //this was not the last element, we need to create another database and make split
 
                 // the two databases share the same state variable
-                TemporalDatabase newDB = new TemporalDatabase(theDatabase.stateVariable);
+                Timeline newDB = new Timeline(theDatabase.stateVariable);
 
                 //add all extra chain components to the new database
                 List<ChainComponent> remove = new LinkedList<>();
@@ -310,7 +310,7 @@ public class State implements Reporter {
         } else {
             throw new FAPEException("Unknown event type: "+s);
         }
-        for(TemporalDatabase db : tdb.vars)
+        for(Timeline db : tdb.vars)
             assert !db.chain.isEmpty();
     }
 
@@ -346,7 +346,7 @@ public class State implements Reporter {
     /**
      * True if the state variables on which those databases apply are necessarily unified (i.e. same functions and same variables).
      */
-    public boolean unified(TemporalDatabase a, TemporalDatabase b) {
+    public boolean unified(Timeline a, Timeline b) {
         return unified(a.stateVariable, b.stateVariable);
     }
 
@@ -367,7 +367,7 @@ public class State implements Reporter {
      * @return True if both TemporalDatabases might be unifiable (ie. the refer
      * to two unifiable state variables).
      */
-    public boolean unifiable(TemporalDatabase a, TemporalDatabase b) {
+    public boolean unifiable(Timeline a, Timeline b) {
         return unifiable(a.stateVariable, b.stateVariable);
     }
 
@@ -408,7 +408,7 @@ public class State implements Reporter {
      * @param s The logical statement (enabler)
      * @param db the temporal database (to be enabled)
      */
-    public boolean canBeEnabler(LogStatement s, TemporalDatabase db) {
+    public boolean canBeEnabler(LogStatement s, Timeline db) {
         boolean canSupport = s instanceof Transition || s instanceof Assignment;
         canSupport = canSupport && unifiable(s.sv(), db.stateVariable);
         canSupport = canSupport && unifiable(s.endValue(), db.getGlobalConsumeValue());
@@ -517,7 +517,7 @@ public class State implements Reporter {
 
         assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
 
-        TemporalDatabase db = new TemporalDatabase(s);
+        Timeline db = new Timeline(s);
 
         if (db.isConsumer()) {
             consumers.add(db);
@@ -771,8 +771,8 @@ public class State implements Reporter {
         if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable ||
                 f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
             return opts;
-        } else if (f instanceof UnsupportedDatabase) {
-            Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedDatabase) f).consumer);
+        } else if (f instanceof UnsupportedTimeline) {
+            Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedTimeline) f).consumer);
             if (mustDeriveFrom == null) {
                 return opts;
             } else {
@@ -797,7 +797,7 @@ public class State implements Reporter {
      * from a decomposition (e.g. this flaw was previously addressed by
      * decomposing a method. null if there is no constraints.
      */
-    private Decomposition getSupportConstraint(TemporalDatabase db) {
+    private Decomposition getSupportConstraint(Timeline db) {
         Decomposition dec = null;
         for (Pair<Integer, Decomposition> constraint : supportConstraints) {
             if (constraint.value1 == mID) {
@@ -829,14 +829,14 @@ public class State implements Reporter {
         if (opt.hasDecomposition()) {
             // decomposition is allowed only if the decomposed action is issued from dec.
             return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
-        } else if (opt instanceof SupportingDatabase) {
+        } else if (opt instanceof SupportingTimeline) {
             // DB supporters are limited to those coming from an action descending from dec.
-            TemporalDatabase db = getDatabase(((SupportingDatabase) opt).supporterID);
+            Timeline db = getDatabase(((SupportingTimeline) opt).supporterID);
 
             // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc;
-            if (((SupportingDatabase) opt).precedingChainComponent != -1) {
-                cc = db.getChainComponent(((SupportingDatabase) opt).precedingChainComponent);
+            if (((SupportingTimeline) opt).precedingChainComponent != -1) {
+                cc = db.getChainComponent(((SupportingTimeline) opt).precedingChainComponent);
             } else {
                 cc = db.getSupportingComponent();
             }
@@ -999,19 +999,19 @@ public class State implements Reporter {
 
     /************ Wrapper around TemporalDatabaseManager **********************/
 
-    public List<TemporalDatabase> getDatabases() { return tdb.vars; }
+    public List<Timeline> getDatabases() { return tdb.vars; }
 
-    public void removeDatabase(TemporalDatabase db) {
-        tdb.vars.remove(db);
-        if(consumers.contains(db))
-            consumers.remove(db);
+    public void removeTimeline(Timeline tl) {
+        tdb.vars.remove(tl);
+        if(consumers.contains(tl))
+            consumers.remove(tl);
     }
 
-    public void insertDatabaseAfter(TemporalDatabase supporter, TemporalDatabase consumer, ChainComponent precedingComponent) {
-        tdb.InsertDatabaseAfter(this, supporter, consumer, precedingComponent);
+    public void insertTimelineAfter(Timeline supporter, Timeline consumer, ChainComponent precedingComponent) {
+        tdb.insertTimelineAfter(this, supporter, consumer, precedingComponent);
     }
 
-    public TemporalDatabase getDBContaining(LogStatement s) { return tdb.getDBContaining(s); }
+    public Timeline getDBContaining(LogStatement s) { return tdb.getTimelineContaining(s); }
 
 
     /************** Wrapper around the Resource Manager ****************/
@@ -1069,7 +1069,7 @@ public class State implements Reporter {
             if(!s.sv().func().isConstant())
                 removeStatement(s);
         }
-        for(TemporalDatabase db : tdb.vars) {
+        for(Timeline db : tdb.vars) {
             if(db.chain.isEmpty()) {
                 boolean breakHere = true;
             }

@@ -4,8 +4,8 @@ package fape.core.planning;
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
 import fape.util.ActionsChart;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
@@ -122,7 +122,7 @@ public class Plan {
         }
     }
 
-    public void buildDependencies(TemporalDatabase db) {
+    public void buildDependencies(Timeline db) {
         for(int i=0 ; i<db.chain.size()-1 ; i++) {
             addDependency(db.getChainComponent(i), db.getChainComponent(i + 1));
         }
@@ -180,7 +180,7 @@ public class Plan {
      * @param fileName File to which the output will be written.
      */
     public void exportToDot(String fileName) {
-        for(TemporalDatabase db : st.getDatabases())
+        for(Timeline db : st.getDatabases())
             buildDependencies(db);
         for(Edge<LogStatement> e :eventsDependencies.jEdges())
             addActionDependency(e.u(), e.v());

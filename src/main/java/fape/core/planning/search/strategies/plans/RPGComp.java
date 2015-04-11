@@ -1,10 +1,9 @@
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fape.core.planning.search.strategies.flaws.RPGOpenGoalComp;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +21,8 @@ public class RPGComp implements PartialPlanComparator {
         RPGOpenGoalComp comp = new RPGOpenGoalComp(st);
         if(!hs.containsKey(st)) {
             int max = 0;
-            for (TemporalDatabase db : st.consumers) {
-                int h = comp.evaluate(new UnsupportedDatabase(db));
+            for (Timeline db : st.consumers) {
+                int h = comp.evaluate(new UnsupportedTimeline(db));
                 max += h;
 //                if(h > max)
 //                    max = h;

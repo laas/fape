@@ -1,7 +1,7 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
@@ -37,7 +37,7 @@ public class ActionSupporters implements ActionSupporterFinder {
      * @param db DB that needs enablers
      * @return Actions containing at least one statement that might enable the database.
      */
-    public Collection<SupportingAction> getActionsSupporting(State st, TemporalDatabase db) {
+    public Collection<SupportingAction> getActionsSupporting(State st, Timeline db) {
         assert db.isConsumer() : "Error: this database doesn't need support: "+db;
 
         return getActionsSupporting(db.stateVariable.func());

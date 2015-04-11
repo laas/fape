@@ -1,12 +1,10 @@
 package fape.core.planning.search.strategies.flaws;
 
 
-import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.util.Pair;
 import planstack.anml.model.AnmlProblem;
 
@@ -37,7 +35,7 @@ public class AbsHierarchyComp implements FlawComparator {
         this.hierarchy = hierarchies.get(st.pb).value2;
     }
 
-    private int priority(UnsupportedDatabase og) {
+    private int priority(UnsupportedTimeline og) {
         // open goal, order them according to their level in the abstraction hierarchy
         return hierarchy.getLevel(og.consumer.stateVariable.func());
     }
@@ -45,8 +43,8 @@ public class AbsHierarchyComp implements FlawComparator {
 
     @Override
     public int compare(Flaw o1, Flaw o2) {
-        if(o1 instanceof UnsupportedDatabase && o2 instanceof UnsupportedDatabase)
-            return priority((UnsupportedDatabase) o1) - priority((UnsupportedDatabase) o2);
+        if(o1 instanceof UnsupportedTimeline && o2 instanceof UnsupportedTimeline)
+            return priority((UnsupportedTimeline) o1) - priority((UnsupportedTimeline) o2);
         else
             return 0;
     }

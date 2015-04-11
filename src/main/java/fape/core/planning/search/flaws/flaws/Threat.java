@@ -5,17 +5,17 @@ import fape.core.planning.search.flaws.resolvers.BindingSeparation;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.TemporalSeparation;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class Threat extends Flaw {
 
-    public final TemporalDatabase db1;
-    public final TemporalDatabase db2;
+    public final Timeline db1;
+    public final Timeline db2;
 
-    public Threat(TemporalDatabase db1, TemporalDatabase db2) {
+    public Threat(Timeline db1, Timeline db2) {
         this.db1 = db1;
         this.db2 = db2;
     }

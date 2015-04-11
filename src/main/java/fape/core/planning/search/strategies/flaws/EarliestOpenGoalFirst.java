@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 
@@ -20,7 +20,7 @@ public class EarliestOpenGoalFirst implements FlawComparator {
         return "eogf";
     }
 
-    int priority(UnsupportedDatabase db) {
+    int priority(UnsupportedTimeline db) {
         int start = 99999999;
         for(TPRef tp : db.consumer.getFirstTimePoints()) {
             start = start < st.getEarliestStartTime(tp) ? start : st.getEarliestStartTime(tp);
@@ -30,8 +30,8 @@ public class EarliestOpenGoalFirst implements FlawComparator {
 
     @Override
     public int compare(Flaw f1, Flaw f2) {
-        if(f1 instanceof UnsupportedDatabase && f2 instanceof UnsupportedDatabase)
-            return priority((UnsupportedDatabase) f1) - priority((UnsupportedDatabase) f2);
+        if(f1 instanceof UnsupportedTimeline && f2 instanceof UnsupportedTimeline)
+            return priority((UnsupportedTimeline) f1) - priority((UnsupportedTimeline) f2);
         else
             return 0;
     }

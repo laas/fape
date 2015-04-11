@@ -13,9 +13,9 @@ public class TieBreaker implements FlawComparator {
 
     @Override
     public int compare(Flaw f1, Flaw f2) {
-        if(f1 instanceof UnsupportedDatabase && !(f2 instanceof UnsupportedDatabase))
+        if(f1 instanceof UnsupportedTimeline && !(f2 instanceof UnsupportedTimeline))
             return -1;
-        if(f2 instanceof UnsupportedDatabase && !(f1 instanceof UnsupportedDatabase))
+        if(f2 instanceof UnsupportedTimeline && !(f1 instanceof UnsupportedTimeline))
             return 1;
         if(f1 instanceof UndecomposedAction && !(f2 instanceof UndecomposedAction))
             return -1;

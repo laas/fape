@@ -2,7 +2,7 @@ package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Decomposition;
@@ -24,7 +24,7 @@ public class SupportingActionDecomposition extends Resolver {
 
     public final int consumerID;
 
-    public SupportingActionDecomposition(Action a, int id, TemporalDatabase consumer) {
+    public SupportingActionDecomposition(Action a, int id, Timeline consumer) {
         act = a;
         decID = id;
         this.consumerID = consumer.mID;
@@ -37,7 +37,7 @@ public class SupportingActionDecomposition extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase consumer = st.getDatabase(consumerID);
+        final Timeline consumer = st.getDatabase(consumerID);
         assert consumer != null : "Could not find consumer.";
         // Apply the i^th decomposition of o.actionToDecompose, where i is given by
         // o.decompositionID

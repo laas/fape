@@ -8,7 +8,7 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.core.planning.temporaldatabases;
+package fape.core.planning.timelines;
 
 import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.states.State;
@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @author FD
  */
-public class TemporalDatabase {
+public class Timeline {
 
     private static int nextID = 0;
     public final int mID;
@@ -37,18 +37,18 @@ public class TemporalDatabase {
 
     public final LinkedList<ChainComponent> chain = new LinkedList<>();
 
-    public TemporalDatabase(LogStatement s) {
+    public Timeline(LogStatement s) {
         chain.add(new ChainComponent(s));
         mID = nextID++;
         stateVariable = s.sv();
     }
 
-    public TemporalDatabase(ParameterizedStateVariable sv) {
+    public Timeline(ParameterizedStateVariable sv) {
         mID = nextID++;
         stateVariable = sv;
     }
 
-    public TemporalDatabase(TemporalDatabase toCopy) {
+    public Timeline(Timeline toCopy) {
         mID = toCopy.mID;
         for (ChainComponent cc : toCopy.chain) {
             chain.add(cc.deepCopy());
@@ -104,8 +104,8 @@ public class TemporalDatabase {
     /**
      * @return
      */
-    public TemporalDatabase deepCopy() {
-        return new TemporalDatabase(this);
+    public Timeline deepCopy() {
+        return new Timeline(this);
     }
 
     /**

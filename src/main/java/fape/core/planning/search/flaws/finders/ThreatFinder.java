@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.finders;
 
 import fape.core.planning.search.flaws.flaws.Threat;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import fape.core.planning.states.State;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.planner.APlanner;
@@ -14,11 +14,11 @@ public class ThreatFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 
-        List<TemporalDatabase> dbs = st.getDatabases();
+        List<Timeline> dbs = st.getDatabases();
         for (int i = 0; i < dbs.size(); i++) {
-            TemporalDatabase db1 = dbs.get(i);
+            Timeline db1 = dbs.get(i);
             for (int j = i + 1; j < dbs.size(); j++) {
-                TemporalDatabase db2 = dbs.get(j);
+                Timeline db2 = dbs.get(j);
                 if (isThreatening(st, db1, db2)) {
                     flaws.add(new Threat(db1, db2));
                 }
@@ -29,7 +29,7 @@ public class ThreatFinder implements FlawFinder {
     }
 
 
-    protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
+    protected boolean isThreatening(State st, Timeline db1, Timeline db2) {
         // if they are not both consumers, it is dealt by open goal reasoning
         if (db1.isConsumer() || db2.isConsumer())
             return false;

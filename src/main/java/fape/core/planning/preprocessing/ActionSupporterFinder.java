@@ -1,8 +1,7 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
-import planstack.anml.model.abs.AbstractAction;
+import fape.core.planning.timelines.Timeline;
 
 import java.util.Collection;
 
@@ -14,5 +13,5 @@ public interface ActionSupporterFinder {
      * @param db DB that needs enablers
      * @return Actions containing at least one statement that might enable the database.
      */
-    public Collection<SupportingAction> getActionsSupporting(State st, TemporalDatabase db);
+    public Collection<SupportingAction> getActionsSupporting(State st, Timeline db);
 }

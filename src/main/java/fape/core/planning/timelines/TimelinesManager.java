@@ -8,7 +8,7 @@
  * further the contents of this file is prohibited without previous written
  * permission of the author.
  */
-package fape.core.planning.temporaldatabases;
+package fape.core.planning.timelines;
 
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
@@ -22,68 +22,65 @@ import java.util.List;
  *
  * @author FD
  */
-public class TemporalDatabaseManager implements Reporter {
+public class TimelinesManager implements Reporter {
 
 
     /**
-     * All temporal databases.
+     * All temporal timelines.
      */
-    public List<TemporalDatabase> vars = new LinkedList<>();
+    public List<Timeline> vars = new LinkedList<>();
 
     /**
-     * Creates a new database containing the Statement s and adds it to this Manager
-     *
-     * @param s Statement that will appear in the the Database
-     * @return
+     * Creates a new timeline containing the Statement s and adds it to this Manager
      */
-    public TemporalDatabase GetNewDatabase(LogStatement s) {
-        TemporalDatabase db = new TemporalDatabase(s);
+    public Timeline getNewTimeline(LogStatement s) {
+        Timeline db = new Timeline(s);
         vars.add(db);
         return db;
     }
 
-    public TemporalDatabase GetDB(int tdbID) {
-        for(TemporalDatabase db : vars) {
+    public Timeline getTimeline(int tdbID) {
+        for(Timeline db : vars) {
             if(db.mID == tdbID)
                 return db;
         }
-        throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+Report());
+        throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+ report());
     }
 
-    public TemporalDatabase getDBContaining(LogStatement s) {
-        for(TemporalDatabase db : vars) {
+    public Timeline getTimelineContaining(LogStatement s) {
+        for(Timeline db : vars) {
             if(db.contains(s)) {
                 return db;
             }
         }
-        throw new FAPEException("Unable to find a temporal database containing the statement "+s);
+        throw new FAPEException("Unable to find a timeline containing the statement "+s);
     }
 
-    public TemporalDatabaseManager DeepCopy() {
-        TemporalDatabaseManager mng = new TemporalDatabaseManager();
+    public TimelinesManager deepCopy() {
+        TimelinesManager mng = new TimelinesManager();
         mng.vars = new LinkedList<>();
-        for (TemporalDatabase b : this.vars) {
-            TemporalDatabase db = b.deepCopy();
+        for (Timeline b : this.vars) {
+            Timeline db = b.deepCopy();
             mng.vars.add(db);
         }
         return mng;
     }
 
     /**
-     * Inserts all chains of the database @included after the ChainComponent @after of database @tdb.
+     * Inserts all chains of the timeline @included after the ChainComponent @after of timeline @tdb.
      * All necessary constraints (temporal precedence and unification) are added to State st.
      *
      * If the both the first chain component of @included and the chain component @after are persistence events, those
      * two are merged before proceeding to the insertion.
      *
-     * At the the included database is completely remove from the search state. All reference to it are replaced by references to tdb
+     * At the the included timeline is completely remove from the search state. All reference to it are replaced by references to tdb
      *
      * @param st State in which the changes are applied
-     * @param tdb Temporal database in which the events will we included
-     * @param included database that will disappear, all of its components being included in tdb
+     * @param tdb timeline in which the events will we included
+     * @param included timeline that will disappear, all of its components being included in tdb
      * @param after a chain component of tdb after which the chain of included will be added
      */
-    public void InsertDatabaseAfter(State st, TemporalDatabase tdb, TemporalDatabase included, ChainComponent after) {
+    public void insertTimelineAfter(State st, Timeline tdb, Timeline included, ChainComponent after) {
         assert tdb.chain.size() != 0;
         assert tdb.chain.contains(after);
 
@@ -101,18 +98,18 @@ public class TemporalDatabaseManager implements Reporter {
             // into 'after' before going any further.
             st.addUnificationConstraint(after.getSupportValue(), included.getGlobalConsumeValue());
 
-            // add persitence events to after, and removing them from the included database
+            // add persitence events to after, and removing them from the included timeline
             after.add(included.chain.getFirst());
             included.chain.removeFirst();
 
-            EnforceChainConstraints(st, tdb, afterIndex-1);
-            EnforceChainConstraints(st, tdb, afterIndex);
+            enforceChainConstraints(st, tdb, afterIndex - 1);
+            enforceChainConstraints(st, tdb, afterIndex);
         }
 
         // copy all remaining components
         if(included.chain.size() > 0) {
             assert tdb.chain.getLast() == after || included.chain.size() == 1 && !included.chain.getFirst().change:
-                    "Integrating a database with transitions in the middle of another one. " +
+                    "Integrating a timeline with transitions in the middle of another one. " +
                     "While this should work with the current implementation it might create unexpected problems " +
                     "because of unexpected unification constraints between two non adjacent chain components.";
 
@@ -123,8 +120,8 @@ public class TemporalDatabaseManager implements Reporter {
             }
 
             // add connstraints before and after the inserted chain
-            EnforceChainConstraints(st, tdb, afterIndex);
-            EnforceChainConstraints(st, tdb, nextInclusion-1);
+            enforceChainConstraints(st, tdb, afterIndex);
+            enforceChainConstraints(st, tdb, nextInclusion - 1);
         }
 
         enforceAllConstraints(st, tdb);
@@ -132,18 +129,18 @@ public class TemporalDatabaseManager implements Reporter {
         // the new domain is the intersection of both domains
         st.addUnificationConstraint(tdb.stateVariable, included.stateVariable);
 
-        // Remove the included database from the system
-        st.removeDatabase(included);
+        // Remove the included timeline from the system
+        st.removeTimeline(included);
     }
 
     /**
-     * Given a database tdb, enforces the unification and temporal constraints between
+     * Given a timeline tdb, enforces the unification and temporal constraints between
      * the elements of indexes chainCompIndex and chainCompIndex+1
      * @param st
      * @param tdb
      * @param chainCompIndex
      */
-    public void EnforceChainConstraints(State st, TemporalDatabase tdb, int chainCompIndex) {
+    public void enforceChainConstraints(State st, Timeline tdb, int chainCompIndex) {
         assert chainCompIndex < tdb.chain.size();
 
         if(chainCompIndex < tdb.chain.size()-1 && chainCompIndex >= 0) {
@@ -165,9 +162,9 @@ public class TemporalDatabaseManager implements Reporter {
         }
     }
 
-    public void enforceAllConstraints(State st, TemporalDatabase tdb) {
+    public void enforceAllConstraints(State st, Timeline tdb) {
         for(int i=0 ; i<tdb.chain.size()-1 ; i++) {
-            //EnforceChainConstraints(st, tdb, i);
+            //enforceChainConstraints(st, tdb, i);
             int j = i+1;
             //for(int j=i+1 ; j<tdb.chain.size() ; j++) {
                 for(LogStatement a : tdb.chain.get(i).contents) {
@@ -181,11 +178,11 @@ public class TemporalDatabaseManager implements Reporter {
     }
 
     @Override
-    public String Report() {
+    public String report() {
         String ret = "";
 
         ret += "  size: " + this.vars.size() + "\n";
-        for (TemporalDatabase b : vars) {
+        for (Timeline b : vars) {
             ret += b.Report();
         }
         ret += "\n";

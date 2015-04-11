@@ -1,4 +1,4 @@
-package fape.core.planning.temporaldatabases;
+package fape.core.planning.timelines;
 
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;

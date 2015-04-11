@@ -5,7 +5,7 @@ import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
@@ -92,7 +92,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 //        } else {
 //            System.out.println("                      aaaaaaaaaaaaaaa");
 //        }
-        for(TemporalDatabase cons : st.consumers) {/*
+        for(Timeline cons : st.consumers) {/*
             DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st, pb);
             if(!pg.supported(df)) {
 //                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));

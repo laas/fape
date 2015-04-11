@@ -12,7 +12,7 @@ import planstack.anml.model.concrete.Action;
 public abstract class Resolver {
 
     public boolean representsCausalLinkAddition() {
-        return this instanceof SupportingDatabase ||
+        return this instanceof SupportingTimeline ||
                 this instanceof SupportingAction ||
                 this instanceof SupportingActionDecomposition;
     }

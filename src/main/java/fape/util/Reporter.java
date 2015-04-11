@@ -6,5 +6,5 @@ package fape.util;
  */
 public interface Reporter {
 
-    public String Report();
+    public String report();
 }

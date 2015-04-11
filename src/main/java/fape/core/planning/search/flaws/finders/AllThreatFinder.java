@@ -4,7 +4,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.Threat;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 
@@ -16,11 +16,11 @@ public class AllThreatFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 
-        List<TemporalDatabase> dbs = st.getDatabases();
+        List<Timeline> dbs = st.getDatabases();
         for (int i = 0; i < dbs.size(); i++) {
-            TemporalDatabase db1 = dbs.get(i);
+            Timeline db1 = dbs.get(i);
             for (int j = i + 1; j < dbs.size(); j++) {
-                TemporalDatabase db2 = dbs.get(j);
+                Timeline db2 = dbs.get(j);
                 if (isThreatening(st, db1, db2)) {
                     flaws.add(new Threat(db1, db2));
                 } else if (isThreatening(st, db2, db1)) {
@@ -33,7 +33,7 @@ public class AllThreatFinder implements FlawFinder {
     }
 
 
-    protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
+    protected boolean isThreatening(State st, Timeline db1, Timeline db2) {
      // if their state variables are not unifiable
         if (!st.unifiable(db1, db2))
             return false;

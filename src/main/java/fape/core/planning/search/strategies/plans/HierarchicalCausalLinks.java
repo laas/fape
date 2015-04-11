@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.Pair;
@@ -48,7 +48,7 @@ public class HierarchicalCausalLinks implements PartialPlanComparator {
      */
     int weightCausalLinks(State st) {
         int w = 0;
-        for(TemporalDatabase db : st.getDatabases()) {
+        for(Timeline db : st.getDatabases()) {
             for(Pair<LogStatement, LogStatement> cl : db.allCausalLinks()) {
                 w += weightOfCausalLink(cl.v1(), cl.v2(), st);
             }

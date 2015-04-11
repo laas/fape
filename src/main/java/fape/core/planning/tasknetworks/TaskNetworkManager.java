@@ -407,7 +407,7 @@ public class TaskNetworkManager implements Reporter {
     }
 
     @Override
-    public String Report() {
+    public String report() {
         String str = "Num roots: " + roots().size() + ", roots: " + roots().toString();
         str += "\n\tLeaf actions" +  GetAllActions().toString();
         return str;

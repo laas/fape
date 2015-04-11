@@ -15,11 +15,11 @@ import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fape.core.planning.search.flaws.finders.OpenGoalFinder;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -102,8 +102,8 @@ public class LMC implements PartialPlanComparator {
         HashMap<String, Slice> goalSlice = new HashMap<>(), initSlice = new HashMap<>();
 
         for (Flaw f : (new OpenGoalFinder()).getFlaws(st, APlanner.currentPlanner)) {
-            assert f instanceof UnsupportedDatabase;
-            TemporalDatabase b = ((UnsupportedDatabase) f).consumer;
+            assert f instanceof UnsupportedTimeline;
+            Timeline b = ((UnsupportedTimeline) f).consumer;
             boolean hasSimpleResolution = false;
             List<Resolver> ops = f.getResolvers(st, APlanner.currentPlanner); //APlanner.currentPlanner.GetSupporters(b, st);
             for (Resolver o : ops) {
@@ -136,7 +136,7 @@ public class LMC implements PartialPlanComparator {
         }
         //now we make a slice of the initial state we are considering
         if (true || LMCut.commonInit == null) {
-            for (TemporalDatabase b : st.getDatabases()) {
+            for (Timeline b : st.getDatabases()) {
                 if (b.hasSinglePersistence()) {
                     continue;
                 }

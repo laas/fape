@@ -3,7 +3,7 @@ package fape.core.planning.search.flaws.resolvers;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PGReachabilityPlanner;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import fape.util.TinyLogger;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.LVarRef;
@@ -35,7 +35,7 @@ public class SupportingAction extends Resolver {
     /** id of the statement used for support */
     public final LStatementRef statementRef;
 
-    public SupportingAction(AbstractAction act, int decID, LStatementRef statementRef, TemporalDatabase consumer) {
+    public SupportingAction(AbstractAction act, int decID, LStatementRef statementRef, Timeline consumer) {
         this.act = act;
         values = null;
         this.consumerID = consumer.mID;
@@ -43,7 +43,7 @@ public class SupportingAction extends Resolver {
         this.statementRef = statementRef;
     }
 
-    public SupportingAction(AbstractAction act, LStatementRef statementRef, int decID, Map<LVarRef, Collection<String>> values, TemporalDatabase consumer) {
+    public SupportingAction(AbstractAction act, LStatementRef statementRef, int decID, Map<LVarRef, Collection<String>> values, Timeline consumer) {
         this.act = act;
         this.values = values;
         this.consumerID = consumer.mID;
@@ -62,7 +62,7 @@ public class SupportingAction extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase consumer = st.getDatabase(consumerID);
+        final Timeline consumer = st.getDatabase(consumerID);
 
         assert consumer != null : "Consumer was not found.";
 
@@ -109,9 +109,9 @@ public class SupportingAction extends Resolver {
         assert supporter != null && supporter instanceof LogStatement;
 
         if(st.canBeEnabler((LogStatement) supporter, consumer)) {
-            final TemporalDatabase supportingDatabase = st.getDBContaining((LogStatement) supporter);
+            final Timeline supportingDatabase = st.getDBContaining((LogStatement) supporter);
             // add the causal link
-            Resolver opt = new SupportingDatabase(supportingDatabase.mID, consumer);
+            Resolver opt = new SupportingTimeline(supportingDatabase.mID, consumer);
             TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
             return opt.apply(st, planner);
         } else {

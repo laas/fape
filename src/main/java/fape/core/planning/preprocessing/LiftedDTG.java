@@ -2,7 +2,7 @@ package fape.core.planning.preprocessing;
 
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
@@ -77,7 +77,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 //        dag.exportToDotFile("dtg.dot");
     }
 
-    public Collection<SupportingAction> getActionsSupporting(State st, TemporalDatabase db) {
+    public Collection<SupportingAction> getActionsSupporting(State st, Timeline db) {
         assert db.isConsumer() : "Error: this database doesn't need support: "+db;
 
         String predicate = db.stateVariable.func().name();

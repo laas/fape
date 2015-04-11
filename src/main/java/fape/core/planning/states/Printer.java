@@ -4,8 +4,8 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.flaws.resolvers.DecomposeAction;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -35,10 +35,10 @@ public class Printer {
             return statement(st, (LogStatement) o);
         else if(o instanceof ParameterizedStateVariable)
             return stateVariable(st, (ParameterizedStateVariable) o);
-        else if(o instanceof TemporalDatabase)
-            return temporalDatabase(st, (TemporalDatabase) o);
+        else if(o instanceof Timeline)
+            return temporalDatabase(st, (Timeline) o);
         else if(o instanceof Reporter)
-            return ((Reporter) o).Report();
+            return ((Reporter) o).report();
         // Flaws
         else if(o instanceof Threat)
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
@@ -48,8 +48,8 @@ public class Printer {
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
         else if(o instanceof UnsupportedTaskCond)
             return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
-        else if(o instanceof UnsupportedDatabase)
-            return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedDatabase) o).consumer);
+        else if(o instanceof UnsupportedTimeline)
+            return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
             return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
 
@@ -57,8 +57,8 @@ public class Printer {
         else if(o instanceof TemporalSeparation)
             return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).firstDbID)+" && "
                     +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
-        else if(o instanceof SupportingDatabase)
-            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.GetDB(((SupportingDatabase) o).supporterID));
+        else if(o instanceof SupportingTimeline)
+            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.getTimeline(((SupportingTimeline) o).supporterID));
         else if(o instanceof DecomposeAction)
             return "Decompose: no "+((DecomposeAction) o).decID;
         else if(o instanceof VarBinding)
@@ -200,28 +200,28 @@ public class Printer {
     }
 
     public static String temporalDatabaseManager(final State st) {
-        HashMap<String, List<TemporalDatabase>> groupedDBs = new HashMap<>();
-        for(TemporalDatabase tdb : st.getDatabases()) {
+        HashMap<String, List<Timeline>> groupedDBs = new HashMap<>();
+        for(Timeline tdb : st.getDatabases()) {
             if(!groupedDBs.containsKey(stateVariable(st, tdb.stateVariable))) {
-                groupedDBs.put(stateVariable(st, tdb.stateVariable), new LinkedList<TemporalDatabase>());
+                groupedDBs.put(stateVariable(st, tdb.stateVariable), new LinkedList<Timeline>());
             }
             groupedDBs.get(stateVariable(st, tdb.stateVariable)).add(tdb);
         }
-        for(List<TemporalDatabase> dbs : groupedDBs.values()) {
-            Collections.sort(dbs, new Comparator<TemporalDatabase>() {
+        for(List<Timeline> dbs : groupedDBs.values()) {
+            Collections.sort(dbs, new Comparator<Timeline>() {
                 @Override
-                public int compare(TemporalDatabase db1, TemporalDatabase db2) {
+                public int compare(Timeline db1, Timeline db2) {
                     return (int) st.getEarliestStartTime(db1.getConsumeTimePoint())
                             - (int) st.getEarliestStartTime(db2.getConsumeTimePoint());
                 }
             });
         }
         StringBuilder sb = new StringBuilder();
-        for(Map.Entry<String,List<TemporalDatabase>> entry : groupedDBs.entrySet()) {
+        for(Map.Entry<String,List<Timeline>> entry : groupedDBs.entrySet()) {
             int offset = entry.getKey().length();
             sb.append(entry.getKey());
             boolean first = true;
-            for(TemporalDatabase db : entry.getValue()) {
+            for(Timeline db : entry.getValue()) {
                 boolean newDb = true;
                 for(ChainComponent cc : db.chain) {
                     for (LogStatement s : cc.contents) {
@@ -258,7 +258,7 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String temporalDatabase(State st, TemporalDatabase db) {
+    public static String temporalDatabase(State st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append("  id:"+db.mID+"\n");
@@ -287,7 +287,7 @@ public class Printer {
         return inlineTemporalDatabase(st, st.getDatabase(dbID));
     }
 
-    public static String inlineTemporalDatabase(State st, TemporalDatabase db) {
+    public static String inlineTemporalDatabase(State st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append(":"+db.mID+"  ");
@@ -351,7 +351,7 @@ public class Printer {
                 return act;
         }
 
-        for(TemporalDatabase db : st.tdb.vars) {
+        for(Timeline db : st.tdb.vars) {
             for(ChainComponent cc : db.chain) {
                 for(LogStatement statement : cc.contents) {
                     if(intervalContains(tp, statement))

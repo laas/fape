@@ -45,7 +45,7 @@ public class TinyLogger {
 
     public static void LogInfo(Reporter o) {
         if(Planner.logging) {
-            System.out.println("Logger: "+o.Report());
+            System.out.println("Logger: "+o.report());
         }
     }
 }

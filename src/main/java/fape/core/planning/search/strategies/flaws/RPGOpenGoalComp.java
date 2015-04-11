@@ -4,7 +4,7 @@ import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
+import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fape.core.planning.states.State;
 
 import java.util.HashMap;
@@ -13,7 +13,7 @@ import java.util.Map;
 public class RPGOpenGoalComp implements FlawComparator {
 
     final State st;
-    final Map<UnsupportedDatabase, Integer> depths = new HashMap<>();
+    final Map<UnsupportedTimeline, Integer> depths = new HashMap<>();
 
     public static GroundProblem gpb = null;
 
@@ -30,7 +30,7 @@ public class RPGOpenGoalComp implements FlawComparator {
         return "rpgog";
     }
 
-    public int evaluate(UnsupportedDatabase udb) {
+    public int evaluate(UnsupportedTimeline udb) {
         if(!depths.containsKey(udb)) {
             GroundProblem pb = new GroundProblem(gpb, st, udb.consumer);
             RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
@@ -44,12 +44,12 @@ public class RPGOpenGoalComp implements FlawComparator {
     @Override
     public int compare(Flaw flaw, Flaw t1) {
         int v1, v2;
-        if(flaw instanceof UnsupportedDatabase)
-            v1 = evaluate((UnsupportedDatabase) flaw);
+        if(flaw instanceof UnsupportedTimeline)
+            v1 = evaluate((UnsupportedTimeline) flaw);
         else
             v1 = 999999;
-        if(t1 instanceof UnsupportedDatabase)
-            v2 = evaluate((UnsupportedDatabase) t1);
+        if(t1 instanceof UnsupportedTimeline)
+            v2 = evaluate((UnsupportedTimeline) t1);
         else
             v2 = 999999;
 

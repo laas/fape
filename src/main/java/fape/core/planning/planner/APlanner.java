@@ -1,6 +1,5 @@
 package fape.core.planning.planner;
 
-import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
@@ -9,22 +8,15 @@ import fape.core.planning.search.flaws.finders.*;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
-import fape.core.planning.search.strategies.flaws.FlawComparator;
-import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
-import fape.util.ActionsChart;
-import fape.util.Pair;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
 
 import java.util.*;

@@ -5,8 +5,8 @@ import fape.core.planning.preprocessing.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -15,11 +15,11 @@ import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
 
-public class UnsupportedDatabase extends Flaw {
+public class UnsupportedTimeline extends Flaw {
 
-    public final TemporalDatabase consumer;
+    public final Timeline consumer;
 
-    public UnsupportedDatabase(TemporalDatabase tdb) {
+    public UnsupportedTimeline(Timeline tdb) {
         this.consumer = tdb;
     }
 
@@ -63,7 +63,7 @@ public class UnsupportedDatabase extends Flaw {
         //3) tasks that can decompose into an action we need
 
         //get chain connections
-        for (TemporalDatabase b : st.getDatabases()) {
+        for (Timeline b : st.getDatabases()) {
             if (consumer == b || !st.unifiable(consumer, b)) {
                 continue;
             }
@@ -75,7 +75,7 @@ public class UnsupportedDatabase extends Flaw {
                 for (ChainComponent comp : b.chain) {
                     if (comp.change && st.unifiable(comp.getSupportValue(), consumer.getGlobalConsumeValue())
                             && st.canBeBefore(comp.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                        resolvers.add(new SupportingDatabase(b.mID, ct, consumer));
+                        resolvers.add(new SupportingTimeline(b.mID, ct, consumer));
                     }
                     ct++;
                 }
@@ -85,7 +85,7 @@ public class UnsupportedDatabase extends Flaw {
             } else if (st.unifiable(b.getGlobalSupportValue(), consumer.getGlobalConsumeValue())
                     && !b.hasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                resolvers.add(new SupportingDatabase(b.mID, consumer));
+                resolvers.add(new SupportingTimeline(b.mID, consumer));
             }
         }
 
@@ -94,7 +94,7 @@ public class UnsupportedDatabase extends Flaw {
         //    they are necessarily on the same state variable and they cannot be temporally separated.
         // If such a resolver if found, it means that no other resolver is applicable and only this one is returned.
         for(Resolver res : resolvers) {
-            SupportingDatabase sdb = (SupportingDatabase) res;
+            SupportingTimeline sdb = (SupportingTimeline) res;
             ChainComponent supportingCC = null;
             if(sdb.precedingChainComponent == -1) {
                 supportingCC = st.getDatabase(sdb.supporterID).chain.getLast();
@@ -117,8 +117,8 @@ public class UnsupportedDatabase extends Flaw {
         // here we check to see if some resolvers are not valid because resulting in unsolvable threats
         List<Resolver> toRemove = new LinkedList<>();
         for(Resolver res : resolvers) {
-            TemporalDatabase supporter = st.getDatabase(((SupportingDatabase) res).supporterID);
-            for(TemporalDatabase other : st.getDatabases()) {
+            Timeline supporter = st.getDatabase(((SupportingTimeline) res).supporterID);
+            for(Timeline other : st.getDatabases()) {
                 if(other != consumer && other != supporter)
                 if(!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
                     // other is on the same state variable and chages the value of the state variable

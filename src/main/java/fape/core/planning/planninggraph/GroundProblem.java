@@ -1,8 +1,8 @@
 package fape.core.planning.planninggraph;
 
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
@@ -67,7 +67,7 @@ public class GroundProblem {
         return total;
     }
 
-    Collection<Fluent> dbToFluents(TemporalDatabase db, State st) {
+    Collection<Fluent> dbToFluents(Timeline db, State st) {
         HashSet<Fluent> fluents = new HashSet<>();
         for(ChainComponent cc : db.chain) {
             if (cc.change) {
@@ -85,16 +85,16 @@ public class GroundProblem {
         this.liftedPb = pb.liftedPb;
         this.gActions = new LinkedList<>(pb.gActions);
 
-        for(TemporalDatabase db : st.tdb.vars) {
+        for(Timeline db : st.tdb.vars) {
             initState.fluents.addAll(dbToFluents(db, st));
         }
     }
 
-    public GroundProblem(GroundProblem pb, State st, TemporalDatabase og) {
+    public GroundProblem(GroundProblem pb, State st, Timeline og) {
         this.liftedPb = pb.liftedPb;
         this.gActions = pb.gActions;
 
-        for(TemporalDatabase db : st.tdb.vars) {
+        for(Timeline db : st.tdb.vars) {
             if(db.hasSinglePersistence())
                 continue;
             for(ChainComponent cc : db.chain) {
@@ -108,7 +108,7 @@ public class GroundProblem {
 
     }
 
-    public boolean canIndirectlySupport(State st, ChainComponent supporter, TemporalDatabase consumer) {
+    public boolean canIndirectlySupport(State st, ChainComponent supporter, Timeline consumer) {
         assert supporter.change;
 
         for(TPRef consumeTP : consumer.getFirstTimePoints()) {

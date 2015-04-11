@@ -2,10 +2,10 @@ package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
+import fape.core.planning.timelines.ChainComponent;
+import fape.core.planning.timelines.Timeline;
 
-public class SupportingDatabase extends Resolver {
+public class SupportingTimeline extends Resolver {
 
     /** Database that will support the consumer */
     public final int supporterID;
@@ -18,13 +18,13 @@ public class SupportingDatabase extends Resolver {
     /** Database that needs to be supported */
     public final int consumerID;
 
-    public SupportingDatabase(int supporterID, TemporalDatabase consumer) {
+    public SupportingTimeline(int supporterID, Timeline consumer) {
         this.supporterID = supporterID;
         precedingChainComponent = -1;
         this.consumerID = consumer.mID;
     }
 
-    public SupportingDatabase(int supporterID, int chainComponent, TemporalDatabase consumer) {
+    public SupportingTimeline(int supporterID, int chainComponent, Timeline consumer) {
         this.supporterID = supporterID;
         precedingChainComponent = chainComponent;
         this.consumerID = consumer.mID;
@@ -32,8 +32,8 @@ public class SupportingDatabase extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase supporter = st.getDatabase(supporterID);
-        final TemporalDatabase consumer = st.getDatabase(consumerID);
+        final Timeline supporter = st.getDatabase(supporterID);
+        final Timeline consumer = st.getDatabase(consumerID);
         assert supporter != null;
         assert consumer != null;
 
@@ -53,7 +53,7 @@ public class SupportingDatabase extends Resolver {
             assert precedingComponent.change : "Support by a component that does not change the value.";
             planner.causalLinkAdded(st, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
 
-            st.insertDatabaseAfter(supporter, consumer, precedingComponent);
+            st.insertTimelineAfter(supporter, consumer, precedingComponent);
 
         } else {
             // we concatenate the two timelines
@@ -63,7 +63,7 @@ public class SupportingDatabase extends Resolver {
             planner.causalLinkAdded(st, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
 
             // database concatenation
-            st.insertDatabaseAfter(supporter, consumer, supporter.chain.getLast());
+            st.insertTimelineAfter(supporter, consumer, supporter.chain.getLast());
         }
 
         return true;

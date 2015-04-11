@@ -1,22 +1,12 @@
 package fape.core.planning.planninggraph;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
-import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.TemporalDatabase;
-import fape.util.Pair;
-import planstack.anml.model.LVarRef;
-import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.ActRef;
-import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
-
-import java.util.*;
 
 /**
  * Planner that uses a relaxed planning graph for domain analysis (to select action resolvers).
