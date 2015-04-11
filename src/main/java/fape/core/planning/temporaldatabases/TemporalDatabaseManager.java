@@ -63,7 +63,7 @@ public class TemporalDatabaseManager implements Reporter {
         TemporalDatabaseManager mng = new TemporalDatabaseManager();
         mng.vars = new LinkedList<>();
         for (TemporalDatabase b : this.vars) {
-            TemporalDatabase db = b.DeepCopy();
+            TemporalDatabase db = b.deepCopy();
             mng.vars.add(db);
         }
         return mng;
@@ -99,10 +99,10 @@ public class TemporalDatabaseManager implements Reporter {
         if(!included.chain.getFirst().change && !after.change) {
             //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
             // into 'after' before going any further.
-            st.addUnificationConstraint(after.GetSupportValue(), included.GetGlobalConsumeValue());
+            st.addUnificationConstraint(after.getSupportValue(), included.getGlobalConsumeValue());
 
             // add persitence events to after, and removing them from the included database
-            after.Add(included.chain.getFirst());
+            after.add(included.chain.getFirst());
             included.chain.removeFirst();
 
             EnforceChainConstraints(st, tdb, afterIndex-1);
@@ -154,7 +154,7 @@ public class TemporalDatabaseManager implements Reporter {
 
             assert first.change || second.change : "There should not be two persistence following each other";
 
-            st.addUnificationConstraint(first.GetSupportValue(), second.GetConsumeValue());
+            st.addUnificationConstraint(first.getSupportValue(), second.getConsumeValue());
 
             // Enforce all statements of first to be before all statements of second
             for(LogStatement sa : first.contents) {

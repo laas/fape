@@ -13,7 +13,6 @@ import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.*;
-import planstack.anml.parser.ANMLFactory;
 
 import java.util.*;
 
@@ -73,12 +72,12 @@ public class GroundProblem {
         for(ChainComponent cc : db.chain) {
             if (cc.change) {
                 // those values can be used for persistences but not for transitions.
-                fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.GetSupportValue(), st, false));
+                fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false));
             }
         }
         // the last value can be used for transitions as well
-        if(!db.HasSinglePersistence())
-            fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.GetGlobalSupportValue(), st, true));
+        if(!db.hasSinglePersistence())
+            fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true));
         return fluents;
     }
 
@@ -96,15 +95,15 @@ public class GroundProblem {
         this.gActions = pb.gActions;
 
         for(TemporalDatabase db : st.tdb.vars) {
-            if(db.HasSinglePersistence())
+            if(db.hasSinglePersistence())
                 continue;
             for(ChainComponent cc : db.chain) {
                 if(cc.change && canIndirectlySupport(st, cc, og)) {
-                    initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.GetSupportValue(), st, false));
+                    initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false));
                 }
             }
             if(st.canBeBefore(db.getSupportTimePoint(), og.getFirstTimePoints()))
-                initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.GetGlobalSupportValue(), st, true));
+                initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true));
         }
 
     }

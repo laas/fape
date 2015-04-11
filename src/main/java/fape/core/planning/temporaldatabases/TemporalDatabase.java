@@ -19,7 +19,6 @@ import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
-import scala.Tuple2;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -52,7 +51,7 @@ public class TemporalDatabase {
     public TemporalDatabase(TemporalDatabase toCopy) {
         mID = toCopy.mID;
         for (ChainComponent cc : toCopy.chain) {
-            chain.add(cc.DeepCopy());
+            chain.add(cc.deepCopy());
         }
         stateVariable = toCopy.stateVariable;
     }
@@ -105,7 +104,7 @@ public class TemporalDatabase {
     /**
      * @return
      */
-    public TemporalDatabase DeepCopy() {
+    public TemporalDatabase deepCopy() {
         return new TemporalDatabase(this);
     }
 
@@ -147,7 +146,7 @@ public class TemporalDatabase {
      */
     public TPRef getFirstChangeTimePoint() {
         assert !chain.isEmpty() : "Database is empty";
-        assert !HasSinglePersistence() : "Database has no change statements";
+        assert !hasSinglePersistence() : "Database has no change statements";
         for(ChainComponent cc : chain) {
             if(cc.change)
                 return cc.contents.getFirst().start();
@@ -162,8 +161,8 @@ public class TemporalDatabase {
         return chain.getFirst().getConsumeTimePoint();
     }
 
-    public List<String> GetPossibleSupportAtomNames(State st) {
-        return LMC.GetAtomNames(st, this.stateVariable, this.GetGlobalSupportValue());
+    public List<String> getPossibleSupportAtomNames(State st) {
+        return LMC.GetAtomNames(st, this.stateVariable, this.getGlobalSupportValue());
     }
 
     /**
@@ -195,14 +194,14 @@ public class TemporalDatabase {
     }
 
 
-    public ChainComponent GetChainComponent(int precedingChainComponent) {
+    public ChainComponent getChainComponent(int precedingChainComponent) {
         return chain.get(precedingChainComponent);
     }
 
     /**
      * @return True if there is only persistences
      */
-    public boolean HasSinglePersistence() {
+    public boolean hasSinglePersistence() {
         return chain.size() == 1 && !chain.get(0).change;
     }
 
@@ -210,16 +209,16 @@ public class TemporalDatabase {
      * @return A global variable representing the value at the end of the
      * temporal database
      */
-    public VarRef GetGlobalSupportValue() {
-        return chain.getLast().GetSupportValue();
+    public VarRef getGlobalSupportValue() {
+        return chain.getLast().getSupportValue();
     }
 
     /**
      *
      * @return
      */
-    public VarRef GetGlobalConsumeValue() {
-        return chain.getFirst().GetConsumeValue();
+    public VarRef getGlobalConsumeValue() {
+        return chain.getFirst().getConsumeValue();
     }
 
     @Override
@@ -240,7 +239,7 @@ public class TemporalDatabase {
      * Checks if there is not two persistence events following each other in the
      * chain.
      */
-    public void CheckChainComposition() {
+    public void checkChainComposition() {
         boolean wasPreviousTransition = true;
         for (ChainComponent cc : this.chain) {
             if (!wasPreviousTransition && !cc.change) {

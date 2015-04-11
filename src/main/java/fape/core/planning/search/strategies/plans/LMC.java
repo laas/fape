@@ -113,7 +113,7 @@ public class LMC implements PartialPlanComparator {
                 }
             }
             if (!hasSimpleResolution) {
-                VarRef v = b.GetGlobalConsumeValue();
+                VarRef v = b.getGlobalConsumeValue();
                 List<String> atoms = GetAtomNames(st, b.stateVariable, v);
                 if (atoms.size() > 1) {
                     continue; //we take only the instantiated atoms
@@ -137,10 +137,10 @@ public class LMC implements PartialPlanComparator {
         //now we make a slice of the initial state we are considering
         if (true || LMCut.commonInit == null) {
             for (TemporalDatabase b : st.getDatabases()) {
-                if (b.HasSinglePersistence()) {
+                if (b.hasSinglePersistence()) {
                     continue;
                 }
-                List<String> names = b.GetPossibleSupportAtomNames(st);
+                List<String> names = b.getPossibleSupportAtomNames(st);
                 for (String nm : names) {
                     if (RelaxedGroundAtom.Indexed(nm)) {
                         Slice s = new Slice(nm, b.getConsumeTimePoint());

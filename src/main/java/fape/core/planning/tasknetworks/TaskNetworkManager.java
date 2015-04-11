@@ -241,7 +241,7 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
-     * Add a task support link from an action condition to an action.
+     * add a task support link from an action condition to an action.
      * THis link means: the action condition cond is supported by the action a.
      *
      * An action condition should be supported by exactly one action.

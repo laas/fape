@@ -1,10 +1,8 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.planninggraph.*;
-import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.strategies.plans.SOCA;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -13,21 +11,10 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.statements.InequalityConstraint;
-import planstack.anml.model.concrete.statements.IntegerAssignmentConstraint;
-import planstack.anml.parser.Instance;
-import planstack.constraints.bindings.ExtensionConstraint;
 import planstack.constraints.bindings.ValuesHolder;
-import planstack.structures.Pair;
-import scala.Int;
-import scala.collection.JavaConversions;
-import sun.awt.image.ImageWatched;
 
 import java.io.PrintWriter;
-import java.lang.management.GarbageCollectorMXBean;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
 
 public class PGReachabilityPlanner extends TaskConditionPlanner {
 
@@ -106,14 +93,14 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
 //            System.out.println("                      aaaaaaaaaaaaaaa");
 //        }
         for(TemporalDatabase cons : st.consumers) {/*
-            DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st, pb);
+            DisjunctiveFluent df = new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st, pb);
             if(!pg.supported(df)) {
 //                System.out.println("NOT INFERABLE   "+Printer.inlineTemporalDatabase(st, cons));
                 return false;
             }*/
             GroundProblem subpb = new GroundProblem(pb, st, cons);
             RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(subpb, derivableOnly);
-            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.GetGlobalConsumeValue(), st));
+            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st));
             if(depth > 1000) {
 //                System.out.println("CUT OFF: "+Printer.inlineTemporalDatabase(st, cons));
                 return false;

@@ -37,7 +37,7 @@ public class SupportingActionDecomposition extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase consumer = st.GetDatabase(consumerID);
+        final TemporalDatabase consumer = st.getDatabase(consumerID);
         assert consumer != null : "Could not find consumer.";
         // Apply the i^th decomposition of o.actionToDecompose, where i is given by
         // o.decompositionID
@@ -49,7 +49,7 @@ public class SupportingActionDecomposition extends Resolver {
         Decomposition dec = Factory.getDecomposition(st.pb, act, absDec);
 
         // remember that the consuming db has to be supporting by a descendant of this decomposition.
-        st.addSupportConstraint(consumer.GetChainComponent(0), dec);
+        st.addSupportConstraint(consumer.getChainComponent(0), dec);
 
         st.applyDecomposition(dec);
 

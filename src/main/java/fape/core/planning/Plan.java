@@ -124,7 +124,7 @@ public class Plan {
 
     public void buildDependencies(TemporalDatabase db) {
         for(int i=0 ; i<db.chain.size()-1 ; i++) {
-            addDependency(db.GetChainComponent(i), db.GetChainComponent(i+1));
+            addDependency(db.getChainComponent(i), db.getChainComponent(i + 1));
         }
     }
 

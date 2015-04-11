@@ -142,7 +142,7 @@ public class State implements Reporter {
         consumers = new LinkedList<>();
 
         for (TemporalDatabase sb : st.consumers) {
-            consumers.add(this.GetDatabase(sb.mID));
+            consumers.add(this.getDatabase(sb.mID));
         }
     }
 
@@ -191,7 +191,7 @@ public class State implements Reporter {
      * @param dbID ID of the database to lookup
      * @return The database with the same ID.
      */
-    public TemporalDatabase GetDatabase(int dbID) {
+    public TemporalDatabase getDatabase(int dbID) {
         for (TemporalDatabase db : tdb.vars) {
             if (db.mID == dbID) {
                 return db;
@@ -226,7 +226,7 @@ public class State implements Reporter {
         for (int i = index; i < db.chain.size(); i++) {
             ChainComponent origComp = db.chain.get(i);
             toRemove.add(origComp);
-            ChainComponent pc = origComp.DeepCopy();
+            ChainComponent pc = origComp.deepCopy();
             newDB.chain.add(pc);
         }
         db.chain.removeAll(toRemove);
@@ -264,7 +264,7 @@ public class State implements Reporter {
                 for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
                     ChainComponent origComp = theDatabase.chain.get(i);
                     remove.add(origComp);
-                    ChainComponent pc = origComp.DeepCopy();
+                    ChainComponent pc = origComp.deepCopy();
                     newDB.chain.add(pc);
                 }
                 this.consumers.add(newDB);
@@ -367,17 +367,17 @@ public class State implements Reporter {
      * @return True if both TemporalDatabases might be unifiable (ie. the refer
      * to two unifiable state variables).
      */
-    public boolean Unifiable(TemporalDatabase a, TemporalDatabase b) {
-        return Unifiable(a.stateVariable, b.stateVariable);
+    public boolean unifiable(TemporalDatabase a, TemporalDatabase b) {
+        return unifiable(a.stateVariable, b.stateVariable);
     }
 
     /**
      * Returns true if two state variables are unifiable (ie: they are on the
      * same function and their variables are unifiable).
      */
-    public boolean Unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
+    public boolean unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
         if (a.func().equals(b.func())) {
-            return Unifiable(a.jArgs(), b.jArgs());
+            return unifiable(a.jArgs(), b.jArgs());
         } else {
             return false;
         }
@@ -389,7 +389,7 @@ public class State implements Reporter {
      *
      * @return True if, for all i in 0..size(as), as[i] and bs[i] are unifiable.
      */
-    public boolean Unifiable(List<VarRef> as, List<VarRef> bs) {
+    public boolean unifiable(List<VarRef> as, List<VarRef> bs) {
         assert as.size() == bs.size() : "The two lists have different size.";
         for (int i = 0; i < as.size(); i++) {
             if (!unifiable(as.get(i), bs.get(i))) {
@@ -410,8 +410,8 @@ public class State implements Reporter {
      */
     public boolean canBeEnabler(LogStatement s, TemporalDatabase db) {
         boolean canSupport = s instanceof Transition || s instanceof Assignment;
-        canSupport = canSupport && Unifiable(s.sv(), db.stateVariable);
-        canSupport = canSupport && unifiable(s.endValue(), db.GetGlobalConsumeValue());
+        canSupport = canSupport && unifiable(s.sv(), db.stateVariable);
+        canSupport = canSupport && unifiable(s.endValue(), db.getGlobalConsumeValue());
         return canSupport;
     }
 
@@ -831,12 +831,12 @@ public class State implements Reporter {
             return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
         } else if (opt instanceof SupportingDatabase) {
             // DB supporters are limited to those coming from an action descending from dec.
-            TemporalDatabase db = GetDatabase(((SupportingDatabase) opt).supporterID);
+            TemporalDatabase db = getDatabase(((SupportingDatabase) opt).supporterID);
 
             // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc;
             if (((SupportingDatabase) opt).precedingChainComponent != -1) {
-                cc = db.GetChainComponent(((SupportingDatabase) opt).precedingChainComponent);
+                cc = db.getChainComponent(((SupportingDatabase) opt).precedingChainComponent);
             } else {
                 cc = db.getSupportingComponent();
             }

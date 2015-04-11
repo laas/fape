@@ -32,14 +32,14 @@ public class SupportingDatabase extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase supporter = st.GetDatabase(supporterID);
-        final TemporalDatabase consumer = st.GetDatabase(consumerID);
+        final TemporalDatabase supporter = st.getDatabase(supporterID);
+        final TemporalDatabase consumer = st.getDatabase(consumerID);
         assert supporter != null;
         assert consumer != null;
 
         ChainComponent precedingComponent = null;
         if (precedingChainComponent != -1) {
-            precedingComponent = supporter.GetChainComponent(precedingChainComponent);
+            precedingComponent = supporter.getChainComponent(precedingChainComponent);
         }
 
         // now perfrom the merging of the two timelines

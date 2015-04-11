@@ -1,7 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.states.Printer;
 import fape.core.planning.planner.PGReachabilityPlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
@@ -63,7 +62,7 @@ public class SupportingAction extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase consumer = st.GetDatabase(consumerID);
+        final TemporalDatabase consumer = st.getDatabase(consumerID);
 
         assert consumer != null : "Consumer was not found.";
 

@@ -35,7 +35,7 @@ public class ThreatFinder implements FlawFinder {
             return false;
 
         // if their state variables are not unifiable
-        if (!st.Unifiable(db1, db2))
+        if (!st.unifiable(db1, db2))
             return false;
 
         // if db1 cannot start before db2 ends

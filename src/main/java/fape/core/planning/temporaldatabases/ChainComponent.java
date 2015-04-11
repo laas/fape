@@ -72,10 +72,10 @@ public class ChainComponent {
     }
 
     /**
-     * Add all events of the parameterized chain component to the current chain component.
+     * add all events of the parameterized chain component to the current chain component.
      * @param cc
      */
-    public void Add(ChainComponent cc) {
+    public void add(ChainComponent cc) {
         assert cc.change == this.change : "Error: merging transition and persistence events in the same chain component.";
         contents.addAll(cc.contents);
     }
@@ -90,18 +90,18 @@ public class ChainComponent {
     /**
      * @return The variable containing the value of the state variable at the end of the component.
      */
-    public VarRef GetSupportValue() {
+    public VarRef getSupportValue() {
         return contents.getFirst().endValue();
     }
 
     /**
      * @return The variable containing the value of the state variable at the start of the component.
      */
-    public VarRef GetConsumeValue() {
+    public VarRef getConsumeValue() {
         return contents.getFirst().startValue();
     }
 
-    public ChainComponent DeepCopy() {
+    public ChainComponent deepCopy() {
         return new ChainComponent(this);
     }
 

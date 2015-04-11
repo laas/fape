@@ -1,7 +1,6 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.planninggraph.PGUtils;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import fape.exceptions.FAPEException;
@@ -15,7 +14,6 @@ import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractTransition;
-import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.VarRef;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
@@ -87,7 +85,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         for(VarRef argVar : db.stateVariable.jArgs()) {
             argTypes.add(st.typeOf(argVar));
         }
-        String valueType = st.typeOf(db.GetGlobalConsumeValue());
+        String valueType = st.typeOf(db.getGlobalConsumeValue());
 //        System.err.println(Printer.temporalDatabaseManager(st));
         return this.getActionsSupporting(new FluentType(predicate, argTypes, valueType));
 

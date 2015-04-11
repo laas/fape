@@ -4,7 +4,6 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.Threat;
 import fape.core.planning.states.State;
-import fape.core.planning.temporaldatabases.ChainComponent;
 import fape.core.planning.temporaldatabases.TemporalDatabase;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
@@ -24,7 +23,7 @@ public class AllThreatFinder implements FlawFinder {
                 TemporalDatabase db2 = dbs.get(j);
                 if (isThreatening(st, db1, db2)) {
                     flaws.add(new Threat(db1, db2));
-                } else if (isThreatening(st, db2, db1)){
+                } else if (isThreatening(st, db2, db1)) {
                     flaws.add(new Threat(db1, db2));
                 }
             }
@@ -36,11 +35,11 @@ public class AllThreatFinder implements FlawFinder {
 
     protected boolean isThreatening(State st, TemporalDatabase db1, TemporalDatabase db2) {
      // if their state variables are not unifiable
-        if (!st.Unifiable(db1, db2))
+        if (!st.unifiable(db1, db2))
             return false;
 
 
-       /* if (  !db1.HasSinglePersistence() ) {
+       /* if (  !db1.hasSinglePersistence() ) {
             for (ChainComponent db1Component : db1.chain) {
                 if ( db1Component.change ) {
                     boolean db1AfterDB2 = true;
@@ -59,7 +58,7 @@ public class AllThreatFinder implements FlawFinder {
                 }
             }
         }*/
-        if ( !db1.HasSinglePersistence() & !db2.HasSinglePersistence()){
+        if ( !db1.hasSinglePersistence() & !db2.hasSinglePersistence()) {
             boolean db1AfterDB2 = true;
             for (TPRef start1 : db1.getFirstTimePoints()) {
                 for (TPRef end2 : db2.getLastTimePoints()) {

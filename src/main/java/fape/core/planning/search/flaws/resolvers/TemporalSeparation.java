@@ -17,8 +17,8 @@ public class TemporalSeparation extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final TemporalDatabase firstDB = st.GetDatabase(firstDbID);
-        final TemporalDatabase secondDB = st.GetDatabase(secondDbID);
+        final TemporalDatabase firstDB = st.getDatabase(firstDbID);
+        final TemporalDatabase secondDB = st.getDatabase(secondDbID);
         assert firstDB != null && secondDB != null;
 
         for (LogStatement first : firstDB.chain.getLast().contents) {

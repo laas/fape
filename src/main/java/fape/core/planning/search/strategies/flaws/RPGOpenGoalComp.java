@@ -1,13 +1,10 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.Planner;
-import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedDatabase;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 
 import java.util.HashMap;
@@ -37,7 +34,7 @@ public class RPGOpenGoalComp implements FlawComparator {
         if(!depths.containsKey(udb)) {
             GroundProblem pb = new GroundProblem(gpb, st, udb.consumer);
             RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
-            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.GetGlobalConsumeValue(), st));
+            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.getGlobalConsumeValue(), st));
             depths.put(udb, depth);
 //            System.out.println(""+depth+"   " +Printer.inlineTemporalDatabase(st, udb.consumer));
         }

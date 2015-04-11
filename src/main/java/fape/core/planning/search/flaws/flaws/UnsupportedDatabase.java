@@ -64,16 +64,16 @@ public class UnsupportedDatabase extends Flaw {
 
         //get chain connections
         for (TemporalDatabase b : st.getDatabases()) {
-            if (consumer == b || !st.Unifiable(consumer, b)) {
+            if (consumer == b || !st.unifiable(consumer, b)) {
                 continue;
             }
             // if the database has a single persistence we try to integrate it with other persistences.
             // except if the state variable is constant, in which case looking only for the assignments saves search effort.
-            if (consumer.HasSinglePersistence() && !consumer.stateVariable.func().isConstant()) {
+            if (consumer.hasSinglePersistence() && !consumer.stateVariable.func().isConstant()) {
                 //we are looking for chain integration too
                 int ct = 0;
                 for (ChainComponent comp : b.chain) {
-                    if (comp.change && st.unifiable(comp.GetSupportValue(), consumer.GetGlobalConsumeValue())
+                    if (comp.change && st.unifiable(comp.getSupportValue(), consumer.getGlobalConsumeValue())
                             && st.canBeBefore(comp.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
                         resolvers.add(new SupportingDatabase(b.mID, ct, consumer));
                     }
@@ -82,8 +82,8 @@ public class UnsupportedDatabase extends Flaw {
 
                 // Otherwise, check for databases containing a change whose support value can
                 // be unified with our consume value.
-            } else if (st.unifiable(b.GetGlobalSupportValue(), consumer.GetGlobalConsumeValue())
-                    && !b.HasSinglePersistence()
+            } else if (st.unifiable(b.getGlobalSupportValue(), consumer.getGlobalConsumeValue())
+                    && !b.hasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
                 resolvers.add(new SupportingDatabase(b.mID, consumer));
             }
@@ -97,11 +97,11 @@ public class UnsupportedDatabase extends Flaw {
             SupportingDatabase sdb = (SupportingDatabase) res;
             ChainComponent supportingCC = null;
             if(sdb.precedingChainComponent == -1) {
-                supportingCC = st.GetDatabase(sdb.supporterID).chain.getLast();
+                supportingCC = st.getDatabase(sdb.supporterID).chain.getLast();
             } else {
-                supportingCC = st.GetDatabase(sdb.supporterID).GetChainComponent(sdb.precedingChainComponent);
+                supportingCC = st.getDatabase(sdb.supporterID).getChainComponent(sdb.precedingChainComponent);
             }
-            ChainComponent consumingCC = st.GetDatabase(sdb.consumerID).GetChainComponent(0);
+            ChainComponent consumingCC = st.getDatabase(sdb.consumerID).getChainComponent(0);
 
             for(LogStatement sup : supportingCC.contents) {
                 for(LogStatement cons : consumingCC.contents) {
@@ -117,10 +117,10 @@ public class UnsupportedDatabase extends Flaw {
         // here we check to see if some resolvers are not valid because resulting in unsolvable threats
         List<Resolver> toRemove = new LinkedList<>();
         for(Resolver res : resolvers) {
-            TemporalDatabase supporter = st.GetDatabase(((SupportingDatabase) res).supporterID);
+            TemporalDatabase supporter = st.getDatabase(((SupportingDatabase) res).supporterID);
             for(TemporalDatabase other : st.getDatabases()) {
                 if(other != consumer && other != supporter)
-                if(!other.HasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
+                if(!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
                     // other is on the same state variable and chages the value of the state variable
                     // if it must be between the two, it will result in an unsolvable threat
                     // hence it must can be after the end of the consumer or before the start of the

@@ -105,7 +105,7 @@ public class PGPlanner extends APlanner {
 
     public List<SupportingAction> rpgActionSupporters(TemporalDatabase db, State st) {
         List<SupportingAction> supporters = new LinkedList<>();
-        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.GetGlobalConsumeValue(), st, groundPB);
+        DisjunctiveFluent fluent = new DisjunctiveFluent(db.stateVariable,db.getGlobalConsumeValue(), st, groundPB);
         DisjunctiveAction dAct = pg.enablers(fluent);
         List<Pair<AbstractAction, List<Set<String>>>> options = dAct.actionsAndParams(groundPB);
 
