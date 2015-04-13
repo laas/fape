@@ -114,25 +114,27 @@ public class UnsupportedTimeline extends Flaw {
             }
         }
 
-        // here we check to see if some resolvers are not valid because resulting in unsolvable threats
-        List<Resolver> toRemove = new LinkedList<>();
-        for(Resolver res : resolvers) {
-            Timeline supporter = st.getDatabase(((SupportingTimeline) res).supporterID);
-            for(Timeline other : st.getTimelines()) {
-                if(other != consumer && other != supporter)
-                if(!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
-                    // other is on the same state variable and chages the value of the state variable
-                    // if it must be between the two, it will result in an unsolvable threat
-                    // hence it must can be after the end of the consumer or before the start of the
-                    if(!st.canBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
-                            && !st.canBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
-                        // will result in unsolvable threat
-                        toRemove.add(res);
-                    }
+        if(planner.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
+            // here we check to see if some resolvers are not valid because resulting in unsolvable threats
+            List<Resolver> toRemove = new LinkedList<>();
+            for (Resolver res : resolvers) {
+                Timeline supporter = st.getDatabase(((SupportingTimeline) res).supporterID);
+                for (Timeline other : st.getTimelines()) {
+                    if (other != consumer && other != supporter)
+                        if (!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
+                            // other is on the same state variable and chages the value of the state variable
+                            // if it must be between the two, it will result in an unsolvable threat
+                            // hence it must can be after the end of the consumer or before the start of the
+                            if (!st.canBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
+                                    && !st.canBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
+                                // will result in unsolvable threat
+                                toRemove.add(res);
+                            }
+                        }
                 }
             }
+            resolvers.removeAll(toRemove);
         }
-        resolvers.removeAll(toRemove);
 
         // adding actions
         // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions

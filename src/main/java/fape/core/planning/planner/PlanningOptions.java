@@ -31,7 +31,6 @@ public class PlanningOptions {
     /**
      * Used to build comparators for partial plans.
      */
-    
     public String[] planSelStrategies;
 
     /**
@@ -43,6 +42,13 @@ public class PlanningOptions {
     /**
      * If set to true, the choice of the flaw to solve next will be done on the command line.
      */
-    public boolean chooseFlawManually = false;
+    public final boolean chooseFlawManually = false;
+
+    /**
+     * If set to true, FAPE will check whether an open goal resolver will result in an unsolvable threat.
+     * In this case, the resolver will not be included (this is beneficial in a least commitment strategy
+     * where choice of the flaw is based on the number of its resolvers).
+     */
+    public boolean checkUnsolvableThreatsForOpenGoalsResolvers = false;
 
 }
