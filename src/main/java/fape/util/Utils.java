@@ -16,7 +16,7 @@ public class Utils {
     /**
      * This method tries to find an example of an inconsistent comparison function for flaws.
      * It will exit if a problematic example is found and throw a FAPEException when no example was found.
-     * 
+     *
      * @param flaws List of flaws to sort
      * @param comp Problematic comparator.
      * @param st State In which the problem arise
