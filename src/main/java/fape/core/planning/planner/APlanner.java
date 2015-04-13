@@ -8,6 +8,7 @@ import fape.core.planning.search.flaws.finders.*;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
+import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -292,7 +293,14 @@ public abstract class APlanner {
                 continue;
 
             // sort the flaws, higher priority come first
-            Collections.sort(flaws, this.flawComparator(st));
+            try {
+                Collections.sort(flaws, this.flawComparator(st));
+            } catch (java.lang.IllegalArgumentException e) {
+                // problem with the sort function, try to find an problematic example and exit
+                System.err.println("The flaw comparison function is not legal (for instance, it might not be transitive).");
+                Utils.showExampleProblemWithFlawComparator(flaws, this.flawComparator(st), st, this);
+                System.exit(1);
+            }
 
             if (flaws.isEmpty()) {
                 throw new FAPEException("Error: no flaws but state was not found to be a solution.");

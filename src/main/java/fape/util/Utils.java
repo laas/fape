@@ -1,13 +1,53 @@
 package fape.util;
 
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.states.Printer;
+import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 public class Utils {
+
+    /**
+     * This method tries to find an example of an inconsistent comparison function for flaws.
+     * It will exit if a problematic example is found and throw a FAPEException when no example was found.
+     * 
+     * @param flaws List of flaws to sort
+     * @param comp Problematic comparator.
+     * @param st State In which the problem arise
+     * @param planner Planner in which the problem occured
+     */
+    public static void showExampleProblemWithFlawComparator(List<Flaw> flaws, Comparator<Flaw> comp, State st, APlanner planner) {
+        for(int i=0 ; i< flaws.size() ; i++) {
+            Flaw a = flaws.get(i);
+            for(int j=i+1 ; j<flaws.size() ; j++) {
+                Flaw b = flaws.get(j);
+                for(int k=j+1 ; k<flaws.size() ; k++) {
+                    Flaw c = flaws.get(k);
+                    int ab = comp.compare(a, b);
+                    int ac = comp.compare(a, c);
+                    int bc = comp.compare(b, c);
+                    if(ab < 0 && bc < 0 || ab < 0 && bc == 0 || ab < 0 && bc == 0) {
+                        if(ac >= 0) {
+                            System.err.println("Problem with flaw comparison function, it is not transitive: ");
+                            System.err.println(" a: num-resolvers="+a.getNumResolvers(st, planner) +" -- flaw: "+ Printer.p(st, a));
+                            System.err.println(" b: num-resolvers="+b.getNumResolvers(st, planner) +" -- flaw: "+ Printer.p(st, b));
+                            System.err.println(" c: num-resolvers="+c.getNumResolvers(st, planner) +" -- flaw: "+ Printer.p(st, c));
+                            System.err.printf("comp(a,b)=%d comp(b,c)=%d comp(a,c)=%d\n", ab, bc, ac);
+                            System.exit(1);
+                        }
+                    }
+
+                }
+            }
+        }
+        throw new FAPEException("Unknown problem with flaw comparison function");
+    }
 
     public static int readInt() {
         String line = null;
