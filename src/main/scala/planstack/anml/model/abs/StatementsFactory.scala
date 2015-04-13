@@ -118,7 +118,7 @@ object StatementsFactory {
                 }
                 case e2: FuncExpr => {
                   //  f(a, b) == g(d, e)  and  f(a, b) != g(d, e)
-                  assert(isStateVariable(e2, context, pb))
+                  assert(isStateVariable(e2, context, pb), s"$e2 is not a state variable. From statement: $statement")
                   val rightSv = asStateVariable(e2, context, pb)
                   assert(rightSv.func.isConstant)
 

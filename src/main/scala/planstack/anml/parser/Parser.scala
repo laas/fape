@@ -385,17 +385,17 @@ object AnmlParser extends JavaTokenParsers {
   def kwType : Parser[String] = numType | symType
 
   /** predefined symbolic types: boolean, object */
-  def symType : Parser[String] = "boolean" | "object"
+  def symType : Parser[String] = "boolean"// | "object"
 
   /** Predefined numeric types: float and integer */
   def numType : Parser[String] = "float" | "integer"
 
   def kwTempAnnot : Parser[String] = "start" | "end"
 
-  def keywords = kwType | kwTempAnnot | "motivated" | "duration"
+  def keywords = (kwType | kwTempAnnot | "motivated" | "duration")
 
   def word = not(keywords) ~> ident
-
+//  def word = ident
 
   def op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
   private def opString : Parser[String] =
