@@ -12,7 +12,7 @@ public class PlanningOptions {
 
     /**
      * Those are used to extract all flaws from a state.
-     * The GetFlaws method will typically use all of those
+     * The getFlaws method will typically use all of those
      * to generate the flaws that need to be solved in a given state.
      */
     public FlawFinder[] flawFinders = {
@@ -20,7 +20,8 @@ public class PlanningOptions {
             new UndecomposedActionFinder(),
             new UnsupportedTaskConditionFinder(),
             new UnmotivatedActionFinder(),
-            new AllThreatFinder()
+            new AllThreatFinder(),
+            new UnboundVariableFinder()
     };
 
     /**

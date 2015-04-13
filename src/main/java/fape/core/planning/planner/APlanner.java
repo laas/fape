@@ -8,7 +8,6 @@ import fape.core.planning.search.flaws.finders.*;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
-import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -141,7 +140,7 @@ public abstract class APlanner {
      * @return A list of flaws present in the system. The list of flaws might not
      * be exhaustive.
      */
-    public List<Flaw> GetFlaws(State st) {
+    public List<Flaw> getFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
         for(FlawFinder fd : options.flawFinders)
             flaws.addAll(fd.getFlaws(st, this));
@@ -149,13 +148,6 @@ public abstract class APlanner {
 
         //find the resource flaws
         flaws.addAll(st.resourceFlaws());
-
-        if (flaws.isEmpty()) {
-            for (VarRef v : st.getUnboundVariables()) {
-                assert !st.typeOf(v).equals("integer");
-                flaws.add(new UnboundVariable(v));
-            }
-        }
 
         return flaws;
     }
@@ -276,7 +268,7 @@ public abstract class APlanner {
                     continue;
                 }
 
-            List<Flaw> flaws = GetFlaws(st);
+            List<Flaw> flaws = getFlaws(st);
 
             TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);
             if (flaws.isEmpty()) {
@@ -362,7 +354,7 @@ public abstract class APlanner {
      * @return
      */
     public boolean fastForward(State st) {
-        List<Flaw> flaws = GetFlaws(st);
+        List<Flaw> flaws = getFlaws(st);
 
         if (flaws.isEmpty()) {
             return true;
