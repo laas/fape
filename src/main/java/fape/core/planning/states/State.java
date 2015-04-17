@@ -879,7 +879,37 @@ public class State implements Reporter {
 
     public boolean canBeBefore(TPRef a, TPRef b) { return csp.stn().canBeBefore(a, b); }
 
-    public boolean canBeBefore(Collection<TPRef> as, Collection<TPRef> bs) {
+    /** Returns true if any time point in as can be before a time point in bs */
+    public boolean canAnyBeBefore(Collection<TPRef> as, Collection<TPRef> bs) {
+        for(TPRef a : as) {
+            for(TPRef b : bs) {
+                if(canBeBefore(a, b))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /** Returns true if any time point in as can be before b */
+    public boolean canAnyBeBefore(Collection<TPRef> as, TPRef b) {
+        for(TPRef a : as) {
+            if(canBeBefore(a, b))
+                return true;
+        }
+        return false;
+    }
+
+    /** Returns true if a can be before a time point in bs */
+    public boolean canAnyBeBefore(TPRef a, Collection<TPRef> bs) {
+        for(TPRef b : bs) {
+            if(canBeBefore(a, b))
+                return true;
+        }
+        return false;
+    }
+
+    /** Returns true if all time point in as can be before all time points in bs */
+    public boolean canAllBeBefore(Collection<TPRef> as, Collection<TPRef> bs) {
         for(TPRef a : as) {
             for(TPRef b : bs) {
                 if(!canBeBefore(a, b))
@@ -889,7 +919,8 @@ public class State implements Reporter {
         return true;
     }
 
-    public boolean canBeBefore(Collection<TPRef> as, TPRef b) {
+    /** Returns true if all time point in as can be before b */
+    public boolean canAllBeBefore(Collection<TPRef> as, TPRef b) {
         for(TPRef a : as) {
             if(!canBeBefore(a, b))
                 return false;
@@ -897,7 +928,8 @@ public class State implements Reporter {
         return true;
     }
 
-    public boolean canBeBefore(TPRef a, Collection<TPRef> bs) {
+    /** Returns true if a can be before all time point in bs */
+    public boolean canAllBeBefore(TPRef a, Collection<TPRef> bs) {
         for(TPRef b : bs) {
             if(!canBeBefore(a, b))
                 return false;

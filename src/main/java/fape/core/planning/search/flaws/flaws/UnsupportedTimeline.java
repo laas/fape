@@ -125,8 +125,8 @@ public class UnsupportedTimeline extends Flaw {
                             // other is on the same state variable and chages the value of the state variable
                             // if it must be between the two, it will result in an unsolvable threat
                             // hence it must can be after the end of the consumer or before the start of the
-                            if (!st.canBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
-                                    && !st.canBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
+                            if (!st.canAllBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
+                                    && !st.canAllBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
                                 // will result in unsolvable threat
                                 toRemove.add(res);
                             }

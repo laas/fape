@@ -102,7 +102,7 @@ public class GroundProblem {
                     initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false));
                 }
             }
-            if(st.canBeBefore(db.getSupportTimePoint(), og.getFirstTimePoints()))
+            if(st.canAllBeBefore(db.getSupportTimePoint(), og.getFirstTimePoints()))
                 initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true));
         }
 

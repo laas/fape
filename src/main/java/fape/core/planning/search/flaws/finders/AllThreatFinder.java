@@ -14,7 +14,8 @@ import java.util.List;
 public class AllThreatFinder implements FlawFinder {
 
     public List<Flaw> getFlaws(State st, APlanner planner) {
-        return st.getAllThreats();
+//        return getAllThreats(st); // non-incremental version
+        return st.getAllThreats(); // incremental version
     }
 
     /** Finds all threats in a state, this can be used to check that the incremental threat resolution works a expected */
@@ -28,8 +29,8 @@ public class AllThreatFinder implements FlawFinder {
                 Timeline db2 = dbs.get(j);
                 if (isThreatening(st, db1, db2)) {
                     flaws.add(new Threat(db1, db2));
-                } else if (isThreatening(st, db2, db1)) {
-                    flaws.add(new Threat(db1, db2));
+                } else {
+                    assert !isThreatening(st, db2, db1) : "Is threatening is not symmetrical";
                 }
             }
         }
@@ -55,12 +56,12 @@ public class AllThreatFinder implements FlawFinder {
 
         else {
             boolean firstNecessarilyAfterSecond =
-                    !st.canBeBefore(tl2.getFirstTimePoints(), tl1.getSupportTimePoint()) &&
-                            !st.canBeBefore(tl2.getFirstChange().start(), tl1.getLastTimePoints());
+                    !st.canAnyBeBefore(tl2.getFirstTimePoints(), tl1.getSupportTimePoint()) &&
+                            !st.canAnyBeBefore(tl2.getFirstChange().start(), tl1.getLastTimePoints());
 
             boolean secondNecessarilyAfterFirst =
-                    !st.canBeBefore(tl1.getFirstTimePoints(), tl2.getSupportTimePoint()) &&
-                            !st.canBeBefore(tl1.getFirstChange().start(), tl2.getLastTimePoints());
+                    !st.canAnyBeBefore(tl1.getFirstTimePoints(), tl2.getSupportTimePoint()) &&
+                            !st.canAnyBeBefore(tl1.getFirstChange().start(), tl2.getLastTimePoints());
 
             return !(firstNecessarilyAfterSecond || secondNecessarilyAfterFirst);
         }
