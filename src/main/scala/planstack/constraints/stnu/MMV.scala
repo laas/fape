@@ -366,13 +366,18 @@ class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
         requirements.addEdge(e.u, e.v, e.l.value)
         if(enabledIFPC)
           IFPC(e.u, e.v, e.l.value)
-      } else if(e.l.cond)
+      } else if(e.l.cond) {
         conditionals.addEdge(e.asInstanceOf[LabeledEdge[Int, Conditional[ID]]])
-      else if(e.l.cont)
+      } else if(e.l.cont) {
         contingents.addEdge(e.asInstanceOf[LabeledEdge[Int, Contingent[ID]]])
-      else
-        throw new RuntimeException("Error: Unknown constraint type.")
+        for(e <- requirements.inEdges(e.u) ++ requirements.outEdges(e.u) ++ requirements.inEdges(e.v) ++ requirements.outEdges(e.v)) {
+          val y = new E(e.u, e.v, new Requirement[ID](e.l))
+          modified = y::modified
+        }
 
+      } else {
+        throw new RuntimeException("Error: Unknown constraint type.")
+      }
       edgeAdded(e)
 
       // return the added edges
