@@ -26,9 +26,11 @@ abstract class AbstractStatement(val id:LocalRef) {
         new AbstractTemporalConstraint(new AbstractTimepointRef("start", id), "=", annot.start.timepoint, annot.start.delta),
         new AbstractTemporalConstraint(new AbstractTimepointRef("end", id), "=", annot.end.timepoint, annot.end.delta)
       )
-      case contains => List(
-        new AbstractTemporalConstraint(annot.start.timepoint, "<", new AbstractTimepointRef("start", id), -annot.start.delta),
-        new AbstractTemporalConstraint(new AbstractTimepointRef("end", id), "<", annot.end.timepoint, annot.end.delta)
+      case "contains" => List(
+        // start(id) >= start+delta <=> start(id) +1 > start+delta <=> start < start(id)+1-delta
+        new AbstractTemporalConstraint(annot.start.timepoint, "<", new AbstractTimepointRef("start", id), -annot.start.delta +1),
+        // end(id) <= end+delta <=> end(id) < end+delta=1
+        new AbstractTemporalConstraint(new AbstractTimepointRef("end", id), "<", annot.end.timepoint, annot.end.delta+1)
       )
     }
   }
