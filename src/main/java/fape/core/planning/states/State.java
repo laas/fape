@@ -579,8 +579,9 @@ public class State implements Reporter {
 
         switch (tc.op()) {
             case "<":
-                // tp1 < tp2 + x => tp1 --[-x, inf] --> tp2
-                csp.stn().enforceMinDelay(tp1, tp2, -tc.plus());
+                // tp1 < tp2 + x   <=>   tp1 -x +1 <= tp2 (the inequality is strict)
+                // tp1 -- [-x+1, inf] --> tp2
+                csp.stn().enforceMinDelay(tp1, tp2, -tc.plus()+1);
                 break;
             case "=":
                 // tp1 --- [x, x] ---> tp2
