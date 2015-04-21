@@ -1,0 +1,65 @@
+
+type Robot with{
+	variable Loc at;
+	variable Team team;
+};
+type Survivor with{
+	variable Loc at;
+	variable boolean stabilized;
+	variable boolean hospitalized;
+};
+type Loc with {
+	variable boolean explored;
+};
+type Zone;
+type Team with{
+	variable Zone zone;
+};
+
+constant boolean hospital(Loc l);
+constant boolean belong(Loc l, Zone z);
+constant boolean adjacent (Loc l1, Loc l2);
+constant integer distance (Loc l1, Loc l2);
+constant integer distanceZone (Zone z1, Zone z2);
+
+action move(Robot r, Loc from, Loc to) {
+	duration := distance(from,to);
+	from != to;
+	[all] r.at == from :-> to;
+};
+
+action explore(Robot r, Loc l){
+	[all] r.at == l;
+	[end] l.explored := true;
+};
+
+action moveTeam(Team t, Zone from, Zone to){
+	duration := distanceZone(from,to);
+	from != to;
+	[all]t.zone == from :-> to;
+};
+
+action stabilize (Robot r, Survivor s,Loc l){
+	[all] r.at == l;
+	[all] s.at == l;
+	[end] s.stabilized := true;
+};
+
+action hospitalize (Survivor s,Loc l){
+	[all] s.at == l;
+	[all] s.stabilized == true;
+	hospital(l) == true;
+	[end] s.hospitalized := true;
+};
+
+action moveSurvivor (Robot r1, Robot r2, Survivor s, Loc from, Loc to){
+	duration := distance(from,to);
+	from != to;
+	r1 != r2;
+	[all] {
+		s.stabilized == true;
+		r1.at == from :-> to;
+		r2.at == from :-> to;
+		s.at == from :-> to;
+	};
+};

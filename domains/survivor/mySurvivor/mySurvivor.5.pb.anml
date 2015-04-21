@@ -1,0 +1,23 @@
+instance Robot r0, r1, r2, r3, r4;
+instance Survivor s0, s1, s2, s3, s4;
+instance Loc l0_0, l0_1, l0_2, l0_3, l1_0, l1_1, l1_2, l1_3, l2_0, l2_1, l2_2, l2_3, l3_0, l3_1, l3_2, l3_3;
+hospital(l3_3) := true;
+[start] {
+	r0.at := l0_3;
+	r1.at := l0_3;
+	r2.at := l0_3;
+	r3.at := l0_3;
+	r4.at := l0_3;
+	s0.at := l2_1;
+	s1.at := l1_1;
+	s2.at := l2_1;
+	s3.at := l2_1;
+	s4.at := l0_3;
+};
+[end] {
+	s0.hospitalized == true;
+	s1.hospitalized == true;
+	s2.hospitalized == true;
+	s3.hospitalized == true;
+	s4.hospitalized == true;
+};

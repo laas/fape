@@ -1,0 +1,12 @@
+
+*21/04/2015
+	pizza:
+	iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, fast-forwarded, sol-depth, flaw-sel, plan-sel
+	0, taskcond, 1.883, 0.609, meal.pizza.pb.anml, 32, 53, 0, 19, hf:ogf:lcf:abs:eogf, soca
+
+	meal1:
+	iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, fast-forwarded, sol-depth, flaw-sel, plan-sel
+	0, taskcond, 3.538, 2.313, meal.meal1.pb.anml, 375, 543, 0, 79, hf:ogf:lcf:abs:eogf, soca
+
+	meal3 : no solution in a acceptable time
+	mealMaket : no solution in a acceptable time

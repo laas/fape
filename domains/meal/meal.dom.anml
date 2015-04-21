@@ -1,0 +1,292 @@
+type Food with{
+	constant integer preparduration();
+	constant integer bakeduration();
+	constant integer timeToEatmin();
+	constant integer timeToEatmax();
+};
+
+type Place;
+type Periode;
+
+type Activity;
+instance Activity eating, nonavailable, available;
+instance Periode morning,midday,night;
+
+instance Food pizza;
+
+constant boolean exist(Place p);
+predicate have(Food f);
+function Periode time();
+
+type Table with{
+	variable boolean seted;
+	variable boolean use;
+};
+
+type Agent with {
+	variable Activity act;
+	predicate haveToEat();
+};
+
+action satisfyHunger(Agent a,Agent b,Agent c){
+	:decomposition{
+		time == morning;
+        [all] contains haveBreakfast(a);
+	};
+	:decomposition{
+		time == midday;
+        [all] contains haveLunch(a);
+	};
+	:decomposition{
+		time == night;
+        [all] contains haveDinner(a,b,c);
+	};
+	[end] a.haveToEat := false;
+};
+
+action haveDinner(Agent a,Agent b,Agent c){ 		
+	motivated;
+	:decomposition{
+		a == b;
+		a == c;
+		[all] contains dinner1(a);
+	};
+	:decomposition{
+		a != b;
+		a != c;
+		[all] contains dinner2(a,b,c);
+	};
+};
+action haveBreakfast(Agent a){ 		
+	motivated;
+	/*:decomposition{
+		*/eatpizza(a);/*
+	};
+	:decomposition{
+		lunch(a);
+	};*/
+};
+action haveLunch(Agent a){ 		
+	motivated;
+	/*:decomposition{
+		*/[all] contains eatpizza(a);/*
+	};
+	:decomposition{
+		lunch(a);
+	};*/
+};
+
+action eatpizza(Agent a){
+	motivated;
+	constant Table t;
+	:decomposition{
+		constant Agent aa;
+		[start] have(pizza) == false;
+		exist(pizzeria) == true;
+		[all] contains c : callpizzeria(aa);
+		[all] contains e : haveMeal(pizza,a,t);
+		end(c) < start(e);
+	};
+    :decomposition{
+		[start] have(pizza) == true;
+		[all] contains b : bake(pizza);
+		[all] contains e : haveMeal(pizza,a,t);
+		end(b) < start(e);
+	};
+};
+
+action callpizzeria(Agent a){
+	motivated;
+	duration :in [7,10];
+	[all] a.act == available :-> available;
+	[end+20]have(pizza) := true;
+};
+
+action haveMeal(Food f,Agent a,Table t){
+	motivated;
+	:decomposition{
+		f == pizza;
+	};
+	:decomposition{
+		f != pizza;
+		[start] t.seted == true ;
+		[end] t.seted := false;
+	};
+	[all] contains eat(f,a);
+
+};
+
+action eat(Food f,Agent a){
+	motivated;
+	duration :in [f.timeToEatmin,f.timeToEatmax];
+	[all] have(f) == true :-> false;
+	:decomposition {[start] a.act == available; };
+	:decomposition {[start] a.act == eating; };
+	[start+1] a.act := eating ;
+	[start+2,end] a.act == eating ;
+};
+
+action dinner1(Agent a){
+	motivated;
+	:decomposition{
+		[all] contains eatpizza(a);
+	};
+	:decomposition{
+		[all] contains meal1(a);
+	};
+
+};
+
+action dinner2(Agent a,Agent b,Agent c){
+	motivated;
+	:decomposition{
+		[all] contains eatpizza(a);
+		[all] contains eatpizza(b);
+		[all] contains eatpizza(c);
+	};
+	:decomposition{
+		[all] contains meal3(a,b,c);
+	};
+
+};
+
+action meal3(Agent a,Agent b,Agent c){
+	motivated;
+	constant Agent a1;
+	constant Agent a2;
+	constant Agent a4;
+	constant Table t;
+	[all] contains {
+		mc : prepare(carrot,a1);
+		mch : prepare(chicken,a2);
+		pp : prepare(pie,a4);
+	};
+  	[end(mc), end] contains hca : haveMeal(carrot,a,t);
+  	[end(mc), end] contains hcb : haveMeal(carrot,b,t);
+  	[end(mc), end] contains hcc : haveMeal(carrot,c,t);
+
+    	[end(mch), end] contains bch : bake(chicken);
+    	[end(bch), end] contains hcha : haveMeal(chicken,a,t);
+    	[end(bch), end] contains hchb : haveMeal(chicken,b,t);
+    	[end(bch), end] contains hchc : haveMeal(chicken,c,t);
+
+	[end(pp), end] contains bp : bake(pie);
+	[end(bp), end] contains hpa : haveMeal(pie,a,t);
+	[end(bp), end] contains hpb : haveMeal(pie,b,t);
+	[end(bp), end] contains hpc : haveMeal(pie,c,t);
+
+	end(bch) < start(hca);
+	end(bch) < start(hcb);
+	end(bch) < start(hcc);
+	end(bp) < start(hca);
+	end(bp) < start(hcb);
+	end(bp) < start(hcc);
+
+	start(hpa) < end(bp) + 15;
+	start(hpb) < end(bp) + 15;
+	start(hpc) < end(bp) + 15;
+	
+	start(hca) < start(hcha) ;
+	start(hcha) < start(hpa) ;
+	start(hcb) < start(hchb) ;
+	start(hchb) < start(hpb) ;
+	start(hcc) < start(hchc) ;
+	start(hchc) < start(hpc) ;
+
+	start(hca) = start(hcb);
+	start(hca) = start(hcc);
+};
+
+action meal1(Agent a){
+	motivated;
+	constant Agent a1;
+	constant Agent a2;
+	constant Agent a4;
+	constant Table t;
+	[all] contains {
+		mc : prepare(carrot,a1);
+		mch : prepare(chicken,a2);
+		pp : prepare(pie,a4);
+	};
+  	[end(mc), end] contains hc : haveMeal(carrot,a,t);
+
+    	[end(mch), end] contains bch : bake(chicken);
+    	[end(bch), end] contains hch : haveMeal(chicken,a,t);
+
+	[end(pp), end] contains bp : bake(pie);
+	[end(bp), end] contains hp : haveMeal(pie,a,t);
+
+	end(bch) < start(hc);
+	end(bp) < start(hc);
+
+	start(hp) < end(bp) + 15;
+	
+	start(hc) < start(hch) ;
+	start(hch) < start(hp) ;
+};
+
+action prepareTable(Agent a,Table t){
+	duration := 4;
+	[all] t.use == false :-> true;
+	[all] t.seted == false :-> true;
+	[all] a.act == available :-> available;
+	
+};
+
+action prepare(Food f, Agent a){
+	motivated;
+	:decomposition{
+		have(f) == true;
+		[all] hPrepare(a,f);
+	};
+	:decomposition{
+		constant Agent aa;
+		[all] contains g : goToSupermarket(aa);
+		[start(g),end(g)] have(f) == false :-> true;
+		[end(g),end] hPrepare(a,f);
+	};
+};
+
+action hPrepare(Agent a,Food f){
+	motivated;
+	duration := 5;
+	constant Table t;
+	[all] t.use == false :-> false;
+	[all] a.act == available :-> available;
+};
+
+action bake(Food f){
+	motivated;
+	constant Agent a1;
+	constant Agent a2;
+	[all] contains p : putInKiln(f,a1);
+	[end(p)+10,end(p)+13]contains po : putOutKiln(f,a2);
+	start(p) = start;
+	end(po) = end;
+};
+
+action putInKiln(Food f,Agent a){
+	motivated;
+	duration := 2;
+	[all] a.act == available :-> available;
+};
+
+action putOutKiln(Food f,Agent a){
+	motivated;
+	duration := 2;
+	[all] a.act == available :-> available;
+};
+
+action goToSupermarket(Agent a){
+	motivated;
+	duration := 20;
+	[all] a.act == available :-> available;
+};
+
+action cleantable(Table t,Agent a){
+	duration := 3;
+	[all] a.act == available :-> available;
+	[all] t.use == true :-> false;
+};
+
+

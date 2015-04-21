@@ -1,0 +1,49 @@
+action line1(Brick b0 , Brick sb0, Brick sb1){
+	constant Worker w0;
+	constant Worker w1;
+	constant Worker w2;
+	constant Truck t0;
+	[all] contains {
+		pi0 : pick(w0, b0, t0);
+		g0 : goto(w0, t0,  wall);
+		pl0 : place(w0, b0, sb0, sb1);
+		 c0 : putCementBrick(w1, sb0);
+		 c1 : putCementBrick(w2, sb1);
+	};
+	end(pi0) < start(g0);
+	end(g0) < start(pl0);
+	end(c0) < start(pl0);
+	end(c1) < start(pl0);
+	end(pl0) < end(c0) + 10;
+	end(pl0) < end(c1) + 10;
+};
+action build1(Brick b0){
+	[start] {
+		b0.loc == t0;
+	};
+	[all] contains {
+		l1 : line1( b0, none0, none1);
+	};
+};
+instance Brick b0;
+instance Worker w0, w1, w2;
+instance Brick none0, none1;
+instance Truck t0, t1;
+[start] {
+	none0.loc := wall;
+	none0.cemented := false;	
+	none1.loc := wall;
+	none1.cemented := false;	
+	haveCement := false;
+	b0.cemented := false; 
+	b0.loc := t0; 
+	w0.at := t0;
+	w0.available := true;
+	w1.at := t0;
+	w1.available := true;
+	w2.at := t0;
+	w2.available := true;
+};
+[all]contains {
+	build1(b0);
+};
