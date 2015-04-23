@@ -1,0 +1,85 @@
+type Location;
+type Car < Location with{
+	variable Location at;
+};
+type Something with{
+	variable Location at;
+};
+	
+type Object < Something ;
+instance Object tent;
+
+type Hiker < Something with {
+	predicate canWalk();
+};
+	
+action walk(Hiker h,Location l1,Location l2){
+	duration := 20;
+	[all] h.at == l1 :-> l2;
+};
+
+action goInCar(Hiker h,Car c,Location l){
+	duration := 1;
+	[all] {
+		h.at == l :-> c;
+		c.at ==l;
+	};
+};
+
+action goOutCar(Hiker h,Car c,Location l){
+	duration := 1;
+	[all] {
+		h.at == c :-> l;
+		c.at ==l;
+	};
+};
+
+action driving(Hiker h,Car c,Location l1,Location l2){
+	duration := 5;
+	[all] {
+		h.at == c;
+		c.at == l1 :-> l2;
+	};
+};
+
+action sleep(Hiker h,Object o,Location l){
+	duration := 15;
+	o == tent;
+	[all] {
+		h.at == l;
+	};	
+};
+
+action putInCar(Hiker h,Car c, Object o,Location l){
+	duration := 1;
+	[all] {
+		h.at == l;
+		c.at == l;	
+	};		
+};
+action putOutCar(Hiker h,Car c, Object o,Location l){
+	duration := 1;
+	[all] {
+		h.at == l;
+		c.at == l;	
+	};		
+};
+action moveObject(Object o, Location l1,Location l2){
+	constant Hiker h;
+	constant Car c;
+	[start] {
+		h.at ==l1;
+		c.at ==l1;
+	}; 
+	[all] contains {
+		pi : putInCar(h,c,o,l1);
+		gi : goInCar(h,c,l1);
+		d : driving(h,c,l1,l2);
+		go: goOutCar(h,c,l2);
+		po : putOutCar(h,c,o,l2);
+	};
+	end(pi) < start(gi);
+	end(gi) < start(d);
+	end(d) < start(go);
+	end(go) < start(po);
+};
