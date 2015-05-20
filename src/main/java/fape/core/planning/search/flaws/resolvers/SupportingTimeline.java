@@ -10,23 +10,18 @@ public class SupportingTimeline extends Resolver {
     /** Database that will support the consumer */
     public final int supporterID;
 
-    /** Index of the chain component that will support the consumer.
-     * If -1 this means the last one?
+    /** Number of the change statement supporting the consumer.
+     * This count ignores the persistence change component. Use numChanges() and
+     * getChangeNumber() methods in Timeline to access this.
      */
-    public final int precedingChainComponent;
+    public final int supportingComponent;
 
     /** Database that needs to be supported */
     public final int consumerID;
 
-    public SupportingTimeline(int supporterID, Timeline consumer) {
+    public SupportingTimeline(int supporterID, int supportingChangeNumber, Timeline consumer) {
         this.supporterID = supporterID;
-        precedingChainComponent = -1;
-        this.consumerID = consumer.mID;
-    }
-
-    public SupportingTimeline(int supporterID, int chainComponent, Timeline consumer) {
-        this.supporterID = supporterID;
-        precedingChainComponent = chainComponent;
+        supportingComponent = supportingChangeNumber;
         this.consumerID = consumer.mID;
     }
 
@@ -37,34 +32,16 @@ public class SupportingTimeline extends Resolver {
         assert supporter != null;
         assert consumer != null;
 
-        ChainComponent precedingComponent = null;
-        if (precedingChainComponent != -1) {
-            precedingComponent = supporter.getChainComponent(precedingChainComponent);
-        }
+        ChainComponent precedingComponent = supporter.getChangeNumber(supportingComponent);
 
-        // now perfrom the merging of the two timelines
-        if (precedingComponent != null) {
-            // will include the consumer into the other timeline
+        // now perform the merging of the two timelines
+        // we concatenate the two timelines
 
-            // this is database merge of one persistence into another
-            assert consumer.chain.size() == 1 && !consumer.chain.get(0).change :
-                    "This is restricted to databases containing single persistence only";
+        assert precedingComponent != null && precedingComponent.change;
+        planner.causalLinkAdded(st, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
 
-            assert precedingComponent.change : "Support by a component that does not change the value.";
-            planner.causalLinkAdded(st, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
-
-            st.insertTimelineAfter(supporter, consumer, precedingComponent);
-
-        } else {
-            // we concatenate the two timelines
-            ChainComponent supportingStatement = supporter.getSupportingComponent();
-
-            assert supportingStatement != null && supportingStatement.change;
-            planner.causalLinkAdded(st, supportingStatement.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
-
-            // database concatenation
-            st.insertTimelineAfter(supporter, consumer, supporter.chain.getLast());
-        }
+        // database concatenation
+        st.insertTimelineAfter(supporter, consumer, precedingComponent);
 
         return true;
     }

@@ -50,6 +50,32 @@ public class UnsupportedTimeline extends Flaw {
         return true;
     }
 
+    /** Returns true if the nth change in potentialSupporter (n = changeNumber) can support the consumer timeline */
+    public static boolean isSupporting(Timeline potentialSupporter, int changeNumber, Timeline consumer, State st) {
+        if(!st.unifiable(potentialSupporter, consumer))
+            return false;
+
+        // if the consumer contains changes, the only possible support is the last change of the supporter
+        if(!consumer.hasSinglePersistence() && changeNumber != potentialSupporter.numChanges()-1)
+            return false;
+
+        final ChainComponent supportingCC = potentialSupporter.getChangeNumber(changeNumber);
+        if(!st.unifiable(supportingCC.getSupportValue(), consumer.getGlobalConsumeValue()))
+            return false;
+
+        if(!st.canAllBeBefore(supportingCC.getSupportTimePoint(), consumer.getFirstTimePoints()))
+            return false;
+
+        // if the supporter is not the last change, check that we can fit the consuming db before the next change
+        if(changeNumber < potentialSupporter.numChanges()-1) {
+            final ChainComponent afterCC = potentialSupporter.getChangeNumber(changeNumber+1);
+            if(!st.canAllBeBefore(consumer.getLastTimePoints(), afterCC.getConsumeTimePoint()))
+                return false;
+        }
+
+        return true;
+    }
+
     @Override
     public List<Resolver> getResolvers(State st, APlanner planner) {
         if(resolvers != null)
@@ -71,13 +97,13 @@ public class UnsupportedTimeline extends Flaw {
             // except if the state variable is constant, in which case looking only for the assignments saves search effort.
             if (consumer.hasSinglePersistence() && !consumer.stateVariable.func().isConstant()) {
                 //we are looking for chain integration too
-                int ct = 0;
-                for (ChainComponent comp : b.chain) {
-                    if (comp.change && st.unifiable(comp.getSupportValue(), consumer.getGlobalConsumeValue())
+                for(int changeNumber = 0 ; changeNumber < b.numChanges() ; changeNumber++) {
+                    ChainComponent comp = b.getChangeNumber(changeNumber);
+                    assert comp.change;
+                    if (st.unifiable(comp.getSupportValue(), consumer.getGlobalConsumeValue())
                             && st.canBeBefore(comp.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                        resolvers.add(new SupportingTimeline(b.mID, ct, consumer));
+                        resolvers.add(new SupportingTimeline(b.mID, changeNumber, consumer));
                     }
-                    ct++;
                 }
 
                 // Otherwise, check for databases containing a change whose support value can
@@ -85,7 +111,7 @@ public class UnsupportedTimeline extends Flaw {
             } else if (st.unifiable(b.getGlobalSupportValue(), consumer.getGlobalConsumeValue())
                     && !b.hasSinglePersistence()
                     && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                resolvers.add(new SupportingTimeline(b.mID, consumer));
+                resolvers.add(new SupportingTimeline(b.mID, b.numChanges()-1, consumer));
             }
         }
 
@@ -95,12 +121,7 @@ public class UnsupportedTimeline extends Flaw {
         // If such a resolver if found, it means that no other resolver is applicable and only this one is returned.
         for(Resolver res : resolvers) {
             SupportingTimeline sdb = (SupportingTimeline) res;
-            ChainComponent supportingCC = null;
-            if(sdb.precedingChainComponent == -1) {
-                supportingCC = st.getDatabase(sdb.supporterID).chain.getLast();
-            } else {
-                supportingCC = st.getDatabase(sdb.supporterID).getChainComponent(sdb.precedingChainComponent);
-            }
+            ChainComponent supportingCC = st.getDatabase(sdb.supporterID).getChangeNumber(sdb.supportingComponent);
             ChainComponent consumingCC = st.getDatabase(sdb.consumerID).getChainComponent(0);
 
             for(LogStatement sup : supportingCC.contents) {

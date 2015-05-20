@@ -772,12 +772,7 @@ public class State implements Reporter {
             Timeline db = getDatabase(((SupportingTimeline) opt).supporterID);
 
             // get the supporting chain component. (must provide a change on the state variable)
-            ChainComponent cc;
-            if (((SupportingTimeline) opt).precedingChainComponent != -1) {
-                cc = db.getChainComponent(((SupportingTimeline) opt).precedingChainComponent);
-            } else {
-                cc = db.getSupportingComponent();
-            }
+            ChainComponent cc = db.getChangeNumber(((SupportingTimeline) opt).supportingComponent);
 
             assert cc != null : "There is no support statement in " + db;
             assert cc.change : "Support is not a change.";

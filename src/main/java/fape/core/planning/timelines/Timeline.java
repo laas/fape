@@ -65,6 +65,31 @@ public class Timeline {
         return false;
     }
 
+    /** Number of chain components containing a change */
+    public int numChanges() {
+        int num = 0;
+        for(ChainComponent cc : chain)
+            if(cc.change)
+                num++;
+        return num;
+    }
+
+    /** Returns the nth chain component containing a change. */
+    public ChainComponent getChangeNumber(int changeNumber) {
+        assert changeNumber >= 0;
+        assert changeNumber < numChanges();
+        int currentChange = 0;
+        for(ChainComponent cc : chain) {
+            if(cc.change) {
+                if(currentChange == changeNumber)
+                    return cc;
+                else
+                    currentChange++;
+            }
+        }
+        throw new FAPEException("Problem: finding change number "+changeNumber+" in timeline "+this);
+    }
+
     public String Report() {
         String ret = "";
         //ret += "{\n";

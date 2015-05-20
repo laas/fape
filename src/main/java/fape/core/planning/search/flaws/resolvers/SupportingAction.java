@@ -111,7 +111,7 @@ public class SupportingAction extends Resolver {
         if(st.canBeEnabler((LogStatement) supporter, consumer)) {
             final Timeline supportingDatabase = st.getDBContaining((LogStatement) supporter);
             // add the causal link
-            Resolver opt = new SupportingTimeline(supportingDatabase.mID, consumer);
+            Resolver opt = new SupportingTimeline(supportingDatabase.mID, supportingDatabase.numChanges()-1, consumer);
             TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
             return opt.apply(st, planner);
         } else {
