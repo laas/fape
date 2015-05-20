@@ -27,8 +27,8 @@ public class SupportingTimeline extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final Timeline supporter = st.getDatabase(supporterID);
-        final Timeline consumer = st.getDatabase(consumerID);
+        final Timeline supporter = st.getTimeline(supporterID);
+        final Timeline consumer = st.getTimeline(consumerID);
         assert supporter != null;
         assert consumer != null;
 

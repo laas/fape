@@ -62,7 +62,7 @@ public class SupportingAction extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final Timeline consumer = st.getDatabase(consumerID);
+        final Timeline consumer = st.getTimeline(consumerID);
 
         assert consumer != null : "Consumer was not found.";
 

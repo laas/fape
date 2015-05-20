@@ -284,7 +284,7 @@ public class Printer {
     }
 
     public static String inlineTemporalDatabase(State st, int dbID) {
-        return inlineTemporalDatabase(st, st.getDatabase(dbID));
+        return inlineTemporalDatabase(st, st.getTimeline(dbID));
     }
 
     public static String inlineTemporalDatabase(State st, Timeline db) {

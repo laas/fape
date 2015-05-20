@@ -37,7 +37,7 @@ public class SupportingActionDecomposition extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final Timeline consumer = st.getDatabase(consumerID);
+        final Timeline consumer = st.getTimeline(consumerID);
         assert consumer != null : "Could not find consumer.";
         // Apply the i^th decomposition of o.actionToDecompose, where i is given by
         // o.decompositionID

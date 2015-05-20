@@ -12,7 +12,6 @@ package fape.core.planning.states;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
-import fape.core.planning.planner.APlanner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
@@ -177,7 +176,7 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>(st.potentialSupporters);
 
         for (Timeline sb : st.consumers) {
-            consumers.add(this.getDatabase(sb.mID));
+            consumers.add(this.getTimeline(sb.mID));
         }
     }
 
@@ -230,14 +229,14 @@ public class State implements Reporter {
     }
 
     /**
-     * Retrieve the Database with the same ID.
+     * Retrieve the Timeline with the same ID.
      *
-     * @param dbID ID of the database to lookup
-     * @return The database with the same ID.
+     * @param timelineID ID of the timeline to lookup
+     * @return The timeline with the same ID.
      */
-    public Timeline getDatabase(int dbID) {
+    public Timeline getTimeline(int timelineID) {
         for (Timeline db : tdb.getTimelines()) {
-            if (db.mID == dbID) {
+            if (db.mID == timelineID) {
                 return db;
             }
         }
@@ -788,7 +787,7 @@ public class State implements Reporter {
             return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
         } else if (opt instanceof SupportingTimeline) {
             // DB supporters are limited to those coming from an action descending from dec.
-            Timeline db = getDatabase(((SupportingTimeline) opt).supporterID);
+            Timeline db = getTimeline(((SupportingTimeline) opt).supporterID);
 
             // get the supporting chain component. (must provide a change on the state variable)
             ChainComponent cc = db.getChangeNumber(((SupportingTimeline) opt).supportingComponent);
@@ -890,7 +889,7 @@ public class State implements Reporter {
             assert sup.consumerID == consumer.mID;
             if(!supporters.contains(sup)
                     && containsTimelineWithID(sup.supporterID)
-                    && UnsupportedTimeline.isSupporting(getDatabase(sup.supporterID), sup.supportingComponent, consumer, this)) {
+                    && UnsupportedTimeline.isSupporting(getTimeline(sup.supporterID), sup.supportingComponent, consumer, this)) {
                 supporters.add(sup);
             }
         }
@@ -902,8 +901,8 @@ public class State implements Reporter {
         List<PotentialThreat> toRemove = new LinkedList<>();
         List<Flaw> verifiedThreats = new LinkedList<>();
         for(PotentialThreat pt : threats) {
-            Timeline tl1 = getDatabase(pt.id1);
-            Timeline tl2 = getDatabase(pt.id2);
+            Timeline tl1 = getTimeline(pt.id1);
+            Timeline tl2 = getTimeline(pt.id2);
             if(AllThreatFinder.isThreatening(this, tl1, tl2)) {
                 verifiedThreats.add(new Threat(tl1, tl2));
             } else {

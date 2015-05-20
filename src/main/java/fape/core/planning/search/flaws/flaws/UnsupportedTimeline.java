@@ -96,8 +96,8 @@ public class UnsupportedTimeline extends Flaw {
         // If such a resolver if found, it means that no other resolver is applicable and only this one is returned.
         for(Resolver res : resolvers) {
             SupportingTimeline sdb = (SupportingTimeline) res;
-            ChainComponent supportingCC = st.getDatabase(sdb.supporterID).getChangeNumber(sdb.supportingComponent);
-            ChainComponent consumingCC = st.getDatabase(sdb.consumerID).getChainComponent(0);
+            ChainComponent supportingCC = st.getTimeline(sdb.supporterID).getChangeNumber(sdb.supportingComponent);
+            ChainComponent consumingCC = st.getTimeline(sdb.consumerID).getChainComponent(0);
 
             for(LogStatement sup : supportingCC.contents) {
                 for(LogStatement cons : consumingCC.contents) {
@@ -114,7 +114,7 @@ public class UnsupportedTimeline extends Flaw {
             // here we check to see if some resolvers are not valid because resulting in unsolvable threats
             List<Resolver> toRemove = new LinkedList<>();
             for (Resolver res : resolvers) {
-                Timeline supporter = st.getDatabase(((SupportingTimeline) res).supporterID);
+                Timeline supporter = st.getTimeline(((SupportingTimeline) res).supporterID);
                 for (Timeline other : st.getTimelines()) {
                     if (other != consumer && other != supporter)
                         if (!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {

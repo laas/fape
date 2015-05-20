@@ -3,7 +3,6 @@ package fape.core.planning.search.flaws.resolvers;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
-import planstack.anml.model.concrete.statements.LogStatement;
 
 public class TemporalSeparation extends Resolver {
 
@@ -17,8 +16,8 @@ public class TemporalSeparation extends Resolver {
 
     @Override
     public boolean apply(State st, APlanner planner) {
-        final Timeline firstDB = st.getDatabase(firstDbID);
-        final Timeline secondDB = st.getDatabase(secondDbID);
+        final Timeline firstDB = st.getTimeline(firstDbID);
+        final Timeline secondDB = st.getTimeline(secondDbID);
         assert firstDB != null && secondDB != null;
         assert !firstDB.hasSinglePersistence() && !secondDB.hasSinglePersistence();
 
