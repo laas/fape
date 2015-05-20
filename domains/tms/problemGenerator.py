@@ -9,8 +9,8 @@ import shutil
 import subprocess
 import sys
 
-kilns = [[2,10],[3,20]]				#[number of kilns,fire time]
-pieces = [[15,3,2],[7,2,2],[5,1,2]]		#[time needed to bake a piece, time needed to treat it, number of this type piece] 
+kilns = [[1,8],[1,20]]				#[number of kilns,fire time]
+pieces = [[15,3,5],[7,2,5],[5,1,5]]		#[time needed to bake a piece, time needed to treat it, number of this type piece] 
 nbgoal =1
 goalf=""
 goalh=""

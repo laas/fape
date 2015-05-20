@@ -41,23 +41,4 @@ action pick (Object o, Location l, Arm a, Position p){
 	};
 };
 
-action change (Object o1, Object o2, Location l1, Location l2){
-	constant Arm a1;
-	constant Arm a2;
-	constant Position p1;
-	constant Position p2;
-	a1 != a2;
-	[start] a1.empty == true; 
-	[start] a2.empty == true;
-	[all] contains {
-		a : pick(o1,l1,a1,p1); 
-		b : pick(o2,l2,a2,p2); 
-		c : place(o1,l2,a1,p2);
-		d : place(o2,l1,a2,p1);
-	};
-	end(a) < start (c);
-	end(b) < start (c);
-	end(a) < start (d);
-	end(b) < start (d);
-};
 

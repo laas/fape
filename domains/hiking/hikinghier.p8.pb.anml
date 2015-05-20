@@ -1,0 +1,25 @@
+instance Place loc0, loc1, loc2, loc3, loc4, loc5, loc6, loc7;
+instance Car car0, car1;
+instance Hiker hik0, hik1;
+[start] {
+	tent.at := loc0;
+	car0.at := loc0;
+	car1.at := loc1;
+	hik0.at := loc0;
+	hik0.canWalk := true;
+	hik1.at := loc0;
+	hik1.canWalk := true;
+};
+[all] contains {
+	o0 : oneStep(tent,loc0,loc1,loc2,hik0,hik1,car0,car1);
+	o1 : oneStep(tent,loc1,loc2,loc3,hik0,hik1,car1,car0);
+	o2 : oneStep(tent,loc2,loc3,loc4,hik0,hik1,car0,car1);
+	o3 : oneStep(tent,loc3,loc4,loc5,hik0,hik1,car1,car0);
+	o4 : oneStep(tent,loc4,loc5,loc6,hik0,hik1,car0,car1);
+	o5 : oneStep(tent,loc5,loc6,loc7,hik0,hik1,car1,car0);
+};
+end(o0) < start(o1);
+end(o1) < start(o2);
+end(o2) < start(o3);
+end(o3) < start(o4);
+end(o4) < start(o5);

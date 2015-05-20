@@ -1,4 +1,7 @@
 type Location;
+
+type Place < Location;
+
 type Car < Location with{
 	variable Location at;
 };
@@ -13,12 +16,12 @@ type Hiker < Something with {
 	predicate canWalk();
 };
 	
-action walk(Hiker h,Location l1,Location l2){
+action walk(Hiker h,Place l1,Place l2){
 	duration := 20;
 	[all] h.at == l1 :-> l2;
 };
 
-action goInCar(Hiker h,Car c,Location l){
+action goInCar(Hiker h,Car c,Place l){
 	duration := 1;
 	[all] {
 		h.at == l :-> c;
@@ -26,7 +29,7 @@ action goInCar(Hiker h,Car c,Location l){
 	};
 };
 
-action goOutCar(Hiker h,Car c,Location l){
+action goOutCar(Hiker h,Car c,Place l){
 	duration := 1;
 	[all] {
 		h.at == c :-> l;
@@ -34,7 +37,7 @@ action goOutCar(Hiker h,Car c,Location l){
 	};
 };
 
-action driving(Hiker h,Car c,Location l1,Location l2){
+action driving(Hiker h,Car c,Place l1,Place l2){
 	duration := 5;
 	[all] {
 		h.at == c;
@@ -42,7 +45,7 @@ action driving(Hiker h,Car c,Location l1,Location l2){
 	};
 };
 
-action sleep(Hiker h,Object o,Location l){
+action sleep(Hiker h,Object o,Place l){
 	duration := 15;
 	o == tent;
 	[all] {
@@ -50,23 +53,21 @@ action sleep(Hiker h,Object o,Location l){
 	};	
 };
 
-action putInCar(Hiker h,Car c, Object o,Location l){
+action putInCar(Hiker h,Car c, Object o,Place l){
 	duration := 1;
 	[all] {
 		h.at == l;
 		c.at == l;	
 	};		
 };
-action putOutCar(Hiker h,Car c, Object o,Location l){
+action putOutCar(Hiker h,Car c, Object o,Place l){
 	duration := 1;
 	[all] {
 		h.at == l;
 		c.at == l;	
 	};		
 };
-action moveObject(Object o, Location l1,Location l2){
-	constant Hiker h;
-	constant Car c;
+action moveObject(Object o, Place l1,Place l2,Car c,Hiker h){
 	[start] {
 		h.at ==l1;
 		c.at ==l1;
@@ -82,4 +83,48 @@ action moveObject(Object o, Location l1,Location l2){
 	end(gi) < start(d);
 	end(d) < start(go);
 	end(go) < start(po);
+	[start(d),end(d)] o.at == l1 :-> l2; 
+};
+
+action oneStep(Object o, Place l1,Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Car c2){
+	/*[start] {
+		o.at == l1;
+		h1.at == l1;
+		h2.at == l1;
+		c1.at == l1;
+		c2.at == l2;
+	};*/
+	[all] contains {
+		m0 : moveObject(o,l1,l2,c1,h1);
+		d0 : driving(h1,c1,l2,l1);
+		w1 : walk(h1,l1,l2);
+		w2 : walk(h2,l1,l2);
+		s1 : sleep(h1,o,l2);
+		s2 : sleep(h2,o,l2);
+		g0: goInCar(h2,c2,l2);
+		d1 : driving(h1,c2,l2,l1);
+		d2 : driving(h1,c2,l1,l3);
+		d3 : driving(h2,c1,l1,l3);
+		g2 : goOutCar(h2,c1,l3);
+		g3 : goInCar(h2,c2,l3);
+		d4 : driving(h1,c2,l3,l2);
+		g4: goOutCar(h1,c2,l2);
+		g5: goOutCar(h2,c2,l2);
+	};
+	end(m0) < start(d0);
+	end(d0) < start(w1);
+	start(w1) = start(w2);
+	end(w1) < start(s1);
+	end(w2) < start(s2);
+	end(s2) < start(g0);
+	start(s1) < start(s2);
+	end(g0) < start(d1);
+	end(d1) < start(d2);
+	start(d2) = start(d3);
+	end(d3) < start(g2);
+	end(g2) < start(g3);
+	end(g3) < start(d4);
+	end(d4) < start(g4);
+	end(d4) < start(g5);
+	
 };
