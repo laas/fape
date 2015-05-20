@@ -122,6 +122,14 @@ public class State implements Reporter {
     final HashSet<PotentialThreat> threats;
 
     /**
+     * Maps from timeline's IDs to potentially supporting (timeline, chain component).
+     * The lists are exhaustive but might contain:
+     *  - the same supporter twice.
+     *  - supporters that are no longer valid (timeline removed or supporter not valid because of new constraints).
+     */
+    final HashMap<Integer, IList<SupportingTimeline>> potentialSupporters;
+
+    /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
     private int problemRevision;
@@ -140,6 +148,7 @@ public class State implements Reporter {
         consumers = new LinkedList<>();
         resMan = new ResourceManager();
         threats = new HashSet<>();
+        potentialSupporters = new HashMap<>();
 
         supportConstraints = new LinkedList<>();
 
@@ -165,6 +174,7 @@ public class State implements Reporter {
         resMan = st.resMan.DeepCopy();
         consumers = new LinkedList<>();
         threats = new HashSet<>(st.threats);
+        potentialSupporters = new HashMap<>(st.potentialSupporters);
 
         for (Timeline sb : st.consumers) {
             consumers.add(this.getDatabase(sb.mID));
@@ -208,6 +218,15 @@ public class State implements Reporter {
         ret += "}\n";
 
         return ret;
+    }
+
+    public boolean containsTimelineWithID(int tlID) {
+        for (Timeline db : tdb.getTimelines()) {
+            if (db.mID == tlID) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -799,9 +818,29 @@ public class State implements Reporter {
                 threats.add(new PotentialThreat(a, b));
             }
         }
+
+        // checks if this new timeline can provide support to others
+        for(int i=0 ; i < a.numChanges() ; i++) {
+            for(Timeline b : consumers) {
+                if (UnsupportedTimeline.isSupporting(a, i, b, this))
+                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
+            }
+        }
+
+
         assert !consumers.contains(a);
-        if(a.isConsumer())
+        if(a.isConsumer()) {
             consumers.add(a);
+
+            // gather all potential supporters for this new timeline
+            potentialSupporters.put(a.mID, new IList<SupportingTimeline>());
+            for(Timeline sup : getTimelines()) {
+                for(int i = 0 ; i < sup.numChanges() ; i++) {
+                    if(UnsupportedTimeline.isSupporting(sup, i, a, this))
+                        potentialSupporters.put(a.mID, potentialSupporters.get(a.mID).with(new SupportingTimeline(sup.mID, i, a)));
+                }
+            }
+        }
     }
 
     public void timelineExtended(Timeline tl) {
@@ -817,8 +856,15 @@ public class State implements Reporter {
             }
         }
 
-        if(tl.isConsumer() && !consumers.contains(tl))
-            consumers.add(tl);
+        if(tl.isConsumer()) assert consumers.contains(tl);
+
+        // checks if the modifications on this timeline creates new supporters for others
+        for(int i=0 ; i < tl.numChanges() ; i++) {
+            for(Timeline b : consumers) {
+                if (UnsupportedTimeline.isSupporting(tl, i, b, this))
+                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(tl.mID, i, b)));
+            }
+        }
     }
 
     public void timelineRemoved(Timeline tl) {
@@ -829,6 +875,27 @@ public class State implements Reporter {
         threats.removeAll(toRemove);
         if(consumers.contains(tl))
             consumers.remove(tl);
+    }
+
+    /**
+     * Retrieves all valid supporters for this timeline.
+     *
+     * As a side effects, this method also cleans up the supporters store in this state to remove double entries
+     * and supporters that are not valid anymore.
+     */
+    public Set<SupportingTimeline> getTimelineSupportersFor(Timeline consumer) {
+        assert consumers.contains(consumer);
+        HashSet<SupportingTimeline> supporters = new HashSet<>();
+        for(SupportingTimeline sup : potentialSupporters.get(consumer.mID)) {
+            assert sup.consumerID == consumer.mID;
+            if(!supporters.contains(sup)
+                    && containsTimelineWithID(sup.supporterID)
+                    && UnsupportedTimeline.isSupporting(getDatabase(sup.supporterID), sup.supportingComponent, consumer, this)) {
+                supporters.add(sup);
+            }
+        }
+        potentialSupporters.put(consumer.mID, new IList<SupportingTimeline>(supporters));
+        return supporters;
     }
 
     public List<Flaw> getAllThreats() {

@@ -45,4 +45,19 @@ public class SupportingTimeline extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int hashCode() {
+        return supporterID + 42*supportingComponent + 42*42*consumerID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof SupportingTimeline) {
+            SupportingTimeline ost = (SupportingTimeline) o;
+            return supporterID == ost.supporterID && supportingComponent == ost.supportingComponent && consumerID == ost.consumerID;
+        } else {
+            return false;
+        }
+    }
 }

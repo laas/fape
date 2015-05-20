@@ -88,32 +88,7 @@ public class UnsupportedTimeline extends Flaw {
         //2) actions that provide the value we need and can be added
         //3) tasks that can decompose into an action we need
 
-        //get chain connections
-        for (Timeline b : st.getTimelines()) {
-            if (consumer == b || !st.unifiable(consumer, b)) {
-                continue;
-            }
-            // if the database has a single persistence we try to integrate it with other persistences.
-            // except if the state variable is constant, in which case looking only for the assignments saves search effort.
-            if (consumer.hasSinglePersistence() && !consumer.stateVariable.func().isConstant()) {
-                //we are looking for chain integration too
-                for(int changeNumber = 0 ; changeNumber < b.numChanges() ; changeNumber++) {
-                    ChainComponent comp = b.getChangeNumber(changeNumber);
-                    assert comp.change;
-                    if (st.unifiable(comp.getSupportValue(), consumer.getGlobalConsumeValue())
-                            && st.canBeBefore(comp.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                        resolvers.add(new SupportingTimeline(b.mID, changeNumber, consumer));
-                    }
-                }
-
-                // Otherwise, check for databases containing a change whose support value can
-                // be unified with our consume value.
-            } else if (st.unifiable(b.getGlobalSupportValue(), consumer.getGlobalConsumeValue())
-                    && !b.hasSinglePersistence()
-                    && st.canBeBefore(b.getSupportTimePoint(), consumer.getConsumeTimePoint())) {
-                resolvers.add(new SupportingTimeline(b.mID, b.numChanges()-1, consumer));
-            }
-        }
+        resolvers.addAll(st.getTimelineSupportersFor(consumer));
 
         // checks all the given resolvers to check if one must be applied.
         // this is true iff the supporter is non separable from the consumer:
