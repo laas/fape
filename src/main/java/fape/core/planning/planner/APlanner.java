@@ -9,6 +9,7 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.search.strategies.plans.RPGComp;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;

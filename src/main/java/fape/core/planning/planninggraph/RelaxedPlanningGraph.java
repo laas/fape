@@ -1,6 +1,5 @@
 package fape.core.planning.planninggraph;
 
-import fape.exceptions.FAPEException;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledDigraph;
 
@@ -61,6 +60,61 @@ public class RelaxedPlanningGraph {
 //        updateDistances(pb.initState);
     }
 
+    private int level(PGNode n) {
+        assert graph.contains(n);
+        assert distances.containsKey(n);
+        return distances.get(n);
+    }
+
+    public Set<GAction> buildRelaxedPlan(DisjunctiveFluent disjunctiveOpenGoal, Collection<GAction> initialRelaxedPlan) {
+        Set<GAction> relaxedPlan = new HashSet<>();
+        Queue<Fluent> openGoals = new LinkedList<>();
+        Set<Fluent> done = new HashSet<>();
+
+        for(GAction ga : initialRelaxedPlan) {
+            done.addAll(ga.add);
+            relaxedPlan.add(ga);
+        }
+
+        Fluent bestFluent = null;
+        int bestLevel = Integer.MAX_VALUE;
+        for(Fluent f : disjunctiveOpenGoal.fluents) {
+            if(graph.contains(f) && distances.get(f) < bestLevel) {
+                bestFluent = f;
+                bestLevel = distances.get(f);
+            }
+        }
+        if(bestFluent == null) {
+            // infeasible
+            return null;
+        }
+
+        openGoals.add(bestFluent);
+        while(!openGoals.isEmpty()) {
+            Fluent og = openGoals.remove();
+            if(level(og) == 0 || done.contains(og)) {
+                done.add(og);
+            } else {
+                GAction bestEnabler = null;
+                int bestEnablerLevel = Integer.MAX_VALUE;
+                for(PGNode n : graph.jParents(og)) {
+                    assert n instanceof GAction;
+                    if(level(n) < bestEnablerLevel) {
+                        bestEnabler = (GAction) n;
+                        bestEnablerLevel = level(n);
+                    }
+                }
+
+                assert bestEnabler != null;
+                assert !relaxedPlan.contains(bestEnabler);
+                relaxedPlan.add(bestEnabler);
+                openGoals.addAll(bestEnabler.pre);
+                done.addAll(bestEnabler.add);
+            }
+        }
+        return relaxedPlan;
+    }
+
     /**
      * Provides a way to exclude actions in subclasses.
      * This is typically used in restricted planning graphs
@@ -92,6 +146,7 @@ public class RelaxedPlanningGraph {
         graph.addVertex(s);
         for(Fluent f : s.fluents) {
             graph.addVertex(f);
+            distances.put(f, 0);
             graph.addEdge(s, f, new PGEdgeLabel());
         }
     }
@@ -101,13 +156,18 @@ public class RelaxedPlanningGraph {
         assert !graph.contains(a);
 
         graph.addVertex(a);
+        int maxPreLevel = -1;
         for(Fluent precondition : a.pre) {
             graph.addEdge(precondition, a, new PGEdgeLabel());
+            maxPreLevel = maxPreLevel > distances.get(precondition) ? maxPreLevel : distances.get(precondition);
         }
+        distances.put(a, maxPreLevel +1);
 
         for(Fluent addition : a.add) {
-            if(!graph.contains(addition))
+            if(!graph.contains(addition)) {
                 graph.addVertex(addition);
+                distances.put(addition, distances.get(a)+1);
+            }
             graph.addEdge(a, addition, new PGEdgeLabel());
         }
     }
@@ -126,7 +186,6 @@ public class RelaxedPlanningGraph {
 
         for(GAction a : toInsert) {
             insertAction(a);
-//            System.out.println("  Inserting: "+a);
         }
 
         return toInsert.size() >0;

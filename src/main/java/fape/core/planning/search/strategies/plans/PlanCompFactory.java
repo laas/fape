@@ -41,7 +41,7 @@ public class PlanCompFactory {
                 case "hcl":
                     compList.add(new HierarchicalCausalLinks());
                     break;
-                case "rpgmax":
+                case "rplan":
                     compList.add(new RPGComp());
                     break;
                 default:
