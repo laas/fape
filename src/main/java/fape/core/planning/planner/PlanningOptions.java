@@ -53,8 +53,8 @@ public class PlanningOptions {
     public boolean checkUnsolvableThreatsForOpenGoalsResolvers = false;
 
     /**
-     * If true, the planner will use AE search
+     * If true, the planner will use A-Epsilon for search
      */
-    public boolean useAE = true;
+    public boolean useAEpsilon = false;
 
 }

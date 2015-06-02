@@ -2,15 +2,11 @@ package fape;
 
 import com.martiansoftware.jsap.*;
 import fape.core.planning.Plan;
-import fape.core.planning.Planner;
 import fape.core.planning.planner.*;
-import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.parser.ANMLFactory;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
@@ -26,11 +22,12 @@ public class Planning {
         final PlanningOptions options;
         final Controllability controllability;
 
-        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability, boolean fastForward) {
+        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability, boolean fastForward, boolean aEpsilon) {
             this.plannerID = plannerID;
             this.options = new PlanningOptions(planStrat, flawStrat);
             this.options.useFastForward = fastForward;
             this.controllability = controllability;
+            this.options.useAEpsilon = aEpsilon;
         }
 
         public boolean usesActionConditions() {
@@ -90,6 +87,10 @@ public class Planning {
                                 "Planner will use incremental deepening."),
                         new Switch("fast-forward", JSAP.NO_SHORTFLAG, "ff", "All trivial flaws are solved before inserting a "+
                                 "state in the queue"),
+                        new Switch("A-Epsilon",
+                                JSAP.NO_SHORTFLAG,
+                                "ae",
+                                "Planner will use A-Epsilon for search"),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -167,6 +168,7 @@ public class Planning {
             default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
         }
         final boolean fastForward = config.getBoolean("fast-forward");
+        final boolean aEpsilon = config.getBoolean("A-Epsilon");
 
         for (String path : configFiles) {
             File f = new File(path);
@@ -215,7 +217,7 @@ public class Planning {
 
                     String[] plannerIDs = config.getStringArray("plannerID");
                     for (String plannerID : plannerIDs)
-                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward));
+                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon));
                 }
 
                 final int maxtime = config.getInt("max-time");

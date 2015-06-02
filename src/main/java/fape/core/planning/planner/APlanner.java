@@ -9,7 +9,6 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
-import fape.core.planning.search.strategies.plans.RPGComp;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
@@ -19,8 +18,6 @@ import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.util.*;
 
 /**
@@ -179,7 +176,7 @@ public abstract class APlanner {
      * Also check the "planState" field for more detailed information.
      */
     public State search(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
-        if (options.useAE) {
+        if (options.useAEpsilon) {
             return AESearch(deadline,maxDepth,incrementalDeepening);
         } else {
             return classicsearch(deadline,maxDepth,incrementalDeepening);
@@ -612,6 +609,7 @@ public abstract class APlanner {
     }
 
     public Integer h(State st){
+
         return getFlaws(st).size();
     }
 
