@@ -36,7 +36,13 @@ public class SeqPlanComparator implements PartialPlanComparator {
                 return res;
             }
         }
-        // no resolver could rank those flaws.
-        return 0;
+
+        // tie breaker: makespan
+        int diffMakespan = state.getEarliestStartTime(state.pb.end()) - state2.getEarliestStartTime(state2.pb.end());
+        if(diffMakespan != 0)
+            return diffMakespan;
+
+        // no ranking done, use mID to make deterministic
+        return state.mID - state2.mID;
     }
 }
