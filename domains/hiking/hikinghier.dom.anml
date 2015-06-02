@@ -76,25 +76,6 @@ motivated;
                 o.at == c :-> l;
 	};		
 };
-action moveObject(Object o, Place l1,Place l2,Car c,Hiker h){
-motivated;
-	[start] {
-		h.at ==l1;
-		c.at ==l1;
-	}; 
-	[all] contains {
-		pi : putInCar(h,c,o,l1);
-		gi : goInCar(h,c,l1);
-		d : driving(h,c,l1,l2);
-		go: goOutCar(h,c,l2);
-		po : putOutCar(h,c,o,l2);
-	};
-	end(pi) < start(gi);
-	end(gi) < start(d);
-	end(d) < start(go);
-	end(go) < start(po);
-	[start(d),end(d)] o.at == l1 :-> l2; 
-};
 
 /** parameter l3 is not used but kept to remain compatible with the problem definitions */
 action oneStep(Object o, Place l1, Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Car c2){
