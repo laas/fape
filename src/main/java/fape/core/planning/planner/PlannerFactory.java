@@ -41,7 +41,7 @@ public class PlannerFactory {
             case "rpg":
                 return new PGPlanner(controllability, options);
             case "taskcond":
-                return new AEPlanner(controllability,options);
+                return new TaskConditionPlanner(controllability,options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }
@@ -59,7 +59,7 @@ public class PlannerFactory {
             case "taskcond":
                 return new TaskConditionPlanner(state, options);
             case "pgr":
-                 return new AEPlanner(state,options);
+                 return new PGReachabilityPlanner(state,options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }
