@@ -43,7 +43,7 @@ public class PlanningOptions {
     /**
      * If set to true, the choice of the flaw to solve next will be done on the command line.
      */
-    public final boolean chooseFlawManually = false;
+    public boolean chooseFlawManually = false;
 
     /**
      * If set to true, FAPE will check whether an open goal resolver will result in an unsolvable threat.
@@ -51,5 +51,10 @@ public class PlanningOptions {
      * where choice of the flaw is based on the number of its resolvers).
      */
     public boolean checkUnsolvableThreatsForOpenGoalsResolvers = false;
+
+    /**
+     * If true, the planner will use AE search
+     */
+    public boolean useAE = true;
 
 }

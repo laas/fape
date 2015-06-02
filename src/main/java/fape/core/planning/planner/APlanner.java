@@ -16,10 +16,11 @@ import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.*;
 
 /**
@@ -57,15 +58,16 @@ public abstract class APlanner {
 
     public final PlanningOptions options;
 
-    /** Transforms the given options from planner independent to planner dependent.
-     *
+    /**
+     * Transforms the given options from planner independent to planner dependent.
+     * <p/>
      * Currently it only removes unneeded flaw finders in case action conditions are not used.
      */
     private void filterOptions(PlanningOptions opts) {
-        if(!useActionConditions()) {
+        if (!useActionConditions()) {
             List<FlawFinder> flawFinders = new LinkedList<>();
-            for(FlawFinder ff : opts.flawFinders) {
-                if(!(ff instanceof UnmotivatedActionFinder) && !(ff instanceof UnsupportedTaskConditionFinder))
+            for (FlawFinder ff : opts.flawFinders) {
+                if (!(ff instanceof UnmotivatedActionFinder) && !(ff instanceof UnsupportedTaskConditionFinder))
                     flawFinders.add(ff);
             }
             opts.flawFinders = flawFinders.toArray(new FlawFinder[flawFinders.size()]);
@@ -116,9 +118,9 @@ public abstract class APlanner {
      * This method is invoked whenever a causal link is added and offers a way
      * to react to it for planner extending this class.
      *
-     * @param st State in which the causal link was added.
+     * @param st        State in which the causal link was added.
      * @param supporter Left side of the causal link.
-     * @param consumer Right side of the causal link.
+     * @param consumer  Right side of the causal link.
      */
     public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) {
     }
@@ -129,6 +131,7 @@ public abstract class APlanner {
     public enum EPlanState {
         TIMEOUT, CONSISTENT, INCONSISTENT, INFEASIBLE
     }
+
     /**
      * what is the current state of the plan
      */
@@ -143,7 +146,7 @@ public abstract class APlanner {
      */
     public List<Flaw> getFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
-        for(FlawFinder fd : options.flawFinders)
+        for (FlawFinder fd : options.flawFinders)
             flaws.addAll(fd.getFlaws(st, this));
 
 
@@ -165,33 +168,43 @@ public abstract class APlanner {
     }
 
     /**
-     *
-     * @param deadline Absolute time (in ms) at which the planner must stop.
-     * @param maxDepth Will discard any partial plan which depth is greater than that.
-     *                 Note that the depth of a partial plan is computed with respect to
-     *                 initial state (i.e. repairing a state starts with a depth > 0)
+     * @param deadline             Absolute time (in ms) at which the planner must stop.
+     * @param maxDepth             Will discard any partial plan which depth is greater than that.
+     *                             Note that the depth of a partial plan is computed with respect to
+     *                             initial state (i.e. repairing a state starts with a depth > 0)
      * @param incrementalDeepening If set to true, the planner will increase the maximum
      *                             allowed depth from 1 until maxDepth until a plan is found
      *                             or the planner times out.
      * @return A solution plan if the planner founds one. null otherwise.
-     *         Also check the "planState" field for more detailed information.
+     * Also check the "planState" field for more detailed information.
      */
     public State search(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
+        if (options.useAE) {
+            return AESearch(deadline,maxDepth,incrementalDeepening);
+        } else {
+            return classicsearch(deadline,maxDepth,incrementalDeepening);
+        }
+    }
+
+    public State classicsearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
+
         List<State> toRestore = new LinkedList<>(queue);
 
         int currentMaxDepth;
         if(incrementalDeepening)
-            currentMaxDepth = 1;
+        currentMaxDepth=1;
         else
-            currentMaxDepth = maxDepth;
+        currentMaxDepth=maxDepth;
 
         State solution = null;
-        while(currentMaxDepth <= maxDepth && solution == null && planState != EPlanState.TIMEOUT) {
+        while(currentMaxDepth<=maxDepth&&solution==null&&planState!=EPlanState.TIMEOUT)
+
+        {
             queue.clear();
             queue.addAll(toRestore);
             solution = depthBoundedAStar(deadline, currentMaxDepth);
 
-            if(solution != null) {
+            if (solution != null) {
                 // here we check that the plan is indeed a solution
                 // it might not be the case if are looking for DC plans (Plan.makeDispatchable)
                 // and the STNU does not check dynamic controllability
@@ -203,7 +216,7 @@ public abstract class APlanner {
                 }
             }
 
-            if(currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
+            if (currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
                 break;
             currentMaxDepth += 1;
         }
@@ -302,6 +315,7 @@ public abstract class APlanner {
             //we just take the first flaw and its resolvers
             Flaw f;
             if(options.chooseFlawManually) {
+                System.out.print("STATE :" + st.mID + "\n");
                 for(int i=0 ; i<flaws.size() ; i++)
                     System.out.println("["+i+"] "+Printer.p(st, flaws.get(i)));
                 int choosen = Utils.readInt();
@@ -368,7 +382,6 @@ public abstract class APlanner {
         //we just take the first flaw and its resolvers
         Flaw f = flaws.get(0);
         List<Resolver> resolvers = f.getResolvers(st, this);
-
         if (resolvers.isEmpty()) {
             // dead end, keep going
             TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
@@ -401,6 +414,209 @@ public abstract class APlanner {
     public boolean applyResolver(State st, Resolver resolver) {
         return resolver.apply(st, this) &&
                 st.isConsistent();
+    }
+
+    protected Float AXg = 0.5F;
+    protected Float AXh = 0.5F;
+    protected Float Openg = 0.5F;
+    protected Float Openh = 0.5F;
+    protected Float Sonsg = 0.5F;
+    protected Float Sonh = 0.5F;
+
+    protected int espilon = 1;
+
+    private PriorityQueue<State>open ; //state list
+    private List<State> closed ;
+    private List<State> solved ;      //at this moment we don't need a list because we don't want the optimum optimorum
+    private float fthreshold;
+    private boolean persevere = true; //at this moment useless; i don't know how use it and where
+
+    private PriorityQueue<State> AX;  //list of sons of the last state selected which are acceptable ( for fthreshold )
+
+    public State AESearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
+
+        open = new PriorityQueue<>(100,new AEComparator(this, Openg, Openh));
+        open.add(queue.peek());
+
+        closed = new ArrayList<>();
+        solved = new ArrayList<>();
+        fthreshold = (1 + espilon) * h(open.peek());
+
+        AX = new PriorityQueue<>(100,new AEComparator(this, AXg, AXh));
+
+        PriorityQueue<State> sons = expand(open.peek());
+        if (sons == null ){
+            return null;
+        }
+        State temp ;
+        while (! sons.isEmpty() ){
+            temp = sons.remove();
+            if((g(temp) + h(temp)) < fthreshold){
+                AX.add(temp);
+            }
+        }
+
+        State n ;
+        while( !open.isEmpty() && solved.isEmpty()) {
+            if (System.currentTimeMillis() > deadline) {
+                TinyLogger.LogInfo("Timeout.");
+                this.planState = EPlanState.TIMEOUT;
+                return null;
+            }
+
+            if ( !AX.isEmpty()){
+                n = AX.remove();
+                open.remove(n);
+            } else {
+                n = open.peek();
+            }
+            if(!n.isConsistent())
+                break;
+            OpenedStates++;
+            sons = expand(n);
+            if (solved.isEmpty()) {
+                while ((solved.isEmpty()) && (sons != null) && (!atleastOneIsAcceptble(sons) || !open.isEmpty() || !persevere)) {
+
+                    if (System.currentTimeMillis() > deadline) {
+                        TinyLogger.LogInfo("Timeout.");
+                        this.planState = EPlanState.TIMEOUT;
+                        return null;
+                    }
+
+                    if (! sons.isEmpty() ){
+                        OpenedStates++;
+                        sons = expand(sons.peek());
+                    } else {
+                        sons =null;
+                    }
+                }
+                AX.clear();
+                if (sons != null){
+                    while (!sons.isEmpty()) {
+                        temp = sons.remove();
+                        if ((g(temp) + h(temp)) < fthreshold) {
+                            AX.add(temp);
+                        }
+                    }
+                }
+            }
+        }
+        if (open.isEmpty()){
+            System.err.println("failure");
+            return null;
+        } else {
+            return solved.get(0);
+        }
+    }
+    /**
+     *
+     * @param st State whose son have to be calculate
+     * @return sons of st if he got at least one resolver
+     * This fonction can also modifie open, closed, solved and fthreshold
+     */
+    private PriorityQueue<State> expand(State st) {
+        open.remove(st);
+        closed.add(st);
+
+        PriorityQueue<State> sons = new PriorityQueue<>(100,new AEComparator(this, Sonsg, Sonh));
+
+        List<Flaw> flaws = getFlaws(st);
+
+        TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);
+
+        //if (st.depth == maxDepth) //we are not interested in its children
+        //return null;
+
+        // sort the flaws, higher priority come first
+        try {
+            Collections.sort(flaws, this.flawComparator(st));
+        } catch (java.lang.IllegalArgumentException e) {
+            // problem with the sort function, try to find an problematic example and exit
+            System.err.println("The flaw comparison function is not legal (for instance, it might not be transitive).");
+            Utils.showExampleProblemWithFlawComparator(flaws, this.flawComparator(st), st, this);
+            System.exit(1);
+        }
+
+        if (flaws.isEmpty()) {
+            throw new FAPEException("Error: no flaws but state was not found to be a solution.");
+        }
+
+        //we just take the first flaw and its resolvers
+        Flaw f;
+        if (options.chooseFlawManually) {
+            System.out.print("STATE :" + st.mID + "\n");
+            for (int i = 0; i < flaws.size(); i++)
+                System.out.println("[" + i + "] " + Printer.p(st, flaws.get(i)));
+            int choosen = Utils.readInt();
+            f = flaws.get(choosen);
+        } else {
+            f = flaws.get(0);
+        }
+        List<Resolver> resolvers = f.getResolvers(st, this);
+
+        if (resolvers.isEmpty()) {
+            // dead end, keep going
+            TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            //continue;
+        }
+
+        TinyLogger.LogInfo(st, " Flaw: %s", f);
+
+        // Append the possibles fixed state to the queue
+        for (Resolver res : resolvers) {
+            TinyLogger.LogInfo(st, "   Res: %s", res);
+
+            State next = st.cc();
+            TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, res);
+            boolean success = applyResolver(next, res);
+
+            if (success) {
+                if (getFlaws(next).isEmpty()){
+                    TinyLogger.LogInfo("Plan found:");
+                    TinyLogger.LogInfo(st);
+                    solved.add(next);
+                } else if (!(open.contains(next) && !closed.contains(next))) {
+                    GeneratedStates++;
+                    open.add(next);
+                    sons.add(next);
+                }
+            }else {
+                TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
+                //inconsistent state, doing nothing
+            }
+
+        }
+        if (!sons.isEmpty()) {
+            if (fthreshold < (1 + espilon) * (g(sons.peek()) + h(sons.peek()))) {
+                fthreshold = (1 + espilon) * (g(sons.peek()) + h(sons.peek()));
+            }
+        }
+        return sons;
+    }
+
+    /**
+     * @return true if at least one of the state in sons if acceptable (for fthreshold )
+     */
+    private boolean atleastOneIsAcceptble(PriorityQueue<State> sons){
+        State temp;
+        if (!sons.isEmpty()) {
+            Iterator<State> it = sons.iterator();
+            while (it.hasNext()) {
+                temp = it.next();
+                if (open.contains(temp) && (g(temp) + h(temp)) < fthreshold) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public Integer h(State st){
+        return getFlaws(st).size();
+    }
+
+    public Integer g(State st){
+        return st.getNumActions();
     }
 
 }
