@@ -49,6 +49,7 @@ public class Utils {
         throw new FAPEException("Unknown problem with flaw comparison function");
     }
 
+    /** Reads an integer from standard input. Default to 0 if an empty line is given */
     public static int readInt() {
         String line = null;
         int val = 0;
@@ -56,7 +57,10 @@ public class Utils {
             BufferedReader is = new BufferedReader(
                     new InputStreamReader(System.in));
             line = is.readLine();
-            val = Integer.parseInt(line);
+            if(line.equals(""))
+                val = 0;
+            else
+                val = Integer.parseInt(line);
         } catch (NumberFormatException ex) {
             System.err.println("Not a valid number: " + line);
             return readInt();

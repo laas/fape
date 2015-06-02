@@ -48,6 +48,9 @@ public class FlawCompFactory {
                 case "rpgog":
                     compList.add(new RPGOpenGoalComp(st));
                     break;
+                case "extfirst":
+                    compList.add(new ExtendPlanFirst(st, planner));
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }
