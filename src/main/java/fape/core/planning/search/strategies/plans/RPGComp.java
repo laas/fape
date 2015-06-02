@@ -1,19 +1,35 @@
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
-import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
-import fape.core.planning.search.strategies.flaws.RPGOpenGoalComp;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 
 import java.util.*;
 
-public class RPGComp implements PartialPlanComparator {
+public class RPGComp implements PartialPlanComparator, Heuristic {
+
+    @Override
+    public float g(State st) {
+        return st.getNumActions();
+    }
+
+    @Override
+    public float h(State st) {
+        return hc(st);
+    }
+
+    @Override
+    public float hc(State st) {
+        if(!hc.containsKey(st.mID)) {
+            int numFlaws = st.consumers.size() + st.getNumOpenLeaves() + threatFinder.getFlaws(st, null).size();
+            hc.put(st.mID, numAdditionalSteps(st) + numFlaws);
+        }
+        return hc.get(st.mID);
+    }
 
     static class OpenGoal implements Comparable<OpenGoal> {
         public final Timeline tl;
@@ -37,17 +53,13 @@ public class RPGComp implements PartialPlanComparator {
         return "rplan";
     }
 
-    HashMap<State, Integer> f = new HashMap<>();
+    HashMap<Integer, Integer> hc = new HashMap<>();
 
     public int eval(State st) {
-        if(!f.containsKey(st)) {
-            int val = evaluate(st);
-            f.put(st, val);
-        }
-        return f.get(st);
+        return (int) g(st) + (int) h(st);
     }
 
-    public static int evaluate(State st) {
+    public static int numAdditionalSteps(State st) {
         if(gpb == null || gpb.liftedPb != st.pb) {
             gpb = new GroundProblem(st.pb);
         }
@@ -73,10 +85,7 @@ public class RPGComp implements PartialPlanComparator {
         if(relaxedPlan == null)
             return 9999999;
 
-        int numFlaws = st.consumers.size() + st.getNumOpenLeaves() + threatFinder.getFlaws(st, null).size();
-        int numActions = st.getNumActions();
-        int numAdditionalSteps = relaxedPlan.size();
-        return numActions + numFlaws + numAdditionalSteps;
+        return relaxedPlan.size();
     }
 
     @Override

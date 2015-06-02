@@ -8,7 +8,7 @@ import fape.core.planning.states.State;
 /**
  * Evaluation function: num-actions*10 + num-consumers*3 + num-undecomposed*3
  */
-public class SOCA implements PartialPlanComparator {
+public class SOCA implements PartialPlanComparator, Heuristic {
 
     private final APlanner planner;
     private final AllThreatFinder threatFinder = new AllThreatFinder();
@@ -44,5 +44,23 @@ public class SOCA implements PartialPlanComparator {
     @Override
     public String shortName() {
         return "soca";
+    }
+
+    @Override
+    public float g(State st) {
+        return st.getNumActions() * 10;
+    }
+
+    @Override
+    public float h(State s) {
+        if(s.h < 0)
+            s.h = threatFinder.getFlaws(s, planner).size();
+
+        return s.consumers.size()*3 + s.getNumOpenLeaves()*3 + s.h*3;
+    }
+
+    @Override
+    public float hc(State st) {
+        return h(st);
     }
 }
