@@ -177,13 +177,13 @@ public abstract class APlanner {
      */
     public State search(final long deadline, final int maxDepth, final boolean incrementalDeepening) {
         if (options.useAEpsilon) {
-            return AESearch(deadline,maxDepth,incrementalDeepening);
+            return aEpsilonSearch(deadline, maxDepth, incrementalDeepening);
         } else {
-            return classicsearch(deadline,maxDepth,incrementalDeepening);
+            return bestFirstSearch(deadline, maxDepth, incrementalDeepening);
         }
     }
 
-    public State classicsearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
+    public State bestFirstSearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
 
         List<State> toRestore = new LinkedList<>(queue);
 
@@ -430,8 +430,9 @@ public abstract class APlanner {
 
     private PriorityQueue<State> AX;  //list of sons of the last state selected which are acceptable ( for fthreshold )
 
-    public State AESearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
-
+    public State aEpsilonSearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
+        assert maxDepth >= 999999 : "Max depth is not used in A-Epsilon.";
+        assert !incrementalDeepening : "Incremental deepening is not available is A-Epsilon.";
         open = new PriorityQueue<>(100,new AEComparator(this, Openg, Openh));
         open.add(queue.peek());
 
