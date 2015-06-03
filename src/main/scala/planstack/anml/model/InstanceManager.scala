@@ -25,7 +25,6 @@ class InstanceManager {
   addType("boolean", "")
   addInstance("true", "boolean")
   addInstance("false", "boolean")
-  addType("object", "")
   addType("typeOfUnknown", "")
   addInstance("unknown", "typeOfUnknown")
 
@@ -49,7 +48,7 @@ class InstanceManager {
     * @param parent Name of the parent type. If empty (""), no parent is set for this type.
     */
   def addType(name:String, parent:String) {
-    assert(!types.contains(name), "Error: type "+name+" is already recorded.")
+    assert(!types.contains(name), "Error: type \""+name+"\" is already recorded.")
 
     types(name) = new Type(name, parent)
     typeHierarchy.addVertex(name)
@@ -91,6 +90,16 @@ class InstanceManager {
     * @return All subtypes including itself.
     */
   def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(subTypesRec(typeName) + "typeOfUnknown")
+
+  /** Returns all parents of this type */
+  def parents(typeName: String) : java.util.Set[String] = {
+    def parentsScala(t: String) : Set[String] =
+      if(typeHierarchy.parents(t).isEmpty)
+        Set()
+      else
+        parentsScala(typeHierarchy.parents(t).head) + typeHierarchy.parents(t).head
+    setAsJavaSet(parentsScala(typeName))
+  }
 
   private def subTypesRec(typeName:String) : Set[String] = typeHierarchy.children(typeName).map(subTypes(_)).flatten + typeName
 
