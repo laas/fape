@@ -11,12 +11,18 @@ import java.util.List;
  * The basic algorithm for comparing two partial plans is to apply the comparators in sequence until it results in an ordering
  * between the two plans. If no comparator is found, the plans are left unordered.
  */
-public class SeqPlanComparator implements PartialPlanComparator {
+public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
 
-    List<PartialPlanComparator> comparators;
+    final List<PartialPlanComparator> comparators;
+    final Heuristic heuristic;
 
     public SeqPlanComparator(List<PartialPlanComparator> comparators) {
         this.comparators = new LinkedList<>(comparators);
+        if(comparators.get(0) instanceof Heuristic)
+            heuristic = (Heuristic) comparators.get(0);
+        else
+            heuristic = null;
+
     }
 
     @Override
@@ -44,5 +50,23 @@ public class SeqPlanComparator implements PartialPlanComparator {
 
         // no ranking done, use mID to make deterministic
         return state.mID - state2.mID;
+    }
+
+    @Override
+    public float g(State st) {
+        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
+        return heuristic.g(st);
+    }
+
+    @Override
+    public float h(State st) {
+        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
+        return heuristic.h(st);
+    }
+
+    @Override
+    public float hc(State st) {
+        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
+        return heuristic.hc(st);
     }
 }

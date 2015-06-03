@@ -9,6 +9,7 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
@@ -231,14 +232,18 @@ public abstract class APlanner {
         return FlawCompFactory.get(st, this, options.flawSelStrategies);
     }
 
+    SeqPlanComparator stateComparator = null;
+
     /**
      * The comparator used to order the queue. THe first state in the queue
      * (according to this comparator, will be selected for expansion.
      *
      * @return The comparator to use for ordering the queue.
      */
-    public final Comparator<State> stateComparator() {
-        return PlanCompFactory.get(this, options.planSelStrategies);
+    public final SeqPlanComparator stateComparator() {
+        if(stateComparator == null)
+            stateComparator = PlanCompFactory.get(this, options.planSelStrategies);
+        return stateComparator;
     }
 
     /**
@@ -432,7 +437,7 @@ public abstract class APlanner {
 
     public State aEpsilonSearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
         assert maxDepth >= 999999 : "Max depth is not used in A-Epsilon.";
-        assert !incrementalDeepening : "Incremental deepening is not available is A-Epsilon.";
+        assert !incrementalDeepening : "Incremental deepening is not available in A-Epsilon.";
         open = new PriorityQueue<>(100,new AEComparator(this, Openg, Openh));
         open.add(queue.peek());
 
@@ -449,7 +454,7 @@ public abstract class APlanner {
         State temp ;
         while (! sons.isEmpty() ){
             temp = sons.remove();
-            if((g(temp) + h(temp)) < fthreshold){
+            if((g(temp) + h(temp)) < fthreshold) {
                 AX.add(temp);
             }
         }
@@ -462,7 +467,7 @@ public abstract class APlanner {
                 return null;
             }
 
-            if ( !AX.isEmpty()){
+            if ( !AX.isEmpty()) {
                 n = AX.remove();
                 open.remove(n);
             } else {
@@ -473,7 +478,7 @@ public abstract class APlanner {
             OpenedStates++;
             sons = expand(n);
             if (solved.isEmpty()) {
-                while ((solved.isEmpty()) && (sons != null) && (!atleastOneIsAcceptble(sons) || !open.isEmpty() || !persevere)) {
+                while ((solved.isEmpty()) && (sons != null) && (!atLeastOneIsAcceptable(sons) || !open.isEmpty() || !persevere)) {
 
                     if (System.currentTimeMillis() > deadline) {
                         TinyLogger.LogInfo("Timeout.");
@@ -508,7 +513,7 @@ public abstract class APlanner {
     }
     /**
      *
-     * @param st State whose son have to be calculate
+     * @param st State whose son have to be calculated
      * @return sons of st if he got at least one resolver
      * This fonction can also modifie open, closed, solved and fthreshold
      */
@@ -595,7 +600,7 @@ public abstract class APlanner {
     /**
      * @return true if at least one of the state in sons if acceptable (for fthreshold )
      */
-    private boolean atleastOneIsAcceptble(PriorityQueue<State> sons){
+    private boolean atLeastOneIsAcceptable(PriorityQueue<State> sons){
         State temp;
         if (!sons.isEmpty()) {
             Iterator<State> it = sons.iterator();
@@ -609,13 +614,11 @@ public abstract class APlanner {
         return false;
     }
 
-    public Integer h(State st){
-
-        return getFlaws(st).size();
+    public int h(State st){
+        return (int) stateComparator().h(st);
     }
 
-    public Integer g(State st){
-        return st.getNumActions();
+    public int g(State st){
+        return (int) stateComparator().g(st);
     }
-
 }
