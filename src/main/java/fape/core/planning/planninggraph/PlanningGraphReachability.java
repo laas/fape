@@ -28,8 +28,64 @@ public class PlanningGraphReachability {
     /** Associate to a ground task condition all ground action (through their IDs) that can be derived from it */
     public final HashMap<GTaskCond, Set<Integer>> taskDerivabilities = new HashMap<>();
 
+
+    public PlanningGraphReachability(APlanner planner, State initialState) {
+        this.planner = planner;
+        // this Problem contains all the ground actions
+        base = new GroundProblem(initialState.pb);
+        unfilteredActions = new HashSet<>(base.gActions);
+
+        for(GAction ga : unfilteredActions) {
+            initialState.csp.bindings().addPossibleValue(ga.id);
+            assert(!gactions.containsKey(ga.id));
+            gactions.put(ga.id, ga);
+        }
+        for(GAction act : unfilteredActions) {
+            LinkedList<InstanceRef> args = new LinkedList<>();
+            for(LVarRef var : act.abs.args())
+                args.add(act.valueOf(var));
+            GTaskCond tc = new GTaskCond(act.abs, args);
+            if(!taskDerivabilities.containsKey(tc))
+                taskDerivabilities.put(tc, new HashSet<Integer>());
+            taskDerivabilities.get(tc).add(act.id);
+        }
+
+        for(GAction ga : unfilteredActions) {
+            if(!varsOfAction.containsKey(ga.abs.name())) {
+                varsOfAction.put(ga.abs.name(), ga.vars);
+            }
+        }
+
+        Set<GAction> allFeasibleActions = getAllActions(initialState);
+
+        this.filteredActions = allFeasibleActions;
+        base.gActions.clear();
+        base.gActions.addAll(filteredActions);
+
+        for(GAction act : allFeasibleActions) {
+            LinkedList<InstanceRef> args = new LinkedList<>();
+            for(LVarRef var : act.abs.args())
+                args.add(act.valueOf(var));
+            GTaskCond tc = new GTaskCond(act.abs, args);
+            if(!taskDerivabilities.containsKey(tc))
+                taskDerivabilities.put(tc, new HashSet<Integer>());
+            taskDerivabilities.get(tc).add(act.id);
+        }
+
+        for(GAction ga : allFeasibleActions) {
+            if(!varsOfAction.containsKey(ga.abs.name())) {
+                varsOfAction.put(ga.abs.name(), ga.vars);
+            }
+
+            List<String> values = new LinkedList<>();
+            for(LVarRef var : varsOfAction.get(ga.abs.name()))
+                values.add(ga.valueOf(var).instance());
+            initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
+        }
+    }
+
     public boolean checkFeasibility(State st) {
-        Set<GAction> acts = getAllActions(base, st);
+        Set<GAction> acts = getAllActions(st);
 
         for(Action a : st.getUnmotivatedActions()) {
             boolean derivable = false;
@@ -95,56 +151,6 @@ public class PlanningGraphReachability {
         return ret;
     }
 
-
-    public PlanningGraphReachability(APlanner planner, State initialState) {
-        this.planner = planner;
-        // this Problem contains all the ground actions
-        base = new GroundProblem(initialState.pb);
-        unfilteredActions = new HashSet<>(base.gActions);
-
-        for(GAction ga : unfilteredActions) {
-            initialState.csp.bindings().addPossibleValue(ga.id);
-            assert(!gactions.containsKey(ga.id));
-            gactions.put(ga.id, ga);
-        }
-        for(GAction act : unfilteredActions) {
-            LinkedList<InstanceRef> args = new LinkedList<>();
-            for(LVarRef var : act.abs.args())
-                args.add(act.valueOf(var));
-            GTaskCond tc = new GTaskCond(act.abs, args);
-            if(!taskDerivabilities.containsKey(tc))
-                taskDerivabilities.put(tc, new HashSet<Integer>());
-            taskDerivabilities.get(tc).add(act.id);
-        }
-
-        Set<GAction> allFeasibleActions = getAllActions(base, initialState);
-
-        this.filteredActions = allFeasibleActions;
-        base.gActions.clear();
-        base.gActions.addAll(filteredActions);
-
-        for(GAction act : allFeasibleActions) {
-            LinkedList<InstanceRef> args = new LinkedList<>();
-            for(LVarRef var : act.abs.args())
-                args.add(act.valueOf(var));
-            GTaskCond tc = new GTaskCond(act.abs, args);
-            if(!taskDerivabilities.containsKey(tc))
-                taskDerivabilities.put(tc, new HashSet<Integer>());
-            taskDerivabilities.get(tc).add(act.id);
-        }
-
-        for(GAction ga : allFeasibleActions) {
-            if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.vars);
-            }
-
-            List<String> values = new LinkedList<>();
-            for(LVarRef var : varsOfAction.get(ga.abs.name()))
-                values.add(ga.valueOf(var).instance());
-            initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
-        }
-    }
-
     public Set<GAction> decomposable(Set<GAction> feasibles) {
         Set<GAction> ret = new HashSet<>();
         for(GAction a : feasibles) {
@@ -173,7 +179,10 @@ public class PlanningGraphReachability {
         return ret;
     }
 
-    public Set<GAction> getAllActions(GroundProblem base, State st) {
+    public Set<GAction> getAllActions(State st) {
+        if(st.addableGroundActions != null)
+            return st.addableGroundActions;
+
         GroundProblem pb = new GroundProblem(base, st);
         RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
         rpg.build();
@@ -184,6 +193,8 @@ public class PlanningGraphReachability {
 
         ValuesHolder dom = st.csp.bindings().intValuesAsDomain(feasiblesIDs);
         for(Action a : st.getAllActions()) {
+            if(!groundedActVariable.containsKey(a.id()))
+                createGroundActionVariable(a, st);
             st.csp.bindings().restrictDomain(groundedActVariable.get(a.id()), dom);
         }
 
@@ -214,7 +225,29 @@ public class PlanningGraphReachability {
                 strictest = feasibles;
             }
         }
+        st.addableGroundActions = feasibles;
         return feasibles;
+    }
+
+    /** This will associate with an action a variable in the CSP representing its
+     * possible ground versions.
+     * @param act Action for which we need to create the variable.
+     * @param st  State in which the action appears (needed to update the CSP)
+     */
+    public void createGroundActionVariable(Action act, State st) {
+        assert !groundedActVariable.containsKey(act.id()) : "The action already has a variable for its ground version.";
+
+        // all ground versions of this actions (represented by their ID)
+        LVarRef[] vars = varsOfAction.get(act.abs().name());
+        List<VarRef> values = new LinkedList<>();
+        for(LVarRef v : vars)
+            values.add(act.context().getDefinition(v)._2());
+        // Variable representing the ground versions of this action
+        VarRef gAction = new VarRef();
+        st.csp.bindings().AddIntVariable(gAction);
+        values.add(gAction);
+        groundedActVariable.put(act.id(), gAction);
+        st.addValuesSetConstraint(values, act.abs().name());
     }
 
     private Map<AbstractAction, List<GAction>> groundedActs = new HashMap<>();

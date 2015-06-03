@@ -34,23 +34,6 @@ public class NewTaskSupporter extends Resolver {
         // create a new action with the same args as the condition
         Action act = Factory.getInstantiatedAction(st.pb, abs, condition.args());
         st.insert(act);
-        if(planner.options.usePlanningGraphReachability) {
-            PlanningGraphReachability pgr = planner.reachability;
-            LVarRef[] vars = pgr.varsOfAction.get(act.abs().name());
-            if(vars == null) {
-                System.out.println("Strange action: "+act.abs()+ " has no recorded vars.");
-                return false;
-            }
-
-            List<VarRef> values = new LinkedList<>();
-            for(LVarRef v : vars)
-                values.add(act.context().getDefinition(v)._2());
-            VarRef gAction = new VarRef();
-            st.csp.bindings().AddIntVariable(gAction);
-            values.add(gAction);
-            pgr.groundedActVariable.put(act.id(), gAction);
-            st.addValuesSetConstraint(values, act.abs().name());
-        }
 
         // enforce equality of time points and add support to task network
         st.addSupport(condition, act);

@@ -42,7 +42,7 @@ public class PlanCompFactory {
                     compList.add(new HierarchicalCausalLinks());
                     break;
                 case "rplan":
-                    compList.add(new RPGComp());
+                    compList.add(new RPGComp(planner));
                     break;
                 case "base":
                     compList.add(new Basic(planner));

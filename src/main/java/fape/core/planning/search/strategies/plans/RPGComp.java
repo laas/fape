@@ -1,5 +1,6 @@
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.DisjunctiveFluent;
 import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.GroundProblem;
@@ -11,6 +12,12 @@ import fape.core.planning.timelines.Timeline;
 import java.util.*;
 
 public class RPGComp implements PartialPlanComparator, Heuristic {
+
+    final APlanner planner;
+
+    public RPGComp(APlanner planner) {
+        this.planner = planner;
+    }
 
     @Override
     public float g(State st) {
@@ -59,7 +66,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
         return (int) g(st) + (int) h(st);
     }
 
-    public static int numAdditionalSteps(State st) {
+    public int numAdditionalSteps(State st) {
         if(gpb == null || gpb.liftedPb != st.pb) {
             gpb = new GroundProblem(st.pb);
         }
@@ -75,7 +82,11 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
             Timeline tl = og.tl;
             DisjunctiveFluent df = new DisjunctiveFluent(DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true));
             GroundProblem pb = new GroundProblem(gpb, st, tl); // problem until the open goal tl
-            RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
+            RelaxedPlanningGraph rpg;
+            if(planner.options.usePlanningGraphReachability)
+                rpg = new RelaxedPlanningGraph(pb, planner.reachability.getAllActions(st));
+            else
+                rpg = new RelaxedPlanningGraph(pb);
             rpg.buildUntil(df);
             relaxedPlan = rpg.buildRelaxedPlan(df, relaxedPlan);
             if(relaxedPlan == null)

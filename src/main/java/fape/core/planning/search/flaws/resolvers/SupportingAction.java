@@ -68,20 +68,6 @@ public class SupportingAction extends Resolver {
 
         Action action = Factory.getStandaloneAction(st.pb, act);
         st.insert(action);
-        if(planner.options.usePlanningGraphReachability) {
-            PlanningGraphReachability pgr = planner.reachability;
-            LVarRef[] vars = pgr.varsOfAction.get(action.abs().name());
-            if(vars == null)
-                return false; // there was no versions of this action in the planning graph
-            List<VarRef> values = new LinkedList<>();
-            for(LVarRef v : vars)
-                values.add(action.context().getDefinition(v)._2());
-            VarRef gAction = new VarRef();
-            st.csp.bindings().AddIntVariable(gAction);
-            values.add(gAction);
-            pgr.groundedActVariable.put(action.id(), gAction);
-            st.addValuesSetConstraint(values, action.abs().name());
-        }
 
         Decomposition dec = null;
         if(decID != -1) { // supporter is in a decomposition

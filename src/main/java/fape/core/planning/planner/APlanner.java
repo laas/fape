@@ -43,9 +43,10 @@ public abstract class APlanner {
         queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(initialState);
 
-        if(options.usePlanningGraphReachability)
+        if(options.usePlanningGraphReachability) {
             reachability = new PlanningGraphReachability(this, initialState);
-        else
+            initialState.pgr = reachability;
+        } else
             reachability = null;
     }
 

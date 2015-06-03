@@ -12,6 +12,8 @@ package fape.core.planning.states;
 
 import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
+import fape.core.planning.planninggraph.GAction;
+import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
@@ -99,6 +101,14 @@ public class State implements Reporter {
 
     public final Controllability controllability;
 
+    /**
+     *  The set of actions that might be addable in this state.
+     * Those actions must (i) be reachable (plannning graph)
+     * (ii) be derivable from an reachable action if motivated.
+     * This field is filled by PlanningGraphReachibility when needed.
+     */
+    public Set<GAction> addableGroundActions = null;
+
 
     class PotentialThreat {
         private final int id1, id2;
@@ -133,6 +143,8 @@ public class State implements Reporter {
      */
     private int problemRevision;
 
+    public PlanningGraphReachability pgr = null;
+
     /**
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
@@ -164,6 +176,7 @@ public class State implements Reporter {
     public State(State st) {
         pb = st.pb;
         this.controllability = st.controllability;
+        this.pgr = st.pgr;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -442,6 +455,9 @@ public class State implements Reporter {
             assert act.maxDuration() == null : "Error: max duration was defined without a min duration.";
             csp.stn().enforceMinDelayWithID(act.start(), act.end(), 1, act.id());
         }
+
+        if(pgr != null)
+            pgr.createGroundActionVariable(act, this);
 
         csp.isConsistent();
     }
