@@ -37,20 +37,22 @@ public class UnsupportedTaskCond extends Flaw {
 
         // existing action can be a supporter if every one of its parameters
         // are unifiable with the task condition
-        for (Action act : st.getAllActions()) {
-            if (act.abs() == actCond.abs()) {
-                boolean unifiable = true;
-                for (int i = 0; i < act.args().size(); i++) {
-                    unifiable &= st.unifiable(act.args().get(i), actCond.args().get(i));
+        if(planner.useActionConditions())
+            for (Action act : st.getAllActions()) {
+                if (act.abs() == actCond.abs()) {
+                    boolean unifiable = true;
+                    for (int i = 0; i < act.args().size(); i++) {
+                        unifiable &= st.unifiable(act.args().get(i), actCond.args().get(i));
+                    }
+                    unifiable &= st.canBeBefore(act.start(), actCond.start());
+                    unifiable &= st.canBeBefore(actCond.start(), act.start());
+                    unifiable &= st.canBeBefore(act.end(), actCond.end());
+                    unifiable &= st.canBeBefore(actCond.end(), act.end());
+                    if (unifiable)
+                        resolvers.add(new ExistingTaskSupporter(actCond, act));
                 }
-                unifiable &= st.canBeBefore(act.start(), actCond.start());
-                unifiable &= st.canBeBefore(actCond.start(), act.start());
-                unifiable &= st.canBeBefore(act.end(), actCond.end());
-                unifiable &= st.canBeBefore(actCond.end(), act.end());
-                if (unifiable)
-                    resolvers.add(new ExistingTaskSupporter(actCond, act));
             }
-        }
+
         return resolvers;
     }
 }

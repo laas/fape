@@ -263,7 +263,7 @@ public class TaskNetworkManager implements Reporter {
 
     /**
      * Inserts an action in the task network. If the action a has
-     * a parent p, an edge from the decomposition of p to a is also added.
+     * a father p, an edge from the decomposition of p to a is also added.
      * O(1)
      */
     public void insert(Action a) {
@@ -348,7 +348,7 @@ public class TaskNetworkManager implements Reporter {
         if(network.inDegree(n1) == 0) {
             return false;
         } else if(network.parents(n1).size() != 1) {
-            throw new FAPEException("Error: node "+n1+" has more than one parent.");
+            throw new FAPEException("Error: node "+n1+" has more than one father.");
         } else if(network.parents(n1).contains(n2)) {
             return true;
         } else {

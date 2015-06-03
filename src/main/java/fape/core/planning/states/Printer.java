@@ -69,7 +69,8 @@ public class Printer {
             return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
         else if(o instanceof ExistingTaskSupporter)
             return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
-
+        else if(o instanceof SupportingActionDecomposition)
+            return "SupportingActionDecomposition: "+action(st, ((SupportingActionDecomposition) o).act)+" dec: "+((SupportingActionDecomposition) o).decID;
         else
             return o.toString();
     }
@@ -93,7 +94,10 @@ public class Printer {
         for(VarRef arg : act.args()) {
             ret += variable(st, arg);
         }
-        return ret + "):"+act.id();
+        ret += "):"+act.id();
+        if(st.taskNet.isDecomposed(act))
+            ret += "[dec]";
+        return ret;
     }
 
     public static String groundedAction(State st, Action act) {

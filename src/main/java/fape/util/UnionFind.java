@@ -148,7 +148,7 @@ public class UnionFind {
         /**
          *
          */
-        public int[] id;     // id[i] = parent of i
+        public int[] id;     // id[i] = father of i
 
         /**
          *

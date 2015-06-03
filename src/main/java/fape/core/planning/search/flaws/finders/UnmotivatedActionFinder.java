@@ -17,6 +17,7 @@ public class UnmotivatedActionFinder implements FlawFinder {
         for(Action unmotivated : st.getUnmotivatedActions())
             flaws.add(new UnmotivatedAction(unmotivated));
 
+        assert planner.useActionConditions() || flaws.size() == 0;
         return flaws;
     }
 }

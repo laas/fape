@@ -17,6 +17,7 @@ import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 
@@ -33,11 +34,8 @@ import java.util.*;
 public abstract class APlanner {
 
     public APlanner(State initialState, PlanningOptions options) {
-        filterOptions(options);
         this.options = options;
         this.pb = initialState.pb;
-        assert pb.usesActionConditions() == this.useActionConditions() :
-                "Difference between problem and planner in the handling action conditions";
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
@@ -52,7 +50,6 @@ public abstract class APlanner {
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
     public APlanner(Controllability controllability, PlanningOptions options) {
-        filterOptions(options);
         this.options = options;
         this.controllability = controllability;
         this.pb = new AnmlProblem(useActionConditions());
@@ -68,23 +65,6 @@ public abstract class APlanner {
 
     public final PlanningOptions options;
     public final PlanningGraphReachability reachability;
-
-    /**
-     * Transforms the given options from planner independent to planner dependent.
-     * <p/>
-     * Currently it only removes unneeded flaw finders in case action conditions are not used.
-     */
-    private void filterOptions(PlanningOptions opts) {
-        if (!useActionConditions()) {
-            List<FlawFinder> flawFinders = new LinkedList<>();
-            for (FlawFinder ff : opts.flawFinders) {
-                if (!(ff instanceof UnmotivatedActionFinder) && !(ff instanceof UnsupportedTaskConditionFinder))
-                    flawFinders.add(ff);
-            }
-            opts.flawFinders = flawFinders.toArray(new FlawFinder[flawFinders.size()]);
-        }
-    }
-
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;
@@ -157,13 +137,20 @@ public abstract class APlanner {
      */
     public List<Flaw> getFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
-        for (FlawFinder fd : options.flawFinders)
-            flaws.addAll(fd.getFlaws(st, this));
 
+        if(!useActionConditions() && !st.getOpenTaskConditions().isEmpty()) {
+            // we are not using action condition (htn planner),
+            // hence every opened task must be solved with an action insertion which is done first
+            for(ActionCondition ac : st.getOpenTaskConditions()) {
+                flaws.add(new UnsupportedTaskCond(ac));
+            }
+        } else {
+            for (FlawFinder fd : options.flawFinders)
+                flaws.addAll(fd.getFlaws(st, this));
 
-        //find the resource flaws
-        flaws.addAll(st.resourceFlaws());
-
+            //find the resource flaws
+            flaws.addAll(st.resourceFlaws());
+        }
         return flaws;
     }
 

@@ -237,7 +237,7 @@ public class Planning {
                     PlannerConf conf = planners.remove();
                     conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
 
-                    final AnmlProblem pb = new AnmlProblem(conf.usesActionConditions());
+                    final AnmlProblem pb = new AnmlProblem(true); //todo clean up AnmlProblem as the parameter is now useless
                     try {
                         pb.extendWithAnmlFile(anmlFile);
 
