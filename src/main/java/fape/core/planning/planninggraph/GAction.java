@@ -100,10 +100,13 @@ public class GAction implements PGNode {
         for(AbstractLogStatement s : abs.jLogStatements()) {
             if(s instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) s;
+
                 pre.add(fluent(t.sv(), t.from(), true, vars, pb));
                 pre.add(fluent(t.sv(), t.from(), false, vars, pb));
-                add.add(fluent(t.sv(), t.to(), true, vars, pb));
-                add.add(fluent(t.sv(), t.to(), false, vars, pb));
+                if(!fluent(t.sv(), t.from(), false, vars, pb).equals(fluent(t.sv(), t.to(), false, vars, pb))) {
+                    add.add(fluent(t.sv(), t.to(), true, vars, pb));
+                    add.add(fluent(t.sv(), t.to(), false, vars, pb));
+                }
             } else if(s instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) s;
                 pre.add(fluent(p.sv(), p.value(), false, vars, pb));
