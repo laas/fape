@@ -43,4 +43,7 @@ public class SupportingAction {
     public int hashCode() {
         return this.absAct.hashCode() + decID + statementRef.hashCode();
     }
+
+    @Override
+    public String toString() { return absAct.name(); }
 }

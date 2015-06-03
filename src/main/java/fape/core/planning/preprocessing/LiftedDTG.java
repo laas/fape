@@ -132,6 +132,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 
         FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
         allEffects.addAll(derivedSubTypes(fluent));
+        allEffects.addAll(derivedSuperTypes(fluent));
         return allEffects;
     }
 
@@ -171,6 +172,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 
         FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
         allPrecond.addAll(derivedSubTypes(fluent));
+        allPrecond.addAll(derivedSuperTypes(fluent));
         return allPrecond;
     }
 
@@ -204,6 +206,35 @@ public class LiftedDTG implements ActionSupporterFinder{
 
             for(List<String> argTypeList : PGUtils.allCombinations(argTypesSets)) {
                 for(String valueType : problem.instances().subTypes(ft.valueType)) {
+                    allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
+                }
+            }
+        }
+        return allFluents;
+    }
+
+    /**
+     * Given a fluent type ft, returns all fluent types where the arg and value
+     * types are super types of those of ft.
+     *
+     * This set includes ft itself.
+     * @param ft
+     * @return
+     */
+    public Set<FluentType> derivedSuperTypes(FluentType ft) {
+        Set<FluentType> allFluents = new HashSet<>();
+        if(ft == null) {
+            return allFluents;
+        } else {
+            List<List<String>> argTypesSets = new LinkedList<>();
+            for(String argType : ft.argTypes) {
+                List<String> parentsAndSelf = new LinkedList<>(problem.instances().parents(argType));
+                parentsAndSelf.add(argType);
+                argTypesSets.add(parentsAndSelf);
+            }
+
+            for(List<String> argTypeList : PGUtils.allCombinations(argTypesSets)) {
+                for(String valueType : problem.instances().parents(ft.valueType)) {
                     allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
                 }
             }
