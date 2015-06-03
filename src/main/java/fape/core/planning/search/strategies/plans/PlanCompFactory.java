@@ -8,7 +8,7 @@ import java.util.List;
 
 public class PlanCompFactory {
 
-    public static PartialPlanComparator get(APlanner planner, String... comparators) {
+    public static SeqPlanComparator get(APlanner planner, String... comparators) {
         List<PartialPlanComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {
@@ -43,6 +43,9 @@ public class PlanCompFactory {
                     break;
                 case "rplan":
                     compList.add(new RPGComp());
+                    break;
+                case "base":
+                    compList.add(new Basic(planner));
                     break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
