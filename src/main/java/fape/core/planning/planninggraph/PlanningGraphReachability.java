@@ -1,8 +1,7 @@
-package fape.core.planning.planner;
+package fape.core.planning.planninggraph;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.*;
-import fape.core.planning.search.flaws.finders.FlawFinder;
-import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -13,11 +12,11 @@ import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.ValuesHolder;
 
-import java.io.PrintWriter;
 import java.util.*;
 
-public class PGReachabilityPlanner extends TaskConditionPlanner {
+public class PlanningGraphReachability {
 
+    final APlanner planner;
     public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
     final Set<GAction> unfilteredActions;
     final Set<GAction> filteredActions;
@@ -97,8 +96,8 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
     }
 
 
-    public PGReachabilityPlanner(State initialState, PlanningOptions options) {
-        super(initialState, options);
+    public PlanningGraphReachability(APlanner planner, State initialState) {
+        this.planner = planner;
         // this Problem contains all the ground actions
         base = new GroundProblem(initialState.pb);
         unfilteredActions = new HashSet<>(base.gActions);
@@ -354,7 +353,7 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
     }
 
     public Set<GAction> supportedByTaskCond(String actName, List<InstanceRef> args) {
-        Set<Integer> sup = taskDerivabilities.get(new GTaskCond(pb.getAction(actName), args));
+        Set<Integer> sup = taskDerivabilities.get(new GTaskCond(planner.pb.getAction(actName), args));
         HashSet<GAction> all = new HashSet<>();
         if(sup == null) // no action derivable from this task cond
             return all;
@@ -363,10 +362,5 @@ public class PGReachabilityPlanner extends TaskConditionPlanner {
             all.add(gactions.get(s));
 
         return all;
-    }
-
-    @Override
-    public String shortName() {
-        return "pgr";
     }
 }

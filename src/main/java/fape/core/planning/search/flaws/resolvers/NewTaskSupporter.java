@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.PGReachabilityPlanner;
+import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.states.State;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
@@ -34,8 +34,8 @@ public class NewTaskSupporter extends Resolver {
         // create a new action with the same args as the condition
         Action act = Factory.getInstantiatedAction(st.pb, abs, condition.args());
         st.insert(act);
-        if(planner instanceof PGReachabilityPlanner) {
-            PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
+        if(planner.options.usePlanningGraphReachability) {
+            PlanningGraphReachability pgr = planner.reachability;
             LVarRef[] vars = pgr.varsOfAction.get(act.abs().name());
             if(vars == null) {
                 System.out.println("Strange action: "+act.abs()+ " has no recorded vars.");

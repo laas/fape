@@ -2,6 +2,7 @@ package fape.core.planning.planner;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.*;
@@ -41,6 +42,11 @@ public abstract class APlanner {
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(initialState);
+
+        if(options.usePlanningGraphReachability)
+            reachability = new PlanningGraphReachability(this, initialState);
+        else
+            reachability = null;
     }
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
@@ -52,9 +58,15 @@ public abstract class APlanner {
         this.dtg = new LiftedDTG(this.pb);
         this.queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(new State(pb, controllability));
+
+        if(options.usePlanningGraphReachability)
+            reachability = new PlanningGraphReachability(this, queue.peek());
+        else
+            reachability = null;
     }
 
     public final PlanningOptions options;
+    public final PlanningGraphReachability reachability;
 
     /**
      * Transforms the given options from planner independent to planner dependent.
@@ -278,8 +290,8 @@ public abstract class APlanner {
                 st.exportTemporalNetwork("current-stn.dot");
             }
 
-            if(this instanceof PGReachabilityPlanner)
-                if(!(((PGReachabilityPlanner) this).checkFeasibility(st))) {
+            if(options.usePlanningGraphReachability)
+                if(!reachability.checkFeasibility(st)) {
                     TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
                     continue;
                 }

@@ -91,6 +91,10 @@ public class Planning {
                                 JSAP.NO_SHORTFLAG,
                                 "ae",
                                 "Planner will use A-Epsilon for search"),
+                        new Switch("reachability",
+                                JSAP.NO_SHORTFLAG,
+                                "reachability",
+                                "Planner will use planning graphs to assess the reachability of the goals."),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -231,6 +235,7 @@ public class Planning {
                     long start = System.currentTimeMillis();
 
                     PlannerConf conf = planners.remove();
+                    conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
 
                     final AnmlProblem pb = new AnmlProblem(conf.usesActionConditions());
                     try {

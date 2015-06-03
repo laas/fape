@@ -57,4 +57,7 @@ public class PlanningOptions {
      */
     public boolean useAEpsilon = false;
 
+    /** If set to true, the planner will use planning graphs to assess the reachibility of goals. */
+    public boolean usePlanningGraphReachability = false;
+
 }

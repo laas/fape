@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.PGReachabilityPlanner;
+import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.TinyLogger;
@@ -68,8 +68,8 @@ public class SupportingAction extends Resolver {
 
         Action action = Factory.getStandaloneAction(st.pb, act);
         st.insert(action);
-        if(planner instanceof PGReachabilityPlanner) {
-            PGReachabilityPlanner pgr = (PGReachabilityPlanner) planner;
+        if(planner.options.usePlanningGraphReachability) {
+            PlanningGraphReachability pgr = planner.reachability;
             LVarRef[] vars = pgr.varsOfAction.get(action.abs().name());
             if(vars == null)
                 return false; // there was no versions of this action in the planning graph
