@@ -33,14 +33,6 @@ public class Fluent implements PGNode {
         return f.name() + params.toString() +"=" + value;
     }
 
-    public String toASP() {
-        String ret = f.name().toLowerCase()+"_";
-        for(VarRef p : params)
-            ret += p+"_";
-        ret += "_"+value;
-        return ret;
-    }
-
     @Override
     public boolean equals(Object o) {
         if(!(o instanceof Fluent))

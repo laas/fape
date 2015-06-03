@@ -141,15 +141,6 @@ public class GAction implements PGNode {
         return ret;
     }
 
-    public String toASP() {
-        String ret = "";
-        ret += abs.name().toLowerCase()+ (decID == -1 ? "" : "_"+decID) + "__";
-        for(int i=0 ; i<vars.length ; i++) {
-            ret += vars[i] +"_"+ values[i]+"__";
-        }
-        return ret;
-    }
-
     public InstanceRef valueOf(LVarRef var, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
         InstanceRef ret;
         if(vars.containsKey(var)) {
