@@ -457,7 +457,7 @@ public class State implements Reporter {
         }
 
         if(pgr != null)
-            pgr.createGroundActionVariable(act, this);
+            pgr.createGroundActionVariables(act, this);
 
         csp.isConsistent();
     }
@@ -640,6 +640,10 @@ public class State implements Reporter {
         taskNet.insert(dec, dec.container());
 
         apply(dec);
+        if(pgr != null) {
+            System.out.println(dec.container().name()+"  "+dec.decNum());
+            bindVariable(pgr.decompositionVariable.get(dec.container().id()), PlanningGraphReachability.decCSPValue(dec.decNum()));
+        }
     }
 
     public void applyChronicle(Chronicle chron) {

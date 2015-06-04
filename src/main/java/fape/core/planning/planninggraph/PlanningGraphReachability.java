@@ -1,8 +1,6 @@
 package fape.core.planning.planninggraph;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.*;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.LVarRef;
@@ -11,6 +9,7 @@ import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.ValuesHolder;
+import planstack.structures.Pair;
 
 import java.util.*;
 
@@ -18,12 +17,14 @@ public class PlanningGraphReachability {
 
     final APlanner planner;
     public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
+    public Map<String, LVarRef[]> varsOfDecomposition = new HashMap<>();
     final Set<GAction> unfilteredActions;
     final Set<GAction> filteredActions;
     final GroundProblem base;
     /** Maps ground actions from their ID */
     public final HashMap<Integer, GAction> gactions = new HashMap<>();
     public final HashMap<ActRef, VarRef> groundedActVariable = new HashMap<>();
+    public final HashMap<ActRef, VarRef> decompositionVariable = new HashMap<>();
 
     /** Associate to a ground task condition all ground action (through their IDs) that can be derived from it */
     public final HashMap<GTaskCond, Set<Integer>> taskDerivabilities = new HashMap<>();
@@ -71,16 +72,36 @@ public class PlanningGraphReachability {
             taskDerivabilities.get(tc).add(act.id);
         }
 
+
+        int maxNumDecompositions = 0;
+        for(AbstractAction aa : initialState.pb.abstractActions()) {
+            maxNumDecompositions = maxNumDecompositions > aa.jDecompositions().size() ?
+                    maxNumDecompositions : aa.jDecompositions().size();
+        }
+        List<String> decompositionVariablesDomain = new LinkedList<>();
+        for(int i=0 ; i<maxNumDecompositions ; i++) {
+            initialState.csp.bindings().addPossibleValue(decCSPValue(i));
+        }
+
         for(GAction ga : allFeasibleActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
                 varsOfAction.put(ga.abs.name(), ga.baseVars);
             }
+            if(ga.decID != -1 && !varsOfDecomposition.containsKey(new Pair<>(ga.baseName(), ga.decID))) {
+                varsOfDecomposition.put(ga.decomposedName(), ga.decVars);
+            }
 
+            // all variables of this action
             List<String> values = new LinkedList<>();
             for(LVarRef var : varsOfAction.get(ga.abs.name()))
                 values.add(ga.valueOf(var).instance());
+
             initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
         }
+    }
+
+    public static String decCSPValue(int decNumber) {
+        return "decnum:"+decNumber;
     }
 
     public boolean checkFeasibility(State st) {
@@ -196,7 +217,7 @@ public class PlanningGraphReachability {
         ValuesHolder dom = st.csp.bindings().intValuesAsDomain(feasiblesIDs);
         for(Action a : st.getAllActions()) {
             if(!groundedActVariable.containsKey(a.id()))
-                createGroundActionVariable(a, st);
+                createGroundActionVariables(a, st);
             st.csp.bindings().restrictDomain(groundedActVariable.get(a.id()), dom);
         }
 
@@ -236,14 +257,25 @@ public class PlanningGraphReachability {
      * @param act Action for which we need to create the variable.
      * @param st  State in which the action appears (needed to update the CSP)
      */
-    public void createGroundActionVariable(Action act, State st) {
+    public void createGroundActionVariables(Action act, State st) {
         assert !groundedActVariable.containsKey(act.id()) : "The action already has a variable for its ground version.";
 
         // all ground versions of this actions (represented by their ID)
         LVarRef[] vars = varsOfAction.get(act.abs().name());
         List<VarRef> values = new LinkedList<>();
-        for(LVarRef v : vars)
-            values.add(act.context().getDefinition(v)._2());
+        for(LVarRef v : vars) {
+            if(v.id().equals("__dec__")) {
+                VarRef decVar = new VarRef();
+                List<String> domain = new LinkedList<>();
+                for(int i=0 ; i< act.decompositions().size() ; i++)
+                    domain.add(decCSPValue(i));
+                st.csp.bindings().AddVariable(decVar, domain, "decomposition_variable");
+                decompositionVariable.put(act.id(), decVar);
+                values.add(decVar);
+            } else {
+                values.add(act.context().getDefinition(v)._2());
+            }
+        }
         // Variable representing the ground versions of this action
         VarRef gAction = new VarRef();
         st.csp.bindings().AddIntVariable(gAction);

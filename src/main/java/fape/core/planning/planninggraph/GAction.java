@@ -60,9 +60,10 @@ public class GAction implements PGNode {
 
     public String baseName() { return abs.name(); }
 
-    public String decomposedName() { return abs.name()+"  dec: "+decID; }
+    public String decomposedName() { return abs.name()+"["+decID+"]"; }
 
     public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) throws NotValidGroundAction {
+        assert !(decID == -1 && abs.decompositions().size() != 0);
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
         assert decID < abs.jDecompositions().size();
@@ -77,6 +78,9 @@ public class GAction implements PGNode {
                 numDecVariables += 1;
         }
         assert numDecVariables == 0 || decID != -1;
+
+        if(decID != -1) // leave space for the decomposition variable
+            numBaseVariables++;
 
         this.baseVars = new LVarRef[numBaseVariables];
         this.baseValues = new InstanceRef[numBaseVariables];
@@ -94,6 +98,10 @@ public class GAction implements PGNode {
                 decValues[iDec] = binding.getValue();
                 iDec++;
             }
+        }
+        if(decID != -1) { // the last one is a variable representing the number of the decomposition.
+            baseVars[iBase] = new LVarRef("__dec__");
+            baseValues[iBase] = new InstanceRef(PlanningGraphReachability.decCSPValue(decID));
         }
 
         List<AbstractStatement> statements;
