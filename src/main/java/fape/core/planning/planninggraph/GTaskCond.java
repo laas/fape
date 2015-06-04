@@ -21,6 +21,14 @@ public class GTaskCond {
     }
 
     @Override
+    public String toString() {
+        String ret = act.name()+"(";
+        for(InstanceRef arg : args)
+            ret+= arg+",";
+        return ret+")";
+    }
+
+    @Override
     public int hashCode() {
         int ret = act.hashCode();
         for(int i=0 ; i<args.length ; i++) {

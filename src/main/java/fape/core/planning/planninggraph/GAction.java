@@ -1,9 +1,11 @@
 package fape.core.planning.planninggraph;
 
 import fape.exceptions.FAPEException;
+import fape.exceptions.NotValidGroundAction;
 import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
+import planstack.anml.model.PartialContext;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.statements.*;
@@ -23,26 +25,22 @@ public class GAction implements PGNode {
     public List<Fluent> pre = new LinkedList<>();
     public List<Fluent> add = new LinkedList<>();
     public final AbstractAction abs;
-//    public final String name;
-    public final LVarRef[] vars;
-    protected final InstanceRef[] values;
+
+    public final LVarRef[] baseVars;
+    protected final InstanceRef[] baseValues;
+    public final LVarRef[] decVars;
+    protected final InstanceRef[] decValues;
+
     public final int decID;
     public final ArrayList<GTaskCond> subTasks;
 
     private static int nextID = 0;
     public final int id;
 
-    public InstanceRef valueOf(LVarRef v) {
-        for(int i=0 ; i<vars.length ; i++)
-            if(vars[i].equals(v))
-                return values[i];
-        throw new FAPEException("This local variable was not found: "+v);
-    }
-
-    public GroundProblem.Invariant invariantOf(AbstractParameterizedStateVariable sv, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
+    public GroundProblem.Invariant invariantOf(AbstractParameterizedStateVariable sv, GroundProblem gPb) {
         List<InstanceRef> params = new LinkedList<>();
         for(LVarRef v : sv.jArgs())
-            params.add(valueOf(v, vars, gPb.liftedPb));
+            params.add(valueOf(v, gPb.liftedPb));
         for(GroundProblem.Invariant inv : gPb.invariants) {
             if(inv.matches(sv.func(), params))
                 return inv;
@@ -50,19 +48,52 @@ public class GAction implements PGNode {
         return null;
     }
 
-    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) {
+    @Override
+    public int hashCode() { return id; }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof GAction) return o == this;
+        else if(o instanceof Integer) return this.id == (int) ((Integer) o);
+        else return false;
+    }
+
+    public String baseName() { return abs.name(); }
+
+    public String decomposedName() { return abs.name()+"  dec: "+decID; }
+
+    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) throws NotValidGroundAction {
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
         assert decID < abs.jDecompositions().size();
         this.decID = decID;
 
-        this.vars = new LVarRef[vars.size()];
-        this.values = new InstanceRef[vars.size()];
-        int i=0;
+        int numBaseVariables = 0;
+        int numDecVariables = 0;
+        for(LVarRef ref : vars.keySet()) {
+            if(abs.context().contains(ref))
+                numBaseVariables += 1;
+            else
+                numDecVariables += 1;
+        }
+        assert numDecVariables == 0 || decID != -1;
+
+        this.baseVars = new LVarRef[numBaseVariables];
+        this.baseValues = new InstanceRef[numBaseVariables];
+        this.decVars = new LVarRef[numDecVariables];
+        this.decValues = new InstanceRef[numDecVariables];
+
+        int iBase = 0, iDec=0;
         for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
-            this.vars[i] = binding.getKey();
-            this.values[i] = binding.getValue();
-            i++;
+            if(abs.context().contains(binding.getKey())) {
+                baseVars[iBase] = binding.getKey();
+                baseValues[iBase] = binding.getValue();
+                iBase++;
+            } else {
+                decVars[iDec] = binding.getKey();
+                decValues[iDec] = binding.getValue();
+                iDec++;
+            }
         }
 
         List<AbstractStatement> statements;
@@ -76,24 +107,24 @@ public class GAction implements PGNode {
         for(AbstractStatement as : abs.jTemporalStatements()) {
             if(as instanceof AbstractEqualityConstraint) {
                 AbstractEqualityConstraint ec = (AbstractEqualityConstraint) as;
-                GroundProblem.Invariant inv = invariantOf(ec.sv(), vars, gPb);
-                if(inv == null || inv.value != valueOf(ec.variable(), vars, pb)) {
-                    throw new FAPEException("Action not valid");
+                GroundProblem.Invariant inv = invariantOf(ec.sv(), gPb);
+                if(inv == null || inv.value != valueOf(ec.variable(), pb)) {
+                    throw new NotValidGroundAction("Action not valid1");
                 }
             } else if(as instanceof AbstractInequalityConstraint) {
                 AbstractInequalityConstraint ec = (AbstractInequalityConstraint) as;
-                GroundProblem.Invariant inv = invariantOf(ec.sv(), vars, gPb);
-                if(inv == null || inv.value == valueOf(ec.variable(), vars, pb)) {
-                    throw new FAPEException("Action not valid");
+                GroundProblem.Invariant inv = invariantOf(ec.sv(), gPb);
+                if(inv == null || inv.value == valueOf(ec.variable(), pb)) {
+                    throw new NotValidGroundAction("Action not valid2");
                 }
             } else if(as instanceof AbstractVarEqualityConstraint) {
                 AbstractVarEqualityConstraint ec = (AbstractVarEqualityConstraint) as;
-                if(valueOf(ec.leftVar(), vars, pb) != valueOf(ec.rightVar(), vars, pb))
-                    throw new FAPEException("Action not valid");
+                if(valueOf(ec.leftVar(), pb) != valueOf(ec.rightVar(), pb))
+                    throw new NotValidGroundAction("Action not valid3");
             } else if(as instanceof AbstractVarInequalityConstraint) {
                 AbstractVarInequalityConstraint ec = (AbstractVarInequalityConstraint) as;
-                if(valueOf(ec.leftVar(), vars, pb) == valueOf(ec.rightVar(), vars, pb))
-                    throw new FAPEException("Action not valid");
+                if(valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
+                    throw new NotValidGroundAction("Action not valid4");
             }
         }
 
@@ -134,47 +165,89 @@ public class GAction implements PGNode {
                 ret += ", ";
         }
         ret +=") ";
-        for(int i=0 ; i<vars.length ; i++) {
-            if(!abs.args().contains(vars[i]))
-                ret += vars[i] +":"+ values[i]+" ";
+        for(int i=0 ; i<baseVars.length ; i++) {
+            if(!abs.args().contains(baseVars[i]))
+                ret += baseVars[i] +":"+ baseValues[i]+" ";
+        }
+        for(int i=0 ; i<decVars.length ; i++) {
+            if(!abs.args().contains(decVars[i]))
+                ret += decVars[i] +":"+ decValues[i]+" ";
         }
         return ret;
     }
 
-    public InstanceRef valueOf(LVarRef var, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
-        InstanceRef ret;
-        if(vars.containsKey(var)) {
-            ret = vars.get(var);
-        } else {
-            ret = (InstanceRef) pb.context().getDefinition(var)._2();
-        }
-        return ret;
+    /** Returns the instance corresponding to this local variable.
+     *  This instance must have been declared in the action (ie. not a global variable. */
+    public InstanceRef valueOf(LVarRef v) {
+        for(int i=0 ; i<decVars.length ; i++)
+            if(decVars[i].equals(v))
+                return decValues[i];
+        for(int i=0 ; i<baseVars.length ; i++)
+            if(baseVars[i].equals(v))
+                return baseValues[i];
+        throw new FAPEException("This local variable was not found: "+v);
+    }
+
+    /** Returns the instance corresponding to this local ref.
+     *  If this ref was not declared in the action, it will look for global variables. */
+    public InstanceRef valueOf(LVarRef v, AnmlProblem pb) {
+        // first look in local variables
+        for(int i=0 ; i<decVars.length ; i++)
+            if(decVars[i].equals(v))
+                return decValues[i];
+        for(int i=0 ; i<baseVars.length ; i++)
+            if(baseVars[i].equals(v))
+                return baseValues[i];
+
+        // it does not appear in local variables, it is a global one
+        return (InstanceRef) pb.context().getDefinition(v)._2();
     }
 
     public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, boolean partOfTransition, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
         List<VarRef> svParams = new LinkedList<>();
         for(LVarRef v : sv.jArgs()) {
-            svParams.add(valueOf(v, vars, pb));
+            svParams.add(valueOf(v, pb));
         }
-        return new Fluent(sv.func(), svParams, valueOf(value, vars, pb), partOfTransition);
+        return new Fluent(sv.func(), svParams, valueOf(value, pb), partOfTransition);
     }
 
-    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa) {
+    /**
+     * Returns all possible instanciation of the the abstract action in the given decomposition.
+     * A possible instanciation is a map from all its local references to instances.
+     *
+     * If the decoposition ID is not -1, variables declared inside the decomposition will be accounted for as well.
+     */
+    public static List<Map<LVarRef, InstanceRef>> getPossibleInstanciations(GroundProblem gPb, AbstractAction aa, int decID) {
         AnmlProblem pb = gPb.liftedPb;
+
+        // this will store all local variables, those can be defined as action parameters, inside the action or within the given decomposition
+        List<LVarRef> allLocalVars = new LinkedList<>();
+        // local vars from the action
+        for(LVarRef ref : scala.collection.JavaConversions.asJavaIterable(aa.context().variables().keys()))
+            allLocalVars.add(ref);
+        if(decID >= 0) // local vars from the definition
+            for(LVarRef ref : scala.collection.JavaConversions.asJavaIterable(aa.jDecompositions().get(decID).context().variables().keys()))
+                allLocalVars.add(ref);
+
+        // context from which to look for the definition of local variable
+        PartialContext context;
+        if(decID == -1) // no decomposition, take the action's context
+            context = aa.context();
+        else // take the context of the decomposition (which include the one of the action
+            context = aa.jDecompositions().get(decID).context();
 
         List<LVarRef> vars = new LinkedList<>();
         List<List<InstanceRef>> possibleValues = new LinkedList<>();
-        for(LVarRef ref : scala.collection.JavaConversions.asJavaIterable(aa.context().variables().keys())) {
+        for(LVarRef ref : allLocalVars) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
-            if(!aa.context().getDefinition(ref)._2().isEmpty()) {
-                if(!(aa.context().getDefinition(ref)._2() instanceof InstanceRef)) {
-                    System.out.print("ERRROR: "+aa.context().getDefinition(ref)._2());
-                }
-                varSet.add((InstanceRef) aa.context().getDefinition(ref)._2());
+            if(!context.getDefinition(ref)._2().isEmpty()) {
+                assert (context.getDefinition(ref)._2() instanceof InstanceRef) :
+                        "ERRROR: "+context.getDefinition(ref)._2();
+                varSet.add((InstanceRef) context.getDefinition(ref)._2());
             } else {
-                // get type of the argument and add all possible values to the argument list.
-                List<String> instanceSet = pb.instances().instancesOfType(aa.context().getType(ref));
+                // get <></>ype of the argument and add all possible values to the argument list.
+                List<String> instanceSet = pb.instances().instancesOfType(context.getType(ref));
                 for (String instance : instanceSet) {
                     varSet.add(pb.instances().referenceOf(instance));
                 }
@@ -193,18 +266,27 @@ public class GAction implements PGNode {
             }
             paramsLists.add(params);
         }
+        return paramsLists;
+    }
 
+    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa) {
+        // all ground actions corresponding to aa
         List<GAction> actions = new LinkedList<>();
-        for(Map<LVarRef, InstanceRef> params : paramsLists) {
-            if(aa.jDecompositions().size() == 0) {
+
+        if(aa.jDecompositions().size() == 0) {
+            List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstanciations(gPb, aa, -1);
+            for(Map<LVarRef, InstanceRef> params : paramsLists) {
                 try {
                     actions.add(new GAction(aa, -1, params, gPb));
-                } catch (FAPEException e) {}
-            } else {
-                for(int i=0 ; i<aa.jDecompositions().size() ; i++) {
+                } catch (NotValidGroundAction e) {}
+            }
+        } else {
+            for(int decID=0 ; decID<aa.jDecompositions().size() ; decID++) {
+                List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstanciations(gPb, aa, decID);
+                for(Map<LVarRef, InstanceRef> params : paramsLists) {
                     try {
-                        actions.add(new GAction(aa, i, params, gPb));
-                    } catch (FAPEException e) {}
+                        actions.add(new GAction(aa, decID, params, gPb));
+                    } catch (NotValidGroundAction e) {}
                 }
             }
         }
@@ -228,7 +310,7 @@ public class GAction implements PGNode {
         for(AbstractActionRef ref : refs) {
             List<InstanceRef> args = new LinkedList<>();
             for(LVarRef v : ref.jArgs()) {
-                args.add(valueOf(v));
+                args.add(valueOf(v, pb));
             }
             ret.add(new GTaskCond(pb.getAction(ref.name()), args));
         }

@@ -28,7 +28,6 @@ public class PlanningGraphReachability {
     /** Associate to a ground task condition all ground action (through their IDs) that can be derived from it */
     public final HashMap<GTaskCond, Set<Integer>> taskDerivabilities = new HashMap<>();
 
-
     public PlanningGraphReachability(APlanner planner, State initialState) {
         this.planner = planner;
         // this Problem contains all the ground actions
@@ -52,7 +51,7 @@ public class PlanningGraphReachability {
 
         for(GAction ga : unfilteredActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.vars);
+                varsOfAction.put(ga.abs.name(), ga.baseVars);
             }
         }
 
@@ -74,7 +73,7 @@ public class PlanningGraphReachability {
 
         for(GAction ga : allFeasibleActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.vars);
+                varsOfAction.put(ga.abs.name(), ga.baseVars);
             }
 
             List<String> values = new LinkedList<>();
@@ -160,8 +159,9 @@ public class PlanningGraphReachability {
 
             for(int i=0 ; i<applicableSubTasks.length ; i++) {
                 GTaskCond gtc = a.getActionRefs().get(i);
-                if(!taskDerivabilities.containsKey(gtc))
+                if(!taskDerivabilities.containsKey(gtc)) {
                     break; // no action supporting task cond in this problem
+                }
                 for(Integer sub : taskDerivabilities.get(gtc)) {
                     if(feasibles.contains(gactions.get(sub))) {
                         applicableSubTasks[i] = true;
@@ -188,8 +188,10 @@ public class PlanningGraphReachability {
         rpg.build();
         Set<GAction> feasibles = new HashSet<>(rpg.getAllActions());
         List<Integer> feasiblesIDs = new LinkedList<>();
-        for(GAction ga : feasibles)
+
+        for(GAction ga : feasibles) {
             feasiblesIDs.add(ga.id);
+        }
 
         ValuesHolder dom = st.csp.bindings().intValuesAsDomain(feasiblesIDs);
         for(Action a : st.getAllActions()) {
@@ -310,12 +312,14 @@ public class PlanningGraphReachability {
     public Set<GAction> derivableFromInitialTaskNetwork(State st, Set<GAction> allowed) {
         Set<GAction> possible = new HashSet<>();
 
+        // all non motivated actions are possible
         for(AbstractAction abs : st.pb.abstractActions())
             if(!abs.motivated())
                 for(GAction ga : getGrounded(abs))
                     if(allowed.contains(ga))
                         possible.add(ga);
 
+        // for all open task conditions, add all corresponding grounded actions with matching args
         for(ActionCondition ac : st.getOpenTaskConditions()) {
             List<GAction> grounded = getGrounded(ac.abs());
             for(GAction ga : grounded) {
@@ -345,18 +349,23 @@ public class PlanningGraphReachability {
                         groundedVersions.add(ga);
                 }
             }
-            for(AbstractDecomposition dec : a.decompositions()) {
-                for(AbstractActionRef ref : dec.jActions()) {
+            for(int decID=0 ; decID<a.decompositions().size() ; decID++) { // all decompositions
+                AbstractDecomposition dec = a.decompositions().get(decID);
+                for(AbstractActionRef ref : dec.jActions()) { // all sub tasks in this decomposition
                     String name = ref.name();
+
                     for(GAction ga : groundedVersions) {
-                        List<InstanceRef> args = new LinkedList<>();
-                        for(LVarRef v : ref.jArgs())
-                            args.add(ga.valueOf(v));
-                        Set<GAction> supported = supportedByTaskCond(name, args);
-                        for(GAction sup : supported) {
-                            if(allowed.contains(sup)) {
-                                pendingPossible.add(sup);
-                                possible.add(sup);
+                        if(ga.decID == decID) {
+                            // ga is a ground version of the action with the decomposition we are looking at
+                            List<InstanceRef> args = new LinkedList<>();
+                            for (LVarRef v : ref.jArgs())
+                                args.add(ga.valueOf(v, st.pb));
+                            Set<GAction> supported = supportedByTaskCond(name, args);
+                            for (GAction sup : supported) {
+                                if (allowed.contains(sup)) {
+                                    pendingPossible.add(sup);
+                                    possible.add(sup);
+                                }
                             }
                         }
                     }
