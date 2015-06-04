@@ -55,8 +55,6 @@ public class UndecomposedAction extends Flaw {
             }
         }
 
-        System.out.println(st.addableGroundActions);
-
         return resolvers;
     }
 }

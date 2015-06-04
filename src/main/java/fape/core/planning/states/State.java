@@ -641,7 +641,7 @@ public class State implements Reporter {
 
         apply(dec);
         if(pgr != null) {
-            System.out.println(dec.container().name()+"  "+dec.decNum());
+            // bind de decomposition variable introduced by reachability checking
             bindVariable(pgr.decompositionVariable.get(dec.container().id()), PlanningGraphReachability.decCSPValue(dec.decNum()));
         }
     }

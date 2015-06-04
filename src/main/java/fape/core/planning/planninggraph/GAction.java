@@ -112,7 +112,7 @@ public class GAction implements PGNode {
             statements.addAll(abs.jDecompositions().get(decID).jStatements());
         }
 
-        for(AbstractStatement as : abs.jTemporalStatements()) {
+        for(AbstractStatement as : statements) {
             if(as instanceof AbstractEqualityConstraint) {
                 AbstractEqualityConstraint ec = (AbstractEqualityConstraint) as;
                 GroundProblem.Invariant inv = invariantOf(ec.sv(), gPb);
@@ -133,12 +133,8 @@ public class GAction implements PGNode {
                 AbstractVarInequalityConstraint ec = (AbstractVarInequalityConstraint) as;
                 if(valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
                     throw new NotValidGroundAction("Action not valid4");
-            }
-        }
-
-        for(AbstractLogStatement s : abs.jLogStatements()) {
-            if(s instanceof AbstractTransition) {
-                AbstractTransition t = (AbstractTransition) s;
+            } else if(as instanceof AbstractTransition) {
+                AbstractTransition t = (AbstractTransition) as;
 
                 pre.add(fluent(t.sv(), t.from(), true, vars, pb));
                 pre.add(fluent(t.sv(), t.from(), false, vars, pb));
@@ -146,11 +142,11 @@ public class GAction implements PGNode {
                     add.add(fluent(t.sv(), t.to(), true, vars, pb));
                     add.add(fluent(t.sv(), t.to(), false, vars, pb));
                 }
-            } else if(s instanceof AbstractPersistence) {
-                AbstractPersistence p = (AbstractPersistence) s;
+            } else if(as instanceof AbstractPersistence) {
+                AbstractPersistence p = (AbstractPersistence) as;
                 pre.add(fluent(p.sv(), p.value(), false, vars, pb));
-            } else if(s instanceof AbstractAssignment) {
-                AbstractAssignment a = (AbstractAssignment) s;
+            } else if(as instanceof AbstractAssignment) {
+                AbstractAssignment a = (AbstractAssignment) as;
                 add.add(fluent(a.sv(), a.value(), false, vars, pb));
                 add.add(fluent(a.sv(), a.value(), true, vars, pb));
             }
