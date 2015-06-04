@@ -186,6 +186,9 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
     ) ++
       (for(tp <- virtualTPs.keys) yield (tp, RIGID))
 
+  /** Returns the number of timep oints, exclding virtual time points */
+  final def numRealTimePoints = id.size
+
 
   final def getEndTimePoint: Option[TPRef] = end
 
