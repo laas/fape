@@ -10,7 +10,8 @@ import scala.collection.JavaConversions._
 
 class Decomposition(
     val context:Context,
-    val container:Action)
+    val container:Action,
+    val decNum: Int)
   extends Chronicle
 {
 
@@ -33,7 +34,8 @@ object Decomposition {
   def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition) : Decomposition = {
     val context = dec.context.buildContext(pb, Some(parent.context))
 
-    val decomposition = new Decomposition(context, parent)
+    val decNum = parent.decompositions.indexOf(dec)
+    val decomposition = new Decomposition(context, parent, decNum)
 
     decomposition.addAll(dec.statements, context, pb)
 
