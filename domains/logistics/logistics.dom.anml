@@ -1,0 +1,43 @@
+ 
+type object;
+type physobj < object;
+type place < object;
+type city < object;
+type location < place;
+type airport < place;
+type package < physobj;
+type vehicle < physobj;
+type truck < vehicle;
+type airplane < vehicle;
+
+constant city incity(place p);
+function object at(physobj obj);
+
+action load_truck(package pkg, truck trk, place loc) {
+  [all] at(trk) == loc;
+  [all] at(pkg) == loc :-> trk;
+};
+
+action load_airplane(package pkg, airplane plane, airport loc) {
+  [all] at(plane) == loc;
+  [all] at(pkg) == loc :-> plane;
+};
+
+action unload_truck(package pkg, truck trk, place loc) {
+  [all] at(trk) == loc;
+  [all] at(pkg) == trk :-> loc;
+};
+
+action unload_plane(package pkg, airplane plane, airport loc) {
+  [all] at(plane) == loc;
+  [all] at(pkg) == plane :-> loc;
+};
+
+action fly(airplane plane, airport loc1, airport loc2) {
+  [all] at(plane) == loc1 :-> loc2;
+};
+
+action drive(truck trk, place p1, place p2) {
+  incity(p1) == incity(p2);
+  [all] at(trk) == p1 :-> p2;
+};
