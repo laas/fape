@@ -95,7 +95,6 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
         if(relaxedPlan == null)
             return 9999999;
-
         return relaxedPlan.size();
     }
 

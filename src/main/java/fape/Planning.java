@@ -293,7 +293,7 @@ public class Planning {
                                     + time + ", "
                                     + planningTime + ", "
                                     + anmlFile + ", "
-                                    + planner.OpenedStates + ", "
+                                    + planner.expandedStates + ", "
                                     + planner.GeneratedStates + ", "
                                     + planner.numFastForwarded + ", "
                                     + (failure ? "-" : sol.depth) + ", "
