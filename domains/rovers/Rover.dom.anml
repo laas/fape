@@ -27,7 +27,7 @@ type Store with {
 };
 
 type Lander with {
-    variable Waypoint at_lander;
+    constant Waypoint at_lander;
     variable boolean channel_free;
 };
 
@@ -111,11 +111,11 @@ action take_image(Rover r, Waypoint p, Objective o, Camera i, Mode m) {
 action communicate_soil_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint y) {
   duration := 5;
     visible(x, y) == true;
+    l.at_lander == y;
     [all] {
         l.channel_free() == true :-> true;
         r.available() == true :-> true;
         r.at == x;
-        l.at_lander == y;
         r.have_soil_analysis(p) == true;
         communicated_soil_data(p) := true;
     };
@@ -124,11 +124,11 @@ action communicate_soil_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint
 action communicate_image_data(Rover r, Lander l, Objective o, Mode m, Waypoint x, Waypoint y) {
   duration := 5;
     visible(x, y) == true;
+    l.at_lander == y;
     [all] {
         l.channel_free() == true :-> true;
         r.available() == true :-> true;
         r.at == x;
-        l.at_lander == y;
         r.have_image(o, m) == true;
         communicated_image_data(o, m) := true;
     };
@@ -137,11 +137,11 @@ action communicate_image_data(Rover r, Lander l, Objective o, Mode m, Waypoint x
 action communicate_rock_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint y) {
   duration := 5;
     visible(x, y) == true;
+    l.at_lander == y;
     [all] {
         l.channel_free() == true :-> true;
         r.available() == true :-> true;
         r.at == x;
-        l.at_lander == y;
         r.have_rock_analysis(p) == true;
         communicated_rock_data(p) := true;
     };
