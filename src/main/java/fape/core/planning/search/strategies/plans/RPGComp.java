@@ -68,7 +68,11 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
     public int numAdditionalSteps(State st) {
         if(gpb == null || gpb.liftedPb != st.pb) {
-            gpb = new GroundProblem(st.pb);
+            if(planner.reachability != null) {
+                assert planner.reachability.base.liftedPb == st.pb;
+                gpb = planner.reachability.base;
+            } else
+                gpb = new GroundProblem(st.pb);
         }
 
         List<OpenGoal> openGoals = new LinkedList<>();

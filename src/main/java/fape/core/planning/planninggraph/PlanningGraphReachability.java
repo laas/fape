@@ -20,7 +20,7 @@ public class PlanningGraphReachability {
     public Map<String, LVarRef[]> varsOfDecomposition = new HashMap<>();
     final Set<GAction> unfilteredActions;
     final Set<GAction> filteredActions;
-    final GroundProblem base;
+    public final GroundProblem base;
     /** Maps ground actions from their ID */
     public final HashMap<Integer, GAction> gactions = new HashMap<>();
     public final HashMap<ActRef, VarRef> groundedActVariable = new HashMap<>();
