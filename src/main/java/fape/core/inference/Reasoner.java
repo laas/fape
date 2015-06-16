@@ -26,6 +26,10 @@ public class Reasoner {
     // current number of clauses
     private int numClauses = 0;
 
+    // if true, it is forbidden to add clauses or variables to this Reasoner.
+    // this is used to share clauses between clones of a same reasoner.
+    private boolean locked = false;
+
     public Reasoner(int maxVars, int maxClauses) {
         clauseLeftVar = new int[maxClauses];
         clausePending = new int[maxClauses];
@@ -33,18 +37,30 @@ public class Reasoner {
         varsAppearance = new ArrayList[maxVars];
     }
 
-    public Reasoner(Reasoner toCopy) {
+    public Reasoner(Reasoner toCopy, boolean lock) {
+        this.locked = lock;
         this.numClauses = toCopy.numClauses;
         this.numVars = toCopy.numVars;
-        clauseLeftVar = Arrays.copyOfRange(toCopy.clauseLeftVar, 0, numClauses);
         clausePending = Arrays.copyOfRange(toCopy.clausePending, 0, numClauses);
         varsStatus = Arrays.copyOfRange(toCopy.varsStatus, 0, numVars);
-        varsAppearance = new ArrayList[numVars];
-        for(int i=0 ; i<numVars ; i++)
-            varsAppearance[i] = new ArrayList<>(toCopy.varsAppearance[i]);
+
+        if(locked && toCopy.locked) {
+            clauseLeftVar = toCopy.clauseLeftVar;
+            varsAppearance = toCopy.varsAppearance;
+        } else {
+            clauseLeftVar = Arrays.copyOfRange(toCopy.clauseLeftVar, 0, numClauses);
+            varsAppearance = new ArrayList[numVars];
+            for (int i = 0; i < numVars; i++)
+                varsAppearance[i] = new ArrayList<>(toCopy.varsAppearance[i]);
+        }
+    }
+
+    public void lock() {
+        this.locked = true;
     }
 
     void addVar(int var) {
+        assert !locked;
         if(var >= varsStatus.length) {
             varsStatus = Arrays.copyOf(varsStatus, varsStatus.length*2);
             varsAppearance = Arrays.copyOf(varsAppearance, varsAppearance.length*2);
@@ -58,6 +74,7 @@ public class Reasoner {
     }
 
     void addHornClause(int left, int... right) {
+        assert !locked;
         if(left >= numVars)
             addVar(left);
 

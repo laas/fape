@@ -124,7 +124,7 @@ public class PlanningGraphReachability {
     }
 
     public Set<GAction> getAllActionsThroughReasoner(State st, Collection<GAction> acceptable) {
-        HReasoner<Term> r = new HReasoner<>(baseReasoner);
+        HReasoner<Term> r = new HReasoner<>(baseReasoner, true);
         st.reasoner = r;
         for(Fluent f : base.allFluents(st)) {
             r.set(f);

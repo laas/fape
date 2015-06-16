@@ -21,7 +21,6 @@ public class FeasibilityReasoner {
     public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
     public Map<String, LVarRef[]> varsOfDecomposition = new HashMap<>();
     private Set<GAction> allActions;
-//    final Set<GAction> filteredActions;
 
     /** Maps ground actions from their ID */
     public final HashMap<Integer, GAction> gactions = new HashMap<>();
@@ -41,10 +40,9 @@ public class FeasibilityReasoner {
         for(GAction ga : allActions) {
             ga.addClauses(baseReasoner);
         }
-        for(Term t : baseReasoner.trueFacts())
-            if(t instanceof Predicate && ((Predicate) t).name.equals("derivable"))
-            System.out.println("  "+t);
-        System.out.println(baseReasoner.trueFacts());
+
+        // all clauses have been added, lock the reasoner for a better sharing of data structures (clauses)
+        baseReasoner.lock();
 
         for(GAction ga : allActions) {
             initialState.csp.bindings().addPossibleValue(ga.id);
@@ -77,7 +75,6 @@ public class FeasibilityReasoner {
         }
 
         // create values for the decomposition variables
-        List<String> decompositionVariablesDomain = new LinkedList<>();
         for(int i=0 ; i<maxNumDecompositions ; i++) {
             initialState.csp.bindings().addPossibleValue(decCSPValue(i));
         }
@@ -125,9 +122,11 @@ public class FeasibilityReasoner {
         if(st.reasoner != null)
             return st.reasoner;
 
-        HReasoner<Term> r = new HReasoner<>(baseReasoner);
+        HReasoner<Term> r = new HReasoner<>(baseReasoner, true);
         for(Fluent f : GroundProblem.allFluents(st)) {
-            r.set(f);
+            // if the fluent is not already recorded, it does not appear in any clause and we can safely ignore it
+            if(r.hasTerm(f))
+                r.set(f);
         }
 
         for(GAction acc : acceptable)

@@ -12,6 +12,7 @@ public class HReasoner<T> {
 
     private int numVars = 0;
 
+    private boolean locked = false;
 
     public HReasoner() {
         vars = (T[]) new Object[baseNumVars];
@@ -19,19 +20,36 @@ public class HReasoner<T> {
         res = new Reasoner(baseNumVars, baseNumClause);
     }
 
-    public HReasoner(HReasoner<T> toCopy) {
+    public HReasoner(HReasoner<T> toCopy, boolean lock) {
+        locked = lock;
         this.numVars = toCopy.numVars;
-        this.res = new Reasoner(toCopy.res);
-        this.varsIds = new HashMap<>(toCopy.varsIds);
-        this.vars = Arrays.copyOfRange(toCopy.vars, 0, numVars);
+        this.res = new Reasoner(toCopy.res, lock);
 
+        if(locked && toCopy.locked) {
+            this.varsIds = toCopy.varsIds;
+            this.vars = toCopy.vars;
+        } else {
+            this.varsIds = new HashMap<>(toCopy.varsIds);
+            this.vars = Arrays.copyOfRange(toCopy.vars, 0, numVars);
+        }
+    }
+
+    public void lock() {
+        this.locked = true;
+        res.lock();
+    }
+
+    public boolean hasTerm(T term) {
+        return varsIds.containsKey(term);
     }
 
     public void addHornClause(T left, Collection<T> right) {
+        assert !locked;
         addHornClause(left, (T[]) right.toArray());
     }
 
     public final void addHornClause(final T left, final T... right) {
+        assert !locked;
         if(!varsIds.containsKey(left))
             addVar(left);
         int[] rightIds = new int[right.length];
@@ -40,15 +58,6 @@ public class HReasoner<T> {
                 addVar(right[i]);
             rightIds[i] = id(right[i]);
         }
-
-//        System.out.print(left+" :- ");
-//        for(T v : right)
-//            System.out.print(v+", ");
-//        System.out.println();
-//        System.out.print(id(left)+" :- ");
-//        for(T v : right)
-//            System.out.print(id(v)+", ");
-//        System.out.println();
 
         res.addHornClause(id(left), rightIds);
     }
@@ -79,6 +88,7 @@ public class HReasoner<T> {
     }
 
     private void addVar(T o) {
+        assert !locked;
         assert !varsIds.containsKey(o) : "Var already registered";
         if(vars.length <= numVars) {
             vars = Arrays.copyOf(vars, vars.length*2);
