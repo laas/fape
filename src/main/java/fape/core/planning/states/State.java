@@ -17,7 +17,7 @@ import fape.core.planning.Plan;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.PlanningGraphReachability;
-import fape.core.planning.planninggraph.TempFluent;
+import fape.core.planning.planninggraph.TempFluents;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
@@ -116,7 +116,7 @@ public class State implements Reporter {
     /**
      * Contains all ground versions of fluents in the state with their associated time points
      */
-    public List<TempFluent> fluents = null;
+    public List<TempFluents> fluents = null;
 
     public HReasoner<Term> reasoner = null;
 

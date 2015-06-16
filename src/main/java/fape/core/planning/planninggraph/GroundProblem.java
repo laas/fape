@@ -69,21 +69,16 @@ public class GroundProblem {
 
     public static int count = 0;
 
-    private static List<TempFluent> tempsFluents(State st) {
+    private static List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
                 for(ChainComponent cc : db.chain) {
                     if (cc.change) {
                         // those values can be used for persistences but not for transitions.
-                        for(Fluent f : DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false))
-                            st.fluents.add(new TempFluent(f, cc.getSupportTimePoint()));
+                        st.fluents.add(new TempFluents(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false), cc.getSupportTimePoint()));
                     }
                 }
-                // the last value can be used for transitions as well
-//                if(!db.hasSinglePersistence())
-//                    for(Fluent f : DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true))
-//                        st.fluents.add(new TempFluent(f, db.getLastTimePoints()));
             }
         }
         return st.fluents;
@@ -91,17 +86,17 @@ public class GroundProblem {
 
     private Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
         Set<Fluent> fluents = new HashSet<>();
-        for(TempFluent tf : tempsFluents(st)) {
+        for(TempFluents tf : tempsFluents(st)) {
             if(st.canAllBeBefore(tf.timepoints, tps))
-                fluents.add(tf.fluent);
+                fluents.addAll(tf.fluents);
         }
         return fluents;
     }
 
     public static Set<Fluent> allFluents(State st) {
         Set<Fluent> fluents = new HashSet<>();
-        for(TempFluent tf : tempsFluents(st))
-            fluents.add(tf.fluent);
+        for(TempFluents tf : tempsFluents(st))
+            fluents.addAll(tf.fluents);
         return fluents;
     }
 
