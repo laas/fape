@@ -10,11 +10,13 @@ public class Fluent implements PGNode {
     final public Function f;
     final public List<VarRef> params;
     final public VarRef value;
+    final public boolean partOfTransition;
 
     int hashVal;
 
 
     public Fluent(Function f, List<VarRef> params, VarRef value, boolean partOfTransition) {
+        this.partOfTransition = partOfTransition;
         this.f = f;
         this.params = new LinkedList<VarRef>(params);
         this.value = value;
@@ -38,6 +40,9 @@ public class Fluent implements PGNode {
         if(!(o instanceof Fluent))
             return false;
         Fluent of = (Fluent) o;
+//        if(partOfTransition != of.partOfTransition)
+//            return false;
+
         if(!f.equals(of.f))
             return false;
 

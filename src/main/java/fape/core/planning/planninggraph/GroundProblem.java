@@ -67,55 +67,59 @@ public class GroundProblem {
         return total;
     }
 
-    Collection<Fluent> dbToFluents(Timeline db, State st) {
-        HashSet<Fluent> fluents = new HashSet<>();
-        for(ChainComponent cc : db.chain) {
-            if (cc.change) {
-                // those values can be used for persistences but not for transitions.
-                fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false));
+    public static int count = 0;
+
+    private List<TempFluent> tempsFluents(State st) {
+        if(st.fluents == null) {
+            st.fluents = new LinkedList<>();
+            for(Timeline db : st.getTimelines()) {
+                for(ChainComponent cc : db.chain) {
+                    if (cc.change) {
+                        // those values can be used for persistences but not for transitions.
+                        for(Fluent f : DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false))
+                            st.fluents.add(new TempFluent(f, cc.getSupportTimePoint()));
+                    }
+                }
+                // the last value can be used for transitions as well
+//                if(!db.hasSinglePersistence())
+//                    for(Fluent f : DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true))
+//                        st.fluents.add(new TempFluent(f, db.getLastTimePoints()));
             }
         }
-        // the last value can be used for transitions as well
-        if(!db.hasSinglePersistence())
-            fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true));
+        return st.fluents;
+    }
+
+    private Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
+        Set<Fluent> fluents = new HashSet<>();
+        for(TempFluent tf : tempsFluents(st)) {
+            if(st.canAllBeBefore(tf.timepoints, tps))
+                fluents.add(tf.fluent);
+        }
         return fluents;
     }
 
+    private Set<Fluent> allFluents(State st) {
+        Set<Fluent> fluents = new HashSet<>();
+        for(TempFluent tf : tempsFluents(st))
+            fluents.add(tf.fluent);
+        return fluents;
+    }
+
+
     public GroundProblem(GroundProblem pb, State st) {
+        count++;
         this.liftedPb = pb.liftedPb;
         this.gActions = new LinkedList<>(pb.gActions);
 
-        for(Timeline db : st.tdb.getTimelines()) {
-            initState.fluents.addAll(dbToFluents(db, st));
-        }
+        initState.fluents.addAll(allFluents(st));
     }
 
     public GroundProblem(GroundProblem pb, State st, Timeline og) {
+        count++;
         this.liftedPb = pb.liftedPb;
         this.gActions = pb.gActions;
 
-        for(Timeline db : st.tdb.getTimelines()) {
-            if(db.hasSinglePersistence())
-                continue;
-            for(ChainComponent cc : db.chain) {
-                if(cc.change && canIndirectlySupport(st, cc, og)) {
-                    initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false));
-                }
-            }
-            if(st.canAllBeBefore(db.getSupportTimePoint(), og.getFirstTimePoints()))
-                initState.fluents.addAll(DisjunctiveFluent.fluentsOf(db.stateVariable, db.getGlobalSupportValue(), st, true));
-        }
-
-    }
-
-    public boolean canIndirectlySupport(State st, ChainComponent supporter, Timeline consumer) {
-        assert supporter.change;
-
-        for(TPRef consumeTP : consumer.getFirstTimePoints()) {
-            if(!st.canBeBefore(supporter.getSupportTimePoint(), consumeTP))
-                return false;
-        }
-        return true;
+        initState.fluents.addAll(fluentsBefore(st, og.getFirstTimePoints()));
     }
 
     public GroundProblem(AnmlProblem liftedPb) {

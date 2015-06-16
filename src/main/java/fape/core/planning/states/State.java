@@ -14,6 +14,7 @@ import fape.core.execution.model.AtomicAction;
 import fape.core.planning.Plan;
 import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.PlanningGraphReachability;
+import fape.core.planning.planninggraph.TempFluent;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
@@ -108,6 +109,11 @@ public class State implements Reporter {
      * This field is filled by PlanningGraphReachibility when needed.
      */
     public Set<GAction> addableGroundActions = null;
+
+    /**
+     * Contains all ground versions of fluents in the state with their associated time points
+     */
+    public List<TempFluent> fluents = null;
 
 
     class PotentialThreat {

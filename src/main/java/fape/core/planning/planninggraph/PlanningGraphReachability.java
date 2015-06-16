@@ -143,15 +143,16 @@ public class PlanningGraphReachability {
 
         Set<GAction> derivableOnly = derivableFromInitialTaskNetwork(st, acts);
 
-        for(Timeline cons : st.consumers) {
-            GroundProblem subpb = new GroundProblem(pb, st, cons);
-            RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(subpb, derivableOnly);
-            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st));
-            if(depth > 1000) {
-                // this consumer cannot be derived (none of its ground versions appear in the planning graph)
-                return false;
-            }
-        }
+//        for(Timeline cons : st.consumers) {
+//            System.out.print(" "+st.consumers.size());
+//            GroundProblem subpb = new GroundProblem(pb, st, cons);
+//            RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(subpb, derivableOnly);
+//            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st));
+//            if(depth > 1000) {
+//                // this consumer cannot be derived (none of its ground versions appear in the planning graph)
+//                return false;
+//            }
+//        }
         Set<AbstractAction> addableActions = new HashSet<>();
         for(GAction ga : derivableOnly)
             addableActions.add(ga.abs);
@@ -344,6 +345,17 @@ public class PlanningGraphReachability {
     public Set<GAction> derivableFromInitialTaskNetwork(State st, Set<GAction> allowed) {
         Set<GAction> possible = new HashSet<>();
 
+        boolean hasMotivatedActions = false;
+        for(AbstractAction abs : st.pb.abstractActions())
+            if(abs.motivated())
+                hasMotivatedActions = true;
+
+        // if the domain has no motivated actions, there is no restrictions on allowed actions
+        if(!hasMotivatedActions) {
+            possible.addAll(allowed);
+            return possible;
+        }
+
         // all non motivated actions are possible
         for(AbstractAction abs : st.pb.abstractActions())
             if(!abs.motivated())
@@ -422,7 +434,6 @@ public class PlanningGraphReachability {
                 }
             }
         }
-
         return possible;
     }
 

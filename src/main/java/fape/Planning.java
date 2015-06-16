@@ -3,6 +3,8 @@ package fape;
 import com.martiansoftware.jsap.*;
 import fape.core.planning.Plan;
 import fape.core.planning.planner.*;
+import fape.core.planning.planninggraph.GroundProblem;
+import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Utils;
@@ -307,5 +309,7 @@ public class Planning {
         }
         if (!config.getString("output").equals("stdout"))
             writer.close();
+        System.out.println("Num RPG: "+ RelaxedPlanningGraph.count);
+        System.out.println("Num RPG: "+ GroundProblem.count);
     }
 }
