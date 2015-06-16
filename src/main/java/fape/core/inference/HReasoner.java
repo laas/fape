@@ -1,32 +1,29 @@
 package fape.core.inference;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-public class HReasoner {
+public class HReasoner<T> {
     private static final int baseNumVars = 100;
     private static final int baseNumClause = 1000;
 
-    private final HashMap<Object,Integer> varsIds;
-    private Object[] vars;
+    private final HashMap<T,Integer> varsIds;
+    private T[] vars;
     private final Reasoner res;
 
     private int numVar = 0;
 
 
     public HReasoner() {
-        vars = new Object[baseNumVars];
+        vars = (T[]) new Object[baseNumVars];
         varsIds = new HashMap<>();
         res = new Reasoner(baseNumVars, baseNumClause);
     }
 
-    public void addHornClause(Object left, Collection<Object> right) {
-        addHornClause(left, right.toArray());
+    public void addHornClause(T left, Collection<T> right) {
+        addHornClause(left, (T[]) right.toArray());
     }
 
-    public void addHornClause(Object left, Object... right) {
+    public final void addHornClause(final T left, final T... right) {
         if(!varsIds.containsKey(left))
             addVar(left);
         int[] rightIds = new int[right.length];
@@ -36,17 +33,26 @@ public class HReasoner {
             rightIds[i] = id(right[i]);
         }
 
+//        System.out.print(left+" :- ");
+//        for(T v : right)
+//            System.out.print(v+", ");
+//        System.out.println();
+//        System.out.print(id(left)+" :- ");
+//        for(T v : right)
+//            System.out.print(id(v)+", ");
+//        System.out.println();
+
         res.addHornClause(id(left), rightIds);
     }
 
-    public void set(Object o) {
+    public void set(T o) {
         if(!varsIds.containsKey(o))
             addVar(o);
         res.set(id(o));
     }
 
-    public Collection<Object> trueFacts() {
-        List<Object> facts = new ArrayList<>();
+    public Collection<T> trueFacts() {
+        List<T> facts = new ArrayList<>();
         for(int var=0 ; var<numVar ; var++) {
             if(res.varsStatus[var]) {
                 facts.add(vars[var]);
@@ -55,12 +61,15 @@ public class HReasoner {
         return facts;
     }
 
-    private int id(Object o) {
+    private int id(T o) {
         return varsIds.get(o);
     }
 
-    private void addVar(Object o) {
+    private void addVar(T o) {
         assert !varsIds.containsKey(o) : "Var already registered";
+        if(vars.length <= numVar) {
+            vars = Arrays.copyOf(vars, vars.length*2);
+        }
         int id = numVar++;
         vars[id] = o;
         varsIds.put(o, id);
@@ -69,7 +78,7 @@ public class HReasoner {
 
 
     public static void main(String[] args) {
-        HReasoner res = new HReasoner();
+        HReasoner<String> res = new HReasoner<>();
         res.addHornClause("A", "a", "b");
         res.addHornClause("c", "A");
         res.addHornClause("B", "c", "b");

@@ -1,11 +1,13 @@
 package fape.core.inference;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Reasoner {
 
     private static final int numAppearence = 3;
 
+    // variable at the left side of the clause
     private int[] clauseLeftVar;
 
     // number of terms that are not proven yet
@@ -14,9 +16,14 @@ public class Reasoner {
 
     // current status of a var, set to false until it is proven to be true
     protected boolean[] varsStatus;
+
+    // clauses in which this variable appears
     private ArrayList<Integer>[] varsAppearance;
 
+    // current number of vars
     private int numVars = 0;
+
+    // current number of clauses
     private int numClauses = 0;
 
     public Reasoner(int maxVars, int maxClauses) {
@@ -27,6 +34,10 @@ public class Reasoner {
     }
 
     void addVar(int var) {
+        if(var >= varsStatus.length) {
+            varsStatus = Arrays.copyOf(varsStatus, varsStatus.length*2);
+            varsAppearance = Arrays.copyOf(varsAppearance, varsAppearance.length*2);
+        }
         assert var < varsStatus.length;
         while(numVars <= var) {
             varsStatus[numVars] = false;
@@ -43,7 +54,11 @@ public class Reasoner {
             set(left);
         } else {
             int clauseNum = numClauses++;
-            for (int v : right)
+            if(numClauses >= clauseLeftVar.length) {
+                clauseLeftVar = Arrays.copyOf(clauseLeftVar, clauseLeftVar.length*2);
+                clausePending = Arrays.copyOf(clausePending, clausePending.length*2);
+            }
+                for (int v : right)
                 if (v >= numVars)
                     addVar(v);
 

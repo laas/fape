@@ -1,6 +1,6 @@
 package fape.core.inference;
 
-public class Predicate {
+public class Predicate implements Term {
     public final String name;
     public final Object var;
 
