@@ -69,7 +69,7 @@ public class GroundProblem {
 
     public static int count = 0;
 
-    private List<TempFluent> tempsFluents(State st) {
+    private static List<TempFluent> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
@@ -98,7 +98,7 @@ public class GroundProblem {
         return fluents;
     }
 
-    private Set<Fluent> allFluents(State st) {
+    public static Set<Fluent> allFluents(State st) {
         Set<Fluent> fluents = new HashSet<>();
         for(TempFluent tf : tempsFluents(st))
             fluents.add(tf.fluent);

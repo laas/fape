@@ -10,13 +10,21 @@ public class HReasoner<T> {
     private T[] vars;
     private final Reasoner res;
 
-    private int numVar = 0;
+    private int numVars = 0;
 
 
     public HReasoner() {
         vars = (T[]) new Object[baseNumVars];
         varsIds = new HashMap<>();
         res = new Reasoner(baseNumVars, baseNumClause);
+    }
+
+    public HReasoner(HReasoner<T> toCopy) {
+        this.numVars = toCopy.numVars;
+        this.res = new Reasoner(toCopy.res);
+        this.varsIds = new HashMap<>(toCopy.varsIds);
+        this.vars = Arrays.copyOfRange(toCopy.vars, 0, numVars);
+
     }
 
     public void addHornClause(T left, Collection<T> right) {
@@ -53,12 +61,17 @@ public class HReasoner<T> {
 
     public Collection<T> trueFacts() {
         List<T> facts = new ArrayList<>();
-        for(int var=0 ; var<numVar ; var++) {
+        for(int var=0 ; var< numVars; var++) {
             if(res.varsStatus[var]) {
                 facts.add(vars[var]);
             }
         }
         return facts;
+    }
+
+    public boolean isTrue(T term) {
+        assert varsIds.containsKey(term) : "Term "+term+" is not a recorded variable.";
+        return res.varsStatus[id(term)];
     }
 
     private int id(T o) {
@@ -67,10 +80,10 @@ public class HReasoner<T> {
 
     private void addVar(T o) {
         assert !varsIds.containsKey(o) : "Var already registered";
-        if(vars.length <= numVar) {
+        if(vars.length <= numVars) {
             vars = Arrays.copyOf(vars, vars.length*2);
         }
-        int id = numVar++;
+        int id = numVars++;
         vars[id] = o;
         varsIds.put(o, id);
         res.addVar(id);

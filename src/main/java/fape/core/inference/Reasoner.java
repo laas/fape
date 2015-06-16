@@ -33,6 +33,17 @@ public class Reasoner {
         varsAppearance = new ArrayList[maxVars];
     }
 
+    public Reasoner(Reasoner toCopy) {
+        this.numClauses = toCopy.numClauses;
+        this.numVars = toCopy.numVars;
+        clauseLeftVar = Arrays.copyOfRange(toCopy.clauseLeftVar, 0, numClauses);
+        clausePending = Arrays.copyOfRange(toCopy.clausePending, 0, numClauses);
+        varsStatus = Arrays.copyOfRange(toCopy.varsStatus, 0, numVars);
+        varsAppearance = new ArrayList[numVars];
+        for(int i=0 ; i<numVars ; i++)
+            varsAppearance[i] = new ArrayList<>(toCopy.varsAppearance[i]);
+    }
+
     void addVar(int var) {
         if(var >= varsStatus.length) {
             varsStatus = Arrays.copyOf(varsStatus, varsStatus.length*2);

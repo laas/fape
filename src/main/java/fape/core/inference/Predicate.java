@@ -3,10 +3,12 @@ package fape.core.inference;
 public class Predicate implements Term {
     public final String name;
     public final Object var;
+    private final int hash;
 
     public Predicate(String name, Object var) {
         this.name = name;
         this.var = var;
+        hash = name.hashCode() + 42*var.hashCode();
     }
 
     @Override
@@ -24,6 +26,6 @@ public class Predicate implements Term {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + 42*var.hashCode();
+        return hash;
     }
 }

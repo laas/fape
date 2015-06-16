@@ -1,12 +1,13 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.inference.Term;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.LinkedList;
 import java.util.List;
 
-public class Fluent implements PGNode {
+public class Fluent implements PGNode , Term {
     final public Function f;
     final public List<VarRef> params;
     final public VarRef value;

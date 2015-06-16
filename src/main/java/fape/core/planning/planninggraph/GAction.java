@@ -1,5 +1,8 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.inference.HReasoner;
+import fape.core.inference.Predicate;
+import fape.core.inference.Term;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import planstack.anml.model.AbstractParameterizedStateVariable;
@@ -25,6 +28,7 @@ public class GAction implements PGNode {
     public List<Fluent> pre = new LinkedList<>();
     public List<Fluent> add = new LinkedList<>();
     public final AbstractAction abs;
+    public final GTaskCond task;
 
     public final LVarRef[] baseVars;
     protected final InstanceRef[] baseValues;
@@ -157,6 +161,7 @@ public class GAction implements PGNode {
 
         this.id = nextID++;
         this.subTasks = initSubTasks(gPb.liftedPb);
+        this.task = initTask(gPb.liftedPb);
     }
 
     @Override
@@ -298,6 +303,14 @@ public class GAction implements PGNode {
         return actions;
     }
 
+    private GTaskCond initTask(AnmlProblem pb) {
+        List<InstanceRef> args = new LinkedList<>();
+        for(LVarRef v : abs.args()) {
+            args.add(valueOf(v, pb));
+        }
+        return new GTaskCond(abs, args);
+    }
+
     public ArrayList<GTaskCond> getActionRefs() {
         return subTasks;
     }
@@ -324,5 +337,44 @@ public class GAction implements PGNode {
             subTasks.add(ret.get(i));
 
         return subTasks;
+    }
+
+    public void addClauses(HReasoner<Term> r) {
+        Predicate sup = new Predicate("supported", this);
+        Term[] preTerms = new Term[pre.size()+1];
+        preTerms[0] = new Predicate("acceptable", this);
+        for(int i=0 ; i<pre.size() ; i++)
+            preTerms[i+1] = (Term) pre.get(i);
+        // supported(a) :- acceptable(a), precond1, precond2, ...
+        r.addHornClause(sup, preTerms);
+        for(Fluent f : add)
+            // effect_i :- supported(a)
+            r.addHornClause(f, sup);
+
+        // feasible(task_a) :- supported(a)
+        r.addHornClause(new Predicate("feasible", task), sup);
+
+        // decomposable(a) :- supported(a), feasible(subtask1), feasible(subtask2), ...
+        Predicate decomposable = new Predicate("decomposable", this);
+        Term[] subtasks = new Term[getActionRefs().size()+1];
+        subtasks[0] = sup;
+        for(int i=1 ; i<subtasks.length ; i++) {
+            subtasks[i] = new Predicate("feasible", getActionRefs().get(i-1));
+        }
+        r.addHornClause(decomposable, subtasks);
+
+        if(!abs.mustBeMotivated())
+            // not motivated: derivable(a) :- decomposable(a)
+            r.addHornClause(new Predicate("derivable", this), decomposable);
+
+        // derivable_task(sub_task_i) :- derivable(a)
+        for(GTaskCond subTask : subTasks) {
+            r.addHornClause(new Predicate("derivable_task", subTask), new Predicate("derivable", this));
+        }
+        // derivable(a) :- derivable_task(task(a))
+        r.addHornClause(new Predicate("derivable", this), new Predicate("derivable_task", task), decomposable);
+
+        r.addHornClause(new Predicate("possible_in_plan", this), new Predicate("derivable", this));
+        r.addHornClause(new Predicate("possible_in_plan", this), new Predicate("in_plan", this), new Predicate("decomposable", this));
     }
 }

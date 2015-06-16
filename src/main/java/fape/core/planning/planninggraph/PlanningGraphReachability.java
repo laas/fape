@@ -1,5 +1,8 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.inference.HReasoner;
+import fape.core.inference.Predicate;
+import fape.core.inference.Term;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -29,11 +32,22 @@ public class PlanningGraphReachability {
     /** Associate to a ground task condition all ground action (through their IDs) that can be derived from it */
     public final HashMap<GTaskCond, Set<Integer>> taskDerivabilities = new HashMap<>();
 
+    final HReasoner<Term> baseReasoner;
+
     public PlanningGraphReachability(APlanner planner, State initialState) {
         this.planner = planner;
         // this Problem contains all the ground actions
         base = new GroundProblem(initialState.pb);
         unfilteredActions = new HashSet<>(base.gActions);
+
+        baseReasoner = new HReasoner<>();
+        for(GAction ga : unfilteredActions) {
+            ga.addClauses(baseReasoner);
+        }
+        for(Term t : baseReasoner.trueFacts())
+            if(t instanceof Predicate && ((Predicate) t).name.equals("derivable"))
+            System.out.println("  "+t);
+        System.out.println(baseReasoner.trueFacts());
 
         for(GAction ga : unfilteredActions) {
             initialState.csp.bindings().addPossibleValue(ga.id);
@@ -104,6 +118,78 @@ public class PlanningGraphReachability {
         return "decnum:"+decNumber;
     }
 
+    public Set<GAction> getAllActions(State st) {
+        return OLDgetAllActions(st);
+//        return getAllActionsThroughReasoner(st, base.allActions());
+    }
+
+    public Set<GAction> getAllActionsThroughReasoner(State st, Collection<GAction> acceptable) {
+        HReasoner<Term> r = new HReasoner<>(baseReasoner);
+        st.reasoner = r;
+        for(Fluent f : base.allFluents(st)) {
+            r.set(f);
+        }
+
+        for(GAction acc : acceptable)
+            r.set(new Predicate("acceptable", acc));
+
+        for(ActionCondition ac : st.getOpenTaskConditions()) {
+            LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
+            for(VarRef v : ac.args()) {
+                varDomains.add(new LinkedList<InstanceRef>());
+                for(String value : st.domainOf(v)) {
+                    varDomains.getLast().add(st.pb.instance(value));
+                }
+            }
+            List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
+            for(List<InstanceRef> instantiation : instantiations) {
+                GTaskCond task = new GTaskCond(ac.abs(), instantiation);
+//                System.out.println(task);
+                r.set(new Predicate("derivable_task", task));
+            }
+        }
+
+        for(Action a : st.getAllActions()) {
+            for(GAction ga : groundedVersions(a, st)) {
+                r.set(new Predicate("in_plan", ga));
+            }
+        }
+
+        for(Action a : st.getOpenLeaves()) {
+            for(Integer gActID : st.csp.bindings().domainOfIntVar(groundedActVariable.get(a.id()))) {
+                GAction ga = gactions.get(gActID);
+                for(GTaskCond tc : ga.subTasks)
+                    r.set(new Predicate("derivable_task", tc));
+            }
+        }
+
+        Set<GAction> feasibles = new HashSet<>();
+
+//        GAction ga = gactions.get(2955);
+//        System.out.println(st.reasoner.isTrue(new Predicate("acceptable", ga)));
+//        System.out.println(st.reasoner.isTrue(new Predicate("supported", ga)));
+//        System.out.println(st.reasoner.isTrue(new Predicate("decomposable", ga)));
+//        System.out.println(st.reasoner.isTrue(new Predicate("derivable", ga)));
+//        System.out.println(st.reasoner.isTrue(new Predicate("possible_in_plan", ga)));
+
+
+
+        for(Term t : r.trueFacts()) {
+//            if(t instanceof Predicate && ((Predicate) t).var instanceof GAction && ((GAction) ((Predicate) t).var).id == 2763)
+//                System.out.println(t);
+            if(t instanceof Predicate && ((Predicate) t).name.equals("possible_in_plan"))
+                feasibles.add((GAction) ((Predicate) t).var);
+        }
+//        System.out.println(" ");
+        if(feasibles.size() < acceptable.size()) {
+//            System.out.println(acceptable.size()+"  -->  "+feasibles.size());
+            return getAllActionsThroughReasoner(st, feasibles);
+        }
+//        System.out.println("Final size: "+feasibles)
+
+        return feasibles;
+    }
+
     public boolean checkFeasibility(State st) {
         Set<GAction> acts = getAllActions(st);
 
@@ -130,10 +216,15 @@ public class PlanningGraphReachability {
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
             for(GAction ga : groundedVersions(a, st)) {
-                if(acts.contains(ga)) {
+//                if(acts.contains(ga)) {
+//                    feasibleAct = true;
+//                    break;
+//                }
+                if(st.reasoner.isTrue(new Predicate("possible_in_plan", ga))) {
                     feasibleAct = true;
                     break;
                 }
+
             }
             if(!feasibleAct) {
                 // there is no feasible ground versions of this action
@@ -201,7 +292,7 @@ public class PlanningGraphReachability {
         return ret;
     }
 
-    public Set<GAction> getAllActions(State st) {
+    public Set<GAction> OLDgetAllActions(State st) {
         if(st.addableGroundActions != null)
             return st.addableGroundActions;
 
@@ -249,8 +340,24 @@ public class PlanningGraphReachability {
                 strictest = feasibles;
             }
         }
+
+//        return getAllActionsThroughReasoner(st, base.allActions());
+
+        Set<GAction> reasFeasibles = getAllActionsThroughReasoner(st, base.allActions());
+        for(GAction ga : reasFeasibles) {
+            if(!feasibles.contains(ga))
+                System.out.println("    not in normal: "+ga);
+        }
+//        System.out.println(reasFeasibles);
+        for(GAction ga : feasibles) {
+            if(!reasFeasibles.contains(ga))
+                System.out.println("    not in reason: "+ga);
+        }
+//        System.out.println(reasFeasibles.size()+"  "+feasibles.size());
+
         st.addableGroundActions = feasibles;
         return feasibles;
+
     }
 
     /** This will associate with an action a variable in the CSP representing its

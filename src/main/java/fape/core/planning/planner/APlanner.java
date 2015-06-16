@@ -2,6 +2,7 @@ package fape.core.planning.planner;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
@@ -42,7 +43,7 @@ public abstract class APlanner {
         queue.add(initialState);
 
         if(options.usePlanningGraphReachability) {
-            reachability = new PlanningGraphReachability(this, initialState);
+            reachability = new FeasibilityReasoner(this, initialState);
             initialState.pgr = reachability;
         } else
             reachability = null;
@@ -58,13 +59,13 @@ public abstract class APlanner {
         queue.add(new State(pb, controllability));
 
         if(options.usePlanningGraphReachability)
-            reachability = new PlanningGraphReachability(this, queue.peek());
+            reachability = new FeasibilityReasoner(this, queue.peek());//new PlanningGraphReachability(this, queue.peek());
         else
             reachability = null;
     }
 
     public final PlanningOptions options;
-    public final PlanningGraphReachability reachability;
+    public final FeasibilityReasoner reachability;
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;

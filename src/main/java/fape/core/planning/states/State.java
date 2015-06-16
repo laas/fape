@@ -11,7 +11,10 @@
 package fape.core.planning.states;
 
 import fape.core.execution.model.AtomicAction;
+import fape.core.inference.HReasoner;
+import fape.core.inference.Term;
 import fape.core.planning.Plan;
+import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.planninggraph.TempFluent;
@@ -115,6 +118,8 @@ public class State implements Reporter {
      */
     public List<TempFluent> fluents = null;
 
+    public HReasoner<Term> reasoner = null;
+
 
     class PotentialThreat {
         private final int id1, id2;
@@ -149,7 +154,7 @@ public class State implements Reporter {
      */
     private int problemRevision;
 
-    public PlanningGraphReachability pgr = null;
+    public FeasibilityReasoner pgr = null;
 
     /**
      * this constructor is only for the initial state!! other states are
