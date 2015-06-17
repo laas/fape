@@ -3,7 +3,6 @@ package fape.core.planning.planner;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.*;

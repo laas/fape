@@ -16,7 +16,6 @@ import fape.core.inference.Term;
 import fape.core.planning.Plan;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GAction;
-import fape.core.planning.planninggraph.PlanningGraphReachability;
 import fape.core.planning.planninggraph.TempFluents;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
@@ -653,7 +652,7 @@ public class State implements Reporter {
         apply(dec);
         if(pgr != null) {
             // bind de decomposition variable introduced by reachability checking
-            bindVariable(pgr.decompositionVariable.get(dec.container().id()), PlanningGraphReachability.decCSPValue(dec.decNum()));
+            bindVariable(pgr.decompositionVariable.get(dec.container().id()), FeasibilityReasoner.decCSPValue(dec.decNum()));
         }
     }
 

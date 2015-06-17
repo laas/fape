@@ -100,7 +100,7 @@ public class GAction implements PGNode {
         }
         if(decID != -1) { // the last one is a variable representing the number of the decomposition.
             baseVars[iBase] = new LVarRef("__dec__");
-            baseValues[iBase] = new InstanceRef(PlanningGraphReachability.decCSPValue(decID));
+            baseValues[iBase] = new InstanceRef(FeasibilityReasoner.decCSPValue(decID));
         }
 
         List<AbstractStatement> statements;

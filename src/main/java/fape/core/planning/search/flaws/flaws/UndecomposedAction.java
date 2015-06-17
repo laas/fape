@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.PlanningGraphReachability;
+import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.search.flaws.resolvers.DecomposeAction;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
@@ -47,7 +47,7 @@ public class UndecomposedAction extends Flaw {
             if(planner.options.usePlanningGraphReachability) {
                 // in this case every action is associated with a variable representing its possible decompositions
                 // a decomposition is possible only if this decomposition is in the domain of the said variable
-                if(st.domainOf(planner.reachability.decompositionVariable.get(action.id())).contains(PlanningGraphReachability.decCSPValue(decompositionID))) {
+                if(st.domainOf(planner.reachability.decompositionVariable.get(action.id())).contains(FeasibilityReasoner.decCSPValue(decompositionID))) {
                     resolvers.add(new DecomposeAction(action, decompositionID));
                 }
             } else {
