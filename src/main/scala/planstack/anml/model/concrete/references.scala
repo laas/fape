@@ -1,7 +1,7 @@
 package planstack.anml.model.concrete
 
 object GlobalRef {
-  type T = Integer
+  type T = Int
 
   val NullID : T = -1
   var next = 0
@@ -22,9 +22,9 @@ class GlobalRef(val id:T) {
   def isEmpty = id == NullID
   def nonEmpty = !isEmpty
 
-  override def toString = id.toString
+  override def toString = ""+id
 
-  override val hashCode = id.hashCode
+  override val hashCode = id
 
   override def equals(o:Any) = {
     if(o.isInstanceOf[T]) {

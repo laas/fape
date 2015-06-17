@@ -152,7 +152,7 @@ case class Instance(tipe:String, name:String) extends AnmlBlock
 
 object AnmlParser extends JavaTokenParsers {
 
-  def annotation : Parser[TemporalAnnotation] = (
+  lazy val annotation : Parser[TemporalAnnotation] = (
     annotationBase<~"contains" ^^ { case TemporalAnnotation(start, end, _) => TemporalAnnotation(start, end, "contains")}
       | annotationBase
     )
@@ -161,7 +161,7 @@ object AnmlParser extends JavaTokenParsers {
     * The flag of this temporal annotation is set to "is" (it doesn't look for the "contains" keyword
     * after the annotation
     */
-  def annotationBase : Parser[TemporalAnnotation] = (
+  lazy val annotationBase : Parser[TemporalAnnotation] = (
     "["~"all"~"]" ^^
       (x => TemporalAnnotation(new RelativeTimepoint("start"), new RelativeTimepoint("end"), "is"))
       | "["~> repsep(timepoint,",") <~"]" ^^ {
@@ -169,7 +169,7 @@ object AnmlParser extends JavaTokenParsers {
       case List(tp1, tp2) => TemporalAnnotation(tp1, tp2, "is")
     })
 
-  def timepoint : Parser[RelativeTimepoint] = (
+  lazy val timepoint : Parser[RelativeTimepoint] = (
     opt(timepointRef)~("+"|"-")~decimalNumber ^^ {
       case tp~"+"~delta => RelativeTimepoint(tp, delta.toInt)
       case tp~"-"~delta => RelativeTimepoint(tp, - delta.toInt)
@@ -179,14 +179,14 @@ object AnmlParser extends JavaTokenParsers {
       | failure("illegal timepoint")
     )
 
-  def timepointRef : Parser[TimepointRef] = (
+  lazy val timepointRef : Parser[TimepointRef] = (
     kwTempAnnot~"("~word<~")" ^^ {
       case kw~"("~id => TimepointRef(kw, id) }
       | kwTempAnnot ^^
       (kw => TimepointRef(kw, ""))
     )
 
-  def statement : Parser[Statement] = (
+  lazy val statement : Parser[Statement] = (
       statementWithoutID
     | ident~":"~statementWithoutID ^^ {
         case id~":"~s => s match {
@@ -198,7 +198,7 @@ object AnmlParser extends JavaTokenParsers {
     | statementWithoutID
     )
 
-  def statementWithoutID : Parser[Statement] = (
+  lazy val statementWithoutID : Parser[Statement] = (
       expr<~";" ^^ (e => new SingleTermStatement(e, ""))
     | expr~op~expr<~";" ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
     | expr~op~expr~op~expr<~";" ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
@@ -207,7 +207,7 @@ object AnmlParser extends JavaTokenParsers {
   /** Temporal constraint between two time points. It is of the form:
     * `start(xx) < end + x`, `start = end -5`, ...
     */
-  def tempConstraint : Parser[TemporalConstraint] =
+  lazy val tempConstraint : Parser[TemporalConstraint] =
     timepointRef~("<"|"=")~timepointRef~opt(constantAddition)<~";" ^^ {
       case tp1~op~tp2~None => TemporalConstraint(tp1, op, tp2, 0)
       case tp1~op~tp2~Some(delta) => TemporalConstraint(tp1, op, tp2, delta)
@@ -219,7 +219,7 @@ object AnmlParser extends JavaTokenParsers {
     case "-"~num => - num.toInt
   }
 
-  def expr : Parser[Expr] = (
+  lazy val expr : Parser[Expr] = (
       decimalNumber ^^ { x => NumExpr(x.toFloat) }
     | "-"~>decimalNumber ^^ { x => NumExpr(-x.toFloat) }
     | repsep(word,".")~opt(refArgs) ^^ {
@@ -230,23 +230,23 @@ object AnmlParser extends JavaTokenParsers {
   )
 
   /** a var expr is a single word such as x, prettyLongName, ... */
-  def varExpr : Parser[VarExpr] =
+  lazy val varExpr : Parser[VarExpr] =
     word ^^ (x => VarExpr(x))
 
   /** List of variable expression such as (x, y, z) */
-  def refArgs : Parser[List[VarExpr]] =
+  lazy val refArgs : Parser[List[VarExpr]] =
     "("~>repsep(varExpr, ",")<~")"
 
-  def action : Parser[Action] =
+  lazy val action : Parser[Action] =
     "action"~>word~"("~repsep(argument, ",")~")"~actionBody ^^
       { case name~"("~args~")"~body => new Action(name, args, body)}
 
-  def actionBody : Parser[List[ActionContent]] = (
+  lazy val actionBody : Parser[List[ActionContent]] = (
     "{"~>rep(actionContent)<~"}"~";" ^^ (_.flatten)
       | "{"~"}"~";" ^^ (x => List())
     )
 
-  def actionContent : Parser[List[ActionContent]] = (
+  lazy val actionContent : Parser[List[ActionContent]] = (
     temporalStatements
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
@@ -259,12 +259,12 @@ object AnmlParser extends JavaTokenParsers {
       }
     )
 
-  def decomposition : Parser[Decomposition] =
+  lazy val decomposition : Parser[Decomposition] =
     ":decomposition"~"{"~>rep(decompositionContent)<~"}"~";" ^^ {
       case content => Decomposition(content.flatten)
     }
 
-  def decompositionContent : Parser[List[DecompositionContent]] = (
+  lazy val decompositionContent : Parser[List[DecompositionContent]] = (
     tempConstraint ^^ (x => List(x))
       | temporalStatements
       | "constant"~>(word|kwType)~word<~";" ^^ {
@@ -272,21 +272,21 @@ object AnmlParser extends JavaTokenParsers {
     })
 
 
-  def argument : Parser[Argument] = (
+  lazy val argument : Parser[Argument] = (
     tipe~word ^^ { case tipe~name => new Argument(tipe, name)}
       | failure("Argument malformed.")
     )
 
-  def temporalStatements : Parser[List[TemporalStatement]] = (
+  lazy val temporalStatements : Parser[List[TemporalStatement]] = (
       annotation~statements ^^ { case annot~statements => statements.map(new TemporalStatement(Some(annot), _))}
     | statement ^^ { case s:Statement => List(new TemporalStatement(None, s))}
   )
 
-  def statements : Parser[List[Statement]] = (
+  lazy val statements : Parser[List[Statement]] = (
     "{"~>rep(statement)<~"}"<~";"
       | statement ^^ (x => List(x)))
 
-  def block : Parser[List[AnmlBlock]] = (
+  lazy val block : Parser[List[AnmlBlock]] = (
     action ^^ (a => List(a))
       | temporalStatements
       | tempConstraint ^^ (x => List(x))
@@ -295,16 +295,16 @@ object AnmlParser extends JavaTokenParsers {
       | instanceDecl
     )
 
-  def anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
+  lazy val anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
 
-  def argList : Parser[List[Argument]] =
+  lazy val argList : Parser[List[Argument]] =
     "("~>repsep(argument,",")<~")"
 
-  def functionDecl : Parser[Function] = numFunctionDecl | symFunctionDecl
+  lazy val functionDecl : Parser[Function] = numFunctionDecl | symFunctionDecl
 
-  def anySymType : Parser[String] = symType | word
+  lazy val anySymType : Parser[String] = symType | word
 
-  def symFunctionDecl : Parser[SymFunction] = (
+  lazy val symFunctionDecl : Parser[SymFunction] = (
     "constant"~>anySymType~word~opt(argList)<~";" ^^ {
       case t~name~Some(args) => SymFunction(name, args, t, isConstant=true)
       case t~name~None => SymFunction(name, Nil, t, isConstant=true)
@@ -314,19 +314,19 @@ object AnmlParser extends JavaTokenParsers {
       | "predicate"~>anySymType~argList<~";" ^^ {case name~args => SymFunction(name, args, "boolean", isConstant=false)}
     )
 
-  def numFunctionDecl : Parser[NumFunction] = integerFunctionDecl | floatFunctionDecl
+  lazy val numFunctionDecl : Parser[NumFunction] = integerFunctionDecl | floatFunctionDecl
 
-  def numFunctionType : Parser[String] = "constant" | "variable" | "function" | "consumable" | "producible" | "reusable" | "replenishable"
+  lazy val numFunctionType : Parser[String] = "constant" | "variable" | "function" | "consumable" | "producible" | "reusable" | "replenishable"
 
-  def floatInterval : Parser[(Float, Float)] = (
+  lazy val floatInterval : Parser[(Float, Float)] = (
     "["~>floatingPointNumber~","~floatingPointNumber<~"]" ^^ { case min~","~max => (min.toFloat, max.toFloat) }
       | "["~>floatingPointNumber~","~"infinity"<~"]" ^^ { case min~","~_ => (min.toFloat, Float.MaxValue) })
 
-  def intInterval : Parser[(Int, Int)] = (
+  lazy val intInterval : Parser[(Int, Int)] = (
     "["~>floatingPointNumber~","~floatingPointNumber<~"]" ^^ { case min~","~max => (min.toInt, max.toInt) }
       | "["~>floatingPointNumber~","~"infinity"<~"]" ^^ { case min~","~_ => (min.toInt, Int.MaxValue) })
 
-  def floatFunctionDecl : Parser[FloatFunction] =
+  lazy val floatFunctionDecl : Parser[FloatFunction] =
     numFunctionType~"float"~opt(floatInterval)~word~opt(argList)<~";" ^^ {
       case fType~"float"~interval~name~argsOpt => {
         val resourceType =
@@ -344,7 +344,7 @@ object AnmlParser extends JavaTokenParsers {
       }
     }
 
-  def integerFunctionDecl : Parser[IntFunction] =
+  lazy val integerFunctionDecl : Parser[IntFunction] =
     numFunctionType~"integer"~opt(intInterval)~word~opt(argList)<~";" ^^ {
       case fType~"integer"~interval~name~argsOpt => {
         val resourceType =
@@ -363,10 +363,10 @@ object AnmlParser extends JavaTokenParsers {
     }
 
 
-  def tipe : Parser[String] =
+  lazy val tipe : Parser[String] =
     kwType | word | failure("Unable to parse type")
 
-  def typeDecl : Parser[Type] = (
+  lazy val typeDecl : Parser[Type] = (
     "type"~>tipe~"<"~tipe~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => Type(name, parent, content)}
       | "type"~>tipe~"with"~typeBody<~";" ^^ {case name~"with"~content => Type(name, "", content)}
       | "type"~>tipe~"<"~tipe<~";" ^^ {case name~"<"~parent => Type(name, parent, List())}
@@ -374,30 +374,30 @@ object AnmlParser extends JavaTokenParsers {
       | failure("Not a valid type declaration")
     )
 
-  def typeBody : Parser[List[TypeContent]] = "{"~>rep(functionDecl)<~"}"
+  lazy val typeBody : Parser[List[TypeContent]] = "{"~>rep(functionDecl)<~"}"
 
-  def instanceDecl : Parser[List[Instance]] =
+  lazy val instanceDecl : Parser[List[Instance]] =
     "instance"~>tipe~repsep(word,",")<~";" ^^ {
       case tipe~names => names.map(Instance(tipe, _))
     }
 
   /** all predefined types: boolean, float, integer, object */
-  def kwType : Parser[String] = numType | symType
+  lazy val kwType : Parser[String] = numType | symType
 
   /** predefined symbolic types: boolean, object */
-  def symType : Parser[String] = "boolean"// | "object"
+  lazy val symType : Parser[String] = "boolean"// | "object"
 
   /** Predefined numeric types: float and integer */
-  def numType : Parser[String] = "float" | "integer"
+  lazy val numType : Parser[String] = "float" | "integer"
 
-  def kwTempAnnot : Parser[String] = "start" | "end"
+  lazy val kwTempAnnot : Parser[String] = "start" | "end"
 
-  def keywords = (kwType | kwTempAnnot | "motivated" | "duration")
+  lazy val keywords = (kwType | kwTempAnnot | "motivated" | "duration")
 
-  def word = not(keywords) ~> ident
-//  def word = ident
+  lazy val word = not(keywords) ~> ident
+//  lazy val word = ident
 
-  def op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
+  lazy val op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
   private def opString : Parser[String] =
     "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!="
 

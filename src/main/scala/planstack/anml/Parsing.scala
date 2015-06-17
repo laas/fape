@@ -5,6 +5,8 @@ import planstack.anml.parser.ANMLFactory
 
 object Parsing extends App {
 
+  val repetitions = 10
+
   val file =
     if(args.size == 0)
       "resources/test.anml"
@@ -12,8 +14,16 @@ object Parsing extends App {
       args(0)
   println("Parsing: "+file)
 
-  val pb = new AnmlProblem(usesActionConditions = true)
-  pb.extendWithAnmlFile(file)
+  for(i <- 0 until repetitions) {
 
-  val breakPoint = true
+    val start = System.currentTimeMillis()
+
+    val pb = new AnmlProblem(usesActionConditions = true)
+    val parsed = System.currentTimeMillis()
+    pb.extendWithAnmlFile(file)
+    val extended = System.currentTimeMillis()
+
+    println(s"Time parsing: ${parsed - start}")
+    println(s"Time extending: ${extended - parsed}")
+  }
 }
