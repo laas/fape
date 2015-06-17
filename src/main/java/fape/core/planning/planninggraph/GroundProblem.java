@@ -67,8 +67,6 @@ public class GroundProblem {
         return total;
     }
 
-    public static int count = 0;
-
     private static List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
@@ -102,7 +100,6 @@ public class GroundProblem {
 
 
     public GroundProblem(GroundProblem pb, State st) {
-        count++;
         this.liftedPb = pb.liftedPb;
         this.gActions = new LinkedList<>(pb.gActions);
 
@@ -110,7 +107,6 @@ public class GroundProblem {
     }
 
     public GroundProblem(GroundProblem pb, State st, Timeline og) {
-        count++;
         this.liftedPb = pb.liftedPb;
         this.gActions = pb.gActions;
 

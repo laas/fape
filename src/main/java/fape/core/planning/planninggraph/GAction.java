@@ -12,13 +12,8 @@ import planstack.anml.model.PartialContext;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.statements.*;
-import planstack.anml.model.concrete.EmptyVarRef;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
-import planstack.anml.model.concrete.statements.EqualityConstraint;
-import planstack.anml.model.concrete.statements.Persistence;
-import planstack.anml.parser.Instance;
-import planstack.structures.Pair;
 import scala.collection.JavaConversions;
 
 import java.util.*;
@@ -232,10 +227,10 @@ public class GAction implements PGNode {
         // this will store all local variables, those can be defined as action parameters, inside the action or within the given decomposition
         List<LVarRef> allLocalVars = new LinkedList<>();
         // local vars from the action
-        for(LVarRef ref : scala.collection.JavaConversions.asJavaIterable(aa.context().variables().keys()))
+        for(LVarRef ref : JavaConversions.asJavaIterable(aa.context().variables().keys()))
             allLocalVars.add(ref);
         if(decID >= 0) // local vars from the definition
-            for(LVarRef ref : scala.collection.JavaConversions.asJavaIterable(aa.jDecompositions().get(decID).context().variables().keys()))
+            for(LVarRef ref : JavaConversions.asJavaIterable(aa.jDecompositions().get(decID).context().variables().keys()))
                 allLocalVars.add(ref);
 
         // context from which to look for the definition of local variable
@@ -245,17 +240,21 @@ public class GAction implements PGNode {
         else // take the context of the decomposition (which include the one of the action
             context = aa.jDecompositions().get(decID).context();
 
+        // will contain all vars of this action
         List<LVarRef> vars = new LinkedList<>();
+
+        // will contain the domain of each var of this action (same order as in vars)
         List<List<InstanceRef>> possibleValues = new LinkedList<>();
+
+        // get all variables and domains
         for(LVarRef ref : allLocalVars) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
             if(!context.getDefinition(ref)._2().isEmpty()) {
-                assert (context.getDefinition(ref)._2() instanceof InstanceRef) :
-                        "ERRROR: "+context.getDefinition(ref)._2();
+                assert (context.getDefinition(ref)._2() instanceof InstanceRef) : "ERRROR: "+context.getDefinition(ref)._2();
                 varSet.add((InstanceRef) context.getDefinition(ref)._2());
             } else {
-                // get <></>ype of the argument and add all possible values to the argument list.
+                // get the type of the argument and add all possible values to the argument list.
                 List<String> instanceSet = pb.instances().instancesOfType(context.getType(ref));
                 for (String instance : instanceSet) {
                     varSet.add(pb.instances().referenceOf(instance));
@@ -264,14 +263,79 @@ public class GAction implements PGNode {
             possibleValues.add(varSet);
         }
 
-        List<List<InstanceRef>> instanciations = PGUtils.allCombinations(possibleValues);
+        List<AbstractStatement> statements = new LinkedList<>(aa.jTemporalStatements());
+        if(decID != -1) {
+            statements.addAll(aa.jDecompositions().get(decID).jStatements());
+        }
+
+        List<PartialBindings> partialBindingses = new LinkedList<>();
+
+        // look at all static equality constraints to infer partial bindings
+        for(AbstractStatement s : statements) {
+            if(s instanceof AbstractEqualityConstraint) {
+                AbstractEqualityConstraint c = (AbstractEqualityConstraint) s;
+                LVarRef[] statementVars = new LVarRef[c.sv().jArgs().size()+1];
+                for(int i=0 ; i<c.sv().jArgs().size() ; i++)
+                    statementVars[i] = c.sv().jArgs().get(i);
+                statementVars[statementVars.length-1] = c.variable();
+
+                // new partial bindings reflecting this constraint
+                PartialBindings partialBindings = new PartialBindings(vars.toArray(new LVarRef[vars.size()]), statementVars, possibleValues);
+                partialBindingses.add(partialBindings);
+
+                // every invariant matching our state variable proposes possible values
+                for(GroundProblem.Invariant inv : gPb.invariants) {
+                    if(c.sv().func() == inv.f) {
+                        InstanceRef[] binding = new InstanceRef[statementVars.length];
+                        for(int i=0 ; i<inv.params.size() ; i++) {
+                            binding[i] = inv.params.get(i);
+                        }
+                        binding[statementVars.length-1] = inv.value;
+                        partialBindings.addPartialBinding(binding, gPb);
+                    }
+                }
+            }
+        }
+
+        if(partialBindingses.isEmpty())
+            // empty partial binding, to be used as no other was produced (happens when no static constraints)
+            partialBindingses.add(new PartialBindings(vars.toArray(new LVarRef[vars.size()]), new LVarRef[0], possibleValues));
+
+        // treat equalities between variables. those are merge into existing partial bindings
+        for(AbstractStatement s : statements) {
+            if(s instanceof AbstractVarEqualityConstraint) {
+                AbstractVarEqualityConstraint c = (AbstractVarEqualityConstraint) s;
+                // find a partial binding in which to merge, this is the one with shares the maximum of variables with this equality constraint
+                int bestNumOverlappingVariables = -1;
+                PartialBindings best = null;
+                for(PartialBindings partialBindings : partialBindingses) {
+                    int numOverlapping = partialBindings.focusesOn(c.leftVar()) ? 1 : 0;
+                    numOverlapping += partialBindings.focusesOn(c.rightVar()) ? 1 : 0;
+                    if(numOverlapping > bestNumOverlappingVariables) {
+                        bestNumOverlappingVariables = numOverlapping;
+                        best = partialBindings;
+                    }
+                }
+                // merge this equality into the best looking PartialBindings
+                best.addEquality(c.leftVar(), c.rightVar());
+            }
+        }
+
+        // merge all partial bindings into one
+        PartialBindings mergeReceiver = partialBindingses.get(0);
+        for(int i=1 ; i<partialBindingses.size() ; i++) {
+            mergeReceiver.merge(partialBindingses.get(i));
+        }
+
+        // get all possible instantiations from our partial binding
+        List<InstanceRef[]> instantiations = mergeReceiver.instantiations();
         List<Map<LVarRef, InstanceRef>> paramsLists = new LinkedList<>();
 
-        for(List<InstanceRef> instanciation : instanciations) {
+        for(InstanceRef[] instantiation : instantiations) {
             Map<LVarRef, InstanceRef> params = new HashMap<>();
-            assert instanciation.size() == vars.size();
+            assert instantiation.length == vars.size();
             for(int i=0 ; i< vars.size() ; i++) {
-                params.put(vars.get(i), instanciation.get(i));
+                params.put(vars.get(i), instantiation[i]);
             }
             paramsLists.add(params);
         }

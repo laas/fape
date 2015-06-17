@@ -309,7 +309,5 @@ public class Planning {
         }
         if (!config.getString("output").equals("stdout"))
             writer.close();
-        System.out.println("Num RPG: "+ RelaxedPlanningGraph.count);
-        System.out.println("Num RPG: "+ GroundProblem.count);
     }
 }

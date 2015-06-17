@@ -7,8 +7,6 @@ import java.util.*;
 
 public class RelaxedPlanningGraph {
 
-    public static int count = 0;
-
     final LabeledDigraph<PGNode, PGEdgeLabel> graph = GraphFactory.getLabeledDigraph();
 
     final GroundProblem pb;
@@ -28,7 +26,6 @@ public class RelaxedPlanningGraph {
     }
 
     public int buildUntil(DisjunctiveFluent df) {
-        count++;
         setInitState(pb.initState);
         distances.put(pb.initState, 0);
 
@@ -52,7 +49,6 @@ public class RelaxedPlanningGraph {
     }
 
     public void build() {
-        count++;
         setInitState(pb.initState);
         distances.put(pb.initState, 0);
 
