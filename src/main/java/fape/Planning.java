@@ -148,7 +148,7 @@ public class Planning {
 
         JSAPResult config = jsap.parse(args);
         if (jsap.messagePrinted()) {
-            System.exit(0);
+            return ;
         }
 
         Writer writer;
@@ -246,7 +246,8 @@ public class Planning {
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Problem with ANML file: " + anmlFile);
-                        System.exit(1);
+                        System.err.println((new File(anmlFile)).getAbsolutePath());
+                        return;
                     }
                     final State iniState = new State(pb, conf.controllability);
                     final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.options);
