@@ -5,6 +5,7 @@ import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
@@ -211,16 +212,21 @@ public class FeasibilityReasoner {
             }
         }
 
-//        for(Timeline cons : st.consumers) {
-//            System.out.print(" "+st.consumers.size());
-//            GroundProblem subpb = new GroundProblem(pb, st, cons);
-//            RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(subpb, derivableOnly);
-//            int depth = rpg.buildUntil(new DisjunctiveFluent(cons.stateVariable, cons.getGlobalConsumeValue(), st));
-//            if(depth > 1000) {
-//                // this consumer cannot be derived (none of its ground versions appear in the planning graph)
-//                return false;
-//            }
-//        }
+        // check that all open goals has at least one achievable fluent
+        for(Timeline cons : st.consumers) {
+            boolean supported = false;
+            for(Fluent f : DisjunctiveFluent.fluentsOf(cons.stateVariable, cons.getGlobalConsumeValue(), st, false)) {
+                if(st.reasoner.hasTerm(f) && st.reasoner.isTrue(f)) {
+                    supported = true;
+                    break;
+                }
+            }
+            if(!supported)
+                return false;
+        }
+
+        // computes the set of non addable actions (used to prune resolvers)
+        // TODO: use derivable? (here we are implicitly using all possible_in_plan)
         Set<AbstractAction> addableActions = new HashSet<>();
         for(GAction ga : getAllActions(st))
             addableActions.add(ga.abs);
