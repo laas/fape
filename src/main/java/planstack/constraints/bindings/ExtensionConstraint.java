@@ -9,7 +9,9 @@ import java.util.*;
  * It consists of a n-tuple of variables and a set of n-tuples of values.
  */
 public class ExtensionConstraint {
-    public LinkedList<LinkedList<Integer>> values = new LinkedList<>();
+
+    public int[][] bindings = new int[100][];
+    int numBindings = 0;
 
     public final boolean isLastVarInteger;
 
@@ -21,11 +23,25 @@ public class ExtensionConstraint {
         return this;
     }
 
+    public boolean isEmpty() { return numBindings == 0; }
+
+    public int numVars() {
+        assert numBindings > 0;
+        return bindings[0].length;
+    }
+
     LinkedList<Map<Integer, BitSet>> relevantConstraints = new LinkedList<>();
 
     public void addValues(List<Integer> vals) {
-        assert values.isEmpty() || values.get(0).size() == vals.size();
-        this.values.add(new LinkedList<Integer>(vals));
+        assert numBindings == 0 || bindings[0].length == vals.size();
+
+        if(numBindings == bindings.length)
+            bindings = Arrays.copyOf(bindings, bindings.length*2);
+
+        int[] valsArray = new int[vals.size()];
+        for(int i=0 ; i<vals.size() ; i ++)
+            valsArray[i] = vals.get(i);
+        this.bindings[numBindings++] = valsArray;
 
         if(relevantConstraints.size() == 0) {
             for(int i=0 ; i<vals.size() ; i++)
@@ -35,15 +51,15 @@ public class ExtensionConstraint {
         for(int i=0 ; i<vals.size() ; i++) {
             if(!relevantConstraints.get(i).containsKey(vals.get(i)))
                 relevantConstraints.get(i).put(vals.get(i), new BitSet());
-            relevantConstraints.get(i).get(vals.get(i)).set(this.values.size()-1);
+            relevantConstraints.get(i).get(vals.get(i)).set(numBindings-1);
         }
     }
 
     public Set<Integer> valuesUnderRestriction(int wanted, Map<Integer, Set<Integer>> constraints) {
-        BitSet toConsider = new BitSet(values.size());
-        toConsider.set(0, values.size());
+        BitSet toConsider = new BitSet(numBindings);
+        toConsider.set(0, numBindings);
         for(int var : constraints.keySet()) {
-            BitSet local = new BitSet(values.size());
+            BitSet local = new BitSet(numBindings);
             for(int val : constraints.get(var)) {
                 if(relevantConstraints.get(var).containsKey(val)) {
                     local.or(relevantConstraints.get(var).get(val));
@@ -54,9 +70,9 @@ public class ExtensionConstraint {
 
         Set<Integer> ret = new HashSet<>();
         int i =0;
-        for(List<Integer> vals : this.values) {
+        for(int[] binding : this.bindings) {
             if(toConsider.get(i)) {
-                ret.add(vals.get(wanted));
+                ret.add(binding[wanted]);
             }
             i++;
         }

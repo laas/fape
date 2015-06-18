@@ -5,7 +5,6 @@ import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
 import scala.collection.JavaConversions;
 
 import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Implements a CSP with a very conservative strategy to allow sharing
@@ -565,7 +564,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         }
 
         exts.get(setID).addValues(vals);
-        assert !extChecked : "Error: adding values to constraints in extension while propagation already occurred.";
+        assert !extChecked : "Error: adding bindings to constraints in extension while propagation already occurred.";
     }
 
     /**
@@ -578,16 +577,18 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
             exts.put(setID, new ExtensionConstraint(isIntegerVar(variables.get(variables.size()-1))));
         }
 
-        assert exts.get(setID).values.isEmpty() || exts.get(setID).values.get(0).size() == variables.size();
+        assert exts.get(setID).isEmpty() || exts.get(setID).numVars() == variables.size();
         assert exts.get(setID).isLastVarInteger == isIntegerVar(variables.get(variables.size()-1));
         mappings.put(new LinkedList<VarRef>(variables), setID);
         LinkedList<HashSet<Integer>> domains = new LinkedList<>();
         for(int i=0 ; i< variables.size() ; i++) {
             domains.add(new HashSet<Integer>());
         }
-        for(List<Integer> line : exts.get(setID).values) {
-            for(int i=0 ; i<line.size() ; i++) {
-                domains.get(i).add(line.get(i));
+        for(int[] binding : exts.get(setID).bindings) {
+            if(binding != null) {
+                for (int i = 0; i < binding.length; i++) {
+                    domains.get(i).add(binding[i]);
+                }
             }
         }
         for(int i=0 ; i<variables.size() ; i++) {
@@ -633,15 +634,17 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
             for(VarRef v : extConst) vals.add(variables.apply(v).values().iterator().next());
 
             boolean isValidTuple = false;
-            for(List<Integer> valsTuple : exts.get(mappings.get(extConst)).values) {
-                for(int i=0 ; i<valsTuple.size() ; i++) {
-                    if(!valsTuple.get(i).equals(vals.get(i)))
+            for(int[] valsTuple : exts.get(mappings.get(extConst)).bindings) {
+                if(valsTuple != null) {
+                    for (int i = 0; i < valsTuple.length; i++) {
+                        if (!vals.get(i).equals(valsTuple[i]))
+                            break;
+                        if (i == valsTuple.length - 1)
+                            isValidTuple = true;
+                    }
+                    if (isValidTuple)
                         break;
-                    if(i == valsTuple.size()-1)
-                        isValidTuple = true;
                 }
-                if(isValidTuple)
-                    break;
             }
             if(!isValidTuple)
                 assert isValidTuple;
