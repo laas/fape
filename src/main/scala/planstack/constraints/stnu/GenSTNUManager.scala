@@ -149,8 +149,8 @@ abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef
     val (source, sourceDist) = getSourceAndDist(c.u, 0)
     val (dest, destDist) = getSourceAndDist(c.v, 0)
 
-    assert(hasTimePoint(source) && !isVirtual(source))
-    assert(hasTimePoint(dest) && !isVirtual(dest))
+    assert(hasTimePoint(source) && !isVirtual(source), "Time point not recorded: "+source)
+    assert(hasTimePoint(dest) && !isVirtual(dest), "Time point not recorded: "+dest)
 
     if (c.tipe == CONTINGENT) {
       assert(!isVirtual(c.u) && !isVirtual(c.v), "Can't add a contingent constraints on virtual time points")
