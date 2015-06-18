@@ -55,12 +55,13 @@ public class ExtensionConstraint {
         }
     }
 
-    public Set<Integer> valuesUnderRestriction(int wanted, Map<Integer, Set<Integer>> constraints) {
+    public Set<Integer> valuesUnderRestriction(int wanted, Set<Integer>[] domains) {
+        assert domains.length == numVars();
         BitSet toConsider = new BitSet(numBindings);
         toConsider.set(0, numBindings);
-        for(int var : constraints.keySet()) {
+        for(int var=0 ; var<domains.length ; var++) {
             BitSet local = new BitSet(numBindings);
-            for(int val : constraints.get(var)) {
+            for(int val : domains[var]) {
                 if(relevantConstraints.get(var).containsKey(val)) {
                     local.or(relevantConstraints.get(var).get(val));
                 }

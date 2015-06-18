@@ -176,15 +176,14 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         for(List<VarRef> cons : constraintsToCheck) {
             for(int focus=0 ; focus<cons.size() ; focus++) {
                 VarRef focusVar = cons.get(focus);
-                Map<Integer, Set<Integer>> restrictions = new HashMap<>();
+                Set<Integer>[] domains = new Set[cons.size()];
                 for(int j=0 ; j<cons.size() ; j++) {
-                    if(j != focus)
-                        restrictions.put(j, variables.apply(cons.get(j)).values());
+                    domains[j] = variables.apply(cons.get(j)).values();
                 }
 
                 ValuesHolder old = variables.apply(focusVar);
 
-                Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, restrictions);
+                Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, domains);
                 if(domainRestrictions == null)
                     break;
                 variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(domainRestrictions)));
