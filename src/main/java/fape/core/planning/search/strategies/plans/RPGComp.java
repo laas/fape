@@ -32,7 +32,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     @Override
     public float hc(State st) {
         if(!hc.containsKey(st.mID)) {
-            int numFlaws = st.consumers.size() + st.getNumOpenLeaves() + threatFinder.getFlaws(st, null).size();
+            int numFlaws = st.tdb.getConsumers().size() + st.getNumOpenLeaves() + threatFinder.getFlaws(st, null).size();
             hc.put(st.mID, numAdditionalSteps(st) + numFlaws);
         }
         return hc.get(st.mID);
@@ -76,7 +76,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
         }
 
         List<OpenGoal> openGoals = new LinkedList<>();
-        for(Timeline tl : st.consumers)
+        for(Timeline tl : st.tdb.getConsumers())
             openGoals.add(new OpenGoal(tl, st.getEarliestStartTime(tl.getConsumeTimePoint())));
 
         Collections.sort(openGoals);

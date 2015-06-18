@@ -14,7 +14,7 @@ public class OpenGoalFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 
-        for(Timeline consumer : st.consumers)
+        for(Timeline consumer : st.tdb.getConsumers())
             flaws.add(new UnsupportedTimeline(consumer));
 
         return flaws;

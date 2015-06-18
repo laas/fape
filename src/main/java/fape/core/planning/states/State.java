@@ -56,7 +56,7 @@ public class State implements Reporter {
 
 
 
-    public float h = -1, g = -1;
+    public float h = -1, g = -1, f=-1;
 
     
 
@@ -92,13 +92,6 @@ public class State implements Reporter {
      * resolver for an unsupported database.
      */
     private LinkedList<Pair<Integer, Decomposition>> supportConstraints;
-
-    /**
-     * All databases that require an enabling event (ie. whose first value is
-     * not an assignment).
-     */
-    public final List<Timeline> consumers;
-
 
     public final AnmlProblem pb;
 
@@ -166,7 +159,6 @@ public class State implements Reporter {
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
-        consumers = new LinkedList<>();
         resMan = new ResourceManager();
         threats = new HashSet<>();
         potentialSupporters = new HashMap<>();
@@ -194,13 +186,8 @@ public class State implements Reporter {
         taskNet = st.taskNet.DeepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
-        consumers = new LinkedList<>();
         threats = new HashSet<>(st.threats);
         potentialSupporters = new HashMap<>(st.potentialSupporters);
-
-        for (Timeline sb : st.consumers) {
-            consumers.add(this.getTimeline(sb.mID));
-        }
     }
 
     public State cc() {
@@ -229,8 +216,8 @@ public class State implements Reporter {
         ret += "  state[" + mID + "]\n";
         ret += "  cons: " + csp.bindings().Report() + "\n";
         //ret += "  stn: " + this.csp.stn().report() + "\n";
-        ret += "  consumers: " + this.consumers.size() + "\n";
-        for (Timeline b : consumers) {
+        ret += "  consumers: " + tdb.getConsumers().size() + "\n";
+        for (Timeline b : tdb.getConsumers()) {
             ret += b.Report();
         }
         ret += "\n";
@@ -824,8 +811,8 @@ public class State implements Reporter {
 
             assert cc != null : "There is no support statement in " + db;
             assert cc.change : "Support is not a change.";
-            assert cc.contents.size() == 1;
-            Action a = getActionContaining(cc.contents.getFirst());
+            assert cc.size() == 1;
+            Action a = getActionContaining(cc.getFirst());
 
             return a != null && taskNet.isDescendantOf(a, dec);
         } else {
@@ -850,17 +837,14 @@ public class State implements Reporter {
 
         // checks if this new timeline can provide support to others
         for(int i=0 ; i < a.numChanges() ; i++) {
-            for(Timeline b : consumers) {
+            for(Timeline b : tdb.getConsumers()) {
                 if (UnsupportedTimeline.isSupporting(a, i, b, this))
                     potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
             }
         }
 
 
-        assert !consumers.contains(a);
         if(a.isConsumer()) {
-            consumers.add(a);
-
             // gather all potential supporters for this new timeline
             potentialSupporters.put(a.mID, new IList<SupportingTimeline>());
             for(Timeline sup : getTimelines()) {
@@ -885,11 +869,11 @@ public class State implements Reporter {
             }
         }
 
-        if(tl.isConsumer()) assert consumers.contains(tl);
+        if(tl.isConsumer()) assert tdb.getConsumers().contains(tl);
 
         // checks if the modifications on this timeline creates new supporters for others
         for(int i=0 ; i < tl.numChanges() ; i++) {
-            for(Timeline b : consumers) {
+            for(Timeline b : tdb.getConsumers()) {
                 if (UnsupportedTimeline.isSupporting(tl, i, b, this))
                     potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(tl.mID, i, b)));
             }
@@ -902,8 +886,6 @@ public class State implements Reporter {
             if(t.id1 == tl.mID || t.id2 == tl.mID)
                 toRemove.add(t);
         threats.removeAll(toRemove);
-        if(consumers.contains(tl))
-            consumers.remove(tl);
     }
 
     /**
@@ -913,7 +895,7 @@ public class State implements Reporter {
      * and supporters that are not valid anymore.
      */
     public Set<SupportingTimeline> getTimelineSupportersFor(Timeline consumer) {
-        assert consumers.contains(consumer);
+        assert tdb.getConsumers().contains(consumer);
         HashSet<SupportingTimeline> supporters = new HashSet<>();
         for(SupportingTimeline sup : potentialSupporters.get(consumer.mID)) {
             assert sup.consumerID == consumer.mID;
@@ -946,12 +928,6 @@ public class State implements Reporter {
 //        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
         return verifiedThreats;
     }
-
-    public int numFlaws() {
-        return consumers.size() + taskNet.getNumOpenActionConditions() + taskNet.getNumOpenLeaves() +taskNet.getNumUnmotivatedActions();
-    }
-
-
 
     /*** Wrapper around STN ******/
 

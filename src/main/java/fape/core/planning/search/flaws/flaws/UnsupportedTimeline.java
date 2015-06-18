@@ -4,15 +4,12 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.*;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 
@@ -102,8 +99,8 @@ public class UnsupportedTimeline extends Flaw {
             ChainComponent supportingCC = st.getTimeline(sdb.supporterID).getChangeNumber(sdb.supportingComponent);
             ChainComponent consumingCC = st.getTimeline(sdb.consumerID).getChainComponent(0);
 
-            for(LogStatement sup : supportingCC.contents) {
-                for(LogStatement cons : consumingCC.contents) {
+            for(LogStatement sup : supportingCC.statements) {
+                for(LogStatement cons : consumingCC.statements) {
                     if(areNecessarilyGlued(st, sup.end(), cons.start()) && areNecessarilyIdentical(st, sup.sv(), cons.sv())) {
                         resolvers.clear();
                         resolvers.add(res);

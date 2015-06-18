@@ -115,15 +115,15 @@ public class Plan {
     }
 
     public void addDependency(ChainComponent c1, ChainComponent c2) {
-        for(LogStatement e1 : c1.contents) {
-            for(LogStatement e2 : c2.contents) {
+        for(LogStatement e1 : c1.statements) {
+            for(LogStatement e2 : c2.statements) {
                 addDependency(e1, e2);
             }
         }
     }
 
     public void buildDependencies(Timeline db) {
-        for(int i=0 ; i<db.chain.size()-1 ; i++) {
+        for(int i=0 ; i<db.size()-1 ; i++) {
             addDependency(db.getChainComponent(i), db.getChainComponent(i + 1));
         }
     }

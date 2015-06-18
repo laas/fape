@@ -17,7 +17,7 @@ public class RootsOCA implements PartialPlanComparator {
     }
 
     private int eval(State s) {
-        return s.getNumRoots()*2 + s.getNumOpenLeaves() + s.consumers.size();
+        return s.getNumRoots()*2 + s.getNumOpenLeaves() + s.tdb.getConsumers().size();
     }
 
     @Override

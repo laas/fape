@@ -38,7 +38,7 @@ public class SupportingTimeline extends Resolver {
         // we concatenate the two timelines
 
         assert precedingComponent != null && precedingComponent.change;
-        planner.causalLinkAdded(st, precedingComponent.contents.getFirst(), consumer.chain.getFirst().contents.getFirst());
+        planner.causalLinkAdded(st, precedingComponent.getFirst(), consumer.getFirst().getFirst());
 
         // database concatenation
         st.insertTimelineAfter(supporter, consumer, precedingComponent);

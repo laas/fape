@@ -19,7 +19,7 @@ public class Basic implements PartialPlanComparator, Heuristic {
         if(s.h < 0)
             s.h = threatFinder.getFlaws(s, planner).size();
 
-        return s.getNumActions()*10 + s.consumers.size()*3 + s.getNumOpenLeaves()*3 + s.h*3;
+        return s.getNumActions()*10 + s.tdb.getConsumers().size()*3 + s.getNumOpenLeaves()*3 + s.h*3;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class Basic implements PartialPlanComparator, Heuristic {
         if(s.h < 0)
             s.h = threatFinder.getFlaws(s, planner).size();
 
-        return s.consumers.size() + s.getNumOpenLeaves() + s.h;
+        return s.tdb.getConsumers().size() + s.getNumOpenLeaves() + s.h;
     }
 
     @Override

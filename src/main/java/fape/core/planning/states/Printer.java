@@ -228,7 +228,7 @@ public class Printer {
             for(Timeline db : entry.getValue()) {
                 boolean newDb = true;
                 for(ChainComponent cc : db.chain) {
-                    for (LogStatement s : cc.contents) {
+                    for (LogStatement s : cc.statements) {
                         if(!first)
                             for(int i=0;i<offset;i++) sb.append(" ");
                         first = false;
@@ -267,7 +267,7 @@ public class Printer {
         sb.append(stateVariable(st, db.stateVariable));
         sb.append("  id:"+db.mID+"\n");
         for(ChainComponent cc : db.chain) {
-            for(LogStatement s : cc.contents) {
+            for(LogStatement s : cc.statements) {
                 sb.append("[");
                 sb.append(st.getEarliestStartTime(s.start()));
                 sb.append(",");
@@ -296,7 +296,7 @@ public class Printer {
         sb.append(stateVariable(st, db.stateVariable));
         sb.append(":"+db.mID+"  ");
         for(ChainComponent cc : db.chain) {
-            for(LogStatement s : cc.contents) {
+            for(LogStatement s : cc.statements) {
                 sb.append("[");
                 sb.append(st.getEarliestStartTime(s.start()));
                 sb.append(",");
@@ -357,7 +357,7 @@ public class Printer {
 
         for(Timeline db : st.tdb.getTimelines()) {
             for(ChainComponent cc : db.chain) {
-                for(LogStatement statement : cc.contents) {
+                for(LogStatement statement : cc.statements) {
                     if(intervalContains(tp, statement))
                         return statement;
                 }

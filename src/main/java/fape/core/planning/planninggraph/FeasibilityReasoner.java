@@ -213,7 +213,7 @@ public class FeasibilityReasoner {
         }
 
         // check that all open goals has at least one achievable fluent
-        for(Timeline cons : st.consumers) {
+        for(Timeline cons : st.tdb.getConsumers()) {
             boolean supported = false;
             for(Fluent f : DisjunctiveFluent.fluentsOf(cons.stateVariable, cons.getGlobalConsumeValue(), st, false)) {
                 if(st.reasoner.hasTerm(f) && st.reasoner.isTrue(f)) {

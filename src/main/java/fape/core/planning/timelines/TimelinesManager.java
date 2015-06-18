@@ -42,6 +42,15 @@ public class TimelinesManager implements Reporter {
         listener = containingState;
     }
 
+    public Collection<Timeline> getConsumers() {
+        List<Timeline> consumers = new LinkedList<>();
+        for(Timeline tl : vars) {
+            if(tl.isConsumer())
+                consumers.add(tl);
+        }
+        return consumers;
+    }
+
     /**
      * Creates a new timeline containing the Statement s and adds it to this Manager
      */
@@ -83,6 +92,43 @@ public class TimelinesManager implements Reporter {
         throw new FAPEException("Unable to find a timeline containing the statement "+s);
     }
 
+    private void update(Timeline tl) {
+        for(int i=0 ; i<vars.size() ; i++) {
+            if(vars.get(i).mID == tl.mID) {
+                vars.set(i, tl);
+                return;
+            }
+        }
+        // TODO: consumers
+        throw new FAPEException("Timeline was not previously known");
+    }
+
+    public Timeline extendTimelineWithComponent(Timeline tl, ChainComponent cc, int at) {
+        Timeline newTL = tl.with(cc, at);
+        update(newTL);
+        return newTL;
+    }
+
+    public Timeline extendTimelineWithComponent(Timeline tl, ChainComponent cc) {
+        Timeline newTL = tl.with(cc);
+        update(newTL);
+        return newTL;
+    }
+
+    public Timeline removeFromTimeline(Timeline tl, ChainComponent cc) {
+        Timeline newTL = tl.without(cc);
+        update(newTL);
+        return newTL;
+    }
+
+    public Timeline removeAllFromTimeline(Timeline tl, Collection<ChainComponent> components) {
+        Timeline newTL = tl;//tl.without(cc);
+        for(ChainComponent cc : components)
+            newTL = newTL.without(cc);
+        update(newTL);
+        return newTL;
+    }
+
     /**
      * Inserts all chains of the timeline @included after the ChainComponent @after of timeline @tdb.
      * All necessary constraints (temporal precedence and unification) are added to State st.
@@ -98,45 +144,46 @@ public class TimelinesManager implements Reporter {
      * @param after a chain component of tdb after which the chain of included will be added
      */
     public void insertTimelineAfter(State st, Timeline tdb, Timeline included, ChainComponent after) {
-        assert tdb.chain.size() != 0;
-        assert tdb.chain.contains(after);
+        assert tdb.size() != 0;
+        assert tdb.contains(after);
 
-        int afterIndex = tdb.chain.indexOf(after);
+        int afterIndex = tdb.indexOf(after);
 
-        if(afterIndex+1 < tdb.chain.size() && !tdb.chain.get(afterIndex+1).change) {
+        if(afterIndex+1 < tdb.size() && !tdb.get(afterIndex+1).change) {
             // we were about to perform the insertion just before a persistence event.
             // instead, we make the insertion after the persistence
             afterIndex = afterIndex + 1;
-            after = tdb.chain.get(afterIndex);
+            after = tdb.get(afterIndex);
         }
 
-        if(!included.chain.getFirst().change && !after.change) {
+        if(!included.getFirst().change && !after.change) {
             //  'after' and first ChainComp of 'included'  are both persistence events. We merge them
             // into 'after' before going any further.
             st.addUnificationConstraint(after.getSupportValue(), included.getGlobalConsumeValue());
 
-            // add persitence events to after, and removing them from the included timeline
-            after.add(included.chain.getFirst());
-            included.chain.removeFirst();
+            // add persistence events to after, and removing them from the included timeline
+            tdb = tdb.addToChainComponent(after, included.getFirst());
+            update(tdb);
+            included = removeFromTimeline(included, included.getFirst());
 
             enforceChainConstraints(st, tdb, afterIndex - 1);
             enforceChainConstraints(st, tdb, afterIndex);
         }
 
         // copy all remaining components
-        if(included.chain.size() > 0) {
-            assert tdb.chain.getLast() == after || included.chain.size() == 1 && !included.chain.getFirst().change:
+        if(included.size() > 0) {
+            assert tdb.getLast() == after || included.size() == 1 && !included.getFirst().change:
                     "Integrating a timeline with transitions in the middle of another one. " +
                     "While this should work with the current implementation it might create unexpected problems " +
                     "because of unexpected unification constraints between two non adjacent chain components.";
 
             int nextInclusion = afterIndex + 1;
             for (ChainComponent c : included.chain) {
-                tdb.chain.add(nextInclusion, c);
+                tdb = extendTimelineWithComponent(tdb, c, nextInclusion);
                 nextInclusion += 1;
             }
 
-            // add connstraints before and after the inserted chain
+            // add constraints before and after the inserted chain
             enforceChainConstraints(st, tdb, afterIndex);
             enforceChainConstraints(st, tdb, nextInclusion - 1);
         }
@@ -154,26 +201,23 @@ public class TimelinesManager implements Reporter {
     /**
      * Given a timeline tdb, enforces the unification and temporal constraints between
      * the elements of indexes chainCompIndex and chainCompIndex+1
-     * @param st
-     * @param tdb
-     * @param chainCompIndex
      */
     public void enforceChainConstraints(State st, Timeline tdb, int chainCompIndex) {
-        assert chainCompIndex < tdb.chain.size();
+        assert chainCompIndex < tdb.size();
 
-        if(chainCompIndex < tdb.chain.size()-1 && chainCompIndex >= 0) {
+        if(chainCompIndex < tdb.size()-1 && chainCompIndex >= 0) {
             // if we are not already the last element of the chain, we add constraints between
             // the component and its direct follower.
-            ChainComponent first = tdb.chain.get(chainCompIndex);
-            ChainComponent second = tdb.chain.get(chainCompIndex + 1);
+            ChainComponent first = tdb.get(chainCompIndex);
+            ChainComponent second = tdb.get(chainCompIndex + 1);
 
             assert first.change || second.change : "There should not be two persistence following each other";
 
             st.addUnificationConstraint(first.getSupportValue(), second.getConsumeValue());
 
             // Enforce all statements of first to be before all statements of second
-            for(LogStatement sa : first.contents) {
-                for(LogStatement sb : second.contents) {
+            for(LogStatement sa : first.statements) {
+                for(LogStatement sb : second.statements) {
                     st.enforceStrictlyBefore(sa.end(), sb.start());
                 }
             }
@@ -181,12 +225,12 @@ public class TimelinesManager implements Reporter {
     }
 
     public void enforceAllConstraints(State st, Timeline tdb) {
-        for(int i=0 ; i<tdb.chain.size()-1 ; i++) {
+        for(int i=0 ; i<tdb.size()-1 ; i++) {
             //enforceChainConstraints(st, tdb, i);
             int j = i+1;
             //for(int j=i+1 ; j<tdb.chain.size() ; j++) {
-                for(LogStatement a : tdb.chain.get(i).contents) {
-                    for(LogStatement b : tdb.chain.get(j).contents) {
+                for(LogStatement a : tdb.get(i).statements) {
+                    for(LogStatement b : tdb.get(j).statements) {
                         st.enforceStrictlyBefore(a.end(), b.start());
                     }
                 }
@@ -204,15 +248,15 @@ public class TimelinesManager implements Reporter {
         //add all extra chain components to the new database
 
         List<ChainComponent> toRemove = new LinkedList<>();
-        for (int i = index; i < db.chain.size(); i++) {
-            ChainComponent origComp = db.chain.get(i);
+        for (int i = index; i < db.size(); i++) {
+            ChainComponent origComp = db.get(i);
             toRemove.add(origComp);
             ChainComponent pc = origComp.deepCopy();
-            newTL.chain.add(pc);
+            newTL = extendTimelineWithComponent(newTL, pc);
         }
-        db.chain.removeAll(toRemove);
-        assert !db.chain.isEmpty();
-        assert !newTL.chain.isEmpty();
+        db = removeAllFromTimeline(db, toRemove);
+        assert !db.isEmpty();
+        assert !newTL.isEmpty();
 
         addTimeline(newTL);
         listener.timelineExtended(db);
@@ -230,12 +274,12 @@ public class TimelinesManager implements Reporter {
 
         // First find which component contains s
         final int ct = theDatabase.indexOfContainer(s);
-        final ChainComponent comp = theDatabase.chain.get(ct);
+        final ChainComponent comp = theDatabase.get(ct);
 
-        assert comp != null && theDatabase.chain.get(ct) == comp;
+        assert comp != null && theDatabase.get(ct) == comp;
 
         if (s instanceof Transition) {
-            if (ct + 1 < theDatabase.chain.size()) {
+            if (ct + 1 < theDatabase.size()) {
                 //this was not the last element, we need to create another database and make split
 
                 // the two databases share the same state variable
@@ -243,40 +287,41 @@ public class TimelinesManager implements Reporter {
 
                 //add all extra chain components to the new database
                 List<ChainComponent> remove = new LinkedList<>();
-                for (int i = ct + 1; i < theDatabase.chain.size(); i++) {
-                    ChainComponent origComp = theDatabase.chain.get(i);
+                for (int i = ct + 1; i < theDatabase.size(); i++) {
+                    ChainComponent origComp = theDatabase.get(i);
                     remove.add(origComp);
                     ChainComponent pc = origComp.deepCopy();
-                    newDB.chain.add(pc);
+                    newDB = extendTimelineWithComponent(newDB, pc);
                 }
                 addTimeline(newDB);
-                theDatabase.chain.remove(comp);
-                theDatabase.chain.removeAll(remove);
-                assert !newDB.chain.isEmpty();
+                theDatabase = removeFromTimeline(theDatabase, comp);
+                theDatabase = removeAllFromTimeline(theDatabase, remove);
+                assert !newDB.isEmpty();
             } else {
-                assert comp.contents.size() == 1;
+                assert comp.size() == 1;
                 //this was the last element so we can just remove it and we are done
-                theDatabase.chain.remove(comp);
+                theDatabase = removeFromTimeline(theDatabase, comp);
             }
 
-            if(theDatabase.chain.isEmpty()) {
+            if(theDatabase.isEmpty()) {
                 removeTimeline(theDatabase);
             }
         } else if (s instanceof Persistence) {
-            if (comp.contents.size() == 1) {
+            if (comp.size() == 1) {
                 // only one statement, remove the whole component
-                theDatabase.chain.remove(comp);
+                theDatabase = removeFromTimeline(theDatabase, comp);
             } else {
                 // more than one statement, remove only this statement
-                comp.contents.remove(s);
+                theDatabase = theDatabase.removeFromChainComponent(comp, s);
+                update(theDatabase);
             }
-            if(theDatabase.chain.isEmpty()) {
+            if(theDatabase.isEmpty()) {
                 removeTimeline(theDatabase);
             }
 
         } else if(s instanceof Assignment) {
-            theDatabase.chain.remove(comp);
-            if(theDatabase.chain.isEmpty()) {
+            theDatabase = removeFromTimeline(theDatabase, comp);
+            if(theDatabase.isEmpty()) {
                 removeTimeline(theDatabase);
             } else {
                 assert theDatabase.isConsumer() : "Removing the first element yields a non-consuming database.";
@@ -286,7 +331,7 @@ public class TimelinesManager implements Reporter {
             throw new FAPEException("Unknown event type: "+s);
         }
         for(Timeline db : getTimelines())
-            assert !db.chain.isEmpty();
+            assert !db.isEmpty();
     }
 
     @Override

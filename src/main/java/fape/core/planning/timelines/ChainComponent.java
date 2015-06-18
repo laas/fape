@@ -5,10 +5,11 @@ import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 
-import java.util.LinkedList;
+import java.util.Arrays;
 
 /**
- *
+ * A collection of logical statements. This class mainly provides easier operations on a collection of logical statements.
+ * A Chain component is immutable and can be shared between different instances.
  */
 public class ChainComponent {
 
@@ -26,10 +27,8 @@ public class ChainComponent {
     /** Next mID for newly created ChainComponents. */
     private static int nextID=0;
 
-    /**
-     *
-     */
-    public final LinkedList<LogStatement> contents = new LinkedList<>();
+    /** All statements in this chain component. */
+    public final LogStatement[] statements;
 
     /**
      * Creates a new ChainComponent containing a unique statement.
@@ -37,7 +36,8 @@ public class ChainComponent {
      */
     public ChainComponent(LogStatement s) {
         mID = nextID++;
-        contents.add(s);
+        statements = new LogStatement[1];
+        statements[0] = s;
         if (s instanceof Persistence) {
             change = false;
         } else {
@@ -45,68 +45,103 @@ public class ChainComponent {
         }
     }
 
-    /**
-     * Creates a new ChainComponent with the same content.
-     * @param toCopy ChainComponent to copy
-     */
-    public ChainComponent(ChainComponent toCopy) {
-        mID = toCopy.mID;
-        contents.addAll(toCopy.contents);
-        change = toCopy.change;
+    /** Creates a new chain component with the given statements and mID */
+    private ChainComponent(LogStatement[] statements, int mID) {
+        this.mID = mID;
+        assert statements.length > 0;
+        this.statements = statements;
+        if(this.statements[0] instanceof Persistence) {
+            change = false;
+        } else {
+            change = true;
+        }
     }
+
+    /** @return Number of statements in this ChainComponent. */
+    public final int size() { return statements.length; }
+
+    /** @return First statement in this chain component. */
+    public final LogStatement getFirst() { return statements[0]; }
 
     /**
      * @return One end time point in the chain component (there might be more!)
      */
     public TPRef getSupportTimePoint() {
-        assert contents.size() == 1 : "There is more than one statement in this chain component.";
-        return contents.getFirst().end();
+        assert statements.length == 1 : "There is more than one statement in this chain component.";
+        return statements[0].end();
     }
 
     /**
      * @return One start time point in the chain component (there might be more!)
      */
     public TPRef getConsumeTimePoint() {
-        assert contents.size() == 1 : "There is more than one statement in this chain component.";
-        return contents.getFirst().start();
+        assert statements.length == 1 : "There is more than one statement in this chain component.";
+        return statements[0].start();
     }
 
     /**
-     * add all events of the parameterized chain component to the current chain component.
+     * Creates a new ChainComponent containing statement in both ChainComponents (this and cc)
      * @param cc
      */
-    public void add(ChainComponent cc) {
+    protected ChainComponent withAll(ChainComponent cc) {
         assert cc.change == this.change : "Error: merging transition and persistence events in the same chain component.";
-        contents.addAll(cc.contents);
+        LogStatement[] newContents = Arrays.copyOf(statements, statements.length + cc.statements.length);
+        for(int i=0 ; i<cc.statements.length ; i++) {
+            newContents[i+ statements.length] = cc.statements[i];
+        }
+        return new ChainComponent(newContents, this.mID);
+    }
+
+    protected ChainComponent with(LogStatement s) {
+        LogStatement[] newContent = Arrays.copyOf(statements, statements.length+1);
+        newContent[statements.length] = s;
+        return new ChainComponent(newContent, mID);
+    }
+
+    /** Creates a new chain component without statement s */
+    protected ChainComponent without(LogStatement s) {
+        LogStatement[] newContent = new LogStatement[statements.length-1];
+        int i=0;
+        for(LogStatement cur : statements) {
+            if(!cur.equals(s)) {
+                newContent[i] = cur;
+                i++;
+            }
+        }
+        return new ChainComponent(newContent, mID);
     }
 
     /**
      * @return True if the statement is present in the this component.
      */
     public boolean contains(LogStatement s) {
-        return contents.contains(s);
+        for(int i=0 ; i< statements.length ; i++)
+            if(statements[i].equals(s))
+                return true;
+        return false;
     }
 
     /**
      * @return The variable containing the value of the state variable at the end of the component.
      */
     public VarRef getSupportValue() {
-        return contents.getFirst().endValue();
+        return statements[0].endValue();
     }
 
     /**
      * @return The variable containing the value of the state variable at the start of the component.
      */
     public VarRef getConsumeValue() {
-        return contents.getFirst().startValue();
+        return statements[0].startValue();
     }
 
+    /** Returns this chain component (it is immutable) */
     public ChainComponent deepCopy() {
-        return new ChainComponent(this);
+        return this;
     }
 
     @Override
     public String toString() {
-        return contents.toString();
+        return statements.toString();
     }
 }

@@ -20,6 +20,7 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,10 +36,11 @@ public class Timeline {
 
     public final ParameterizedStateVariable stateVariable;
 
-    public final LinkedList<ChainComponent> chain = new LinkedList<>();
+    public final ChainComponent[] chain;
 
     public Timeline(LogStatement s) {
-        chain.add(new ChainComponent(s));
+        chain = new ChainComponent[1];
+        chain[0] = new ChainComponent(s);
         mID = nextID++;
         stateVariable = s.sv();
     }
@@ -46,14 +48,26 @@ public class Timeline {
     public Timeline(ParameterizedStateVariable sv) {
         mID = nextID++;
         stateVariable = sv;
+        chain = new ChainComponent[0];
     }
 
-    public Timeline(Timeline toCopy) {
-        mID = toCopy.mID;
-        for (ChainComponent cc : toCopy.chain) {
-            chain.add(cc.deepCopy());
-        }
-        stateVariable = toCopy.stateVariable;
+    private Timeline(ChainComponent[] chain, int mID, ParameterizedStateVariable sv) {
+        this.mID = mID;
+        this.chain = chain;
+        this.stateVariable = sv;
+    }
+
+    public int size() { return chain.length; }
+
+    public ChainComponent get(int position) { return chain[position]; }
+
+    public boolean isEmpty() { return chain.length == 0; }
+
+    public boolean contains(ChainComponent cc) {
+        for(ChainComponent cur : chain)
+            if(cc.equals(cur))
+                return true;
+        return false;
     }
 
     public boolean contains(LogStatement s) {
@@ -63,6 +77,73 @@ public class Timeline {
             }
         }
         return false;
+    }
+
+    /** @return A new Timeline with cc appended to the chain. */
+    protected Timeline with(ChainComponent cc) {
+        return with(cc, chain.length);
+    }
+
+    /** @return A new Timeline with the componenet "toAdd" added at "at" */
+    protected Timeline with(ChainComponent toAdd, int at) {
+        ChainComponent[] newChain = new ChainComponent[chain.length+1];
+        int delta = 0;
+        for(int i=0 ; i<chain.length ; i++) {
+            if(i == at) // leave space here for element toAdd
+                delta = 1;
+            newChain[i+delta] = chain[i];
+        }
+        assert newChain[at] == null;
+        newChain[at] = toAdd;
+
+        return new Timeline(newChain, mID, stateVariable);
+    }
+
+    protected Timeline without(ChainComponent cc) {
+        ChainComponent[] newChain = new ChainComponent[chain.length-1];
+
+        int i = 0;
+        for(ChainComponent cur : chain) {
+            if(!cur.equals(cc)) {
+                newChain[i] = cur;
+                i++;
+            }
+        }
+
+        return new Timeline(newChain, mID, stateVariable);
+    }
+
+    public ChainComponent getFirst() { return chain[0]; }
+
+    public ChainComponent getLast() { return chain[chain.length-1]; }
+
+    /** @return A new timeline from which the statement s is removed from cc. */
+    public Timeline removeFromChainComponent(ChainComponent cc, LogStatement s) {
+        ChainComponent[] newChain = Arrays.copyOf(chain, chain.length);
+        boolean found = false;
+        for(int i=0 ; i<newChain.length ; i++) {
+            if(newChain[i].equals(cc)) {
+                newChain[i] = newChain[i].without(s);
+                found = true;
+                break;
+            }
+        }
+        assert found : "Unable to find this chain component in the timeline.";
+        return new Timeline(newChain, mID, stateVariable);
+    }
+
+    public Timeline addToChainComponent(ChainComponent cc, ChainComponent toAdd) {
+        ChainComponent[] newChain = Arrays.copyOf(chain, chain.length);
+        boolean found = false;
+        for(int i=0 ; i<newChain.length ; i++) {
+            if(newChain[i].equals(cc)) {
+                newChain[i] = newChain[i].withAll(toAdd);
+                found = true;
+                break;
+            }
+        }
+        assert found : "Unable to find this chain component in the timeline.";
+        return new Timeline(newChain, mID, stateVariable);
     }
 
     /** Number of chain components containing a change */
@@ -96,7 +177,7 @@ public class Timeline {
 
         ret += "    " + this.stateVariable + "  :  id=" + mID + "\n";
         for (ChainComponent c : chain) {
-            for (LogStatement e : c.contents) {
+            for (LogStatement e : c.statements) {
                 ret += "    " + e;
             }
             ret += "\n";
@@ -111,15 +192,27 @@ public class Timeline {
      * an assignment)
      */
     public boolean isConsumer() {
-        return chain.getFirst().contents.getFirst().needsSupport();
+        return chain[0].getFirst().needsSupport();
+    }
+
+    /**
+     * Returns the index of the chain component cc.
+     */
+    public int indexOf(ChainComponent cc) {
+        for(int ct = 0; ct < chain.length; ct++) {
+            if (chain[ct].equals(cc)) {
+                return ct;
+            }
+        }
+        throw new FAPEException("This statement is not present in the database.");
     }
 
     /**
      * Returns the index of the chain component containing s.
      */
     public int indexOfContainer(LogStatement s) {
-        for(int ct = 0; ct < chain.size(); ct++) {
-            if (chain.get(ct).contains(s)) {
+        for(int ct = 0; ct < chain.length; ct++) {
+            if (chain[ct].contains(s)) {
                 return ct;
             }
         }
@@ -130,7 +223,7 @@ public class Timeline {
      * @return
      */
     public Timeline deepCopy() {
-        return new Timeline(this);
+        return this;
     }
 
     /**
@@ -146,9 +239,9 @@ public class Timeline {
      * @return All time points from the last component.
      */
     public LinkedList<TPRef> getLastTimePoints() {
-        assert !chain.isEmpty() : "Database is empty.";
+        assert chain.length > 0 : "Database is empty.";
         LinkedList<TPRef> tps = new LinkedList<>();
-        for(LogStatement s : chain.getLast().contents) {
+        for(LogStatement s : chain[chain.length-1].statements) {
             tps.add(s.end());
         }
         return tps;
@@ -158,9 +251,9 @@ public class Timeline {
      * @return All time points from the first component.
      */
     public LinkedList<TPRef> getFirstTimePoints() {
-        assert !chain.isEmpty() : "Database is empty";
+        assert chain.length > 0 : "Database is empty";
         LinkedList<TPRef> tps = new LinkedList<>();
-        for(LogStatement s : chain.getFirst().contents) {
+        for(LogStatement s : chain[0].statements) {
             tps.add(s.start());
         }
         return tps;
@@ -170,20 +263,20 @@ public class Timeline {
      * Returns the start time point of the first change statement (assigment or transition) of the database.
      */
     public TPRef getFirstChangeTimePoint() {
-        assert !chain.isEmpty() : "Database is empty";
+        assert chain.length > 0 : "Database is empty";
         assert !hasSinglePersistence() : "Database has no change statements";
         for(ChainComponent cc : chain) {
             if(cc.change)
-                return cc.contents.getFirst().start();
+                return cc.getFirst().start();
         }
         throw new FAPEException("Error: no change statements encountered.");
     }
 
     @Deprecated
     public TPRef getConsumeTimePoint() {
-        assert !chain.isEmpty() : "Database is empty.";
-        assert chain.getFirst().contents.size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
-        return chain.getFirst().getConsumeTimePoint();
+        assert chain.length > 0 : "Database is empty.";
+        assert chain[0].size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
+        return chain[0].getConsumeTimePoint();
     }
 
     public List<String> getPossibleSupportAtomNames(State st) {
@@ -195,10 +288,10 @@ public class Timeline {
      * assignment or a transition). It returns null if no such element exists.
      */
     public ChainComponent getSupportingComponent() {
-        for (int i = chain.size() - 1; i >= 0; i--) {
-            if (chain.get(i).change) {
-                assert chain.get(i).contents.size() == 1;
-                return chain.get(i);
+        for (int i = chain.length - 1; i >= 0; i--) {
+            if (chain[i].change) {
+                assert chain[i].size() == 1;
+                return chain[i];
             }
         }
         return null;
@@ -209,25 +302,25 @@ public class Timeline {
      * assignment or a transition). It returns null if no such element exists.
      */
     public LogStatement getFirstChange() {
-        for (int i = 0 ; i <= chain.size() - 1 ; i++) {
-            if (chain.get(i).change) {
-                assert chain.get(i).contents.size() == 1;
-                return chain.get(i).contents.getFirst() ;
+        for (int i = 0 ; i < chain.length ; i++) {
+            if (chain[i].change) {
+                assert chain[i].size() == 1;
+                return chain[i].getFirst() ;
             }
         }
         return null;
     }
 
 
-    public ChainComponent getChainComponent(int precedingChainComponent) {
-        return chain.get(precedingChainComponent);
+    public ChainComponent getChainComponent(int position) {
+        return chain[position];
     }
 
     /**
      * @return True if there is only persistences
      */
     public boolean hasSinglePersistence() {
-        return chain.size() == 1 && !chain.get(0).change;
+        return chain.length == 1 && !chain[0].change;
     }
 
     /**
@@ -235,7 +328,7 @@ public class Timeline {
      * temporal database
      */
     public VarRef getGlobalSupportValue() {
-        return chain.getLast().getSupportValue();
+        return chain[chain.length-1].getSupportValue();
     }
 
     /**
@@ -243,7 +336,7 @@ public class Timeline {
      * @return
      */
     public VarRef getGlobalConsumeValue() {
-        return chain.getFirst().getConsumeValue();
+        return chain[0].getConsumeValue();
     }
 
     @Override
@@ -251,7 +344,7 @@ public class Timeline {
         String res = "(tdb:" + mID + " dom=[" + this.stateVariable + "] chains=[";
 
         for (ChainComponent comp : this.chain) {
-            for (LogStatement ev : comp.contents) {
+            for (LogStatement ev : comp.statements) {
                 res += ev.toString() + ", ";
             }
         }
@@ -276,24 +369,24 @@ public class Timeline {
 
     public IList<Pair<LogStatement, LogStatement>> allCausalLinks() {
         IList<Pair<LogStatement, LogStatement>> cls = new IList<>();
-        for(int i=0 ; i<chain.size() ; i++) {
-            ChainComponent supCC = chain.get(i);
+        for(int i=0 ; i<chain.length ; i++) {
+            ChainComponent supCC = chain[i];
 
             if(!supCC.change) //supporter must be a change
                 continue;
 
-            assert supCC.contents.size() == 1;
-            LogStatement sup = supCC.contents.getFirst();
+            assert supCC.size() == 1;
+            LogStatement sup = supCC.getFirst();
 
-            if(i+1<chain.size()) {
-                for(LogStatement cons : chain.get(i+1).contents) {
+            if(i+1<chain.length) {
+                for(LogStatement cons : chain[i+1].statements) {
                     cls = cls.with(new Pair<>(sup, cons));
                 }
             }
 
-            if(i+2 < chain.size() && !chain.get(i+1).change) {
-                assert chain.get(i+2).change;
-                for(LogStatement cons : chain.get(i+2).contents) {
+            if(i+2 < chain.length && !chain[i+1].change) {
+                assert chain[i+2].change;
+                for(LogStatement cons : chain[i+2].statements) {
                     cls = cls.with(new Pair<>(sup, cons));
                 }
             }

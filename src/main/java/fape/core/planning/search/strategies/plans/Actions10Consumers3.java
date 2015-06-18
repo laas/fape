@@ -16,7 +16,7 @@ public class Actions10Consumers3 implements PartialPlanComparator {
     }
 
     public int eval(State s) {
-        return s.getNumActions()* 10 + s.consumers.size() * 3;
+        return s.getNumActions()* 10 + s.tdb.getConsumers().size() * 3;
     }
 
     @Override
