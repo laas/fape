@@ -36,11 +36,11 @@ public class Threat extends Flaw {
             resolvers.add(new TemporalSeparation(db2, db1));
 
         // make any argument of the state variables different
-        for (int i = 0; i < db1.stateVariable.jArgs().size(); i++) {
-            if(st.separable(db1.stateVariable.jArgs().get(i), db2.stateVariable.jArgs().get(i)))
+        for (int i = 0; i < db1.stateVariable.args().length; i++) {
+            if(st.separable(db1.stateVariable.arg(i), db2.stateVariable.arg(i)))
                 resolvers.add(new BindingSeparation(
-                        db1.stateVariable.jArgs().get(i),
-                        db2.stateVariable.jArgs().get(i)));
+                        db1.stateVariable.arg(i),
+                        db2.stateVariable.arg(i)));
         }
 
         return resolvers;

@@ -13,16 +13,16 @@ public class RelaxedPlanningGraph {
 
     final Map<PGNode, Integer> distances = new HashMap<>();
 
-    final List<GAction> baseActions;
+    final Collection<GAction> baseActions;
 
     public RelaxedPlanningGraph(GroundProblem pb) {
         this.pb = pb;
-        this.baseActions = new LinkedList<>(pb.allActions());
+        this.baseActions = pb.allActions(); //= new LinkedList<>(pb.allActions());
     }
 
     public RelaxedPlanningGraph(GroundProblem pb, Collection<GAction> acts) {
         this.pb = pb;
-        this.baseActions = new LinkedList<>(acts);
+        this.baseActions = acts; //new LinkedList<>(acts);
     }
 
     public int buildUntil(DisjunctiveFluent df) {

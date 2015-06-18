@@ -51,11 +51,10 @@ public class LMC implements PartialPlanComparator {
         Collection<String> dom = state.domainOf(value);
         for (String val : dom) {
             List<Collection<String>> inits = new LinkedList<>();
-            scala.collection.Iterator<VarRef> it = v.args().iterator();
-            while (it.hasNext()) {
-                VarRef var = it.next();
+
+            for(VarRef var : v.args())
                 inits.add(state.domainOf(var));
-            }
+
             List<String> variations = new LinkedList<>();
             recGen(inits, variations, "", 0);
             for (String s : variations) {

@@ -164,12 +164,12 @@ public class ResourceManager {
      * @return
      */
     public boolean Unified(Resource a, Resource b, State st) {
-        if (!a.stateVariable.func().name().equals(b.stateVariable.func().name()) || a.stateVariable.jArgs().size() != b.stateVariable.jArgs().size()) {
+        if (!a.stateVariable.func().name().equals(b.stateVariable.func().name()) || a.stateVariable.args().length != b.stateVariable.args().length) {
             return false;
         } else {
             boolean unifies = true;
-            for (int i = 0; i < a.stateVariable.jArgs().size() && unifies; i++) {
-                unifies &= st.unified(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
+            for (int i = 0; i < a.stateVariable.args().length && unifies; i++) {
+                unifies &= st.unified(a.stateVariable.arg(i), b.stateVariable.arg(i));
             }
             return unifies;
         }
@@ -184,12 +184,12 @@ public class ResourceManager {
      * @return
      */
     public boolean Unifiable(Resource a, Resource b, State st) {
-        if (!a.stateVariable.func().name().equals(b.stateVariable.func().name()) || a.stateVariable.jArgs().size() != b.stateVariable.jArgs().size()) {
+        if (!a.stateVariable.func().name().equals(b.stateVariable.func().name()) || a.stateVariable.args().length != b.stateVariable.args().length) {
             return false;
         } else {
             boolean unifies = true;
-            for (int i = 0; i < a.stateVariable.jArgs().size() && unifies; i++) {
-                unifies &= st.unifiable(a.stateVariable.jArgs().get(i), b.stateVariable.jArgs().get(i));
+            for (int i = 0; i < a.stateVariable.args().length && unifies; i++) {
+                unifies &= st.unifiable(a.stateVariable.arg(i), b.stateVariable.arg(i));
             }
             return unifies;
         }

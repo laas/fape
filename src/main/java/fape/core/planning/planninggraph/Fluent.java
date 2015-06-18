@@ -9,17 +9,17 @@ import java.util.List;
 
 public class Fluent implements PGNode , Term {
     final public Function f;
-    final public List<VarRef> params;
+    final public VarRef[] params;
     final public VarRef value;
     final public boolean partOfTransition;
 
     int hashVal;
 
 
-    public Fluent(Function f, List<VarRef> params, VarRef value, boolean partOfTransition) {
+    public Fluent(Function f, VarRef[] params, VarRef value, boolean partOfTransition) {
         this.partOfTransition = partOfTransition;
         this.f = f;
-        this.params = new LinkedList<VarRef>(params);
+        this.params = params;
         this.value = value;
 
         int i = 0;
@@ -47,8 +47,8 @@ public class Fluent implements PGNode , Term {
         if(!f.equals(of.f))
             return false;
 
-        for(int i=0 ; i<params.size() ; i++) {
-            if(!params.get(i).equals(of.params.get(i)))
+        for(int i=0 ; i<params.length ; i++) {
+            if(!params[i].equals(of.params[i]))
                 return false;
         }
 

@@ -31,11 +31,11 @@ public class GroundProblem {
         public final List<InstanceRef> params;
         public final InstanceRef value;
 
-        public Invariant(Function f, List<VarRef> params, VarRef value) {
+        public Invariant(Function f, VarRef[] params, VarRef value) {
             this.f =  f;
             this.params = new LinkedList<>();
             for(VarRef v : params)
-            this.params.add((InstanceRef) v);
+                this.params.add((InstanceRef) v);
             this.value = (InstanceRef) value;
         }
 
@@ -121,7 +121,7 @@ public class GroundProblem {
             for(BindingConstraint bc : c.bindingConstraints()) {
                 if(bc instanceof AssignmentConstraint) {
                     AssignmentConstraint ac = (AssignmentConstraint) bc;
-                    invariants.add(new Invariant(ac.sv().func(), ac.sv().jArgs(), ac.variable()));
+                    invariants.add(new Invariant(ac.sv().func(), ac.sv().args(), ac.variable()));
                 }
             }
         }
@@ -189,9 +189,9 @@ public class GroundProblem {
     protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, VarRef> argMap) {
         List<Fluent> fluents = new LinkedList<>();
         if(s instanceof Transition) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), true));
+            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), true));
         } else if(s instanceof Persistence) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), false));
+            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), false));
         }
         return fluents;
     }
@@ -199,8 +199,8 @@ public class GroundProblem {
     protected Collection<Fluent> statementToAddition(LogStatement s, Map<LVarRef, VarRef> argMap) {
         List<Fluent> fluents = new LinkedList<>();
         if(s instanceof Transition || s instanceof Assignment) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), false));
-            fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.endValue(), true));
+            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), false));
+            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), true));
         }
         return fluents;
     }
@@ -212,14 +212,14 @@ public class GroundProblem {
             for(String value : liftedPb.instances().instancesOfType(s.sv().func().valueType())) {
                 VarRef val = liftedPb.instances().referenceOf(value);
                 if(val != s.endValue()) {
-                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val, true));
-                    fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), val, false));
+                    fluents.add(new Fluent(s.sv().func(), s.sv().args(), val, true));
+                    fluents.add(new Fluent(s.sv().func(), s.sv().args(), val, false));
                 }
             }
         } else {
             if(s.startValue() != s.endValue()) {
-                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), true));
-                fluents.add(new Fluent(s.sv().func(), s.sv().jArgs(), s.startValue(), false));
+                fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), true));
+                fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), false));
             }
         }
         return fluents;

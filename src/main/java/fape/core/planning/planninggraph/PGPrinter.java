@@ -5,6 +5,7 @@ import planstack.anml.model.concrete.VarRef;
 import planstack.graph.core.Edge;
 import planstack.graph.printers.NodeEdgePrinter;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,7 +36,7 @@ class PGPrinter extends NodeEdgePrinter<PGNode, PGEdgeLabel, Edge<PGNode>> {
             GAction act = (GAction) n;
             return act.toString();
         } else if(n instanceof Fluent) {
-            return ((Fluent) n).f.name() + valuesOf(((Fluent) n).params).toString() + pb.valueOf(((Fluent) n).value) + " ->"+rpg.distance(n);
+            return ((Fluent) n).f.name() + valuesOf(Arrays.asList(((Fluent) n).params)).toString() + pb.valueOf(((Fluent) n).value) + " ->"+rpg.distance(n);
         } else if(n instanceof GroundState) {
             return "Init" + " ->"+rpg.distance(n);
         }

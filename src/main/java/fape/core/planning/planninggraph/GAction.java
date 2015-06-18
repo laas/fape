@@ -208,10 +208,10 @@ public class GAction implements PGNode {
     }
 
     public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, boolean partOfTransition, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
-        List<VarRef> svParams = new LinkedList<>();
-        for(LVarRef v : sv.jArgs()) {
-            svParams.add(valueOf(v, pb));
-        }
+        VarRef[] svParams = new VarRef[sv.jArgs().size()];
+        for(int i=0 ; i<svParams.length ; i++)
+            svParams[i] = valueOf(sv.jArgs().get(i), pb);
+
         return new Fluent(sv.func(), svParams, valueOf(value, pb), partOfTransition);
     }
 

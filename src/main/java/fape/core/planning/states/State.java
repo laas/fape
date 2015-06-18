@@ -324,8 +324,8 @@ public class State implements Reporter {
     public boolean unified(ParameterizedStateVariable a, ParameterizedStateVariable b) {
         if(a.func() != b.func())
             return false;
-        for(int i=0 ; i<a.jArgs().size() ; i++) {
-            if(!unified(a.jArgs().get(i), b.jArgs().get(i)))
+        for(int i=0 ; i<a.args().length ; i++) {
+            if(!unified(a.arg(i), b.arg(i)))
                 return false;
         }
         return true;
@@ -345,7 +345,7 @@ public class State implements Reporter {
      */
     public boolean unifiable(ParameterizedStateVariable a, ParameterizedStateVariable b) {
         if (a.func().equals(b.func())) {
-            return unifiable(a.jArgs(), b.jArgs());
+            return unifiable(a.args(), b.args());
         } else {
             return false;
         }
@@ -357,10 +357,10 @@ public class State implements Reporter {
      *
      * @return True if, for all i in 0..size(as), as[i] and bs[i] are unifiable.
      */
-    public boolean unifiable(List<VarRef> as, List<VarRef> bs) {
-        assert as.size() == bs.size() : "The two lists have different size.";
-        for (int i = 0; i < as.size(); i++) {
-            if (!unifiable(as.get(i), bs.get(i))) {
+    public boolean unifiable(VarRef[] as, VarRef[] bs) {
+        assert as.length == bs.length : "The two lists have different size.";
+        for (int i = 0; i < as.length ; i++) {
+            if (!unifiable(as[i], bs[i])) {
                 return false;
             }
         }
@@ -415,7 +415,7 @@ public class State implements Reporter {
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
                 min = new VarRef();
                 csp.bindings().AddIntVariable(min);
-                List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
+                List<VarRef> varsOfExtConst = Arrays.asList(sv.args());
                 varsOfExtConst.add(min);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
@@ -436,7 +436,7 @@ public class State implements Reporter {
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
                 max = new VarRef();
                 csp.bindings().AddIntVariable(max);
-                List<VarRef> varsOfExtConst = new LinkedList<>(sv.jArgs());
+                List<VarRef> varsOfExtConst = Arrays.asList(sv.args());
                 varsOfExtConst.add(max);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
@@ -504,7 +504,7 @@ public class State implements Reporter {
         if (bc instanceof AssignmentConstraint) {
             AssignmentConstraint c = (AssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
-            for (VarRef v : c.sv().jArgs()) {
+            for (VarRef v : c.sv().args()) {
                 assert v instanceof InstanceRef;
                 values.add(((InstanceRef) v).instance());
             }
@@ -519,14 +519,14 @@ public class State implements Reporter {
             csp.bindings().AddSeparationConstraint(c.leftVar(), c.rightVar());
         } else if (bc instanceof EqualityConstraint) {
             EqualityConstraint c = (EqualityConstraint) bc;
-            List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
+            List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             variables.add(c.variable());
             csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
         } else if (bc instanceof InequalityConstraint) {
             // create a new value tmp such that
             // c.sv == tmp and tmp != c.variable
             InequalityConstraint c = (InequalityConstraint) bc;
-            List<VarRef> variables = new LinkedList<>(c.sv().jArgs());
+            List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             VarRef tmp = new VarRef();
             csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
             variables.add(tmp);
@@ -535,7 +535,7 @@ public class State implements Reporter {
         } else if (bc instanceof IntegerAssignmentConstraint) {
             IntegerAssignmentConstraint c = (IntegerAssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
-            for (VarRef v : c.sv().jArgs()) {
+            for (VarRef v : c.sv().args()) {
                 assert v instanceof InstanceRef;
                 values.add(((InstanceRef) v).instance());
             }
@@ -1073,9 +1073,9 @@ public class State implements Reporter {
 
     public void addUnificationConstraint(ParameterizedStateVariable a, ParameterizedStateVariable b) {
         assert a.func() == b.func() : "Error unifying two state variable on different functions.";
-        assert a.jArgs().size() == b.jArgs().size() : "Error different number of arguments.";
-        for (int i = 0; i < a.jArgs().size(); i++) {
-            csp.bindings().AddUnificationConstraint(a.jArgs().get(i), b.jArgs().get(i));
+        assert a.args().length == b.args().length : "Error different number of arguments.";
+        for (int i = 0; i < a.args().length; i++) {
+            csp.bindings().AddUnificationConstraint(a.arg(i), b.arg(i));
         }
     }
 

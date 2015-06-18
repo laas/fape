@@ -22,7 +22,7 @@ public class DisjunctiveFluent implements Landmark {
     public static Collection<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, boolean addChangeableFluents) {
         HashSet<Fluent> fluents = new HashSet<>();
         List<VarRef> variables = new LinkedList<>();
-        for(VarRef var : sv.jArgs()) {
+        for(VarRef var : sv.args()) {
             if(!variables.contains(var)) {
                 variables.add(var);
             }
@@ -44,16 +44,16 @@ public class DisjunctiveFluent implements Landmark {
 
         for(List<VarRef> args : argList) {
 
-            List<VarRef> fluentArgs = new LinkedList<>();
-            for(VarRef arg : sv.jArgs()) {
+            VarRef[] fluentArgs = new VarRef[sv.args().length];
+            int i =0;
+            for(VarRef arg : sv.args()) {
                 int argIndex;
                 for(argIndex=0 ; argIndex<variables.size() ; argIndex++) {
                     if(arg.equals(variables.get(argIndex)))
                         break;
                 }
-                if(argIndex >= args.size())
-                    throw new FAPEException("Couldn't find arggument for ");
-                fluentArgs.add(args.get(argIndex));
+                assert argIndex < args.size() : "Couldn't find arggument for ";
+                fluentArgs[i++] = args.get(argIndex);
             }
             int argIndex;
             for(argIndex=0 ; argIndex<variables.size() ; argIndex++) {

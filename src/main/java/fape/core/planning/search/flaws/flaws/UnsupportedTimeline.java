@@ -43,8 +43,8 @@ public class UnsupportedTimeline extends Flaw {
     private boolean areNecessarilyIdentical(State st, ParameterizedStateVariable sv1, ParameterizedStateVariable sv2) {
         if(sv1.func() != sv2.func())
             return false;
-        for(int i=0 ; i<sv1.args().size() ; i++) {
-            if(st.separable(sv1.jArgs().get(i), sv2.jArgs().get(i)))
+        for(int i=0 ; i<sv1.args().length ; i++) {
+            if(st.separable(sv1.arg(i), sv2.arg(i)))
                 return false;
         }
         return true;

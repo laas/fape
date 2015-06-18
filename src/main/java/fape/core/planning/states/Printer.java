@@ -189,7 +189,7 @@ public class Printer {
 
     public static String stateVariable(State st, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
-        for(VarRef arg : sv.jArgs()) {
+        for(VarRef arg : sv.args()) {
             ret += variable(st, arg);
         }
         return ret + ")";
@@ -197,7 +197,7 @@ public class Printer {
 
     public static String groundStateVariable(State st, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
-        for(VarRef arg : sv.jArgs()) {
+        for(VarRef arg : sv.args()) {
             ret += bindedVariable(st, arg);
         }
         return ret + ")";
