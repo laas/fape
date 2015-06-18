@@ -174,20 +174,20 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         }
 
         for(List<VarRef> cons : constraintsToCheck) {
-            for(int focus=0 ; focus<cons.size() ; focus++) {
-                VarRef focusVar = cons.get(focus);
-                Set<Integer>[] domains = new Set[cons.size()];
-                for(int j=0 ; j<cons.size() ; j++) {
-                    domains[j] = variables.apply(cons.get(j)).values();
-                }
+            Set<Integer>[] domains = new Set[cons.size()];
+            for(int j=0 ; j<cons.size() ; j++) {
+                domains[j] = variables.apply(cons.get(j)).values();
+            }
+            // get restricted domains for all vars in the constraint
+            Set<Integer>[] restrictedDomains = exts.get(mappings.get(cons)).restrictedDomains(domains);
+
+            for(int i=0 ; i<cons.size() ; i++) {
+                assert cons.size() == restrictedDomains.length;
+                VarRef focusVar = cons.get(i);
 
                 ValuesHolder old = variables.apply(focusVar);
-
-                Set<Integer> domainRestrictions = exts.get(mappings.get(cons)).valuesUnderRestriction(focus, domains);
-                if(domainRestrictions == null)
-                    break;
-                variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(domainRestrictions)));
-                if(old.size() != variables.apply(focusVar).size())
+                variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(restrictedDomains[i])));
+                if (old.size() > variables.apply(focusVar).size())
                     domainModified(focusVar);
             }
         }
