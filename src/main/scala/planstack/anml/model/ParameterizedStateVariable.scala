@@ -10,7 +10,7 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
 
   /** Produces a new ParameterizedStateVariable whose parameters refer to global variables (as defined in `context` */
   def bind(context:Context) : ParameterizedStateVariable =
-    new ParameterizedStateVariable(func, args.map(context.getGlobalVar(_)))
+    new ParameterizedStateVariable(func, args.map(context.getGlobalVar(_)).toArray)
 
   def jArgs = seqAsJavaList(args)
 
@@ -25,11 +25,11 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   * @param func Function on which this state variables applies.
   * @param args A list of variables that are the parameters of the state variable.
   */
-class ParameterizedStateVariable(val func:Function, val args:List[VarRef]) {
+class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
   assert(args.length == func.argTypes.length,
     "There is "+args.length+" arguments instead of "+func.argTypes.length+" for the state varaible: "+func)
 
-  def jArgs = seqAsJavaList(args)
+  def arg(i: Int) : VarRef = args(i)
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
 }

@@ -22,9 +22,9 @@ class GlobalRef(val id:T) {
   def isEmpty = id == NullID
   def nonEmpty = !isEmpty
 
-  override def toString = ""+id
+  override def toString = id.toString
 
-  override val hashCode = id
+  override final val hashCode = id
 
   override def equals(o:Any) = {
     if(o.isInstanceOf[T]) {

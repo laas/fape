@@ -279,7 +279,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
   def stateVariable(funcName: String, args: Seq[String]) = {
     val vars = args.map(instances.referenceOf(_))
     val func = functions.get(funcName)
-    new ParameterizedStateVariable(func, vars.toList)
+    new ParameterizedStateVariable(func, vars.toArray)
   }
 
   /** Builds a state variable with the given function and args */
