@@ -4,10 +4,8 @@ import planstack.constraints.stn.ISTN;
 import planstack.structures.IList;
 import planstack.structures.ISet;
 import scala.*;
-import scala.collection.*;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Simple Temporal Network, provides effective representation and copy constructor, methods for acessing,
@@ -28,17 +26,8 @@ import java.util.List;
  */
 public class FullSTN<ID> extends ISTN<ID> {
 
-    /**
-     *
-     */
-    public static void precalc_inic(){
-        precalc = new int[precalc_size][];
-        for(int i = 0; i < precalc_size; i++){
-            precalc[i] = new int[i];
-            for(int j = 0; j < i; j++){
-                precalc[i][j] = i*(i-1)/2 + j;
-            }
-        }
+    private static int pos(int i, int j) {
+        return i*(i-1)/2 + j;
     }
 
     /** lower bound on time relations */
@@ -62,9 +51,6 @@ public class FullSTN<ID> extends ISTN<ID> {
     /** +infinity */
     protected static final int sup = 2000000000;
 
-    static int precalc[][] = null;
-    static final int precalc_size = 10000;
-
     /**
      * constructs new network (intended to run once per Finder invokation)
      */
@@ -77,8 +63,6 @@ public class FullSTN<ID> extends ISTN<ID> {
     }
 
     protected void init(int capacity) {
-        if(precalc == null)
-            precalc_inic();
         allConstraints = new IList<>();
         emptySpots = new ISet<>();
         top = 0;
@@ -162,7 +146,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     protected int ga(int var1, int var2){
         if(var1 == var2) return 0;
         else if(var1 < var2) return (- gb(var2,var1));
-        else return edge_a[FullSTN.precalc[var1][var2]];
+        else return edge_a[pos(var1, var2)];
     }
     /**
      * returns the upper bound on time between time point var1 and var2, uses symmetry of the network
@@ -173,7 +157,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     protected int gb(int var1, int var2){
         if(var1 == var2) return 0;
         else if(var1 < var2) return (- ga(var2,var1));
-        else return edge_b[FullSTN.precalc[var1][var2]];
+        else return edge_b[pos(var1, var2)];
     }
     /**
      * sets value of the lower bound on time between time point var1 and var2, uses symmetry of the network
@@ -186,7 +170,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      */
     protected void sa(int var1, int var2, int value){
         if(var1 < var2) sb(var2,var1, - value);
-        else edge_a[var1*(var1-1)/2 + var2] = value;
+        else edge_a[pos(var1, var2)] = value;
     }
     /**
      * sets value of the upper bound on time between time point var1 and var2, uses symmetry of the network
@@ -199,7 +183,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      */
     protected void sb(int var1, int var2, int value){
         if(var1 < var2) sa(var2,var1, - value);
-        else edge_b[var1*(var1-1)/2 + var2] = value;
+        else edge_b[pos(var1, var2)] = value;
     }
 
     /**
