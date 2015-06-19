@@ -1,6 +1,9 @@
 package planstack.constraints.stnu
 
+import net.openhft.koloboke.collect.map.hash._
+import net.openhft.koloboke.collect.map.{IntIntMap, IntObjMap}
 import planstack.UniquelyIdentified
+import planstack.constraints.Kolokobe
 import planstack.constraints.stn.{STNIncBellmanFord, ISTN}
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
@@ -10,20 +13,18 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class MinimalSTNUManager[TPRef <: UniquelyIdentified,ID](val stn:ISTN[ID],
-                                   _tps: Map[Int,TimePoint[TPRef]],
-                                   _ids : Map[Int,Int],
+                                   _tps: HashIntObjMap[TimePoint[TPRef]],
+                                   _ids : HashIntIntMap,
                                    _rawConstraints : List[Constraint[TPRef,ID]],
                                    _start : Option[TPRef],
                                    _end : Option[TPRef])
   extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  implicit def ref2id(tp: TPRef) = id(tp.id)
-
-  def this() = this(new STNIncBellmanFord[ID](), Map(), Map(), List(), None, None)
+  def this() = this(new STNIncBellmanFord[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
 
   /** Makes an independent clone of this STN. */
   override def deepCopy(): MinimalSTNUManager[TPRef, ID] =
-    new MinimalSTNUManager(stn.cc(), tps, id, rawConstraints, start, end)
+    new MinimalSTNUManager(stn.cc(), Kolokobe.clone(tps), Kolokobe.clone(id), rawConstraints, start, end)
 
   override def controllability: Controllability = Controllability.STN_CONSISTENCY
 

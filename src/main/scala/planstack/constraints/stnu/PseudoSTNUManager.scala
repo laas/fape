@@ -1,6 +1,8 @@
 package planstack.constraints.stnu
 
+import net.openhft.koloboke.collect.map.hash.{HashIntIntMap, HashIntObjMap}
 import planstack.UniquelyIdentified
+import planstack.constraints.Kolokobe
 import planstack.constraints.stn.ISTN
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
@@ -12,16 +14,16 @@ import planstack.structures.Converters._
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
 class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
-                                  _tps : Map[Int,TimePoint[TPRef]],
-                                  _ids : Map[Int,Int],
+                                  _tps : HashIntObjMap[TimePoint[TPRef]],
+                                  _ids : HashIntIntMap,
                                   _rawConstraints : List[Constraint[TPRef,ID]],
                                   _start : Option[TPRef],
                                   _end : Option[TPRef])
   extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  def this() = this(new FullSTN[ID](), Map(), Map(), List(), None, None)
+  def this() = this(new FullSTN[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
   def this(toCopy:PseudoSTNUManager[TPRef,ID]) =
-    this(toCopy.stn.cc(), toCopy.tps, toCopy.id, toCopy.rawConstraints, toCopy.start, toCopy.end)
+    this(toCopy.stn.cc(), Kolokobe.clone(toCopy.tps), Kolokobe.clone(toCopy.id), toCopy.rawConstraints, toCopy.start, toCopy.end)
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
@@ -30,7 +32,7 @@ class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
   override def deepCopy(): PseudoSTNUManager[TPRef, ID] = new PseudoSTNUManager(this)
 
   override def isConsistent: Boolean = {
-    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u.id), id(c.v.id), c.d))
+    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id.get(c.u.id), id.get(c.v.id), c.d))
   }
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
