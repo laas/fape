@@ -835,15 +835,6 @@ public class State implements Reporter {
             }
         }
 
-        // checks if this new timeline can provide support to others
-        for(int i=0 ; i < a.numChanges() ; i++) {
-            for(Timeline b : tdb.getConsumers()) {
-                if (UnsupportedTimeline.isSupporting(a, i, b, this))
-                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
-            }
-        }
-
-
         if(a.isConsumer()) {
             // gather all potential supporters for this new timeline
             potentialSupporters.put(a.mID, new IList<SupportingTimeline>());
@@ -854,6 +845,17 @@ public class State implements Reporter {
                 }
             }
         }
+
+        // checks if this new timeline can provide support to others
+        for(int i=0 ; i < a.numChanges() ; i++) {
+            for(Timeline b : tdb.getConsumers()) {
+                if (UnsupportedTimeline.isSupporting(a, i, b, this)) {
+                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
+                }
+            }
+        }
+
+
     }
 
     public void timelineExtended(Timeline tl) {

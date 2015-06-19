@@ -12,10 +12,7 @@ libraryDependencies ++= Seq(
   "fr.laas.fape" % "constraints" % "0.8-SNAPSHOT"
 )
 
-
-javaOptions in run += "-Xmx3000m"
-
-javaOptions in run += "-ea"
+javaOptions in run ++= Seq("-Xmx3000m", "-ea")
 
 fork in run := true
 
