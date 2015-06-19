@@ -15,7 +15,7 @@ import planstack.anml.model.concrete.GlobalRef._
   *
   * @param id Unique id of the reference.
   */
-class GlobalRef(val id:T) {
+class GlobalRef(val id:T) extends planstack.UniquelyIdentified {
   require(id<next, "Error: ids should be strictly growing to avoid overlapping.")
   def this() = this(getNext)
 
