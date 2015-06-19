@@ -19,18 +19,34 @@ object Ref {
   }
 
   implicit def toRef(name:String) : Ref = new Ref(name)
-  implicit def toRef(i:Int) : Ref = new Ref(i.toString)
+}
+
+object IRef {
+  implicit def toIRef(i:Int) : IRef = new IRef(i)
+}
+
+class IRef(val id: Int) extends UniquelyIdentified {
+  override def toString = id.toString
 }
 
 class Ref(val name:String) extends UniquelyIdentified {
 
   override val id = Ref.get(name)
+
+  override def equals(o: Any) : Boolean = o match {
+    case r:Ref => r.name == name
+    case i:Int => i.toString == name
+    case s:String => s == name
+  }
+
+  override def hashCode : Int = name.hashCode
+
 }
 
 class MixedConstraintsSuite extends FunSuite {
 
   test("isPropagated") {
-    val csp = new MetaCSP[Ref,Ref,Ref]()
+    val csp = Factory.getMetaWithoutControllability[Ref,Ref,Ref]
 
     val iDomain = new java.util.LinkedList[Integer]
     for(i <- 1 until 5)

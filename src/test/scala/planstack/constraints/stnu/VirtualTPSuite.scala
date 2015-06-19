@@ -1,12 +1,12 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
-import planstack.constraints.Ref
+import planstack.constraints.{IRef, Ref}
 import planstack.constraints.stn.Predef._
 
 class VirtualTPSuite extends FunSuite {
 
-  for(stn <- getAllSTNUManager[Ref,Int]) {
+  for(stn <- getAllSTNUManager[IRef,Int]) {
     test("[" + stn.getClass.getSimpleName + "] constraints are enforced") {
       stn.recordTimePointAsStart(1)
       stn.addControllableTimePoint(2)

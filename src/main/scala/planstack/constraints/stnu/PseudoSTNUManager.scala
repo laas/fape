@@ -12,19 +12,16 @@ import planstack.structures.Converters._
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
 class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
-                                  _dispatchableVars : Set[Int],
-                                  _contingentVars : Set[Int],
+                                  _tps : Map[Int,TimePoint[TPRef]],
                                   _ids : Map[Int,Int],
-                                  _virtuals : Map[Int, Option[(TPRef,Int)]],
                                   _rawConstraints : List[Constraint[TPRef,ID]],
                                   _start : Option[TPRef],
                                   _end : Option[TPRef])
-  extends GenSTNUManager[TPRef,ID](_virtuals, _ids, _dispatchableVars, _contingentVars, _rawConstraints, _start, _end)
+  extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  def this() = this(new FullSTN[ID](), Set(), Set(), Map(), Map(), List(), None, None)
+  def this() = this(new FullSTN[ID](), Map(), Map(), List(), None, None)
   def this(toCopy:PseudoSTNUManager[TPRef,ID]) =
-    this(toCopy.stn.cc(), toCopy.dispatchableTPs, toCopy.contingentTPs, toCopy.id, toCopy.virtualTPs,
-      toCopy.rawConstraints, toCopy.start, toCopy.end)
+    this(toCopy.stn.cc(), toCopy.tps, toCopy.id, toCopy.rawConstraints, toCopy.start, toCopy.end)
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
@@ -33,43 +30,13 @@ class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
   override def deepCopy(): PseudoSTNUManager[TPRef, ID] = new PseudoSTNUManager(this)
 
   override def isConsistent: Boolean = {
-    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u), id(c.v), c.d))
+    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u.id), id(c.v.id), c.d))
   }
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
     println("Warning: this STNUManager can not be exported to a dot file")
 
-  override def recordTimePoint(tp: TPRef): Int = {
-    assert(!id.contains(tp), "Time point is already recorded.")
-    id += ((tp, stn.addVar()))
-    id(tp)
-  }
-
   override protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean = stn.isConstraintPossible(u, v, w)
-
-  override def removeTimePoint(tp:TPRef): Unit = {
-    stn.removeVar(id(tp))
-    id = id - tp
-  }
-
-
-  /** Record this time point as the global start of the STN */
-  override def recordTimePointAsStart(tp: TPRef): Int = {
-    assert(start.isEmpty, "This STN already has a start timepoint recorded.")
-    assert(!id.contains(tp), "Timepoint is already recorded.")
-    id += ((tp, stn.start))
-    start = Some(tp)
-    stn.start
-  }
-
-  /** Unifies this time point with the global end of the STN */
-  override def recordTimePointAsEnd(tp: TPRef): Int = {
-    assert(end.isEmpty, "This STN already has a end timepoint recorded.")
-    assert(!id.contains(tp), "Timepoint is already recorded.")
-    id += ((tp, stn.end))
-    end = Some(tp)
-    stn.end
-  }
 
   /** If there is a contingent constraint [min, max] between those two timepoints, it returns
     * Some((min, max).

@@ -6,8 +6,6 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-import scala.language.implicitConversions
-
 object BindingConstraintNetwork {
   type DomID = Int
 }
@@ -83,7 +81,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       queue = ListBuffer[DomID]()
   }
 
-  implicit private def domID(v: VarRef) : DomID = domIds(v)
+  private def domID(v: VarRef) : DomID = domIds(v)
 
   private def allDomIds = (0 until vars.size).filterNot(unusedDomainIds.contains(_))
 
@@ -207,11 +205,11 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     if(domID(a) == domID(b))
       hasEmptyDomains = true
 
-    different(a)(b) = true
-    different(b)(a) = true
+    different(domID(a))(domID(b)) = true
+    different(domID(b))(domID(a)) = true
 
-    queue += a
-    queue += b
+    queue += domID(a)
+    queue += domID(b)
   }
 
   override def isConsistent: Boolean = {

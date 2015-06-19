@@ -542,7 +542,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         }
 
         exts.get(setID).addValues(vals);
-//        assert !extChecked : "Error: adding values to constraints in extension while propagation already occurred.";
+        assert !extChecked : "Error: adding values to constraints in extension while propagation already occurred.";
     }
 
     /**
@@ -557,6 +557,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
             assert valuesIds.containsKey(v);
             vals.add(valuesIds.get(v));
         }
+        assert intValuesIds.get(lastVal) != null : "Integer value "+lastVal+" was not recorded";
         vals.add(intValuesIds.get(lastVal));
         if(!exts.containsKey(setID)) {
             exts.put(setID, new ExtensionConstraint(true));
@@ -572,6 +573,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
      * @param setID ID of the extension cosntraint to respect.
      */
     public void addValuesSetConstraint(List<VarRef> variables, String setID) {
+        extChecked = true;
         if(!exts.containsKey(setID)) {
             exts.put(setID, new ExtensionConstraint(isIntegerVar(variables.get(variables.size()-1))));
         }

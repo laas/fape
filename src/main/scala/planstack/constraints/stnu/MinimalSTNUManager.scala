@@ -10,27 +10,20 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class MinimalSTNUManager[TPRef <: UniquelyIdentified,ID](val stn:ISTN[ID],
-                                   _dispatchableVars : Set[Int],
-                                   _contingentVars : Set[Int],
+                                   _tps: Map[Int,TimePoint[TPRef]],
                                    _ids : Map[Int,Int],
-                                   _virtuals : Map[Int, Option[(TPRef,Int)]],
                                    _rawConstraints : List[Constraint[TPRef,ID]],
                                    _start : Option[TPRef],
                                    _end : Option[TPRef])
-  extends GenSTNUManager[TPRef,ID](_virtuals, _ids, _dispatchableVars, _contingentVars, _rawConstraints, _start, _end)
+  extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  implicit def ref2id(tp: TPRef) = id(tp)
+  implicit def ref2id(tp: TPRef) = id(tp.id)
 
-  def this() = this(new STNIncBellmanFord[ID](), Set(), Set(), Map(), Map(), List(), None, None)
+  def this() = this(new STNIncBellmanFord[ID](), Map(), Map(), List(), None, None)
 
   /** Makes an independent clone of this STN. */
   override def deepCopy(): MinimalSTNUManager[TPRef, ID] =
-    new MinimalSTNUManager(stn.cc(), dispatchableTPs, contingentTPs, id, virtualTPs, rawConstraints, start, end)
-
-  override def removeTimePoint(tp: TPRef): Unit = {
-    stn.removeVar(tp)
-    id = id - tp
-  }
+    new MinimalSTNUManager(stn.cc(), tps, id, rawConstraints, start, end)
 
   override def controllability: Controllability = Controllability.STN_CONSISTENCY
 
@@ -59,37 +52,10 @@ class MinimalSTNUManager[TPRef <: UniquelyIdentified,ID](val stn:ISTN[ID],
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
   stn.writeToDotFile(filename)
 
-  /** Records a new time point in the STN. Returns its ID (which might change) */
-  override def recordTimePoint(tp: TPRef): Int = {
-    assert(!id.contains(tp))
-    val varID = stn.addVar()
-    id += ((tp, varID))
-    varID
-  }
-
 
   /** Returns the minimal time from the start of the STN to u */
   override def earliestStart(u: Int): Int =
     stn.earliestStart(u)
-
-
-  /** Record this time point as the global start of the STN */
-  override def recordTimePointAsStart(tp: TPRef): Int = {
-    assert(start.isEmpty, "A start timepoint was already recorded.")
-    assert(!id.contains(tp), "Timepoint "+tp+" is already recorded.")
-    id += ((tp, stn.start))
-    start = Some(tp)
-    stn.start
-  }
-
-  /** Unifies this time point with the global end of the STN */
-  override def recordTimePointAsEnd(tp: TPRef): Int = {
-    assert(end.isEmpty, "A end timepoint was already recorded.")
-    assert(!id.contains(tp), "Timepoint "+tp+" is already recorded.")
-    id += ((tp, stn.end))
-    end = Some(tp)
-    stn.end
-  }
 
   /** If there is a contingent constraint [min, max] between those two timepoints, it returns
     * Some((min, max).

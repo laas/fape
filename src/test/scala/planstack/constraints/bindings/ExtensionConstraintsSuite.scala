@@ -18,13 +18,13 @@ class ExtensionConstraintsSuite extends FunSuite {
     for (letter <- letters)
       cn.AddVariable(letter, (0 until 5).map(i => letter + i.toString), "object")
 
-    cn.addValuesSetConstraint(List("A", "B", "C"), "myConst")
     cn.addValuesToValuesSet("myConst", List("A1", "B1", "C1"))
+    cn.addValuesSetConstraint(List("A", "B", "C"), "myConst")
 
-    cn.addValuesSetConstraint(List("B", "D"), "second")
     cn.addValuesToValuesSet("second", List("B1", "D1"))
     cn.addValuesToValuesSet("second", List("B1", "D2"))
     cn.addValuesToValuesSet("second", List("B2", "D3"))
+    cn.addValuesSetConstraint(List("B", "D"), "second")
 
     assert(cn.isConsistent)
 
@@ -51,6 +51,7 @@ class ExtensionConstraintsSuite extends FunSuite {
     for(i <- 1 until 5)
       iDomain.add(i)
 
+    cn.addPossibleValue(7)
     cn.AddIntVariable("I", iDomain)
 
     cn.addValuesToValuesSet("myConst", List("A1", "B1", "C1"))
@@ -66,6 +67,7 @@ class ExtensionConstraintsSuite extends FunSuite {
     assert(cn.isConsistent)
 
     cn.restrictDomain("B", List("B2"))
+
 
     // false because 7 is not a valid value for I, hence B2 is not good for B
     assert(!cn.isConsistent)

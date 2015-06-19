@@ -25,7 +25,6 @@ object Predef {
   )
 
   def getAllSTNManager[TPRef<:UniquelyIdentified,ID] : List[GenSTNManager[TPRef,ID]] = List(
-    new STNManager[TPRef,ID](),
     new MinimalSTNUManager[TPRef,ID](),
     new PseudoSTNUManager[TPRef,ID](),
     new STNUManager[TPRef,ID]()
