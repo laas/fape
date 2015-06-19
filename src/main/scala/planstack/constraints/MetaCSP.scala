@@ -1,5 +1,6 @@
 package planstack.constraints
 
+import planstack.UniquelyIdentified
 import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stn.STNManager
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
@@ -27,7 +28,7 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @tparam TPRef Type of the time points in the STN
  * @tparam ID Type of identifiers for constraints in the STN.
  */
-class MetaCSP[VarRef, TPRef, ID](
+class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
                           val bindings: BindingCN[VarRef],
                           val stn: GenSTNUManager[TPRef,ID],
                           protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]])

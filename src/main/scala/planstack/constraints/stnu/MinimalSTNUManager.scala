@@ -1,5 +1,6 @@
 package planstack.constraints.stnu
 
+import planstack.UniquelyIdentified
 import planstack.constraints.stn.{STNIncBellmanFord, ISTN}
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
@@ -8,7 +9,7 @@ import planstack.structures.IList
 import planstack.structures.Converters._
 import scala.language.implicitConversions
 
-class MinimalSTNUManager[TPRef,ID](val stn:ISTN[ID],
+class MinimalSTNUManager[TPRef <: UniquelyIdentified,ID](val stn:ISTN[ID],
                                    _dispatchableVars : Set[TPRef],
                                    _contingentVars : Set[TPRef],
                                    _ids : Map[TPRef,Int],

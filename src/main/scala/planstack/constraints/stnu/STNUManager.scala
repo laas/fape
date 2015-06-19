@@ -1,5 +1,6 @@
 package planstack.constraints.stnu
 
+import planstack.UniquelyIdentified
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
@@ -7,7 +8,7 @@ import planstack.structures.IList
 import planstack.structures.Converters._
 import scala.language.implicitConversions
 
-class STNUManager[TPRef,ID](val stnu : ISTNU[ID],
+class STNUManager[TPRef <: UniquelyIdentified,ID](val stnu : ISTNU[ID],
                             _dispatchableVars : Set[TPRef],
                             _contingentVars : Set[TPRef],
                             _ids : Map[TPRef,Int],

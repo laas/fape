@@ -1,5 +1,6 @@
 package planstack.constraints.stnu
 
+import planstack.UniquelyIdentified
 import planstack.constraints.stn.ISTN
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
@@ -10,7 +11,7 @@ import planstack.structures.Converters._
 
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
-class PseudoSTNUManager[TPRef,ID](val stn : ISTN[ID],
+class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
                                   _dispatchableVars : Set[TPRef],
                                   _contingentVars : Set[TPRef],
                                   _ids : Map[TPRef,Int],

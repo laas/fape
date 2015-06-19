@@ -1,5 +1,6 @@
 package planstack.constraints.stn
 
+import planstack.UniquelyIdentified
 import planstack.constraints.stnu._
 
 object Predef {
@@ -17,13 +18,13 @@ object Predef {
   //new EfficientIDC[ID]
   )
 
-  def getAllSTNUManager[TPRef,ID] : List[GenSTNUManager[TPRef,ID]] = List(
+  def getAllSTNUManager[TPRef<:UniquelyIdentified,ID] : List[GenSTNUManager[TPRef,ID]] = List(
     new MinimalSTNUManager[TPRef,ID](),
     new PseudoSTNUManager[TPRef,ID](),
     new STNUManager[TPRef,ID]()
   )
 
-  def getAllSTNManager[TPRef,ID] : List[GenSTNManager[TPRef,ID]] = List(
+  def getAllSTNManager[TPRef<:UniquelyIdentified,ID] : List[GenSTNManager[TPRef,ID]] = List(
     new STNManager[TPRef,ID](),
     new MinimalSTNUManager[TPRef,ID](),
     new PseudoSTNUManager[TPRef,ID](),

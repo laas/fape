@@ -1,5 +1,6 @@
 package planstack.constraints.stnu
 
+import planstack.UniquelyIdentified
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
@@ -9,7 +10,7 @@ import scala.language.implicitConversions
 import ElemStatus._
 import planstack.structures.Converters._
 
-class STNUDispatcher[TPRef, ID](from:GenSTNUManager[TPRef,ID]) {
+class STNUDispatcher[TPRef <: UniquelyIdentified, ID](from:GenSTNUManager[TPRef,ID]) {
   val dispatcher :DispatchableSTNU[ID] = new Dispatcher[ID]
 
   /** Timepoints that must stay in the STN (dispatchable, contingents and stn's start end */

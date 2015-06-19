@@ -1,11 +1,36 @@
 package planstack.constraints
 
 import org.scalatest.FunSuite
+import planstack.UniquelyIdentified
+
+import scala.collection.mutable
+import scala.language.implicitConversions
+
+object Ref {
+  val map = mutable.Map[String,Int]()
+  private var next = 0
+
+  def get(name:String) = {
+    if(!map.contains(name)) {
+      map += ((name, next))
+      next += 1
+    }
+    map(name)
+  }
+
+  implicit def toRef(name:String) : Ref = new Ref(name)
+  implicit def toRef(i:Int) : Ref = new Ref(i.toString)
+}
+
+class Ref(val name:String) extends UniquelyIdentified {
+
+  override val id = Ref.get(name)
+}
 
 class MixedConstraintsSuite extends FunSuite {
 
   test("isPropagated") {
-    val csp = new MetaCSP[String,String,String]()
+    val csp = new MetaCSP[Ref,Ref,Ref]()
 
     val iDomain = new java.util.LinkedList[Integer]
     for(i <- 1 until 5)
@@ -41,7 +66,7 @@ class MixedConstraintsSuite extends FunSuite {
   }
 
   test("is Propagated Right Away On Singleton Domain (Max)") {
-    val csp = new MetaCSP[String,String,String]()
+    val csp = new MetaCSP[Ref,Ref,Ref]()
 
     val iDomain = new java.util.LinkedList[Integer]
     iDomain.add(4)
@@ -61,7 +86,7 @@ class MixedConstraintsSuite extends FunSuite {
   }
 
   test("is Propagated Right Away On Singleton Domain (Min)") {
-    val csp = new MetaCSP[String,String,String]()
+    val csp = new MetaCSP[Ref,Ref,Ref]()
 
     val iDomain = new java.util.LinkedList[Integer]
     iDomain.add(4)

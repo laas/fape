@@ -1,5 +1,6 @@
 package planstack.constraints.stnu
 
+import planstack.UniquelyIdentified
 import planstack.constraints.stn.GenSTNManager
 import ElemStatus._
 
@@ -14,13 +15,15 @@ case class Constraint[TPRef,ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:
       (if(optID.nonEmpty) "("+optID.get+")" else "")
 }
 
-abstract class GenSTNUManager[TPRef,ID](var virtualTPs: Map[TPRef, Option[(TPRef, Int)]],
-                                        var id : Map[TPRef, Int],
-                                        var dispatchableTPs : Set[TPRef],
-                                        var contingentTPs : Set[TPRef],
-                                        var rawConstraints : List[Constraint[TPRef,ID]],
-                                        var start : Option[TPRef],
-                                        var end : Option[TPRef])
+abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
+(
+  var virtualTPs: Map[TPRef, Option[(TPRef, Int)]],
+  var id : Map[TPRef, Int],
+  var dispatchableTPs : Set[TPRef],
+  var contingentTPs : Set[TPRef],
+  var rawConstraints : List[Constraint[TPRef,ID]],
+  var start : Option[TPRef],
+  var end : Option[TPRef])
   extends GenSTNManager[TPRef,ID]
 {
   type Const = Constraint[TPRef,ID]

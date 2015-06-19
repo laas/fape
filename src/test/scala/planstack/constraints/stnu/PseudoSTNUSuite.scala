@@ -1,11 +1,12 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
+import planstack.constraints.Ref
 import planstack.constraints.stn.Predef._
 
 class PseudoSTNUSuite extends FunSuite {
 
-  for(stnu <- getAllSTNUManager[String,String] if stnu.checksPseudoControllability) {
+  for(stnu <- getAllSTNUManager[Ref,String] if stnu.checksPseudoControllability) {
     test("["+stnu.getClass.getSimpleName+"] Pseudo consistency") {
 
       assert(stnu.checksPseudoControllability)
