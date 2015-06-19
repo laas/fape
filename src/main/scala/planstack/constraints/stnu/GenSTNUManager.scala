@@ -7,6 +7,9 @@ import ElemStatus._
 import planstack.constraints.stnu.Controllability._
 import planstack.structures.IList
 import planstack.structures.Converters._
+import java.{util => ju}
+
+import scala.language.implicitConversions
 
 case class Constraint[TPRef,ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option[ID]) {
   override def toString =
@@ -17,15 +20,17 @@ case class Constraint[TPRef,ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:
 
 abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
 (
-  var virtualTPs: Map[TPRef, Option[(TPRef, Int)]],
-  var id : Map[TPRef, Int],
-  var dispatchableTPs : Set[TPRef],
-  var contingentTPs : Set[TPRef],
+  var virtualTPs: Map[Int, Option[(TPRef, Int)]],
+  var id : Map[Int, Int],
+  var dispatchableTPs : Set[Int],
+  var contingentTPs : Set[Int],
   var rawConstraints : List[Constraint[TPRef,ID]],
   var start : Option[TPRef],
   var end : Option[TPRef])
   extends GenSTNManager[TPRef,ID]
 {
+  implicit def refToInt(ref:TPRef) : Int = ref.id()
+
   type Const = Constraint[TPRef,ID]
 
   final def hasTimePoint(tp: TPRef) = id.contains(tp) || virtualTPs.contains(tp)
@@ -179,15 +184,15 @@ abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
 
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */
-  final def timepoints : IList[(TPRef, ElemStatus)] =
-    (for (tp <- id.keys) yield
-      if(start.nonEmpty && tp == start.get) (tp, START)
-      else if(end.nonEmpty && tp == end.get) (tp, END)
-      else if (dispatchableTPs.contains(tp)) (tp, CONTROLLABLE)
-      else if (contingentTPs.contains(tp)) (tp, CONTINGENT)
-      else (tp, NO_FLAG)
-    ) ++
-      (for(tp <- virtualTPs.keys) yield (tp, RIGID))
+  final def timepoints : IList[(TPRef, ElemStatus)] = new IList[(TPRef, ElemStatus)]()
+//    (for (tp <- id.keys) yield
+//      if(start.nonEmpty && tp == start.get) (tp, START)
+//      else if(end.nonEmpty && tp == end.get) (tp, END)
+//      else if (dispatchableTPs.contains(tp)) (tp, CONTROLLABLE)
+//      else if (contingentTPs.contains(tp)) (tp, CONTINGENT)
+//      else (tp, NO_FLAG)
+//    ) ++
+//      (for(tp <- virtualTPs.keys) yield (tp, RIGID))
 
   /** Returns the number of timep oints, exclding virtual time points */
   final def numRealTimePoints = id.size
@@ -228,10 +233,10 @@ abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  final def constraints : IList[Const] =
-    rawConstraints ++
-      (for((virt, definition) <- virtualTPs if definition.nonEmpty) yield
-        new Const(definition.get._1, virt, definition.get._2, RIGID, None))
+  final def constraints : IList[Const] = new IList[Const]()
+//    rawConstraints ++
+//      (for((virt, definition) <- virtualTPs if definition.nonEmpty) yield
+//        new Const(definition.get._1, virt, definition.get._2, RIGID, None))
 }
 
 

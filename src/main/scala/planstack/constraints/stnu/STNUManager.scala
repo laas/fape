@@ -9,10 +9,10 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class STNUManager[TPRef <: UniquelyIdentified,ID](val stnu : ISTNU[ID],
-                            _dispatchableVars : Set[TPRef],
-                            _contingentVars : Set[TPRef],
-                            _ids : Map[TPRef,Int],
-                            _virtuals : Map[TPRef, Option[(TPRef,Int)]],
+                            _dispatchableVars : Set[Int],
+                            _contingentVars : Set[Int],
+                            _ids : Map[Int,Int],
+                            _virtuals : Map[Int, Option[(TPRef,Int)]],
                             _rawConstraints : List[Constraint[TPRef,ID]],
                             _start : Option[TPRef],
                             _end : Option[TPRef])
