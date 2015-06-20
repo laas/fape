@@ -240,8 +240,10 @@ public class FeasibilityReasoner {
     public Set<GAction> groundedVersions(Action a, State st) {
         Set<GAction> ret = new HashSet<>();
         assert(groundedActVariable.containsKey(a.id()));
-        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(a.id())))
-            ret.add(gactions.get(i));
+        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(a.id()))) {
+            if(gactions.containsKey(i)) // the domain might contain any int variable
+                ret.add(gactions.get(i));
+        }
 
         return ret;
     }

@@ -10,6 +10,7 @@
  */
 package fape.core.planning.timelines;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
@@ -19,6 +20,7 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,24 +33,26 @@ public class TimelinesManager implements Reporter {
     private List<Timeline> vars = new LinkedList<>();
     private final State listener;
 
+    private final List<Timeline> consumers;
+
     public TimelinesManager(TimelinesManager toCopy, State containingState) {
         listener = containingState;
+        this.consumers = new LinkedList<>(toCopy.consumers);
+        this.vars = new LinkedList<>(toCopy.getTimelines());
 
-        for (Timeline b : toCopy.getTimelines())
-            this.vars.add(b.deepCopy());
+        if(APlanner.debugging) {
+            for (Timeline a : consumers) assert vars.contains(a);
+            for (Timeline a : vars) if (a.isConsumer()) assert consumers.contains(a);
+        }
     }
 
     public TimelinesManager(State containingState) {
         listener = containingState;
+        consumers = new LinkedList<>();
     }
 
     public Collection<Timeline> getConsumers() {
-        List<Timeline> consumers = new LinkedList<>();
-        for(Timeline tl : vars) {
-            if(tl.isConsumer())
-                consumers.add(tl);
-        }
-        return consumers;
+        return Collections.unmodifiableList(consumers);
     }
 
     /**
@@ -64,6 +68,8 @@ public class TimelinesManager implements Reporter {
         for(Timeline existing : vars)
             assert existing.mID != tl.mID : "Timeline already recorded";
         vars.add(tl);
+        if(tl.isConsumer())
+            consumers.add(tl);
 
         listener.timelineAdded(tl);
     }
@@ -71,6 +77,7 @@ public class TimelinesManager implements Reporter {
     public void removeTimeline(Timeline tl) {
         assert vars.contains(tl);
         vars.remove(tl);
+        consumers.remove(tl);
 
         listener.timelineRemoved(tl);
     }
@@ -93,14 +100,32 @@ public class TimelinesManager implements Reporter {
     }
 
     private void update(Timeline tl) {
+        boolean wasPresent = false;
+        // replace var with the same ID
         for(int i=0 ; i<vars.size() ; i++) {
             if(vars.get(i).mID == tl.mID) {
                 vars.set(i, tl);
-                return;
+                wasPresent = true;
+                break;
             }
         }
-        // TODO: consumers
-        throw new FAPEException("Timeline was not previously known");
+        assert wasPresent;
+        if(tl.size() == 0 || tl.isConsumer()) {
+            boolean found = false;
+            for(int i=0 ; i<consumers.size() ; i++) {
+                if(tl.mID == consumers.get(i).mID) {
+                    if(tl.size() == 0) {
+                        consumers.remove(i);
+                    } else {
+                        consumers.set(i, tl);
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+                consumers.add(tl);
+        }
     }
 
     public Timeline extendTimelineWithComponent(Timeline tl, ChainComponent cc, int at) {
@@ -144,7 +169,8 @@ public class TimelinesManager implements Reporter {
      * @param after a chain component of tdb after which the chain of included will be added
      */
     public void insertTimelineAfter(State st, Timeline tdb, Timeline included, ChainComponent after) {
-        assert tdb.size() != 0;
+        if(included.mID == 16)
+            assert tdb.size() != 0;
         assert tdb.contains(after);
 
         int afterIndex = tdb.indexOf(after);
@@ -187,7 +213,6 @@ public class TimelinesManager implements Reporter {
             enforceChainConstraints(st, tdb, afterIndex);
             enforceChainConstraints(st, tdb, nextInclusion - 1);
         }
-
         enforceAllConstraints(st, tdb);
 
         // the new domain is the intersection of both domains
@@ -347,5 +372,5 @@ public class TimelinesManager implements Reporter {
         return ret;
     }
 
-    public List<Timeline> getTimelines() { return vars; }
+    public List<Timeline> getTimelines() { return Collections.unmodifiableList(vars); }
 }
