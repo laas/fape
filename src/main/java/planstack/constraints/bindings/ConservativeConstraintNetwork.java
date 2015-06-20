@@ -477,8 +477,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
     }
 
     public boolean unifiable(VarRef a, VarRef b) {
-        // TODO: we could check if they don't have an inequality constraint but it is too expensive (make it less expensive)
-        return variables.apply(a).intersect(variables.apply(b)).size() != 0;
+        return !separated(a,b) && variables.apply(a).intersect(variables.apply(b)).size() != 0;
     }
 
     public boolean separable(VarRef a, VarRef b) {

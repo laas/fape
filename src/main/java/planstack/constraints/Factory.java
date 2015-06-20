@@ -2,11 +2,13 @@ package planstack.constraints;
 
 
 import planstack.UniquelyIdentified;
+import planstack.constraints.bindings.BindingConstraintNetwork;
 import planstack.constraints.bindings.ConservativeConstraintNetwork;
 import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.MinimalSTNUManager;
 import planstack.constraints.stnu.PseudoSTNUManager;
 import planstack.constraints.stnu.STNUManager;
+import scala.None$;
 import scala.collection.immutable.List;
 import scala.collection.immutable.Map$;
 
@@ -24,7 +26,8 @@ public class Factory {
     /** Returns a MetaCSP that will consistent only if the underlying STNU is dynamically controllable */
     public static <VarRef extends UniquelyIdentified,TPRef extends UniquelyIdentified,ID> MetaCSP<VarRef,TPRef,ID> getMetaWithDynamicControllability() {
         return new MetaCSP<>(
-                new ConservativeConstraintNetwork<VarRef>(),
+                new BindingConstraintNetwork<VarRef>(),
+//                new ConservativeConstraintNetwork<VarRef>(),
                 new STNUManager<TPRef,ID>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
@@ -32,7 +35,8 @@ public class Factory {
     /** Returns a MetaCSP that will consistent only if the underlying STNU is pseudo controllable */
     public static <VarRef extends UniquelyIdentified,TPRef extends UniquelyIdentified,ID> MetaCSP<VarRef,TPRef,ID> getMetaWithPseudoControllability() {
         return new MetaCSP<>(
-                new ConservativeConstraintNetwork<VarRef>(),
+                new BindingConstraintNetwork<VarRef>(),
+//                new ConservativeConstraintNetwork<VarRef>(),
                 new PseudoSTNUManager<TPRef,ID>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
@@ -41,7 +45,8 @@ public class Factory {
      * (contingent constraints are recorded bu not checked. */
     public static <VarRef extends UniquelyIdentified,TPRef extends UniquelyIdentified,ID> MetaCSP<VarRef,TPRef,ID> getMetaWithoutControllability() {
         return new MetaCSP<>(
-                new ConservativeConstraintNetwork<VarRef>(),
+                new BindingConstraintNetwork<VarRef>(),
+//                new ConservativeConstraintNetwork<VarRef>(),
                 new MinimalSTNUManager<TPRef,ID>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }

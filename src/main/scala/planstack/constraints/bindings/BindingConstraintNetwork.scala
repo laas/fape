@@ -8,9 +8,13 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object BindingConstraintNetwork {
   type DomID = Int
+
+  var cnt = 0
 }
 
 class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[VarRef]]) extends BindingCN[VarRef] {
+
+  def this() = this(None)
 
   import BindingConstraintNetwork.DomID
 
@@ -60,6 +64,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       unusedDomainIds = o.unusedDomainIds.clone()
       queue = o.queue.clone()
     case None =>
+      BindingConstraintNetwork.cnt += 1
       domIds = mutable.Map[VarRef, DomID]()
       types = mutable.Map[VarRef, String]()
       domains = mutable.Map[DomID, ValuesHolder]()
@@ -99,19 +104,19 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     if(vars.size > id) vars(id) = ListBuffer[VarRef]()
     else vars += ListBuffer[VarRef]()
 
-    if(id < different.size) {
+    if(id == different.size) {
       // replace with bigger
-      val newConstraints = new Array[Array[Boolean]](different.size + increment)
+      val newConstraints = new Array[Array[Boolean]](different.size *2)
       for(i <- 0 until newConstraints.size)
-        newConstraints(i) = Array.fill(different.size +increment)(false)
+        newConstraints(i) = Array.fill(different.size *2)(false)
 
       for(i <- 0 until different.size)
         Array.copy(different(i), 0, newConstraints(i), 0, different(i).size)
+      different = newConstraints
     }
 
     id
   }
-
 
   override def rawDomain(v: VarRef) : ValuesHolder = domains(domID(v))
 
@@ -167,9 +172,13 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     if(!extensionConstraints.contains(setID)) {
       extensionConstraints += ((setID, new ExtensionConstraint(true)))
     }
-    val valuesAsIDs = values.asScala.map(valuesIds(_).asInstanceOf[Integer]).toList.asJava
-    valuesAsIDs.add(intValuesIds(lastVal))
-    extensionConstraints(setID).addValues(valuesAsIDs)
+    val valuesAsIDs = values.asScala
+      .map(valuesIds(_).asInstanceOf[Integer]).toBuffer
+
+    addPossibleValue(lastVal)
+    valuesAsIDs.append(intValuesIds(lastVal))
+
+    extensionConstraints(setID).addValues(valuesAsIDs.asJava)
   }
 
 
@@ -189,13 +198,15 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     if(!intValuesIds.contains(value)) {
       intValuesIds += ((value, intValues.size))
       intValues += value
-      defaultIntDomain(0) = defaultIntDomain(0).add(value)
+      assert(intValues(intValuesIds(value)) == value)
+      defaultIntDomain(0) = defaultIntDomain(0).add(intValuesIds(value))
     }
   }
 
   override def addValuesSetConstraint(variables: util.List[VarRef], setID: String): Unit = {
     val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID(_))
     mapping += ((asIDs, setID))
+    checkExtendedConstraint(asIDs, setID)
   }
 
   override def restrictIntDomain(v: VarRef, toValues: util.Collection[Integer]): Unit =
@@ -213,18 +224,24 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   }
 
   override def isConsistent: Boolean = {
-    while(queue.nonEmpty) {
+    while(queue.nonEmpty && !hasEmptyDomains) {
       val cur = queue.head
       queue -= cur
       if(domains(cur).size() == 0) {
         hasEmptyDomains = true
       } else if(domains(cur).size() == 1) {
-        val uniqueValue = domains(cur).head()
-        for (o <- 0 until vars.size; if !unusedDomainIds.contains(o); if different(cur)(o)) {
-          if(domains(o).contains(uniqueValue)) {
+        checkExtendedConstraints(cur)
+
+        if(!hasEmptyDomains) {
+          val uniqueValue = domains(cur).head()
+          for (o <- 0 until vars.size
+               if !unusedDomainIds.contains(o)
+               if different(cur)(o)
+               if domains(o).contains(uniqueValue))
+          {
             domains(o) = domains(o).remove(uniqueValue)
 
-            if(domains(o).isEmpty)
+            if (domains(o).isEmpty)
               hasEmptyDomains = true
 
             domainChanged(o)
@@ -236,7 +253,40 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     !hasEmptyDomains
   }
 
-  override def domainAsString(v: VarRef): String = "{"+ rawDomain(v).vals.map(values(_)).mkString(", ") +"}"
+  private def checkExtendedConstraint(domainsIDs: Seq[DomID], constraintName: String): Unit = {
+    // process this constraint // TODO check if there is anything new since last time
+    val ext = extensionConstraints(constraintName)
+    val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
+    val restrictedDomains = ext.restrictedDomains(initialDomains)
+    //        println(constraintName)
+    //        println(initialDomains.toList.map(_.asScala))
+    //        println(restrictedDomains.toList.map(_.asScala))
+    //        println()
+    for(i <- 0 until initialDomains.length) {
+      if(initialDomains(i).size() > restrictedDomains(i).size()) {
+        domains(domainsIDs(i)) = new ValuesHolder(restrictedDomains(i))
+        if(domains(domainsIDs(i)).isEmpty)
+          hasEmptyDomains = true
+
+        domainChanged(domainsIDs(i))
+      }
+    }
+  }
+
+  private def checkExtendedConstraints(domID: Int): Unit = {
+    for((domainsIDs, constraintName) <- mapping) {
+      if(domainsIDs.contains(domID)) {
+        checkExtendedConstraint(domainsIDs, constraintName)
+      }
+
+    }
+  }
+
+  override def domainAsString(v: VarRef): String =
+    if(isIntegerVar(v))
+      "{" + rawDomain(v).vals.map(intValues(_)).mkString(", ") + "}"
+    else
+      "{"+ rawDomain(v).vals.map(values(_)).mkString(", ") +"}"
 
   override def Report(): String =
     allDomIds.map(id => (id, "["+ vars(id).mkString(", ") +"]", "  "+domainAsString(vars(id).head))).mkString("\n")
@@ -264,7 +314,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
     for(i <- 0 until mapping.size) {
       if(mapping(i)._1.contains(id2)) {
-        val newDef = mapping(i)._1.map(id => if(id == id1) id1 else id)
+        val newDef = mapping(i)._1.map(id => if(id == id2) id1 else id)
         mapping(i) = (newDef, mapping(i)._2)
       }
     }
@@ -296,7 +346,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
   override def getUnboundVariables: util.List[VarRef] = {
     val unboundDomains = for ((domId, dom) <- domains; if dom.size() != 1) yield domId
-    unboundDomains.map(vars(_).head).toList.asJava
+    unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
   override def AddVariable(v: VarRef, domain: util.Collection[String], typ: String): Unit = {
@@ -331,7 +381,12 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     addVariable(v, intValuesAsDomain(domain), "integer")
 
   override def intValuesAsDomain(intDomain: util.Collection[Integer]): ValuesHolder = {
-    val valuesIds = intDomain.asScala.map(value => intValuesIds(value))
+    val valuesIds =
+      for(value <- intDomain.asScala) yield {
+        if(!intValuesIds.contains(value))
+          addPossibleValue(value)
+        intValuesIds(value)
+      }
     new ValuesHolder(valuesIds)
   }
 
