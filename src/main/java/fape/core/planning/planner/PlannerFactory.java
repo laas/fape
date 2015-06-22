@@ -19,7 +19,7 @@ public class PlannerFactory {
 
     public static final String defaultPlanner = "taskcond";
     public static final String[] defaultPlanSelStrategies = { "soca" };
-    public static final String[] defaultFlawSelStrategies = { "ogf", "abs", "lcf", "eogf" };
+    public static final String[] defaultFlawSelStrategies = { "hf", "ogf", "abs", "lcf", "eogf" };
     public static final Controllability defaultControllabilityStrategy = Controllability.PSEUDO_CONTROLLABILITY;
 
     public static PlanningOptions defaultOptions() {
