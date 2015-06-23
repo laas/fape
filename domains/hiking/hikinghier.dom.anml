@@ -79,7 +79,10 @@ motivated;
 
 /** parameter l3 is not used but kept to remain compatible with the problem definitions */
 action oneStep(Object o, Place l1, Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Car c2){
-
+  motivated;
+  h1 != h2;
+  c1 != c2;
+  l1 != l2;
   // place where the first car is
   constant Place car1Loc;
   [start] c1.at == car1Loc;
@@ -93,11 +96,14 @@ action oneStep(Object o, Place l1, Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Ca
   :decomposition {
     car1Loc != l1;
     [all] oneStepOrdered(o, l1, l2, h1, h2, c2, c1);
-}; 
+  }; 
 };
 
 action oneStepOrdered(Object o, Place l1, Place l2, Hiker h1, Hiker h2, Car c1, Car c2){
-
+  motivated;
+  h1 != h2;
+  c1 != c2;
+  l1 != l2;
   // place from which we need to get car2
   constant Place carLoc;
   [start] { 
