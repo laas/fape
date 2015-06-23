@@ -87,8 +87,8 @@ public class HReasoner<T> {
         return varsIds.get(o);
     }
 
-    private void addVar(T o) {
-        assert !locked;
+    public void addVar(T o) {
+        assert !locked : "Error adding variable to locked Reasoner: "+o;
         assert !varsIds.containsKey(o) : "Var already registered";
         if(vars.length <= numVars) {
             vars = Arrays.copyOf(vars, vars.length*2);

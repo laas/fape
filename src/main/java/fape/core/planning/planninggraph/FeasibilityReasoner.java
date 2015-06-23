@@ -144,7 +144,9 @@ public class FeasibilityReasoner {
             List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
             for(List<InstanceRef> instantiation : instantiations) {
                 GTaskCond task = new GTaskCond(ac.abs(), instantiation);
-                r.set(new Predicate("derivable_task", task));
+                Predicate derivableTaskPredicate = new Predicate("derivable_task", task);
+                if(r.hasTerm(derivableTaskPredicate))
+                    r.set(derivableTaskPredicate);
             }
         }
 
