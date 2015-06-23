@@ -5,6 +5,7 @@ import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
+import fape.util.Utils;
 import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
@@ -345,6 +346,7 @@ public class GAction implements PGNode {
             Map<LVarRef, InstanceRef> params = new HashMap<>();
             assert instantiation.length == vars.size();
             for(int i=0 ; i< vars.size() ; i++) {
+                assert instantiation[i] != null : "There is a problem with instantiation.";
                 params.put(vars.get(i), instantiation[i]);
             }
             paramsLists.add(params);

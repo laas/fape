@@ -299,7 +299,7 @@ public class PartialBindings {
                     InstanceRef[] extendedBinding = Arrays.copyOf(currentBinding, currentBinding.length);
                     extendedBinding[i] = extendedBinding[eqs[i]];
                     assert extendedBinding[i] != null;
-                    extendedBindings.add(currentBinding);
+                    extendedBindings.add(extendedBinding);
                 } else {
                     // no equality constraints, create a new extendedBinding for each value in the domain of allVars[i]
                     for (InstanceRef val : possibleValues.get(i)) {

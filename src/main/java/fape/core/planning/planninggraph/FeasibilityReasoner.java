@@ -145,7 +145,6 @@ public class FeasibilityReasoner {
             for(List<InstanceRef> instantiation : instantiations) {
                 GTaskCond task = new GTaskCond(ac.abs(), instantiation);
                 Predicate derivableTaskPredicate = new Predicate("derivable_task", task);
-                if(r.hasTerm(derivableTaskPredicate))
                     r.set(derivableTaskPredicate);
             }
         }
