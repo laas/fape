@@ -3,6 +3,7 @@ package fape.core.planning.planninggraph;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.parser.Instance;
 
 import java.util.*;
 
@@ -71,6 +72,25 @@ public class PartialBindings {
             binding[focusedVarsPositions[i]] = myValues[i];
         }
         partialBindings.add(binding);
+    }
+
+    public void bind(LVarRef var, InstanceRef value) {
+        if(focusesOn(var)) {
+            List<InstanceRef[]> toRemove = new LinkedList<>();
+            int posV = pos(var);
+            for(InstanceRef[] binding : partialBindings) {
+                if(!binding[posV].equals(value))
+                    toRemove.add(binding);
+            }
+            partialBindings.removeAll(toRemove);
+        } else {
+            addVar(var);
+            int posV = pos(var);
+            for(InstanceRef[] binding : partialBindings) {
+                assert binding[posV] == null;
+                binding[posV] = value;
+            }
+        }
     }
 
     /**

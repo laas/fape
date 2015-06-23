@@ -316,8 +316,18 @@ public class GAction implements PGNode {
                         best = partialBindings;
                     }
                 }
-                // merge this equality into the best looking PartialBindings
-                best.addEquality(c.leftVar(), c.rightVar());
+                if(vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
+                    // merge this equality into the best looking PartialBindings
+                    best.addEquality(c.leftVar(), c.rightVar());
+                } else if(!vars.contains(c.leftVar())) {
+                    InstanceRef value = pb.instance(c.leftVar().id());
+                    best.bind(c.rightVar(), value);
+                } else if(!vars.contains(c.rightVar())) {
+                    InstanceRef value = pb.instance(c.rightVar().id());
+                    best.bind(c.leftVar(), value);
+                } else {
+                    throw new FAPEException("Equality constraint between two constaint: "+s+" in action "+aa.name());
+                }
             }
         }
 
