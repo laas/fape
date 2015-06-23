@@ -415,7 +415,7 @@ public class State implements Reporter {
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
                 min = new VarRef();
                 csp.bindings().AddIntVariable(min);
-                List<VarRef> varsOfExtConst = Arrays.asList(sv.args());
+                List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(min);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
@@ -436,7 +436,7 @@ public class State implements Reporter {
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
                 max = new VarRef();
                 csp.bindings().AddIntVariable(max);
-                List<VarRef> varsOfExtConst = Arrays.asList(sv.args());
+                List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(max);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
