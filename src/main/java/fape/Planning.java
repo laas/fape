@@ -7,6 +7,7 @@ import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.util.Configuration;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
@@ -37,8 +38,8 @@ public class Planning {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        SimpleJSAP jsap = new SimpleJSAP(
+    public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
+        return new SimpleJSAP(
                 "FAPE planners",
                 "Solves ANML problems",
                 new Parameter[]{
@@ -55,21 +56,10 @@ public class Planning {
                                 .setShortFlag('p')
                                 .setLongFlag("planner")
                                 .setDefault("taskcond")
-                                .setList(true)
-                                .setListSeparator(',')
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
                                         + "  - htn: subtasks will be replaced with a matching action directly inserted in the plan\n"
                                         + "  - taskcond: The actions in decompositions are replaced with task conditions that "
-                                        + "are fulfilled through search be linking with other actions in the plan\n"
-                                        + "  \n"
-                                        + " The following options are EXPERIMENTAL, they won't work on every domain:\n"
-                                        + "   - base: Most basic planner that supports any domain. Uses a fully lifted representation.\n"
-                                        + "   - rpg:  Planner that uses relaxed planning graphs for domain analysis. "
-                                        + "Be aware that (i) it does not handle all anml problems (ii) rpg is miles away from being optimized.\n"
-                                        + "   - rpg_ext: Extension of rpg that add constraint on every causal link whose supporter "
-                                        + "is provided by an action. It checks (using RPG) for every ground action "
-                                        + "supporting the consumer and enforce a n-ary constraint on the action's "
-                                        + "parameters to make sure they fit at least one of the ground action.\n"),
+                                        + "are fulfilled through search be linking with other actions in the plan\n"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -107,15 +97,13 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("strats")
-                                .setList(true)
-                                .setListSeparator(',')
                                 .setDefault("%")
                                 .setHelp("This is used to define search strategies. A search strategy consists of "
                                         + "one or more flaw selection strategy and one or more state selection strategy. "
                                         + "Ex: the argument 'lcf:lfr%dfs' would give for flaws: lcf (LeastCommitingFirst), using "
                                         + "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). "
                                         + "For more information on search strategies, look at the fape.core.planning.search.strategies "
-                                        + "package. If several strategies are given (separated by commas), they will all be attempted."),
+                                        + "package."),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')
@@ -137,44 +125,47 @@ public class Planning {
                                         +"  - 'dynamic': [experimental] enforces dynamic controllability.\n"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
-                                .setRequired(true)
+                                .setRequired(isAnmlFileRequired)
                                 .setGreedy(true)
                                 .setHelp("ANML problem files on which to run the planners. If it is set "
                                         + "to a directory, all files ending with .anml will be considered. "
-                                        + "If a file of the form xxxxx.yy.pb.anml is given, the file xxxxx.dom.anml will be loaded first.\n")
+                                        + "If a file of the form xxxxx.yy.pb.anml is given, the file xxxxx.dom.anml will be loaded first."
+                                        + "If a file xxxxx.conf is present, it will be used to provide default options of the planner.\n")
 
                 }
         );
+    }
 
-        JSAPResult config = jsap.parse(args);
+    public static String getAssociatedConfigFile(String anmlFile) {
+        assert anmlFile.endsWith(".anml") : anmlFile+" is not a valid problem file.";
+        File f = new File(anmlFile);
+        String domainName = f.getName().substring(0, f.getName().indexOf("."));
+        File confFile = new File(f.getParentFile(), domainName+".conf");
+        return confFile.getPath();
+    }
+
+    public static void main(String[] args) throws Exception {
+        SimpleJSAP jsap = getCommandLineParser(true);
+
+        JSAPResult commandLineConfig = jsap.parse(args);
         if (jsap.messagePrinted()) {
             return ;
         }
 
         Writer writer;
-        if (config.getString("output").equals("stdout")) {
+        if (commandLineConfig.getString("output").equals("stdout")) {
             writer = new OutputStreamWriter(System.out);
         } else {
-            writer = new FileWriter(config.getString("output"));
+            writer = new FileWriter(commandLineConfig.getString("output"));
         }
 
-        APlanner.logging = config.getBoolean("verbose");
-        APlanner.debugging = config.getBoolean("debug");
-        Plan.showChart = config.getBoolean("actions-chart");
-        Plan.makeDispatchable = config.getBoolean("dispatchable");
+        APlanner.logging = commandLineConfig.getBoolean("verbose");
+        APlanner.debugging = commandLineConfig.getBoolean("debug");
+        Plan.showChart = commandLineConfig.getBoolean("actions-chart");
+        Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
 
-        String[] configFiles = config.getStringArray("anml-file");
+        String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
-
-        Controllability controllability;
-        switch (config.getString("stnu-consistency")) {
-            case "stn": controllability = Controllability.STN_CONSISTENCY; break;
-            case "pseudo": controllability = Controllability.PSEUDO_CONTROLLABILITY; break;
-            case "dynamic": controllability = Controllability.DYNAMIC_CONTROLLABILITY; break;
-            default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
-        }
-        final boolean fastForward = config.getBoolean("fast-forward");
-        final boolean aEpsilon = config.getBoolean("A-Epsilon");
 
         for (String path : configFiles) {
             File f = new File(path);
@@ -186,10 +177,12 @@ public class Planning {
                     }
                 });
                 for (File anmlFile : anmls) {
+                    if(anmlFile.getName().endsWith(".anml") && !anmlFile.getName().endsWith(".dom.anml"))
                     anmlFiles.add(anmlFile.getPath());
                 }
             } else {
-                anmlFiles.add(path);
+                if(path.endsWith(".anml") && !path.endsWith(".dom.anml"))
+                    anmlFiles.add(path);
             }
         }
 
@@ -198,117 +191,123 @@ public class Planning {
         // output format
         writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, fast-forwarded, sol-depth, flaw-sel, plan-sel\n");
 
-        final int repetitions = config.getInt("repetitions");
+        final int repetitions = commandLineConfig.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
 
-                Queue<PlannerConf> planners = new LinkedList<>();
+                Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
 
-                // creates all planners that will be tested for this problem
-                for (String strategy : config.getStringArray("strategies")) {
-                    assert strategy.contains("%") : "Strategy \"" + strategy + "\" is not well formed see help.";
-                    String rawFlawStrat = strategy.substring(0, strategy.indexOf('%'));
-                    String rawPlanStrat = strategy.substring(strategy.indexOf('%') + 1);
-                    String[] planStrat;
-                    if (rawPlanStrat.isEmpty())
-                        planStrat = PlannerFactory.defaultPlanSelStrategies;
-                    else
-                        planStrat = rawPlanStrat.split(":");
-                    String[] flawStrat;
-                    if (rawFlawStrat.isEmpty())
-                        flawStrat = PlannerFactory.defaultFlawSelStrategies;
-                    else
-                        flawStrat = rawFlawStrat.split(":");
-
-                    String[] plannerIDs = config.getStringArray("plannerID");
-                    for (String plannerID : plannerIDs)
-                        planners.add(new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon));
+                Controllability controllability;
+                switch (config.getString("stnu-consistency")) {
+                    case "stn": controllability = Controllability.STN_CONSISTENCY; break;
+                    case "pseudo": controllability = Controllability.PSEUDO_CONTROLLABILITY; break;
+                    case "dynamic": controllability = Controllability.DYNAMIC_CONTROLLABILITY; break;
+                    default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
                 }
 
+                // creates all planners that will be tested for this problem
+                String strategy = config.getString("strategies");
+                assert strategy.contains("%") : "Strategy \"" + strategy + "\" is not well formed see help.";
+                String rawFlawStrat = strategy.substring(0, strategy.indexOf('%'));
+                String rawPlanStrat = strategy.substring(strategy.indexOf('%') + 1);
+                String[] planStrat;
+                if (rawPlanStrat.isEmpty())
+                    planStrat = PlannerFactory.defaultPlanSelStrategies;
+                else
+                    planStrat = rawPlanStrat.split(":");
+                String[] flawStrat;
+                if (rawFlawStrat.isEmpty())
+                    flawStrat = PlannerFactory.defaultFlawSelStrategies;
+                else
+                    flawStrat = rawFlawStrat.split(":");
+
+                String plannerID = config.getString("plannerID");
+
+                final boolean fastForward = config.getBoolean("fast-forward");
+                final boolean aEpsilon = config.getBoolean("A-Epsilon");
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
                 long planningStart = 0;
 
-                while(!planners.isEmpty()) {
-                    System.gc(); // clean up previous runs to avoid impact on performance measure
+                PlannerConf conf = new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon);
 
-                    long start = System.currentTimeMillis();
+                System.gc(); // clean up previous runs to avoid impact on performance measure
 
-                    PlannerConf conf = planners.remove();
-                    conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
+                long start = System.currentTimeMillis();
 
-                    final AnmlProblem pb = new AnmlProblem(true); //todo clean up AnmlProblem as the parameter is now useless
-                    try {
-                        pb.extendWithAnmlFile(anmlFile);
+                conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        System.err.println("Problem with ANML file: " + anmlFile);
-                        System.err.println((new File(anmlFile)).getAbsolutePath());
-                        return;
-                    }
-                    final State iniState = new State(pb, conf.controllability);
-                    final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.options);
-                    APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
+                final AnmlProblem pb = new AnmlProblem(true); //todo clean up AnmlProblem as the parameter is now useless
+                try {
+                    pb.extendWithAnmlFile(anmlFile);
 
-                    boolean failure;
-                    State sol;
-                    try {
-                        planningStart = System.currentTimeMillis();
-                        sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
-                        failure = sol == null;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
-                        continue;
-                    }
-                    long end = System.currentTimeMillis();
-                    float total = (end - start) / 1000f;
-                    String time;
-                    String planningTime = Float.toString((end - planningStart) / 1000f);
-                    if (failure) {
-                        if(planner.planState == APlanner.EPlanState.TIMEOUT)
-                            time = "TIMEOUT";
-                        else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
-                            time = "INFEASIBLE";
-                        else
-                            time = "UNKNOWN PROBLEM";
-                    } else {
-                        time = Float.toString(total);
-                    }
-
-                    if (!failure && !config.getBoolean("quiet")) {
-                        System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
-                        System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
-
-                        Plan plan = new Plan(sol);
-                        plan.exportToDot("plan.dot");
-                        sol.exportTemporalNetwork("stn.dot");
-                        sol.exportTaskNetwork("task-network.dot");
-                        System.out.println("Look at stn.dot and task-network.dot for more details.");
-                    }
-
-                    writer.write(
-                            i + ", "
-                                    + planner.shortName() + ", "
-                                    + time + ", "
-                                    + planningTime + ", "
-                                    + anmlFile + ", "
-                                    + planner.expandedStates + ", "
-                                    + planner.GeneratedStates + ", "
-                                    + planner.numFastForwarded + ", "
-                                    + (failure ? "-" : sol.depth) + ", "
-                                    + Utils.print(planner.options.flawSelStrategies, ":") + ", "
-                                    + Utils.print(planner.options.planSelStrategies, ":")
-                                    + "\n");
-                    writer.flush();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Problem with ANML file: " + anmlFile);
+                    System.err.println((new File(anmlFile)).getAbsolutePath());
+                    return;
                 }
+                final State iniState = new State(pb, conf.controllability);
+                final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.options);
+                APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
+
+                boolean failure;
+                State sol;
+                try {
+                    planningStart = System.currentTimeMillis();
+                    sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
+                    failure = sol == null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
+                    continue;
+                }
+                long end = System.currentTimeMillis();
+                float total = (end - start) / 1000f;
+                String time;
+                String planningTime = Float.toString((end - planningStart) / 1000f);
+                if (failure) {
+                    if(planner.planState == APlanner.EPlanState.TIMEOUT)
+                        time = "TIMEOUT";
+                    else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
+                        time = "INFEASIBLE";
+                    else
+                        time = "UNKNOWN PROBLEM";
+                } else {
+                    time = Float.toString(total);
+                }
+
+                if (!failure && !config.getBoolean("quiet")) {
+                    System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
+                    System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
+
+                    Plan plan = new Plan(sol);
+                    plan.exportToDot("plan.dot");
+                    sol.exportTemporalNetwork("stn.dot");
+                    sol.exportTaskNetwork("task-network.dot");
+                    System.out.println("Look at stn.dot and task-network.dot for more details.");
+                }
+
+                writer.write(
+                        i + ", "
+                                + planner.shortName() + ", "
+                                + time + ", "
+                                + planningTime + ", "
+                                + anmlFile + ", "
+                                + planner.expandedStates + ", "
+                                + planner.GeneratedStates + ", "
+                                + planner.numFastForwarded + ", "
+                                + (failure ? "-" : sol.depth) + ", "
+                                + Utils.print(planner.options.flawSelStrategies, ":") + ", "
+                                + Utils.print(planner.options.planSelStrategies, ":")
+                                + "\n");
+                writer.flush();
 
             }
         }
-        if (!config.getString("output").equals("stdout"))
+        if (!commandLineConfig.getString("output").equals("stdout"))
             writer.close();
     }
 }
