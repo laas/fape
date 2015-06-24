@@ -4,7 +4,8 @@ instance Piece p1_0, p1_1;
 instance Piece p2_0, p2_1;
 constant Kiln k0;
 [all] contains {
-	bakeStructureH(p2_1,p1_1,k0);
+    bakeStructureH(p2_1,p1_1,k0);
+    //treatPiece(p0_0);
 };
 
 
