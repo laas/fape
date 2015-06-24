@@ -29,6 +29,9 @@ public class Configuration {
 
                 SimpleJSAP parser = Planning.getCommandLineParser(false);
                 defaultConf = parser.parse(line);
+                if(parser.messagePrinted()) {
+                    throw new FAPEException("Error reading default configuration file: "+defaultConfFile);
+                }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
                 throw new FAPEException("");

@@ -73,20 +73,39 @@ public class Planning {
                                 .setDefault("999999")
                                 .setHelp("Maximum depth of a solution plan. Any partial plan beyond this depth "
                                         +"will be ignored."),
-                        new Switch("inc-deep",
-                                JSAP.NO_SHORTFLAG,
-                                "inc-deep",
-                                "Planner will use incremental deepening."),
-                        new Switch("fast-forward", JSAP.NO_SHORTFLAG, "ff", "All trivial flaws are solved before inserting a "+
-                                "state in the queue"),
-                        new Switch("A-Epsilon",
-                                JSAP.NO_SHORTFLAG,
-                                "ae",
-                                "Planner will use A-Epsilon for search"),
-                        new Switch("reachability",
-                                JSAP.NO_SHORTFLAG,
-                                "reachability",
-                                "Planner will use planning graphs to assess the reachability of the goals."),
+                        new FlaggedOption("inc-deep")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("inc-deep")
+                                .setDefault("false")
+                                .setHelp("The planner will use incremental deepening until a solution is found or the maximum depth is reached. " +
+                                        "To be efficient this option should probably be used with \"--strats lcf%dfs\", which will reduce the branching " +
+                                        "factor and search in depth first (reducing memory consumption)."),
+                        new FlaggedOption("fast-forward")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("fast-forward")
+                                .setDefault("false")
+                                .setHelp("If true, all trivial flaws (with one resolver) will be solved before inserting a state into the queue." +
+                                        "This results in additional computations as some time is spent computing flaws and resolver for partial plans that " +
+                                        "might never be expanded. On the other hand, it can result in a better herristic information because states in " +
+                                        "the queue are more advanced. Also the total number of states in the queue is often reduces which means less" +
+                                        " heuristics have to be computed."),
+                        new FlaggedOption("A-Epsilon")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("ae")
+                                .setDefault("false")
+                                .setHelp("The planner will use an A-Epsilon search with epsilon = 0.3. The epsilon can not be " +
+                                        "parameterized through command line yet."),
+                        new FlaggedOption("reachability")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("reachability")
+                                .setDefault("false")
+                                .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
+                                        "consists in an analysis on a ground version of the problem, checking both causal and" +
+                                        "hierarchical properties of a partial plan."),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -189,7 +208,8 @@ public class Planning {
         Collections.sort(anmlFiles);
 
         // output format
-        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, fast-forwarded, sol-depth, flaw-sel, plan-sel\n");
+        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, " +
+                "fast-forwarded, sol-depth, flaw-sel, plan-sel, reachability, fast-forward, ae\n");
 
         final int repetitions = commandLineConfig.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
@@ -290,6 +310,10 @@ public class Planning {
                     System.out.println("Look at stn.dot and task-network.dot for more details.");
                 }
 
+                final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";
+                final String ffStr = fastForward ? "ff" : "no-ff";
+                final String aeStr = aEpsilon ? "ae" : "no-ae";
+
                 writer.write(
                         i + ", "
                                 + planner.shortName() + ", "
@@ -301,7 +325,10 @@ public class Planning {
                                 + planner.numFastForwarded + ", "
                                 + (failure ? "-" : sol.depth) + ", "
                                 + Utils.print(planner.options.flawSelStrategies, ":") + ", "
-                                + Utils.print(planner.options.planSelStrategies, ":")
+                                + Utils.print(planner.options.planSelStrategies, ":") + ", "
+                                + reachStr + ", "
+                                + ffStr + ", "
+                                + aeStr
                                 + "\n");
                 writer.flush();
 
