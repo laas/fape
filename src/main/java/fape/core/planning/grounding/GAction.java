@@ -1,11 +1,13 @@
-package fape.core.planning.planninggraph;
+package fape.core.planning.grounding;
 
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
+import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.planninggraph.PGNode;
+import fape.core.planning.planninggraph.PartialBindings;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
-import fape.util.Utils;
 import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;

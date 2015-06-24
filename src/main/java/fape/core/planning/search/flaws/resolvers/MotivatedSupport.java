@@ -3,13 +3,12 @@ package fape.core.planning.search.flaws.resolvers;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
-import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
-import planstack.anml.model.concrete.*;
-
-import java.util.LinkedList;
-import java.util.List;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Decomposition;
+import planstack.anml.model.concrete.Factory;
 
 /**
  * Given an action marked as "motivated" to support, this resolvers select an action condition

@@ -1,10 +1,10 @@
 package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.search.flaws.flaws.Threat;
-import fape.core.planning.timelines.Timeline;
-import fape.core.planning.states.State;
-import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.Threat;
+import fape.core.planning.states.State;
+import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.concrete.TPRef;
 
 import java.util.LinkedList;

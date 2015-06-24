@@ -1,9 +1,9 @@
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.DisjunctiveFluent;
-import fape.core.planning.planninggraph.GAction;
-import fape.core.planning.planninggraph.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.states.State;

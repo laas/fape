@@ -1,7 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.GAction;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.NewTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.Resolver;

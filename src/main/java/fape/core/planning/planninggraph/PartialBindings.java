@@ -1,9 +1,9 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.parser.Instance;
 
 import java.util.*;
 

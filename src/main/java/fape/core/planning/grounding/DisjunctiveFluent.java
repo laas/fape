@@ -1,7 +1,8 @@
-package fape.core.planning.planninggraph;
+package fape.core.planning.grounding;
 
+import fape.core.planning.planninggraph.Landmark;
+import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
-import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.VarRef;
 

@@ -18,7 +18,6 @@ import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.Decomposition;
-import planstack.anml.model.concrete.statements.IntegerAssignmentConstraint;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.Edge;

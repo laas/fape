@@ -1,4 +1,4 @@
-package fape.core.planning.planninggraph;
+package fape.core.planning.grounding;
 
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.InstanceRef;

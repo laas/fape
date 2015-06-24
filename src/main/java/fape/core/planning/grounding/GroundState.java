@@ -1,4 +1,6 @@
-package fape.core.planning.planninggraph;
+package fape.core.planning.grounding;
+
+import fape.core.planning.planninggraph.PGNode;
 
 import java.util.HashSet;
 import java.util.Set;

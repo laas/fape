@@ -1,10 +1,8 @@
 package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.resolvers.Resolver;
 
 import java.util.Comparator;
-import java.util.List;
 
 /**
  * This is the base interface that any flaw selection strategy should implement.

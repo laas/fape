@@ -1,19 +1,9 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.Planner;
-import fape.core.planning.planninggraph.PGPlanner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
-import planstack.anml.model.concrete.ActRef;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionStatus;
-import planstack.anml.model.concrete.VarRef;
 import planstack.constraints.stnu.Controllability;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 public class PlannerFactory {
 
@@ -38,8 +28,6 @@ public class PlannerFactory {
                 return new BaseDTG(controllability, options);
             case "base":
                 return new Planner(controllability, options);
-            case "rpg":
-                return new PGPlanner(controllability, options);
             case "taskcond":
                 return new TaskConditionPlanner(controllability,options);
             default:
@@ -54,8 +42,6 @@ public class PlannerFactory {
                 return new BaseDTG(state, options);
             case "base":
                 return new Planner(state, options);
-            case "rpg":
-                return new PGPlanner(state, options);
             case "taskcond":
                 return new TaskConditionPlanner(state, options);
             default:

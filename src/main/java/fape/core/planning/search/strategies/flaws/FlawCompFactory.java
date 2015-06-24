@@ -1,6 +1,5 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.Planner;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;

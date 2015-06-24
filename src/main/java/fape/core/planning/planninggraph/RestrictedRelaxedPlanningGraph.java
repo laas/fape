@@ -1,5 +1,8 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GroundProblem;
 import fape.util.Utils;
 
 public class RestrictedRelaxedPlanningGraph extends RelaxedPlanningGraph {

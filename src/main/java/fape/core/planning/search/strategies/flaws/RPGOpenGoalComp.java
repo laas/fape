@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planninggraph.DisjunctiveFluent;
-import fape.core.planning.planninggraph.GroundProblem;
+import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;

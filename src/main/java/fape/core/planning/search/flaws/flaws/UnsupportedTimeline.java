@@ -1,9 +1,12 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.*;
-import fape.core.planning.search.flaws.resolvers.*;
+import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
+import fape.core.planning.search.flaws.resolvers.SupportingActionDecomposition;
+import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;

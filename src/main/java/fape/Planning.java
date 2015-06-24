@@ -3,8 +3,6 @@ package fape;
 import com.martiansoftware.jsap.*;
 import fape.core.planning.Plan;
 import fape.core.planning.planner.*;
-import fape.core.planning.planninggraph.GroundProblem;
-import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;
@@ -16,7 +14,6 @@ import java.io.*;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class Planning {
 

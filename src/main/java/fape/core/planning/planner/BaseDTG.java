@@ -4,12 +4,7 @@ import fape.core.planning.Planner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.states.State;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.ActRef;
-import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
-
-import java.util.Map;
 
 public class BaseDTG extends Planner {
 

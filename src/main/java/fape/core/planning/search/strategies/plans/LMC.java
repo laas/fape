@@ -10,13 +10,13 @@
  */
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.heuristics.lmcut.LMCut;
 import fape.core.planning.heuristics.lmcut.RelaxedGroundAtom;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.GroundProblem;
+import fape.core.planning.search.flaws.finders.OpenGoalFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
-import fape.core.planning.search.flaws.finders.OpenGoalFinder;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;

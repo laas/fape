@@ -10,9 +10,9 @@
  */
 package fape.core.planning.heuristics.lmcut;
 
-import fape.core.planning.planninggraph.Fluent;
-import fape.core.planning.planninggraph.GAction;
-import fape.core.planning.planninggraph.GroundProblem;
+import fape.core.planning.grounding.Fluent;
+import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GroundProblem;
 
 import java.util.*;
 

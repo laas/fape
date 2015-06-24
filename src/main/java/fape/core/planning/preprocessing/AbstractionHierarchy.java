@@ -1,9 +1,6 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.PGUtils;
-import fape.exceptions.FAPEException;
-import org.jfree.chart.plot.AbstractPieLabelDistributor;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;

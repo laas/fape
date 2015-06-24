@@ -5,8 +5,6 @@ import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.Threat;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
-import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.LinkedList;
 import java.util.List;

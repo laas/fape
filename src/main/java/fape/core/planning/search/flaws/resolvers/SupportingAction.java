@@ -11,13 +11,10 @@ import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.Factory;
-import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Statement;
 
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**

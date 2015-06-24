@@ -2,11 +2,7 @@ package fape.core.planning.planner;
 
 
 import fape.core.planning.states.State;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.ActRef;
 import planstack.constraints.stnu.Controllability;
-
-import java.util.Map;
 
 /**
  * THis planner reasons on task decomposition. When an action has a subtask, instead of inserting

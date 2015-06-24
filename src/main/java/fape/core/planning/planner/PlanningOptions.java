@@ -1,7 +1,6 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.search.flaws.finders.*;
-import planstack.constraints.stnu.Controllability;
 
 public class PlanningOptions {
 

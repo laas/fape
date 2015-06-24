@@ -5,7 +5,6 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;

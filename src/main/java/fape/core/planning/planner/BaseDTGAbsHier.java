@@ -2,12 +2,7 @@ package fape.core.planning.planner;
 
 import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.states.State;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.ActRef;
-import planstack.anml.parser.ParseResult;
 import planstack.constraints.stnu.Controllability;
-
-import java.util.Map;
 
 public class BaseDTGAbsHier extends BaseDTG {
 

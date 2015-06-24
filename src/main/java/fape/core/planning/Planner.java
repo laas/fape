@@ -12,7 +12,6 @@ package fape.core.planning;
 
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.ActionExecution;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.ActionSupporters;
@@ -20,12 +19,10 @@ import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import fape.util.Pair;
-import planstack.anml.model.concrete.ActRef;
 import planstack.constraints.stnu.Controllability;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The base line planner that stick to a lifted representation and supports the whole range of anml problems.

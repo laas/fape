@@ -2,7 +2,6 @@ package fape.core.planning.states;
 
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.*;
-import fape.core.planning.search.flaws.resolvers.DecomposeAction;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
