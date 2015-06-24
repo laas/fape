@@ -1,0 +1,36 @@
+
+type Location; 
+type Block < Location;
+
+predicate clear(Block b);
+predicate handempty();
+function Location on(Block b);
+
+instance Location TABLE, HAND;
+
+
+action pickup(Block b) {
+  [all] clear(b) == true;
+  [all] on(b) == TABLE :-> HAND;
+  [all] handempty == true :-> false;
+};
+
+action putdown(Block b) {
+  [all] clear(b) == true;
+  [all] on(b) == HAND :-> TABLE;
+  [all] handempty == false :-> true;
+};
+
+action stack(Block b, Block c) {
+  [all] on(b) == HAND :-> c;
+  [all] handempty == false :-> true;
+  [all] clear(c) == true :-> false;
+  [all] clear(b) == true;
+};
+
+action unstack(Block b, Block c) {
+  [all] on(b) == c :-> HAND;
+  [all] handempty == true :-> false;
+  [all] clear(b) == true;
+  [all] clear(c) == false :-> true;
+};
