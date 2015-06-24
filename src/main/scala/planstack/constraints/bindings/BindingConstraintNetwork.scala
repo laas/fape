@@ -120,7 +120,10 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
   override def rawDomain(v: VarRef) : ValuesHolder = domains(domID(v))
 
-  def isDiff(v1: VarRef, v2: VarRef) = different(domID(v1))(domID(v2))
+  def isDiff(v1: VarRef, v2: VarRef) = {
+    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
+    different(domID(v1))(domID(v2))
+  }
 
   private def domainChanged(id: DomID): Unit = {
     if(!queue.contains(id))
@@ -258,10 +261,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     val ext = extensionConstraints(constraintName)
     val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
     val restrictedDomains = ext.restrictedDomains(initialDomains)
-    //        println(constraintName)
-    //        println(initialDomains.toList.map(_.asScala))
-    //        println(restrictedDomains.toList.map(_.asScala))
-    //        println()
+
     for(i <- 0 until initialDomains.length) {
       if(initialDomains(i).size() > restrictedDomains(i).size()) {
         domains(domainsIDs(i)) = new ValuesHolder(restrictedDomains(i))
@@ -297,8 +297,10 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
     domains(id1) = newDom
     vars(id1) = vars(id1) ++ vars(id2)
-    for(i <- 0 until different(id1).size)
-      different(id1)(i) = different(id1)(i) && different(id2)(i)
+    for(i <- 0 until different(id1).size) {
+      different(id1)(i) = different(id1)(i) || different(id2)(i)
+      different(i)(id1) = different(i)(id1) || different(i)(id2)
+    }
     for(v <- vars(id2))
       domIds(v) = id1
     if(queue.contains(id2))
