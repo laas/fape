@@ -13,6 +13,7 @@ import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.TinyLogger;
 import fape.util.Utils;
@@ -421,8 +422,7 @@ public abstract class APlanner {
      *         False otherwise.
      */
     public boolean applyResolver(State st, Resolver resolver) {
-        return resolver.apply(st, this) &&
-                st.isConsistent();
+        return resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.isConsistent();
     }
 
     /**
