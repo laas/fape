@@ -3,6 +3,7 @@ package planstack.constraints
 import planstack.UniquelyIdentified
 import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
+import scala.collection.JavaConverters._
 
 abstract class PendingConstraint[VarRef, TPRef, ID](val from:TPRef, val to:TPRef, val optID:Option[ID]) {
   def hasID(id:ID) = optID match {
@@ -13,9 +14,14 @@ abstract class PendingConstraint[VarRef, TPRef, ID](val from:TPRef, val to:TPRef
 
 class PendingContingency[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val min:VarRef, val max:VarRef)
   extends PendingConstraint[VarRef, TPRef, ID](from, to, optID)
+{
+  override def toString = s"$from $to [$min, $max] $optID"
+}
 
 class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val value:VarRef, val f:(Int=>Int))
-  extends PendingConstraint[VarRef, TPRef, ID](from, to, optID)
+  extends PendingConstraint[VarRef, TPRef, ID](from, to, optID) {
+
+}
 
 
 /**
@@ -36,7 +42,7 @@ class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
 
   bindings.setListener(this)
 
-  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
+  def this() = this(new BindingConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
 //  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
 
   def this(toCopy : MetaCSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
@@ -108,6 +114,8 @@ class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
     varsToConstraints += ((min, pending :: varsToConstraints.getOrElse(min, List())))
     varsToConstraints += ((max, pending :: varsToConstraints.getOrElse(max, List())))
 
+    propagateMixedConstraints()
+
     if(bindings.domainSize(min) == 1)
       onBinded(min, bindings.domainOfIntVar(min).get(0))
     if(bindings.domainSize(max) == 1)
@@ -118,6 +126,8 @@ class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
     val pending = new PendingContingency[VarRef,TPRef,ID](from, to, Some(id), min, max)
     varsToConstraints += ((min, pending :: varsToConstraints.getOrElse(min, List())))
     varsToConstraints += ((max, pending :: varsToConstraints.getOrElse(max, List())))
+
+     propagateMixedConstraints()
 
     if(bindings.domainSize(min) == 1)
       onBinded(min, bindings.domainOfIntVar(min).get(0))
@@ -168,6 +178,37 @@ class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
     }
   }
 
+  def propagateMixedConstraints(): Boolean = {
+    try {
+      for (pendings <- varsToConstraints.values; pending <- pendings) pending match {
+        case req: PendingRequirement[VarRef, TPRef, ID] =>
+          ???
+        case cont: PendingContingency[VarRef, TPRef, ID] =>
+          val minDuration = stn.getMinDelay(cont.from, cont.to)
+          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
+          bindings.keepValuesBelowOrEqualTo(cont.min, maxDuration)
+          bindings.keepValuesAboveOrEqualTo(cont.max, minDuration)
+          val minDelay = bindings.domainOfIntVar(cont.min).asScala.foldLeft(Int.MaxValue)((x, y) => if (x < y) x else y)
+          val maxDelay = bindings.domainOfIntVar(cont.max).asScala.foldLeft(Int.MinValue)((x, y) => if (x > y) x else y)
+          cont.optID match {
+            case Some(id) =>
+              stn.enforceMinDelayWithID(cont.from, cont.to, minDelay, id)
+              stn.enforceMaxDelayWithID(cont.from, cont.to, maxDelay, id)
+            case None =>
+              stn.enforceMinDelay(cont.from, cont.to, minDelay)
+              stn.enforceMaxDelay(cont.from, cont.to, maxDelay)
+          }
+      }
+      isConsistent
+    } catch {
+      // TODO: some of the constraint networks do not implement all needed interfaces
+      case e:UnsupportedOperationException => true
+      case e:NotImplementedError => true
+    }
+  }
+
   /** Returns true if both the binding constraint network and the STN are consistent */
-  def isConsistent = bindings.isConsistent && stn.isConsistent
+  def isConsistent = {
+    bindings.isConsistent && stn.isConsistent
+  }
 }

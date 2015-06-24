@@ -65,4 +65,8 @@ class STNUManager[TPRef <: UniquelyIdentified,ID](val stnu : ISTNU[ID],
 
   /** Returns the earliest time for the time point with id u */
   override protected def earliestStart(u: Int): Int = stnu.earliestStart(u)
+
+  override def getMinDelay(u: TPRef, v: TPRef): Int = ???
+
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = ???
 }

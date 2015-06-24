@@ -13,7 +13,7 @@ import planstack.structures.Converters._
 
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
-class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
+class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : FullSTN[ID],
                                   _tps : HashIntObjMap[TimePoint[TPRef]],
                                   _ids : HashIntIntMap,
                                   _rawConstraints : List[Constraint[TPRef,ID]],
@@ -75,4 +75,8 @@ class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : ISTN[ID],
 
   /** Returns the earliest time for the time point with id u */
   override protected def earliestStart(u: Int): Int = stn.earliestStart(u)
+
+  override def getMinDelay(u: TPRef, v: TPRef): Int = stn.minDelay(id.get(u.id), id.get(v.id))
+
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = stn.maxDelay(id.get(u.id), id.get(v.id))
 }

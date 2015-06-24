@@ -59,10 +59,17 @@ public interface BindingCN<VarRef> {
 
     public void restrictIntDomain(VarRef var, Collection<Integer> toValues);
 
+    /** Only keep values in var's domain that lower or equal to max. var must be an integer variable. */
+    public void keepValuesBelowOrEqualTo(VarRef var, int max);
+
+    /** Only keep values in var's domain that greater or equal to min. var must be an integer variable. */
+    public void keepValuesAboveOrEqualTo(VarRef var, int min);
+
+
     public void AddVariable(VarRef var, Collection<String> domain, String type);
 
     /**
-     * Creates a new integer variable. Its domain will all integer values that where delared up to now.
+     * Creates a new integer variable. Its domain will contain all integer values that where declared up to now.
      * @param var Variable to record.
      */
     public void AddIntVariable(VarRef var);

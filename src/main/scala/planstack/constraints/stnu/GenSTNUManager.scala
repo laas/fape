@@ -266,6 +266,9 @@ abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
   /** Returns the latest time for the time point with id u */
   protected def latestStart(u:Int) : Int
 
+  def getMinDelay(u:TPRef, v:TPRef) : Int
+  def getMaxDelay(u: TPRef, v:TPRef) : Int
+
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */

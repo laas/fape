@@ -143,9 +143,9 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param var2 time point
      * @return lower bound on time between time point var1 and var2
      */
-    protected int ga(int var1, int var2){
+    protected int minDelay(int var1, int var2){
         if(var1 == var2) return 0;
-        else if(var1 < var2) return (- gb(var2,var1));
+        else if(var1 < var2) return (- maxDelay(var2, var1));
         else return edge_a[pos(var1, var2)];
     }
     /**
@@ -154,9 +154,9 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param var2 time point
      * @return lower bound on time between time point var1 and var2
      */
-    protected int gb(int var1, int var2){
+    protected int maxDelay(int var1, int var2){
         if(var1 == var2) return 0;
-        else if(var1 < var2) return (- ga(var2,var1));
+        else if(var1 < var2) return (- minDelay(var2, var1));
         else return edge_b[pos(var1, var2)];
     }
     /**
@@ -221,7 +221,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      */
     protected boolean edge_consistent(int v1, int v2, int a, int b){
         //non-empty intersection
-        return (Math.max(ga(v1,v2),a) <= Math.min(gb(v1,v2), b));
+        return (Math.max(minDelay(v1, v2),a) <= Math.min(maxDelay(v1, v2), b));
     }
     /**
      * addition operation that takes into account our infities
@@ -251,9 +251,9 @@ public class FullSTN<ID> extends ISTN<ID> {
 
         int I_top = 0, J_top = 0, I[] = new int[top], J[] = new int[top], aa, bb, i,j,k;
 
-        aa = Math.max(a, ga(v1,v2)); //(K->V1 + V1->V2) /\ (K->V2)
-        bb = Math.min(b, gb(v1,v2));
-        if(ga(v1,v2) != aa || gb(v1,v2) != bb){
+        aa = Math.max(a, minDelay(v1, v2)); //(K->V1 + V1->V2) /\ (K->V2)
+        bb = Math.min(b, maxDelay(v1, v2));
+        if(minDelay(v1, v2) != aa || maxDelay(v1, v2) != bb){
 
             // intersection of the original edge
             sa(v1, v2, aa);
@@ -263,20 +263,20 @@ public class FullSTN<ID> extends ISTN<ID> {
             for(k = 0; k < top; k++) {
                 if(emptySpots.contains(k)) break;
                 if (v1 != k && v2 != k) {
-                    aa = lim_plus(ga(k, v1), ga(v1, v2)); //K->V1 + V1->V2
-                    bb = lim_plus(gb(k, v1), gb(v1, v2));
-                    aa = Math.max(aa, ga(k, v2)); //(K->V1 + V1->V2) /\ (K->V2)
-                    bb = Math.min(bb, gb(k, v2));
-                    if (ga(k, v2) != aa || gb(k, v2) != bb) {//change of interval occured
+                    aa = lim_plus(minDelay(k, v1), minDelay(v1, v2)); //K->V1 + V1->V2
+                    bb = lim_plus(maxDelay(k, v1), maxDelay(v1, v2));
+                    aa = Math.max(aa, minDelay(k, v2)); //(K->V1 + V1->V2) /\ (K->V2)
+                    bb = Math.min(bb, maxDelay(k, v2));
+                    if (minDelay(k, v2) != aa || maxDelay(k, v2) != bb) {//change of interval occured
                         I[I_top++] = k;
                         sa(k, v2, aa);
                         sb(k, v2, bb);
                     }
-                    aa = lim_plus(ga(v1, v2), ga(v2, k)); //V1->V2 + V2->K
-                    bb = lim_plus(gb(v1, v2), gb(v2, k));
-                    aa = Math.max(aa, ga(v1, k)); //(V1->V2 + V2->K) /\ (V1->K)
-                    bb = Math.min(bb, gb(v1, k));
-                    if (ga(v1, k) != aa || gb(v1, k) != bb) {//change of interval occured
+                    aa = lim_plus(minDelay(v1, v2), minDelay(v2, k)); //V1->V2 + V2->K
+                    bb = lim_plus(maxDelay(v1, v2), maxDelay(v2, k));
+                    aa = Math.max(aa, minDelay(v1, k)); //(V1->V2 + V2->K) /\ (V1->K)
+                    bb = Math.min(bb, maxDelay(v1, k));
+                    if (minDelay(v1, k) != aa || maxDelay(v1, k) != bb) {//change of interval occured
                         J[J_top++] = k;
                         sa(v1, k, aa);
                         sb(v1, k, bb);
@@ -289,11 +289,11 @@ public class FullSTN<ID> extends ISTN<ID> {
                 for (j = 0; j < J_top; j++) {
                     if(emptySpots.contains(j)) break;
                     if (I[i] != J[j]) {
-                        aa = lim_plus(ga(I[i], v1), ga(v1, J[j])); //I->V1 + V1->J
-                        bb = lim_plus(gb(I[i], v1), gb(v1, J[j]));
-                        aa = Math.max(aa, ga(I[i], J[j])); //(I->V1 + V1->J) /\ (I->J)
-                        bb = Math.min(bb, gb(I[i], J[j]));
-                        if (ga(I[i], J[j]) != aa || gb(I[i], J[j]) != bb) {
+                        aa = lim_plus(minDelay(I[i], v1), minDelay(v1, J[j])); //I->V1 + V1->J
+                        bb = lim_plus(maxDelay(I[i], v1), maxDelay(v1, J[j]));
+                        aa = Math.max(aa, minDelay(I[i], J[j])); //(I->V1 + V1->J) /\ (I->J)
+                        bb = Math.min(bb, maxDelay(I[i], J[j]));
+                        if (minDelay(I[i], J[j]) != aa || maxDelay(I[i], J[j]) != bb) {
                             sa(I[i], J[j], aa);
                             sb(I[i], J[j], bb);
                         }
@@ -408,12 +408,12 @@ public class FullSTN<ID> extends ISTN<ID> {
 
     @Override
     public int earliestStart(int u) {
-        return ga(start(), u);
+        return minDelay(start(), u);
     }
 
     @Override
     public int latestStart(int u) {
-        return gb(start(), u);
+        return maxDelay(start(), u);
     }
 
     @Override

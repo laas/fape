@@ -78,4 +78,8 @@ class MinimalSTNUManager[TPRef <: UniquelyIdentified,ID](val stn:ISTN[ID],
       case Some(id) => stn.addConstraintWithID(u, v, w, id)
       case None => stn.addConstraint(u, v, w)
     }
+
+  override def getMinDelay(u: TPRef, v: TPRef): Int = ???
+
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = ???
 }

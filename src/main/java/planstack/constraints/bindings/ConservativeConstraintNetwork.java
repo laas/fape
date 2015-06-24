@@ -346,6 +346,16 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         restrictDomain(var, intValuesAsDomain(toValues));
     }
 
+    @Override
+    public void keepValuesBelowOrEqualTo(VarRef var, int max) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void keepValuesAboveOrEqualTo(VarRef var, int min) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
     public void AddVariable(VarRef var, Collection<String> domain, String type) {
         assert !type.equals("integer") && !type.equals("int");
         assert !variables.contains(var);

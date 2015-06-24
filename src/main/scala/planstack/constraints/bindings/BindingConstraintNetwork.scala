@@ -346,6 +346,29 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   override def restrictDomain(v: VarRef, toValues: util.Collection[String]): Unit =
     restrictDomain(v, stringValuesAsDomain(toValues))
 
+  override def keepValuesAboveOrEqualTo(v: VarRef, min: Int): Unit = {
+    assert(isIntegerVar(v))
+
+    val initialDomain = domainOfIntVar(v).asScala
+    val newDomain = initialDomain.filter(i => i >= min)
+    if(newDomain.size < initialDomain.size) {
+      domains(domID(v)) = intValuesAsDomain(newDomain.asJava)
+      checkExtendedConstraints(domID(v))
+      domainChanged(domID(v))
+    }
+  }
+  override def keepValuesBelowOrEqualTo(v: VarRef, max: Int): Unit = {
+    assert(isIntegerVar(v))
+
+    val initialDomain = domainOfIntVar(v).asScala
+    val newDomain = initialDomain.filter(i => i <= max)
+    if(newDomain.size < initialDomain.size) {
+      domains(domID(v)) = intValuesAsDomain(newDomain.asJava)
+      checkExtendedConstraints(domID(v))
+      domainChanged(domID(v))
+    }
+  }
+
   override def getUnboundVariables: util.List[VarRef] = {
     val unboundDomains = for ((domId, dom) <- domains; if dom.size() != 1) yield domId
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
