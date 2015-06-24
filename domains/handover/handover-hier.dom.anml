@@ -71,6 +71,7 @@ action Transport(Robot r1, Robot r2, NavLocation from, NavLocation to, Item i) {
 };
 
 action Exchange(Robot r1, Robot r2, Item i) {
+    // note: this gets huge when grounding ...
     constant NavLocation l1;
     constant NavLocation l2;
     constant Robot r;
