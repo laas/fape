@@ -6,6 +6,8 @@ public class LeveledReasoner {
 
     public static int defSize = 10;
 
+    private boolean locked = false;
+
     class Enabler {
         final int level;
         final int clause;
@@ -34,6 +36,24 @@ public class LeveledReasoner {
         Arrays.fill(clausesLevels, -1);
     }
 
+    public LeveledReasoner(LeveledReasoner toCopy) {
+        toCopy.locked = true;
+        nextClause = toCopy.nextClause;
+        factsLevels = new int[toCopy.factsCapacity()];
+        Arrays.fill(factsLevels, -1);
+        clausesLevels = new int[toCopy.clausesCapacity()];
+        Arrays.fill(clausesLevels, -1);
+        initialFacts = new boolean[toCopy.factsCapacity()];
+        clausesConditions = toCopy.clausesConditions;
+        clausesEffects = toCopy.clausesEffects;
+        clausesIds = toCopy.clausesIds;
+        factsAppearance = toCopy.factsAppearance;
+        clausesPendingCount = new int[toCopy.clausesCapacity()];
+        for(int i=0 ; i<nextClause ; i++) {
+            clausesPendingCount[i] = clausesConditions[i].length;
+        }
+    }
+
     private int factsCapacity() { return factsLevels.length; }
     private int clausesCapacity() { return clausesConditions.length; }
 
@@ -56,13 +76,14 @@ public class LeveledReasoner {
     }
 
     public int addClause(int[] clauseConditions, int[] clauseEffects, int id) {
+        assert !locked : "Trying to add a clause to a locked LeveledReasoner.";
         if(nextClause >= clausesCapacity())
             increaseClauseSize();
 
         clausesConditions[nextClause] = clauseConditions;
         clausesEffects[nextClause] = clauseEffects;
 
-        // make sure we ahve enough space
+        // make sure we have enough space
         for(int eff : clauseEffects)
             if(eff >= factsCapacity())
                 increaseFactsSize();
@@ -90,8 +111,39 @@ public class LeveledReasoner {
         factsLevels[fact] = 0;
     }
 
+    private boolean inferenceMade = true;
+    public void infer() {
+        int nextLevel = 1;
+        boolean[] currentFacts = initialFacts;
+
+        while(inferenceMade) {
+            inferenceMade = false;
+            currentFacts = getNextLevel(currentFacts, nextLevel);
+            nextLevel++;
+        }
+    }
+
     public boolean[] getNextLevel(boolean[] facts, int lvl) {
         boolean[] nextLevel = Arrays.copyOfRange(facts, 0, facts.length);
+
+        // deal with clauses with no conditions
+        if(lvl == 1) {
+            for (int clause = 0; clause < nextClause; clause++) {
+                if (clausesConditions[clause].length == 0) {
+                    clausesLevels[clause] = 1;
+                    for(int eff : clausesEffects[clause]) {
+                        if(enablers[eff] == null)
+                            enablers[eff] = new ArrayList<>();
+
+                        enablers[eff].add(new Enabler(lvl, clause));
+
+                        factsLevels[eff] = factsLevels[eff] == -1 ? lvl : factsLevels[eff];
+                        nextLevel[eff] = true;
+                        inferenceMade = true;
+                    }
+                }
+            }
+        }
 
         for(int i=0 ; i<facts.length ; i++) {
             if(facts[i] && (factsLevels[i] == lvl-1) && factsAppearance[i] != null) {
@@ -100,14 +152,20 @@ public class LeveledReasoner {
                     assert clausesPendingCount[clause] > 0;
                     clausesPendingCount[clause]--;
                     if(clausesPendingCount[clause] == 0) {
-                        for(int eff : clausesEffects[clause]) {
 
-                            if(enablers[eff] == null) enablers[eff] = new ArrayList<>();
+                        // just became true, set clause level
+                        assert clausesLevels[clause] == -1;
+                        clausesLevels[clause] = lvl;
+
+                        for(int eff : clausesEffects[clause]) {
+                            if(enablers[eff] == null)
+                                enablers[eff] = new ArrayList<>();
+
                             enablers[eff].add(new Enabler(lvl, clause));
-                            assert clausesLevels[clause] == -1;
-                            clausesLevels[clause] = lvl;
+
                             factsLevels[eff] = factsLevels[eff] == -1 ? lvl : factsLevels[eff];
                             nextLevel[eff] = true;
+                            inferenceMade = true;
                         }
                     }
                 }
@@ -116,11 +174,16 @@ public class LeveledReasoner {
         return nextLevel;
     }
 
-    private static int[] arr(int... values) {
-        return values.clone();
+    public int levelOfClause(int clause) {
+        return clausesLevels[clause];
+    }
+
+    public int levelOfFact(int fact) {
+        return factsLevels[fact];
     }
 
     public Collection<Integer> getPathTo(int fact) {
+        assert levelOfFact(fact) != -1 : "Requesting path to a fact that is not true.";
         Set<Integer> clauses = new HashSet<>();
         Queue<Integer> opened = new LinkedList<>();
         opened.add(fact);
@@ -155,21 +218,6 @@ public class LeveledReasoner {
 
 
     public static void main(String[] args) {
-        LeveledReasoner r = new LeveledReasoner();
-        r.addClause(arr(1,2), arr(3,6), 0);
-        r.addClause(arr(4,5), arr(6), 1);
-        r.addClause(arr(2,3), arr(4), 2);
 
-        r.set(1);
-        r.set(2);
-        r.set(5);
-
-        boolean[] lvl1 = r.getNextLevel(r.initialFacts, 1);
-
-        boolean[] lvl2 = r.getNextLevel(lvl1, 2);
-        boolean[] lvl3 = r.getNextLevel(lvl2, 3);
-
-        System.out.println(lvl2);
-        System.out.println(r.getPathTo(6));
     }
 }
