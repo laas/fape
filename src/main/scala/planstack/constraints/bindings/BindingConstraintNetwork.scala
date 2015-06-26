@@ -2,12 +2,15 @@ package planstack.constraints.bindings
 
 import java.util
 
+import planstack.constraints.bindings.BindingConstraintNetwork.ExtID
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object BindingConstraintNetwork {
   type DomID = Int
+  type ExtID = Int
 
   var cnt = 0
 }
@@ -39,7 +42,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   var mapping : ArrayBuffer[(mutable.Buffer[DomID], String)] = null
 
 
-  var queue : ListBuffer[DomID] = null
+  var extToCheck : mutable.Set[ExtID] = null
 
   var unusedDomainIds : mutable.ListBuffer[DomID] = null
 
@@ -62,7 +65,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       extensionConstraints = o.extensionConstraints
       mapping = o.mapping.clone()
       unusedDomainIds = o.unusedDomainIds.clone()
-      queue = o.queue.clone()
+      extToCheck = o.extToCheck.clone()
     case None =>
       BindingConstraintNetwork.cnt += 1
       domIds = mutable.Map[VarRef, DomID]()
@@ -83,8 +86,10 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       mapping = ArrayBuffer()
 
       unusedDomainIds = ListBuffer[DomID]()
-      queue = ListBuffer[DomID]()
+      extToCheck = mutable.Set[ExtID]()
   }
+
+  protected[bindings] def allVars = domIds.keys
 
   private def domID(v: VarRef) : DomID = domIds(v)
 
@@ -125,10 +130,34 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     different(domID(v1))(domID(v2))
   }
 
-  private def domainChanged(id: DomID): Unit = {
-    if(!queue.contains(id))
-      queue += id
+  private def domainChanged(id: DomID, causedByExtended: Option[ExtID]): Unit = {
+    if(domains(id).size() == 0)
+      hasEmptyDomains = true
 
+    if(domains(id).size() == 1) {
+      // check difference constraints
+      val uniqueValue = domains(id).head()
+      for (o <- 0 until vars.size
+           if !unusedDomainIds.contains(o)
+           if different(id)(o)
+           if domains(o).contains(uniqueValue))
+      {
+        domains(o) = domains(o).remove(uniqueValue)
+
+        if (domains(o).isEmpty)
+          hasEmptyDomains = true
+
+        domainChanged(o, None)
+      }
+    }
+
+    // add extended constraints to the queue
+    extToCheck ++= (causedByExtended match {
+      case Some(extID) => extendedInvolving(id).filter(_ != extID)
+      case None => extendedInvolving(id)
+    })
+
+    // if it is a integer varaible that got binded, notify the listener if any
     if(listener != null && domains(id).size() == 1 && isIntegerVar(vars(id).head)) {
       val value = intValues(domains(id).head())
       for(v <- vars(id)) {
@@ -209,7 +238,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   override def addValuesSetConstraint(variables: util.List[VarRef], setID: String): Unit = {
     val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID(_))
     mapping += ((asIDs, setID))
-    checkExtendedConstraint(asIDs, setID)
+    extToCheck += mapping.size-1
   }
 
   override def restrictIntDomain(v: VarRef, toValues: util.Collection[Integer]): Unit =
@@ -222,41 +251,26 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     different(domID(a))(domID(b)) = true
     different(domID(b))(domID(a)) = true
 
-    queue += domID(a)
-    queue += domID(b)
+    if(domainSize(a) == 1)
+      domainChanged(domID(a), None)
+    if(domainSize(b) == 1)
+      domainChanged(domID(b), None)
   }
 
   override def isConsistent: Boolean = {
-    while(queue.nonEmpty && !hasEmptyDomains) {
-      val cur = queue.head
-      queue -= cur
-      if(domains(cur).size() == 0) {
-        hasEmptyDomains = true
-      } else if(domains(cur).size() == 1) {
-        checkExtendedConstraints(cur)
+    while(extToCheck.nonEmpty && !hasEmptyDomains) {
+      val cur = extToCheck.head
+      extToCheck -= cur
 
-        if(!hasEmptyDomains) {
-          val uniqueValue = domains(cur).head()
-          for (o <- 0 until vars.size
-               if !unusedDomainIds.contains(o)
-               if different(cur)(o)
-               if domains(o).contains(uniqueValue))
-          {
-            domains(o) = domains(o).remove(uniqueValue)
-
-            if (domains(o).isEmpty)
-              hasEmptyDomains = true
-
-            domainChanged(o)
-          }
-        }
-      }
+      checkExtendedConstraint(cur)
     }
 
     !hasEmptyDomains
   }
 
-  private def checkExtendedConstraint(domainsIDs: Seq[DomID], constraintName: String): Unit = {
+  private def checkExtendedConstraint(extID: ExtID): Unit = {
+    val (domainsIDs, constraintName) = mapping(extID)
+
     // process this constraint // TODO check if there is anything new since last time
     val ext = extensionConstraints(constraintName)
     val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
@@ -268,18 +282,14 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
         if(domains(domainsIDs(i)).isEmpty)
           hasEmptyDomains = true
 
-        domainChanged(domainsIDs(i))
+        domainChanged(domainsIDs(i), causedByExtended = Some(extID))
       }
     }
   }
 
-  private def checkExtendedConstraints(domID: Int): Unit = {
-    for((domainsIDs, constraintName) <- mapping) {
-      if(domainsIDs.contains(domID)) {
-        checkExtendedConstraint(domainsIDs, constraintName)
-      }
-
-    }
+  private def extendedInvolving(domID: DomID) : Iterable[ExtID]= {
+    for(i <- 0 until mapping.size ; if mapping(i)._1.contains(domID)) yield
+      i
   }
 
   override def domainAsString(v: VarRef): String =
@@ -303,8 +313,6 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     }
     for(v <- vars(id2))
       domIds(v) = id1
-    if(queue.contains(id2))
-      queue -= id2
 
     unusedDomainIds += id2
     vars(id2) = new ListBuffer[VarRef]()
@@ -321,8 +329,8 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       }
     }
 
-    if(domainUpdated)
-      domainChanged(id1)
+    // make sure new constraints are propagated
+    domainChanged(id1, None)
 
     assert(allDomIds.forall(id => vars(id).nonEmpty))
   }
@@ -338,7 +346,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     val modified = newDom.size() < rawDomain(v).size()
     if(modified) {
       domains(domID(v)) = newDom
-      domainChanged(domID(v))
+      domainChanged(domID(v), None)
     }
     modified
   }
@@ -353,8 +361,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     val newDomain = initialDomain.filter(i => i >= min)
     if(newDomain.size < initialDomain.size) {
       domains(domID(v)) = intValuesAsDomain(newDomain.asJava)
-      checkExtendedConstraints(domID(v))
-      domainChanged(domID(v))
+      domainChanged(domID(v), None)
     }
   }
   override def keepValuesBelowOrEqualTo(v: VarRef, max: Int): Unit = {
@@ -364,8 +371,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     val newDomain = initialDomain.filter(i => i <= max)
     if(newDomain.size < initialDomain.size) {
       domains(domID(v)) = intValuesAsDomain(newDomain.asJava)
-      checkExtendedConstraints(domID(v))
-      domainChanged(domID(v))
+      domainChanged(domID(v), None)
     }
   }
 
@@ -385,7 +391,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     domIds(v) = domID
     vars(domID) += v
     domains(domID) = dom
-    domainChanged(domID)
+    domainChanged(domID, None)
 
     assert(vars(domID).size == 1)
   }
