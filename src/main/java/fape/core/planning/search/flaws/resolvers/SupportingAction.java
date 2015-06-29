@@ -25,7 +25,6 @@ import java.util.Map;
 public class SupportingAction extends Resolver {
 
     public final AbstractAction act;
-    public final Map<LVarRef, Collection<String>> values;
     public final int consumerID;
     public final int decID;
     /** id of the statement used for support */
@@ -33,15 +32,6 @@ public class SupportingAction extends Resolver {
 
     public SupportingAction(AbstractAction act, int decID, LStatementRef statementRef, Timeline consumer) {
         this.act = act;
-        values = null;
-        this.consumerID = consumer.mID;
-        this.decID = decID;
-        this.statementRef = statementRef;
-    }
-
-    public SupportingAction(AbstractAction act, LStatementRef statementRef, int decID, Map<LVarRef, Collection<String>> values, Timeline consumer) {
-        this.act = act;
-        this.values = values;
         this.consumerID = consumer.mID;
         this.decID = decID;
         this.statementRef = statementRef;
@@ -76,12 +66,6 @@ public class SupportingAction extends Resolver {
         }
         assert decID == -1 || dec != null;
 
-        if(values != null)
-            // restrict domain of given variables to the given set of variables.
-            for (LVarRef lvar : values.keySet()) {
-                st.restrictDomain(action.context().getGlobalVar(lvar), values.get(lvar));
-            }
-
         // statement that should be supporting our consumer
         Statement supporter;
         if(decID == -1)
@@ -101,5 +85,22 @@ public class SupportingAction extends Resolver {
             return false;
         }
 
+    }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof SupportingAction;
+        SupportingAction o = (SupportingAction) e;
+        if(act != o.act)
+            return act.name().compareTo(o.act.name());
+
+        if(consumerID != o.consumerID)
+            return consumerID - o.consumerID;
+
+        if(decID != o.decID)
+            return decID - o.decID;
+
+        assert !statementRef.equals(o.statementRef) : "Error: trying to compare to identical resolvers";
+        return statementRef.id().compareTo(o.statementRef.id());
     }
 }

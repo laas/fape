@@ -22,4 +22,14 @@ public class BindingSeparation extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof BindingSeparation;
+        BindingSeparation o = (BindingSeparation) e;
+        if(a != o.a)
+            return a.id() - o.a.id();
+        assert b != o.b : "Comparing two identical resolvers.";
+        return b.id() - o.b.id();
+    }
 }

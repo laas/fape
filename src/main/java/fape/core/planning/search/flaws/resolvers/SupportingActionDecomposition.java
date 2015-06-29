@@ -55,4 +55,18 @@ public class SupportingActionDecomposition extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof SupportingActionDecomposition;
+        SupportingActionDecomposition o = (SupportingActionDecomposition) e;
+        if(act != o.act)
+            return act.id().id() - o.act.id().id();
+
+        if(decID != o.decID)
+            return decID - o.decID;
+
+        assert consumerID != o.consumerID : "Error: comparing two indentical resolvers.";
+            return consumerID - o.consumerID;
+    }
 }

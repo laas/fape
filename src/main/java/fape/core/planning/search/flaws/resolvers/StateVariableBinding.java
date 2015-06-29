@@ -32,4 +32,10 @@ public class StateVariableBinding extends Resolver {
         st.addUnificationConstraint(a, b);
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
 }

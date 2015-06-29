@@ -28,4 +28,14 @@ public class VarBinding extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof VarBinding;
+        VarBinding o = (VarBinding) e;
+        if(!value.equals(o.value))
+            return value.compareTo(o.value);
+        assert var != o.var;
+        return var.id() - o.var.id();
+    }
 }

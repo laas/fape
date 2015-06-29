@@ -35,5 +35,14 @@ public class ExistingTaskSupporter extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof ExistingTaskSupporter;
+        ExistingTaskSupporter o = (ExistingTaskSupporter) e;
+        assert condition == o.condition : "Comparing two resolvers on different flaws.";
+        assert act != o.act;
+        return act.id().id() - o.act.id().id();
+    }
 }
 

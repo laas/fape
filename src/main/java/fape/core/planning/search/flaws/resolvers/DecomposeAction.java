@@ -43,4 +43,14 @@ public class DecomposeAction extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof DecomposeAction;
+        DecomposeAction o = (DecomposeAction) e;
+        if(act != o.act)
+            return act.id().id() - o.act.id().id();
+        assert decID != o.decID : "Comparing two identical resolvers.";
+        return decID - o.decID;
+    }
 }

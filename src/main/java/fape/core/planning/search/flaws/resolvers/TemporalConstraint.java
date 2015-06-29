@@ -34,4 +34,19 @@ public class TemporalConstraint extends Resolver {
         st.enforceConstraint(first, second, min, max);
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof TemporalConstraint;
+        TemporalConstraint o = (TemporalConstraint) e;
+        if(first != o.first)
+            return first.id() - o.first.id();
+        if(second != o.second)
+            return second.id() - o.second.id();
+        if(min != o.min)
+            return min - o.min;
+
+        assert max != o.max : "Error: comparing two identical resolvers.";
+        return max - o.max;
+    }
 }

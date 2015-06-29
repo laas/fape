@@ -9,7 +9,7 @@ import planstack.anml.model.concrete.Action;
  * A resolver is recipe to fix a Flaw.
  * It provides an apply method that modifies a state so that the flaw is fixed.
  */
-public abstract class Resolver {
+public abstract class Resolver implements Comparable<Resolver> {
 
     public boolean representsCausalLinkAddition() {
         return this instanceof SupportingTimeline ||
@@ -33,4 +33,29 @@ public abstract class Resolver {
      *         guarantee is that the flaw is fixed.
      */
     public abstract boolean apply(State st, APlanner planner);
+
+    /**
+     * Should provide a comparison with another resolver of the same class.
+     * This is used to sort resolvers for reproducibility.
+     */
+    public abstract int compareWithSameClass(Resolver e);
+
+    /**
+     * Provides a way to sort resolvers for reproducibility. This is not intended to give information
+     * on how much interesting a resolver is but just to make sure that resolvers are always in the same
+     * order between two runs.
+     */
+    @Override
+    public int compareTo(Resolver o) {
+        String n1 = this.getClass().getCanonicalName();
+        String n2 = o.getClass().getCanonicalName();
+        int cmp = n1.compareTo(n2);
+        if(cmp != 0) {
+            assert this.getClass() != o.getClass();
+            return -cmp;
+        } else {
+            assert this.getClass() == o.getClass();
+            return -this.compareWithSameClass(o);
+        }
+    }
 }

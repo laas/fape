@@ -108,4 +108,31 @@ public class MotivatedSupport extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof MotivatedSupport;
+        MotivatedSupport o = (MotivatedSupport) e;
+        assert toSupport == o.toSupport : "Comparing resolvers on different flaws.";
+
+        if(act != null && o.act == null)
+            return -1;
+        if(act == null && o.act != null)
+            return 1;
+        if(act != null && o.act != null && act != o.act)
+            return act.id().id() - o.act.id().id();
+
+        if(abs != null && o.abs == null)
+            return -1;
+        if(abs == null && o.abs != null)
+            return 1;
+        if(abs != null && o.abs != null && abs != o.abs)
+            return abs.name().compareTo(o.abs.name());
+
+        if(decID != o.decID)
+            return decID - o.decID;
+
+        assert actRef != o.actRef;
+        return actRef.id().compareTo(o.actRef.id());
+    }
 }

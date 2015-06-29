@@ -65,4 +65,9 @@ public class ResourceSupportingAction extends Resolver {
 
         return true;
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

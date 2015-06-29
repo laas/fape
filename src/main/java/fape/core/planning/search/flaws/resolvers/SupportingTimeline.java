@@ -47,6 +47,18 @@ public class SupportingTimeline extends Resolver {
     }
 
     @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof SupportingTimeline;
+        SupportingTimeline o = (SupportingTimeline) e;
+        if(consumerID != o.consumerID)
+            return consumerID - o.consumerID;
+        if(supporterID != o.supporterID)
+            return supporterID - o.supporterID;
+        assert supportingComponent != o.supportingComponent : "Error: comparing two identical resolvers.";
+        return supportingComponent - o.supportingComponent;
+    }
+
+    @Override
     public int hashCode() {
         return supporterID + 42*supportingComponent + 42*42*consumerID;
     }

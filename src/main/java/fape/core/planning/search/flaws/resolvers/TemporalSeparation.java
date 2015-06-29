@@ -31,4 +31,14 @@ public class TemporalSeparation extends Resolver {
         );
         return st.isConsistent();
     }
+
+    @Override
+    public int compareWithSameClass(Resolver e) {
+        assert e instanceof TemporalSeparation;
+        TemporalSeparation o = (TemporalSeparation) e;
+        if(firstDbID != o.firstDbID)
+            return firstDbID - o.firstDbID;
+        assert secondDbID != o.secondDbID : "Comparing two identical resolvers.";
+        return secondDbID - o.secondDbID;
+    }
 }

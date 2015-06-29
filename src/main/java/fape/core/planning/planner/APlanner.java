@@ -335,6 +335,8 @@ public abstract class APlanner {
             f = flaws.get(0);
         }
         List<Resolver> resolvers = f.getResolvers(st, this);
+        // put resolvers are always in the same order (for reproducibility)
+        Collections.sort(resolvers);
 
         if (resolvers.isEmpty()) {
             // dead end, keep going
