@@ -6,7 +6,7 @@ import planstack.constraints.bindings.BindingConstraintNetwork.ExtID
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ArrayBuffer
 
 object BindingConstraintNetwork {
   type DomID = Int
@@ -28,14 +28,14 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   var domIds : mutable.Map[VarRef, DomID] = null
   var types : mutable.Map[VarRef, String] = null
   var domains : mutable.Map[DomID, ValuesHolder] = null
-  var vars : ListBuffer[ListBuffer[VarRef]] = null
+  var vars : ArrayBuffer[ArrayBuffer[VarRef]] = null
   var different : Array[Array[Boolean]] = null
-  var values : ListBuffer[String] = null
+  var values : ArrayBuffer[String] = null
   var valuesIds : Map[String, Int] = null
-  var intValues : ListBuffer[Int] = null
+  var intValues : ArrayBuffer[Int] = null
   var intValuesIds : Map[Int, Int] = null
 
-  var defaultIntDomain : ListBuffer[ValuesHolder] = null
+  var defaultIntDomain : ArrayBuffer[ValuesHolder] = null
 
   /** Extension constraints */
   var extensionConstraints : Map[String, ExtensionConstraint] = null
@@ -44,7 +44,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
   var extToCheck : mutable.Set[ExtID] = null
 
-  var unusedDomainIds : mutable.ListBuffer[DomID] = null
+  var unusedDomainIds : mutable.ArrayBuffer[DomID] = null
 
   var hasEmptyDomains = false
 
@@ -71,21 +71,21 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       domIds = mutable.Map[VarRef, DomID]()
       types = mutable.Map[VarRef, String]()
       domains = mutable.Map[DomID, ValuesHolder]()
-      vars = ListBuffer[ListBuffer[VarRef]]()
+      vars = ArrayBuffer[ArrayBuffer[VarRef]]()
       different = new Array[Array[Boolean]](increment)
       for(i <- 0 until different.size)
         different(i) = Array.fill(increment)(false)
 
-      values = ListBuffer[String]()
+      values = ArrayBuffer[String]()
       valuesIds = Map[String, Int]()
-      intValues = ListBuffer[Int]()
+      intValues = ArrayBuffer[Int]()
       intValuesIds = Map[Int, Int]()
-      defaultIntDomain = ListBuffer(new ValuesHolder(Set()))
+      defaultIntDomain = ArrayBuffer(new ValuesHolder(Set()))
 
       extensionConstraints = Map()
       mapping = ArrayBuffer()
 
-      unusedDomainIds = ListBuffer[DomID]()
+      unusedDomainIds = ArrayBuffer[DomID]()
       extToCheck = mutable.Set[ExtID]()
   }
 
@@ -106,8 +106,8 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
         next
       }
 
-    if(vars.size > id) vars(id) = ListBuffer[VarRef]()
-    else vars += ListBuffer[VarRef]()
+    if(vars.size > id) vars(id) = ArrayBuffer[VarRef]()
+    else vars += ArrayBuffer[VarRef]()
 
     if(id == different.size) {
       // replace with bigger
@@ -315,7 +315,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       domIds(v) = id1
 
     unusedDomainIds += id2
-    vars(id2) = new ListBuffer[VarRef]()
+    vars(id2) = new ArrayBuffer[VarRef]()
     for(i <- 0 until different.size) {
       different(i)(id2) = false
       different(id2)(i) = false
