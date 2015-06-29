@@ -34,7 +34,7 @@ public class LiftedDTG implements ActionSupporterFinder{
 
         for(Function func : pb.functions().getAll()) {
             if(func instanceof SymFunction) {
-                FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaList(func.argTypes()), func.valueType());
+                FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaCollection(func.argTypes()), func.valueType());
                 for(FluentType derived : derivedSubTypes(fluent)) {
                     if(!dag.contains(derived))
                         dag.addVertex(derived);
@@ -95,7 +95,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         Set<SupportingAction> supporters = new HashSet<>();
 
         try {
-            for(LabeledEdge<FluentType, SupportingAction> inEdge : JavaConversions.asJavaList(dag.inEdges(f))) {
+            for(LabeledEdge<FluentType, SupportingAction> inEdge : JavaConversions.asJavaIterable(dag.inEdges(f))) {
                 supporters.add(inEdge.l());
             }
         } catch (NoSuchElementException e) {

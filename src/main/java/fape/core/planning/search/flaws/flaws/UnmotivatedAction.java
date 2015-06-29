@@ -84,4 +84,10 @@ public class UnmotivatedAction extends Flaw {
 
         return resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof UnmotivatedAction;
+        return ((UnmotivatedAction) o).act.id().id() - act.id().id();
+    }
 }

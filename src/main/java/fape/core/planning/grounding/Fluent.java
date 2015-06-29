@@ -5,6 +5,8 @@ import fape.core.planning.planninggraph.PGNode;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.VarRef;
 
+import java.util.Arrays;
+
 public class Fluent implements PGNode, Term {
     final public Function f;
     final public VarRef[] params;
@@ -31,7 +33,7 @@ public class Fluent implements PGNode, Term {
 
     @Override
     public String toString() {
-        return f.name() + params.toString() +"=" + value;
+        return f.name() + Arrays.toString(params) +"=" + value;
     }
 
     @Override

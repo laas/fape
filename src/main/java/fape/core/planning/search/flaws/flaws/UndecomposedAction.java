@@ -57,4 +57,10 @@ public class UndecomposedAction extends Flaw {
 
         return resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof UndecomposedAction;
+        return ((UndecomposedAction) o).action.id().id() - action.id().id();
+    }
 }

@@ -32,4 +32,9 @@ public class ResourceFlaw extends Flaw {
     public List<Resolver> getResolvers(State st, APlanner planner) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

@@ -1,6 +1,8 @@
 package fape.core.planning.preprocessing;
 
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -21,9 +23,9 @@ class FluentType {
         this.valueType = value.type;
     }
 */
-    public FluentType(String predicate, List<String> argTypes, String valueType) {
+    public FluentType(String predicate, Collection<String> argTypes, String valueType) {
         this.predicateName = predicate;
-        this.argTypes = argTypes;
+        this.argTypes = new LinkedList<>(argTypes);
         this.valueType = valueType;
     }
 

@@ -44,4 +44,10 @@ public class UnboundVariable extends Flaw {
 
         return resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof UnboundVariable;
+        return ((UnboundVariable) o).var.id() - var.id();
+    }
 }

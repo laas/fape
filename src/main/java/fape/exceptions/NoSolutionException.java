@@ -1,4 +1,4 @@
 package fape.exceptions;
 
-public class NoSolutionException {
+public class NoSolutionException extends Exception {
 }

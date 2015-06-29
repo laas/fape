@@ -175,4 +175,11 @@ public class UnsupportedTimeline extends Flaw {
 
         return this.resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof UnsupportedTimeline;
+        UnsupportedTimeline ut = (UnsupportedTimeline) o;
+        return ((UnsupportedTimeline) o).consumer.mID - consumer.mID;
+    }
 }

@@ -55,4 +55,10 @@ public class UnsupportedTaskCond extends Flaw {
 
         return resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof UnsupportedTaskCond;
+        return ((UnsupportedTaskCond) o).actCond.start().id() - actCond.start().id();
+    }
 }

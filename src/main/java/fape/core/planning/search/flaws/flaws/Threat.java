@@ -45,4 +45,16 @@ public class Threat extends Flaw {
 
         return resolvers;
     }
+
+    @Override
+    public int compareTo(Flaw o) {
+        assert o instanceof Threat;
+        Threat t = (Threat) o;
+        if(t.db1.mID != db1.mID)
+            return t.db1.mID - db1.mID;
+        else {
+            assert t.db2.mID != db2.mID;
+            return t.db2.mID - db2.mID;
+        }
+    }
 }

@@ -1,13 +1,17 @@
 package fape.core.planning.search.strategies.plans;
 
+import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
+import fape.exceptions.NoSolutionException;
 
 import java.util.*;
 
@@ -96,10 +100,46 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
             if(relaxedPlan == null)
                 break;
         }
+//        int reasoned = numAdditionalStepWithReasoner(st);
 
-        if(relaxedPlan == null)
+        if(relaxedPlan == null) {
+//            System.out.println("inf "+reasoned);
             return 9999999;
+        }
+
+
+//        System.out.println(relaxedPlan.size()+"  "+reasoned);
         return relaxedPlan.size();
+    }
+
+    public int numAdditionalStepWithReasoner(State st) {
+        try {
+
+            HLeveledReasoner<GAction, Fluent> baseHLR = new HLeveledReasoner<>();
+            for (GAction ga : planner.reachability.getAllActions(st)) {
+                baseHLR.addClause(ga.pre, ga.add, ga);
+            }
+
+            Collection<GAction> alreadyUsed = new HashSet<>();
+
+            for (Timeline tl : st.tdb.getConsumers()) {
+                HLeveledReasoner<GAction, Fluent> hlr = baseHLR.clone();
+
+                Collection<Fluent> goals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true);
+                Collection<Fluent> init = GroundProblem.fluentsBefore(st, tl.getFirstTimePoints());
+                for (Fluent i : init) {
+                    hlr.set(i);
+                }
+                hlr.infer();
+                alreadyUsed = hlr.getStepsToAnyOf(goals, alreadyUsed);
+//                System.out.println(Printer.statement(st, tl.get(0).getFirst()) + " " + alreadyUsed);
+            }
+//            System.out.println();
+
+            return alreadyUsed.size();
+        } catch (NoSolutionException e) {
+            return 9999999;
+        }
     }
 
     @Override

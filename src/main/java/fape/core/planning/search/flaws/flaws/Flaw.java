@@ -48,4 +48,6 @@ public abstract class Flaw {
      * @return A list of resolvers.
      */
     public abstract List<Resolver> getResolvers(State st, APlanner planner);
+
+    public abstract int compareTo(Flaw o);
 }

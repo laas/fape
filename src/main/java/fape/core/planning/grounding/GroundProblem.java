@@ -83,7 +83,7 @@ public class GroundProblem {
         return st.fluents;
     }
 
-    private Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
+    public static Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
         Set<Fluent> fluents = new HashSet<>();
         for(TempFluents tf : tempsFluents(st)) {
             if(st.canAllBeBefore(tf.timepoints, tps))
