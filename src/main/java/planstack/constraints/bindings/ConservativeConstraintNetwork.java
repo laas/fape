@@ -527,7 +527,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
      */
     public List<VarRef> getUnboundVariables() {
         List<VarRef> unbound = new LinkedList<>();
-        for(VarRef var : JavaConversions.asJavaList(variables.keys().toList())) {
+        for(VarRef var : JavaConversions.asJavaCollection(variables.keys().toList())) {
             if(domainSize(var) > 1 && !isIntegerVar(var))
                 unbound.add(var);
         }

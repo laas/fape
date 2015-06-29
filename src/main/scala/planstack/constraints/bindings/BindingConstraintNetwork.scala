@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
+
 object BindingConstraintNetwork {
   type DomID = Int
   type ExtID = Int

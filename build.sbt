@@ -1,18 +1,20 @@
 name := "constraints"
 
+scalaVersion := "2.11.7"
+
 organization := "fr.laas.fape"
 
 version := "0.8-SNAPSHOT"
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 
 libraryDependencies ++= Seq(
-  "fr.laas.fape" % "graphs" % "0.8-SNAPSHOT",
+  "fr.laas.fape" %% "graphs" % "0.8-SNAPSHOT",
   "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7",
-  "net.openhft" % "koloboke-impl-jdk6-7" % "0.6.7" % "runtime"
+  "net.openhft" % "koloboke-impl-jdk6-7" % "0.6.7" % "runtime",
+  "com.github.scala-blitz" %% "scala-blitz" % "1.1"
 )
 
-crossPaths := false
-
+crossPaths := true

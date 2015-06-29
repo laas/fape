@@ -25,7 +25,7 @@ class EDG[ID](val checkCycles : Boolean,
               val conditionals : DirectedMultiLabeledIIAdjList[Conditional[ID]],
               val ccgraph : CCGraph,
               var squeezed : Boolean,
-              protected[stnu] var listener : EDGListener[ID] = null)
+              protected[stnu] var listener : EDGListener[ID])
 {
   type E = Edge[ID]
 
@@ -44,7 +44,8 @@ class EDG[ID](val checkCycles : Boolean,
     new SimpleLabeledDirectedIIMatrix[Requirement[ID]](),
     new DirectedMultiLabeledIIAdjList[Conditional[ID]](),
     if(checkCycles) new CCGraph else null,
-    false
+    false,
+    null
   )
 
   def inConditionals(n : Int) = conditionals.inEdges(n).filter(_.l.cond)
