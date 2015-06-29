@@ -49,6 +49,7 @@ public class LeveledReasoner {
         clausesIds = toCopy.clausesIds;
         factsAppearance = toCopy.factsAppearance;
         clausesPendingCount = new int[toCopy.clausesCapacity()];
+        enablers = new ArrayList[toCopy.factsCapacity()];
         for(int i=0 ; i<nextClause ; i++) {
             clausesPendingCount[i] = clausesConditions[i].length;
         }
@@ -67,8 +68,11 @@ public class LeveledReasoner {
         clausesIds = Arrays.copyOf(clausesIds, newSize);
         clausesPendingCount = Arrays.copyOf(clausesPendingCount, newSize);
     }
-    private void increaseFactsSize() {
-        int newSize = initialFacts.length*2;
+    private void ensureFactsCapacity(int atLeast) {
+        if(factsCapacity() > atLeast)
+            return;
+        int newSize = atLeast+1 > factsCapacity()*2 ? atLeast +1 : factsCapacity()*2;
+
         initialFacts = Arrays.copyOf(initialFacts, newSize);
         factsLevels = Arrays.copyOf(factsLevels, newSize);
         factsAppearance = Arrays.copyOf(factsAppearance, newSize);
@@ -85,11 +89,9 @@ public class LeveledReasoner {
 
         // make sure we have enough space
         for(int eff : clauseEffects)
-            if(eff >= factsCapacity())
-                increaseFactsSize();
+            ensureFactsCapacity(eff);
         for(int cond : clauseConditions) {
-            if(cond >= factsCapacity())
-                increaseFactsSize();
+            ensureFactsCapacity(cond);
 
             // record that this fact appears as a precondition of this clause
             if(factsAppearance[cond] == null)
@@ -102,8 +104,7 @@ public class LeveledReasoner {
     }
 
     public void set(int fact) {
-        if(fact < factsCapacity())
-            increaseFactsSize();
+        ensureFactsCapacity(fact);
         initialFacts[fact] = true;
         if(enablers[fact] == null)
             enablers[fact] = new ArrayList<>();
@@ -123,7 +124,7 @@ public class LeveledReasoner {
         }
     }
 
-    public boolean[] getNextLevel(boolean[] facts, int lvl) {
+    protected boolean[] getNextLevel(boolean[] facts, int lvl) {
         boolean[] nextLevel = Arrays.copyOfRange(facts, 0, facts.length);
 
         // deal with clauses with no conditions
@@ -183,8 +184,12 @@ public class LeveledReasoner {
     }
 
     public Collection<Integer> getPathTo(int fact) {
+        return getPathTo(fact, new HashSet<Integer>());
+    }
+
+    public Collection<Integer> getPathTo(int fact, Collection<Integer> alreadyAchievedClauses) {
         assert levelOfFact(fact) != -1 : "Requesting path to a fact that is not true.";
-        Set<Integer> clauses = new HashSet<>();
+        Set<Integer> clauses = new HashSet<>(alreadyAchievedClauses);
         Queue<Integer> opened = new LinkedList<>();
         opened.add(fact);
         while(!opened.isEmpty()) {
@@ -216,8 +221,28 @@ public class LeveledReasoner {
         return clauses;
     }
 
-
-    public static void main(String[] args) {
-
+    public Collection<Integer> getPathToAnyOf(Collection<Integer> disjunctionOfFacts, Collection<Integer> alreadyUsedClauses) {
+        Set<Integer> achievedFacts = new HashSet<>();
+        for(Integer clause : alreadyUsedClauses) {
+            for(int eff : clausesEffects[clause]) {
+                achievedFacts.add(eff);
+            }
+        }
+        int easierToAchieveFact = -1;
+        int bestLevel = Integer.MAX_VALUE;
+        for(int fact : disjunctionOfFacts) {
+            if(achievedFacts.contains(fact)) {
+                easierToAchieveFact = fact;
+                break;
+            } else {
+                if(levelOfFact(fact) < bestLevel) {
+                    easierToAchieveFact = fact;
+                    bestLevel = levelOfFact(fact);
+                }
+            }
+        }
+        assert easierToAchieveFact != -1;
+        return getPathTo(easierToAchieveFact, alreadyUsedClauses);
     }
+
 }

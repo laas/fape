@@ -1,5 +1,7 @@
 package fape.core.inference;
 
+import fape.exceptions.NoSolutionException;
+
 import java.util.*;
 
 public class HLeveledReasoner<Clause, Fact> {
@@ -13,11 +15,24 @@ public class HLeveledReasoner<Clause, Fact> {
     int nextFact = 0;
     int nextClause = 0;
 
+    public HLeveledReasoner() {}
+
+    public HLeveledReasoner(HLeveledReasoner<Clause,Fact> toClone) {
+        this.clausesIds = toClone.clausesIds;
+        this.clauses = toClone.clauses;
+        this.facts = toClone.facts;
+        this.factsIds = toClone.factsIds;
+        this.lr = new LeveledReasoner(toClone.lr);
+    }
+
+    public HLeveledReasoner<Clause,Fact> clone() { return new HLeveledReasoner<>(this); }
+
     LeveledReasoner lr = new LeveledReasoner();
 
     public void set(Fact f) {
-        assert factsIds.containsKey(f);
-        lr.set(factsIds.get(f));
+//        assert factsIds.containsKey(f);
+        if(factsIds.containsKey(f))
+            lr.set(factsIds.get(f));
     }
 
     public void addClause(Fact[] conditions, Fact[] effects, Clause clause) {
@@ -67,5 +82,28 @@ public class HLeveledReasoner<Clause, Fact> {
             path.add(clauses.get(i));
         }
         return path;
+    }
+
+    public Collection<Clause> getStepsToAnyOf(Collection<Fact> disjunctionOfFacts, Collection<Clause> alreadyUsedClauses) throws NoSolutionException {
+        List<Integer> disFacts = new LinkedList<>();
+        for(Fact f : disjunctionOfFacts) {
+//            assert factsIds.containsKey(f);
+            if(factsIds.containsKey(f))
+                disFacts.add(factsIds.get(f));
+        }
+        if(disFacts.isEmpty())
+            throw new NoSolutionException();
+
+        List<Integer> usedClauses = new LinkedList<>();
+        for(Clause c : alreadyUsedClauses) {
+            assert clausesIds.containsKey(c);
+            usedClauses.add(clausesIds.get(c));
+        }
+        Collection<Integer> stepsIds = lr.getPathToAnyOf(disFacts, usedClauses);
+        List<Clause> steps = new LinkedList<>();
+        for(Integer c : stepsIds) {
+            steps.add(clauses.get(c));
+        }
+        return steps;
     }
 }
