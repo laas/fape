@@ -27,7 +27,7 @@ class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : FullSTN[ID],
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
-  def contingents = rawConstraints.filter(c => c.tipe == CONTINGENT)
+  def contingents = rawConstraints.view.filter(c => c.tipe == CONTINGENT)
 
   override def deepCopy(): PseudoSTNUManager[TPRef, ID] = new PseudoSTNUManager(this)
 

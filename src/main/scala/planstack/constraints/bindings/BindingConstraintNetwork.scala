@@ -8,6 +8,8 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
+// blitz optimizations
+import scala.collection.optimizer._
 
 object BindingConstraintNetwork {
   type DomID = Int
@@ -45,7 +47,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
   var extToCheck : mutable.Set[ExtID] = null
 
-  var unusedDomainIds : mutable.ArrayBuffer[DomID] = null
+  var unusedDomainIds : mutable.Set[DomID] = null
 
   var hasEmptyDomains = false
 
@@ -86,7 +88,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
       extensionConstraints = Map()
       mapping = ArrayBuffer()
 
-      unusedDomainIds = ArrayBuffer[DomID]()
+      unusedDomainIds = mutable.Set[DomID]()
       extToCheck = mutable.Set[ExtID]()
   }
 
@@ -131,7 +133,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     different(domID(v1))(domID(v2))
   }
 
-  private def domainChanged(id: DomID, causedByExtended: Option[ExtID]): Unit = {
+  private def domainChanged(id: DomID, causedByExtended: Option[ExtID]): Unit = optimize {
     if(domains(id).size() == 0)
       hasEmptyDomains = true
 
@@ -201,7 +203,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     extensionConstraints(setID).addValues(valuesAsIDs)
   }
 
-  override def addValuesToValuesSet(setID: String, values: util.List[String], lastVal: Int): Unit = {
+  override def addValuesToValuesSet(setID: String, values: util.List[String], lastVal: Int): Unit = optimize {
     if(!extensionConstraints.contains(setID)) {
       extensionConstraints += ((setID, new ExtensionConstraint(true)))
     }
@@ -302,7 +304,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   override def Report(): String =
     allDomIds.map(id => (id, "["+ vars(id).mkString(", ") +"]", "  "+domainAsString(vars(id).head))).mkString("\n")
 
-  private def merge(id1: DomID, id2: DomID) {
+  private def merge(id1: DomID, id2: DomID) : Unit = optimize {
     val newDom = domains(id1).intersect(domains(id2))
     val domainUpdated = newDom.size() < domains(id1).size() || newDom.size() < domains(id2).size()
 

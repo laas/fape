@@ -20,8 +20,6 @@ object ValuesHolder {
     set ++= values.asInstanceOf[util.Collection[Int]].asScala
     set
   }
-
-
 }
 
 class ValuesHolder(val vals: scala.collection.Set[Int]) {
@@ -29,9 +27,12 @@ class ValuesHolder(val vals: scala.collection.Set[Int]) {
   def this(values: util.Collection[Integer]) = this(ValuesHolder.convert(values))
   def this(values: Iterable[Int]) = this(values.map(_.asInstanceOf[Integer]).asJavaCollection)
 
+  lazy private val _isEmpty = vals.isEmpty
+  lazy private val _size = vals.size
+
   def values() : util.Set[Integer] = JavaConversions.setAsJavaSet(vals).asInstanceOf[java.util.Set[Integer]]
 
-  def size() : Integer = vals.size
+  def size() : Integer = _size
 
   def head() : Integer = vals.head
 
@@ -44,7 +45,7 @@ class ValuesHolder(val vals: scala.collection.Set[Int]) {
   def contains(v: Integer) : Boolean =
     vals.contains(v)
 
-  def isEmpty : Boolean = vals.isEmpty
+  def isEmpty : Boolean = _isEmpty
 
   def nonEmpty = !isEmpty
 
