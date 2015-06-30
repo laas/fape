@@ -118,6 +118,34 @@ public class FeasibilityReasoner {
         return getReasoner(st, allActions);
     }
 
+    public Iterable<GTaskCond> getDerivableTasks(State st) {
+        List<GTaskCond> derivableTasks = new LinkedList<>();
+        for(ActionCondition ac : st.getOpenTaskConditions()) {
+            LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
+            for(VarRef v : ac.args()) {
+                varDomains.add(new LinkedList<InstanceRef>());
+                for(String value : st.domainOf(v)) {
+                    varDomains.getLast().add(st.pb.instance(value));
+                }
+            }
+            List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
+            for(List<InstanceRef> instantiation : instantiations) {
+                GTaskCond task = new GTaskCond(ac.abs(), instantiation);
+                derivableTasks.add(task);
+            }
+        }
+
+        for(Action a : st.getOpenLeaves()) {
+            for(Integer gActID : st.csp.bindings().domainOfIntVar(groundedActVariable.get(a.id()))) {
+                GAction ga = gactions.get(gActID);
+                for(GTaskCond tc : ga.subTasks) {
+                    derivableTasks.add(tc);
+                }
+            }
+        }
+        return derivableTasks;
+    }
+
     private HReasoner<Term> getReasoner(State st, Collection<GAction> acceptable) {
         if(st.reasoner != null)
             return st.reasoner;
@@ -132,33 +160,13 @@ public class FeasibilityReasoner {
         for(GAction acc : acceptable)
             r.set(new Predicate("acceptable", acc));
 
-        for(ActionCondition ac : st.getOpenTaskConditions()) {
-            LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
-            for(VarRef v : ac.args()) {
-                varDomains.add(new LinkedList<InstanceRef>());
-                for(String value : st.domainOf(v)) {
-                    varDomains.getLast().add(st.pb.instance(value));
-                }
-            }
-            List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
-            for(List<InstanceRef> instantiation : instantiations) {
-                GTaskCond task = new GTaskCond(ac.abs(), instantiation);
-                Predicate derivableTaskPredicate = new Predicate("derivable_task", task);
-                    r.set(derivableTaskPredicate);
-            }
+        for(GTaskCond tc : getDerivableTasks(st)) {
+            r.set(new Predicate("derivable_task", tc));
         }
 
         for(Action a : st.getAllActions()) {
             for(GAction ga : groundedVersions(a, st)) {
                 r.set(new Predicate("in_plan", ga));
-            }
-        }
-
-        for(Action a : st.getOpenLeaves()) {
-            for(Integer gActID : st.csp.bindings().domainOfIntVar(groundedActVariable.get(a.id()))) {
-                GAction ga = gactions.get(gActID);
-                for(GTaskCond tc : ga.subTasks)
-                    r.set(new Predicate("derivable_task", tc));
             }
         }
 
