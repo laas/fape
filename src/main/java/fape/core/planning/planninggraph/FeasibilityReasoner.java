@@ -60,13 +60,6 @@ public class FeasibilityReasoner {
         base.gActions.clear();
         base.gActions.addAll(allActions);
 
-        for(GAction act : allActions) {
-            LinkedList<InstanceRef> args = new LinkedList<>();
-            for(LVarRef var : act.abs.args())
-                args.add(act.valueOf(var));
-            GTaskCond tc = new GTaskCond(act.abs, args);
-        }
-
         // get the maximum number of decompositions in the domain
         int maxNumDecompositions = 0;
         for(AbstractAction aa : initialState.pb.abstractActions()) {
@@ -110,6 +103,16 @@ public class FeasibilityReasoner {
             if(t instanceof Predicate && ((Predicate) t).name.equals("possible_in_plan")) //TODO make a selector for this
                 feasibles.add((GAction) ((Predicate) t).var);
         }
+
+        List<Integer> allowedDomainOfActions = new LinkedList<>();
+        for(GAction ga : feasibles) {
+            allowedDomainOfActions.add(ga.id);
+        }
+        ValuesHolder dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
+        for(Action a : st.getAllActions()) {
+            st.csp.bindings().restrictDomain(groundedActVariable.get(a.id()), dom);
+        }
+
         st.addableGroundActions = feasibles;
         return feasibles;
     }
