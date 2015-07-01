@@ -118,21 +118,27 @@ public class FeasibilityReasoner {
         return getReasoner(st, allActions);
     }
 
+    public Collection<GTaskCond> getGroundedTasks(ActionCondition liftedTask, State st) {
+        List<GTaskCond> tasks = new LinkedList<>();
+        LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
+        for(VarRef v : liftedTask.args()) {
+            varDomains.add(new LinkedList<InstanceRef>());
+            for(String value : st.domainOf(v)) {
+                varDomains.getLast().add(st.pb.instance(value));
+            }
+        }
+        List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
+        for(List<InstanceRef> instantiation : instantiations) {
+            GTaskCond task = new GTaskCond(liftedTask.abs(), instantiation);
+            tasks.add(task);
+        }
+        return tasks;
+    }
+
     public Iterable<GTaskCond> getDerivableTasks(State st) {
         List<GTaskCond> derivableTasks = new LinkedList<>();
         for(ActionCondition ac : st.getOpenTaskConditions()) {
-            LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
-            for(VarRef v : ac.args()) {
-                varDomains.add(new LinkedList<InstanceRef>());
-                for(String value : st.domainOf(v)) {
-                    varDomains.getLast().add(st.pb.instance(value));
-                }
-            }
-            List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
-            for(List<InstanceRef> instantiation : instantiations) {
-                GTaskCond task = new GTaskCond(ac.abs(), instantiation);
-                derivableTasks.add(task);
-            }
+            derivableTasks.addAll(getGroundedTasks(ac, st));
         }
 
         for(Action a : st.getOpenLeaves()) {
