@@ -15,6 +15,7 @@ public class LeveledReasoner {
             this.clause = clause;
             this.level = level;
         }
+        public boolean isInitEnabler() { return clause == -1; }
     }
 
     int[] factsLevels = new int[defSize];
@@ -61,22 +62,28 @@ public class LeveledReasoner {
     int nextClause = 0;
 
     private void increaseClauseSize() {
+        int prevSize = clausesLevels.length;
         int newSize = clausesLevels.length * 2;
         clausesLevels = Arrays.copyOf(clausesLevels, newSize);
         clausesConditions = Arrays.copyOf(clausesConditions, newSize);
         clausesEffects = Arrays.copyOf(clausesEffects, newSize);
         clausesIds = Arrays.copyOf(clausesIds, newSize);
         clausesPendingCount = Arrays.copyOf(clausesPendingCount, newSize);
+        for(int i=prevSize ; i<newSize ; i++)
+            clausesLevels[i] = -1;
     }
     private void ensureFactsCapacity(int atLeast) {
         if(factsCapacity() > atLeast)
             return;
-        int newSize = atLeast+1 > factsCapacity()*2 ? atLeast +1 : factsCapacity()*2;
+        int prevSize = factsCapacity();
+        int newSize = atLeast+1 > prevSize*2 ? atLeast +1 : prevSize*2;
 
         initialFacts = Arrays.copyOf(initialFacts, newSize);
         factsLevels = Arrays.copyOf(factsLevels, newSize);
         factsAppearance = Arrays.copyOf(factsAppearance, newSize);
         enablers = Arrays.copyOf(enablers, newSize);
+        for(int i=prevSize ; i<newSize ; i++)
+            factsLevels[i] = -1;
     }
 
     public int addClause(int[] clauseConditions, int[] clauseEffects, int id) {
@@ -100,6 +107,7 @@ public class LeveledReasoner {
         }
         clausesPendingCount[nextClause] = clauseConditions.length;
         clausesIds[nextClause] = id;
+        clausesLevels[nextClause] = -1;
         return nextClause++;
     }
 
@@ -126,6 +134,7 @@ public class LeveledReasoner {
 
     protected boolean[] getNextLevel(boolean[] facts, int lvl) {
         boolean[] nextLevel = Arrays.copyOfRange(facts, 0, facts.length);
+        assert lvl > 0;
 
         // deal with clauses with no conditions
         if(lvl == 1) {

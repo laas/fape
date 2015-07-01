@@ -29,10 +29,15 @@ public class HLeveledReasoner<Clause, Fact> {
 
     LeveledReasoner lr = new LeveledReasoner();
 
+    /** Set this fact to true. If the fact is not known, nothing is done */
     public void set(Fact f) {
-//        assert factsIds.containsKey(f);
         if(factsIds.containsKey(f))
             lr.set(factsIds.get(f));
+    }
+
+    /** Returns true if this fact has been recorded (part of a clause previously added). */
+    public boolean knowsFact(Fact f) {
+        return factsIds.containsKey(f);
     }
 
     public void addClause(Fact[] conditions, Fact[] effects, Clause clause) {
@@ -105,5 +110,82 @@ public class HLeveledReasoner<Clause, Fact> {
             steps.add(clauses.get(c));
         }
         return steps;
+    }
+
+    /**
+     * Returns all possible clause achieving this fact.
+     * The value null means that it was set as an initial fact.
+     * @throws NoSolutionException If no clause ever achieve this fact. (this means its level is -1)
+     */
+    public Collection<Clause> candidatesFor(Fact f) throws NoSolutionException {
+        List<Clause> candidates = new LinkedList<>();
+        for(LeveledReasoner.Enabler enabler : lr.enablers[factsIds.get(f)]) {
+            if(enabler.isInitEnabler()) {
+                candidates.add(null);
+            } else {
+                candidates.add(clauses.get(enabler.clause));
+            }
+        }
+        if(candidates.isEmpty())
+            throw new NoSolutionException();
+        return candidates;
+    }
+
+    /** Returns all conditions of this clause */
+    public Collection<Fact> conditionsOf(Clause clause) {
+        List<Fact> conditions = new LinkedList<>();
+        for(int f : lr.clausesConditions[clausesIds.get(clause)]) {
+            conditions.add(facts.get(f));
+        }
+        return conditions;
+    }
+
+    /**
+     *  Returns the minimum level in which this facts appears
+     * 0 meaning it is initially set. -1 meaning it was not inferred
+     */
+    public int levelOfFact(Fact f) {
+        assert knowsFact(f);
+        return lr.levelOfFact(factsIds.get(f));
+    }
+
+    /**
+     *  Returns the minimum level in which this clause is valid
+     *  -1 meaning it is never valid
+     */
+    public int levelOfClause(Clause c) {
+        assert clausesIds.containsKey(c);
+        return lr.levelOfClause(clausesIds.get(c));
+    }
+
+    public String report() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Facts: (lvl - fact):\n");
+        int currentLvl = -1;
+        while(currentLvl < 20) {
+            for (Fact f : factsIds.keySet()) {
+                if(levelOfFact(f) == currentLvl) {
+                    sb.append(currentLvl);
+                    sb.append(" ");
+                    sb.append(f);
+                    sb.append("\n");
+                }
+            }
+            currentLvl++;
+        }
+        sb.append("\n\nClauses: (lvl - clause");
+        currentLvl = -1;
+        while(currentLvl < 20) {
+            for (Clause c : clausesIds.keySet()) {
+                if(levelOfClause(c) == currentLvl) {
+                    sb.append(currentLvl);
+                    sb.append(" ");
+                    sb.append(c);
+                    sb.append("\n");
+                }
+            }
+            currentLvl++;
+        }
+        return sb.toString();
     }
 }
