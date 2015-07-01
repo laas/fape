@@ -171,7 +171,7 @@ public class FeasibilityReasoner {
         }
 
         for(Action a : st.getAllActions()) {
-            for(GAction ga : groundedVersions(a, st)) {
+            for(GAction ga : getGroundActions(a, st)) {
                 r.set(new Predicate("in_plan", ga));
             }
         }
@@ -199,7 +199,7 @@ public class FeasibilityReasoner {
 
         for(Action a : st.getUnmotivatedActions()) {
             boolean derivable = false;
-            for(GAction ga : groundedVersions(a, st)) {
+            for(GAction ga : getGroundActions(a, st)) {
                 if (acts.contains(ga)) {
                     derivable = true;
                     break;
@@ -213,7 +213,7 @@ public class FeasibilityReasoner {
 
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
-            for(GAction ga : groundedVersions(a, st)) {
+            for(GAction ga : getGroundActions(a, st)) {
                 if(st.reasoner.isTrue(new Predicate("possible_in_plan", ga))) {
                     feasibleAct = true;
                     break;
@@ -251,10 +251,10 @@ public class FeasibilityReasoner {
         return true;
     }
 
-    public Set<GAction> groundedVersions(Action a, State st) {
+    public Set<GAction> getGroundActions(Action liftedAction, State st) {
         Set<GAction> ret = new HashSet<>();
-        assert(groundedActVariable.containsKey(a.id()));
-        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(a.id()))) {
+        assert(groundedActVariable.containsKey(liftedAction.id()));
+        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(liftedAction.id()))) {
             if(gactions.containsKey(i)) // the domain might contain any int variable
                 ret.add(gactions.get(i));
         }
