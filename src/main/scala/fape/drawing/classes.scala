@@ -31,7 +31,9 @@ class TimedCanvas(val lines: Iterable[ChartLine], currentTime:Option[Float] = No
 
   def yOfLine(l: Int) : Float = (l+0.5f) * (lineHeight + spaceBetweenLines)
   def xProj(x: Float) : Float = labelWidth + x * width / maxX
-  def widthProj(w: Float) : Float = w * width / maxX
+  def widthProj(w: Float) : Float =
+    if(width >= 0) w * width / maxX
+    else 0
 
   def draw : NodeSeq =
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={s"0 0 $totalWidth $totalHeight"}>
