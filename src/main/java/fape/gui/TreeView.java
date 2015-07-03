@@ -1,11 +1,13 @@
 package fape.gui;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 
 import javax.swing.AbstractAction;
 import javax.swing.KeyStroke;
 
+import fape.exceptions.FAPEException;
 import prefuse.Constants;
 import prefuse.Display;
 import prefuse.Visualization;
@@ -23,11 +25,7 @@ import prefuse.action.filter.FisheyeTreeFilter;
 import prefuse.action.layout.CollapsedSubtreeLayout;
 import prefuse.action.layout.graph.NodeLinkTreeLayout;
 import prefuse.activity.SlowInSlowOutPacer;
-import prefuse.controls.FocusControl;
-import prefuse.controls.PanControl;
-import prefuse.controls.WheelZoomControl;
-import prefuse.controls.ZoomControl;
-import prefuse.controls.ZoomToFitControl;
+import prefuse.controls.*;
 import prefuse.data.*;
 import prefuse.data.event.TupleSetListener;
 import prefuse.data.search.PrefixSearchTupleSet;
@@ -38,6 +36,7 @@ import prefuse.render.AbstractShapeRenderer;
 import prefuse.render.LabelRenderer;
 import prefuse.util.ColorLib;
 import prefuse.util.FontLib;
+import prefuse.util.ui.JCustomTooltip;
 import prefuse.visual.VisualItem;
 import prefuse.visual.VisualTree;
 import prefuse.visual.expression.InGroupPredicate;
@@ -66,7 +65,6 @@ public class TreeView extends Display {
     public VisualTree visualTree;
 
     public void updated() {
-
         m_vis.run("filter");
         m_vis.repaint();
     }
@@ -79,12 +77,15 @@ public class TreeView extends Display {
         return m_vis;
     }
 
-    public TreeView(Tree t, String label, String description) {
+    public VisualItem getVisualItem(Tuple t) {
+        return m_vis.getVisualItem(tree, t);
+    }
+
+    public TreeView(Tree t, String label) {
         super(new Visualization());
         m_label = label;
 
         visualTree = m_vis.addTree(tree, t);
-        visualTree.
 
         m_nodeRenderer = new LabelRenderer(m_label);
         m_nodeRenderer.setRenderType(AbstractShapeRenderer.RENDER_TYPE_FILL);
@@ -120,7 +121,7 @@ public class TreeView extends Display {
 
         // animate paint change
         ActionList animatePaint = new ActionList(400);
-        animatePaint.add(new ColorAnimator(treeNodes));
+//        animatePaint.add(new ColorAnimator(treeNodes));
         animatePaint.add(new RepaintAction());
         m_vis.putAction("animatePaint", animatePaint);
 
@@ -138,7 +139,7 @@ public class TreeView extends Display {
 
         // create the filtering and layout
         ActionList filter = new ActionList();
-        filter.add(new FisheyeTreeFilter(tree, 5));
+//        filter.add(new FisheyeTreeFilter(tree, 5));
         filter.add(new FontAction(treeNodes, FontLib.getFont("Tahoma", 16)));
         filter.add(treeLayout);
         filter.add(subLayout);
@@ -149,24 +150,15 @@ public class TreeView extends Display {
 
         // animated transition
         ActionList animate = new ActionList(1000);
-        animate.setPacingFunction(new SlowInSlowOutPacer());
+//        animate.setPacingFunction(new SlowInSlowOutPacer());
         animate.add(autoPan);
-        animate.add(new QualityControlAnimator());
-        animate.add(new VisibilityAnimator(tree));
-        animate.add(new LocationAnimator(treeNodes));
-        animate.add(new ColorAnimator(treeNodes));
-        animate.add(new RepaintAction());
+//        animate.add(new QualityControlAnimator());
+//        animate.add(new VisibilityAnimator(tree));
+//        animate.add(new LocationAnimator(treeNodes));
+//        animate.add(new ColorAnimator(treeNodes));
+//        animate.add(new RepaintAction());
         m_vis.putAction("animate", animate);
         m_vis.alwaysRunAfter("filter", "animate");
-
-        // create animator for orientation changes
-        ActionList orient = new ActionList(2000);
-        orient.setPacingFunction(new SlowInSlowOutPacer());
-        orient.add(autoPan);
-        orient.add(new QualityControlAnimator());
-        orient.add(new LocationAnimator(treeNodes));
-        orient.add(new RepaintAction());
-        m_vis.putAction("orient", orient);
 
         // ------------------------------------------------
 
@@ -177,7 +169,7 @@ public class TreeView extends Display {
         addControlListener(new ZoomControl());
         addControlListener(new WheelZoomControl());
         addControlListener(new PanControl());
-        addControlListener(new FocusControl(1, "filter"));
+//        addControlListener(new FocusControl(1, "filter"));
 
         registerKeyboardAction(
                 new OrientAction(Constants.ORIENT_LEFT_RIGHT),
@@ -416,22 +408,32 @@ public class TreeView extends Display {
 
     public static class NodeColorAction extends ColorAction {
 
+
         public NodeColorAction(String group) {
             super(group, VisualItem.FILLCOLOR);
         }
 
         public int getColor(VisualItem item) {
-            if ( m_vis.isInGroup(item, Visualization.SEARCH_ITEMS) )
-                return ColorLib.rgb(255,190,190);
-            else if ( m_vis.isInGroup(item, Visualization.FOCUS_ITEMS) )
+            assert item != null;
+
+            if ( m_vis.isInGroup(item, Visualization.FOCUS_ITEMS) )
                 return ColorLib.rgb(198,229,229);
-            else if ( item.getDOI() > -1 )
+            else if(item.canGetString(SearchView.NODE_STATUS) && item.getString(SearchView.NODE_STATUS) != null) {
+                switch (item.getString(SearchView.NODE_STATUS)) {
+                    case "deadend": return ColorLib.rgba(120,0,0, 80);
+                    case "expanded": return ColorLib.rgba(0,120,0, 80); //green(120);
+                    case "inqueue": return ColorLib.rgba(10,30,30, 40);
+                    case "solution": return ColorLib.rgba(0,120,0, 200);
+                    case "init": return ColorLib.rgba(255,255,255,0);
+                    default: throw new FAPEException("Unrecognized node status: "+item.getString(SearchView.NODE_STATUS));
+                }
+
+            } else if ( item.getDOI() > -1 )
                 return ColorLib.rgb(164,193,193);
             else
                 return ColorLib.rgba(255,255,255,0);
         }
 
     } // end of inner class TreeMapColorAction
-
 
 } // end of class TreeMap
