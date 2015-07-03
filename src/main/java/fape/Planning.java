@@ -45,6 +45,7 @@ public class Planning {
                         new Switch("debug", 'd', "debug", "Set the planner in debugging mode. "
                                 + "Mainly consists in time consuming checks."),
                         new Switch("actions-chart", JSAP.NO_SHORTFLAG, "gui", "Planner will show the actions on a time chart."),
+                        new Switch("display-search", JSAP.NO_SHORTFLAG, "display-search", "Search will be displayed online."),
                         new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "FAPE will build a dispatchable Plan. "+
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
@@ -177,7 +178,6 @@ public class Planning {
 
         APlanner.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
-        Plan.showChart = commandLineConfig.getBoolean("actions-chart");
         Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
@@ -255,6 +255,7 @@ public class Planning {
                 long start = System.currentTimeMillis();
 
                 conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
+                conf.options.displaySearch = config.getBoolean("display-search");
 
                 final AnmlProblem pb = new AnmlProblem(true); //todo clean up AnmlProblem as the parameter is now useless
                 try {
@@ -294,6 +295,8 @@ public class Planning {
                         time = "UNKNOWN PROBLEM";
                 } else {
                     time = Float.toString(total);
+                    if(config.getBoolean("actions-chart"))
+                        planner.drawState(sol);
                 }
 
                 if (!failure && !config.getBoolean("quiet")) {

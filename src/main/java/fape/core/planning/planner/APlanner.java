@@ -3,6 +3,7 @@ package fape.core.planning.planner;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.planninggraph.RelaxedPlanExtractor;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -11,9 +12,12 @@ import fape.core.planning.search.flaws.flaws.UnsupportedTaskCond;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
+import fape.core.planning.search.strategies.plans.RPGComp;
 import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.drawing.gui.ChartWindow;
+import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
@@ -46,6 +50,11 @@ public abstract class APlanner {
             initialState.pgr = reachability;
         } else
             reachability = null;
+
+        if(options.displaySearch) {
+            searchView = new SearchView(this);
+            searchView.addNode(initialState, null);
+        }
     }
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
@@ -81,6 +90,8 @@ public abstract class APlanner {
 
     public final AnmlProblem pb;
     LiftedDTG dtg = null;
+
+    SearchView searchView = null;
 
     /**
      * A short identifier for the planner.
@@ -276,6 +287,8 @@ public abstract class APlanner {
                 // this is a solution state
                 if(Planner.debugging)
                     st.assertConstraintNetworkGroundAndConsistent();
+                if(options.displaySearch)
+                    searchView.setSolution(st);
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
@@ -299,6 +312,9 @@ public abstract class APlanner {
     public List<State> expand(State st, List<Flaw> flaws) {
         List<State> children = new LinkedList<>();
 
+        if(options.displaySearch)
+            searchView.setCurrentFocus(st);
+
         assert st.isConsistent() : "Expand was given an inconsistent state.";
 
         expandedStates++;
@@ -306,6 +322,8 @@ public abstract class APlanner {
         if(options.usePlanningGraphReachability)
             if(!reachability.checkFeasibility(st)) {
                 TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
+                if(options.displaySearch)
+                    searchView.setDeadEnd(st);
                 return children;
             }
 
@@ -338,9 +356,14 @@ public abstract class APlanner {
         // put resolvers are always in the same order (for reproducibility)
         Collections.sort(resolvers);
 
+        if(options.displaySearch)
+            searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st, f));
+
         if (resolvers.isEmpty()) {
             // dead end, keep going
             TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            if(options.displaySearch)
+                searchView.setDeadEnd(st);
             return children;
         }
 
@@ -356,7 +379,7 @@ public abstract class APlanner {
 
             if (success) {
                 if(options.useFastForward) {
-                    if(fastForward(next)) {
+                    if(fastForward(next, 10)) {
                         children.add(next);
                         GeneratedStates++;
                     } else {
@@ -365,6 +388,10 @@ public abstract class APlanner {
                 } else {
                     children.add(next);
                     GeneratedStates++;
+                }
+                if(options.displaySearch) {
+                    searchView.addNode(next, st);
+                    searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st, res));
                 }
             } else {
                 TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
@@ -376,11 +403,13 @@ public abstract class APlanner {
 
     /**
      * This function looks at flaws and resolvers in the state and fixes flaws with a single resolver.
-     * @param st
-     * @return
+     * It does that at most "maxForwardState"
      */
-    public boolean fastForward(State st) {
+    public boolean fastForward(State st, int maxForwardStates) {
         List<Flaw> flaws = getFlaws(st);
+
+        if(maxForwardStates == 0)
+            return true;
 
         if (flaws.isEmpty()) {
             return true;
@@ -404,7 +433,7 @@ public abstract class APlanner {
             TinyLogger.LogInfo(st, "     [%s] ff: Adding %s", st.mID, res);
             if(applyResolver(st, res)) {
                 numFastForwarded++;
-                return fastForward(st);
+                return fastForward(st, maxForwardStates-1);
             } else {
                 return false;
             }
@@ -473,6 +502,8 @@ public abstract class APlanner {
                 // this is a solution state
                 if(Planner.debugging)
                     current.assertConstraintNetworkGroundAndConsistent();
+                if(options.displaySearch)
+                    searchView.setSolution(current);
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
@@ -505,4 +536,13 @@ public abstract class APlanner {
         return stateComparator().g(st);
     }
     public float f(State st) { return g(st) + h(st); }
+    public boolean definesHeuristicsValues() { return stateComparator().definesHeuristicsValues(); }
+
+    private ChartWindow chartWindow = null;
+    public void drawState(State st) {
+        if(chartWindow == null)
+            chartWindow = new ChartWindow("Actions");
+
+        chartWindow.draw(st.getCanvasOfActions());
+    }
 }

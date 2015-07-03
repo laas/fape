@@ -28,6 +28,11 @@ import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.core.planning.timelines.TimelinesManager;
+import fape.drawing.ChartLine;
+import fape.drawing.RectElem;
+import fape.drawing.TextLabel;
+import fape.drawing.TimedCanvas;
+import fape.drawing.gui.ChartWindow;
 import fape.exceptions.FAPEException;
 import fape.util.ActionsChart;
 import fape.util.Pair;
@@ -933,6 +938,47 @@ public class State implements Reporter {
         return verifiedThreats;
     }
 
+    public TimedCanvas getCanvasOfActions() {
+        List<Action> acts = new LinkedList<>(getAllActions());
+        Collections.sort(acts, new Comparator<Action>() {
+            @Override
+            public int compare(Action a1, Action a2) {
+                return (int) (getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
+            }
+        });
+        List<ChartLine> lines = new LinkedList<>();
+
+        for (Action a : acts) {
+            int start = (int) getEarliestStartTime(a.start());
+            int earliestEnd = (int) getEarliestStartTime(a.end());
+            String name = Printer.action(this, a);
+            TextLabel label = new TextLabel(name, "action-name");
+
+            switch (a.status()) {
+                case EXECUTED:
+                    lines.add(new ChartLine(label, new RectElem(start, earliestEnd - start, "successful")));
+//                    sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
+                    break;
+                case EXECUTING:
+                case PENDING:
+                    if (getDurationBounds(a).nonEmpty()) {
+                        int min = getDurationBounds(a).get()._1();
+                        int max = getDurationBounds(a).get()._2();
+                        lines.add(new ChartLine(label,
+                                new RectElem(start, min, "pending"),
+                                new RectElem(start + min + 0.1f, max - min, "uncertain")));
+//                        sb.append(String.format("%s \t\tstarted: %s\tduration in [%s, %s]  [EXECUTING]\n", name, start, min, max));
+                    } else {
+                        lines.add(new ChartLine(label, new RectElem(start, earliestEnd - start, "pending")));
+//                        sb.append(String.format("%s \t\tstarted: %s\tmin-duration: %s  [EXECUTING]\n", name, start, earliestEnd-start));
+                    }
+                    break;
+                case FAILED:
+            }
+        }
+        return new TimedCanvas(lines, getEarliestStartTime(pb.earliestExecution()));
+    }
+
     /*** Wrapper around STN ******/
 
     public void enforceBefore(TPRef a, TPRef b) { csp.stn().enforceBefore(a, b); }
@@ -1203,9 +1249,6 @@ public class State implements Reporter {
                 }
             }
         }
-
-        if(Plan.showChart)
-            ActionsChart.setCurrentTime((int) currentTime);
     }
 
     /**

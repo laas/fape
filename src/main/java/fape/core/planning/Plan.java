@@ -20,9 +20,6 @@ import java.util.*;
 
 public class Plan {
 
-    /** if set to true, planned actions will be displayed in a graphical window */
-    public static boolean showChart = true;
-
     /** if true, building a Plan will create a dispatchable STNU */
     public static boolean makeDispatchable = false;
 
@@ -65,8 +62,6 @@ public class Plan {
             dispatcher.print(new Printer());
             */
         }
-        if(showChart)
-            ActionsChart.displayState(st);
     }
 
     public State getState() { return st; }

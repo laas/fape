@@ -52,6 +52,10 @@ public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
         return state.mID - state2.mID;
     }
 
+    public boolean definesHeuristicsValues() {
+        return heuristic != null;
+    }
+
     @Override
     public float g(State st) {
         assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";

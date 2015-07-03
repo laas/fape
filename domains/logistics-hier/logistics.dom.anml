@@ -53,6 +53,7 @@ action Transport(package pkg, place loc) {
 
   :decomposition{ init == loc; };
   :decomposition{
+    init != loc;
     incity(init) == incity(loc);
     TruckTransport(pkg, init, loc);
   };
@@ -91,6 +92,7 @@ action TruckTransport(package pkg, place cur, place dest) {
      cur == dest;
    };
    :decomposition{
+     cur != dest;
      constant truck trk; 
      [all] contains lt : load_truck(pkg, trk, cur);
      [end(lt), end] contains ut : unload_truck(pkg, trk, dest);
