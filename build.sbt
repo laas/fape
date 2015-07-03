@@ -6,6 +6,6 @@ version := "0.8-SNAPSHOT"
 
 scalacOptions ++= Seq("-deprecation", "-feature")
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 
-crossPaths := false
+crossPaths := true
