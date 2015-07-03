@@ -4,9 +4,9 @@ organization := "fr.laas.fape"
 
 version := "0.8-SNAPSHOT"
 
-libraryDependencies += "fr.laas.fape" % "graphs" % "0.8-SNAPSHOT"
+libraryDependencies ++= Seq(
+  "fr.laas.fape" %% "graphs" % "0.8-SNAPSHOT",
+  "org.scalatest" %% "scalatest" % "2.2.5" % "test"
+)
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.0" % "test"
-
-crossPaths := false
-
+crossPaths := true
