@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "fr.laas.fape" %% "graphs" % "0.8-SNAPSHOT",
   "fr.laas.fape" %% "anml-parser" % "0.8-SNAPSHOT",
   "fr.laas.fape" %% "constraints" % "0.8-SNAPSHOT",
+  "fr.laas.fape" %% "svg-plot"    % "0.1-SNAPSHOT",
   "de.sciss" % "prefuse-core" % "1.0.0"
 )
 
