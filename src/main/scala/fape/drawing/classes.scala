@@ -1,10 +1,9 @@
 package fape.drawing
 
 
-
-
 import scala.xml.{NodeSeq, Attribute}
 import ImplicitConversions._
+import scala.collection.JavaConverters._
 
 object ImplicitConversions {
   implicit def ts(i:Int) : String = i.toString
@@ -12,13 +11,18 @@ object ImplicitConversions {
 }
 
 class TimedCanvas(val lines: Iterable[ChartLine], currentTime:Option[Float] = None) {
+  def this(lines: java.util.Collection[ChartLine], currentTime: Int) = this(lines.asScala, Some(currentTime.toFloat))
+  def this(lines: java.util.Collection[ChartLine]) = this(lines.asScala, None)
+
   def totalWidth = width + labelWidth
   def totalHeight = height
   val numLines = lines.size +1 // keep one for label on time grid
   val height = 650
   val width = 650
 
-  val maxX = lines.flatMap(_.elements).map(_.maxX).max
+  val maxX =
+    if(lines.nonEmpty) lines.flatMap(_.elements).map(_.maxX).max
+    else 10 // no lines do display
 
   val lineHeight : Float = height / numLines * 0.66f
   val labelHeight : Int =
@@ -27,7 +31,9 @@ class TimedCanvas(val lines: Iterable[ChartLine], currentTime:Option[Float] = No
     else lineHeight.toInt
   val spaceBetweenLines : Float = height / numLines * 0.33f
 
-  val labelWidth = lines.map(_.label.length(this)).max /2
+  val labelWidth =
+    if(lines.nonEmpty) lines.map(_.label.length(this)).max /2
+    else 10
 
   def yOfLine(l: Int) : Float = (l+0.5f) * (lineHeight + spaceBetweenLines)
   def xProj(x: Float) : Float = labelWidth + x * width / maxX
@@ -66,6 +72,11 @@ class TimedCanvas(val lines: Iterable[ChartLine], currentTime:Option[Float] = No
 }
 
 class ChartLine(val label:TextLabel, val elements: Iterable[CanvasElement]) {
+  def this(label:TextLabel, elements: java.util.Collection[CanvasElement]) = this(label, elements.asScala)
+  def this(label:TextLabel, elem: CanvasElement) = this(label, List(elem))
+  def this(label:TextLabel, elem1: CanvasElement, elem2: CanvasElement) = this(label, List(elem1, elem2))
+
+
   def draw(canvas: TimedCanvas, atLine: Int): NodeSeq = {
     <g>
       { label.draw(canvas, atLine) }

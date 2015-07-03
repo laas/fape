@@ -94,7 +94,7 @@ object SVG extends App {
   }
   })
 
-    new TimedCanvas (lines, Some (time) )
+    new TimedCanvas (lines, Some (time.toFloat) )
   }
 
   def print(acts: Iterable[Action], time: Int, fileName: String) {
