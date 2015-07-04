@@ -15,6 +15,11 @@ public class HierarchicalCausalLinks implements PartialPlanComparator {
         return "hcl";
     }
 
+    @Override
+    public String reportOnState(State st) {
+        return "HCL: f: "+f(st)+"causal-link-weight: "+weightCausalLinks(st);
+    }
+
     /**
      * Map a causal link to a weight.
      * The basic idea here is to penalize causal link between actions that are not part of the same hierarchy.

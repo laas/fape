@@ -19,7 +19,7 @@ public class PlanCompFactory {
                     compList.add(new DepthFirst());
                     break;
                 case "fex":
-                    compList.add(new Fex());
+                    compList.add(new NumUnboundVariables());
                 case "soca":
                     compList.add(new SOCA(planner));
                     break;

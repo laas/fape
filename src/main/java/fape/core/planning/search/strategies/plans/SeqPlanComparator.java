@@ -35,6 +35,16 @@ public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
     }
 
     @Override
+    public String reportOnState(State st) {
+        StringBuilder sb = new StringBuilder();
+        for(PartialPlanComparator ppc : comparators) {
+            sb.append(ppc.reportOnState(st));
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    @Override
     public int compare(State state, State state2) {
         for(PartialPlanComparator comp : comparators) {
             int res = comp.compare(state, state2);

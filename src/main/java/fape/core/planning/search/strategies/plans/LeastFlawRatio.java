@@ -14,6 +14,11 @@ public class LeastFlawRatio implements PartialPlanComparator {
         return "lfr";
     }
 
+    @Override
+    public String reportOnState(State st) {
+        return "LFR:\tflaw-ratio (%): "+eval(st);
+    }
+
     float eval(State st) {
         return ((float) st.getNumOpenLeaves() + st.tdb.getConsumers().size()) / ((float) st.getNumActions())*100;
     }

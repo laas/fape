@@ -14,10 +14,9 @@ package fape.core.planning.search.strategies.plans;
 import fape.core.planning.states.State;
 
 /**
- * another metric heuristic
- * @author FD
+ * Gives priority to state with the least number of unbound variables
  */
-public class Fex implements PartialPlanComparator  {
+public class NumUnboundVariables implements PartialPlanComparator  {
     
     public float f(State s) {
         return s.getUnboundVariables().size();
@@ -46,5 +45,10 @@ public class Fex implements PartialPlanComparator  {
     public String shortName() {
         return "fex";
     }
- 
+
+    @Override
+    public String reportOnState(State st) {
+        return "Unbound: num-unbound: "+ st.getUnboundVariables().size();
+    }
+
 }

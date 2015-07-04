@@ -59,6 +59,11 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
         return "rplan";
     }
 
+    @Override
+    public String reportOnState(State st) {
+        return String.format("RPGComp\tg: %s, h: %s, num-add-steps: %s", g(st), h(st), numAdditionalSteps(st));
+    }
+
     HashMap<Integer, Integer> hc = new HashMap<>();
 
     public int eval(State st) {

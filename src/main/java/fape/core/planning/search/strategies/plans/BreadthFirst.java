@@ -12,6 +12,11 @@ public class BreadthFirst implements PartialPlanComparator {
     }
 
     @Override
+    public String reportOnState(State st) {
+        return "BFS:\t depth: "+st.depth;
+    }
+
+    @Override
     public int compare(State state, State state2) {
         return state.depth - state2.depth;
     }

@@ -49,6 +49,11 @@ public class SOCA implements PartialPlanComparator, Heuristic {
     }
 
     @Override
+    public String reportOnState(State st) {
+        return "SOCA:\t g: "+g(st)+" h: "+h(st)+" f: "+f(st);
+    }
+
+    @Override
     public float g(State st) {
         return st.getNumActions() * 10;
     }

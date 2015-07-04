@@ -12,6 +12,11 @@ public class DepthFirst implements PartialPlanComparator {
     }
 
     @Override
+    public String reportOnState(State st) {
+        return String.format("DFS:\t depth: %s", st.depth);
+    }
+
+    @Override
     public int compare(State state, State state2) {
         return state2.depth - state.depth;
     }
