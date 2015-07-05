@@ -18,34 +18,23 @@ public class PlanCompFactory {
                 case "dfs":
                     compList.add(new DepthFirst());
                     break;
-                case "fex":
+                case "unbound":
                     compList.add(new NumUnboundVariables());
+                    break;
+                case "threats":
+                    compList.add(new Threats());
+                    break;
                 case "soca":
                     compList.add(new SOCA(planner));
                     break;
-//                case "metric":
-//                    compList.add(new Metric());
-//                    break;
-                case "psaoca":
-                    compList.add(new RootsOCA());
-                    break;
                 case "lfr":
                     compList.add(new LeastFlawRatio());
-                    break;
-                case "lmc":
-                    compList.add(new LMC());
-                    break;
-                case "actions-10-cons-3":
-                    compList.add(new Actions10Consumers3());
                     break;
                 case "hcl":
                     compList.add(new HierarchicalCausalLinks());
                     break;
                 case "rplan":
                     compList.add(new RPGComp(planner));
-                    break;
-                case "base":
-                    compList.add(new Basic(planner));
                     break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);

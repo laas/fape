@@ -231,11 +231,18 @@ public class SearchView {
             n = addNode(st.mID, -1);
 
         StringBuilder h = new StringBuilder();
-        h.append("num-actions: ");
-        h.append(st.getNumActions());
+        h.append("num-actions: "); h.append(st.getNumActions());
+        h.append(" num-open-goals: "); h.append(st.tdb.getConsumers().size());
+        h.append(" num-threats: "); h.append(st.getAllThreats().size());
+        h.append(" num-undecomposed: "); h.append(st.getOpenLeaves().size());
+        h.append(" num-opentasks: "); h.append(st.getOpenTaskConditions().size());
+        h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
+        h.append(" num-unbound: "); h.append(st.getUnboundVariables().size()); h.append("\n");
+        h.append(planner.stateComparator().reportOnState(st));
         if(planner.definesHeuristicsValues()) {
             h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
         }
+
         n.setString(LABEL, label);
         n.setString(NODE_STATUS, "inqueue");
         n.setString(HEURISTIC_VALUES, h.toString());

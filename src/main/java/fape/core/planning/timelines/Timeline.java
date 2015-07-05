@@ -10,7 +10,6 @@
  */
 package fape.core.planning.timelines;
 
-import fape.core.planning.search.strategies.plans.LMC;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -26,8 +25,6 @@ import java.util.List;
 
 /**
  * records the events for one state variable
- *
- * @author FD
  */
 public class Timeline {
 
@@ -277,10 +274,6 @@ public class Timeline {
         assert chain.length > 0 : "Database is empty.";
         assert chain[0].size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
         return chain[0].getConsumeTimePoint();
-    }
-
-    public List<String> getPossibleSupportAtomNames(State st) {
-        return LMC.GetAtomNames(st, this.stateVariable, this.getGlobalSupportValue());
     }
 
     /**

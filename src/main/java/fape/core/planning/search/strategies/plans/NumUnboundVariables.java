@@ -43,7 +43,7 @@ public class NumUnboundVariables implements PartialPlanComparator  {
 
     @Override
     public String shortName() {
-        return "fex";
+        return "unbound";
     }
 
     @Override
