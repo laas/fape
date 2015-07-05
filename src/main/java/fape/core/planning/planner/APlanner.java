@@ -327,6 +327,10 @@ public abstract class APlanner {
                 return children;
             }
 
+        RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(this, st);
+//        System.out.println(String.format("old: add-step: %s, num-actions: %s", rpe.numAdditionalSteps(), st.getNumActions()));
+        rpe.relaxedGroundPlan(st);
+
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
         TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);

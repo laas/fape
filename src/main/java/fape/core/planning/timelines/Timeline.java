@@ -19,9 +19,7 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * records the events for one state variable
@@ -74,6 +72,10 @@ public class Timeline {
             }
         }
         return false;
+    }
+
+    public Collection<ChainComponent> getComponents() {
+        return Collections.unmodifiableList(Arrays.asList(chain));
     }
 
     /** @return A new Timeline with cc appended to the chain. */

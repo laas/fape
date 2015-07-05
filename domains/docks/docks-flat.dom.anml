@@ -85,6 +85,7 @@ action stack(Crane k, Container c, Pile p) {
     c != pallet;
     
     constant Container prevTop;
+    prevTop != c;
     
     [all] p.top == prevTop :-> c;
     [all] k.empty == false :-> true;
@@ -97,6 +98,7 @@ action stack(Crane k, Container c, Pile p) {
 action unstack(Crane k, Container c, Pile p) {
     c != pallet;
     constant Container under;
+    under != c;
     
     [all] p.top == c :-> under;
     [all] k.empty == true :-> false;

@@ -31,8 +31,8 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     @Override
     public float hc(State st) {
         if(!hc.containsKey(st.mID)) {
-            int numFlaws = st.tdb.getConsumers().size() + st.getNumOpenLeaves() + threatFinder.getFlaws(st, null).size();
-            hc.put(st.mID, numAdditionalSteps(st) + numFlaws);
+            int numFlaws = st.tdb.getConsumers().size() + st.getNumOpenLeaves();// + threatFinder.getFlaws(st, null).size();
+            hc.put(st.mID, numAdditionalSteps(st));// + numFlaws);
         }
         return hc.get(st.mID);
     }
@@ -61,7 +61,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
     @Override
     public String reportOnState(State st) {
-        return String.format("RPGComp\tg: %s, h: %s, num-add-steps: %s", g(st), h(st), numAdditionalSteps(st));
+        return String.format("RPGComp\tg: %s, h: %s, num-add-steps: %s", g(st), h(st), h(st)-st.tdb.getConsumers().size() - st.getNumOpenLeaves()); //numAdditionalSteps(st));
     }
 
     HashMap<Integer, Integer> hc = new HashMap<>();
@@ -71,11 +71,13 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     }
 
     public int numAdditionalSteps(State st) {
-        boolean useReasoner = false;
+        boolean useReasoner = true;
 
         if(useReasoner) {
             RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
-            return rpe.numAdditionalSteps();
+//            int addSteps = rpe.numAdditionalSteps();
+            return rpe.relaxedGroundPlan(st);
+//            return addSteps;
         } else {
             return numAdditionalStepsWithPG(st);
         }

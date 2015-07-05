@@ -5,14 +5,16 @@ import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import fape.exceptions.FAPEException;
 import fape.exceptions.NoSolutionException;
+import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.statements.LogStatement;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class RelaxedPlanExtractor {
 
@@ -22,7 +24,7 @@ public class RelaxedPlanExtractor {
     final HLeveledReasoner<GAction,Fluent> baseCausalReas;
     final State st;
     final Set<GAction> allowedActions;
-    final Set<GAction> inPlanActions;
+    Set<GAction> inPlanActions;
 
 
     Collection<GAction> alreadyUsed = new HashSet<>();
@@ -110,6 +112,8 @@ public class RelaxedPlanExtractor {
 //        System.out.println(currentCausalReasoner.levelOfClause(ga) +" "+ derivReaas.levelOfClause(ga)+" "+ decompReas.levelOfClause(ga));
         if(inPlanActions.contains(ga))
             return 0;
+        if(debugging)
+            System.out.println(ga+": "+currentCausalReasoner.levelOfClause(ga) +" "+ derivReaas.levelOfClause(ga)+" "+ decompReas.levelOfClause(ga));
         if(currentCausalReasoner.levelOfClause(ga) <0 || derivReaas.levelOfClause(ga)<0 || decompReas.levelOfClause(ga)<0)
             return -1; // impossible in at least one
         return currentCausalReasoner.levelOfClause(ga) +
@@ -179,8 +183,10 @@ public class RelaxedPlanExtractor {
 
             return bestAction;
 
-        } else
+        } else {
+//            selectMostInterestingAction(actions);
             throw new NoSolutionException();
+        }
     }
 
     public GTaskCond selectMostInterestingTask(Collection<GTaskCond> tasks) {
@@ -198,6 +204,12 @@ public class RelaxedPlanExtractor {
     }
 
     public int numAdditionalSteps() {
+        inPlanActions = new HashSet<>();
+        for(Action a : st.getAllActions()) {
+            for(GAction ga : planner.reachability.getGroundActions(a, st))
+                inPlanActions.add(ga);
+        }
+        alreadyUsed = new HashSet<>();
         assert alreadyUsed.isEmpty() : "THis method should be called only once for this object.";
         try {
 
@@ -289,6 +301,210 @@ public class RelaxedPlanExtractor {
             return actionsToAdd;
         } catch (NoSolutionException e) {
             return 9999999;
+        }
+    }
+
+    public GAction selectMostInterestingActionForRelaxedPlan(Collection<GAction> actions, Collection<Action> possiblyBfore,
+                                                             Map<Action,Set<GAction>> actionInstantiations) throws NoSolutionException {
+
+        GAction bestAction = null;
+        int bestActionCost = Integer.MAX_VALUE;
+        for(GAction ga : actions) {
+            if(ga == null)
+                return null; // init fact, we can not do better
+            if(alreadyUsed.contains(ga))
+                return ga; // no additional cost as the action is already part of the relaxed plan
+
+            for(Action a : possiblyBfore) {
+                if(actionInstantiations.get(a).contains(ga))
+                    return ga; // this corresponds to an action we need to instantiate anyway
+            }
+
+            int cost = costOfAction(ga);
+            if(cost >= 0 && cost < bestActionCost) {
+                bestActionCost = cost;
+                bestAction = ga;
+            }
+        }
+        if(bestAction != null) {
+            if(!inPlanActions.contains(bestAction))
+                for(GTaskCond task : derivReaas.conditionsOf(bestAction))
+                    assert derivReaas.levelOfFact(task) >= 0;
+
+            for(GTaskCond task : decompReas.conditionsOf(bestAction))
+                assert decompReas.levelOfFact(task) >= 0;
+
+            return bestAction;
+
+        } else
+            throw new NoSolutionException();
+    }
+
+//    static AnmlProblem lastProblem = null;
+//    static HLeveledReasoner<GAction,Fluent>
+    boolean debugging = true;
+    public int relaxedGroundPlan(State st) {
+        if(st.mID == 3)
+            System.out.println("BREAK.");
+        if(debugging)
+            System.out.println("State: "+st.mID);
+        try {
+            alreadyUsed = new HashSet<>();
+            inPlanActions = new HashSet<>();
+            HLeveledReasoner<GAction, Fluent> causalModel = baseCausalReas.clone();
+
+
+            for (Timeline tl : st.getTimelines()) {
+                for (ChainComponent cc : tl.getComponents()) {
+                    if (cc.change) {
+                        LogStatement s = cc.getFirst();
+                        if (st.getActionContaining(s) == null) {
+                            // statement part of the initial problem definition
+                            Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, true);
+                            for (Fluent f : fluents) {
+                                causalModel.set(f);
+                            }
+                        }
+                    }
+                }
+            }
+            causalModel.infer();
+            Map<Action, Set<GAction>> actionInstantiations = new HashMap<>();
+
+            for (Action a : st.getAllActions()) {
+                actionInstantiations.put(a, planner.reachability.getGroundActions(a, st));
+            }
+
+            currentCausalReasoner = causalModel;
+
+            for (Timeline tl : st.tdb.getConsumers()) {
+                if(debugging)
+                    System.out.println("opengoal: "+Printer.inlineTemporalDatabase(st, tl));
+                Collection<Action> possiblyBefore = new LinkedList<>();
+                for(Action a : st.getAllActions()) {
+                    if(st.canAllBeBefore(a.start(), tl.getFirstTimePoints())) {
+                        possiblyBefore.add(a);
+                    }
+                }
+                assert causalPending.isEmpty();
+                causalPending = new HashSet<>();
+
+                Collection<Fluent> disjunctiveGoals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true);
+                Fluent selectedGoal = selectMostInterestingFluent(disjunctiveGoals);
+                causalPending.add(selectedGoal);
+                if(debugging) {
+                    System.out.println("  goals: "+disjunctiveGoals);
+                    System.out.println("  selected: "+selectedGoal);
+                }
+
+                while (!causalPending.isEmpty()) {
+                    Fluent og = causalPending.iterator().next();
+                    if(debugging)
+                        System.out.println("    current subgoal: "+og);
+                    causalPending.remove(og);
+                    GAction ga = selectMostInterestingActionForRelaxedPlan(currentCausalReasoner.candidatesFor(og), possiblyBefore, actionInstantiations);
+                    if(debugging)
+                        System.out.println("    action for sub goal: "+ga);
+
+                    // if we need action (ga !=null) and we didn't already used it
+                    if (ga != null && !alreadyUsed.contains(ga)) {
+                        // find if we can use the instantiation of an action already in the plan
+                        for(Action a : possiblyBefore) {
+                            if(actionInstantiations.get(a).contains(ga)) {
+                                actionInstantiations.get(a).clear();
+                                actionInstantiations.get(a).add(ga); // this action is instantiated with that
+                                break;
+                            }
+                        }
+
+                        causalPending.addAll(ga.pre);
+                        if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
+                            // deriv all actions that are not already in the plan
+                            derivPending.addAll(derivReaas.conditionsOf(ga));
+
+//                        System.out.println("2"+ga+" "+derivPending);
+                        decompPending.addAll(decompReas.conditionsOf(ga));
+                        alreadyUsed.add(ga);
+                    }
+                }
+            }
+
+            for(Action a : actionInstantiations.keySet()) {
+                assert actionInstantiations.get(a).size() > 0;
+
+                Collection<Action> possiblyBefore = new LinkedList<>();
+                for(Action lifted : st.getAllActions()) {
+                    if(st.canBeBefore(a.start(), lifted.start())) {
+                        possiblyBefore.add(lifted);
+                    }
+                }
+
+                if(actionInstantiations.get(a).size() != 1 || !alreadyUsed.contains(actionInstantiations.get(a).iterator().next())) {
+                    // this lifted action is not instantiated or not recorded as part of the plan
+                    GAction instantiation = selectMostInterestingAction(actionInstantiations.get(a));
+                    actionInstantiations.get(a).clear();
+                    actionInstantiations.get(a).add(instantiation);
+                    assert instantiation != null;
+                    causalPending.addAll(currentCausalReasoner.conditionsOf(instantiation));
+
+                    while (!causalPending.isEmpty()) {
+                        Fluent og = causalPending.iterator().next();
+                        causalPending.remove(og);
+                        GAction ga = selectMostInterestingActionForRelaxedPlan(currentCausalReasoner.candidatesFor(og), possiblyBefore, actionInstantiations);
+
+                        // if we need action (ga !=null) and we didn't already used it
+                        if (ga != null && !alreadyUsed.contains(ga)) {
+                            // find if we can use the instantiation of an action already in the plan
+                            for (Action liftedAction : possiblyBefore) {
+                                if (actionInstantiations.get(liftedAction).contains(ga)) {
+                                    actionInstantiations.get(liftedAction).clear();
+                                    actionInstantiations.get(liftedAction).add(ga); // this action is instantiated with that
+                                    break;
+                                }
+                            }
+
+                            causalPending.addAll(ga.pre);
+                            if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
+                                // deriv all actions that are not already in the plan
+                                derivPending.addAll(derivReaas.conditionsOf(ga));
+
+//                        System.out.println("2"+ga+" "+derivPending);
+                            decompPending.addAll(decompReas.conditionsOf(ga));
+                            alreadyUsed.add(ga);
+                        }
+                    }
+                }
+                assert actionInstantiations.get(a).size() == 1;
+            }
+            boolean display = debugging;
+            if(display)
+                System.out.println("    state: "+st.mID);
+            for(Action a : st.getAllActions()) {
+                assert actionInstantiations.get(a).size() == 1;
+                GAction instantiated = actionInstantiations.get(a).iterator().next();
+                alreadyUsed.remove(instantiated);
+                if(display) {
+                    System.out.println("    " + instantiated + "  <-  " + a);
+                }
+            }
+            if(display)
+                for(GAction ga : alreadyUsed)
+                    System.out.println("    "+ga+"      additional");
+
+            if(display)
+                System.out.println("    Size: "+(alreadyUsed.size()+st.getNumActions()));
+//            System.out.println("Size of relaxed plan: "+alreadyUsed.size());
+//            System.out.println(alreadyUsed);
+//            System.out.println(actionInstantiations);
+            currentCausalReasoner = null;
+            return alreadyUsed.size();
+        } catch (NoSolutionException e) {
+            e.printStackTrace();
+            return 999999;
+
+//            throw new FAPEException("");
+//            System.out.println("no-solutions");
+//            return null;
         }
     }
 }
