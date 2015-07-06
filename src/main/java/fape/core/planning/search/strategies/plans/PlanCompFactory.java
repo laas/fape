@@ -24,6 +24,9 @@ public class PlanCompFactory {
                 case "threats":
                     compList.add(new Threats());
                     break;
+                case "opengoals":
+                    compList.add(new OpenGoals());
+                    break;
                 case "soca":
                     compList.add(new SOCA(planner));
                     break;

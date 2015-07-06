@@ -86,10 +86,14 @@ public class RelaxedPlanExtractor {
                 baseHLR.addClause(new GTaskCond[0], ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
             }
         }
-
-        for(GTaskCond tc : planner.reachability.getDerivableTasks(st)) {
-            baseHLR.set(tc);
+        // all tasks (for complete relaxed plan)
+        for(ActionCondition liftedTask : st.taskNet.getAllTasks()) {
+            for(GTaskCond task : planner.reachability.getGroundedTasks(liftedTask, st))
+                baseHLR.set(task);
         }
+//        for(GTaskCond tc : planner.reachability.getDerivableTasks(st)) {
+//            baseHLR.set(tc);
+//        }
         baseHLR.infer();
         for(GAction ga : allowedActions) {
             assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
@@ -342,7 +346,7 @@ public class RelaxedPlanExtractor {
 
 //    static AnmlProblem lastProblem = null;
 //    static HLeveledReasoner<GAction,Fluent>
-    boolean debugging = true;
+    boolean debugging = false;
     public int relaxedGroundPlan(State st) {
         if(st.mID == 3)
             System.out.println("BREAK.");
@@ -499,7 +503,7 @@ public class RelaxedPlanExtractor {
             currentCausalReasoner = null;
             return alreadyUsed.size();
         } catch (NoSolutionException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             return 999999;
 
 //            throw new FAPEException("");

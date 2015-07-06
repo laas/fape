@@ -26,6 +26,7 @@ import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.printers.NodeEdgePrinter;
 import planstack.structures.Pair;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -195,6 +196,17 @@ public class TaskNetworkManager implements Reporter {
             }
         }
         assert l.size() == numOpenedActionConditions;
+        return l;
+    }
+
+    public Collection<ActionCondition> getAllTasks() {
+        List<ActionCondition> l = new LinkedList<>();
+        for (TNNode n : network.jVertices()) {
+            if(n.isActionCondition()) {
+                ActionCondition ac = n.asActionCondition();
+                l.add(ac);
+            }
+        }
         return l;
     }
 
