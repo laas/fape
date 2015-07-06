@@ -187,7 +187,7 @@ public class GroundProblem {
         }
     }
 
-    protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, VarRef> argMap) {
+    protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, InstanceRef> argMap) {
         List<Fluent> fluents = new LinkedList<>();
         if(s instanceof Transition) {
             fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), true));

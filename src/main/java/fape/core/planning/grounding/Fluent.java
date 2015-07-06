@@ -3,14 +3,15 @@ package fape.core.planning.grounding;
 import fape.core.inference.Term;
 import fape.core.planning.planninggraph.PGNode;
 import planstack.anml.model.Function;
+import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
+import planstack.anml.parser.Instance;
 
 import java.util.Arrays;
 
 public class Fluent implements PGNode, Term {
-    final public Function f;
-    final public VarRef[] params;
-    final public VarRef value;
+    final public GStateVariable sv;
+    final public InstanceRef value;
     final public boolean partOfTransition;
 
     int hashVal;
@@ -18,41 +19,30 @@ public class Fluent implements PGNode, Term {
 
     public Fluent(Function f, VarRef[] params, VarRef value, boolean partOfTransition) {
         this.partOfTransition = partOfTransition;
-        this.f = f;
-        this.params = params;
-        this.value = value;
+        InstanceRef[] castParams = new InstanceRef[params.length];
+        for(int i=0 ; i< params.length ; i++)
+            castParams[i] = (InstanceRef) params[i];
+        this.sv = new GStateVariable(f, castParams);
+        this.value = (InstanceRef) value;
 
-        int i = 0;
-        hashVal = 0;
-        hashVal += f.hashCode() * 42*i++;
-        hashVal += value.hashCode() * 42*i++;
-        for(VarRef param : params) {
-            hashVal += param.hashCode() * 42*i++;
-        }
+        hashVal += sv.hashCode() * 42* value.hashCode();
     }
 
     @Override
     public String toString() {
-        return f.name() + Arrays.toString(params) +"=" + value;
+        return sv +"=" + value;
     }
 
     @Override
     public boolean equals(Object o) {
-        if(!(o instanceof Fluent))
+        if (!(o instanceof Fluent))
             return false;
         Fluent of = (Fluent) o;
 //        if(partOfTransition != of.partOfTransition)
 //            return false;
 
-        if(!f.equals(of.f))
-            return false;
+        return sv.equals(of.sv) && value.equals(of.value);
 
-        for(int i=0 ; i<params.length ; i++) {
-            if(!params[i].equals(of.params[i]))
-                return false;
-        }
-
-        return value.equals(of.value);
     }
 
     @Override

@@ -348,8 +348,6 @@ public class RelaxedPlanExtractor {
 //    static HLeveledReasoner<GAction,Fluent>
     boolean debugging = false;
     public int relaxedGroundPlan(State st) {
-        if(st.mID == 3)
-            System.out.println("BREAK.");
         if(debugging)
             System.out.println("State: "+st.mID);
         try {

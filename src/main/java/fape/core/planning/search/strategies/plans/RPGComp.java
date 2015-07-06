@@ -71,7 +71,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     }
 
     public int numAdditionalSteps(State st) {
-        boolean useReasoner = true;
+        boolean useReasoner = false;
 
         if(useReasoner) {
             RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
