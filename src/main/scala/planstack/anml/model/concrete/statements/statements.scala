@@ -2,7 +2,7 @@ package planstack.anml.model.concrete.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.concrete.{TemporalInterval, VarRef}
+import planstack.anml.model.concrete.{Chronicle, TemporalInterval, VarRef}
 
 
 /** Describes a concrete ANML statement such as `location(Rb) == l`, ...
@@ -14,8 +14,9 @@ import planstack.anml.model.concrete.{TemporalInterval, VarRef}
   * An instance should be able to exist in diverging nodes of the search space.
   *
   * @param sv State variable on which the statement applies.
+  * @param container The chronicle in which this statement appears.
   */
-abstract class Statement(val sv:ParameterizedStateVariable)
+abstract class Statement(val sv:ParameterizedStateVariable, val container: Chronicle)
   extends TemporalInterval
 
 
@@ -29,7 +30,7 @@ abstract class Statement(val sv:ParameterizedStateVariable)
   * See [[planstack.anml.model.concrete.statements.Statement]] for more details on statements in general.
   * @param sv State variable on which the statement applies.
   */
-abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv) {
+abstract class LogStatement(sv:ParameterizedStateVariable, container:Chronicle) extends Statement(sv, container) {
   require(sv.func.isInstanceOf[SymFunction], "Error: this Logical statement is not applied to a " +
     "symbolic function: "+this)
 
@@ -49,8 +50,8 @@ abstract class LogStatement(sv:ParameterizedStateVariable) extends Statement(sv)
   * @param sv State variable on which the statement applies.
   * @param value
   */
-class Assignment(sv:ParameterizedStateVariable, val value:VarRef)
-  extends LogStatement(sv) {
+class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle)
+  extends LogStatement(sv, container) {
 
   /** Throws ANMLException since an assignment has no startValue */
   def startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
@@ -67,8 +68,8 @@ class Assignment(sv:ParameterizedStateVariable, val value:VarRef)
   * @param from Value of the state variable before the statement.
   * @param to Value of the state variable after the statement.
   */
-class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef)
-  extends LogStatement(sv) {
+class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, container:Chronicle)
+  extends LogStatement(sv, container) {
 
   val startValue = from
   val endValue = to
@@ -82,8 +83,8 @@ class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef)
   * @param sv State variable on which the statement applies.
   * @param value Value of the state variable during the statement.
   */
-class Persistence(sv:ParameterizedStateVariable, val value:VarRef)
-  extends LogStatement(sv) {
+class Persistence(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle)
+  extends LogStatement(sv, container) {
 
   val startValue = value
   val endValue = value

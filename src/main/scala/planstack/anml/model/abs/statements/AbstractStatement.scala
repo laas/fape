@@ -4,6 +4,7 @@ import planstack.anml.ANMLException
 import planstack.anml.model._
 import planstack.anml.model.abs.AbstractTemporalConstraint
 import planstack.anml.model.abs.time.{AbstractTemporalAnnotation, AbstractTimepointRef}
+import planstack.anml.model.concrete.Chronicle
 import planstack.anml.model.concrete.statements._
 
 abstract class AbstractStatement(val id:LocalRef) {
@@ -13,7 +14,7 @@ abstract class AbstractStatement(val id:LocalRef) {
    * @param context Context in which this statement appears.
    * @return
    */
-  def bind(context:Context, pb:AnmlProblem) : Any
+  def bind(context:Context, pb:AnmlProblem, container: Chronicle) : Any
 
   def isTemporalInterval : Boolean
 
@@ -40,7 +41,7 @@ abstract class AbstractLogStatement(val sv:AbstractParameterizedStateVariable, o
   extends AbstractStatement(id)
 {
   require(sv.func.valueType != "integer", "Error: the function of this LogStatement has an integer value.")
-  def bind(context:Context, pb:AnmlProblem) : LogStatement
+  def bind(context:Context, pb:AnmlProblem, container:Chronicle) : LogStatement
 
   def isTemporalInterval = true
 }
@@ -53,7 +54,8 @@ abstract class AbstractLogStatement(val sv:AbstractParameterizedStateVariable, o
 class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
   extends AbstractLogStatement(sv, id)
 {
-  override def bind(context:Context, pb:AnmlProblem) = new Assignment(sv.bind(context), context.getGlobalVar(value))
+  override def bind(context:Context, pb:AnmlProblem, container:Chronicle) =
+    new Assignment(sv.bind(context), context.getGlobalVar(value), container)
 
   override def toString = "%s := %s".format(sv, value)
 }
@@ -61,7 +63,8 @@ class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRe
 class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef, val to:LVarRef, id:LStatementRef)
   extends AbstractLogStatement(sv, id)
 {
-  override def bind(context:Context, pb:AnmlProblem) = new Transition(sv.bind(context), context.getGlobalVar(from), context.getGlobalVar(to))
+  override def bind(context:Context, pb:AnmlProblem, container:Chronicle) =
+    new Transition(sv.bind(context), context.getGlobalVar(from), context.getGlobalVar(to), container)
 
   override def toString = "%s == %s :-> %s".format(sv, from, to)
 }
@@ -69,7 +72,8 @@ class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef
 class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
   extends AbstractLogStatement(sv, id)
 {
-  override def bind(context:Context, pb:AnmlProblem) = new Persistence(sv.bind(context), context.getGlobalVar(value))
+  override def bind(context:Context, pb:AnmlProblem, container:Chronicle) =
+    new Persistence(sv.bind(context), context.getGlobalVar(value), container)
 
   override def toString = "%s == %s".format(sv, value)
 }

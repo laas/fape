@@ -2,6 +2,7 @@ package planstack.anml.model.abs
 
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.AbstractStatement
+import planstack.anml.model.concrete.Chronicle
 
 import scala.collection.JavaConverters._
 
@@ -17,7 +18,7 @@ class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LAc
 
   def jArgs : java.util.List[LVarRef] = args.asJava
 
-  override def bind(context:Context, pb:AnmlProblem) = throw new UnsupportedOperationException
+  override def bind(context:Context, pb:AnmlProblem, container: Chronicle) = throw new UnsupportedOperationException
 
   override def isTemporalInterval = true
 

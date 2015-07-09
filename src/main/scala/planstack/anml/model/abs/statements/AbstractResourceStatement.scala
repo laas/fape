@@ -1,5 +1,6 @@
 package planstack.anml.model.abs.statements
 
+import planstack.anml.model.concrete.Chronicle
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.{AbstractParameterizedStateVariable, AnmlProblem, Context, LStatementRef}
 
@@ -27,16 +28,16 @@ abstract class AbstractResourceStatement(val sv:AbstractParameterizedStateVariab
    * @param context Context in which this statement appears.
    * @return
    */
-  override def bind(context: Context, pb:AnmlProblem): ResourceStatement = {
+  override def bind(context: Context, pb:AnmlProblem, container: Chronicle): ResourceStatement = {
     val variable = sv.bind(context)
 
     this match {
-      case _:AbstractProduceResource => new ProduceResource(variable, param)
-      case _:AbstractSetResource => new SetResource(variable, param)
-      case _:AbstractConsumeResource => new ConsumeResource(variable, param)
-      case _:AbstractLendResource => new LendResource(variable, param)
-      case _:AbstractUseResource => new UseResource(variable, param)
-      case _:AbstractRequireResource => new RequireResource(variable, operator, param)
+      case _:AbstractProduceResource => new ProduceResource(variable, param, container)
+      case _:AbstractSetResource => new SetResource(variable, param, container)
+      case _:AbstractConsumeResource => new ConsumeResource(variable, param, container)
+      case _:AbstractLendResource => new LendResource(variable, param, container)
+      case _:AbstractUseResource => new UseResource(variable, param, container)
+      case _:AbstractRequireResource => new RequireResource(variable, operator, param, container)
     }
   }
 
