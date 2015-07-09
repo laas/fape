@@ -229,6 +229,17 @@ public class TaskNetworkManager implements Reporter {
         return l;
     }
 
+    public Action getContainingAction(Decomposition d) {
+        TNNode n = new TNNode(d);
+        assert network.contains(n);
+        assert network.inDegree(n) == 1 : "Decomposition with 0 or more than one parent in the task network.";
+        for(TNNode parent : network.jParents(n)) {
+            assert parent.isAction();
+            return parent.asAction();
+        }
+        throw new FAPEException("Decomposition "+d+" has no containing action");
+    }
+
     /**
      * @return True if this action is motivated: it is part of an action or a decomposition.
      */

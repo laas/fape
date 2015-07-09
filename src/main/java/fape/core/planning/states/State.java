@@ -266,12 +266,20 @@ public class State implements Reporter {
      * was found.
      */
     public Action getActionContaining(LogStatement s) {
-        for (Action a : taskNet.GetAllActions()) {
-            if (a.contains(s)) {
-                return a;
+        if(s.container() instanceof Action) {
+            Action a = (Action) s.container();
+            assert a.contains(s);
+            assert taskNet.GetAllActions().contains(a);
+            return a;
+        } else if(s.container() instanceof Decomposition) {
+            Decomposition d = (Decomposition) s.container();
+            return taskNet.getContainingAction(d);
+        } else {
+            for (Action a : taskNet.GetAllActions()) {
+                assert !a.contains(s);
             }
+            return null;
         }
-        return null;
     }
 
     public void breakCausalLink(LogStatement supporter, LogStatement consumer) {
