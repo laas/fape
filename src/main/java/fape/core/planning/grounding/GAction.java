@@ -8,10 +8,8 @@ import fape.core.planning.planninggraph.PGNode;
 import fape.core.planning.planninggraph.PartialBindings;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
-import planstack.anml.model.AbstractParameterizedStateVariable;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.LVarRef;
-import planstack.anml.model.PartialContext;
+import fape.util.Pair;
+import planstack.anml.model.*;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractActionRef;
 import planstack.anml.model.abs.statements.*;
@@ -23,10 +21,43 @@ import java.util.*;
 
 public class GAction implements PGNode {
 
+    public abstract class GLogStatement {
+        public final GStateVariable sv;
+        public GLogStatement(GStateVariable sv) {
+            this.sv = sv;
+        }
+    }
+    public class GTransition extends GLogStatement {
+
+        public final InstanceRef from ;
+        public final InstanceRef to;
+        public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to) {
+            super(sv);
+            this.from = from;
+            this.to = to;
+        }
+    }
+    public final class GAssignement extends GLogStatement {
+        public final InstanceRef to;
+        public GAssignement(GStateVariable sv, InstanceRef to) {
+            super(sv);
+            this.to = to;
+        }
+    }
+    public final class GPersistence extends GLogStatement {
+        public final InstanceRef value;
+        public GPersistence(GStateVariable sv, InstanceRef value) {
+            super(sv);
+            this.value = value;
+        }
+    }
+
     public List<Fluent> pre = new LinkedList<>();
     public List<Fluent> add = new LinkedList<>();
     public final AbstractAction abs;
     public final GTaskCond task;
+
+    public List<Pair<LStatementRef, GLogStatement>> gStatements;
 
     public final LVarRef[] baseVars;
     protected final InstanceRef[] baseValues;
@@ -136,7 +167,11 @@ public class GAction implements PGNode {
                 if(valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
                     throw new NotValidGroundAction("Action not valid4");
             } else if(as instanceof AbstractTransition) {
+
                 AbstractTransition t = (AbstractTransition) as;
+                gStatements.add(new Pair<>(
+                        t.id(),
+                        (GLogStatement) new GTransition(sv(t.sv(), pb), valueOf(t.from(), pb), valueOf(t.to(), pb))));
 
                 pre.add(fluent(t.sv(), t.from(), true, vars, pb));
                 pre.add(fluent(t.sv(), t.from(), false, vars, pb));
@@ -146,9 +181,15 @@ public class GAction implements PGNode {
                 }
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
+                gStatements.add(new Pair<>(
+                        p.id(),
+                        (GLogStatement) new GPersistence(sv(p.sv(), pb), valueOf(p.value(), pb))));
                 pre.add(fluent(p.sv(), p.value(), false, vars, pb));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
+                gStatements.add(new Pair<>(
+                        a.id(),
+                        (GLogStatement) new GAssignement(sv(a.sv(), pb), valueOf(a.value(), pb))));
                 add.add(fluent(a.sv(), a.value(), false, vars, pb));
                 add.add(fluent(a.sv(), a.value(), true, vars, pb));
             }
@@ -208,6 +249,13 @@ public class GAction implements PGNode {
 
         // it does not appear in local variables, it is a global one
         return (InstanceRef) pb.context().getDefinition(v)._2();
+    }
+
+    public GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb) {
+        InstanceRef[] svParams = new InstanceRef[sv.jArgs().size()];
+        for(int i=0 ; i<svParams.length ; i++)
+            svParams[i] = valueOf(sv.jArgs().get(i), pb);
+        return new GStateVariable(sv.func(), svParams);
     }
 
     public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, boolean partOfTransition, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
