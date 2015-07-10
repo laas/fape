@@ -74,31 +74,33 @@ trait Chronicle {
   def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem): Unit = {
     for(absStatement <- absStatements) {
       absStatement match {
-        case s: AbstractLogStatement => {
+        case s: AbstractLogStatement =>
           val binded = s.bind(context, pb, this)
           statements += binded
           context.addStatement(s.id, binded)
-        }
-        case s: AbstractResourceStatement => {
+
+        case s: AbstractResourceStatement =>
           val binded = s.bind(context, pb, this)
           statements += binded
           context.addStatement(s.id, binded)
-        }
+
         case s:AbstractTemporalConstraint =>
           temporalConstraints += s.bind(context, pb, this)
-        case s:AbstractActionRef => {
-          val parent =
-            if (this.isInstanceOf[Action]) Some(this.asInstanceOf[Action])
-            else if(this.isInstanceOf[Decomposition]) Some(this.asInstanceOf[Decomposition].container)
-            else None
-          if (pb.usesActionConditions) {
+
+        case s:AbstractActionRef =>
+          val parent = this match {
+              case x: Action => Some(x)
+              case decomposition: Decomposition => Some(decomposition.container)
+              case _ => None
+            }
+          if (pb.usesActionConditions)
             actionConditions += ActionCondition(pb, s, context, parent)
-          } else {
+          else
             actions += Action(pb, s, parent, Some(context))
-          }
-        }
+
         case s:AbstractBindingConstraint =>
           bindingConstraints += s.bind(context, pb, this)
+          
         case _ => throw new ANMLException("unsupported yet:" + absStatement)
       }
     }

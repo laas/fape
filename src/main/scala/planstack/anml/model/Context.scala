@@ -91,6 +91,16 @@ abstract class AbstractContext {
       globalName
   }
 
+  def getLocalVar(globalRef: VarRef) : LVarRef = {
+    for((lv, (typ, v)) <- variables ; if v == globalRef)
+      return lv
+
+    parentContext match {
+      case Some(parent) => parent.getLocalVar(globalRef)
+      case None => null
+    }
+  }
+
   def addVar(localName:LVarRef, typeName:String, globalName:VarRef) {
     assert(!variables.contains(localName), "Error: Context already contains local variable: "+localName)
     variables.put(localName, (typeName, globalName))
