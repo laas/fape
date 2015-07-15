@@ -28,7 +28,6 @@ public class GAction implements PGNode {
         }
     }
     public class GTransition extends GLogStatement {
-
         public final InstanceRef from ;
         public final InstanceRef to;
         public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to) {
@@ -57,7 +56,7 @@ public class GAction implements PGNode {
     public final AbstractAction abs;
     public final GTaskCond task;
 
-    public List<Pair<LStatementRef, GLogStatement>> gStatements;
+    public final List<Pair<LStatementRef, GLogStatement>> gStatements = new LinkedList<>();
 
     public final LVarRef[] baseVars;
     protected final InstanceRef[] baseValues;
@@ -79,6 +78,14 @@ public class GAction implements PGNode {
                 return inv;
         }
         return null;
+    }
+
+    public GLogStatement statementWithRef(LStatementRef ref) {
+        for(Pair<LStatementRef, GLogStatement> p : gStatements) {
+            if(p.value1.equals(ref))
+                return p.value2;
+        }
+        throw new FAPEException("Unable to find statement with ref: "+ref);
     }
 
     @Override

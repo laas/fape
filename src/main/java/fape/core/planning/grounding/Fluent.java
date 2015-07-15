@@ -14,8 +14,11 @@ public class Fluent implements PGNode, Term {
     final public InstanceRef value;
     final public boolean partOfTransition;
 
-    int hashVal;
-
+    public Fluent(GStateVariable sv, InstanceRef value, boolean partOfTransition) {
+        this.sv = sv;
+        this.value = value;
+        this.partOfTransition = partOfTransition;
+    }
 
     public Fluent(Function f, VarRef[] params, VarRef value, boolean partOfTransition) {
         this.partOfTransition = partOfTransition;
@@ -24,8 +27,6 @@ public class Fluent implements PGNode, Term {
             castParams[i] = (InstanceRef) params[i];
         this.sv = new GStateVariable(f, castParams);
         this.value = (InstanceRef) value;
-
-        hashVal += sv.hashCode() * 42* value.hashCode();
     }
 
     @Override
@@ -47,7 +48,7 @@ public class Fluent implements PGNode, Term {
 
     @Override
     public int hashCode() {
-        return hashVal;
+        return sv.hashCode() * 42* value.hashCode();
     }
 
 }

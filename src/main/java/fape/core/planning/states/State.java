@@ -993,6 +993,22 @@ public class State implements Reporter {
 
     public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().enforceStrictlyBefore(a, b); }
 
+    public boolean canBeBefore(Timeline tl1, Timeline tl2) {
+        if(!tl1.hasSinglePersistence()) {
+            if (tl2.hasSinglePersistence()) {
+                return canAllBeBefore(tl1.getSupportTimePoint(), tl2.getFirstTimePoints());
+            } else {
+                assert tl2.get(0).change : "First statement of timeline containing changes is a persistence";
+                return //canAllBeBefore(tl1.getSupportTimePoint(), tl2.getFirstTimePoints()) &&
+                        canAllBeBefore(tl1.getLastTimePoints(), tl2.getFirstChangeTimePoint());
+            }
+        } else {
+            assert !tl2.hasSinglePersistence() : "Temporal comparison of two timelien with persistences only is not supported. " +
+                    "Usually this case should have been filtered out.";
+            return canAllBeBefore(tl1.getLastTimePoints(), tl2.getFirstChangeTimePoint());
+        }
+    }
+
     public void enforceStrictlyBefore(Collection<TPRef> as, TPRef b) {
         for(TPRef a : as)
             enforceStrictlyBefore(a, b);

@@ -12,11 +12,11 @@ import fape.core.planning.search.flaws.flaws.UnsupportedTaskCond;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
-import fape.core.planning.search.strategies.plans.RPGComp;
 import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.drawing.gui.ChartWindow;
+import fape.exceptions.NoSolutionException;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
@@ -281,7 +281,12 @@ public abstract class APlanner {
             //get the best state and continue the search
             State st = queue.remove();
 
-            assert st.isConsistent();
+            if(!st.isConsistent()) {
+                if(options.displaySearch)
+                    searchView.setDeadEnd(st);
+                continue;
+            }
+
             List<Flaw> flaws = getFlaws(st);
             if (flaws.isEmpty()) {
                 // this is a solution state
@@ -319,17 +324,22 @@ public abstract class APlanner {
 
         expandedStates++;
 
-        if(options.usePlanningGraphReachability)
-            if(!reachability.checkFeasibility(st)) {
+        if(options.usePlanningGraphReachability) {
+//            GroundDTGs dtgs = new GroundDTGs(reachability.getAllActions(st));
+//            dtgs.print();
+            System.out.println("\n--------------------\n");
+            if (!reachability.checkFeasibility(st)) {
                 TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
-                if(options.displaySearch)
+                if (options.displaySearch)
                     searchView.setDeadEnd(st);
                 return children;
             }
+        }
 
         RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(this, st);
 //        System.out.println(String.format("old: add-step: %s, num-actions: %s", rpe.numAdditionalSteps(), st.getNumActions()));
         rpe.relaxedGroundPlan(st);
+        rpe.myPerfectHeuristic();
 
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
@@ -499,7 +509,11 @@ public abstract class APlanner {
                 queue.remove(current);
             }
 
-            assert current.isConsistent() : "A non consistent state made his way in the queue.";
+            if(!current.isConsistent()) {
+                if(options.displaySearch)
+                    searchView.setDeadEnd(current);
+                continue;
+            }
 
             List<Flaw> flaws = getFlaws(current);
             if (flaws.isEmpty()) {
