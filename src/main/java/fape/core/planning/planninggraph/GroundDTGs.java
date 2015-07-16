@@ -4,7 +4,8 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.heuristics.relaxed.DomainTransitionGraph;
-import fape.exceptions.FAPEException;
+import fape.core.planning.states.State;
+import planstack.anml.model.concrete.TPRef;
 
 import java.util.*;
 
@@ -132,6 +133,16 @@ public class GroundDTGs {
         @Override
         public boolean areEdgesFree() {
             return false;
+        }
+
+        @Override
+        public Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st) {
+            List<DTNode> mergeableNodes = new LinkedList<>();
+            for(DTNode cur : ids.keySet()) {
+                if(cur.canSupportValue(f, start, end, st))
+                    mergeableNodes.add(cur);
+            }
+            return mergeableNodes;
         }
     }
 

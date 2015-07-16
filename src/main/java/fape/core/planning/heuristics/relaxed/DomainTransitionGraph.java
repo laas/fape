@@ -2,8 +2,11 @@ package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.TPRef;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 public abstract class DomainTransitionGraph {
@@ -25,15 +28,36 @@ public abstract class DomainTransitionGraph {
         public final int lvl;
         public final int containerID;
         public final Fluent value;
+        public final TPRef start;
+        public final TPRef end;
+
         public DTNode(Fluent value) {
             this.value = value;
             this.lvl = 0;
             this.containerID = id();
+            start = null;
+            end = null;
         }
-        public DTNode(Fluent value, int lvl) {
+        public DTNode(Fluent value, int lvl, TPRef start, TPRef end) {
             this.value = value;
             this.lvl = lvl;
             containerID = id();
+            this.start = start;
+            this.end = end;
+        }
+
+        /**
+         * Returns true if the node n (a fluent value and a temporal interval) can be merged
+         * in this node (i.e. same value and the interval of n fits into this one).
+         */
+        public boolean canSupportValue(Fluent f, TPRef start, TPRef end, State st) {
+            if(!hasFluent(f))
+                return false;
+            if(this.start != null && start != null && !st.canBeBefore(this.start, start))
+                return false;
+            if(this.end != null && end != null && !st.canBeBefore(end, this.end))
+                return false;
+            return true;
         }
 
         public boolean hasSameFluent(DTNode n) {
@@ -95,13 +119,15 @@ public abstract class DomainTransitionGraph {
 
     public final int id() { return id; }
 
-        public DTNode baseNode(Fluent f) {
-        return new DTNode(f, 0);
+    public DTNode baseNode(Fluent f) {
+        return new DTNode(f, 0, null, null);
     }
 
     public abstract boolean isAccepting(DTNode n);
 
     public abstract DTNode possibleEntryPointFrom(DTNode n);
+
+    public abstract Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st);
 
     /** Returns true if the cost of the edges should not be counted (already accounted for another local solution) */
     public abstract boolean areEdgesFree();

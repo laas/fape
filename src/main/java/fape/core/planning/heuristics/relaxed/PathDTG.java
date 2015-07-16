@@ -3,9 +3,11 @@ package fape.core.planning.heuristics.relaxed;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
+import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.Pair;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.TPRef;
 
 import java.util.*;
 
@@ -29,6 +31,13 @@ public class PathDTG extends DomainTransitionGraph {
 
     public GStateVariable getStateVariable() {
         return endNode.value.sv;
+    }
+
+    public boolean isAcceptableSupporterForTransitions() {
+        if(supporter == null)
+            return true;
+        else
+            return supporter.numChanges() <= edges.size();
     }
 
     private boolean eq(Object o1, Object o2) {
@@ -86,6 +95,9 @@ public class PathDTG extends DomainTransitionGraph {
         }
         return actionBindings;
     }
+    public Collection<DTEdge> edges() {
+        return edges.values();
+    }
 
     public List<GAction> allGroundActions() {
         List<GAction> groundActions = new LinkedList<>();
@@ -109,9 +121,10 @@ public class PathDTG extends DomainTransitionGraph {
         return out;
     }
 
-    public void addNextEdge(Fluent from, Fluent to, GAction gAction, Action liftedAct) {
-        DTNode src = new DTNode(from, size);
-        DTNode dst = new DTNode(to, size+1);
+    public void addNextEdge(DTNode from, DTNode to, GAction gAction, Action liftedAct) {
+        // create new DTNode (they will link to this PathDTG)
+        DTNode src = new DTNode(from.value, size, from.start, from.end);
+        DTNode dst = new DTNode(to.value, size+1, to.start, to.end);
 
         assert !revEdges.containsKey(dst);
         if(size == 0) {
@@ -176,5 +189,17 @@ public class PathDTG extends DomainTransitionGraph {
     @Override
     public boolean areEdgesFree() {
         return true;
+    }
+
+    @Override
+    public Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st) {
+        List<DTNode> mergeableNodes = new LinkedList<>();
+        for(DTNode cur : edges.keySet()) {
+            if(cur.canSupportValue(f, start, end, st))
+                mergeableNodes.add(cur);
+        }
+        if(endNode.canSupportValue(f, start, end, st))
+            mergeableNodes.add(endNode);
+        return mergeableNodes;
     }
 }

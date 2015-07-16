@@ -2,10 +2,12 @@ package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NoSolutionException;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.TPRef;
 
 import java.util.*;
 
@@ -50,12 +52,20 @@ public class OpenGoalTransitionFinder {
 //        public boolean usable(GAction ga);
     }
 
-    public void addSources(Collection<Fluent> fluents) {
+    public void addTransitionTargets(Collection<Fluent> fluents) {
         for(DomainTransitionGraph dtg : dtgs.values()) {
             for (Fluent f : fluents) {
                 DomainTransitionGraph.DTNode start = dtg.startNodeForFluent(f);
                 if(start != null)
                     startNodes.add(start);
+            }
+        }
+    }
+
+    public void addPersistenceTargets(Collection<Fluent> fluents, TPRef start, TPRef end, State st) {
+        for(Fluent f : fluents) {
+            for(DomainTransitionGraph dtg : dtgs.values()) {
+                startNodes.addAll(dtg.unifiableNodes(f, start, end, st));
             }
         }
     }
@@ -170,7 +180,7 @@ public class OpenGoalTransitionFinder {
             PathDTG dtg = new PathDTG(supporter, extendedSolution);
             for(NodeCost nc : nodes) {
                 if(nc.e != null) {
-                    dtg.addNextEdge(nc.e.from.value, nc.e.to.value, nc.e.ga, nc.e.act);
+                    dtg.addNextEdge(nc.e.from, nc.e.to, nc.e.ga, nc.e.act);
                 }
             }
             return dtg;
