@@ -3,6 +3,7 @@ package fape.core.planning.heuristics.relaxed;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.states.State;
+import fape.util.Utils;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 
@@ -22,6 +23,7 @@ public abstract class DomainTransitionGraph {
     }
 
     final int id;
+    public boolean hasBeenExtended = false;
 
     public class DTNode {
 
@@ -75,15 +77,10 @@ public abstract class DomainTransitionGraph {
             return (value != null ? value.hashCode() : 0) + lvl;
         }
         @Override public boolean equals(Object o) {
-            if(o instanceof DTNode) {
-                if(((DTNode) o).lvl == lvl) {
-                    if(value != null && ((DTNode) o).value != null)
-                        return ((DTNode) o).value.equals(value);
-                    else
-                        return value == ((DTNode) o).value;
-                }
-            }
-            return false;
+            if(o instanceof DTNode)
+                return lvl == ((DTNode) o).lvl && Utils.eq(value, ((DTNode) o).value) && containerID == ((DTNode) o).containerID;
+            else
+                return false;
         }
 
         @Override public String toString() {
@@ -107,9 +104,10 @@ public abstract class DomainTransitionGraph {
             this.to = to;
         }
         @Override public String toString() {
-            if(act != null) return "ag";
-            if(ga != null) return "g"; //return ga.toString();
-            else return "";
+            return from +" "+ga+"  "+to;
+//            if(act != null) return "ag";
+//            if(ga != null) return "g"; //return ga.toString();
+//            else return "";
         }
     }
 

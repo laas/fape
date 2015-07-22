@@ -70,7 +70,8 @@ public class RelaxedPlanExtractor {
         baseHLR.infer();
         for(GAction ga : allowedActions) {
             if(!(baseHLR.levelOfClause(ga) > -1) && !inPlanActions.contains(ga))
-                System.out.println(baseHLR.report());
+                if(debugging)
+                    System.out.println(baseHLR.report());
             assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
         }
         return baseHLR;
@@ -260,7 +261,6 @@ public class RelaxedPlanExtractor {
                             // deriv all actions that are not alreay in the plan
                             derivPending.addAll(derivReaas.conditionsOf(ga));
 
-//                        System.out.println("2"+ga+" "+derivPending);
                         decompPending.addAll(decompReas.conditionsOf(ga));
                         alreadyUsed.add(ga);
                     }
@@ -283,7 +283,6 @@ public class RelaxedPlanExtractor {
             for(Action liftedAction : st.getOpenLeaves()) {
                 Collection<GAction> groundActions = planner.reachability.getGroundActions(liftedAction, st);
                 GAction candidate =selectMostInterestingAction(groundActions);
-//                System.out.println("openleaves:"+Printer.action(st, liftedAction) + "  " + candidate);
                 decompPending.addAll(decompReas.conditionsOf(candidate));
             }
             for(Action liftedAction : st.getUnmotivatedActions()) {
@@ -402,7 +401,8 @@ public class RelaxedPlanExtractor {
 
     //    static AnmlProblem lastProblem = null;
 //    static HLeveledReasoner<GAction,Fluent>
-    boolean debugging = false;
+    protected static boolean debugging = false;
+    public static boolean debugging2 = false;
     public int relaxedGroundPlan(State st) {
         if(debugging)
             System.out.println("State: "+st.mID);
@@ -458,7 +458,6 @@ public class RelaxedPlanExtractor {
                             // deriv all actions that are not already in the plan
                             derivPending.addAll(derivReaas.conditionsOf(ga));
 
-//                        System.out.println("2"+ga+" "+derivPending);
                         decompPending.addAll(decompReas.conditionsOf(ga));
                         alreadyUsed.add(ga);
                     }
@@ -504,7 +503,6 @@ public class RelaxedPlanExtractor {
                                 // deriv all actions that are not already in the plan
                                 derivPending.addAll(derivReaas.conditionsOf(ga));
 
-//                        System.out.println("2"+ga+" "+derivPending);
                             decompPending.addAll(decompReas.conditionsOf(ga));
                             alreadyUsed.add(ga);
                         }
@@ -512,23 +510,22 @@ public class RelaxedPlanExtractor {
                 }
                 assert actionInstantiations.get(a).size() == 1;
             }
-            boolean display = debugging;
-            if(display)
+            if(debugging)
                 System.out.println("    state: "+st.mID);
             for(Action a : st.getAllActions()) {
                 assert actionInstantiations.get(a).size() == 1;
                 GAction instantiated = actionInstantiations.get(a).iterator().next();
                 alreadyUsed.remove(instantiated);
-                if(display) {
+                if(debugging) {
                     System.out.println("    " + instantiated + "  <-  " + a);
                 }
             }
 
-            if(display)
+            if(debugging)
                 for(GAction ga : alreadyUsed)
                     System.out.println("    "+ga+"      additional");
 
-            if(display)
+            if(debugging)
                 System.out.println("    Size: "+(alreadyUsed.size()+st.getNumActions()));
 //            System.out.println("Size of relaxed plan: "+alreadyUsed.size());
 //            System.out.println(alreadyUsed);
@@ -561,7 +558,8 @@ public class RelaxedPlanExtractor {
                 pathFinder.addDTG(dtgs.getDTGOf(sv));
             if(previousPaths.containsKey(sv))
                 for(PathDTG dtg : previousPaths.get(sv))
-                    pathFinder.addDTG(dtg);
+                    if(dtg.isAcceptableSupporterForTransitions())
+                        pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -606,12 +604,14 @@ public class RelaxedPlanExtractor {
         for(Timeline tl : potentialIndirectSupporters) {
             pathFinder.addDTG(timelineDTGs.get(tl));
             for(PathDTG dtg : previousSolutions.get(tl)) {
-                pathFinder.addDTG(dtg);
+                if(dtg.isAcceptableSupporterForTransitions())
+                    pathFinder.addDTG(dtg);
             }
         }
+        assert og.chain.length == 1;
+        pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint(), st);
 
-        pathFinder.addTransitionTargets(ogs);
-        if(pathFinder.startNodes.isEmpty()) {
+        if(debugging2 && pathFinder.startNodes.isEmpty()) {
             System.out.println(ogs);
             System.out.println(Printer.temporalDatabase(st, og));
             for(Timeline t : toRemove)
@@ -635,14 +635,14 @@ public class RelaxedPlanExtractor {
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for(Fluent f : ogs)
             possibleStateVariables.add(f.sv);
-//            transitions.addStartNodes(ogs); TODO
 
         for(GStateVariable sv : possibleStateVariables) {
             if (dtgs.hasDTGFor(sv))
                 pathFinder.addDTG(dtgs.getDTGOf(sv));
             if(previousPaths.containsKey(sv))
                 for(PathDTG dtg : previousPaths.get(sv))
-                    pathFinder.addDTG(dtg);
+                    if(dtg.isAcceptableSupporterForTransitions())
+                        pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -659,6 +659,8 @@ public class RelaxedPlanExtractor {
 
             potentialIndirectSupporters.add(tl);
         }
+
+
 
         // filter to keep only those that can be directly before
         List<Timeline> toRemove = new LinkedList<>();
@@ -687,26 +689,32 @@ public class RelaxedPlanExtractor {
         for(Timeline tl : potentialIndirectSupporters) {
             pathFinder.addDTG(timelineDTGs.get(tl));
             for(PathDTG dtg : previousSolutions.get(tl)) {
-                pathFinder.addDTG(dtg);
+                if(dtg.isAcceptableSupporterForTransitions())
+                    pathFinder.addDTG(dtg);
             }
         }
 
-        pathFinder.addTransitionTargets(ogs);
-        if(pathFinder.startNodes.isEmpty()) {
+        pathFinder.addTransitionTargets(ogs, og.getFirstChangeTimePoint());
+        if(debugging2 && pathFinder.startNodes.isEmpty()) {
             System.out.println(ogs);
             System.out.println(Printer.temporalDatabase(st, og));
             for(Timeline t : toRemove)
                 System.out.println("  "+Printer.inlineTemporalDatabase(st, t));
-            System.out.println("BREAK HERE");
-        }
 
-        OpenGoalTransitionFinder.TransitionSequence seq = pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
-            @Override
-            public int cost(Action a, GAction ga) {
-                return costOfAction(a, ga);
-            }
-        });
-        return seq;
+        }
+//        if(st.mID == 12 && og.mID ==16)
+//            System.out.println("BREAK HERE");
+        try {
+            OpenGoalTransitionFinder.TransitionSequence seq = pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
+                @Override
+                public int cost(Action a, GAction ga) {
+                    return costOfAction(a, ga);
+                }
+            });
+            return seq;
+        } catch (NoSolutionException e) {
+            throw e;
+        }
     }
 
     GroundDTGs dtgs;
@@ -734,6 +742,10 @@ public class RelaxedPlanExtractor {
         previousSolutions = new HashMap<>();
         previousPaths = new HashMap<>();
 
+        if(debugging2 && st.mID == 148) {
+            System.out.println(Printer.temporalDatabaseManager(st));
+        }
+
         for(Timeline tl : st.getTimelines()) {
             if(!tl.hasSinglePersistence()) {
                 timelineDTGs.put(tl, new TimelineDTG(tl, st, planner, planner.reachability));
@@ -741,14 +753,28 @@ public class RelaxedPlanExtractor {
             }
         }
 
-        for(Timeline og : st.tdb.getConsumers()) {
-            if(og.hasSinglePersistence()) {
-                System.out.println("Ignored: "+Printer.inlineTemporalDatabase(st, og));
-                continue;
+        List<Timeline> opengoals = new LinkedList<>(st.tdb.getConsumers());
+        Collections.sort(opengoals, new Comparator<Timeline>() {
+            @Override
+            public int compare(Timeline t1, Timeline t2) {
+                return st.getEarliestStartTime(t1.getFirst().getFirst().start()) - st.getEarliestStartTime(t2.getFirst().getFirst().start());
             }
-//            DomainTransitions transitions = new DomainTransitions(planner.reachability, st);
-            OpenGoalTransitionFinder.TransitionSequence seq = getPathToTransition(og);
+        });
+//        System.out.println();
+        for(Timeline og : opengoals) {
+//            System.out.println(Printer.inlineTemporalDatabase(st, og));
+            OpenGoalTransitionFinder.TransitionSequence seq;
+            if(og.hasSinglePersistence()) {
+                seq = getPathToPersistence(og);
+            } else {
+                seq = getPathToTransition(og);
+            }
             PathDTG path = seq.getDTG();
+            if(debugging2) {
+                System.out.println(Printer.inlineTemporalDatabase(st, og));
+                System.out.println(path);
+
+            }
             if(seq.supporter != null) { //TODO handle case with no supporter
                 previousSolutions.get(seq.supporter).add(path);
             } else {
@@ -762,18 +788,16 @@ public class RelaxedPlanExtractor {
                     assert e.ga != null;
                     setActionUsed(e.ga);
                     if(!instantiated.contains(e.act)) {
-                        if(st.mID == breakState && actionInstantiations.get(e.act).size() > 1)
-                            System.out.print("");
                         assert actionInstantiations.get(e.act).contains(e.ga);
                         actionInstantiations.get(e.act).clear();
                         actionInstantiations.get(e.act).add(e.ga);
                         instantiated.add(e.act);
                     } else {
                         assert actionInstantiations.get(e.act).size() == 1;
-                        if(!actionInstantiations.get(e.act).contains(e.ga))
+                        if(debugging2 && !actionInstantiations.get(e.act).contains(e.ga))
                             System.out.println("New value: "+e.ga);
                     }
-                } else if(e.ga != null) {
+                } else if(e.ga != null && debugging2) {
                     System.out.println("   new value from dtg: "+e.ga);
                 }
             }
@@ -835,11 +859,16 @@ public class RelaxedPlanExtractor {
     int breakState = 82;
 
     public int myPerfectHeuristic() {
+//        if(st.depth == 209) {
+//            debugging2 = true;
+//            System.out.println("\n\n"+Printer.temporalDatabaseManager(st));
+//        } else
+//            debugging2 = false;
         try {
             initActionUsage();
             currentCausalReasoner = getCausalModelOfInitialDefinitions();
             actionInstantiations = getInitialPossibleActionsInstantiations();
-            if(st.mID == breakState)
+            if(debugging2 && st.mID == breakState)
                 System.out.println("BREAK");
             List<PathDTG> paths = getPaths();
 
@@ -879,7 +908,7 @@ public class RelaxedPlanExtractor {
 
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
-                    if(st.mID == breakState && actionInstantiations.get(actInst.getKey()).size() > 1)
+                    if(debugging2 && st.mID == breakState && actionInstantiations.get(actInst.getKey()).size() > 1)
                             System.out.print("");
                     instantiated.add(actInst.getKey());
                     GAction ga = selectMostInterestingAction(actInst.getValue());
@@ -916,7 +945,8 @@ public class RelaxedPlanExtractor {
                 if (ga != null && !alreadyUsed.contains(ga)) {
                     // find if we can use the instantiation of an action already in the plan
 
-                    System.out.println(st.mID+"    New action from RPG: "+ga);
+                    if(debugging)
+                        System.out.println(st.mID+"    New action from RPG: "+ga);
 
                     causalPending.addAll(ga.pre);
                     if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
@@ -931,17 +961,23 @@ public class RelaxedPlanExtractor {
                 }
             }
             int total = 0;
+            if(debugging2)
+                System.out.println("State id : "+st.mID);
             for(Map.Entry<GAction, Integer> actionCountEntry : actionCount.entrySet()) {
-                System.out.println(actionCountEntry.getValue() +" "+actionCountEntry.getKey());
+                if(debugging2)
+                    System.out.println(actionCountEntry.getValue() +" "+actionCountEntry.getKey());
                 total += actionCountEntry.getValue();
             }
-            System.out.println(total);
-            System.out.println("not inst: "+(st.getAllActions().size() - instantiated.size()));
+            if(debugging2) {
+                System.out.println(total);
+                System.out.println("not inst: " + (st.getAllActions().size() - instantiated.size()));
+            }
+            return total - st.getNumActions();
         } catch (NoSolutionException e) {
+            if(debugging2)
+                e.printStackTrace();
             return 99999;
         }
-
-        return 0;
     }
 
     private int costOfAction(Action lifted, GAction ga) {

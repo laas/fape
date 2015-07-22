@@ -5,9 +5,11 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import fape.exceptions.NoSolutionException;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
@@ -57,7 +59,7 @@ public class TimelineDTG extends DomainTransitionGraph {
         }
     }
 
-    public TimelineDTG(Timeline tl, State st, APlanner planner, FeasibilityReasoner reas) {
+    public TimelineDTG(Timeline tl, State st, APlanner planner, FeasibilityReasoner reas) throws NoSolutionException {
 
         this.tl = tl;
         this.st = st;
@@ -146,7 +148,9 @@ public class TimelineDTG extends DomainTransitionGraph {
                 }
             }
         }
-        assert !entryPoints.isEmpty();
+        if(entryPoints.isEmpty())
+            // There exist no path
+            throw new NoSolutionException();
     }
 
     @Override
@@ -200,7 +204,7 @@ public class TimelineDTG extends DomainTransitionGraph {
     public Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st) {
         List<DTNode> mergeableNodes = new LinkedList<>();
         for(DTNode cur : transitions.jVertices()) {
-            if(cur.canSupportValue(f, start, end, st))
+            if(!acceptingNodes.contains(cur) && cur.canSupportValue(f, start, end, st))
                 mergeableNodes.add(cur);
         }
         return mergeableNodes;

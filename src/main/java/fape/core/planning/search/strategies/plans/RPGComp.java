@@ -76,7 +76,8 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
         if(useReasoner) {
             RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
 //            int addSteps = rpe.numAdditionalSteps();
-            return rpe.relaxedGroundPlan(st);
+            return rpe.myPerfectHeuristic();
+//            return rpe.relaxedGroundPlan(st);
 //            return addSteps;
         } else {
             RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);

@@ -327,7 +327,7 @@ public abstract class APlanner {
         if(options.usePlanningGraphReachability) {
 //            GroundDTGs dtgs = new GroundDTGs(reachability.getAllActions(st));
 //            dtgs.print();
-            System.out.println("\n--------------------\n");
+//            System.out.println("\n--------------------\n");
             if (!reachability.checkFeasibility(st)) {
                 TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
                 if (options.displaySearch)
@@ -336,10 +336,10 @@ public abstract class APlanner {
             }
         }
 
-        RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(this, st);
+//        RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(this, st);
 //        System.out.println(String.format("old: add-step: %s, num-actions: %s", rpe.numAdditionalSteps(), st.getNumActions()));
-        rpe.relaxedGroundPlan(st);
-        rpe.myPerfectHeuristic();
+//        rpe.relaxedGroundPlan(st);
+//        rpe.myPerfectHeuristic();
 
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 

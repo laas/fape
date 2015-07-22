@@ -18,15 +18,17 @@ public class PathDTG extends DomainTransitionGraph {
     DTNode startNode = null;
     DTNode endNode = null;
     final Timeline supporter;
+    final TPRef endOfPath;
 
     /** if not null, this is an path in a DTG that was extended to get this path */
     public final PathDTG extendedSolution;
 
     int size = 0;
 
-    public PathDTG(Timeline tl, PathDTG extendedPath) {
+    public PathDTG(Timeline tl, PathDTG extendedPath, TPRef endOfPathTimePoint) {
         supporter = tl;
         this.extendedSolution = extendedPath;
+        this.endOfPath = endOfPathTimePoint;
     }
 
     public GStateVariable getStateVariable() {
@@ -64,7 +66,7 @@ public class PathDTG extends DomainTransitionGraph {
         DTNode myCur = startNode;
         DTNode oCur = path.startNode;
         while(oCur != null) {
-            if(!oCur.equals(myCur))
+            if(!oCur.hasSameFluent(myCur))
                 return false;
             if(path.edges.containsKey(oCur)) {
                 DTEdge myEdge = edges.get(myCur);
@@ -139,6 +141,8 @@ public class PathDTG extends DomainTransitionGraph {
         edges.put(src, new DTEdge(src, dst, liftedAct, gAction));
         endNode = dst;
         size++;
+        if(supporter != null && size > supporter.numChanges())
+            assert liftedAct == null;
         assert edges.size() == revEdges.size();
     }
 
@@ -194,12 +198,12 @@ public class PathDTG extends DomainTransitionGraph {
     @Override
     public Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st) {
         List<DTNode> mergeableNodes = new LinkedList<>();
-        for(DTNode cur : edges.keySet()) {
+        if(!st.canBeBefore(end, endOfPath))
+            return mergeableNodes; // TODO might need to consider the last value as it persists
+        for(DTNode cur : revEdges.keySet()) { // all nodes except the first one
             if(cur.canSupportValue(f, start, end, st))
                 mergeableNodes.add(cur);
         }
-        if(endNode.canSupportValue(f, start, end, st))
-            mergeableNodes.add(endNode);
         return mergeableNodes;
     }
 }

@@ -13,6 +13,12 @@ import java.util.*;
 
 public class Utils {
 
+    public static boolean eq(Object o1, Object o2) {
+        if(o1 == null) return o2 == null;
+        else if(o2 == null) return o1 == null;
+        else return o1.equals(o2);
+    }
+
     /**
      * This method tries to find an example of an inconsistent comparison function for flaws.
      * It will exit if a problematic example is found and throw a FAPEException when no example was found.
