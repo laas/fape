@@ -737,7 +737,7 @@ public class RelaxedPlanExtractor {
     }
 
     public List<PathDTG> getPaths() throws NoSolutionException {
-        dtgs = new GroundDTGs(allowedActions);
+        dtgs = new GroundDTGs(allowedActions, st.pb);
         timelineDTGs = new HashMap<>();
         previousSolutions = new HashMap<>();
         previousPaths = new HashMap<>();

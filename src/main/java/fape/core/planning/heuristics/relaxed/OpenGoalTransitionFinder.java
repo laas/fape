@@ -65,8 +65,10 @@ public class OpenGoalTransitionFinder {
         for(DomainTransitionGraph dtg : dtgs.values()) {
             for (Fluent f : fluents) {
                 DomainTransitionGraph.DTNode start = dtg.startNodeForFluent(f);
-                if(start != null)
+                if(start != null) {
+                    assert dtg instanceof GroundDTGs.DTG;
                     startNodes.add(start);
+                }
             }
         }
     }

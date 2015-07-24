@@ -176,11 +176,7 @@ public class TimelineDTG extends DomainTransitionGraph {
 
     @Override
     public DTNode startNodeForFluent(Fluent f) {
-        assert !entryPoints.isEmpty();
-        for(DTNode nloc : entryPoints) {
-            if(nloc.hasFluent(f))
-                return nloc;
-        }
+        // nodes should always start at the DTG level
         return null; // no entry point with identical value
     }
 
@@ -194,7 +190,7 @@ public class TimelineDTG extends DomainTransitionGraph {
         assert n.containerID != id();
         assert !entryPoints.isEmpty();
         for(DTNode nloc : entryPoints) {
-            if(nloc.value.equals(n.value))
+            if(nloc.hasSameFluent(n))
                 return nloc;
         }
         return null; // no entry point with identical value

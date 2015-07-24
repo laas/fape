@@ -170,11 +170,8 @@ public class PathDTG extends DomainTransitionGraph {
 
     @Override
     public DTNode startNodeForFluent(Fluent f) {
-        assert endNode != null;
-        if(endNode.hasFluent(f))
-            return endNode;
-        else
-            return null;
+        // search should always start at the DTG level
+        return null;
     }
 
     @Override

@@ -5,26 +5,15 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.heuristics.relaxed.DomainTransitionGraph;
 import fape.core.planning.states.State;
+import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.TPRef;
 
 import java.util.*;
 
 public class GroundDTGs {
 
-//    public class Edge {
-//        final public Fluent from;
-//        final public Fluent to;
-//        final public GAction act;
-//        public Edge(Fluent from, Fluent to, GAction act) {
-//            this.from = from;
-//            this.to = to;
-//            this.act = act;
-//        }
-//
-//        @Override public String toString() {
-//            return String.format("%s --- %s ---> %s", from, act, to);
-//        }
-//    }
+    private final AnmlProblem pb;
 
     public class DTG extends DomainTransitionGraph {
         final public GStateVariable sv;
@@ -37,10 +26,19 @@ public class GroundDTGs {
 
         public DTG(GStateVariable sv) {
             this.sv = sv;
+
+            // initialize nodes
+            for(String val : pb.instances().instancesOfType(sv.f.valueType())) {
+                InstanceRef instance = pb.instance(val);
+                addFluent(new DTNode(new Fluent(sv, instance, false), this.id()));
+//                addFluent(new DTNode(new Fluent(sv, instance, true), this.id()));
+            }
+            addFluent(new DTNode(null, id()));
         }
 
         private void addFluent(DTNode n) {
             assert revEdges.size() == nextID;
+            assert !ids.containsKey(n);
             if(!ids.containsKey(n)) {
                 revEdges.add(new ArrayList<DTEdge>());
                 unconditionalTransitions.add(new ArrayList<DTEdge>());
@@ -80,9 +78,8 @@ public class GroundDTGs {
 
         private void addEdge(DTNode from, DTNode to, GAction act) {
             assert to != null && from != null;
-            addFluent(to);
+            assert ids.containsKey(to) && ids.containsKey(from) : "A node is missing in the DTG (probably missed during initialization).";
             assert from.value == null || to.value == null || from.value.sv.equals(to.value.sv);
-            addFluent(from);
             if(!hasEdge(from, to, act))
                 revEdges.get(ids.get(to)).add(new DTEdge(from, to, null, act));
         }
@@ -148,7 +145,8 @@ public class GroundDTGs {
 
     Map<GStateVariable, DTG> dtgs = new HashMap<>();
 
-    public GroundDTGs(Collection<GAction> actions) {
+    public GroundDTGs(Collection<GAction> actions, AnmlProblem pb) {
+        this.pb = pb;
         for(GAction ga : actions) {
 
             for(Fluent effect : ga.add) {
