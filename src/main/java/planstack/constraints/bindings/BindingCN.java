@@ -117,6 +117,10 @@ public interface BindingCN<VarRef> {
      */
     public BindingCN<VarRef> DeepCopy();
     public boolean unifiable(VarRef a, VarRef b);
+
+    /** Returns true if (i) there is no previous separation constraint between the two variables
+     * (ii) adding such a constraint would not result in a trivially inconsistent network.
+     */
     public boolean separable(VarRef a, VarRef b);
 
     public boolean unified(VarRef a, VarRef b);

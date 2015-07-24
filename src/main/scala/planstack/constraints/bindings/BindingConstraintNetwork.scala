@@ -219,7 +219,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     isDiff(a, b)
 
   override def separable(a: VarRef, b: VarRef): Boolean =
-    !isDiff(a, b)
+    !isDiff(a, b) && !unified(a, b)
 
   override def addPossibleValue(value: String) {
     assert(!valuesIds.contains(value))
