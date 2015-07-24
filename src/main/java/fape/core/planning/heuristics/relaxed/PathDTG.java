@@ -125,8 +125,8 @@ public class PathDTG extends DomainTransitionGraph {
 
     public void addNextEdge(DTNode from, DTNode to, GAction gAction, Action liftedAct) {
         // create new DTNode (they will link to this PathDTG)
-        DTNode src = new DTNode(from.value, size, from.start, from.end);
-        DTNode dst = new DTNode(to.value, size+1, to.start, to.end);
+        DTNode src = new DTNode(from.value, size, id(), from.start, from.end);
+        DTNode dst = new DTNode(to.value, size+1, id(), to.start, to.end);
 
         assert !revEdges.containsKey(dst);
         if(size == 0) {

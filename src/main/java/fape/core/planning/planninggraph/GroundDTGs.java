@@ -88,7 +88,7 @@ public class GroundDTGs {
         }
 
         public void addEdge(Fluent from, Fluent to, GAction act) {
-            addEdge(new DTNode(from), new DTNode(to), act);
+            addEdge(new DTNode(from, id()), new DTNode(to, id()), act);
         }
 
         @Override public String toString() {

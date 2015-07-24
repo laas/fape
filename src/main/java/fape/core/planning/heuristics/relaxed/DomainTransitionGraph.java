@@ -33,17 +33,19 @@ public abstract class DomainTransitionGraph {
         public final TPRef start;
         public final TPRef end;
 
-        public DTNode(Fluent value) {
+        public DTNode(Fluent value, int containerID) {
             this.value = value;
             this.lvl = 0;
-            this.containerID = id();
+            assert containerID == id();
+            this.containerID = containerID;
             start = null;
             end = null;
         }
-        public DTNode(Fluent value, int lvl, TPRef start, TPRef end) {
+        public DTNode(Fluent value, int lvl, int containerID, TPRef start, TPRef end) {
             this.value = value;
             this.lvl = lvl;
-            containerID = id();
+            this.containerID = containerID;
+            assert containerID == id();
             this.start = start;
             this.end = end;
         }
@@ -118,7 +120,7 @@ public abstract class DomainTransitionGraph {
     public final int id() { return id; }
 
     public DTNode baseNode(Fluent f) {
-        return new DTNode(f, 0, null, null);
+        return new DTNode(f, 0, id(), null, null);
     }
 
     public abstract boolean isAccepting(DTNode n);

@@ -54,7 +54,7 @@ public class TimelineDTG extends DomainTransitionGraph {
             return ret;
         } else {
             assert !nodesByLevel.get(lvl).containsKey(f);
-            nodesByLevel.get(lvl).put(f, new DTNode(f, lvl, start, end));
+            nodesByLevel.get(lvl).put(f, new DTNode(f, lvl, id(), start, end));
             return nodesByLevel.get(lvl).get(f);
         }
     }
