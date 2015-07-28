@@ -11,6 +11,7 @@ import planstack.anml.model.concrete.TPRef;
 
 import java.util.*;
 
+@Deprecated
 public class PathDTG extends DomainTransitionGraph {
 
     Map<DTNode, DTEdge> revEdges = new HashMap<>();
@@ -33,6 +34,30 @@ public class PathDTG extends DomainTransitionGraph {
 
     public GStateVariable getStateVariable() {
         return endNode.value.sv;
+    }
+
+    /** Returns all edges present in this PathDTG and not in the extended DTG.
+     * If this Path does not extend any other path, all edges are returned
+     */
+    public List<DTEdge> additionalEdges() {
+        List<DTEdge> es = new LinkedList<>();
+        int curEdgeNum = 0;
+        DTNode curNode = startNode;
+        // skip all edges of the extended solution
+        if(extendedSolution != null && size <= extendedSolution.size)
+            // size did not grow, return an empty list
+            return es;
+
+        while(extendedSolution != null && curEdgeNum < extendedSolution.size) {
+            curEdgeNum++;
+            curNode = edges.get(curNode).to;
+        }
+        while(curNode != endNode) {
+            es.add(edges.get(curNode));
+            curNode = edges.get(curNode).to;
+        }
+        assert this.size == (extendedSolution == null ? 0 : extendedSolution.size) + es.size();
+        return es;
     }
 
     public boolean isAcceptableSupporterForTransitions() {
@@ -152,13 +177,35 @@ public class PathDTG extends DomainTransitionGraph {
             boolean isFirst = true;
 
             @Override public boolean hasNext() {
-                return isFirst;
+                return isFirst && revEdges.containsKey(n);
             }
 
             @Override public DTEdge next() {
                 if(isFirst) {
                     isFirst = false;
                     return revEdges.get(n);
+                } else {
+                    return null;
+                }
+            }
+
+            @Override public void remove() { throw new UnsupportedOperationException("Not supported yet."); }
+        };
+    }
+
+    @Override
+    public Iterator<DTEdge> outEdges(final DTNode n) {
+        return new Iterator<DTEdge>() {
+            boolean isFirst = true;
+
+            @Override public boolean hasNext() {
+                return isFirst && edges.containsKey(n);
+            }
+
+            @Override public DTEdge next() {
+                if(isFirst) {
+                    isFirst = false;
+                    return edges.get(n);
                 } else {
                     return null;
                 }
@@ -190,6 +237,13 @@ public class PathDTG extends DomainTransitionGraph {
     @Override
     public boolean areEdgesFree() {
         return true;
+    }
+
+    @Override
+    public Collection<DTNode> getAllNodes() {
+        List<DTNode> nodes = new LinkedList<>(edges.keySet());
+        nodes.add(endNode);
+        return nodes;
     }
 
     @Override

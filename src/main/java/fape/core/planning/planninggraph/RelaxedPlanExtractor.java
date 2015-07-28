@@ -2,10 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
-import fape.core.planning.heuristics.relaxed.DomainTransitionGraph;
-import fape.core.planning.heuristics.relaxed.OpenGoalTransitionFinder;
-import fape.core.planning.heuristics.relaxed.PathDTG;
-import fape.core.planning.heuristics.relaxed.TimelineDTG;
+import fape.core.planning.heuristics.relaxed.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -544,7 +541,7 @@ public class RelaxedPlanExtractor {
 
     public static int next = 0;
 
-    public OpenGoalTransitionFinder.TransitionSequence getPathToPersistence(Timeline og) throws NoSolutionException {
+    public PartialPathDTG getPathToPersistence(Timeline og) throws NoSolutionException {
         assert og.hasSinglePersistence();
         OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, false);
@@ -557,9 +554,8 @@ public class RelaxedPlanExtractor {
             if (dtgs.hasDTGFor(sv))
                 pathFinder.addDTG(dtgs.getDTGOf(sv));
             if(previousPaths.containsKey(sv))
-                for(PathDTG dtg : previousPaths.get(sv))
-                    if(dtg.isAcceptableSupporterForTransitions())
-                        pathFinder.addDTG(dtg);
+                for(PartialPathDTG dtg : previousPaths.get(sv))
+                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -603,9 +599,8 @@ public class RelaxedPlanExtractor {
 
         for(Timeline tl : potentialIndirectSupporters) {
             pathFinder.addDTG(timelineDTGs.get(tl));
-            for(PathDTG dtg : previousSolutions.get(tl)) {
-                if(dtg.isAcceptableSupporterForTransitions())
-                    pathFinder.addDTG(dtg);
+            for(PartialPathDTG dtg : previousSolutions.get(tl)) {
+                pathFinder.addDTG(dtg);
             }
         }
         assert og.chain.length == 1;
@@ -619,16 +614,15 @@ public class RelaxedPlanExtractor {
             System.out.println("BREAK HERE");
         }
 
-        OpenGoalTransitionFinder.TransitionSequence seq = pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
+        return pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
             @Override
             public int cost(Action a, GAction ga) {
                 return costOfAction(a, ga);
             }
         });
-        return seq;
     }
 
-    public OpenGoalTransitionFinder.TransitionSequence getPathToTransition(Timeline og) throws NoSolutionException {
+    public PartialPathDTG getPathToTransition(Timeline og) throws NoSolutionException {
         assert !og.hasSinglePersistence();
         OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, false);
@@ -637,12 +631,10 @@ public class RelaxedPlanExtractor {
             possibleStateVariables.add(f.sv);
 
         for(GStateVariable sv : possibleStateVariables) {
-            if (dtgs.hasDTGFor(sv))
-                pathFinder.addDTG(dtgs.getDTGOf(sv));
+            pathFinder.addDTG(dtgs.getDTGOf(sv));
             if(previousPaths.containsKey(sv))
-                for(PathDTG dtg : previousPaths.get(sv))
-                    if(dtg.isAcceptableSupporterForTransitions())
-                        pathFinder.addDTG(dtg);
+                for(PartialPathDTG dtg : previousPaths.get(sv))
+                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -659,8 +651,6 @@ public class RelaxedPlanExtractor {
 
             potentialIndirectSupporters.add(tl);
         }
-
-
 
         // filter to keep only those that can be directly before
         List<Timeline> toRemove = new LinkedList<>();
@@ -688,9 +678,8 @@ public class RelaxedPlanExtractor {
 
         for(Timeline tl : potentialIndirectSupporters) {
             pathFinder.addDTG(timelineDTGs.get(tl));
-            for(PathDTG dtg : previousSolutions.get(tl)) {
-                if(dtg.isAcceptableSupporterForTransitions())
-                    pathFinder.addDTG(dtg);
+            for(PartialPathDTG dtg : previousSolutions.get(tl)) {
+                pathFinder.addDTG(dtg);
             }
         }
 
@@ -704,23 +693,18 @@ public class RelaxedPlanExtractor {
         }
 //        if(st.mID == 12 && og.mID ==16)
 //            System.out.println("BREAK HERE");
-        try {
-            OpenGoalTransitionFinder.TransitionSequence seq = pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
-                @Override
-                public int cost(Action a, GAction ga) {
+        return pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
+            @Override
+            public int cost(Action a, GAction ga) {
                     return costOfAction(a, ga);
                 }
-            });
-            return seq;
-        } catch (NoSolutionException e) {
-            throw e;
-        }
+        });
     }
 
     GroundDTGs dtgs;
     Map<Timeline, TimelineDTG> timelineDTGs;
-    Map<Timeline, List<PathDTG>> previousSolutions;
-    Map<GStateVariable, List<PathDTG>> previousPaths;
+    Map<Timeline, List<PartialPathDTG>> previousSolutions;
+    Map<GStateVariable, List<PartialPathDTG>> previousPaths;
 
     HashSet<Fluent> achievedFluents = new HashSet<>();
 
@@ -736,7 +720,7 @@ public class RelaxedPlanExtractor {
         achievedFluents = new HashSet<>();
     }
 
-    public List<PathDTG> getPaths() throws NoSolutionException {
+    public List<PartialPathDTG> getPaths() throws NoSolutionException {
         dtgs = new GroundDTGs(allowedActions, st.pb);
         timelineDTGs = new HashMap<>();
         previousSolutions = new HashMap<>();
@@ -749,7 +733,7 @@ public class RelaxedPlanExtractor {
         for(Timeline tl : st.getTimelines()) {
             if(!tl.hasSinglePersistence()) {
                 timelineDTGs.put(tl, new TimelineDTG(tl, st, planner, planner.reachability));
-                previousSolutions.put(tl, new LinkedList<PathDTG>());
+                previousSolutions.put(tl, new LinkedList<PartialPathDTG>());
             }
         }
 
@@ -763,44 +747,62 @@ public class RelaxedPlanExtractor {
 //        System.out.println();
         for(Timeline og : opengoals) {
 //            System.out.println(Printer.inlineTemporalDatabase(st, og));
-            OpenGoalTransitionFinder.TransitionSequence seq;
+            PartialPathDTG path;
             if(og.hasSinglePersistence()) {
-                seq = getPathToPersistence(og);
+                path = getPathToPersistence(og);
             } else {
-                seq = getPathToTransition(og);
+                path = getPathToTransition(og);
             }
-            PathDTG path = seq.getDTG();
             if(debugging2) {
                 System.out.println(Printer.inlineTemporalDatabase(st, og));
                 System.out.println(path);
 
             }
-            if(seq.supporter != null) { //TODO handle case with no supporter
-                previousSolutions.get(seq.supporter).add(path);
+            if(path.extendedTimeline() != null) { //TODO handle case with no supporter
+                previousSolutions.get(path.extendedTimeline()).add(path);
             } else {
                 if(!previousPaths.containsKey(path.getStateVariable()))
-                    previousPaths.put(path.getStateVariable(), new LinkedList<PathDTG>());
+                    previousPaths.put(path.getStateVariable(), new LinkedList<>());
                 previousPaths.get(path.getStateVariable()).add(path);
             }
 
-            for(DomainTransitionGraph.DTEdge e : path.edges()) {
-                if(e.act != null) {
-                    assert e.ga != null;
-                    setActionUsed(e.ga);
-                    if(!instantiated.contains(e.act)) {
-                        assert actionInstantiations.get(e.act).contains(e.ga);
-                        actionInstantiations.get(e.act).clear();
-                        actionInstantiations.get(e.act).add(e.ga);
-                        instantiated.add(e.act);
-                    } else {
-                        assert actionInstantiations.get(e.act).size() == 1;
-                        if(debugging2 && !actionInstantiations.get(e.act).contains(e.ga))
-                            System.out.println("New value: "+e.ga);
+            for(DomainTransitionGraph.DTEdge addedEdge : path.additionalEdges()) {
+                if(addedEdge.ga != null) {
+                    setActionUsed(addedEdge.ga);
+                    if(addedEdge.act == null)// not an instantiation
+                        counter.addActionOccurrence(addedEdge.ga, path.getStateVariable());
+                    else {// instantiation
+                        counter.addActionInstantiation(addedEdge.act, addedEdge.ga);
+                        if(!instantiated.contains(addedEdge.act)) {
+                            assert actionInstantiations.get(addedEdge.act).contains(addedEdge.ga);
+                            actionInstantiations.get(addedEdge.act).clear();
+                            actionInstantiations.get(addedEdge.act).add(addedEdge.ga);
+                            instantiated.add(addedEdge.act);
+                        } else {
+                            assert actionInstantiations.get(addedEdge.act).size() == 1;
+                        }
                     }
-                } else if(e.ga != null && debugging2) {
-                    System.out.println("   new value from dtg: "+e.ga);
                 }
             }
+
+//            for(DomainTransitionGraph.DTEdge e : path.edges()) { // TODO: redundant with previous block
+//                if(e.act != null) {
+//                    assert e.ga != null;
+//                    setActionUsed(e.ga);
+//                    if(!instantiated.contains(e.act)) {
+//                        assert actionInstantiations.get(e.act).contains(e.ga);
+//                        actionInstantiations.get(e.act).clear();
+//                        actionInstantiations.get(e.act).add(e.ga);
+//                        instantiated.add(e.act);
+//                    } else {
+//                        assert actionInstantiations.get(e.act).size() == 1;
+//                        if(debugging2 && !actionInstantiations.get(e.act).contains(e.ga))
+//                            System.out.println("New value: "+e.ga);
+//                    }
+//                } else if(e.ga != null && debugging2) {
+//                    System.out.println("   new value from dtg: "+e.ga);
+//                }
+//            }
 
 //            if(seq.supporter != null && seq.hasGraphChange()) {
 //                System.out.println(Printer.inlineTemporalDatabase(st, seq.supporter));
@@ -813,31 +815,31 @@ public class RelaxedPlanExtractor {
         }
 
         // cleaning up redundant paths
-        for(Timeline tl : previousSolutions.keySet()) {
-            Set<PathDTG> toRemove = new HashSet<>();
-            for(PathDTG p1 : previousSolutions.get(tl)) {
-                for(PathDTG p2 : previousSolutions.get(tl)) {
-                    if(p1 == p2)
-                        continue;
-                    if(p2.contains(p1) && !toRemove.contains(p2))
-                        toRemove.add(p1);
-                }
-            }
-            previousSolutions.get(tl).removeAll(toRemove);
-        }
+//        for(Timeline tl : previousSolutions.keySet()) {
+//            Set<PathDTG> toRemove = new HashSet<>();
+//            for(PathDTG p1 : previousSolutions.get(tl)) {
+//                for(PathDTG p2 : previousSolutions.get(tl)) {
+//                    if(p1 == p2)
+//                        continue;
+//                    if(p2.contains(p1) && !toRemove.contains(p2))
+//                        toRemove.add(p1);
+//                }
+//            }
+//            previousSolutions.get(tl).removeAll(toRemove);
+//        }
 
-        for(GStateVariable sv : previousPaths.keySet()) {
-            Set<PathDTG> toRemove = new HashSet<>();
-            for(PathDTG p1 : previousPaths.get(sv)) {
-                for(PathDTG p2 : previousPaths.get(sv)) {
-                    if(p1 == p2)
-                        continue;
-                    if(p2.contains(p1) && !toRemove.contains(p2))
-                        toRemove.add(p1);
-                }
-            }
-            previousPaths.get(sv).removeAll(toRemove);
-        }
+//        for(GStateVariable sv : previousPaths.keySet()) {
+//            Set<PathDTG> toRemove = new HashSet<>();
+//            for(PathDTG p1 : previousPaths.get(sv)) {
+//                for(PathDTG p2 : previousPaths.get(sv)) {
+//                    if(p1 == p2)
+//                        continue;
+//                    if(p2.contains(p1) && !toRemove.contains(p2))
+//                        toRemove.add(p1);
+//                }
+//            }
+//            previousPaths.get(sv).removeAll(toRemove);
+//        }
 
 //        if(st.mID > 25) {
 //            System.out.println("BREAK.");
@@ -847,7 +849,7 @@ public class RelaxedPlanExtractor {
 //                    System.out.println("  "+path+(path.extendedSolution != null ? ("      ext:"+path.extendedSolution) : ""));
 //            }
 //        }
-        List<PathDTG> allPaths = new LinkedList<>();
+        List<PartialPathDTG> allPaths = new LinkedList<>();
         for(Timeline tl : previousSolutions.keySet())
             allPaths.addAll(previousSolutions.get(tl));
         for(GStateVariable sv : previousPaths.keySet())
@@ -855,72 +857,70 @@ public class RelaxedPlanExtractor {
         return allPaths;
     }
     Set<Action> instantiated = new HashSet<>();
+    ActionUsageTracker counter = null;
 
     int breakState = 82;
 
     public int myPerfectHeuristic() {
-//        if(st.depth == 209) {
-//            debugging2 = true;
-//            System.out.println("\n\n"+Printer.temporalDatabaseManager(st));
-//        } else
-//            debugging2 = false;
+        counter = new ActionUsageTracker();
         try {
             initActionUsage();
             currentCausalReasoner = getCausalModelOfInitialDefinitions();
             actionInstantiations = getInitialPossibleActionsInstantiations();
             if(debugging2 && st.mID == breakState)
                 System.out.println("BREAK");
-            List<PathDTG> paths = getPaths();
+            List<PartialPathDTG> paths = getPaths();
 
+            Set<GAction> allGroundActions = new HashSet<>(counter.getAllUsedAction());
+//            for(PartialPathDTG path : paths) {
+//                for(Pair<Action, GAction> actBinding : path.actionBindings()) {
+//                    if(!instantiated.contains(actBinding.value1)) {
+//                        instantiated.add(actBinding.value1);
+//                        assert actionInstantiations.get(actBinding.value1).contains(actBinding.value2);
+//                        actionInstantiations.get(actBinding.value1).clear();
+//                        actionInstantiations.get(actBinding.value1).add(actBinding.value2);
+//                    }
+//                }
+//                allGroundActions.addAll(path.allGroundActions());
+//            }
+            for(Action a : counter.instantiations.keySet())
+                assert instantiated.contains(a) && actionInstantiations.get(a).size() == 1;
 
-            Set<GAction> allGroundActions = new HashSet<>();
-            for(PathDTG path : paths) {
-                for(Pair<Action, GAction> actBinding : path.actionBindings()) {
-                    if(!instantiated.contains(actBinding.value1)) {
-                        instantiated.add(actBinding.value1);
-                        assert actionInstantiations.get(actBinding.value1).contains(actBinding.value2);
-                        actionInstantiations.get(actBinding.value1).clear();
-                        actionInstantiations.get(actBinding.value1).add(actBinding.value2);
-                    }
-                }
-                allGroundActions.addAll(path.allGroundActions());
-            }
-            Map<GAction, Map<GStateVariable, Integer>> actionCountPetSV = new HashMap<>();
-            for(PathDTG path : paths) {
-                GStateVariable sv = path.getStateVariable();
-                for(GAction ga : path.allGroundActions()) {
-                    if(!actionCountPetSV.containsKey(ga))
-                        actionCountPetSV.put(ga, new HashMap<GStateVariable, Integer>());
-                    if(!actionCountPetSV.get(ga).containsKey(sv))
-                    actionCountPetSV.get(ga).put(sv, 0);
-                    actionCountPetSV.get(ga).put(sv, 1+ actionCountPetSV.get(ga).get(sv));
-                }
-            }
-            Map<GAction,Integer> actionCount = new HashMap<>();
-            for(Map.Entry<GAction,Map<GStateVariable,Integer>> actionMapEntry : actionCountPetSV.entrySet()) {
-                int maxCount = 0;
-                for(Integer cnt : actionMapEntry.getValue().values()) {
-                    if(cnt > maxCount)
-                        maxCount = cnt;
-                }
-                actionCount.put(actionMapEntry.getKey(), maxCount);
-            }
+//            Map<GAction, Map<GStateVariable, Integer>> actionCountPetSV = new HashMap<>();
+//            for(PathDTG path : paths) {
+//                GStateVariable sv = path.getStateVariable();
+//                for(GAction ga : path.allGroundActions()) {
+//                    if(!actionCountPetSV.containsKey(ga))
+//                        actionCountPetSV.put(ga, new HashMap<GStateVariable, Integer>());
+//                    if(!actionCountPetSV.get(ga).containsKey(sv))
+//                        actionCountPetSV.get(ga).put(sv, 0);
+//                    actionCountPetSV.get(ga).put(sv, 1+ actionCountPetSV.get(ga).get(sv));
+//                }
+//            }
+//            Map<GAction,Integer> actionCount = new HashMap<>();
+//            for(Map.Entry<GAction,Map<GStateVariable,Integer>> actionMapEntry : actionCountPetSV.entrySet()) {
+//                int maxCount = actionMapEntry.getValue().values().stream().mapToInt(i -> i).max().orElse(0);
+////                int maxCount = 0;
+////                for(Integer cnt : actionMapEntry.getValue().values()) {
+////                    if(cnt > maxCount)
+////                        maxCount = cnt;
+////                }
+//                actionCount.put(actionMapEntry.getKey(), maxCount);
+//                System.out.println(actionMapEntry.getKey()+" "+actionCount.get(actionMapEntry.getKey())+" "+counter.totalOccurrences(actionMapEntry.getKey()));
+//                if(actionCount.get(actionMapEntry.getKey()) != counter.totalOccurrences(actionMapEntry.getKey()))
+//                    System.out.println(actionMapEntry.getKey());
+//            }
+//            System.out.println();
 
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
-                    if(debugging2 && st.mID == breakState && actionInstantiations.get(actInst.getKey()).size() > 1)
-                            System.out.print("");
                     instantiated.add(actInst.getKey());
                     GAction ga = selectMostInterestingAction(actInst.getValue());
                     setActionUsed(ga);
                     actInst.getValue().clear();
                     actInst.getValue().add(ga);
-                    if(!actionCount.containsKey(ga)) {
-                        actionCount.put(ga, 1);
-                        allGroundActions.add(ga);
-                    } else {
-                        actionCount.put(ga, actionCount.get(ga) + 1);
-                    }
+                    counter.addActionInstantiation(actInst.getKey(), ga);
+                    allGroundActions.add(ga);
                 }
             }
             for(GAction ga : allGroundActions)
@@ -956,17 +956,15 @@ public class RelaxedPlanExtractor {
 //                        System.out.println("2"+ga+" "+derivPending);
                     decompPending.addAll(decompReas.conditionsOf(ga));
                     alreadyUsed.add(ga);
-                    assert !actionCount.containsKey(ga);
-                    actionCount.put(ga, 1);
+                    assert counter.totalOccurrences(ga) == 0; //!actionCount.containsKey(ga);
+                    counter.addIndependentUsage(ga);
                 }
             }
             int total = 0;
             if(debugging2)
                 System.out.println("State id : "+st.mID);
-            for(Map.Entry<GAction, Integer> actionCountEntry : actionCount.entrySet()) {
-                if(debugging2)
-                    System.out.println(actionCountEntry.getValue() +" "+actionCountEntry.getKey());
-                total += actionCountEntry.getValue();
+            for(GAction ga : counter.getAllUsedAction()) {
+                total += counter.totalOccurrences(ga);
             }
             if(debugging2) {
                 System.out.println(total);

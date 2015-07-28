@@ -109,6 +109,11 @@ public class GroundDTGs {
         }
 
         @Override
+        public Iterator<DTEdge> outEdges(DTNode n) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
         public DTNode startNodeForFluent(Fluent f) {
             for(DTNode n : ids.keySet()) {
                 if(n.hasFluent(f))
@@ -130,6 +135,11 @@ public class GroundDTGs {
         @Override
         public boolean areEdgesFree() {
             return false;
+        }
+
+        @Override
+        public Collection<DTNode> getAllNodes() {
+            return ids.keySet();
         }
 
         @Override
@@ -172,6 +182,11 @@ public class GroundDTGs {
     }
 
     public DTG getDTGOf(GStateVariable sv) {
+        if(!dtgs.containsKey(sv)) {
+            // the dtg was not initialized because no actions have an effect on it
+            DTG newDTG = new DTG(sv);
+            dtgs.put(sv, newDTG);
+        }
         return dtgs.get(sv);
     }
 

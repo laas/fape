@@ -92,7 +92,7 @@ public abstract class DomainTransitionGraph {
         }
     }
 
-    public class DTEdge {
+    public static class DTEdge {
         public final DTNode from;
         public final DTNode to;
         public final Action act;
@@ -114,6 +114,7 @@ public abstract class DomainTransitionGraph {
     }
 
     public abstract Iterator<DTEdge> inEdges(DTNode n);
+    public abstract Iterator<DTEdge> outEdges(DTNode n);
 
     public abstract DTNode startNodeForFluent(Fluent f);
 
@@ -131,4 +132,6 @@ public abstract class DomainTransitionGraph {
 
     /** Returns true if the cost of the edges should not be counted (already accounted for another local solution) */
     public abstract boolean areEdgesFree();
+
+    public abstract Collection<DTNode> getAllNodes();
 }

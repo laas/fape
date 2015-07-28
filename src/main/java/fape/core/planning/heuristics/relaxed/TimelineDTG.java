@@ -157,20 +157,19 @@ public class TimelineDTG extends DomainTransitionGraph {
     public Iterator<DTEdge> inEdges(DTNode n) {
         final Iterator<LabeledEdge<DTNode,DTEdge>> it = JavaConversions.asJavaIterator(transitions.inEdges(n).iterator());
         return new Iterator<DTEdge>() {
-            @Override
-            public boolean hasNext() {
-                return it.hasNext();
-            }
+            @Override public boolean hasNext() { return it.hasNext(); }
+            @Override public DTEdge next() { return it.next().l(); }
+            @Override public void remove() { throw new UnsupportedOperationException("Not supported yet."); }
+        };
+    }
 
-            @Override
-            public DTEdge next() {
-                return it.next().l();
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
+    @Override
+    public Iterator<DTEdge> outEdges(DTNode n) {
+        final Iterator<LabeledEdge<DTNode,DTEdge>> it = JavaConversions.asJavaIterator(transitions.outEdges(n).iterator());
+        return new Iterator<DTEdge>() {
+            @Override public boolean hasNext() { return it.hasNext(); }
+            @Override public DTEdge next() { return it.next().l(); }
+            @Override public void remove() { throw new UnsupportedOperationException("Not supported yet."); }
         };
     }
 
@@ -209,5 +208,10 @@ public class TimelineDTG extends DomainTransitionGraph {
     @Override
     public boolean areEdgesFree() {
         return false;
+    }
+
+    @Override
+    public Collection<DTNode> getAllNodes() {
+        return transitions.jVertices();
     }
 }
