@@ -39,16 +39,16 @@ public class RelaxedPlanExtractor {
     public RelaxedPlanExtractor(APlanner planner, State st) {
         this.planner = planner;
         this.st = st;
-        allowedActions = new HashSet<>(planner.reachability.getAllActions(st));
+        allowedActions = new HashSet<>(planner.preprocessor.getFeasibilityReasoner().getAllActions(st));
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
-            for(GAction ga : planner.reachability.getGroundActions(a, st))
+            for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
                 inPlanActions.add(ga);
         }
         decompReas = decomposabilityReasoner(st);
         derivReaas = derivabilityReasoner(st);
         baseCausalReas = new HLeveledReasoner<>();
-        for (GAction ga : planner.reachability.getAllActions(st)) {
+        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             baseCausalReas.addClause(ga.pre, ga.add, ga);
         }
     }
@@ -57,7 +57,7 @@ public class RelaxedPlanExtractor {
     /** initial "facts" are actions with no subtasks */
     public HLeveledReasoner<GAction, GTaskCond> decomposabilityReasoner(State st) {
         HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>();
-        for (GAction ga : planner.reachability.getAllActions(st)) {
+        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             GTaskCond[] effect = new GTaskCond[1];
             effect[0] = ga.task;
             baseHLR.addClause(ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), effect, ga);
@@ -76,7 +76,7 @@ public class RelaxedPlanExtractor {
     /** initial facts opened tasks and initial clauses are non-motivated actions*/
     public HLeveledReasoner<GAction, GTaskCond> derivabilityReasoner(State st) {
         HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>();
-        for (GAction ga : planner.reachability.getAllActions(st)) {
+        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             if(ga.abs.motivated()) {
                 GTaskCond[] condition = new GTaskCond[1];
                 condition[0] = ga.task;
@@ -87,7 +87,7 @@ public class RelaxedPlanExtractor {
         }
         // all tasks (for complete relaxed plan)
         for(ActionCondition liftedTask : st.taskNet.getAllTasks()) {
-            for(GTaskCond task : planner.reachability.getGroundedTasks(liftedTask, st))
+            for(GTaskCond task : planner.preprocessor.getFeasibilityReasoner().getGroundedTasks(liftedTask, st))
                 baseHLR.set(task);
         }
 //        for(GTaskCond tc : planner.reachability.getDerivableTasks(st)) {
@@ -225,10 +225,11 @@ public class RelaxedPlanExtractor {
         return best;
     }
 
+    /*
     public int numAdditionalSteps() {
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
-            for(GAction ga : planner.reachability.getGroundActions(a, st))
+            for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
                 inPlanActions.add(ga);
         }
         alreadyUsed = new HashSet<>();
@@ -322,7 +323,7 @@ public class RelaxedPlanExtractor {
         } catch (NoSolutionException e) {
             return 9999999;
         }
-    }
+    }*/
 
     public GAction selectMostInterestingActionForRelaxedPlan(Collection<GAction> actions, Collection<Action> possiblyBfore,
                                                              Map<Action,Set<GAction>> actionInstantiations) throws NoSolutionException {
@@ -366,7 +367,7 @@ public class RelaxedPlanExtractor {
         Map<Action, Set<GAction>> instantiations = new HashMap<>();
 
         for (Action a : st.getAllActions()) {
-            instantiations.put(a, planner.reachability.getGroundActions(a, st));
+            instantiations.put(a, planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st));
         }
         return instantiations;
     }
@@ -738,7 +739,7 @@ public class RelaxedPlanExtractor {
 
         for(Timeline tl : st.getTimelines()) {
             if(!tl.hasSinglePersistence()) {
-                timelineDTGs.put(tl, new TimelineDTG(tl, st, planner, planner.reachability));
+                timelineDTGs.put(tl, new TimelineDTG(tl, st, planner));
                 previousSolutions.put(tl, new LinkedList<PartialPathDTG>());
             }
         }

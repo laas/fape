@@ -59,12 +59,12 @@ public class TimelineDTG extends DomainTransitionGraph {
         }
     }
 
-    public TimelineDTG(Timeline tl, State st, APlanner planner, FeasibilityReasoner reas) throws NoSolutionException {
+    public TimelineDTG(Timeline tl, State st, APlanner planner) throws NoSolutionException {
 
         this.tl = tl;
         this.st = st;
         this.planner = planner;
-        this.reas = reas;
+        this.reas = planner.preprocessor.getFeasibilityReasoner();
 
         for(int i=0 ; i<tl.numChanges() ; i++) {
             ChainComponent cc = tl.getChangeNumber(i);

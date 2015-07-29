@@ -2,6 +2,7 @@ package fape.core.planning.planner;
 
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
+import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.RelaxedPlanExtractor;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
@@ -44,12 +45,10 @@ public abstract class APlanner {
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(initialState);
-
+        preprocessor = new Preprocessor(this, initialState);
         if(options.usePlanningGraphReachability) {
-            reachability = new FeasibilityReasoner(this, initialState);
-            initialState.pgr = reachability;
-        } else
-            reachability = null;
+            initialState.pgr = preprocessor.getFeasibilityReasoner();
+        }
 
         if(options.displaySearch) {
             searchView = new SearchView(this);
@@ -66,14 +65,11 @@ public abstract class APlanner {
         this.queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(new State(pb, controllability));
 
-        if(options.usePlanningGraphReachability)
-            reachability = new FeasibilityReasoner(this, queue.peek());//new PlanningGraphReachability(this, queue.peek());
-        else
-            reachability = null;
+        this.preprocessor = new Preprocessor(this, queue.peek());
     }
 
     public final PlanningOptions options;
-    public final FeasibilityReasoner reachability;
+    public final Preprocessor preprocessor;
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;
@@ -325,21 +321,13 @@ public abstract class APlanner {
         expandedStates++;
 
         if(options.usePlanningGraphReachability) {
-//            GroundDTGs dtgs = new GroundDTGs(reachability.getAllActions(st));
-//            dtgs.print();
-//            System.out.println("\n--------------------\n");
-            if (!reachability.checkFeasibility(st)) {
+            if (!preprocessor.getFeasibilityReasoner().checkFeasibility(st)) {
                 TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
                 if (options.displaySearch)
                     searchView.setDeadEnd(st);
                 return children;
             }
         }
-
-//        RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(this, st);
-//        System.out.println(String.format("old: add-step: %s, num-actions: %s", rpe.numAdditionalSteps(), st.getNumActions()));
-//        rpe.relaxedGroundPlan(st);
-//        rpe.myPerfectHeuristic();
 
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 

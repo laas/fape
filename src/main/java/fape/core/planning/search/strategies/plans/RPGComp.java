@@ -71,60 +71,9 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     }
 
     public int numAdditionalSteps(State st) {
-        boolean useReasoner = true;
-
-        if(useReasoner) {
-            RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
-//            int addSteps = rpe.numAdditionalSteps();
-            return rpe.myPerfectHeuristic();
-//            return rpe.relaxedGroundPlan(st);
-//            return addSteps;
-        } else {
-            RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
-//            int addSteps = rpe.numAdditionalSteps();
-            return rpe.numAdditionalSteps();
-//            return numAdditionalSteps(st);
-        }
+        RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
+        return rpe.myPerfectHeuristic();
     }
-
-    public int numAdditionalStepsWithPG(State st) {
-        if(gpb == null || gpb.liftedPb != st.pb) {
-            if(planner.reachability != null) {
-                assert planner.reachability.base.liftedPb == st.pb;
-                gpb = planner.reachability.base;
-            } else
-                gpb = new GroundProblem(st.pb);
-        }
-
-        List<OpenGoal> openGoals = new LinkedList<>();
-        for(Timeline tl : st.tdb.getConsumers())
-            openGoals.add(new OpenGoal(tl, st.getEarliestStartTime(tl.getConsumeTimePoint())));
-
-        Collections.sort(openGoals);
-
-        Set<GAction> relaxedPlan = new HashSet<>();
-        for(OpenGoal og : openGoals) {
-            Timeline tl = og.tl;
-            DisjunctiveFluent df = new DisjunctiveFluent(DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true));
-            GroundProblem pb = new GroundProblem(gpb, st, tl); // problem until the open goal tl
-            RelaxedPlanningGraph rpg;
-            if(planner.options.usePlanningGraphReachability)
-                rpg = new RelaxedPlanningGraph(pb, planner.reachability.getAllActions(st));
-            else
-                rpg = new RelaxedPlanningGraph(pb);
-            rpg.buildUntil(df);
-            relaxedPlan = rpg.buildRelaxedPlan(df, relaxedPlan);
-            if(relaxedPlan == null)
-                break;
-        }
-
-        if(relaxedPlan == null) {
-            return 9999999;
-        }
-
-        return relaxedPlan.size();
-    }
-
 
     @Override
     public int compare(State state, State t1) {
