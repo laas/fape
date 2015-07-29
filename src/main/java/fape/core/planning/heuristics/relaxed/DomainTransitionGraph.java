@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.states.State;
 import fape.util.Utils;
 import planstack.anml.model.concrete.Action;
@@ -87,8 +88,8 @@ public abstract class DomainTransitionGraph {
 
         @Override public String toString() {
             String base = isAccepting(this) ? "(acc) " : "";
-            if(value != null) return base+value.toString()+" "+lvl;
-            else return base+"null "+lvl;
+            if(value != null) return "("+containerID+") "+base+value.toString()+" "+lvl;
+            else return "("+containerID+") "+base+"null "+lvl;
         }
     }
 
@@ -104,6 +105,10 @@ public abstract class DomainTransitionGraph {
             this.ga = ga;
             this.from = from;
             this.to = to;
+        }
+
+        public GStateVariable sv() {
+            return to.value.sv;
         }
         @Override public String toString() {
             return from +" "+ga+"  "+to;
@@ -130,8 +135,8 @@ public abstract class DomainTransitionGraph {
 
     public abstract Collection<DTNode> unifiableNodes(Fluent f, TPRef start, TPRef end, State st);
 
-    /** Returns true if the cost of the edges should not be counted (already accounted for another local solution) */
-    public abstract boolean areEdgesFree();
+    /** Returns true if the cost of this edge should not be counted (already accounted for another local solution) */
+    public abstract boolean isFree(DTEdge e);
 
     public abstract Collection<DTNode> getAllNodes();
 }

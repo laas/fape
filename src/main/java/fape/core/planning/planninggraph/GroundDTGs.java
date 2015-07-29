@@ -133,11 +133,6 @@ public class GroundDTGs {
         }
 
         @Override
-        public boolean areEdgesFree() {
-            return false;
-        }
-
-        @Override
         public Collection<DTNode> getAllNodes() {
             return ids.keySet();
         }
@@ -150,6 +145,11 @@ public class GroundDTGs {
                     mergeableNodes.add(cur);
             }
             return mergeableNodes;
+        }
+
+        @Override
+        public boolean isFree(DTEdge e) {
+            return false;
         }
     }
 

@@ -206,9 +206,7 @@ public class TimelineDTG extends DomainTransitionGraph {
     }
 
     @Override
-    public boolean areEdgesFree() {
-        return false;
-    }
+    public boolean isFree(DTEdge e) { return false; }
 
     @Override
     public Collection<DTNode> getAllNodes() {

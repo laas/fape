@@ -1,41 +1,32 @@
 package fape.core.planning.heuristics.relaxed;
 
-import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
-import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
-import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.NoSolutionException;
 import fape.util.Utils;
-import planstack.anml.model.LStatementRef;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.statements.Assignment;
-import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.LabeledEdge;
 import planstack.graph.core.MultiLabeledDigraph;
 import scala.collection.JavaConversions;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PartialPathDTG extends DomainTransitionGraph {
 
     public DTNode acceptingNode;
     public final Set<DTNode> entryPoints = new HashSet<>();
     public MultiLabeledDigraph<DTNode,DTEdge> transitions = GraphFactory.getMultiLabeledDigraph();
-    public final List<DTEdge> startPath;
-    public final DomainTransitionGraph extendedDTG;
-//    public final Timeline tl;
-//    public final State st;
-//    public final APlanner planner;
-//    public final FeasibilityReasoner reas;
+
+    /** A compulsory path that constitute the first levels of this DTG. */
+    public final List<DTEdge> startPath = new LinkedList<>();
+
+    /** The DTG that this partial path dtg was extracted from. The start path is in fact a path in this DTG */
+    public final DomainTransitionGraph baseDTG;
 
     Map<Integer, Map<Fluent, DTNode>> nodesByLevel = new HashMap<>();
 
@@ -52,22 +43,25 @@ public class PartialPathDTG extends DomainTransitionGraph {
 
     public void addEdge(DTEdge e) {
         assert transitions.contains(e.from);
+        assert e.from.containerID == id && e.to.containerID == id;
         if(!transitions.contains(e.to))
             transitions.addVertex(e.to);
+        transitions.addEdge(e.from, e.to, e);
     }
 
-    public PartialPathDTG(Collection<DTEdge> initialPath, DomainTransitionGraph extendedDTG) throws NoSolutionException {
+    public PartialPathDTG(List<DTEdge> initialPath, DomainTransitionGraph baseDTG) throws NoSolutionException {
         assert initialPath.size() > 0;
-        startPath = new LinkedList<>(initialPath);
-        if(extendedDTG instanceof GroundDTGs.DTG)
-            extendedDTG = null;
-        this.extendedDTG = extendedDTG;
+
+        if(baseDTG instanceof GroundDTGs.DTG)
+            baseDTG = null;
+        this.baseDTG = baseDTG;
 
         int lvl=1;
 
         // part of the graph matching the initial path
         DTNode lastOfPath = null;
-        for(DTEdge e : initialPath) {
+        for(int i=0 ; i<initialPath.size() ; i++) {
+            DTEdge e = initialPath.get(i);
             if(lastOfPath == null) { // first edge
                 transitions.addVertex(convert(e.from, lvl));
                 acceptingNode = convert(e.from, lvl);
@@ -75,49 +69,86 @@ public class PartialPathDTG extends DomainTransitionGraph {
             if(e.from.containerID != e.to.containerID) {
                 assert e.ga == null && e.act == null;
                 assert e.from.hasSameFluent(e.to);
+                assert baseDTG == null || e.from.containerID == baseDTG.id();
             } else {
-                addEdge(convert(e, lvl));
+                DTEdge newEdge = convert(e, lvl);
+                addEdge(newEdge);
+                startPath.add(newEdge);
                 lastOfPath = e.to;
                 lvl++;
             }
         }
         assert lastOfPath != null;
 
-        // TODO : deal with transition edges from one DTG to another (remove them !)
-
         // part of the graph matching the end of the timeline
-        if(extendedDTG != null && lastOfPath.containerID == extendedDTG.id()) {
+        if(baseDTG != null && lastOfPath.containerID == baseDTG.id()) {
             Set<DTNode> nodesOfCurrentLevel = new HashSet<>();
-            nodesOfCurrentLevel.add(lastOfPath);
-            while(nodesOfCurrentLevel.isEmpty()) {
-                Set<DTNode> nodesOfNextLevel = new HashSet<>();
+            Set<DTNode> nodesOfNextLevel = new HashSet<>();
+            nodesOfNextLevel.add(lastOfPath);
+            do {
+                nodesOfCurrentLevel = nodesOfNextLevel;
+                nodesOfNextLevel = new HashSet<>();
                 for(DTNode cur : nodesOfCurrentLevel) {
-                    Iterator<DTEdge> it = extendedDTG.outEdges(cur);
+                    Iterator<DTEdge> it = baseDTG.outEdges(cur);
                     while(it.hasNext()) {
-                        addEdge(convert(it.next(), lvl));
+                        DTEdge e = it.next();
+                        nodesOfNextLevel.add(e.to);
+                        addEdge(convert(e, lvl));
                     }
                 }
-                nodesOfCurrentLevel = nodesOfNextLevel;
                 lvl++;
-            }
-            // nodes of the last level are the entry points
-            entryPoints.addAll(nodesOfCurrentLevel);
+            } while(!nodesOfNextLevel.isEmpty());
+            assert !nodesOfCurrentLevel.isEmpty();
+            // nodes of the last level are the entry points of the DTG
+            final int l = lvl-1;
+            entryPoints.addAll(nodesOfCurrentLevel.stream().map(n -> convert(n, l)).collect(Collectors.toList()));
         } else {
+            assert extendedTimeline() == null || startPath.size() >= extendedTimeline().numChanges() : //TODO: readd
+                    "Does not goes through the whole timeline: "+startPath.size()+" != "+extendedTimeline().numChanges();
             // last node of the path is the last one. make it an entry point
-            entryPoints.add(lastOfPath);
+            entryPoints.add(convert(lastOfPath, lvl));
         }
 
         assert !startPath.isEmpty();
         assert acceptingNode != null;
-        if(extendedDTG != null) {
-            assert isExtensionOf(extendedDTG);
-            extendedDTG.hasBeenExtended = true;
+        for(DTNode n : entryPoints)
+            assert n.containerID == id();
+        if(baseDTG != null) {
+            if(isExtensionOf(baseDTG)) {
+                baseDTG.hasBeenExtended = true;
+            } else {
+                assert baseDTG instanceof PartialPathDTG && isSubPathOf((PartialPathDTG) baseDTG);
+                this.hasBeenExtended = true;
+            }
+
         }
+    }
+
+    /**
+     * Returns true if the start path is a subpath the  one given a parameter.
+     */
+    public boolean isSubPathOf(PartialPathDTG ppd) {
+        if(startPath.size() > ppd.startPath.size())
+            return false;
+
+        for(int i=0 ; i<startPath.size() ; i++) {
+            DTEdge e1 = startPath.get(i);
+            DTEdge e2 = ppd.startPath.get(i);
+            if(!e1.from.hasSameFluent(e2.from))
+                return false;
+            if(!e1.to.hasSameFluent(e2.to))
+                return false;
+            if(!Utils.eq(e1.act, e2.act))
+                return false;
+            if(!Utils.eq(e1.ga, e2.ga))
+                return false;
+        }
+        return true;
     }
 
     public boolean isExtensionOf(DomainTransitionGraph dtg) {
         assert dtg != null;
-        if(!Utils.eq(dtg, extendedDTG))
+        if(!Utils.eq(dtg, baseDTG))
             return false;
         if(dtg instanceof TimelineDTG)
             return true;
@@ -143,6 +174,7 @@ public class PartialPathDTG extends DomainTransitionGraph {
 
     @Override
     public Iterator<DTEdge> inEdges(DTNode n) {
+        assert transitions.contains(n);
         final Iterator<LabeledEdge<DTNode,DTEdge>> it = JavaConversions.asJavaIterator(transitions.inEdges(n).iterator());
         return new Iterator<DTEdge>() {
             @Override public boolean hasNext() { return it.hasNext(); }
@@ -177,6 +209,7 @@ public class PartialPathDTG extends DomainTransitionGraph {
         assert n.containerID != id();
         assert !entryPoints.isEmpty();
         for(DTNode nloc : entryPoints) {
+            assert nloc.containerID == id();
             if(nloc.hasSameFluent(n))
                 return nloc;
         }
@@ -194,8 +227,8 @@ public class PartialPathDTG extends DomainTransitionGraph {
     }
 
     @Override
-    public boolean areEdgesFree() {
-        return false;
+    public boolean isFree(DTEdge e) {
+        return startPath.contains(e);
     }
 
     @Override
@@ -203,26 +236,31 @@ public class PartialPathDTG extends DomainTransitionGraph {
         return transitions.jVertices();
     }
 
+    /** Returns the timeline on which this DTG is based. null if there is no such timelines. */
     public Timeline extendedTimeline() {
-        if(extendedDTG == null || extendedDTG instanceof GroundDTGs.DTG)
+        if(baseDTG == null || baseDTG instanceof GroundDTGs.DTG)
             return null;
-        if(extendedDTG instanceof TimelineDTG)
-            return ((TimelineDTG) extendedDTG).tl;
+        if(baseDTG instanceof TimelineDTG)
+            return ((TimelineDTG) baseDTG).tl;
 
-        assert extendedDTG instanceof PartialPathDTG;
-        return ((PartialPathDTG) extendedDTG).extendedTimeline();
+        assert baseDTG instanceof PartialPathDTG;
+        return ((PartialPathDTG) baseDTG).extendedTimeline();
     }
 
+    /** Returns the state variable on which this DTG applies */
     public GStateVariable getStateVariable() {
         return startPath.get(0).to.value.sv;
     }
 
     public List<DTEdge> additionalEdges() {
-        int first = (extendedDTG != null && (extendedDTG instanceof PartialPathDTG)) ?
-                ((PartialPathDTG) extendedDTG).startPath.size() : 0;
+        if(baseDTG != null && (baseDTG instanceof PartialPathDTG) && isSubPathOf((PartialPathDTG) baseDTG))
+            return new LinkedList<>();
 
-        if(extendedDTG != null && (extendedDTG instanceof PartialPathDTG)) { ///TODO: only for validation, remove when stable
-            List<DTEdge> ext = ((PartialPathDTG) extendedDTG).startPath;
+        int first = (baseDTG != null && (baseDTG instanceof PartialPathDTG)) ?
+                ((PartialPathDTG) baseDTG).startPath.size() : 0;
+
+        if(baseDTG != null && (baseDTG instanceof PartialPathDTG)) { //TODO: only for validation, remove when stable
+            List<DTEdge> ext = ((PartialPathDTG) baseDTG).startPath;
             for (int i = 0; i < first; i++) {
                 DTEdge e1 = startPath.get(i);
                 DTEdge e2 = ext.get(i);

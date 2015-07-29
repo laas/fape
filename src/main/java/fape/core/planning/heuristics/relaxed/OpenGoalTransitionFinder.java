@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.planninggraph.RelaxedPlanExtractor;
 import fape.core.planning.states.State;
@@ -58,7 +59,8 @@ public class OpenGoalTransitionFinder {
     }
 
     public interface CostEvaluator {
-        public int cost(Action a, GAction ga);
+        public int cost(Action a, GAction ga, GStateVariable sv);
+        public int distTo(GAction ga);
 
 //        public boolean usable(GAction ga);
     }
@@ -104,15 +106,16 @@ public class OpenGoalTransitionFinder {
         Iterator<DomainTransitionGraph.DTEdge> it = container.inEdges(n);
         while(it.hasNext()) {
             DomainTransitionGraph.DTEdge e = it.next();
-            edges.add(new EdgeWithCost(e, ce.cost(e.act, e.ga), 0));
+            edges.add(new EdgeWithCost(e, e.ga!=null ? ce.distTo(e.ga) : 0,  ce.cost(e.act, e.ga, e.sv())));
         }
-        if(container instanceof GroundDTGs.DTG)
-        for (DomainTransitionGraph dtg : dtgs.values()) {
-            if (dtg != container) {
-                DomainTransitionGraph.DTNode nNext = dtg.possibleEntryPointFrom(n);
-                if (nNext != null) {
-                    int transitionCost = dtg.hasBeenExtended ? 999 : 0;
-                    edges.add(new EdgeWithCost(new DomainTransitionGraph.DTEdge(nNext, n, null, null), 0, transitionCost));
+        if(container instanceof GroundDTGs.DTG) {
+            for (DomainTransitionGraph dtg : dtgs.values()) {
+                if (dtg != container) {
+                    DomainTransitionGraph.DTNode nNext = dtg.possibleEntryPointFrom(n);
+                    if (nNext != null) {
+                        int transitionCost = dtg.hasBeenExtended ? 999 : 0;
+                        edges.add(new EdgeWithCost(new DomainTransitionGraph.DTEdge(nNext, n, null, null), 0, transitionCost));
+                    }
                 }
             }
         }
@@ -149,12 +152,12 @@ public class OpenGoalTransitionFinder {
 
                     int accCost;
                     int extCost;
-                    if(current.areEdgesFree()) {
+                    if(current.isFree(e)) {
                         accCost = nc.accumulatedCost;
                         extCost = nc.externalCost;
                     } else {
-                        accCost = nc.accumulatedCost; //TODO + 1;
-                        int actionCost = ce.cost(e.act, e.ga);
+                        accCost = nc.accumulatedCost + ce.cost(e.act, e.ga, e.sv());
+                        int actionCost = e.ga != null ? ce.distTo(e.ga) : 0;
                         extCost = (actionCost > nc.externalCost) ? actionCost : nc.externalCost;
                     }
                     NodeCost ncNext = new NodeCost(e.from, extCost, accCost, nc, e);
@@ -204,7 +207,12 @@ public class OpenGoalTransitionFinder {
         assert startTimePoint != null;
         DomainTransitionGraph containingDTG = dtgs.get(cur.n.containerID);
 
-        return new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
+        PartialPathDTG partialPathDTG = new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
+        if(partialPathDTG.id == 227) {
+            print("coucou.dot", ce);
+            System.out.println("dqsdqsd");
+        }
+        return partialPathDTG;
     }
 
     private List<DomainTransitionGraph.DTEdge> extractEdgeSequence(NodeCost nc) {
@@ -231,7 +239,7 @@ public class OpenGoalTransitionFinder {
                 for(EdgeWithCost e : inEdges(n, ce)) {
                     if(!fullGraph.contains(e.e.from))
                         fullGraph.addVertex(e.e.from);
-                    assert n == e.e.to;
+                    assert n.equals(e.e.to);
                     fullGraph.addEdge(e.e.from, e.e.to, e);
                 }
             }
