@@ -60,12 +60,14 @@ abstract class AbstractContext {
   }
 
   /** Checks if the local variable is defined in this context or its parent context. */
-  def contains(localName:LVarRef) = {
-    try {
-      getDefinition(localName)
+  def contains(localName:LVarRef) : Boolean = {
+    if(variables.contains(localName)) {
       true
-    } catch {
-      case _:Exception => false
+    } else {
+      parentContext match {
+        case None => false
+        case Some(parent) => parent.contains(localName)
+      }
     }
   }
 
@@ -126,6 +128,18 @@ abstract class AbstractContext {
     assert(statements.contains(localRef) && statements(localRef) != null)
     statements(localRef)
   }
+  def getRefOfStatement(statement: Statement) : LStatementRef = {
+
+    for((curRef, curStatement) <- statements if statement == curStatement)
+      return curRef
+    throw new ANMLException("Unable to find reference of statement "+statement)
+  }
+
+  def contains(statement: Statement) : Boolean =
+    statements.find(_._2 == statement) match {
+      case Some(_) => true
+      case None => false
+    }
 
   /** Adds both the local and global reference to an AbstractAction/Action
     *
