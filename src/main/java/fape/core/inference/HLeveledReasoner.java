@@ -17,15 +17,22 @@ public class HLeveledReasoner<Clause, Fact> {
 
     public HLeveledReasoner() {}
 
-    public HLeveledReasoner(HLeveledReasoner<Clause,Fact> toClone) {
+    public HLeveledReasoner(HLeveledReasoner<Clause,Fact> toClone, Collection<Clause> allowed) {
         this.clausesIds = toClone.clausesIds;
         this.clauses = toClone.clauses;
         this.facts = toClone.facts;
         this.factsIds = toClone.factsIds;
-        this.lr = new LeveledReasoner(toClone.lr);
+        boolean[] allowedClause = null;
+        if(allowed != null) {
+            allowedClause = new boolean[toClone.lr.nextClause];
+            for(Clause cl : allowed) {
+                allowedClause[clausesIds.get(cl)] = true;
+            }
+        }
+        this.lr = new LeveledReasoner(toClone.lr, allowedClause);
     }
 
-    public HLeveledReasoner<Clause,Fact> clone() { return new HLeveledReasoner<>(this); }
+    public HLeveledReasoner<Clause,Fact> clone() { return new HLeveledReasoner<>(this, null); }
 
     LeveledReasoner lr = new LeveledReasoner();
 

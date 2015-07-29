@@ -1,6 +1,7 @@
 package fape.core.inference;
 
 import java.util.*;
+import java.util.function.*;
 
 public class LeveledReasoner {
 
@@ -25,6 +26,7 @@ public class LeveledReasoner {
     int[][] clausesConditions = new int[defSize][];
     int[][] clausesEffects = new int[defSize][];
     int[] clausesIds = new int[defSize];
+    boolean[] allowedClauses = null;
 
     /** What are the clauses in which this fact appears as a precondition */
     ArrayList<Integer>[] factsAppearance = new ArrayList[defSize];
@@ -37,7 +39,7 @@ public class LeveledReasoner {
         Arrays.fill(clausesLevels, -1);
     }
 
-    public LeveledReasoner(LeveledReasoner toCopy) {
+    public LeveledReasoner(LeveledReasoner toCopy, boolean[] allowedClauses) {
         toCopy.locked = true;
         nextClause = toCopy.nextClause;
         factsLevels = new int[toCopy.factsCapacity()];
@@ -51,6 +53,7 @@ public class LeveledReasoner {
         factsAppearance = toCopy.factsAppearance;
         clausesPendingCount = new int[toCopy.clausesCapacity()];
         enablers = new ArrayList[toCopy.factsCapacity()];
+        this.allowedClauses = allowedClauses;
         for(int i=0 ; i<nextClause ; i++) {
             clausesPendingCount[i] = clausesConditions[i].length;
         }
@@ -132,6 +135,10 @@ public class LeveledReasoner {
         }
     }
 
+    private boolean allowed(int clauseID) {
+        return allowedClauses == null || allowedClauses[clauseID];
+    }
+
     protected boolean[] getNextLevel(boolean[] facts, int lvl) {
         boolean[] nextLevel = Arrays.copyOfRange(facts, 0, facts.length);
         assert lvl > 0;
@@ -139,7 +146,7 @@ public class LeveledReasoner {
         // deal with clauses with no conditions
         if(lvl == 1) {
             for (int clause = 0; clause < nextClause; clause++) {
-                if (clausesConditions[clause].length == 0) {
+                if (clausesConditions[clause].length == 0 && allowed(clause)) {
                     clausesLevels[clause] = 1;
                     for(int eff : clausesEffects[clause]) {
                         if(enablers[eff] == null)
@@ -161,7 +168,7 @@ public class LeveledReasoner {
                 for(int clause : factsAppearance[i]) {
                     assert clausesPendingCount[clause] > 0;
                     clausesPendingCount[clause]--;
-                    if(clausesPendingCount[clause] == 0) {
+                    if(clausesPendingCount[clause] == 0 && allowed(clause)) {
 
                         // just became true, set clause level
                         assert clausesLevels[clause] == -1;

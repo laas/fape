@@ -72,7 +72,7 @@ public class LeveledReasonerTests {
 
         r.infer();
 
-        LeveledReasoner r2 = new LeveledReasoner(r);
+        LeveledReasoner r2 = new LeveledReasoner(r, null);
         r2.set(3); r2.set(2); r2.set(5);
         r2.infer();
         assertEquals(0, r2.levelOfFact(2));
