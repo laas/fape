@@ -28,12 +28,11 @@ public class FeasibilityReasoner {
     public final HashMap<ActRef, VarRef> decompositionVariable = new HashMap<>();
 
     final HReasoner<Term> baseReasoner;
-    public final GroundProblem base;
 
     public FeasibilityReasoner(APlanner planner, State initialState) {
         this.planner = planner;
         // this Problem contains all the ground actions
-        base = new GroundProblem(initialState.pb);
+        GroundProblem base = planner.preprocessor.getGroundProblem();
         allActions = new HashSet<>(base.gActions);
 
         baseReasoner = new HReasoner<>();

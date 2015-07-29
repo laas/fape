@@ -140,6 +140,7 @@ public class HLeveledReasoner<Clause, Fact> {
 
     /** Returns all conditions of this clause */
     public Collection<Fact> conditionsOf(Clause clause) {
+        assert clause != null;
         List<Fact> conditions = new LinkedList<>();
         for(int f : lr.clausesConditions[clausesIds.get(clause)]) {
             conditions.add(facts.get(f));
@@ -152,7 +153,7 @@ public class HLeveledReasoner<Clause, Fact> {
      * 0 meaning it is initially set. -1 meaning it was not inferred
      */
     public int levelOfFact(Fact f) {
-        assert knowsFact(f);
+        assert f != null && knowsFact(f);
         return lr.levelOfFact(factsIds.get(f));
     }
 
@@ -161,7 +162,7 @@ public class HLeveledReasoner<Clause, Fact> {
      *  -1 meaning it is never valid
      */
     public int levelOfClause(Clause c) {
-        assert clausesIds.containsKey(c);
+        assert c != null && clausesIds.containsKey(c);
         return lr.levelOfClause(clausesIds.get(c));
     }
 

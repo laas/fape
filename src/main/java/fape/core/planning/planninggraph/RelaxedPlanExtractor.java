@@ -45,8 +45,13 @@ public class RelaxedPlanExtractor {
             for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
                 inPlanActions.add(ga);
         }
-        decompReas = decomposabilityReasoner(st);
-        derivReaas = derivabilityReasoner(st);
+        if(planner.preprocessor.isHierarchical()) {
+            decompReas = decomposabilityReasoner(st);
+            derivReaas = derivabilityReasoner(st);
+        } else {
+            decompReas = null;
+            derivReaas = null;
+        }
         baseCausalReas = new HLeveledReasoner<>();
         for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             baseCausalReas.addClause(ga.pre, ga.add, ga);
@@ -197,12 +202,14 @@ public class RelaxedPlanExtractor {
             }
         }
         if(bestAction != null) {
-            if(!inPlanActions.contains(bestAction))
-                for(GTaskCond task : derivReaas.conditionsOf(bestAction))
-                    assert derivReaas.levelOfFact(task) >= 0;
+            if(planner.preprocessor.isHierarchical()) {
+                if (!inPlanActions.contains(bestAction))
+                    for (GTaskCond task : derivReaas.conditionsOf(bestAction))
+                        assert derivReaas.levelOfFact(task) >= 0;
 
-            for(GTaskCond task : decompReas.conditionsOf(bestAction))
-                assert decompReas.levelOfFact(task) >= 0;
+                for (GTaskCond task : decompReas.conditionsOf(bestAction))
+                    assert decompReas.levelOfFact(task) >= 0;
+            }
 
             return bestAction;
 
@@ -549,8 +556,7 @@ public class RelaxedPlanExtractor {
 //            transitions.addStartNodes(ogs); TODO
 
         for (GStateVariable sv : possibleStateVariables) {
-            if (dtgs.hasDTGFor(sv))
-                pathFinder.addDTG(dtgs.getDTGOf(sv));
+            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
             if (previousPaths.containsKey(sv))
                 for (PartialPathDTG dtg : previousPaths.get(sv))
                     pathFinder.addDTG(dtg);
@@ -622,6 +628,11 @@ public class RelaxedPlanExtractor {
             public int distTo(GAction ga) {
                 return costOfPreconditions(ga);
             }
+
+            @Override
+            public boolean usable(GAction ga) {
+                return allowedActions.contains(ga);
+            }
         });
     }
 
@@ -634,7 +645,7 @@ public class RelaxedPlanExtractor {
             possibleStateVariables.add(f.sv);
 
         for(GStateVariable sv : possibleStateVariables) {
-            pathFinder.addDTG(dtgs.getDTGOf(sv));
+            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
             if(previousPaths.containsKey(sv))
                 for(PartialPathDTG dtg : previousPaths.get(sv))
                     pathFinder.addDTG(dtg);
@@ -705,10 +716,14 @@ public class RelaxedPlanExtractor {
             public int distTo(GAction ga) {
                 return costOfPreconditions(ga);
             }
+
+            @Override
+            public boolean usable(GAction ga) {
+                return allowedActions.contains(ga);
+            }
         });
     }
 
-    GroundDTGs dtgs;
     Map<Timeline, TimelineDTG> timelineDTGs;
     Map<Timeline, List<PartialPathDTG>> previousSolutions;
     Map<GStateVariable, List<PartialPathDTG>> previousPaths;
@@ -728,7 +743,6 @@ public class RelaxedPlanExtractor {
     }
 
     public List<PartialPathDTG> getPaths() throws NoSolutionException {
-        dtgs = new GroundDTGs(allowedActions, st.pb);
         timelineDTGs = new HashMap<>();
         previousSolutions = new HashMap<>();
         previousPaths = new HashMap<>();
@@ -857,12 +871,14 @@ public class RelaxedPlanExtractor {
                         System.out.println(st.mID+"    New action from RPG: "+ga);
 
                     causalPending.addAll(ga.pre);
-                    if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
-                        // deriv all actions that are not already in the plan
-                        derivPending.addAll(derivReaas.conditionsOf(ga));
+                    if(planner.preprocessor.isHierarchical()) {
+                        if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
+                            // deriv all actions that are not already in the plan
+                            derivPending.addAll(derivReaas.conditionsOf(ga));
 
 //                        System.out.println("2"+ga+" "+derivPending);
-                    decompPending.addAll(decompReas.conditionsOf(ga));
+                        decompPending.addAll(decompReas.conditionsOf(ga));
+                    }
                     alreadyUsed.add(ga);
                     assert counter.totalOccurrences(ga) == 0; //!actionCount.containsKey(ga);
                     counter.addIndependentUsage(ga);
