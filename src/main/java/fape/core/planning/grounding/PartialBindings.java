@@ -1,6 +1,5 @@
-package fape.core.planning.planninggraph;
+package fape.core.planning.grounding;
 
-import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.concrete.InstanceRef;
@@ -44,6 +43,8 @@ public class PartialBindings {
         this.focusedVars = focusedVars;
         this.possibleValues = possibleValues;
 
+        assert focusedVars.length <= allVars.length;
+
         // get the positions of the focused vars in the allVars array.
         focusedVarsPositions = new int[focusedVars.length];
         for(int i=0 ; i< focusedVars.length ; i++) {
@@ -51,6 +52,7 @@ public class PartialBindings {
             for(int j=0 ; j<allVars.length ; j++)
                 if(focusedVars[i].equals(allVars[j]))
                     focusedVarsPositions[i] = j;
+            assert focusedVarsPositions[i] != -1;
         }
 
         if(focusedVars.length == 0)
@@ -179,6 +181,7 @@ public class PartialBindings {
         focusedVarsPositions = Arrays.copyOf(focusedVarsPositions, focusedVarsPositions.length+1);
         focusedVars[focusedVars.length-1] = v;
         focusedVarsPositions[focusedVars.length-1] = pos(v);
+        assert focusedVars.length <= allVars.length;
     }
 
     /** Enforces an equality constraint, returns true if it was integrated in the partialBindings.

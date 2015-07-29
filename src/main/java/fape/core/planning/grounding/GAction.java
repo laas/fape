@@ -5,7 +5,6 @@ import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.PGNode;
-import fape.core.planning.planninggraph.PartialBindings;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
@@ -279,7 +278,7 @@ public class GAction implements PGNode {
      *
      * If the decoposition ID is not -1, variables declared inside the decomposition will be accounted for as well.
      */
-    public static List<Map<LVarRef, InstanceRef>> getPossibleInstanciations(GroundProblem gPb, AbstractAction aa, int decID) {
+    public static List<Map<LVarRef, InstanceRef>> getPossibleInstantiations(GroundProblem gPb, AbstractAction aa, int decID) {
         AnmlProblem pb = gPb.liftedPb;
 
         // this will store all local variables, those can be defined as action parameters, inside the action or within the given decomposition
@@ -332,13 +331,44 @@ public class GAction implements PGNode {
         for(AbstractStatement s : statements) {
             if(s instanceof AbstractEqualityConstraint) {
                 AbstractEqualityConstraint c = (AbstractEqualityConstraint) s;
+
+                // statementVars contains variables that appear as parameters of the function
+                // statementConstants contains constants that appear as parameter fo the function
+                // for instance the statement `connected(a, b) == true;` would give:
+                // statementsVars = {a, b, null} and constantVars == {null, null, true}
                 LVarRef[] statementVars = new LVarRef[c.sv().jArgs().size()+1];
-                for(int i=0 ; i<c.sv().jArgs().size() ; i++)
-                    statementVars[i] = c.sv().jArgs().get(i);
-                statementVars[statementVars.length-1] = c.variable();
+                InstanceRef[] statementConstants = new InstanceRef[c.sv().jArgs().size()+1];
+                int numVariables = 0;
+                for(int i=0 ; i <= c.sv().jArgs().size() ; i++) {
+                    LVarRef locVar;
+                    if(i < c.sv().jArgs().size()) // get all arguments first
+                        locVar = c.sv().jArgs().get(i);
+                    else // last one is the variable
+                        locVar = c.variable();
+
+                    if(vars.contains(locVar)) {
+                        statementVars[i] = locVar;
+                        numVariables++;
+                    } else {
+                        assert pb.instances().containsInstance(locVar.id());
+                        statementConstants[i] = pb.instance(locVar.id());
+                    }
+                }
+                for(int i=0 ; i<statementVars.length ; i++)
+                    assert statementVars[i] == null && statementConstants[i] != null || statementVars[i] != null && statementConstants[i] == null;
+
+                LVarRef[] holeFreeStatementVariables = new LVarRef[numVariables];
+                int j = 0;
+                for(LVarRef v : statementVars) {
+                    if(v != null) {
+                        holeFreeStatementVariables[j] = v;
+                        j++;
+                    }
+                }
+                assert j == numVariables;
 
                 // new partial bindings reflecting this constraint
-                PartialBindings partialBindings = new PartialBindings(vars.toArray(new LVarRef[vars.size()]), statementVars, possibleValues);
+                PartialBindings partialBindings = new PartialBindings(vars.toArray(new LVarRef[vars.size()]), holeFreeStatementVariables, possibleValues);
                 partialBindingses.add(partialBindings);
 
                 // every invariant matching our state variable proposes possible values
@@ -349,7 +379,21 @@ public class GAction implements PGNode {
                             binding[i] = inv.params.get(i);
                         }
                         binding[statementVars.length-1] = inv.value;
-                        partialBindings.addPartialBinding(binding, gPb);
+
+                        InstanceRef[] variablesOnlyBinding = new InstanceRef[numVariables];
+                        int nextVarIndex = 0; // next position in variables only binding
+                        boolean valid = true; // is this binding valid wrt constaints
+                        for(int i=0 ; i<binding.length ; i++) {
+                            if(statementVars[i] != null) {
+                                variablesOnlyBinding[nextVarIndex++] = binding[i];
+                            } else {
+                                assert statementConstants[i] != null;
+                                if(!statementConstants[i].equals(binding[i]))
+                                    valid = false;
+                            }
+                        }
+                        if(valid)
+                            partialBindings.addPartialBinding(variablesOnlyBinding, gPb);
                     }
                 }
             }
@@ -416,7 +460,7 @@ public class GAction implements PGNode {
         List<GAction> actions = new LinkedList<>();
 
         if(aa.jDecompositions().size() == 0) {
-            List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstanciations(gPb, aa, -1);
+            List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, -1);
             for(Map<LVarRef, InstanceRef> params : paramsLists) {
                 try {
                     actions.add(new GAction(aa, -1, params, gPb));
@@ -424,7 +468,7 @@ public class GAction implements PGNode {
             }
         } else {
             for(int decID=0 ; decID<aa.jDecompositions().size() ; decID++) {
-                List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstanciations(gPb, aa, decID);
+                List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, decID);
                 for(Map<LVarRef, InstanceRef> params : paramsLists) {
                     try {
                         actions.add(new GAction(aa, decID, params, gPb));
