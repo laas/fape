@@ -133,6 +133,11 @@ public class TaskNetworkManager implements Reporter {
         return false;
     }
 
+    public Decomposition getDecomposition(Action a) {
+        assert isDecomposed(a);
+        return getDecompositionNode(a).asDecomposition();
+    }
+
     /**
      * @param ac ActionCondition to lookup
      * @return True if the action condition is supported (i.e. there is an edge
@@ -153,7 +158,7 @@ public class TaskNetworkManager implements Reporter {
      * @param a The action for which to retrieve the decomposition.
      * @return The decomposition of the action.
      */
-    private TNNode getDecomposition(Action a) {
+    private TNNode getDecompositionNode(Action a) {
         assert isDecomposed(a) : "Error: action "+a+" has no decomposition.";
         for(TNNode child : network.jChildren(new TNNode(a))) {
             if(child.isDecomposition()) {

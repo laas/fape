@@ -84,9 +84,11 @@ public class TimelineDTG extends DomainTransitionGraph {
                     transitions.addVertex(n);
                 }
             }
-            Action container = st.getActionContaining(s);
 
-            if(container == null) { // statement was not added as part of an action
+            // action by which this statement was introduced (null if no action)
+            Action containingAction = st.getActionContaining(s);
+
+            if(containingAction == null) { // statement was not added as part of an action
                 assert s instanceof Assignment;
                 assert s.endValue() instanceof InstanceRef;
                 assert i == 0;
@@ -108,9 +110,20 @@ public class TimelineDTG extends DomainTransitionGraph {
                             entryPoints.add(to);
                         }
                 }
-            } else { // statement was added as part of an action
-                Collection<GAction> acts = reas.getGroundActions(container, st);
-                LStatementRef statementRef = container.context().getRefOfStatement(s);
+            } else { // statement was added as part of an action or a decomposition
+                Collection<GAction> acts = reas.getGroundActions(containingAction, st);
+
+                // local reference of the statement, used to extract the corresponding ground statement from the GAction
+                LStatementRef statementRef;
+                if(containingAction.context().contains(s)) {
+                    // statement defined in the action
+                    statementRef = containingAction.context().getRefOfStatement(s);
+                } else {
+                    // statement not defined in the action, it is necesarily defined in the decomposition of this action
+                    assert st.taskNet.isDecomposed(containingAction) && st.taskNet.getDecomposition(containingAction).context().contains(s);
+                    statementRef = st.taskNet.getDecomposition(containingAction).context().getRefOfStatement(s);
+                }
+
                 for(GAction ga : acts) {
                     GAction.GLogStatement gs = ga.statementWithRef(statementRef);
                     DTNode from;
@@ -132,7 +145,7 @@ public class TimelineDTG extends DomainTransitionGraph {
                     if(from != null && transitions.contains(from)) {
                         if(!transitions.contains(to))
                             transitions.addVertex(to);
-                        DTEdge label = new DTEdge(from, to, container, ga);
+                        DTEdge label = new DTEdge(from, to, containingAction, ga);
                         transitions.addEdge(from, to, label);
 
                         if(i == tl.numChanges()-1) { // this is the last transition of this timeline, link to the DTG
