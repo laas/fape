@@ -208,10 +208,6 @@ public class OpenGoalTransitionFinder {
         DomainTransitionGraph containingDTG = dtgs.get(cur.n.containerID);
 
         PartialPathDTG partialPathDTG = new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
-        if(partialPathDTG.id == 227) {
-            print("coucou.dot", ce);
-            System.out.println("dqsdqsd");
-        }
         return partialPathDTG;
     }
 

@@ -103,8 +103,6 @@ public class PartialPathDTG extends DomainTransitionGraph {
             final int l = lvl-1;
             entryPoints.addAll(nodesOfCurrentLevel.stream().map(n -> convert(n, l)).collect(Collectors.toList()));
         } else {
-            assert extendedTimeline() == null || startPath.size() >= extendedTimeline().numChanges() : //TODO: readd
-                    "Does not goes through the whole timeline: "+startPath.size()+" != "+extendedTimeline().numChanges();
             // last node of the path is the last one. make it an entry point
             entryPoints.add(convert(lastOfPath, lvl));
         }
