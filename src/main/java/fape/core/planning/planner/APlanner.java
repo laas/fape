@@ -396,6 +396,8 @@ public abstract class APlanner {
                     searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st, res));
                 }
             } else {
+                if(st .mID == 138)
+                    System.out.println("sdqsdqsd");
                 TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
                 //inconsistent state, doing nothing
             }

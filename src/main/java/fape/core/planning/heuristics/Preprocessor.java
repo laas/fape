@@ -1,8 +1,7 @@
 package fape.core.planning.heuristics;
 
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.grounding.GroundProblem;
+import fape.core.inference.HLeveledReasoner;
+import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
@@ -20,6 +19,7 @@ public class Preprocessor {
     private GroundProblem gPb;
     private Set<GAction> allActions;
     private GroundDTGs dtgs;
+    HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
 
     Boolean isHierarchical = null;
 
@@ -76,5 +76,15 @@ public class Preprocessor {
 
     public Set<GAction> getAllPossibleActionFromState(State st) {
         return getFeasibilityReasoner().getAllActions(st);
+    }
+
+    public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
+        if(baseCausalReasoner == null) {
+            baseCausalReasoner = new HLeveledReasoner<>();
+            for(GAction ga : getAllActions()) {
+                baseCausalReasoner.addClause(ga.pre, ga.add, ga);
+            }
+        }
+        return new HLeveledReasoner<>(baseCausalReasoner, getAllPossibleActionFromState(st));
     }
 }

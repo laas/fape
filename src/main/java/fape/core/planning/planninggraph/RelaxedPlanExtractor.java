@@ -52,10 +52,11 @@ public class RelaxedPlanExtractor {
             decompReas = null;
             derivReaas = null;
         }
-        baseCausalReas = new HLeveledReasoner<>();
-        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
-            baseCausalReas.addClause(ga.pre, ga.add, ga);
-        }
+//        baseCausalReas = new HLeveledReasoner<>();
+//        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
+//            baseCausalReas.addClause(ga.pre, ga.add, ga);
+//        }
+        baseCausalReas = planner.preprocessor.getLeveledCausalReasoner(st);
     }
 
 
@@ -380,7 +381,7 @@ public class RelaxedPlanExtractor {
     }
 
     private HLeveledReasoner<GAction, Fluent> getCausalModelOfInitialDefinitions() {
-        HLeveledReasoner<GAction, Fluent> causalModel = baseCausalReas.clone();
+        HLeveledReasoner<GAction, Fluent> causalModel = planner.preprocessor.getLeveledCausalReasoner(st); //baseCausalReas.clone();
 
         for (Timeline tl : st.getTimelines()) {
             for (ChainComponent cc : tl.getComponents()) {
