@@ -18,7 +18,7 @@ public class Reasoner {
     protected boolean[] varsStatus;
 
     // clauses in which this variable appears
-    private ArrayList<Integer>[] varsAppearance;
+    private int[][] varsAppearance;
 
     // current number of vars
     private int numVars = 0;
@@ -34,7 +34,7 @@ public class Reasoner {
         clauseLeftVar = new int[maxClauses];
         clausePending = new int[maxClauses];
         varsStatus = new boolean[maxVars];
-        varsAppearance = new ArrayList[maxVars];
+        varsAppearance = new int[maxVars][];
     }
 
     public Reasoner(Reasoner toCopy, boolean lock) {
@@ -49,9 +49,9 @@ public class Reasoner {
             varsAppearance = toCopy.varsAppearance;
         } else {
             clauseLeftVar = Arrays.copyOfRange(toCopy.clauseLeftVar, 0, numClauses);
-            varsAppearance = new ArrayList[numVars];
+            varsAppearance = new int[numVars][];
             for (int i = 0; i < numVars; i++)
-                varsAppearance[i] = new ArrayList<>(toCopy.varsAppearance[i]);
+                varsAppearance[i] = Arrays.copyOf(toCopy.varsAppearance[i], toCopy.varsAppearance.length);
         }
     }
 
@@ -68,7 +68,7 @@ public class Reasoner {
         assert var < varsStatus.length;
         while(numVars <= var) {
             varsStatus[numVars] = false;
-            varsAppearance[numVars] = new ArrayList<>(numAppearence);
+            varsAppearance[numVars] = new int[0];
             numVars++;
         }
     }
@@ -93,7 +93,9 @@ public class Reasoner {
             clauseLeftVar[clauseNum] = left;
             clausePending[clauseNum] = right.length;
             for (int v : right) {
-                varsAppearance[v].add(clauseNum);
+                // add one clause to the vars appearance of v
+                varsAppearance[v] = Arrays.copyOf(varsAppearance[v], varsAppearance[v].length+1);
+                varsAppearance[v][varsAppearance[v].length-1] = clauseNum;
                 if(varsStatus[v])
                     clausePending[clauseNum]--;
             }
