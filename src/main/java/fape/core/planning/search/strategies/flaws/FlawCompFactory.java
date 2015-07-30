@@ -50,6 +50,9 @@ public class FlawCompFactory {
                 case "extfirst":
                     compList.add(new ExtendPlanFirst(st, planner));
                     break;
+                case "threats":
+                    compList.add(new ThreatsFirst());
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }

@@ -59,7 +59,6 @@ public class OpenGoalTransitionFinder {
     }
 
     public interface CostEvaluator {
-
         int cost(Action a, GAction ga, GStateVariable sv);
         int distTo(GAction ga);
         boolean usable(GAction ga);

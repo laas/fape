@@ -13,6 +13,7 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.ActionCondition;
 import planstack.anml.model.concrete.statements.LogStatement;
 
+import java.sql.Time;
 import java.util.*;
 
 public class RelaxedPlanExtractor {
@@ -25,6 +26,7 @@ public class RelaxedPlanExtractor {
     final Set<GAction> allowedActions;
     Set<GAction> inPlanActions;
 
+    private boolean displayResolution() { return false; }
 
     Collection<GAction> alreadyUsed = new HashSet<>();
 
@@ -71,9 +73,6 @@ public class RelaxedPlanExtractor {
 
         baseHLR.infer();
         for(GAction ga : allowedActions) {
-            if(!(baseHLR.levelOfClause(ga) > -1) && !inPlanActions.contains(ga))
-                if(debugging)
-                    System.out.println(baseHLR.report());
             assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
         }
         return baseHLR;
@@ -118,6 +117,10 @@ public class RelaxedPlanExtractor {
 
     private int costOfFluent(Fluent f) {
         if(achievedFluents.contains(f))
+            // already achieved
+            return 0;
+        else if(causalPending.contains(f))
+            // we already need to achieve it
             return 0;
         else
             return currentCausalReasoner.levelOfFact(f);
@@ -133,22 +136,9 @@ public class RelaxedPlanExtractor {
             if (cost > maxPreconditionCost)
                 maxPreconditionCost = cost;
         }
+        assert maxPreconditionCost >= 0;
         return maxPreconditionCost;
     }
-
-//    private int costOfPreconditions(GAction ga) {
-//        assert ga != null;
-////        System.out.println(currentCausalReasoner.levelOfClause(ga) +" "+ derivReaas.levelOfClause(ga)+" "+ decompReas.levelOfClause(ga));
-//        if(inPlanActions.contains(ga))
-//            return 0;
-//        if(debugging)
-//            System.out.println(ga+": "+currentCausalReasoner.levelOfClause(ga) +" "+ derivReaas.levelOfClause(ga)+" "+ decompReas.levelOfClause(ga));
-//        if(currentCausalReasoner.levelOfClause(ga) <0 || derivReaas.levelOfClause(ga)<0 || decompReas.levelOfClause(ga)<0)
-//            return -1; // impossible in at least one
-//        return currentCausalReasoner.levelOfClause(ga) +
-//                derivReaas.levelOfClause(ga) -1 +
-//                decompReas.levelOfClause(ga) -1;
-//    }
 
     private int costOfTask(GTaskCond t) {
         assert t != null;
@@ -196,13 +186,51 @@ public class RelaxedPlanExtractor {
                 return null; // init fact, we can not do better
             if(alreadyUsed.contains(ga))
                 return ga; // no additional cost as the action is already part of the relaxed plan
-            int cost = costOfPreconditions(ga);
-            if(cost >= 0 && cost < bestActionCost) {
+
+            int maxCostOfAchieved = 0;
+            int sumPreconditionsCosts = 0;
+            for(Fluent f : ga.pre) {
+                int base = costOfFluent(f);
+                if(base != 0) {
+                    for(Action a : actionInstantiations.keySet()) {
+                        for(GAction candidate : actionInstantiations.get(a)) {
+                            for(Fluent gaAddition : candidate.add) {
+                                if(gaAddition.equals(f)) {
+                                    base = 0;
+                                    break;
+                                }
+                            }
+                            if(base == 0)
+                                break;
+                        }
+                        if(base == 0)
+                            break;
+                    }
+                }
+                sumPreconditionsCosts += base;
+            }
+            if(true) {
+                for(Fluent f : ga.add) {
+                    if(causalPending.contains(f) && !achievedFluents.contains(f)) {
+                        int c = currentCausalReasoner.levelOfFact(f);
+                        assert c >= 0;
+                        maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
+//                        System.out.println(costOfPreconditions(ga)+" "+f+" "+ga+" "+c);
+                    }
+                }
+            }
+            int cost = sumPreconditionsCosts - maxCostOfAchieved;
+            if(cost < bestActionCost) {
                 bestActionCost = cost;
                 bestAction = ga;
             }
         }
+        if(displayResolution())
+            System.out.print("");
         if(bestAction != null) {
+//            if(st.mID == 16) {
+//                System.out.println(bestAction+"\n");
+//            }
             if(planner.preprocessor.isHierarchical()) {
                 if (!inPlanActions.contains(bestAction))
                     for (GTaskCond task : derivReaas.conditionsOf(bestAction))
@@ -232,106 +260,6 @@ public class RelaxedPlanExtractor {
         assert best != null;
         return best;
     }
-
-    /*
-    public int numAdditionalSteps() {
-        inPlanActions = new HashSet<>();
-        for(Action a : st.getAllActions()) {
-            for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
-                inPlanActions.add(ga);
-        }
-        alreadyUsed = new HashSet<>();
-        assert alreadyUsed.isEmpty() : "THis method should be called only once for this object.";
-        try {
-
-            for (Timeline tl : st.tdb.getConsumers()) {
-                currentCausalReasoner = causalReasonerForOpenGoal(st, tl);
-                assert causalPending.isEmpty();
-                causalPending = new HashSet<>();
-
-                Collection<Fluent> goals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true);
-                causalPending.add(selectMostInterestingFluent(goals));
-
-                while (!causalPending.isEmpty()) {
-                    Fluent og = causalPending.iterator().next();
-                    causalPending.remove(og);
-                    GAction ga = selectMostInterestingAction(currentCausalReasoner.candidatesFor(og));
-
-                    // if we need action (ga !=null) and we didn't already used it
-                    if(ga != null && !alreadyUsed.contains(ga)) {
-                        causalPending.addAll(ga.pre);
-                        if(!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
-                            // deriv all actions that are not alreay in the plan
-                            derivPending.addAll(derivReaas.conditionsOf(ga));
-
-                        decompPending.addAll(decompReas.conditionsOf(ga));
-                        alreadyUsed.add(ga);
-                    }
-                }
-                currentCausalReasoner = null;
-            }
-
-            assert causalPending.isEmpty();
-            causalPending = new HashSet<>();
-            currentCausalReasoner = baseCausalReas.clone();
-            Collection<Fluent> init = GroundProblem.allFluents(st); //GroundProblem.fluentsBefore(st, consumer.getFirstTimePoints());
-            for (Fluent i : init) {
-                currentCausalReasoner.set(i);
-            }
-            currentCausalReasoner.infer();
-            for(ActionCondition liftedTask : st.getOpenTaskConditions()) {
-                Collection<GTaskCond> tasks = planner.reachability.getGroundedTasks(liftedTask, st);
-                decompPending.add(selectMostInterestingTask(tasks));
-            }
-            for(Action liftedAction : st.getOpenLeaves()) {
-                Collection<GAction> groundActions = planner.reachability.getGroundActions(liftedAction, st);
-                GAction candidate =selectMostInterestingAction(groundActions);
-                decompPending.addAll(decompReas.conditionsOf(candidate));
-            }
-            for(Action liftedAction : st.getUnmotivatedActions()) {
-                Collection<GAction> groundActions = planner.reachability.getGroundActions(liftedAction, st);
-                GAction candidate = selectMostInterestingAction(groundActions);
-                derivPending.addAll(derivReaas.conditionsOf(candidate));
-            }
-
-            while(!causalPending.isEmpty() || !derivPending.isEmpty() || !decompPending.isEmpty()) {
-                GAction ga;
-                if(!causalPending.isEmpty()) {
-                    Fluent og = causalPending.iterator().next();
-                    causalPending.remove(og);
-                    ga = selectMostInterestingAction(currentCausalReasoner.candidatesFor(og));
-                } else if(!derivPending.isEmpty()) {
-                    GTaskCond task = derivPending.iterator().next();
-                    derivPending.remove(task);
-                    if(!derivReaas.knowsFact(task) || derivReaas.levelOfFact(task) == -1)
-                        throw new NoSolutionException();
-                    ga = selectMostInterestingAction(derivReaas.candidatesFor(task));
-                } else {
-                    assert !decompPending.isEmpty();
-                    GTaskCond task = decompPending.iterator().next();
-                    decompPending.remove(task);
-                    ga = selectMostInterestingAction(decompReas.candidatesFor(task));
-                }
-                // if we need action (ga !=null) and we didn't already used it
-                if(ga != null && !alreadyUsed.contains(ga)) {
-                    causalPending.addAll(ga.pre);
-                    derivPending.addAll(derivReaas.conditionsOf(ga));
-                    decompPending.addAll(decompReas.conditionsOf(ga));
-                    alreadyUsed.add(ga);
-                }
-            }
-            currentCausalReasoner = null;
-
-            int actionsToAdd = 0;
-            for(GAction ga : alreadyUsed) {
-                if(!inPlanActions.contains(ga))
-                    actionsToAdd++;
-            }
-            return actionsToAdd;
-        } catch (NoSolutionException e) {
-            return 9999999;
-        }
-    }*/
 
     public GAction selectMostInterestingActionForRelaxedPlan(Collection<GAction> actions, Collection<Action> possiblyBfore,
                                                              Map<Action,Set<GAction>> actionInstantiations) throws NoSolutionException {
@@ -407,8 +335,6 @@ public class RelaxedPlanExtractor {
     protected static boolean debugging = false;
     public static boolean debugging2 = false;
     public int relaxedGroundPlan(State st) {
-        if(debugging)
-            System.out.println("State: "+st.mID);
         try {
             alreadyUsed = new HashSet<>();
             inPlanActions = new HashSet<>();
@@ -513,8 +439,8 @@ public class RelaxedPlanExtractor {
                 }
                 assert actionInstantiations.get(a).size() == 1;
             }
-            if(debugging)
-                System.out.println("    state: "+st.mID);
+//            if(debugging)
+//                System.out.println("    state: "+st.mID);
             for(Action a : st.getAllActions()) {
                 assert actionInstantiations.get(a).size() == 1;
                 GAction instantiated = actionInstantiations.get(a).iterator().next();
@@ -524,12 +450,12 @@ public class RelaxedPlanExtractor {
                 }
             }
 
-            if(debugging)
-                for(GAction ga : alreadyUsed)
-                    System.out.println("    "+ga+"      additional");
+//            if(debugging)
+//                for(GAction ga : alreadyUsed)
+//                    System.out.println("    "+ga+"      additional");
 
-            if(debugging)
-                System.out.println("    Size: "+(alreadyUsed.size()+st.getNumActions()));
+//            if(debugging)
+//                System.out.println("    Size: "+(alreadyUsed.size()+st.getNumActions()));
 //            System.out.println("Size of relaxed plan: "+alreadyUsed.size());
 //            System.out.println(alreadyUsed);
 //            System.out.println(actionInstantiations);
@@ -611,30 +537,15 @@ public class RelaxedPlanExtractor {
         assert og.chain.length == 1;
         pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint(), st);
 
-        if (debugging2 && pathFinder.startNodes.isEmpty()) {
-            System.out.println(ogs);
-            System.out.println(Printer.temporalDatabase(st, og));
-            for (Timeline t : toRemove)
-                System.out.println("  " + Printer.inlineTemporalDatabase(st, t));
-            System.out.println("BREAK HERE");
-        }
+//        if (debugging2 && pathFinder.startNodes.isEmpty()) {
+//            System.out.println(ogs);
+//            System.out.println(Printer.temporalDatabase(st, og));
+//            for (Timeline t : toRemove)
+//                System.out.println("  " + Printer.inlineTemporalDatabase(st, t));
+//            System.out.println("BREAK HERE");
+//        }
 
-        return pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
-            @Override
-            public int cost(Action a, GAction ga, GStateVariable sv) {
-                return costOfAction(a, ga, sv);
-            }
-
-            @Override
-            public int distTo(GAction ga) {
-                return costOfPreconditions(ga);
-            }
-
-            @Override
-            public boolean usable(GAction ga) {
-                return allowedActions.contains(ga);
-            }
-        });
+        return pathFinder.bestPath(actionCostEvaluator);
     }
 
     public PartialPathDTG getPathToTransition(Timeline og) throws NoSolutionException {
@@ -699,31 +610,38 @@ public class RelaxedPlanExtractor {
         }
 
         pathFinder.addTransitionTargets(ogs, og.getFirstChangeTimePoint());
-        if(debugging2 && pathFinder.startNodes.isEmpty()) {
-            System.out.println(ogs);
-            System.out.println(Printer.temporalDatabase(st, og));
-            for(Timeline t : toRemove)
-                System.out.println("  "+Printer.inlineTemporalDatabase(st, t));
+//        if(debugging2 && pathFinder.startNodes.isEmpty()) {
+//            System.out.println(ogs);
+//            System.out.println(Printer.temporalDatabase(st, og));
+//            for(Timeline t : toRemove)
+//                System.out.println("  "+Printer.inlineTemporalDatabase(st, t));
+//
+//        }
 
+
+
+//        if(st.mID == 322 && og.numChanges() > 30)
+//            pathFinder.print("coucou.dot", actionCostEvaluator);
+
+        return pathFinder.bestPath(actionCostEvaluator);
+    }
+
+    OpenGoalTransitionFinder.CostEvaluator actionCostEvaluator = new OpenGoalTransitionFinder.CostEvaluator() {
+        @Override
+        public int cost(Action a, GAction ga, GStateVariable sv) {
+            return costOfAction(a, ga, sv);
         }
 
-        return pathFinder.bestPath(new OpenGoalTransitionFinder.CostEvaluator() {
-            @Override
-            public int cost(Action a, GAction ga, GStateVariable sv) {
-                return costOfAction(a, ga, sv);
-            }
+        @Override
+        public int distTo(GAction ga) {
+            return costOfPreconditions(ga);
+        }
 
-            @Override
-            public int distTo(GAction ga) {
-                return costOfPreconditions(ga);
-            }
-
-            @Override
-            public boolean usable(GAction ga) {
-                return allowedActions.contains(ga);
-            }
-        });
-    }
+        @Override
+        public boolean usable(GAction ga) {
+            return allowedActions.contains(ga);
+        }
+    };
 
     Map<Timeline, TimelineDTG> timelineDTGs;
     Map<Timeline, List<PartialPathDTG>> previousSolutions;
@@ -732,9 +650,20 @@ public class RelaxedPlanExtractor {
     HashSet<Fluent> achievedFluents = new HashSet<>();
 
     private void setActionUsed(GAction ga) {
+        if(!alreadyUsed.contains(ga) && displayResolution()) {
+            System.out.println("  act: "+ga);
+        }
         alreadyUsed.add(ga);
         for(Fluent f : ga.add) {
             achievedFluents.add(f);
+        }
+        for(Fluent f : ga.pre) {
+            if(!causalPending.contains(f) && !achievedFluents.contains(f)) {
+                causalPending.add(f);
+                if (displayResolution()) {
+                    System.out.println("    pending: " + f);
+                }
+            }
         }
     }
 
@@ -748,9 +677,9 @@ public class RelaxedPlanExtractor {
         previousSolutions = new HashMap<>();
         previousPaths = new HashMap<>();
 
-        if(debugging2 && st.mID == 148) {
-            System.out.println(Printer.temporalDatabaseManager(st));
-        }
+//        if(debugging2 && st.mID == 148) {
+//            System.out.println(Printer.temporalDatabaseManager(st));
+//        }
 
         for(Timeline tl : st.getTimelines()) {
             if(!tl.hasSinglePersistence()) {
@@ -768,6 +697,9 @@ public class RelaxedPlanExtractor {
         });
 //        System.out.println();
         for(Timeline og : opengoals) {
+            if(displayResolution()) {
+                System.out.println("og: "+Printer.inlineTemporalDatabase(st, og));
+            }
 //            System.out.println(Printer.inlineTemporalDatabase(st, og));
             PartialPathDTG path;
             if(og.hasSinglePersistence()) {
@@ -775,11 +707,10 @@ public class RelaxedPlanExtractor {
             } else {
                 path = getPathToTransition(og);
             }
-            if(debugging2) {
-                System.out.println(Printer.inlineTemporalDatabase(st, og));
-                System.out.println(path);
-
-            }
+//            if(debugging2) {
+//                System.out.println(Printer.inlineTemporalDatabase(st, og));
+//                System.out.println(path);
+//            }
             if(path.extendedTimeline() != null) { //TODO handle case with no supporter
                 previousSolutions.get(path.extendedTimeline()).add(path);
             } else {
@@ -787,14 +718,16 @@ public class RelaxedPlanExtractor {
                     previousPaths.put(path.getStateVariable(), new LinkedList<>());
                 previousPaths.get(path.getStateVariable()).add(path);
             }
-
+//            System.out.println("OpenGoal: "+Printer.inlineTemporalDatabase(st, og));
             for(DomainTransitionGraph.DTEdge addedEdge : path.additionalEdges()) {
                 if(addedEdge.ga != null) {
                     setActionUsed(addedEdge.ga);
-                    if(addedEdge.act == null)// not an instantiation
+                    if(addedEdge.act == null) {// not an instantiation
                         counter.addActionOccurrence(addedEdge.ga, path.getStateVariable());
-                    else {// instantiation
+//                        System.out.println("  " + addedEdge.ga);
+                    } else {// instantiation
                         counter.addActionInstantiation(addedEdge.act, addedEdge.ga);
+//                        System.out.println("  " + addedEdge.ga + "    (--" + addedEdge.act + "--)");
                         if(!instantiated.contains(addedEdge.act)) {
                             assert actionInstantiations.get(addedEdge.act).contains(addedEdge.ga);
                             actionInstantiations.get(addedEdge.act).clear();
@@ -825,11 +758,12 @@ public class RelaxedPlanExtractor {
     public int myPerfectHeuristic() {
         counter = new ActionUsageTracker();
         try {
+            if(displayResolution()) {
+                System.out.println("\n\n ---- state: "+st.mID+"   -----");
+            }
             initActionUsage();
             currentCausalReasoner = getCausalModelOfInitialDefinitions();
             actionInstantiations = getInitialPossibleActionsInstantiations();
-            if(debugging2 && st.mID == breakState)
-                System.out.println("BREAK");
             List<PartialPathDTG> paths = getPaths();
 
             Set<GAction> allGroundActions = new HashSet<>(counter.getAllUsedAction());
@@ -837,10 +771,20 @@ public class RelaxedPlanExtractor {
             for(Action a : counter.instantiations.keySet())
                 assert instantiated.contains(a) && actionInstantiations.get(a).size() == 1;
 
+            for(GAction ga : alreadyUsed) {
+                causalPending.addAll(currentCausalReasoner.conditionsOf(ga));
+            }
+
+            if(displayResolution()) {
+                System.out.println("\n---- Instantiation -----");
+            }
+
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
                     instantiated.add(actInst.getKey());
                     GAction ga = selectMostInterestingAction(actInst.getValue());
+//                    if(st.mID == 16)
+//                        System.out.print("");
                     setActionUsed(ga);
                     actInst.getValue().clear();
                     actInst.getValue().add(ga);
@@ -855,22 +799,24 @@ public class RelaxedPlanExtractor {
                 causalPending.addAll(currentCausalReasoner.conditionsOf(ga));
             }
 
+            if(displayResolution()) {
+                System.out.println("\n------- RPG ------");
+            }
+
             while (!causalPending.isEmpty()) {
                 Fluent og = causalPending.iterator().next();
-                if (debugging)
-                    System.out.println("    current subgoal: " + og);
+                if(displayResolution())
+                    System.out.println("pending: "+og);
                 causalPending.remove(og);
                 GAction ga = selectMostInterestingAction(currentCausalReasoner.candidatesFor(og));
-                if (debugging)
-                    System.out.println("    action for sub goal: " + ga);
 
                 // if we need action (ga !=null) and we didn't already used it
                 if (ga != null && !alreadyUsed.contains(ga)) {
                     // find if we can use the instantiation of an action already in the plan
 
-                    if(debugging)
-                        System.out.println(st.mID+"    New action from RPG: "+ga);
-
+//                    if(debugging)
+//                        System.out.println(st.mID+"    New action from RPG: "+ga);
+                    setActionUsed(ga);
                     causalPending.addAll(ga.pre);
                     if(planner.preprocessor.isHierarchical()) {
                         if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
@@ -886,21 +832,45 @@ public class RelaxedPlanExtractor {
                 }
             }
             int total = 0;
-            if(debugging2)
-                System.out.println("State id : "+st.mID);
+//            if(debugging2)
+//                System.out.println("State id : "+st.mID);
             for(GAction ga : counter.getAllUsedAction()) {
                 total += counter.totalOccurrences(ga);
             }
-            if(debugging2) {
-                System.out.println(total);
-                System.out.println("not inst: " + (st.getAllActions().size() - instantiated.size()));
-            }
+//            if(debugging2) {
+//                System.out.println(total);
+//                System.out.println("not inst: " + (st.getAllActions().size() - instantiated.size()));
+//            }
+//            if(st.mID == 16)
+//                System.out.println(report());
             return total - st.getNumActions();
         } catch (NoSolutionException e) {
-            if(debugging2)
-                e.printStackTrace();
+//            if(debugging2)
+//                e.printStackTrace();
             return 99999;
         }
+    }
+
+    public String report() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\nState: "+st.mID+"\n");
+        sb.append("-------------- Timelines -----------\n");
+        for(Timeline tl : previousSolutions.keySet()) {
+            sb.append(Printer.inlineTemporalDatabase(st, tl)+"\n");
+            for(PartialPathDTG ppd : previousSolutions.get(tl)) {
+                sb.append("  ");
+                sb.append(ppd.startPath+"\n");
+            }
+        }
+        sb.append("\n-------------- State variables -----------\n");
+        for(GStateVariable sv : previousPaths.keySet()) {
+            sb.append(sv+"\n");
+            for(PartialPathDTG ppd : previousPaths.get(sv)) {
+                sb.append("  "+ppd.startPath+"\n");
+            }
+        }
+        sb.append("\n");
+        return sb.toString();
     }
 
     /** Returns the expected cost of either:
