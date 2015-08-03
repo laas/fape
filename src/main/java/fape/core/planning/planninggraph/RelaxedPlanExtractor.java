@@ -209,14 +209,11 @@ public class RelaxedPlanExtractor {
                 }
                 sumPreconditionsCosts += base;
             }
-            if(true) {
-                for(Fluent f : ga.add) {
-                    if(causalPending.contains(f) && !achievedFluents.contains(f)) {
-                        int c = currentCausalReasoner.levelOfFact(f);
-                        assert c >= 0;
-                        maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
-//                        System.out.println(costOfPreconditions(ga)+" "+f+" "+ga+" "+c);
-                    }
+            for(Fluent f : ga.add) {
+                if(causalPending.contains(f) && !achievedFluents.contains(f)) {
+                    int c = currentCausalReasoner.levelOfFact(f);
+                    assert c >= 0;
+                    maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
                 }
             }
             int cost = sumPreconditionsCosts - maxCostOfAchieved;
@@ -706,6 +703,9 @@ public class RelaxedPlanExtractor {
                 path = getPathToPersistence(og);
             } else {
                 path = getPathToTransition(og);
+                path.extendWith(timelineDTGs.get(og));
+                timelineDTGs.get(og).hasBeenExtended = true; //TODO add tiempoint infomation ?
+                previousSolutions.get(og).add(path);
             }
 //            if(debugging2) {
 //                System.out.println(Printer.inlineTemporalDatabase(st, og));
@@ -841,8 +841,6 @@ public class RelaxedPlanExtractor {
 //                System.out.println(total);
 //                System.out.println("not inst: " + (st.getAllActions().size() - instantiated.size()));
 //            }
-//            if(st.mID == 16)
-//                System.out.println(report());
             return total - st.getNumActions();
         } catch (NoSolutionException e) {
 //            if(debugging2)

@@ -122,6 +122,40 @@ public class PartialPathDTG extends DomainTransitionGraph {
         }
     }
 
+    public void extendWith(TimelineDTG dtg) {
+        int lvl = entryPoints.iterator().next().lvl;
+        Set<DTNode> next = new HashSet<>();
+        Set<DTNode> current = new HashSet<>();
+        for(DTNode n : entryPoints) {
+            for(DTNode n2 : dtg.acceptingNodes) {
+                if(n.hasSameFluent(n2)) {
+                    next.add(n2);
+                }
+            }
+        }
+
+        while(!next.isEmpty()) {
+            current = next;
+            next = new HashSet<>();
+            for(DTNode n2 : current) {
+                Iterator<DTEdge> it = dtg.outEdges(n2);
+                while (it.hasNext()) {
+                    DTEdge e = it.next();
+                    addEdge(convert(e, lvl));
+                    next.add(e.to);
+                }
+            }
+            lvl++;
+        }
+        assert !current.isEmpty();
+        entryPoints.clear();
+        for(DTNode n : current) {
+            DTNode convertedEntry = convert(n, lvl-1);
+            assert !outEdges(convertedEntry).hasNext();
+            entryPoints.add(convertedEntry);
+        }
+    }
+
     /**
      * Returns true if the start path is a subpath the  one given a parameter.
      */
@@ -270,5 +304,9 @@ public class PartialPathDTG extends DomainTransitionGraph {
 
         }
         return startPath.subList(first, startPath.size());
+    }
+
+    @Override public String toString() {
+        return ""+id();
     }
 }

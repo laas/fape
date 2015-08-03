@@ -29,8 +29,8 @@ public class OpenGoalTransitionFinder {
     public List<DomainTransitionGraph.DTNode> startNodes = new LinkedList<>();
 
     public void addDTG(DomainTransitionGraph dtg) {
-        assert !dtgs.containsKey(dtg.id());
-        dtgs.put(dtg.id(), dtg);
+        if(!dtgs.containsKey(dtg.id()))
+            dtgs.put(dtg.id(), dtg);
     }
 
     private class NodeCost implements Comparable<NodeCost> {

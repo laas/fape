@@ -311,6 +311,9 @@ public abstract class APlanner {
      * @return      All consistent children as a result of the expansion.
      */
     public List<State> expand(State st, List<Flaw> flaws) {
+        for(Flaw f : flaws)
+            f.getNumResolvers(st, this);
+
         List<State> children = new LinkedList<>();
 
         if(options.displaySearch)
