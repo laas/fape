@@ -53,13 +53,9 @@ public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
             }
         }
 
-        // tie breaker: makespan
-        int diffMakespan = state.getEarliestStartTime(state.pb.end()) - state2.getEarliestStartTime(state2.pb.end());
-        if(diffMakespan != 0)
-            return diffMakespan;
-
         // no ranking done, use mID to make deterministic
-        return state.mID - state2.mID;
+        // this gives a depth first flavour by giving higher priory to states with
+        return state2.mID - state.mID;
     }
 
     public boolean definesHeuristicsValues() {
