@@ -5,7 +5,6 @@ import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.planninggraph.PGNode;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
@@ -19,7 +18,7 @@ import scala.collection.JavaConversions;
 
 import java.util.*;
 
-public class GAction implements PGNode {
+public class GAction {
 
     public abstract class GLogStatement {
         public final GStateVariable sv;

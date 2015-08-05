@@ -1,11 +1,9 @@
 package fape.core.planning.grounding;
 
-import fape.core.planning.planninggraph.PGNode;
-
 import java.util.HashSet;
 import java.util.Set;
 
-public class GroundState implements PGNode {
+public class GroundState {
 
     public final Set<Fluent> fluents = new HashSet<>();
 

@@ -1,15 +1,10 @@
 package fape.core.planning.grounding;
 
 import fape.core.inference.Term;
-import fape.core.planning.planninggraph.PGNode;
-import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.VarRef;
-import planstack.anml.parser.Instance;
 
-import java.util.Arrays;
 
-public final class Fluent implements PGNode, Term {
+public final class Fluent implements Term {
     final public GStateVariable sv;
     final public InstanceRef value;
     final public int ID;

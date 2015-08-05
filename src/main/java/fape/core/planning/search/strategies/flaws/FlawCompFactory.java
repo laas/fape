@@ -44,9 +44,6 @@ public class FlawCompFactory {
                 case "eogf":
                     compList.add(new EarliestOpenGoalFirst(st));
                     break;
-                case "rpgog":
-                    compList.add(new RPGOpenGoalComp(st, planner));
-                    break;
                 case "extfirst":
                     compList.add(new ExtendPlanFirst(st, planner));
                     break;
