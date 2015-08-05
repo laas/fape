@@ -192,7 +192,7 @@ public class State implements Reporter {
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
         tdb = new TimelinesManager(st.tdb, this); //st.tdb.deepCopy();
-        taskNet = st.taskNet.DeepCopy();
+        taskNet = st.taskNet.deepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
@@ -271,13 +271,13 @@ public class State implements Reporter {
         if(s.container() instanceof Action) {
             Action a = (Action) s.container();
             assert a.contains(s);
-            assert taskNet.GetAllActions().contains(a);
+            assert taskNet.getAllActions().contains(a);
             return a;
         } else if(s.container() instanceof Decomposition) {
             Decomposition d = (Decomposition) s.container();
             return taskNet.getContainingAction(d);
         } else {
-            for (Action a : taskNet.GetAllActions()) {
+            for (Action a : taskNet.getAllActions()) {
                 assert !a.contains(s);
             }
             return null;
@@ -1111,13 +1111,13 @@ public class State implements Reporter {
 
     /********* Wrapper around the task network **********/
 
-    public Action getAction(ActRef actionID) { return taskNet.GetAction(actionID); }
+    public Action getAction(ActRef actionID) { return taskNet.getAction(actionID); }
 
-    public List<Action> getAllActions() { return taskNet.GetAllActions(); }
+    public List<Action> getAllActions() { return taskNet.getAllActions(); }
 
-    public List<Action> getOpenLeaves() { return taskNet.GetOpenLeaves(); }
+    public List<Action> getOpenLeaves() { return taskNet.getUndecomposedActions(); }
 
-    public List<Task> getOpenTaskConditions() { return taskNet.getOpenTaskConditions(); }
+    public List<Task> getOpenTaskConditions() { return taskNet.getOpenTasks(); }
 
     public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
 
@@ -1133,7 +1133,7 @@ public class State implements Reporter {
 
     public int getNumActions() { return taskNet.getNumActions(); }
 
-    public int getNumOpenLeaves() { return taskNet.getNumOpenLeaves(); }
+    public int getNumOpenLeaves() { return taskNet.getNumUndecomposed(); }
 
     public int getNumRoots() { return taskNet.getNumRoots(); }
 
@@ -1235,7 +1235,7 @@ public class State implements Reporter {
      * @param actRef Reference of the action to update.
      */
     public void setActionFailed(ActRef actRef, int failureTime) {
-        Action toRemove = taskNet.GetAction(actRef);
+        Action toRemove = taskNet.getAction(actRef);
         // remove the duration constraints of the action
         removeActionDurationOf(toRemove.id());
         // insert new constraint specifying the end time of the action

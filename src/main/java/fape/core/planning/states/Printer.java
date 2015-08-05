@@ -77,7 +77,7 @@ public class Printer {
     public static String taskNetwork(State st, TaskNetworkManager tn) {
         StringBuilder sb = new StringBuilder();
         sb.append("Tasks: ");
-        for(Action a : tn.GetAllActions()) {
+        for(Action a : tn.getAllActions()) {
             sb.append(action(st, a));
             sb.append("  ");
         }
@@ -349,7 +349,7 @@ public class Printer {
     }
 
     public static TemporalInterval containingInterval(State st, TPRef tp) {
-        for(Action act : st.taskNet.GetAllActions()) {
+        for(Action act : st.taskNet.getAllActions()) {
             if(intervalContains(tp, act))
                 return act;
         }

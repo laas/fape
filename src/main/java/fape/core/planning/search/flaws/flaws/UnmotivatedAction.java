@@ -46,7 +46,7 @@ public class UnmotivatedAction extends Flaw {
             return resolvers;
 
         resolvers = new LinkedList<>();
-        assert(st.taskNet.getNumOpenActionConditions() == st.getOpenTaskConditions().size());
+        assert(st.taskNet.getNumOpenTasks() == st.getOpenTaskConditions().size());
 
         // any task condition unifiable with act
         for(Task ac : st.getOpenTaskConditions()) {

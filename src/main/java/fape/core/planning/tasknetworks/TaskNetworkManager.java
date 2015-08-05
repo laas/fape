@@ -26,6 +26,7 @@ import planstack.graph.core.UnlabeledDigraph;
 import planstack.graph.printers.NodeEdgePrinter;
 import planstack.structures.Pair;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,11 +59,19 @@ public class TaskNetworkManager implements Reporter {
         this.numUnmotivatedActions = base.numUnmotivatedActions;
     }
 
+    private List<Task> openTasks = null;
+    private List<Action> undecomposed = null;
+
+    private void clearCache() {
+        openTasks = null;
+        undecomposed = null;
+    }
+
     /**
      * O(1)
      * @return The number of undecomposed method.
      */
-    public int getNumOpenLeaves() {
+    public int getNumUndecomposed() {
         return numOpenLeaves;
     }
 
@@ -86,7 +95,7 @@ public class TaskNetworkManager implements Reporter {
      * O(1)
      * @return Number of opened action conditions.
      */
-    public int getNumOpenActionConditions() { return numOpenedActionConditions; }
+    public int getNumOpenTasks() { return numOpenedActionConditions; }
 
     /**
      * O(1)
@@ -172,36 +181,42 @@ public class TaskNetworkManager implements Reporter {
      * O(n)
      * @return All decomposable actions that are not decomposed yet.
      */
-    public List<Action> GetOpenLeaves() {
-        LinkedList<Action> l = new LinkedList<>();
-        for (TNNode n : network.jVertices()) {
-            if(n.isAction()) {
-                Action a = n.asAction();
-                if(a.decomposable() && !isDecomposed(a)) {
-                    l.add(a);
+    public List<Action> getUndecomposedActions() {
+        if(undecomposed == null) {
+            ArrayList<Action> l = new ArrayList<>();
+            for (TNNode n : network.jVertices()) {
+                if (n.isAction()) {
+                    Action a = n.asAction();
+                    if (a.decomposable() && !isDecomposed(a)) {
+                        l.add(a);
+                    }
                 }
             }
+            undecomposed = l;
         }
-        assert l.size() == numOpenLeaves : "Error: wrong number of opened leaves.";
-        return l;
+        assert undecomposed.size() == numOpenLeaves : "Error: wrong number of opened leaves.";
+        return undecomposed;
     }
 
     /**
      * O(n)
      * @return All action condition that are not supported yet.
      */
-    public List<Task> getOpenTaskConditions() {
-        LinkedList<Task> l = new LinkedList<>();
-        for (TNNode n : network.jVertices()) {
-            if(n.isActionCondition()) {
-                Task ac = n.asActionCondition();
-                if(!isSupported(ac)) {
-                    l.add(ac);
+    public List<Task> getOpenTasks() {
+        if(openTasks == null) {
+            List<Task> l = new ArrayList<>();
+            for (TNNode n : network.jVertices()) {
+                if (n.isActionCondition()) {
+                    Task ac = n.asActionCondition();
+                    if (!isSupported(ac)) {
+                        l.add(ac);
+                    }
                 }
             }
+            openTasks = l;
         }
-        assert l.size() == numOpenedActionConditions;
-        return l;
+        assert openTasks.size() == numOpenedActionConditions;
+        return openTasks;
     }
 
     public Collection<Task> getAllTasks() {
@@ -286,6 +301,7 @@ public class TaskNetworkManager implements Reporter {
                 numUnmotivatedActions--;
         }
         numOpenedActionConditions--;
+        clearCache();
     }
 
     /**
@@ -306,6 +322,7 @@ public class TaskNetworkManager implements Reporter {
         }
         if(a.mustBeMotivated() && !isMotivated(a))
             numUnmotivatedActions++;
+        clearCache();
     }
 
     /**
@@ -317,6 +334,7 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(dec));
         network.addEdge(new TNNode(parent), new TNNode(dec));
         this.numOpenLeaves--;
+        clearCache();
     }
 
     /**
@@ -329,6 +347,7 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
         numOpenedActionConditions++;
+        clearCache();
     }
 
     /**
@@ -341,6 +360,7 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
         numOpenedActionConditions++;
+        clearCache();
     }
 
     /**
@@ -350,6 +370,7 @@ public class TaskNetworkManager implements Reporter {
     public void insert(Task ac) {
         network.addVertex(new TNNode(ac));
         numOpenedActionConditions++;
+        clearCache();
     }
 
 
@@ -429,14 +450,14 @@ public class TaskNetworkManager implements Reporter {
      * actions.
      * @return A new TaskManager with the same content.
      */
-    public TaskNetworkManager DeepCopy() {
+    public TaskNetworkManager deepCopy() {
         return new TaskNetworkManager(this);
     }
 
     @Override
     public String report() {
         String str = "Num roots: " + roots().size() + ", roots: " + roots().toString();
-        str += "\n\tLeaf actions" +  GetAllActions().toString();
+        str += "\n\tLeaf actions" +  getAllActions().toString();
         return str;
     }
 
@@ -444,7 +465,7 @@ public class TaskNetworkManager implements Reporter {
      * O(n).
      * @return All actions of the task network.
      */
-    public List<Action> GetAllActions() {
+    public List<Action> getAllActions() {
         List<Action> allActions = new LinkedList<>();
         for(TNNode n : network.jVertices()) {
             if(n.isAction()) {
@@ -461,8 +482,8 @@ public class TaskNetworkManager implements Reporter {
      * @param id Id of the action
      * @return the action with the given id
      */
-    public Action GetAction(ActRef id) {
-        for(Action a : GetAllActions()) {
+    public Action getAction(ActRef id) {
+        for(Action a : getAllActions()) {
             if(id.equals(a.id())) {
                 return a;
             }
@@ -481,7 +502,7 @@ public class TaskNetworkManager implements Reporter {
      * @return The action containing the statement. null if no action in the task network contains the statement.
      */
     public Action getActionContainingStatement(LogStatement e) {
-        for(Action a : GetAllActions()) {
+        for(Action a : getAllActions()) {
             for(LogStatement s : a.logStatements()) {
                 if(s.equals(e)) {
                     return a;
