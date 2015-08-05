@@ -159,7 +159,7 @@ public class FeasibilityReasoner {
             return st.reasoner;
 
         HReasoner<Term> r = new HReasoner<>(baseReasoner, true);
-        for(Fluent f : GroundProblem.allFluents(st)) {
+        for(Fluent f : planner.preprocessor.getGroundProblem().allFluents(st)) {
             // if the fluent is not already recorded, it does not appear in any clause and we can safely ignore it
             if(r.hasTerm(f))
                 r.set(f);
@@ -231,7 +231,7 @@ public class FeasibilityReasoner {
         // check that all open goals has at least one achievable fluent
         for(Timeline cons : st.tdb.getConsumers()) {
             boolean supported = false;
-            for(Fluent f : DisjunctiveFluent.fluentsOf(cons.stateVariable, cons.getGlobalConsumeValue(), st, false)) {
+            for(Fluent f : DisjunctiveFluent.fluentsOf(cons.stateVariable, cons.getGlobalConsumeValue(), st, planner)) {
                 if(st.reasoner.hasTerm(f) && st.reasoner.isTrue(f)) {
                     supported = true;
                     break;

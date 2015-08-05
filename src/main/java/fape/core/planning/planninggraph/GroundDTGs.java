@@ -4,6 +4,7 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.heuristics.relaxed.DomainTransitionGraph;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.InstanceRef;
@@ -30,8 +31,7 @@ public class GroundDTGs {
             // initialize nodes
             for(String val : pb.instances().instancesOfType(sv.f.valueType())) {
                 InstanceRef instance = pb.instance(val);
-                addFluent(new DTNode(new Fluent(sv, instance, false), this.id()));
-//                addFluent(new DTNode(new Fluent(sv, instance, true), this.id()));
+                addFluent(new DTNode(planner.preprocessor.getFluent(sv, instance), this.id()));
             }
             addFluent(new DTNode(null, id()));
         }
@@ -154,9 +154,11 @@ public class GroundDTGs {
     }
 
     Map<GStateVariable, DTG> dtgs = new HashMap<>();
+    final APlanner planner;
 
-    public GroundDTGs(Collection<GAction> actions, AnmlProblem pb) {
+    public GroundDTGs(Collection<GAction> actions, AnmlProblem pb, APlanner planner) {
         this.pb = pb;
+        this.planner = planner;
         for(GAction ga : actions) {
 
             for(Fluent effect : ga.add) {

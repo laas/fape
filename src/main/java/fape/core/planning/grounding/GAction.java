@@ -3,6 +3,7 @@ package fape.core.planning.grounding;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.PGNode;
 import fape.exceptions.FAPEException;
@@ -101,7 +102,7 @@ public class GAction implements PGNode {
 
     public String decomposedName() { return abs.name()+"["+decID+"]"; }
 
-    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb) throws NotValidGroundAction {
+    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
         assert !(decID == -1 && abs.decompositions().size() != 0);
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
@@ -179,25 +180,22 @@ public class GAction implements PGNode {
                         t.id(),
                         (GLogStatement) new GTransition(sv(t.sv(), pb), valueOf(t.from(), pb), valueOf(t.to(), pb))));
 
-                pre.add(fluent(t.sv(), t.from(), true, vars, pb));
-                pre.add(fluent(t.sv(), t.from(), false, vars, pb));
-                if(!fluent(t.sv(), t.from(), false, vars, pb).equals(fluent(t.sv(), t.to(), false, vars, pb))) {
-                    add.add(fluent(t.sv(), t.to(), true, vars, pb));
-                    add.add(fluent(t.sv(), t.to(), false, vars, pb));
+                pre.add(fluent(t.sv(), t.from(), vars, planner));
+                if(!fluent(t.sv(), t.from(), vars, planner).equals(fluent(t.sv(), t.to(), vars, planner))) {
+                    add.add(fluent(t.sv(), t.to(), vars, planner));
                 }
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
                 gStatements.add(new Pair<>(
                         p.id(),
                         (GLogStatement) new GPersistence(sv(p.sv(), pb), valueOf(p.value(), pb))));
-                pre.add(fluent(p.sv(), p.value(), false, vars, pb));
+                pre.add(fluent(p.sv(), p.value(), vars, planner));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
                 gStatements.add(new Pair<>(
                         a.id(),
                         (GLogStatement) new GAssignement(sv(a.sv(), pb), valueOf(a.value(), pb))));
-                add.add(fluent(a.sv(), a.value(), false, vars, pb));
-                add.add(fluent(a.sv(), a.value(), true, vars, pb));
+                add.add(fluent(a.sv(), a.value(), vars, planner));
             }
         }
 
@@ -264,12 +262,12 @@ public class GAction implements PGNode {
         return new GStateVariable(sv.func(), svParams);
     }
 
-    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, boolean partOfTransition, Map<LVarRef, InstanceRef> vars, AnmlProblem pb) {
+    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Map<LVarRef, InstanceRef> vars, APlanner planner) {
         VarRef[] svParams = new VarRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
-            svParams[i] = valueOf(sv.jArgs().get(i), pb);
-
-        return new Fluent(sv.func(), svParams, valueOf(value, pb), partOfTransition);
+            svParams[i] = valueOf(sv.jArgs().get(i), planner.pb);
+        GStateVariable gsv = planner.preprocessor.getStateVariable(sv.func(), svParams);
+        return planner.preprocessor.getFluent(gsv, valueOf(value, planner.pb));
     }
 
     /**
@@ -455,7 +453,7 @@ public class GAction implements PGNode {
         return paramsLists;
     }
 
-    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa) {
+    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa, APlanner planner) {
         // all ground actions corresponding to aa
         List<GAction> actions = new LinkedList<>();
 
@@ -463,7 +461,7 @@ public class GAction implements PGNode {
             List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, -1);
             for(Map<LVarRef, InstanceRef> params : paramsLists) {
                 try {
-                    actions.add(new GAction(aa, -1, params, gPb));
+                    actions.add(new GAction(aa, -1, params, gPb, planner));
                 } catch (NotValidGroundAction e) {}
             }
         } else {
@@ -471,7 +469,7 @@ public class GAction implements PGNode {
                 List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, decID);
                 for(Map<LVarRef, InstanceRef> params : paramsLists) {
                     try {
-                        actions.add(new GAction(aa, decID, params, gPb));
+                        actions.add(new GAction(aa, decID, params, gPb, planner));
                     } catch (NotValidGroundAction e) {}
                 }
             }

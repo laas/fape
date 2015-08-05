@@ -107,7 +107,7 @@ public class RelaxedPlanExtractor {
 
     public HLeveledReasoner<GAction,Fluent> causalReasonerForOpenGoal(State st, Timeline consumer) {
         HLeveledReasoner<GAction, Fluent> hlr = baseCausalReas.clone();
-        Collection<Fluent> init = GroundProblem.fluentsBefore(st, consumer.getFirstTimePoints());
+        Collection<Fluent> init = planner.preprocessor.getGroundProblem().fluentsBefore(st, consumer.getFirstTimePoints());
         for (Fluent i : init) {
             hlr.set(i);
         }
@@ -314,7 +314,7 @@ public class RelaxedPlanExtractor {
                     LogStatement s = cc.getFirst();
                     if (st.getActionContaining(s) == null) {
                         // statement part of the initial problem definition
-                        Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, true);
+                        Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
                         for (Fluent f : fluents) {
                             causalModel.set(f);
                         }
@@ -351,7 +351,7 @@ public class RelaxedPlanExtractor {
                 assert causalPending.isEmpty();
                 causalPending = new HashSet<>();
 
-                Collection<Fluent> disjunctiveGoals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, true);
+                Collection<Fluent> disjunctiveGoals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, planner);
                 Fluent selectedGoal = selectMostInterestingFluent(disjunctiveGoals);
                 causalPending.add(selectedGoal);
                 if(debugging) {
@@ -473,7 +473,7 @@ public class RelaxedPlanExtractor {
     public PartialPathDTG getPathToPersistence(Timeline og) throws NoSolutionException {
         assert og.hasSinglePersistence();
         OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
-        Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, false);
+        Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for (Fluent f : ogs)
             possibleStateVariables.add(f.sv);
@@ -548,7 +548,7 @@ public class RelaxedPlanExtractor {
     public PartialPathDTG getPathToTransition(Timeline og) throws NoSolutionException {
         assert !og.hasSinglePersistence();
         OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
-        Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, false);
+        Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for(Fluent f : ogs)
             possibleStateVariables.add(f.sv);

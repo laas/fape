@@ -1,9 +1,11 @@
 package fape.core.planning.grounding;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.Landmark;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
@@ -16,11 +18,11 @@ public class DisjunctiveFluent implements Landmark {
         this.fluents = new HashSet<>(fluents);
     }
 
-    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st) {
-        this.fluents = new HashSet<>(fluentsOf(sv, value, st, false));
+    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
+        this.fluents = new HashSet<>(fluentsOf(sv, value, st, planner));
     }
 
-    public static Collection<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, boolean addChangeableFluents) {
+    public static Collection<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
         HashSet<Fluent> fluents = new HashSet<>();
         List<VarRef> variables = new LinkedList<>();
         for(VarRef var : sv.args()) {
@@ -32,18 +34,18 @@ public class DisjunctiveFluent implements Landmark {
             variables.add(value);
         }
 
-        List<List<VarRef>> valuesSets = new LinkedList<>();
+        List<List<InstanceRef>> valuesSets = new LinkedList<>();
         for(VarRef var : variables) {
-            List<VarRef> values = new LinkedList<>();
+            List<InstanceRef> values = new LinkedList<>();
             for(String val : st.domainOf(var)) {
                 values.add(st.pb.instances().referenceOf(val));
             }
             valuesSets.add(values);
         }
 
-        List<List<VarRef>> argList = PGUtils.allCombinations(valuesSets);
+        List<List<InstanceRef>> argList = PGUtils.allCombinations(valuesSets);
 
-        for(List<VarRef> args : argList) {
+        for(List<InstanceRef> args : argList) {
 
             VarRef[] fluentArgs = new VarRef[sv.args().length];
             int i =0;
@@ -61,11 +63,10 @@ public class DisjunctiveFluent implements Landmark {
                 if(value.equals(variables.get(argIndex)))
                     break;
             }
-            VarRef varOfValue = args.get(argIndex);
+            InstanceRef varOfValue = args.get(argIndex);
 
-            fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue, false));
-            if(addChangeableFluents)
-                fluents.add(new Fluent(sv.func(), fluentArgs, varOfValue, true));
+            GStateVariable gsv = planner.preprocessor.getStateVariable(sv.func(), fluentArgs);
+            fluents.add(planner.preprocessor.getFluent(gsv, varOfValue));
         }
         return fluents;
     }

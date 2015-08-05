@@ -2,6 +2,7 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.GroundProblem;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.RelaxedPlanningGraph;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
@@ -13,16 +14,15 @@ import java.util.Map;
 public class RPGOpenGoalComp implements FlawComparator {
 
     final State st;
+    final APlanner planner;
+    final GroundProblem gpb;
     final Map<UnsupportedTimeline, Integer> depths = new HashMap<>();
 
-    public static GroundProblem gpb = null;
 
-    public RPGOpenGoalComp(State st) {
+    public RPGOpenGoalComp(State st, APlanner planner) {
         this.st = st;
-
-        if(gpb == null || gpb.liftedPb != st.pb) {
-            gpb = new GroundProblem(st.pb);
-        }
+        this.planner = planner;
+        gpb = planner.preprocessor.getGroundProblem();
     }
 
     @Override
@@ -34,7 +34,7 @@ public class RPGOpenGoalComp implements FlawComparator {
         if(!depths.containsKey(udb)) {
             GroundProblem pb = new GroundProblem(gpb, st, udb.consumer);
             RelaxedPlanningGraph rpg = new RelaxedPlanningGraph(pb);
-            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.getGlobalConsumeValue(), st));
+            int depth = rpg.buildUntil(new DisjunctiveFluent(udb.consumer.stateVariable, udb.consumer.getGlobalConsumeValue(), st, planner));
             depths.put(udb, depth);
 //            System.out.println(""+depth+"   " +Printer.inlineTemporalDatabase(st, udb.consumer));
         }

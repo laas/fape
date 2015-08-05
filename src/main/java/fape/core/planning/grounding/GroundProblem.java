@@ -1,10 +1,12 @@
 package fape.core.planning.grounding;
 
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
+import org.jfree.chart.plot.AbstractPieLabelDistributor;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -20,6 +22,7 @@ import java.util.*;
 public class GroundProblem {
 
     public final AnmlProblem liftedPb;
+    public final APlanner planner;
     public final GroundState initState = new GroundState();
     public final GroundState goalState = new GroundState();
 
@@ -68,14 +71,14 @@ public class GroundProblem {
         return total;
     }
 
-    private static List<TempFluents> tempsFluents(State st) {
+    private List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
                 for(ChainComponent cc : db.chain) {
                     if (cc.change) {
                         // those values can be used for persistences but not for transitions.
-                        st.fluents.add(new TempFluents(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, false), cc.getSupportTimePoint()));
+                        st.fluents.add(new TempFluents(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, planner), cc.getSupportTimePoint()));
                     }
                 }
             }
@@ -83,7 +86,7 @@ public class GroundProblem {
         return st.fluents;
     }
 
-    public static Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
+    public Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
         Set<Fluent> fluents = new HashSet<>();
         for(TempFluents tf : tempsFluents(st)) {
             if(st.canAllBeBefore(tf.timepoints, tps))
@@ -92,7 +95,7 @@ public class GroundProblem {
         return fluents;
     }
 
-    public static Set<Fluent> allFluents(State st) {
+    public Set<Fluent> allFluents(State st) {
         Set<Fluent> fluents = new HashSet<>();
         for(TempFluents tf : tempsFluents(st))
             fluents.addAll(tf.fluents);
@@ -103,6 +106,7 @@ public class GroundProblem {
     public GroundProblem(GroundProblem pb, State st) {
         this.liftedPb = pb.liftedPb;
         this.gActions = new LinkedList<>(pb.gActions);
+        this.planner = pb.planner;
 
         initState.fluents.addAll(allFluents(st));
     }
@@ -110,13 +114,15 @@ public class GroundProblem {
     public GroundProblem(GroundProblem pb, State st, Timeline og) {
         this.liftedPb = pb.liftedPb;
         this.gActions = pb.gActions;
+        this.planner = pb.planner;
 
         initState.fluents.addAll(fluentsBefore(st, og.getFirstTimePoints()));
     }
 
-    public GroundProblem(AnmlProblem liftedPb) {
+    public GroundProblem(AnmlProblem liftedPb, APlanner planner) {
         this.liftedPb = liftedPb;
         this.gActions = new LinkedList<>();
+        this.planner = planner;
 
         for(Chronicle c : liftedPb.chronicles()) {
             for(BindingConstraint bc : c.bindingConstraints()) {
@@ -128,7 +134,7 @@ public class GroundProblem {
         }
 
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
-            this.gActions.addAll(GAction.groundActions(this, liftedAct));
+            this.gActions.addAll(GAction.groundActions(this, liftedAct, planner));
         }
 
         for(Chronicle mod : liftedPb.chronicles()) {
@@ -189,10 +195,11 @@ public class GroundProblem {
 
     protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, InstanceRef> argMap) {
         List<Fluent> fluents = new LinkedList<>();
+        GStateVariable sv = planner.preprocessor.getStateVariable(s.sv().func(), s.sv().args());
         if(s instanceof Transition) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), true));
+            fluents.add(planner.preprocessor.getFluent(sv, (InstanceRef) s.startValue()));
         } else if(s instanceof Persistence) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), false));
+            fluents.add(planner.preprocessor.getFluent(sv, (InstanceRef) s.startValue()));
         }
         return fluents;
     }
@@ -200,28 +207,8 @@ public class GroundProblem {
     protected Collection<Fluent> statementToAddition(LogStatement s, Map<LVarRef, VarRef> argMap) {
         List<Fluent> fluents = new LinkedList<>();
         if(s instanceof Transition || s instanceof Assignment) {
-            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), false));
-            fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.endValue(), true));
-        }
-        return fluents;
-    }
-
-    protected Collection<Fluent> statementToDeletions(LogStatement s, Map<LVarRef, VarRef> argMap) {
-        List<Fluent> fluents = new LinkedList<>();
-        if(!(s instanceof Assignment || s instanceof Transition)) {
-        } else if(s instanceof Assignment) {
-            for(String value : liftedPb.instances().instancesOfType(s.sv().func().valueType())) {
-                VarRef val = liftedPb.instances().referenceOf(value);
-                if(val != s.endValue()) {
-                    fluents.add(new Fluent(s.sv().func(), s.sv().args(), val, true));
-                    fluents.add(new Fluent(s.sv().func(), s.sv().args(), val, false));
-                }
-            }
-        } else {
-            if(s.startValue() != s.endValue()) {
-                fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), true));
-                fluents.add(new Fluent(s.sv().func(), s.sv().args(), s.startValue(), false));
-            }
+            GStateVariable sv = planner.preprocessor.getStateVariable(s.sv().func(), s.sv().args());
+            fluents.add(planner.preprocessor.getFluent(sv, (InstanceRef) s.endValue()));
         }
         return fluents;
     }

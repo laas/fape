@@ -9,46 +9,24 @@ import planstack.anml.parser.Instance;
 
 import java.util.Arrays;
 
-public class Fluent implements PGNode, Term {
+public final class Fluent implements PGNode, Term {
     final public GStateVariable sv;
     final public InstanceRef value;
-    final public boolean partOfTransition;
+    final public int ID;
 
-    public Fluent(GStateVariable sv, InstanceRef value, boolean partOfTransition) {
+    /** Creates a new Fluent representing the state variable sv with value 'value".
+     *
+     *  This constructor should only be invoked by the Preprocessor.
+     *  If you need a new FLuent, you should invoke Preprocessor.getFluent(...)
+     */
+    public Fluent(final GStateVariable sv, final InstanceRef value, final int ID) {
         this.sv = sv;
         this.value = value;
-        this.partOfTransition = partOfTransition;
-    }
-
-    public Fluent(Function f, VarRef[] params, VarRef value, boolean partOfTransition) {
-        this.partOfTransition = partOfTransition;
-        InstanceRef[] castParams = new InstanceRef[params.length];
-        for(int i=0 ; i< params.length ; i++)
-            castParams[i] = (InstanceRef) params[i];
-        this.sv = new GStateVariable(f, castParams);
-        this.value = (InstanceRef) value;
+        this.ID = ID;
     }
 
     @Override
     public String toString() {
         return sv +"=" + value;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Fluent))
-            return false;
-        Fluent of = (Fluent) o;
-//        if(partOfTransition != of.partOfTransition)
-//            return false;
-
-        return sv.equals(of.sv) && value.equals(of.value);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return sv.hashCode() * 42* value.hashCode();
-    }
-
 }

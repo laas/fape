@@ -6,8 +6,13 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
+import planstack.anml.model.Function;
+import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.VarRef;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class Preprocessor {
@@ -20,6 +25,8 @@ public class Preprocessor {
     private Set<GAction> allActions;
     private GroundDTGs dtgs;
     HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
+    Map<GStateVariable, Map<InstanceRef, Fluent>> fluents;
+    int nextFluentID = 0;
 
     Boolean isHierarchical = null;
 
@@ -38,7 +45,7 @@ public class Preprocessor {
 
     public GroundProblem getGroundProblem() {
         if(gPb == null) {
-            gPb = new GroundProblem(initialState.pb);
+            gPb = new GroundProblem(initialState.pb, planner);
         }
         return gPb;
     }
@@ -52,7 +59,7 @@ public class Preprocessor {
 
     public GroundDTGs.DTG getDTG(GStateVariable groundStateVariable) {
         if(dtgs == null) {
-            dtgs = new GroundDTGs(getAllActions(), planner.pb);
+            dtgs = new GroundDTGs(getAllActions(), planner.pb, planner);
         }
         return dtgs.getDTGOf(groundStateVariable);
     }
@@ -86,5 +93,25 @@ public class Preprocessor {
             }
         }
         return new HLeveledReasoner<>(baseCausalReasoner, getAllPossibleActionFromState(st));
+    }
+
+    public Fluent getFluent(GStateVariable sv, InstanceRef value) {
+        if(fluents == null) {
+            fluents = new HashMap<>();
+        }
+        if(!fluents.containsKey(sv)) {
+            fluents.put(sv, new HashMap<>());
+        }
+        if(!fluents.get(sv).containsKey(value)) {
+            fluents.get(sv).put(value, new Fluent(sv, value, nextFluentID++));
+        }
+        return fluents.get(sv).get(value);
+    }
+
+    public GStateVariable getStateVariable(Function f, VarRef[] params) {
+        InstanceRef[] castParams = new InstanceRef[params.length];
+        for (int i = 0; i < params.length; i++)
+            castParams[i] = (InstanceRef) params[i];
+        return new GStateVariable(f, castParams);
     }
 }

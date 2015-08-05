@@ -74,7 +74,7 @@ public class TimelineDTG extends DomainTransitionGraph {
                 if(s instanceof Assignment) {
                     addNode(i, null, null, s.start());
                 } else {
-                    Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.startValue(), st, false); //todo why false
+                    Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.startValue(), st, planner); //todo why false
                     for(Fluent f : fluents) {
                         addNode(i, f, null, s.start());
                     }
@@ -94,7 +94,7 @@ public class TimelineDTG extends DomainTransitionGraph {
                 assert i == 0;
                 assert nodesByLevel.get(i).size() == 1;
                 DTNode from = nodesByLevel.get(i).get(null);
-                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, false); //todo why false
+                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner); //todo why false
 
                 TPRef start = s.end();
                 TPRef end = i+1 < tl.numChanges() ? tl.getChangeNumber(i+1).getConsumeTimePoint() : null;
@@ -131,14 +131,14 @@ public class TimelineDTG extends DomainTransitionGraph {
                     TPRef start = s.end();
                     TPRef end = i+1 < tl.numChanges() ? tl.getChangeNumber(i+1).getConsumeTimePoint() : null;
                     if(gs instanceof GAction.GTransition) {
-                        Fluent fromFluent = new Fluent(gs.sv, ((GAction.GTransition) gs).from, true);
-                        Fluent toFluent = new Fluent(gs.sv, ((GAction.GTransition) gs).to, true);
+                        Fluent fromFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GTransition) gs).from);
+                        Fluent toFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GTransition) gs).to);
                         from = hasNode(i, fromFluent) ? getNode(i, fromFluent) : null;
                         to =  addNode(i+1, toFluent, start, end);
                     } else {
                         assert gs instanceof GAction.GAssignement;
                         from = hasNode(i, null) ? getNode(i, null) : null;
-                        Fluent toFluent = new Fluent(gs.sv, ((GAction.GAssignement) gs).to, true);
+                        Fluent toFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GAssignement) gs).to);
                         to = addNode(i+1, toFluent, start, end);
                     }
 
