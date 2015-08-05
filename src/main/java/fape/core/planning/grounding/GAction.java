@@ -138,10 +138,10 @@ public class GAction {
                 iDec++;
             }
         }
-//        if(decID != -1) { // the last one is a variable representing the number of the decomposition.
-//            baseVars[iBase] = new LVarRef("__dec__");
-//            baseValues[iBase] = new InstanceRef(FeasibilityReasoner.decCSPValue(decID));
-//        }
+        if(decID != -1) { // the last one is a variable representing the number of the decomposition.
+            baseVars[iBase] = new LVarRef("__dec__");
+            baseValues[iBase] = planner.pb.instance(FeasibilityReasoner.decCSPValue(decID));
+        }
 
         List<AbstractStatement> statements;
         if(decID == -1) {

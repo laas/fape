@@ -24,8 +24,6 @@ public class FeasibilityReasoner {
 
     /** Maps ground actions from their ID */
     public final HashMap<Integer, GAction> gactions = new HashMap<>();
-    public final HashMap<ActRef, VarRef> groundedActVariable = new HashMap<>();
-    public final HashMap<ActRef, VarRef> decompositionVariable = new HashMap<>();
 
     final HReasoner<Term> baseReasoner;
 
@@ -66,11 +64,6 @@ public class FeasibilityReasoner {
                     maxNumDecompositions : aa.jDecompositions().size();
         }
 
-        // create values for the decomposition variables
-        for(int i=0 ; i<maxNumDecompositions ; i++) {
-            initialState.csp.bindings().addPossibleValue(decCSPValue(i));
-        }
-
         for(GAction ga : allActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
                 varsOfAction.put(ga.abs.name(), ga.baseVars);
@@ -109,7 +102,7 @@ public class FeasibilityReasoner {
         }
         ValuesHolder dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
         for(Action a : st.getAllActions()) {
-            st.csp.bindings().restrictDomain(groundedActVariable.get(a.id()), dom);
+            st.csp.bindings().restrictDomain(a.instantiationVar(), dom);
         }
 
         st.addableGroundActions = feasibles;
@@ -144,7 +137,7 @@ public class FeasibilityReasoner {
         }
 
         for(Action a : st.getOpenLeaves()) {
-            for(Integer gActID : st.csp.bindings().domainOfIntVar(groundedActVariable.get(a.id()))) {
+            for(Integer gActID : st.csp.bindings().domainOfIntVar(a.instantiationVar())) {
                 GAction ga = gactions.get(gActID);
                 for(GTaskCond tc : ga.subTasks) {
                     derivableTasks.add(tc);
@@ -255,8 +248,8 @@ public class FeasibilityReasoner {
 
     public Set<GAction> getGroundActions(Action liftedAction, State st) {
         Set<GAction> ret = new HashSet<>();
-        assert(groundedActVariable.containsKey(liftedAction.id()));
-        for(Integer i : st.csp.bindings().domainOfIntVar(this.groundedActVariable.get(liftedAction.id()))) {
+        assert st.csp.bindings().isRecorded(liftedAction.instantiationVar());
+        for(Integer i : st.csp.bindings().domainOfIntVar(liftedAction.instantiationVar())) {
             if(gactions.containsKey(i)) // the domain might contain any int variable
                 ret.add(gactions.get(i));
         }
@@ -270,30 +263,33 @@ public class FeasibilityReasoner {
      * @param st  State in which the action appears (needed to update the CSP)
      */
     public void createGroundActionVariables(Action act, State st) {
-        assert !groundedActVariable.containsKey(act.id()) : "The action already has a variable for its ground version.";
+        assert !st.csp.bindings().isRecorded(act.instantiationVar()) : "The action already has a variable for its ground versions.";
+        assert !st.csp.bindings().isRecorded(act.decompositionVar()) : "The action already has a variable for its decompostions.";
 
         // all ground versions of this actions (represented by their ID)
         LVarRef[] vars = varsOfAction.get(act.abs().name());
-        List<VarRef> values = new LinkedList<>();
+        List<VarRef> values = new ArrayList<>();
         for(LVarRef v : vars) {
             if(v.id().equals("__dec__")) {
-                VarRef decVar = new VarRef(st.refCounter);
+                assert act.decomposable();
+                VarRef decVar = act.decompositionVar();
                 List<String> domain = new LinkedList<>();
                 for(int i=0 ; i< act.decompositions().size() ; i++)
                     domain.add(decCSPValue(i));
                 st.csp.bindings().AddVariable(decVar, domain, "decomposition_variable");
-                decompositionVariable.put(act.id(), decVar);
                 values.add(decVar);
             } else {
                 values.add(act.context().getDefinition(v)._2());
             }
         }
+
         // Variable representing the ground versions of this action
-        VarRef gAction = new VarRef(st.refCounter);
-        st.csp.bindings().AddIntVariable(gAction);
-        values.add(gAction);
-        groundedActVariable.put(act.id(), gAction);
+        st.csp.bindings().AddIntVariable(act.instantiationVar());
+        values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
+
+        assert st.csp.bindings().isRecorded(act.instantiationVar());
+        assert !act.decomposable() || st.csp.bindings().isRecorded(act.decompositionVar());
     }
 
     private Map<AbstractAction, List<GAction>> groundedActs = new HashMap<>();
@@ -313,8 +309,7 @@ public class FeasibilityReasoner {
         Set<GAction> ret = new HashSet<>();
         ValuesHolder current = new ValuesHolder(new LinkedList<Integer>());
         for(Action a : st.getAllActions()) {
-            assert(groundedActVariable.containsKey(a.id()));
-            ValuesHolder toAdd = st.csp.bindings().rawDomain(groundedActVariable.get(a.id()));
+            ValuesHolder toAdd = st.csp.bindings().rawDomain(a.decompositionVar());
             current = current.union(toAdd);
         }
         for(Integer gaRawID : current.values()) {

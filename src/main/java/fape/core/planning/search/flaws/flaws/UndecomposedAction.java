@@ -47,7 +47,7 @@ public class UndecomposedAction extends Flaw {
             if(planner.options.usePlanningGraphReachability) {
                 // in this case every action is associated with a variable representing its possible decompositions
                 // a decomposition is possible only if this decomposition is in the domain of the said variable
-                List<String> possibleDecompositions = st.domainOf(planner.preprocessor.getFeasibilityReasoner().decompositionVariable.get(action.id()));
+                List<String> possibleDecompositions = st.domainOf(action.decompositionVar());
                 if(possibleDecompositions.contains(FeasibilityReasoner.decCSPValue(decompositionID))) {
                     resolvers.add(new DecomposeAction(action, decompositionID));
                 }

@@ -82,7 +82,7 @@ public class State implements Reporter {
      */
     public final TimelinesManager tdb;
 
-    public final MetaCSP<VarRef,TPRef,GlobalRef> csp;
+    public final MetaCSP<TPRef,GlobalRef> csp;
 
     public final TaskNetworkManager taskNet;
 
@@ -656,7 +656,7 @@ public class State implements Reporter {
         apply(dec);
         if(pgr != null) {
             // bind de decomposition variable introduced by reachability checking
-            bindVariable(pgr.decompositionVariable.get(dec.container().id()), FeasibilityReasoner.decCSPValue(dec.decNum()));
+            bindVariable(dec.container().decompositionVar(), FeasibilityReasoner.decCSPValue(dec.decNum()));
         }
     }
 
