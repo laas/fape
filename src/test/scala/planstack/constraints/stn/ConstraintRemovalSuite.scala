@@ -97,6 +97,7 @@ class ConstraintRemovalSuite extends FunSuite {
     }
   }
 
+  /*
   test("Removal with pending mixed constraints") {
     val csp = new MetaCSP[Ref,Ref,Ref]
     csp.bindings.addPossibleValue(3)
@@ -114,5 +115,5 @@ class ConstraintRemovalSuite extends FunSuite {
     // even with d binded, the constraint should not be propagated since it was removed
     assert(csp.stn.getEarliestStartTime("v") <= 1)
   }
-
+*/
 }

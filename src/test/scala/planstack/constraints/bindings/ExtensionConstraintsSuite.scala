@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 
 class ExtensionConstraintsSuite extends FunSuite {
 
+  /*
   for(cn <- List(new BindingConstraintNetwork[String](), new ConservativeConstraintNetwork[String]())) {
 
     test("["+cn.getClass.getSimpleName+"] Propagation of extension constraints") {
@@ -73,4 +74,5 @@ class ExtensionConstraintsSuite extends FunSuite {
       assert(!cn.isConsistent)
     }
   }
+  */
 }

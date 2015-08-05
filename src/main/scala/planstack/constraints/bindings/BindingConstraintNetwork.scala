@@ -2,6 +2,7 @@ package planstack.constraints.bindings
 
 import java.util
 
+import planstack.anml.model.concrete.VarRef
 import planstack.constraints.bindings.BindingConstraintNetwork.ExtID
 
 import scala.collection.mutable
@@ -16,7 +17,7 @@ object BindingConstraintNetwork {
   var cnt = 0
 }
 
-class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[VarRef]]) extends BindingCN[VarRef] {
+class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends BindingCN[VarRef] {
 
   def this() = this(None)
 
@@ -399,8 +400,8 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
 
   override def contains(v: VarRef): Boolean = domIds.contains(v)
 
-  override def DeepCopy(): BindingConstraintNetwork[VarRef] =
-    new BindingConstraintNetwork[VarRef](Some(this))
+  override def DeepCopy(): BindingConstraintNetwork =
+    new BindingConstraintNetwork(Some(this))
 
   override def assertGroundAndConsistent(): Unit = ???
 

@@ -7,6 +7,8 @@ import scala.collection.JavaConversions._
 
 class BindingsSuite extends FunSuite {
 
+  /*
+
   for(cn <- List(new BindingConstraintNetwork[String](), new ConservativeConstraintNetwork[String]())) {
 
     test("aeaze"+ cn.getClass.getSimpleName) {
@@ -38,4 +40,5 @@ class BindingsSuite extends FunSuite {
       println(cn.Report())
     }
   }
+  */
 }

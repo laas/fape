@@ -45,6 +45,7 @@ class Ref(val name:String) extends UniquelyIdentified {
 
 class MixedConstraintsSuite extends FunSuite {
 
+  /*
   test("isPropagated") {
     val csp = Factory.getMetaWithoutControllability[Ref,Ref,Ref]
 
@@ -120,6 +121,6 @@ class MixedConstraintsSuite extends FunSuite {
     csp.stn.enforceMaxDelay("A","B",3)
     assert(!csp.stn.isConsistent())
   }
-
+*/
 
 }

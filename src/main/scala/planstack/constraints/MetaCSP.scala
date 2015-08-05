@@ -1,6 +1,7 @@
 package planstack.constraints
 
 import planstack.UniquelyIdentified
+import planstack.anml.model.concrete.VarRef
 import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, ConservativeConstraintNetwork, IntBindingListener}
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
 import scala.collection.JavaConverters._
@@ -33,7 +34,7 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @tparam TPRef Type of the time points in the STN
  * @tparam ID Type of identifiers for constraints in the STN.
  */
-class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
+class MetaCSP[TPRef <: UniquelyIdentified, ID](
                           val bindings: BindingCN[VarRef],
                           val stn: GenSTNUManager[TPRef,ID],
                           protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]])
@@ -42,10 +43,10 @@ class MetaCSP[VarRef <: UniquelyIdentified, TPRef <: UniquelyIdentified, ID](
 
   bindings.setListener(this)
 
-  def this() = this(new BindingConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
+  def this() = this(new BindingConstraintNetwork(), new MinimalSTNUManager[TPRef,ID](), Map())
 //  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
 
-  def this(toCopy : MetaCSP[VarRef,TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
+  def this(toCopy : MetaCSP[TPRef,ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 
   def futureConstraint(u:TPRef,v:TPRef,id:ID,f:(Int=>Int)) =
     Tuple4[TPRef,TPRef,ID,(Int=>Int)](u, v, id, f)
