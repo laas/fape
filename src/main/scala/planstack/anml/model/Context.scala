@@ -2,7 +2,7 @@ package planstack.anml.model
 
 import planstack.anml.ANMLException
 import planstack.anml.model.concrete.statements.Statement
-import planstack.anml.model.concrete.{Action, ActionCondition, TemporalInterval, VarRef}
+import planstack.anml.model.concrete._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -22,7 +22,7 @@ abstract class AbstractContext {
   protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
   protected val actions = mutable.Map[LActRef, Action]()
-  protected val actionConditions = mutable.Map[LActRef, ActionCondition]()
+  protected val actionConditions = mutable.Map[LActRef, Task]()
 
   protected val statements = mutable.Map[LStatementRef, Statement]()
 
@@ -42,7 +42,7 @@ abstract class AbstractContext {
     }
   }
 
-  def addUndefinedVar(name:LVarRef, typeName:String)
+  def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter)
 
   /**
    * @param localName Name of the local variable to look up
@@ -151,7 +151,7 @@ abstract class AbstractContext {
     actions(localID) = globalID
   }
 
-  def addActionCondition(localID:LActRef, globalDef:ActionCondition) {
+  def addActionCondition(localID:LActRef, globalDef:Task) {
     assert(!actions.contains(localID) || actions(localID) == null)
     assert(!actionConditions.contains(localID) || actionConditions(localID) == null)
     actionConditions(localID) = globalDef
@@ -197,8 +197,8 @@ class Context(
 
   def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
 
-  override def addUndefinedVar(name: LVarRef, typeName: String): Unit = {
-    val globalVar = new VarRef()
+  override def addUndefinedVar(name: LVarRef, typeName: String, refCounter: RefCounter): Unit = {
+    val globalVar = new VarRef(refCounter)
     addVar(name, typeName, globalVar)
     addVarToCreate(typeName, globalVar)
   }

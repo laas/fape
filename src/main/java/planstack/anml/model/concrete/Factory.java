@@ -20,8 +20,8 @@ public class Factory {
      * @param abs Abstract version of the action.
      * @return A fully instantiated Action
      */
-    public static Action getStandaloneAction(AnmlProblem pb, AbstractAction abs) {
-        return Action$.MODULE$.getNewStandaloneAction(pb, abs);
+    public static Action getStandaloneAction(AnmlProblem pb, AbstractAction abs, RefCounter refCounter) {
+        return Action$.MODULE$.getNewStandaloneAction(pb, abs, refCounter);
     }
 
     /**
@@ -31,8 +31,8 @@ public class Factory {
      * @param parameters List of parameters.
      * @return A concrete action with the given parameters.
      */
-    public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters) {
-        return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), new ActRef(), null, null);
+    public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters, RefCounter refCounter) {
+        return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), refCounter, null, null);
     }
 
     /**
@@ -43,10 +43,10 @@ public class Factory {
      * @param parameters List of parameters.
      * @param id ID of the action
      * @return A concrete action with the given parameters.
-     */
+     *
     public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters, ActRef id) {
         return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), id, null, null);
-    }
+    }*/
 
     /**
      * Returns a concrete decomposition.
@@ -58,8 +58,8 @@ public class Factory {
      * @param abs Abstract version of the decomposition.
      * @return A fully instantiated Decomposition
      */
-    public static Decomposition getDecomposition(AnmlProblem pb, Action parent, AbstractDecomposition abs) {
-        return Decomposition$.MODULE$.apply(pb, parent, abs);
+    public static Decomposition getDecomposition(AnmlProblem pb, Action parent, AbstractDecomposition abs, RefCounter refCounter) {
+        return Decomposition$.MODULE$.apply(pb, parent, abs, refCounter);
     }
 
 }

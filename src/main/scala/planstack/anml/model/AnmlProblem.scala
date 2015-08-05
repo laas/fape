@@ -41,18 +41,22 @@ import scala.collection.JavaConversions._
   */
 class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
+  val refCounter = new RefCounter()
+
   /**
    * A time-point representing the earliest possible execution of an action.
    * Note that no explicit constraint including this timepoint is specified in the the ANML problem, it
    * is provided here mainly for consistency in the planner implementation. It is the responsability of the
    * planner to enforce the ordering between this time-point and the actions in the plan.
    */
-  val earliestExecution : TPRef = new TPRef()
+  val earliestExecution : TPRef = new TPRef(refCounter)
+  override val start: TPRef = new TPRef(refCounter)
+  override val end: TPRef = new TPRef(refCounter)
 
   /**
    * An InstanceManager that keeps track of all types and instances of the problem.
    */
-  val instances = new InstanceManager
+  val instances = new InstanceManager(refCounter)
 
   /**
    * A [[planstack.anml.model.FunctionManager]] that keeps track of all functions (ie. definition of state variables)
@@ -161,7 +165,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
     // add all instance declaration to the instance manager and to the chronicle
     blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
-      instances.addInstance(instanceDecl.name, instanceDecl.tipe)
+      instances.addInstance(instanceDecl.name, instanceDecl.tipe, refCounter)
       chronicle.instances += instanceDecl.name
       // all instances are added to the context
       context.addVar(new LVarRef(instanceDecl.name), instanceDecl.tipe, instances.referenceOf(instanceDecl.name))
@@ -174,7 +178,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val newVar = new VarRef()
+        val newVar = new VarRef(refCounter)
         context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, newVar)
         chronicle.vars += ((funcDecl.tipe, newVar))
       } else {
@@ -192,7 +196,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     })
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
-      val abs = AbstractAction(actionDecl, this)
+      val abs = AbstractAction(actionDecl, this, refCounter)
       abstractActions += abs
 
       // if the action is a seed, add it to the chronicle to make sure it appears in the initial plan.
@@ -202,8 +206,8 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
-      val absStatements = StatementsFactory(tempStatement, this.context, this)
-      chronicle.addAll(absStatements, context, this)
+      val absStatements = StatementsFactory(tempStatement, this.context, this, refCounter)
+      chronicle.addAll(absStatements, context, this, refCounter)
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
@@ -247,7 +251,7 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
     for(block <- blocks.filter(_.isInstanceOf[parser.Function])) block match {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
-        val newVar = new VarRef()
+        val newVar = new VarRef(refCounter)
         localContext.addVar(LVarRef(func.name), func.tipe, newVar)
         chron.vars += ((func.tipe, newVar))
 
@@ -258,8 +262,8 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
     for(block <- blocks.filter(!_.isInstanceOf[parser.Function])) block match {
       case ts: parser.TemporalStatement =>
-        val absStatements = StatementsFactory(ts, localContext, this)
-        chron.addAll(absStatements, localContext, this)
+        val absStatements = StatementsFactory(ts, localContext, this, refCounter)
+        chron.addAll(absStatements, localContext, this, refCounter)
 
       case tc: parser.TemporalConstraint =>
         val abs = AbstractTemporalConstraint(tc)

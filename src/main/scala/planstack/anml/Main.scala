@@ -30,8 +30,8 @@ object Main extends App {
 
 //  val ref = new AbstractActionRef("Transport", List("R0", "sdjqsdqsd_", "L1", "L0"), "")
 //  val act = Action(pb, ref)
-  val act = Action.getNewStandaloneAction(pb, "Transport")
-  val decs = act.decompositions.map(Decomposition(pb, act, _))
+  val act = Action.getNewStandaloneAction(pb, "Transport", pb.refCounter)
+  val decs = act.decompositions.map(Decomposition(pb, act, _, pb.refCounter))
   println(act)
 
 }

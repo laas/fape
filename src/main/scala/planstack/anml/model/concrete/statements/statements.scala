@@ -2,7 +2,7 @@ package planstack.anml.model.concrete.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.concrete.{Chronicle, TemporalInterval, VarRef}
+import planstack.anml.model.concrete._
 
 
 /** Describes a concrete ANML statement such as `location(Rb) == l`, ...
@@ -50,8 +50,11 @@ abstract class LogStatement(sv:ParameterizedStateVariable, container:Chronicle) 
   * @param sv State variable on which the statement applies.
   * @param value
   */
-class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle)
+class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle, refCounter: RefCounter)
   extends LogStatement(sv, container) {
+
+  override val start : TPRef = new TPRef(refCounter)
+  override val end : TPRef = new TPRef(refCounter)
 
   /** Throws ANMLException since an assignment has no startValue */
   def startValue = throw new ANMLException("Assignments have no start value. Check with needsSupport.")
@@ -68,8 +71,11 @@ class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chro
   * @param from Value of the state variable before the statement.
   * @param to Value of the state variable after the statement.
   */
-class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, container:Chronicle)
+class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, container:Chronicle, refCounter: RefCounter)
   extends LogStatement(sv, container) {
+
+  override val start : TPRef = new TPRef(refCounter)
+  override val end : TPRef = new TPRef(refCounter)
 
   val startValue = from
   val endValue = to
@@ -83,8 +89,11 @@ class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, 
   * @param sv State variable on which the statement applies.
   * @param value Value of the state variable during the statement.
   */
-class Persistence(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle)
+class Persistence(sv:ParameterizedStateVariable, val value:VarRef, container:Chronicle, refCounter: RefCounter)
   extends LogStatement(sv, container) {
+
+  override val start : TPRef = new TPRef(refCounter)
+  override val end : TPRef = new TPRef(refCounter)
 
   val startValue = value
   val endValue = value

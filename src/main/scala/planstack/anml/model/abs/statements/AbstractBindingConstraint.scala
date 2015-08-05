@@ -1,13 +1,13 @@
 package planstack.anml.model.abs.statements
 
 import planstack.anml.model._
-import planstack.anml.model.concrete.Chronicle
+import planstack.anml.model.concrete.{RefCounter, Chronicle}
 import planstack.anml.model.concrete.statements._
 
 abstract class AbstractBindingConstraint(id : LStatementRef)
   extends AbstractStatement(id)
 {
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle): BindingConstraint
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter): BindingConstraint
 
   override def isTemporalInterval = false
 }
@@ -20,7 +20,7 @@ class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, 
   override def toString = "%s := %s".format(sv, variable)
 
 
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new AssignmentConstraint(sv.bind(context), context.getGlobalVar(variable))
 }
 
@@ -32,7 +32,7 @@ class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariabl
   override def toString = "%s := %s".format(sv, value)
 
 
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new IntegerAssignmentConstraint(sv.bind(context), value)
 }
 
@@ -49,7 +49,7 @@ class AbstractEqualityConstraint(val sv : AbstractParameterizedStateVariable, va
    * @param context Context in which this statement appears.
    * @return
    */
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new EqualityConstraint(sv.bind(context), context.getGlobalVar(variable))
 }
 
@@ -64,7 +64,7 @@ class AbstractVarEqualityConstraint(val leftVar : LVarRef, val rightVar : LVarRe
    * @param context Context in which this statement appears.
    * @return
    */
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new VarEqualityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
 }
 
@@ -81,7 +81,7 @@ class AbstractInequalityConstraint(val sv : AbstractParameterizedStateVariable, 
    * @param context Context in which this statement appears.
    * @return
    */
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new InequalityConstraint(sv.bind(context), context.getGlobalVar(variable))
 }
 
@@ -97,6 +97,6 @@ class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVar
    * @param context Context in which this statement appears.
    * @return
    */
-  override def bind(context: Context, pb: AnmlProblem, container: Chronicle) =
+  override def bind(context: Context, pb: AnmlProblem, container: Chronicle, refCounter: RefCounter) =
     new VarInequalityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
 }

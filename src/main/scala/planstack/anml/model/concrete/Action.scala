@@ -30,11 +30,15 @@ class Action(
     val abs:AbstractAction,
     val context:Context,
     val id:ActRef,
-    val parentAction:Option[Action])
+    val parentAction:Option[Action],
+    refCounter: RefCounter)
   extends Chronicle with TemporalInterval {
 
   assert(context.interval == null)
   context.setInterval(this)
+
+  override val start : TPRef = new TPRef(refCounter)
+  override val end : TPRef = new TPRef(refCounter)
 
   val statements = new util.LinkedList[Statement]()
 
@@ -86,7 +90,7 @@ class Action(
 
   def name = abs.name
   val actions = new util.LinkedList[Action]()
-  val actionConditions = new util.LinkedList[ActionCondition]()
+  val actionConditions = new util.LinkedList[Task]()
 
   def decompositions = seqAsJavaList(abs.decompositions)
 
@@ -154,7 +158,7 @@ object Action {
    * @param contextOpt Option: Context of the decomposition
    * @return concrete action as a StateModifier
    */
-  def apply(pb:AnmlProblem, ref:AbstractActionRef, parentAction:Option[Action]=None, contextOpt:Option[Context]=None) : Action = {
+  def apply(pb:AnmlProblem, ref:AbstractActionRef, refCounter: RefCounter, parentAction:Option[Action]=None, contextOpt:Option[Context]=None) : Action = {
     val parentContext = contextOpt match {
       case Some(parentContext) => parentContext
       case None => pb.context
@@ -170,7 +174,7 @@ object Action {
     // map every abstract variable to the global one defined in the parent context.
     val args = ref.args.map(parentContext.getGlobalVar(_))
 
-    newAction(pb, abs, args, ref.localId, parentAction, contextOpt)
+    newAction(pb, abs, args, ref.localId, refCounter, parentAction, contextOpt)
   }
 
   def jNewAction(
@@ -178,7 +182,8 @@ object Action {
       abs :AbstractAction,
       args :util.List[VarRef],
       localID :LActRef,
-      id : ActRef = new ActRef(),
+      refCounter: RefCounter,
+//      id : ActRef = new ActRef(),
       parentAction :Action = null,
       contextOpt :Context = null)
   : Action = {
@@ -187,9 +192,9 @@ object Action {
       abs,
       args,
       localID,
+      refCounter,
       if(parentAction == null) None else Some(parentAction),
-      if(contextOpt == null) None else Some(contextOpt),
-      id
+      if(contextOpt == null) None else Some(contextOpt)
     )
   }
 
@@ -209,10 +214,10 @@ object Action {
       abs :AbstractAction,
       args :Seq[VarRef],
       localID :LActRef,
+      refCounter: RefCounter,
       parentAction :Option[Action] = None,
-      contextOpt :Option[Context] = None,
-      id :ActRef = new ActRef())
-  : Action = {
+      contextOpt :Option[Context] = None) : Action =
+  {
     // containing context is the one passed, if it is empty, it defaults to the problem's
     val parentContext = contextOpt match {
       case Some(parentContext) => parentContext
@@ -222,11 +227,11 @@ object Action {
 
     // creates pair (localVar, globalVar) as defined by the ActionRef
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), args(i))
-    val context = abs.context.buildContext(pb, Some(parentContext), argPairs.toMap)
+    val context = abs.context.buildContext(pb, Some(parentContext), refCounter, argPairs.toMap)
+    val id = new ActRef(refCounter)
+    val act = new Action(abs, context, id, parentAction, refCounter)
 
-    val act = new Action(abs, context, id, parentAction)
-
-    act.addAll(abs.statements, context, pb)
+    act.addAll(abs.statements, context, pb, refCounter)
 
     // if there is a parent action, add a mapping localId -> globalID to its context
     contextOpt match {
@@ -243,14 +248,14 @@ object Action {
     * @param actionName Name of the action to create.
     * @return The new concrete action.
     */
-  def getNewStandaloneAction(pb:AnmlProblem, actionName:String) : Action = {
+  def getNewStandaloneAction(pb:AnmlProblem, actionName:String, refCounter: RefCounter) : Action = {
     val abs =
       pb.abstractActions.find(_.name == actionName) match {
         case Some(act) => act
         case None => throw new ANMLException("Unable to find action "+actionName)
       }
 
-    getNewStandaloneAction(pb, abs)
+    getNewStandaloneAction(pb, abs, refCounter)
   }
 
   /** Creates a new Action with new VarRef as parameters.
@@ -259,8 +264,8 @@ object Action {
     * @param abs Abstract version of the action to create.
     * @return The new concrete action.
     */
-  def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction) : Action = {
-    val act = newAction(pb, abs, abs.args.map(x => new VarRef()), new LActRef(), None, Some(pb.context))
+  def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction, refCounter: RefCounter) : Action = {
+    val act = newAction(pb, abs, abs.args.map(x => new VarRef(refCounter)), new LActRef(), refCounter, None, Some(pb.context))
 
     // for all created vars, make sure those are present in [[StateModifier#vars]]
     for(localArg <- abs.args) {

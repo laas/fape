@@ -20,7 +20,7 @@ class Decomposition(
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
   val actions = new util.LinkedList[Action]()
-  val actionConditions = new util.LinkedList[ActionCondition]()
+  val actionConditions = new util.LinkedList[Task]()
 
   assert(context.interval == null)
   context.setInterval(container)
@@ -31,13 +31,13 @@ class Decomposition(
 
 object Decomposition {
 
-  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition) : Decomposition = {
-    val context = dec.context.buildContext(pb, Some(parent.context))
+  def apply(pb:AnmlProblem, parent:Action, dec:AbstractDecomposition, refCounter: RefCounter) : Decomposition = {
+    val context = dec.context.buildContext(pb, Some(parent.context), refCounter)
 
     val decNum = parent.decompositions.indexOf(dec)
     val decomposition = new Decomposition(context, parent, decNum)
 
-    decomposition.addAll(dec.statements, context, pb)
+    decomposition.addAll(dec.statements, context, pb, refCounter)
 
 
     decomposition

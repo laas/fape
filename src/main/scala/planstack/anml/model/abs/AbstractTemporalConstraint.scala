@@ -2,7 +2,7 @@ package planstack.anml.model.abs
 
 import planstack.anml.model.abs.statements.AbstractStatement
 import planstack.anml.model.abs.time.AbstractTimepointRef
-import planstack.anml.model.concrete.{Chronicle, TemporalConstraint}
+import planstack.anml.model.concrete.{RefCounter, Chronicle, TemporalConstraint}
 import planstack.anml.model.{AnmlProblem, Context, LActRef, LocalRef}
 import planstack.anml.parser
 
@@ -16,7 +16,7 @@ class AbstractTemporalConstraint(
 
   override def toString = "%s %s %s + %s".format(tp1, op, tp2, plus)
 
-  override def bind(context:Context, pb:AnmlProblem, container: Chronicle) = TemporalConstraint(pb, context, this)
+  override def bind(context:Context, pb:AnmlProblem, container: Chronicle, refCounter: RefCounter) = TemporalConstraint(pb, context, this)
 
   override def isTemporalInterval = false
 }

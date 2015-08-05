@@ -2,6 +2,7 @@ package planstack.anml.model.abs
 
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.concrete.RefCounter
 import planstack.anml.parser
 
 import scala.collection.JavaConversions._
@@ -90,7 +91,7 @@ object AbstractAction {
     * @param pb Problem in which the action is defined
     * @return
     */
-  def apply(act:parser.Action, pb:AnmlProblem) : AbstractAction = {
+  def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : AbstractAction = {
     val action = new AbstractAction(act.name, act.args.map(a => new LVarRef(a.name)), new PartialContext(Some(pb.context)))
 
     act.args foreach(arg => {
@@ -99,10 +100,10 @@ object AbstractAction {
 
     act.content foreach( _ match {
       case ts:parser.TemporalStatement => {
-        action.statements ++= StatementsFactory(ts, action.context, pb)
+        action.statements ++= StatementsFactory(ts, action.context, pb, refCounter)
       }
       case dec:parser.Decomposition => {
-        action.decompositions += AbstractDecomposition(pb, action.context, dec)
+        action.decompositions += AbstractDecomposition(pb, action.context, dec, refCounter)
       }
       case tempConstraint:parser.TemporalConstraint => {
         action.statements += AbstractTemporalConstraint(tempConstraint)

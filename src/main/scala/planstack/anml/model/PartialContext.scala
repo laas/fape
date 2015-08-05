@@ -1,11 +1,11 @@
 package planstack.anml.model
 
-import planstack.anml.model.concrete.{EmptyVarRef, VarRef}
+import planstack.anml.model.concrete.{RefCounter, EmptyVarRef, VarRef}
 
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
 
-  def addUndefinedVar(name:LVarRef, typeName:String) {
+  def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter = null) {
     assert(!variables.contains(name), "Local variable already defined: "+name)
     variables.put(name, (typeName, EmptyVarRef))
   }
@@ -39,14 +39,14 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    * @param newVars map of (localVar -> globalVar) to be added to the context)
    * @return
    */
-  def buildContext(pb:AnmlProblem, parent:Option[Context], newVars:Map[LVarRef, VarRef] = Map()) = {
+  def buildContext(pb:AnmlProblem, parent:Option[Context], refCounter: RefCounter, newVars:Map[LVarRef, VarRef] = Map()) = {
     val context = new Context(parent)
 
     for((local, (tipe, global)) <- variables) {
       if(global.isEmpty && newVars.contains(local)) {
         context.addVar(local, tipe, newVars(local))
       } else if(global.isEmpty) {
-        val globalVar = new VarRef()
+        val globalVar = new VarRef(refCounter)
         context.addVar(local, tipe, globalVar)
         context.addVarToCreate(tipe, globalVar)
       } else {

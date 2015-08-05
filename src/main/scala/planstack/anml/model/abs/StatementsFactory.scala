@@ -3,6 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
+import planstack.anml.model.concrete.RefCounter
 import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
 import planstack.anml.{ANMLException, parser}
 
@@ -44,8 +45,8 @@ object StatementsFactory {
    * @param pb Problem in which the statement appears
    * @return An equivalent list of AbstractStatement
    */
-  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, pb:AnmlProblem) : List[AbstractStatement] = {
-    val s = StatementsFactory(annotatedStatement.statement, context, pb)
+  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractStatement] = {
+    val s = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
 
     annotatedStatement.annotation match {
       case None => s
@@ -57,7 +58,7 @@ object StatementsFactory {
     }
   }
 
-  def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem) : List[AbstractStatement] = {
+  def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem, refCounter: RefCounter) : List[AbstractStatement] = {
     statement match {
       case s:parser.SingleTermStatement => {
         if (isStateVariable(s.term, context, pb)) {
@@ -135,7 +136,7 @@ object StatementsFactory {
                         throw new ANMLException("The two state variables have incompatible types: " + sv + " -- " + rightSv)
 
                     val variable = new LVarRef()
-                    context.addUndefinedVar(variable, sharedType)
+                    context.addUndefinedVar(variable, sharedType, refCounter)
                     List(
                       new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
@@ -143,9 +144,9 @@ object StatementsFactory {
                   } else {
                     assert(op.op == "!=", "Unsupported operator in statement: " + statement)
                     val v1 = new LVarRef()
-                    context.addUndefinedVar(v1, sv.func.valueType)
+                    context.addUndefinedVar(v1, sv.func.valueType, refCounter)
                     val v2 = new LVarRef()
-                    context.addUndefinedVar(v2, rightSv.func.valueType)
+                    context.addUndefinedVar(v2, rightSv.func.valueType, refCounter)
                     List(
                       new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),

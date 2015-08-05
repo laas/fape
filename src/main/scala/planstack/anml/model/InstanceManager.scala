@@ -1,14 +1,14 @@
 package planstack.anml.model
 
 import planstack.anml.ANMLException
-import planstack.anml.model.concrete.{InstanceRef, VarRef}
+import planstack.anml.model.concrete.{RefCounter, InstanceRef, VarRef}
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 
-class InstanceManager {
+class InstanceManager(refCounter: RefCounter) {
 
   private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
 
@@ -23,10 +23,10 @@ class InstanceManager {
 
   // predefined ANML types and instances
   addType("boolean", "")
-  addInstance("true", "boolean")
-  addInstance("false", "boolean")
+  addInstance("true", "boolean", refCounter)
+  addInstance("false", "boolean", refCounter)
   addType("typeOfUnknown", "")
-  addInstance("unknown", "typeOfUnknown")
+  addInstance("unknown", "typeOfUnknown", refCounter)
 
 
   /** Creates a new instance of a certain type.
@@ -34,11 +34,11 @@ class InstanceManager {
     * @param name Name of the instance.
     * @param t Type of the instance.
     */
-  def addInstance(name:String, t:String) {
+  def addInstance(name:String, t:String, refCounter: RefCounter) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
 
-    instancesDef(name) = (t, new InstanceRef(name))
+    instancesDef(name) = (t, new InstanceRef(name, refCounter))
     instancesByType(t) = name :: instancesByType(t)
   }
 

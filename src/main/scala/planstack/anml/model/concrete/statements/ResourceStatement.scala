@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete.statements
 
-import planstack.anml.model.concrete.Chronicle
+import planstack.anml.model.concrete.{TPRef, RefCounter, Chronicle}
 import planstack.anml.model.{NumFunction, ParameterizedStateVariable}
 
 /** A concrete ANML resource Statement.
@@ -13,9 +13,12 @@ import planstack.anml.model.{NumFunction, ParameterizedStateVariable}
   * @param sv State Variable on which this statement applies
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   */
-abstract class ResourceStatement(sv:ParameterizedStateVariable, val param:Float, container:Chronicle) extends Statement(sv, container) {
+abstract class ResourceStatement(sv:ParameterizedStateVariable, val param:Float, container:Chronicle, refCounter: RefCounter) extends Statement(sv, container) {
   require(sv.func.isInstanceOf[NumFunction], "Error: this resource statement is not applied " +
     "on a numeric function: "+this)
+
+  override val start : TPRef = new TPRef(refCounter)
+  override val end : TPRef = new TPRef(refCounter)
 
   def operator :String
 
@@ -23,23 +26,28 @@ abstract class ResourceStatement(sv:ParameterizedStateVariable, val param:Float,
 }
 
 
-class SetResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class SetResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   val operator: String = ":="
 }
 
-class UseResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class UseResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   val operator: String = ":use"
 }
 
-class ConsumeResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class ConsumeResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   val operator: String = ":consume"
 }
 
-class LendResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class LendResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   val operator: String = ":lend"
 }
 
-class ProduceResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class ProduceResource(sv :ParameterizedStateVariable, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   val operator: String = ":produce"
 }
 
@@ -49,6 +57,7 @@ class ProduceResource(sv :ParameterizedStateVariable, param :Float, container:Ch
   * @param operator The operator: <, >, <= or >=
   * @param param Right side of the statement: a numeric value. For instance, in the statement `energy :use 50`, 50 would be the param.
   */
-class RequireResource(sv :ParameterizedStateVariable, val operator :String, param :Float, container:Chronicle) extends ResourceStatement(sv, param, container) {
+class RequireResource(sv :ParameterizedStateVariable, val operator :String, param :Float, container:Chronicle, refCounter: RefCounter)
+  extends ResourceStatement(sv, param, container, refCounter) {
   assert(Set("<=",">=","<",">").contains(operator))
 }

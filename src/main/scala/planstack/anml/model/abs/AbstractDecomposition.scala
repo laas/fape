@@ -1,6 +1,7 @@
 package planstack.anml.model.abs
 
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.concrete.RefCounter
 import planstack.anml.model.{AnmlProblem, LVarRef, PartialContext}
 import planstack.anml.parser
 
@@ -23,7 +24,7 @@ class AbstractDecomposition(parentContext:PartialContext) {
 
 object AbstractDecomposition {
 
-  def apply(pb:AnmlProblem, context:PartialContext, pDec:parser.Decomposition) : AbstractDecomposition = {
+  def apply(pb:AnmlProblem, context:PartialContext, pDec:parser.Decomposition, refCounter: RefCounter) : AbstractDecomposition = {
     val dec = new AbstractDecomposition(context)
 
     pDec.content.foreach(_ match {
@@ -31,7 +32,7 @@ object AbstractDecomposition {
       // constant function with no arguments is interpreted as local variable
       case const:parser.Constant => dec.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
       case statement:parser.TemporalStatement => {
-        dec.statements ++= StatementsFactory(statement, dec.context, pb)
+        dec.statements ++= StatementsFactory(statement, dec.context, pb, refCounter)
       }
     })
 

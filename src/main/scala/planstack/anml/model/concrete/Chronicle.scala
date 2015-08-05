@@ -59,7 +59,7 @@ trait Chronicle {
     * It can be fulfilled/supported by an action with the same whose parameters and
     * time points are equal to those of the action condition.
     */
-  def actionConditions : java.util.List[ActionCondition]
+  def actionConditions : java.util.List[Task]
 
   /** (Type, Reference) of global variables to be declared */
   def vars : java.util.List[Pair[String, VarRef]]
@@ -71,21 +71,21 @@ trait Chronicle {
 
   protected def temporalConstraints : java.util.List[TemporalConstraint]
 
-  def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem): Unit = {
+  def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
     for(absStatement <- absStatements) {
       absStatement match {
         case s: AbstractLogStatement =>
-          val binded = s.bind(context, pb, this)
+          val binded = s.bind(context, pb, this, refCounter)
           statements += binded
           context.addStatement(s.id, binded)
 
         case s: AbstractResourceStatement =>
-          val binded = s.bind(context, pb, this)
+          val binded = s.bind(context, pb, this, refCounter)
           statements += binded
           context.addStatement(s.id, binded)
 
         case s:AbstractTemporalConstraint =>
-          temporalConstraints += s.bind(context, pb, this)
+          temporalConstraints += s.bind(context, pb, this, refCounter)
 
         case s:AbstractActionRef =>
           val parent = this match {
@@ -94,12 +94,12 @@ trait Chronicle {
               case _ => None
             }
           if (pb.usesActionConditions)
-            actionConditions += ActionCondition(pb, s, context, parent)
+            actionConditions += Task(pb, s, context, parent, refCounter)
           else
-            actions += Action(pb, s, parent, Some(context))
+            actions += Action(pb, s, refCounter, parent, Some(context))
 
         case s:AbstractBindingConstraint =>
-          bindingConstraints += s.bind(context, pb, this)
+          bindingConstraints += s.bind(context, pb, this, refCounter)
           
         case _ => throw new ANMLException("unsupported yet:" + absStatement)
       }
@@ -182,7 +182,7 @@ class BaseChronicle(val container: TemporalInterval) extends Chronicle {
   val statements = new util.LinkedList[Statement]()
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
   val actions = new util.LinkedList[Action]()
-  val actionConditions = new util.LinkedList[ActionCondition]()
+  val actionConditions = new util.LinkedList[Task]()
   val vars = new util.LinkedList[Pair[String, VarRef]]()
   override val instances = new util.LinkedList[String]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
