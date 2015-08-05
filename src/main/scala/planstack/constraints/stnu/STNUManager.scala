@@ -2,6 +2,7 @@ package planstack.constraints.stnu
 
 import net.openhft.koloboke.collect.map.hash.{HashIntIntMap, HashIntObjMap}
 import planstack.UniquelyIdentified
+import planstack.anml.model.concrete.TPRef
 import planstack.constraints.Kolokobe
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
@@ -10,13 +11,13 @@ import planstack.structures.IList
 import planstack.structures.Converters._
 import scala.language.implicitConversions
 
-class STNUManager[TPRef <: UniquelyIdentified,ID](val stnu : ISTNU[ID],
+class STNUManager[ID](val stnu : ISTNU[ID],
                             _tps : HashIntObjMap[TimePoint[TPRef]],
                             _ids : HashIntIntMap,
-                            _rawConstraints : List[Constraint[TPRef,ID]],
+                            _rawConstraints : List[Constraint[ID]],
                             _start : Option[TPRef],
                             _end : Option[TPRef])
-  extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
+  extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
   // could use FastIDC as well
   def this() = this(new MMV[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
@@ -28,8 +29,8 @@ class STNUManager[TPRef <: UniquelyIdentified,ID](val stnu : ISTNU[ID],
   override def controllability = stnu.controllability
 
   /** Makes an independent clone of this STN. */
-  override def deepCopy(): STNUManager[TPRef, ID] =
-    new STNUManager[TPRef,ID](stnu.cc(), Kolokobe.clone(tps), Kolokobe.clone(id), rawConstraints, start, end)
+  override def deepCopy(): STNUManager[ID] =
+    new STNUManager[ID](stnu.cc(), Kolokobe.clone(tps), Kolokobe.clone(id), rawConstraints, start, end)
 
   /** Returns true if the STN is consistent (might trigger a propagation */
   override def isConsistent(): Boolean = stnu.consistent

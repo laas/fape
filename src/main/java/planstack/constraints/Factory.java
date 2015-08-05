@@ -2,6 +2,7 @@ package planstack.constraints;
 
 
 import planstack.UniquelyIdentified;
+import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.constraints.bindings.BindingConstraintNetwork;
 import planstack.constraints.bindings.ConservativeConstraintNetwork;
@@ -15,7 +16,7 @@ import scala.collection.immutable.Map$;
 
 public class Factory {
 
-    public static <TPRef extends UniquelyIdentified,ID> MetaCSP<TPRef,ID> getMetaWithGivenControllability(Controllability controllability) {
+    public static <TPRef extends UniquelyIdentified,ID> MetaCSP<ID> getMetaWithGivenControllability(Controllability controllability) {
         switch (controllability) {
             case STN_CONSISTENCY: return getMetaWithoutControllability();
             case PSEUDO_CONTROLLABILITY: return getMetaWithPseudoControllability();
@@ -25,30 +26,27 @@ public class Factory {
     }
 
     /** Returns a MetaCSP that will consistent only if the underlying STNU is dynamically controllable */
-    public static <TPRef extends UniquelyIdentified,ID> MetaCSP<TPRef,ID> getMetaWithDynamicControllability() {
+    public static <ID> MetaCSP<ID> getMetaWithDynamicControllability() {
         return new MetaCSP<>(
                 new BindingConstraintNetwork(),
-//                new ConservativeConstraintNetwork<VarRef>(),
-                new STNUManager<TPRef,ID>(),
+                new STNUManager<>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
 
     /** Returns a MetaCSP that will consistent only if the underlying STNU is pseudo controllable */
-    public static <TPRef extends UniquelyIdentified,ID> MetaCSP<TPRef,ID> getMetaWithPseudoControllability() {
+    public static <ID> MetaCSP<ID> getMetaWithPseudoControllability() {
         return new MetaCSP<>(
                 new BindingConstraintNetwork(),
-//                new ConservativeConstraintNetwork<VarRef>(),
-                new PseudoSTNUManager<TPRef,ID>(),
+                new PseudoSTNUManager<>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
 
     /** Returns a MetaCSP that will consistent only if the underlying STNU is validates stn consistency.
      * (contingent constraints are recorded bu not checked. */
-    public static <TPRef extends UniquelyIdentified,ID> MetaCSP<TPRef,ID> getMetaWithoutControllability() {
+    public static <ID> MetaCSP<ID> getMetaWithoutControllability() {
         return new MetaCSP<>(
                 new BindingConstraintNetwork(),
-//                new ConservativeConstraintNetwork<VarRef>(),
-                new MinimalSTNUManager<TPRef,ID>(),
+                new MinimalSTNUManager<ID>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
 }

@@ -1,6 +1,7 @@
 package planstack.constraints.stnu
 
 import planstack.UniquelyIdentified
+import planstack.anml.model.concrete.TPRef
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
@@ -10,7 +11,7 @@ import scala.language.implicitConversions
 import ElemStatus._
 import planstack.structures.Converters._
 
-class STNUDispatcher[TPRef <: UniquelyIdentified, ID](from:GenSTNUManager[TPRef,ID]) {
+class STNUDispatcher[ID](from:GenSTNUManager[ID]) {
   val dispatcher :DispatchableSTNU[ID] = new Dispatcher[ID]
 
   /** Timepoints that must stay in the STN (dispatchable, contingents and stn's start end */
@@ -35,7 +36,7 @@ class STNUDispatcher[TPRef <: UniquelyIdentified, ID](from:GenSTNUManager[TPRef,
    * If one/two timepoints of the constraint are in a rigid constraint with a fixed one,
    * the constraint is modified to be on the fixed timepoints.
    */
-  private def finalConstraint(c : Constraint[TPRef,ID]): Constraint[TPRef,ID] = {
+  private def finalConstraint(c : Constraint[ID]): Constraint[ID] = {
     // given tp, if there is a rigid constraint x -- d --> tp,
     // it returns (x, d).
     // otherwise, it returns (tp, 0)
@@ -56,7 +57,7 @@ class STNUDispatcher[TPRef <: UniquelyIdentified, ID](from:GenSTNUManager[TPRef,
     val (tp1, d1) = distToRigid(c.u)
     val (tp2, d2) = distToRigid(c.v)
 
-    new Constraint[TPRef,ID](tp1, tp2, d1 + c.d - d2, c.tipe, c.optID)
+    new Constraint[ID](tp1, tp2, d1 + c.d - d2, c.tipe, c.optID)
 //    (tp1, tp2, d1 + c._3 - d2, c._4, c._5)
   }
 

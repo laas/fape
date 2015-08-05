@@ -3,6 +3,7 @@ package planstack.constraints.stnu
 import net.openhft.koloboke.collect.map.hash.{HashIntObjMap, HashIntIntMap, HashIntIntMaps, HashIntObjMaps}
 import net.openhft.koloboke.collect.map.{IntIntMap, IntObjMap}
 import planstack.UniquelyIdentified
+import planstack.anml.model.concrete.TPRef
 import planstack.constraints.stn.{ISTN, GenSTNManager}
 import ElemStatus._
 
@@ -12,23 +13,23 @@ import planstack.structures.Converters._
 
 import scala.collection.JavaConversions
 
-case class Constraint[TPRef,ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option[ID]) {
+case class Constraint[ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option[ID]) {
   override def toString =
     (if(tipe==CONTINGENT) "cont:" else "") +
       "(%s -- %s --> %s ".format(u, d, v) +
       (if(optID.nonEmpty) "("+optID.get+")" else "")
 }
 
-abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
+abstract class GenSTNUManager[ID]
 (
   var tps: HashIntObjMap[TimePoint[TPRef]],
   var id : HashIntIntMap,
-  var rawConstraints : List[Constraint[TPRef,ID]],
+  var rawConstraints : List[Constraint[ID]],
   var start : Option[TPRef],
   var end : Option[TPRef])
   extends GenSTNManager[TPRef,ID]
 {
-  type Const = Constraint[TPRef,ID]
+  type Const = Constraint[ID]
 
   final def hasTimePoint(tp: TPRef) = tps.containsKey(tp.id) || isVirtual(tp)
   final def isVirtual(tp: TPRef) = tps.containsKey(tp.id) && tps.get(tp.id).isVirtual
@@ -217,7 +218,7 @@ abstract class GenSTNUManager[TPRef <: UniquelyIdentified,ID]
   def controllability : Controllability
 
   /** Makes an independent clone of this STN. */
-  override def deepCopy(): GenSTNUManager[TPRef, ID]
+  override def deepCopy(): GenSTNUManager[ID]
 
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */

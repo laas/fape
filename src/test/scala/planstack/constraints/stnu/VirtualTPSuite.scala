@@ -5,7 +5,7 @@ import planstack.constraints.{IRef, Ref}
 import planstack.constraints.stn.Predef._
 
 class VirtualTPSuite extends FunSuite {
-
+/*
   for(stn <- getAllSTNUManager[IRef,Int]) {
     test("[" + stn.getClass.getSimpleName + "] constraints are enforced") {
       stn.recordTimePointAsStart(1)
@@ -34,4 +34,5 @@ class VirtualTPSuite extends FunSuite {
       assert(stn.getEarliestStartTime(6) == 20)
     }
   }
+  */
 }

@@ -2,6 +2,7 @@ package planstack.constraints.stnu
 
 import net.openhft.koloboke.collect.map.hash.{HashIntIntMap, HashIntObjMap}
 import planstack.UniquelyIdentified
+import planstack.anml.model.concrete.TPRef
 import planstack.constraints.Kolokobe
 import planstack.constraints.stn.ISTN
 import planstack.graph.core.LabeledEdge
@@ -13,23 +14,23 @@ import planstack.structures.Converters._
 
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
-class PseudoSTNUManager[TPRef <: UniquelyIdentified,ID](val stn : FullSTN[ID],
+class PseudoSTNUManager[ID](val stn : FullSTN[ID],
                                   _tps : HashIntObjMap[TimePoint[TPRef]],
                                   _ids : HashIntIntMap,
-                                  _rawConstraints : List[Constraint[TPRef,ID]],
+                                  _rawConstraints : List[Constraint[ID]],
                                   _start : Option[TPRef],
                                   _end : Option[TPRef])
-  extends GenSTNUManager[TPRef,ID](_tps, _ids, _rawConstraints, _start, _end)
+  extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
   def this() = this(new FullSTN[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
-  def this(toCopy:PseudoSTNUManager[TPRef,ID]) =
+  def this(toCopy:PseudoSTNUManager[ID]) =
     this(toCopy.stn.cc(), Kolokobe.clone(toCopy.tps), Kolokobe.clone(toCopy.id), toCopy.rawConstraints, toCopy.start, toCopy.end)
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
   def contingents = rawConstraints.view.filter(c => c.tipe == CONTINGENT)
 
-  override def deepCopy(): PseudoSTNUManager[TPRef, ID] = new PseudoSTNUManager(this)
+  override def deepCopy(): PseudoSTNUManager[ID] = new PseudoSTNUManager(this)
 
   override def isConsistent: Boolean = {
     stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id.get(c.u.id), id.get(c.v.id), c.d))
