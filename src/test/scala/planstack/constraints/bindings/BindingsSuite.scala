@@ -2,7 +2,6 @@ package planstack.constraints.bindings
 
 
 import org.scalatest.FunSuite
-import planstack.constraints.bindings.ConservativeConstraintNetwork
 
 import scala.collection.JavaConversions._
 

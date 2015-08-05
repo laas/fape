@@ -127,7 +127,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
   override def rawDomain(v: VarRef) : ValuesHolder = domains(domID(v))
 
   def isDiff(v1: VarRef, v2: VarRef) = {
-    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
+//    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
     different(domID(v1))(domID(v2))
   }
 
@@ -277,7 +277,7 @@ class BindingConstraintNetwork[VarRef](toCopy: Option[BindingConstraintNetwork[V
     val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
     val restrictedDomains = ext.restrictedDomains(initialDomains)
 
-    for(i <- 0 until initialDomains.length) {
+    for(i <- initialDomains.indices) {
       if(initialDomains(i).size() > restrictedDomains(i).size()) {
         domains(domainsIDs(i)) = new ValuesHolder(restrictedDomains(i))
         if(domains(domainsIDs(i)).isEmpty)
