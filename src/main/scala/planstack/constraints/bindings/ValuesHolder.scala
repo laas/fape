@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.BitSet
 
 object ValuesHolder {
-  val BITSET_MAX_SIZE = 100
+  val BITSET_MAX_SIZE = 1000
   def convert(values: util.Collection[Integer]) : Set[Int] = {
     var max = -10
     for(v <- values.asScala)
@@ -36,12 +36,21 @@ class ValuesHolder(val vals: scala.collection.Set[Int]) {
 
   def head() : Integer = vals.head
 
-  def intersect(other: ValuesHolder) : ValuesHolder =
-    new ValuesHolder(vals intersect other.vals)
+  def intersect(other: ValuesHolder) : ValuesHolder = {
+    val intersection = (vals, other.vals) match {
+      case (v1: BitSet, v2:BitSet) => v1 & v2 // should be significantly faster as it is just and 'and' on two bitset
+      case (v1, v2) => v1 & v2
+    }
+    new ValuesHolder(intersection)
+  }
 
-  def union(other: ValuesHolder) : ValuesHolder =
-    new ValuesHolder(vals | other.vals)
-
+  def union(other: ValuesHolder) : ValuesHolder = {
+    val union = (vals, other.vals) match {
+      case (v1: BitSet, v2: BitSet) => v1 | v2 // should be significantly faster as it is just and 'or' on two bitset
+      case (v1, v2) => v1 | v2
+    }
+    new ValuesHolder(union)
+  }
   def contains(v: Integer) : Boolean =
     vals.contains(v)
 
