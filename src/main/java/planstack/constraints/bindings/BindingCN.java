@@ -80,6 +80,8 @@ public interface BindingCN<VarRef> {
 
     public void AddSeparationConstraint(VarRef a, VarRef b);
 
+    public boolean isRecorded(VarRef v);
+
     /** Returns true if the variable has already been declared. */
     public boolean contains(VarRef v);
     /** Human readable representation of a domain. */

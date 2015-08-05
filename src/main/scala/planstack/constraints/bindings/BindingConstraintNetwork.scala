@@ -25,11 +25,11 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
 
   private val increment = 10
 
+  var domIds : Array[DomID] = null
+  var types : Array[String] = null
+  var variables : Array[VarRef] = null
+  var domains : Array[ValuesHolder] = null
 
-
-  var domIds : mutable.Map[VarRef, DomID] = null
-  var types : mutable.Map[VarRef, String] = null
-  var domains : mutable.Map[DomID, ValuesHolder] = null
   var vars : ArrayBuffer[ArrayBuffer[VarRef]] = null
   var different : Array[Array[Boolean]] = null
   var values : ArrayBuffer[String] = null
@@ -55,8 +55,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   toCopy match {
     case Some(o) =>
       domIds = o.domIds.clone()
-      types = o.types
+      types = o.types.clone()
       domains = o.domains.clone()
+      variables = o.variables.clone()
       vars = o.vars.map(x => x.clone())
       different = o.different.map(x => x.clone())
       values = o.values
@@ -70,9 +71,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       extToCheck = o.extToCheck.clone()
     case None =>
       BindingConstraintNetwork.cnt += 1
-      domIds = mutable.Map[VarRef, DomID]()
-      types = mutable.Map[VarRef, String]()
-      domains = mutable.Map[DomID, ValuesHolder]()
+      domIds = Array.fill(10)(-1) //mutable.Map[VarRef, DomID]()
+      types = Array.fill(10)(null) //mutable.Map[VarRef, String]()
+      variables = Array.fill(10)(null)
+      domains = Array.fill(10)(null) //mutable.Map[DomID, ValuesHolder]()
       vars = ArrayBuffer[ArrayBuffer[VarRef]]()
       different = new Array[Array[Boolean]](increment)
       for(i <- 0 until different.size)
@@ -91,9 +93,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       extToCheck = mutable.Set[ExtID]()
   }
 
-  protected[bindings] def allVars = domIds.keys
+  protected[bindings] def allVars = variables
 
-  private def domID(v: VarRef) : DomID = domIds(v)
+  private def domID(v: VarRef) : DomID = domIds(v.id)
 
   private def allDomIds = (0 until vars.size).filterNot(unusedDomainIds.contains(_))
 
@@ -183,7 +185,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   override def stringValuesAsDomain(stringDomain: util.Collection[String]): ValuesHolder =
     new ValuesHolder(stringDomain.asScala.map(valuesIds(_)))
 
-  override def typeOf(v: VarRef): String = types(v)
+  override def typeOf(v: VarRef): String = types(v.id)
 
   override def unifiable(a: VarRef, b: VarRef): Boolean =
     !isDiff(a, b) && rawDomain(a).intersect(rawDomain(b)).nonEmpty
@@ -314,7 +316,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       different(i)(id1) = different(i)(id1) || different(i)(id2)
     }
     for(v <- vars(id2))
-      domIds(v) = id1
+      domIds(v.id) = id1
 
     unusedDomainIds += id2
     vars(id2) = new ArrayBuffer[VarRef]()
@@ -322,7 +324,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       different(i)(id2) = false
       different(id2)(i) = false
     }
-    domains -= id2
+    domains(id2) = null // -= id2
 
     for(i <- 0 until mapping.size) {
       if(mapping(i)._1.contains(id2)) {
@@ -378,7 +380,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   }
 
   override def getUnboundVariables: util.List[VarRef] = {
-    val unboundDomains = for ((domId, dom) <- domains; if dom.size() != 1) yield domId
+    val unboundDomains =
+      for (domId <- domains.indices ; if domains(domId) != null && domains(domId).size() != 1)
+        yield domId
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
@@ -386,11 +390,32 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     addVariable(v, stringValuesAsDomain(domain), typ)
   }
 
+  private def ensureSpaceForVar(v:VarRef, futureDomID: Int): Unit = {
+    if(v.id >= types.length) {
+      types = util.Arrays.copyOf(types, types.length * 2)
+      val tmp = domIds
+      domIds = Array.fill(domIds.length * 2)(-1)
+      Array.copy(tmp, 0, domIds, 0, tmp.length)
+      variables = util.Arrays.copyOf(variables, variables.length * 2)
+    }
+    if(futureDomID >= domains.length) {
+      domains = util.Arrays.copyOf(domains, domains.length * 2)
+    }
+
+    assert(types(v.id) == null)
+    assert(domIds(v.id) == -1)
+    assert(variables(v.id) == null)
+    assert(domains(futureDomID) == null)
+  }
+
   private def addVariable(v:VarRef, dom: ValuesHolder, typ: String) {
     assert(!contains(v))
     val domID = newDomID()
-    types(v) = typ
-    domIds(v) = domID
+    ensureSpaceForVar(v, domID)
+
+    types(v.id) = typ
+    domIds(v.id) = domID
+    variables(v.id) = v
     vars(domID) += v
     domains(domID) = dom
     domainChanged(domID, None)
@@ -398,7 +423,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     assert(vars(domID).size == 1)
   }
 
-  override def contains(v: VarRef): Boolean = domIds.contains(v)
+  def isRecorded(v: VarRef) : Boolean = types.length > v.id && types(v.id) != null
+
+  override def contains(v: VarRef): Boolean = types.length > v.id && types(v.id) != null
 
   override def DeepCopy(): BindingConstraintNetwork =
     new BindingConstraintNetwork(Some(this))

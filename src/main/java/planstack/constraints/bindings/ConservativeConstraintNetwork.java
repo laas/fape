@@ -412,6 +412,11 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         toProcess.add(b);
     }
 
+    @Override
+    public boolean isRecorded(VarRef v) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
     /** Returns true if the variable has already been declared. */
     public boolean contains(VarRef v) {
         return variables.contains(v);
