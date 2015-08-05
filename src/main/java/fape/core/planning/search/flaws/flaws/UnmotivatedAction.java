@@ -9,7 +9,7 @@ import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -49,7 +49,7 @@ public class UnmotivatedAction extends Flaw {
         assert(st.taskNet.getNumOpenActionConditions() == st.getOpenTaskConditions().size());
 
         // any task condition unifiable with act
-        for(ActionCondition ac : st.getOpenTaskConditions()) {
+        for(Task ac : st.getOpenTaskConditions()) {
             boolean unifiable = true;
             if(ac.abs() != act.abs())
                 continue;

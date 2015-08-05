@@ -37,7 +37,7 @@ public class DecomposeAction extends Resolver {
         AbstractDecomposition absDec = act.decompositions().get(decID);
 
         // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-        Decomposition dec = Factory.getDecomposition(st.pb, act, absDec);
+        Decomposition dec = Factory.getDecomposition(st.pb, act, absDec, st.refCounter);
 
         st.applyDecomposition(dec);
 

@@ -52,7 +52,7 @@ public class SupportingAction extends Resolver {
 
         assert consumer != null : "Consumer was not found.";
 
-        Action action = Factory.getStandaloneAction(st.pb, act);
+        Action action = Factory.getStandaloneAction(st.pb, act, st.refCounter);
         st.insert(action);
 
         Decomposition dec = null;
@@ -61,7 +61,7 @@ public class SupportingAction extends Resolver {
             AbstractDecomposition absDec = action.decompositions().get(decID);
 
             // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-            dec = Factory.getDecomposition(st.pb, action, absDec);
+            dec = Factory.getDecomposition(st.pb, action, absDec, st.refCounter);
             st.applyDecomposition(dec);
         }
         assert decID == -1 || dec != null;

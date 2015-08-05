@@ -32,9 +32,7 @@ import fape.drawing.ChartLine;
 import fape.drawing.RectElem;
 import fape.drawing.TextLabel;
 import fape.drawing.TimedCanvas;
-import fape.drawing.gui.ChartWindow;
 import fape.exceptions.FAPEException;
-import fape.util.ActionsChart;
 import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.AbstractContext;
@@ -89,6 +87,8 @@ public class State implements Reporter {
     public final TaskNetworkManager taskNet;
 
     protected final ResourceManager resMan;
+
+    public final RefCounter refCounter;
 
     public Set<AbstractAction> notAddable = new HashSet<>();
 
@@ -162,6 +162,7 @@ public class State implements Reporter {
     public State(AnmlProblem pb, Controllability controllability) {
         this.pb = pb;
         this.controllability = controllability;
+        this.refCounter = new RefCounter(pb.refCounter());
         depth = 0;
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
@@ -185,6 +186,7 @@ public class State implements Reporter {
     public State(State st) {
         pb = st.pb;
         this.controllability = st.controllability;
+        this.refCounter = new RefCounter(st.refCounter);
         this.pgr = st.pgr;
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
@@ -428,14 +430,14 @@ public class State implements Reporter {
                 ParameterizedStateVariable sv = act.minDuration().sv();
                 assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-                min = new VarRef();
+                min = new VarRef(refCounter);
                 csp.bindings().AddIntVariable(min);
                 List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(min);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
                 // create a var with a singleton domain
-                min = new VarRef();
+                min = new VarRef(refCounter);
                 List<Integer> domain = new LinkedList<>();
                 domain.add(act.minDuration().d());
                 csp.bindings().AddIntVariable(min, domain);
@@ -449,14 +451,14 @@ public class State implements Reporter {
                 ParameterizedStateVariable sv = act.maxDuration().sv();
                 assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
                 assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-                max = new VarRef();
+                max = new VarRef(refCounter);
                 csp.bindings().AddIntVariable(max);
                 List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(max);
                 csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
             } else {
                 // create a var with a singleton domain
-                max = new VarRef();
+                max = new VarRef(refCounter);
                 List<Integer> domain = new LinkedList<>();
                 domain.add(act.maxDuration().d());
                 csp.bindings().AddIntVariable(max, domain);
@@ -542,7 +544,7 @@ public class State implements Reporter {
             // c.sv == tmp and tmp != c.variable
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
-            VarRef tmp = new VarRef();
+            VarRef tmp = new VarRef(refCounter);
             csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
             variables.add(tmp);
             csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
@@ -729,7 +731,7 @@ public class State implements Reporter {
         }
 
         // needs time points to be defined
-        for(ActionCondition ac : mod.actionConditions()) {
+        for(Task ac : mod.actionConditions()) {
             csp.stn().enforceBefore(ac.start(), ac.end());
 
             if(mod instanceof Decomposition)
@@ -1115,7 +1117,7 @@ public class State implements Reporter {
 
     public List<Action> getOpenLeaves() { return taskNet.GetOpenLeaves(); }
 
-    public List<ActionCondition> getOpenTaskConditions() { return taskNet.getOpenTaskConditions(); }
+    public List<Task> getOpenTaskConditions() { return taskNet.getOpenTaskConditions(); }
 
     public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
 
@@ -1123,7 +1125,7 @@ public class State implements Reporter {
      *  Unifies the time points of the action condition and those of the action, and add
      * the support link in the task network.
      */
-    public void addSupport(ActionCondition cond, Action act) {
+    public void addSupport(Task cond, Action act) {
         csp.stn().enforceConstraint(cond.start(), act.start(), 0, 0);
         csp.stn().enforceConstraint(cond.end(), act.end(), 0, 0);
         taskNet.addSupport(cond, act);
@@ -1319,7 +1321,7 @@ public class State implements Reporter {
                     assert possibleValues.size() == 1 : "Argument "+arg+" of action "+oldAction+" has more than one possible value.";
                     params.add(pb.instances().referenceOf(possibleValues.get(0)));
                 }
-                Action copy = Factory.getInstantiatedAction(pb, oldAction.abs(), params, oldAction.id());
+                Action copy = null; //Factory.getInstantiatedAction(pb, oldAction.abs(), params, oldAction.id()); TODO: depecated, action should be immutable
 
                 st.insert(copy);
                 st.setActionExecuting(copy.id(), getEarliestStartTime(oldAction.start()));

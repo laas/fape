@@ -16,7 +16,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Reporter;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
@@ -143,7 +143,7 @@ public class TaskNetworkManager implements Reporter {
      * @return True if the action condition is supported (i.e. there is an edge
      *         from ac to an action.
      */
-    public boolean isSupported(ActionCondition ac) {
+    public boolean isSupported(Task ac) {
         for(TNNode child : network.jChildren(new TNNode(ac))) {
             if(child.isAction()) {
                 return true;
@@ -190,11 +190,11 @@ public class TaskNetworkManager implements Reporter {
      * O(n)
      * @return All action condition that are not supported yet.
      */
-    public List<ActionCondition> getOpenTaskConditions() {
-        LinkedList<ActionCondition> l = new LinkedList<>();
+    public List<Task> getOpenTaskConditions() {
+        LinkedList<Task> l = new LinkedList<>();
         for (TNNode n : network.jVertices()) {
             if(n.isActionCondition()) {
-                ActionCondition ac = n.asActionCondition();
+                Task ac = n.asActionCondition();
                 if(!isSupported(ac)) {
                     l.add(ac);
                 }
@@ -204,11 +204,11 @@ public class TaskNetworkManager implements Reporter {
         return l;
     }
 
-    public Collection<ActionCondition> getAllTasks() {
-        List<ActionCondition> l = new LinkedList<>();
+    public Collection<Task> getAllTasks() {
+        List<Task> l = new LinkedList<>();
         for (TNNode n : network.jVertices()) {
             if(n.isActionCondition()) {
-                ActionCondition ac = n.asActionCondition();
+                Task ac = n.asActionCondition();
                 l.add(ac);
             }
         }
@@ -275,7 +275,7 @@ public class TaskNetworkManager implements Reporter {
      * @param cond An action condition already present in the task network.
      * @param a An action already present in the task network.
      */
-    public void addSupport(ActionCondition cond, Action a) {
+    public void addSupport(Task cond, Action a) {
         assert network.contains(new TNNode(cond));
         assert network.contains(new TNNode(a));
         assert network.outDegree(new TNNode(cond)) == 0;
@@ -325,7 +325,7 @@ public class TaskNetworkManager implements Reporter {
      * @param parent The decomposition in which ac appears. This decomposition must be already
      *               present in the task network.
      */
-    public void insert(ActionCondition ac, Decomposition parent) {
+    public void insert(Task ac, Decomposition parent) {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
         numOpenedActionConditions++;
@@ -337,7 +337,7 @@ public class TaskNetworkManager implements Reporter {
      * @param parent The action in which ac appears. This action must be already
      *               present in the task network.
      */
-    public void insert(ActionCondition ac, Action parent) {
+    public void insert(Task ac, Action parent) {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
         numOpenedActionConditions++;
@@ -347,7 +347,7 @@ public class TaskNetworkManager implements Reporter {
      * Adds an action condition in the task network.
      * @param ac The action condition.
      */
-    public void insert(ActionCondition ac) {
+    public void insert(Task ac) {
         network.addVertex(new TNNode(ac));
         numOpenedActionConditions++;
     }

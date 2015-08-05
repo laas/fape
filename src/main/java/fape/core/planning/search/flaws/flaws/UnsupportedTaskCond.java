@@ -6,7 +6,7 @@ import fape.core.planning.search.flaws.resolvers.NewTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -20,9 +20,9 @@ import java.util.List;
  */
 public class UnsupportedTaskCond extends Flaw {
 
-    public final ActionCondition actCond;
+    public final Task actCond;
 
-    public UnsupportedTaskCond(ActionCondition ac) { actCond = ac; }
+    public UnsupportedTaskCond(Task ac) { actCond = ac; }
 
     @Override
     public List<Resolver> getResolvers(State st, APlanner planner) {

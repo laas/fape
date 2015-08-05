@@ -3,7 +3,7 @@ package fape.core.planning.search.flaws.resolvers;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 
 /**
  * Mark an action (already in the plan) as supporting an action condition.
@@ -11,12 +11,12 @@ import planstack.anml.model.concrete.ActionCondition;
 public class ExistingTaskSupporter extends Resolver {
 
     /** Unsupported condition */
-    public final ActionCondition condition;
+    public final Task condition;
 
     /** Supporting action. */
     public final Action act;
 
-    public ExistingTaskSupporter(ActionCondition cond, Action act) {
+    public ExistingTaskSupporter(Task cond, Action act) {
         this.condition = cond;
         this.act = act;
     }

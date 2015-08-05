@@ -44,7 +44,7 @@ public class ResourceSupportingDecomposition extends Resolver {
         AbstractDecomposition absDec = resourceMotivatedActionToDecompose.decompositions().get(decompositionID);
 
         // Decomposition (ie implementing StateModifier) containing all changes to be made to a search state.
-        Decomposition dec = Factory.getDecomposition(st.pb, resourceMotivatedActionToDecompose, absDec);
+        Decomposition dec = Factory.getDecomposition(st.pb, resourceMotivatedActionToDecompose, absDec, st.refCounter);
 
         st.applyDecomposition(dec);
 

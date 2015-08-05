@@ -153,7 +153,7 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String taskCondition(State st, ActionCondition act) {
+    public static String taskCondition(State st, Task act) {
         if(act == null)
             return "null";
 

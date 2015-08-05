@@ -24,21 +24,4 @@ public class ActionExecution {
         this.args = args;
         this.status = ActionStatus.EXECUTING;
     }
-
-    public void setSuccess(long endTime) {
-        this.endTime = endTime;
-        this.status = ActionStatus.EXECUTED;
-    }
-
-    public void setFailed() {
-        this.status = ActionStatus.FAILED;
-    }
-
-    public Action createNewGroundAction(AnmlProblem pb) {
-        List<VarRef> argVars = new LinkedList<>();
-        for(String arg : args) {
-            argVars.add(pb.instances().referenceOf(arg));
-        }
-        return Factory.getInstantiatedAction(pb, abs, argVars, id);
-    }
 }

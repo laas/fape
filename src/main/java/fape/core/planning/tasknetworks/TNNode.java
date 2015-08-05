@@ -2,7 +2,7 @@ package fape.core.planning.tasknetworks;
 
 import fape.exceptions.FAPEException;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.Decomposition;
 
 /**
@@ -14,7 +14,7 @@ public class TNNode {
 
     protected final Action act;
     protected final Decomposition dec;
-    protected final ActionCondition actCond;
+    protected final Task actCond;
 
     public TNNode(Action action) {
         assert action != null;
@@ -30,7 +30,7 @@ public class TNNode {
         actCond = null;
     }
 
-    public TNNode(ActionCondition actCond) {
+    public TNNode(Task actCond) {
         assert actCond != null;
         this.actCond = actCond;
         this.act = null;
@@ -67,7 +67,7 @@ public class TNNode {
         return dec;
     }
 
-    public ActionCondition asActionCondition() {
+    public Task asActionCondition() {
         assert isActionCondition() : "This node is not an action condition.";
         return actCond;
     }
@@ -90,7 +90,7 @@ public class TNNode {
             return isDecomposition() && dec == o;
         } else if(o instanceof Action) {
             return isAction() && act == o;
-        } else if(o instanceof ActionCondition) {
+        } else if(o instanceof Task) {
             return isActionCondition() && actCond == o;
         } else {
             return false;

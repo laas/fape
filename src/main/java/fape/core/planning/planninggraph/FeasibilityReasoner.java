@@ -120,7 +120,7 @@ public class FeasibilityReasoner {
         return getReasoner(st, allActions);
     }
 
-    public Collection<GTaskCond> getGroundedTasks(ActionCondition liftedTask, State st) {
+    public Collection<GTaskCond> getGroundedTasks(Task liftedTask, State st) {
         List<GTaskCond> tasks = new LinkedList<>();
         LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
         for(VarRef v : liftedTask.args()) {
@@ -139,7 +139,7 @@ public class FeasibilityReasoner {
 
     public Iterable<GTaskCond> getDerivableTasks(State st) {
         List<GTaskCond> derivableTasks = new LinkedList<>();
-        for(ActionCondition ac : st.getOpenTaskConditions()) {
+        for(Task ac : st.getOpenTaskConditions()) {
             derivableTasks.addAll(getGroundedTasks(ac, st));
         }
 
@@ -277,7 +277,7 @@ public class FeasibilityReasoner {
         List<VarRef> values = new LinkedList<>();
         for(LVarRef v : vars) {
             if(v.id().equals("__dec__")) {
-                VarRef decVar = new VarRef();
+                VarRef decVar = new VarRef(st.refCounter);
                 List<String> domain = new LinkedList<>();
                 for(int i=0 ; i< act.decompositions().size() ; i++)
                     domain.add(decCSPValue(i));
@@ -289,7 +289,7 @@ public class FeasibilityReasoner {
             }
         }
         // Variable representing the ground versions of this action
-        VarRef gAction = new VarRef();
+        VarRef gAction = new VarRef(st.refCounter);
         st.csp.bindings().AddIntVariable(gAction);
         values.add(gAction);
         groundedActVariable.put(act.id(), gAction);

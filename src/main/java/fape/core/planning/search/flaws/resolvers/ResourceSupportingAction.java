@@ -38,7 +38,7 @@ public class ResourceSupportingAction extends Resolver {
     public boolean apply(State st, APlanner planner) {
         assert false : "Needs to be checked.";
 
-        Action action = Factory.getStandaloneAction(st.pb, absAction);
+        Action action = Factory.getStandaloneAction(st.pb, absAction, st.refCounter);
         //add the actual action
         st.insert(action);
 

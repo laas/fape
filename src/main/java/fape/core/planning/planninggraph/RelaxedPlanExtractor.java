@@ -10,10 +10,9 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.NoSolutionException;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 
-import java.sql.Time;
 import java.util.*;
 
 public class RelaxedPlanExtractor {
@@ -91,7 +90,7 @@ public class RelaxedPlanExtractor {
             }
         }
         // all tasks (for complete relaxed plan)
-        for(ActionCondition liftedTask : st.taskNet.getAllTasks()) {
+        for(Task liftedTask : st.taskNet.getAllTasks()) {
             for(GTaskCond task : planner.preprocessor.getFeasibilityReasoner().getGroundedTasks(liftedTask, st))
                 baseHLR.set(task);
         }

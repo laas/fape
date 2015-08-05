@@ -3,8 +3,6 @@ package fape.core.planning.planner;
 import fape.core.planning.Plan;
 import fape.core.planning.Planner;
 import fape.core.planning.heuristics.Preprocessor;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.planninggraph.RelaxedPlanExtractor;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -17,12 +15,11 @@ import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.drawing.gui.ChartWindow;
-import fape.exceptions.NoSolutionException;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 
@@ -148,7 +145,7 @@ public abstract class APlanner {
         if(!useActionConditions() && !st.getOpenTaskConditions().isEmpty()) {
             // we are not using action condition (htn planner),
             // hence every opened task must be solved with an action insertion which is done first
-            for(ActionCondition ac : st.getOpenTaskConditions()) {
+            for(Task ac : st.getOpenTaskConditions()) {
                 flaws.add(new UnsupportedTaskCond(ac));
             }
         } else {

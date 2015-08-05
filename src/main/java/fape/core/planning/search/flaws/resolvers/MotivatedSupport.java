@@ -6,7 +6,7 @@ import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.ActionCondition;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.Factory;
 
@@ -79,12 +79,12 @@ public class MotivatedSupport extends Resolver {
 
         // action that will be decomposed. Either it is already in the plan or we add it now
         if(act == null) {
-            act = Factory.getStandaloneAction(st.pb, abs);
+            act = Factory.getStandaloneAction(st.pb, abs, st.refCounter);
             st.insert(act);
         }
 
         // Look for the action condition with ID actRef
-        ActionCondition ac;
+        Task ac;
         if(decID == -1) {
             // the action condition is directly in the main body
             ac = act.context().actionConditions().apply(actRef);
@@ -92,7 +92,7 @@ public class MotivatedSupport extends Resolver {
             // we need to make one decomposition
             // decompose the action with the given decomposition ID
             AbstractDecomposition absDec = act.decompositions().get(decID);
-            Decomposition dec = Factory.getDecomposition(st.pb, act, absDec);
+            Decomposition dec = Factory.getDecomposition(st.pb, act, absDec, st.refCounter);
             st.applyDecomposition(dec);
 
             // Get the action condition we wanted
