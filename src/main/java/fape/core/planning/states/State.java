@@ -82,7 +82,7 @@ public class State implements Reporter {
      */
     public final TimelinesManager tdb;
 
-    public final MetaCSP<TPRef,GlobalRef> csp;
+    public final MetaCSP<GlobalRef> csp;
 
     public final TaskNetworkManager taskNet;
 
@@ -1100,7 +1100,7 @@ public class State implements Reporter {
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
 
-    public STNUDispatcher<TPRef,GlobalRef> getDispatchableSTNU() {
+    public STNUDispatcher<GlobalRef> getDispatchableSTNU() {
         return new STNUDispatcher<>(csp.stn());
     }
 

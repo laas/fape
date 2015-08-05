@@ -30,7 +30,7 @@ public class Plan {
         }
     }
     final State st;
-    STNUDispatcher<TPRef, GlobalRef> dispatcher;
+    STNUDispatcher<GlobalRef> dispatcher;
     final Map<TPRef, Action> actions = new HashMap<>();
     final UnlabeledDigraph<LogStatement> eventsDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
     final UnlabeledDigraph<Action> actionDependencies = new SimpleUnlabeledDirectedAdjacencyList<>();
