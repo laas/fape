@@ -14,18 +14,18 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class MinimalSTNUManager[ID](val stn:ISTN[ID],
-                                   _tps: HashIntObjMap[TimePoint[TPRef]],
-                                   _ids : HashIntIntMap,
+                                   _tps: Array[TPRef],
+                                   _ids : Array[Int],
                                    _rawConstraints : List[Constraint[ID]],
                                    _start : Option[TPRef],
                                    _end : Option[TPRef])
   extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  def this() = this(new STNIncBellmanFord[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
+  def this() = this(new STNIncBellmanFord[ID](), Array(), Array(), List(), None, None)
 
   /** Makes an independent clone of this STN. */
   override def deepCopy(): MinimalSTNUManager[ID] =
-    new MinimalSTNUManager(stn.cc(), Kolokobe.clone(tps), Kolokobe.clone(id), rawConstraints, start, end)
+    new MinimalSTNUManager(stn.cc(), tps.clone(), id.clone(), rawConstraints, start, end)
 
   override def controllability: Controllability = Controllability.STN_CONSISTENCY
 

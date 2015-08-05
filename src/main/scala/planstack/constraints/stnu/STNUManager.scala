@@ -12,17 +12,17 @@ import planstack.structures.Converters._
 import scala.language.implicitConversions
 
 class STNUManager[ID](val stnu : ISTNU[ID],
-                            _tps : HashIntObjMap[TimePoint[TPRef]],
-                            _ids : HashIntIntMap,
+                            _tps : Array[TPRef],
+                            _ids : Array[Int],
                             _rawConstraints : List[Constraint[ID]],
                             _start : Option[TPRef],
                             _end : Option[TPRef])
   extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
   // could use FastIDC as well
-  def this() = this(new MMV[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
+  def this() = this(new MMV[ID](), Array(), Array(), List(), None, None)
 
-  implicit def TPRef2stnID(tp : TPRef) : Int = id.get(tp.id)
+  implicit def TPRef2stnID(tp : TPRef) : Int = id(tp.id)
 
   override def stn = stnu
 
@@ -30,7 +30,7 @@ class STNUManager[ID](val stnu : ISTNU[ID],
 
   /** Makes an independent clone of this STN. */
   override def deepCopy(): STNUManager[ID] =
-    new STNUManager[ID](stnu.cc(), Kolokobe.clone(tps), Kolokobe.clone(id), rawConstraints, start, end)
+    new STNUManager[ID](stnu.cc(), tps.clone(), id.clone(), rawConstraints, start, end)
 
   /** Returns true if the STN is consistent (might trigger a propagation */
   override def isConsistent(): Boolean = stnu.consistent

@@ -15,16 +15,16 @@ import planstack.structures.Converters._
 protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
 class PseudoSTNUManager[ID](val stn : FullSTN[ID],
-                                  _tps : HashIntObjMap[TimePoint[TPRef]],
-                                  _ids : HashIntIntMap,
+                                  _tps : Array[TPRef],
+                                  _ids : Array[Int],
                                   _rawConstraints : List[Constraint[ID]],
                                   _start : Option[TPRef],
                                   _end : Option[TPRef])
   extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  def this() = this(new FullSTN[ID](), Kolokobe.getIntObjMap[TimePoint[TPRef]], Kolokobe.getIntIntMap, List(), None, None)
+  def this() = this(new FullSTN[ID](), Array(), Array(), List(), None, None)
   def this(toCopy:PseudoSTNUManager[ID]) =
-    this(toCopy.stn.cc(), Kolokobe.clone(toCopy.tps), Kolokobe.clone(toCopy.id), toCopy.rawConstraints, toCopy.start, toCopy.end)
+    this(toCopy.stn.cc(), toCopy.tps.clone(), toCopy.id.clone(), toCopy.rawConstraints, toCopy.start, toCopy.end)
 
   override def controllability = PSEUDO_CONTROLLABILITY
 
@@ -33,7 +33,7 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
   override def deepCopy(): PseudoSTNUManager[ID] = new PseudoSTNUManager(this)
 
   override def isConsistent: Boolean = {
-    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id.get(c.u.id), id.get(c.v.id), c.d))
+    stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u.id), id(c.v.id), c.d))
   }
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit =
@@ -77,7 +77,7 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
   /** Returns the earliest time for the time point with id u */
   override protected def earliestStart(u: Int): Int = stn.earliestStart(u)
 
-  override def getMinDelay(u: TPRef, v: TPRef): Int = stn.minDelay(id.get(u.id), id.get(v.id))
+  override def getMinDelay(u: TPRef, v: TPRef): Int = stn.minDelay(id(u.id), id(v.id))
 
-  override def getMaxDelay(u: TPRef, v: TPRef): Int = stn.maxDelay(id.get(u.id), id.get(v.id))
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = stn.maxDelay(id(u.id), id(v.id))
 }

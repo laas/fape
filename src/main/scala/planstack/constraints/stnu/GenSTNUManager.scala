@@ -1,5 +1,7 @@
 package planstack.constraints.stnu
 
+import java.util
+
 import net.openhft.koloboke.collect.map.hash.{HashIntObjMap, HashIntIntMap, HashIntIntMaps, HashIntObjMaps}
 import net.openhft.koloboke.collect.map.{IntIntMap, IntObjMap}
 import planstack.UniquelyIdentified
@@ -22,8 +24,8 @@ case class Constraint[ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option
 
 abstract class GenSTNUManager[ID]
 (
-  var tps: HashIntObjMap[TimePoint[TPRef]],
-  var id : HashIntIntMap,
+  var tps: Array[TPRef],
+  var id : Array[Int], // -1 if virtual, -2 if not recorded, otherwise the ID in the underlying STN
   var rawConstraints : List[Constraint[ID]],
   var start : Option[TPRef],
   var end : Option[TPRef])
@@ -31,15 +33,32 @@ abstract class GenSTNUManager[ID]
 {
   type Const = Constraint[ID]
 
-  final def hasTimePoint(tp: TPRef) = tps.containsKey(tp.id) || isVirtual(tp)
-  final def isVirtual(tp: TPRef) = tps.containsKey(tp.id) && tps.get(tp.id).isVirtual
-  final def isPendingVirtual(tp: TPRef) = isVirtual(tp) && tps.get(tp.id).refToReal.isEmpty
-  final def idInSTN(tp: TPRef) = tps.get(tp.id)
-  final def add(timePoint: TimePoint[TPRef]) = tps.put(timePoint.tp.id, timePoint)
-  final def rm(tp: TPRef) = tps.remove(tp.id)
-  final def refToReal(tp: TPRef) : (TPRef, Int) = tps.get(tp.id).refToReal.get
+  final def hasTimePoint(tp: TPRef) = id.length > tp.id && id(tp.id) != -2 //tps.containsKey(tp.id) || isVirtual(tp)
+  final def isVirtual(tp: TPRef) = tp.isVirtual //tps.containsKey(tp.id) && tps.get(tp.id).isVirtual
+  final def isPendingVirtual(tp: TPRef) = isVirtual(tp) && !tp.isAttached //tps.get(tp.id).refToReal.isEmpty
+//  final def idInSTN(tp: TPRef) =  //tps.get(tp.id)
+  final def add(timePoint: TPRef) = {
+    assert(tps(timePoint.id) == null)
+    assert(id(timePoint.id) != -2, "Make sure you updated the ID of this timepoint.")
+    tps(timePoint.id) = timePoint
+  }
+
+  final def rm(tp: TPRef) = { id(tp.id) = -2 ; tps(tp.id) = null }//tps.remove(tp.id)
+  final def refToReal(tp: TPRef) : (TPRef, Int) = { assert(tp.isAttached) ; tp.attachmentToReal }
 
   def stn : ISTN[ID]
+
+  private final def ensureSpaceFor(tp: TPRef): Unit = {
+    if(tps.size <= tp.id) {
+      val newSize =Math.max(tp.id+1, tps.length*2)
+      val tmp = tps
+      tps = Array.fill(newSize)(null)
+      Array.copy(tmp, 0, tps, 0, tmp.length)
+      val tmp2 = id
+      id = Array.fill(newSize)(-2)
+      Array.copy(tmp2, 0, id, 0, tmp2.length)
+    }
+  }
 
   final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int): Unit = {
     assert(hasTimePoint(u) && !isVirtual(u), "Cannot add contingent constraint on virtual timepoints")
@@ -65,24 +84,25 @@ abstract class GenSTNUManager[ID]
 
   final def addControllableTimePoint(tp : TPRef) : Int = {
     assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
-    assert(!id.containsKey(tp.id), "Time point is already recorded.")
-    id.put(tp.id, stn.addVar())//id += ((tp.id, stn.addVar()))
-    add(new DispatchableTimePoint[TPRef](tp))
-    id.get(tp.id)
+    ensureSpaceFor(tp)
+    tp.setControllable()
+    id(tp.id) = stn.addVar()
+    add(tp)
+    id(tp.id)
   }
   final def addContingentTimePoint(tp : TPRef) : Int = {
     assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
-    assert(!id.containsKey(tp.id), "Time point is already recorded.")
-    add(new ContingentTimePoint[TPRef](tp))
-    id.put(tp.id, stn.addVar())
-    id.get(tp.id)
+    ensureSpaceFor(tp)
+    tp.setContingent()
+    id(tp.id) = stn.addVar()
+    add(tp)
+    id(tp.id)
   }
 
   override final def recordTimePoint(tp: TPRef): Int = addControllableTimePoint(tp)
 
   override final def removeTimePoint(tp: TPRef): Unit = {
     stn.removeVar(tp.id)
-    id.remove(tp.id)
     rm(tp)
   }
 
@@ -123,21 +143,28 @@ abstract class GenSTNUManager[ID]
   def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) {
     assert(hasTimePoint(real), "This virtual time points points to a non-recored TP. Maybe use pendingVirtual.")
     assert(!hasTimePoint(virt), "There is already a time point "+virt)
-    add(new VirtualTimePoint[TPRef](virt, Some(real, -dist)))
+    ensureSpaceFor(virt)
+    virt.setVirtual()
+    virt.attachToReal(real, -dist)
+    id(virt.id) = -1
+    add(virt)
   }
 
   /** Records a virtual time point that is still partially defined.
     * All constraints on this time point will only be processed when defined with method*/
   def addPendingVirtualTimePoint(virt: TPRef): Unit = {
     assert(!hasTimePoint(virt), "There is already a time point "+virt)
-    add(new VirtualTimePoint[TPRef](virt, None))
+    ensureSpaceFor(virt)
+    virt.setVirtual()
+    id(virt.id) = -1
+    add(virt)
   }
 
   /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
   def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
     assert(hasTimePoint(real), "This virtual time points points to a non-recorded TP. Maybe use pendingVirtual.")
     assert(isPendingVirtual(virt), "This method is only applicable to pending virtual timepoints.")
-    add(new VirtualTimePoint[TPRef](virt, Some(real, -dist)))
+    virt.attachToReal(real, -dist)
 
     for(c <- rawConstraints if c.u == virt || c.v == virt) {
       if(!isPendingVirtual(c.u) && !isPendingVirtual(c.v))
@@ -149,8 +176,10 @@ abstract class GenSTNUManager[ID]
   override final def recordTimePointAsStart(tp: TPRef): Int = {
     assert(start.isEmpty, "This STN already has a start timepoint recorded.")
     assert(!hasTimePoint(tp), "Timepoint is already recorded.")
-    id.put(tp.id, stn.start)
-    add(new StructuralTimePoint[TPRef](tp))
+    ensureSpaceFor(tp)
+    tp.setStructural()
+    id(tp.id) = stn.start
+    add(tp)
     start = Some(tp)
     stn.start
   }
@@ -159,8 +188,10 @@ abstract class GenSTNUManager[ID]
   override final def recordTimePointAsEnd(tp: TPRef): Int = {
     assert(end.isEmpty, "This STN already has a end timepoint recorded.")
     assert(!hasTimePoint(tp), "Timepoint is already recorded.")
-    id.put(tp.id, stn.end)
-    add(new StructuralTimePoint[TPRef](tp))
+    ensureSpaceFor(tp)
+    tp.setStructural()
+    id(tp.id) = stn.end
+    add(tp)
     end = Some(tp)
     stn.end
   }
@@ -176,7 +207,7 @@ abstract class GenSTNUManager[ID]
     assert(hasTimePoint(source) && !isVirtual(source))
     assert(hasTimePoint(dest) && !isVirtual(dest))
 
-    isConstraintPossible(id.get(source.id), id.get(dest.id), sourceDist + w - destDist)
+    isConstraintPossible(id(source.id), id(dest.id), sourceDist + w - destDist)
   }
 
   /** Is this constraint possible in the underlying stnu ? */
@@ -200,9 +231,9 @@ abstract class GenSTNUManager[ID]
 
     if (c.tipe == CONTINGENT) {
       assert(!isVirtual(c.u) && !isVirtual(c.v), "Can't add a contingent constraints on virtual time points")
-      commitContingent(id.get(source.id), id.get(dest.id), sourceDist + c.d - destDist, c.optID)
+      commitContingent(id(source.id), id(dest.id), sourceDist + c.d - destDist, c.optID)
     } else {
-      commitConstraint(id.get(source.id), id.get(dest.id), sourceDist + c.d - destDist, c.optID)
+      commitConstraint(id(source.id), id(dest.id), sourceDist + c.d - destDist, c.optID)
     }
   }
 
@@ -223,13 +254,13 @@ abstract class GenSTNUManager[ID]
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */
   final def timepoints : IList[(TPRef, ElemStatus)] =
-    for(tp <- JavaConversions.iterableAsScalaIterable(tps.values())) yield
-      if(start.nonEmpty && tp.tp == start.get) (tp.tp, START)
-      else if(end.nonEmpty && tp.tp == end.get) (tp.tp, END)
-      else if(tp.isDispatchable) (tp.tp, CONTROLLABLE)
-      else if(tp.isContingent) (tp.tp, CONTINGENT)
-      else if(tp.isVirtual) (tp.tp, RIGID)
-      else (tp.tp, NO_FLAG)
+    (for(tp <- tps ; if tp != null) yield
+      if(start.nonEmpty && tp == start.get) (tp, START)
+      else if(end.nonEmpty && tp == end.get) (tp, END)
+      else if(tp.isControllable) (tp, CONTROLLABLE)
+      else if(tp.isContingent) (tp, CONTINGENT)
+      else if(tp.isVirtual) (tp, RIGID)
+      else (tp, NO_FLAG)).toList
 
   /** Returns the number of timep oints, exclding virtual time points */
   final def numRealTimePoints = id.size
@@ -246,7 +277,7 @@ abstract class GenSTNUManager[ID]
       val (real, dist) = refToReal(u)
       getEarliestStartTime(real) + dist
     } else {
-      earliestStart(id.get(u.id))
+      earliestStart(id(u.id))
     }
   }
 
@@ -257,7 +288,7 @@ abstract class GenSTNUManager[ID]
       val (real, dist) = refToReal(u)
       getLatestStartTime(real) + dist
     } else {
-      latestStart(id.get(u.id))
+      latestStart(id(u.id))
     }
   }
 
@@ -275,8 +306,8 @@ abstract class GenSTNUManager[ID]
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
   final def constraints : IList[Const] = new IList[Const]()
     rawConstraints ++
-      (for(tp <- JavaConversions.iterableAsScalaIterable(tps.values()) if tp.isVirtual if tp.refToReal.nonEmpty) yield
-        new Const(tp.refToReal.get._1, tp.tp, tp.refToReal.get._2, RIGID, None))
+      (for(tp <- tps.toList if tp != null if tp.isVirtual if tp.isAttached) yield
+        new Const(tp.attachmentToReal._1, tp, tp.attachmentToReal._2, RIGID, None))
 }
 
 
