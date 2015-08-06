@@ -10,7 +10,7 @@ import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
-import planstack.constraints.bindings.ValuesHolder;
+import planstack.constraints.bindings.Domain;
 import planstack.structures.Pair;
 
 import java.util.*;
@@ -100,7 +100,7 @@ public class FeasibilityReasoner {
         for(GAction ga : feasibles) {
             allowedDomainOfActions.add(ga.id);
         }
-        ValuesHolder dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
+        Domain dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
         for(Action a : st.getAllActions()) {
             st.csp.bindings().restrictDomain(a.instantiationVar(), dom);
         }
@@ -307,9 +307,9 @@ public class FeasibilityReasoner {
 
     public Set<GAction> actionsInState(State st, Set<GAction> rpgFeasibleActions) {
         Set<GAction> ret = new HashSet<>();
-        ValuesHolder current = new ValuesHolder(new LinkedList<Integer>());
+        Domain current = new Domain(new LinkedList<Integer>());
         for(Action a : st.getAllActions()) {
-            ValuesHolder toAdd = st.csp.bindings().rawDomain(a.decompositionVar());
+            Domain toAdd = st.csp.bindings().rawDomain(a.decompositionVar());
             current = current.union(toAdd);
         }
         for(Integer gaRawID : current.values()) {
