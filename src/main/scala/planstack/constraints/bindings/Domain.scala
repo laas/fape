@@ -55,6 +55,14 @@ class Domain(val vals: scala.collection.Set[Int]) {
     }
     new Domain(union)
   }
+
+  def hasOneCommonElement(o: Domain) : Boolean = {
+    (vals, o.vals) match {
+      case (v1: IBitSet, v2:IBitSet) => v1.sharesOneElement(v2) // optimized method
+      case (v1, v2) => (v1 & v2).nonEmpty
+    }
+  }
+
   def contains(v: Integer) : Boolean =
     vals.contains(v)
 

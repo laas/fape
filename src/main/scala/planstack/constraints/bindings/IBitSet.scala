@@ -89,6 +89,17 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
     new IBitSet(union)
   }
 
+  def sharesOneElement(o: IBitSet) : Boolean = {
+    val newSize = Math.min(nwords, o.nwords)
+    var i = 0
+    while(i < newSize) {
+      if(words(i) != 0 && o.words(i) != 0 && (words(i) & o.words(i)) != 0)
+        return true
+      i += 1
+    }
+    return false
+  }
+
   override def iterator: Iterator[Int] = new Iterator[Int] {
     private var current = nextSetBit(0)
     override def hasNext: Boolean = current != -1

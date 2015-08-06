@@ -130,7 +130,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   override def rawDomain(v: VarRef) : Domain = domains(domID(v))
 
   def isDiff(v1: VarRef, v2: VarRef) = {
-//    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
+    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
     different(domID(v1))(domID(v2))
   }
 
@@ -188,7 +188,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   override def typeOf(v: VarRef): String = types(v.id)
 
   override def unifiable(a: VarRef, b: VarRef): Boolean =
-    !isDiff(a, b) && rawDomain(a).intersect(rawDomain(b)).nonEmpty
+    domID(a) == domID(b) || (!isDiff(a, b) && rawDomain(a).hasOneCommonElement(rawDomain(b)))
 
   override def domainOf(v: VarRef): util.List[String] =
     rawDomain(v).values().asScala.map(values(_)).toList.asJava
