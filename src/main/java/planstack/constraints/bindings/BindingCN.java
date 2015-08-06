@@ -1,11 +1,6 @@
 package planstack.constraints.bindings;
 
-import planstack.graph.core.LabeledEdge;
-import planstack.graph.core.impl.MultiLabeledUndirectedAdjacencyList;
-import scala.collection.JavaConversions;
-
 import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Implements a CSP with a very conservative strategy to allow sharing
@@ -44,16 +39,16 @@ public interface BindingCN<VarRef> {
     public boolean isConsistent();
 
     /** Domain representation of a set of integer values */
-    public ValuesHolder intValuesAsDomain(Collection<Integer> intDomain);
+    public Domain intValuesAsDomain(Collection<Integer> intDomain);
 
     /** Domain representation of a set of string values */
-    public ValuesHolder stringValuesAsDomain(Collection<String> stringDomain);
+    public Domain stringValuesAsDomain(Collection<String> stringDomain);
 
     /**
      *  Restricts the domain of variable to the given one.
      *  The resulting domain will be the intersection of the existing and this one.
      */
-    public boolean restrictDomain(VarRef v, ValuesHolder domain);
+    public boolean restrictDomain(VarRef v, Domain domain);
 
     public void restrictDomain(VarRef var, Collection<String> toValues);
 
@@ -103,7 +98,7 @@ public interface BindingCN<VarRef> {
      */
     public List<Integer> domainOfIntVar(VarRef var);
 
-    public ValuesHolder rawDomain(VarRef var);
+    public Domain rawDomain(VarRef var);
 
     /**
      * Returns the type of this variable.

@@ -33,7 +33,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
      * Maps variables to their domain. The ValuesHolder object is to be recreated whenever a
      * modification is done.
      */
-    scala.collection.immutable.Map<VarRef, ValuesHolder> variables;
+    scala.collection.immutable.Map<VarRef, Domain> variables;
 
     /**
      * Maps variables to their type. This instance is shared with all descendants.
@@ -61,7 +61,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
      * Contains a domain that is shared between all instances of ConservativeConstraintNetworks.
      * This domain is the default one for all new int variables.
      */
-    private final ValuesHolder[] defaultIntDomain;
+    private final Domain[] defaultIntDomain;
 
     final HashMap<Integer, Integer> intValuesIds;
 
@@ -112,8 +112,8 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         exts = new HashMap<String, ExtensionConstraint>();
         mappings = new HashMap<>();
         extChecked = false;
-        defaultIntDomain = new ValuesHolder[1];
-        defaultIntDomain[0] = new ValuesHolder(new LinkedList<Integer>());
+        defaultIntDomain = new Domain[1];
+        defaultIntDomain[0] = new Domain(new LinkedList<Integer>());
         assert defaultIntDomain[0].size() == intValues.size();
     }
 
@@ -185,8 +185,8 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
                 assert cons.size() == restrictedDomains.length;
                 VarRef focusVar = cons.get(i);
 
-                ValuesHolder old = variables.apply(focusVar);
-                variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new ValuesHolder(restrictedDomains[i])));
+                Domain old = variables.apply(focusVar);
+                variables = variables.updated(focusVar, variables.apply(focusVar).intersect(new Domain(restrictedDomains[i])));
                 if (old.size() > variables.apply(focusVar).size())
                     domainModified(focusVar);
             }
@@ -230,7 +230,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         return consistent;
     }
 
-    private ValuesHolder vals(VarRef var) {
+    private Domain vals(VarRef var) {
         return variables.apply(var);
     }
 
@@ -267,30 +267,30 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
     }
 
     /** Domain representation of a set of integer values */
-    public ValuesHolder intValuesAsDomain(Collection<Integer> intDomain) {
+    public Domain intValuesAsDomain(Collection<Integer> intDomain) {
         List<Integer> ids = new LinkedList<>();
         for(Integer value : intDomain) {
             ids.add(intValuesIds.get(value));
         }
-        return new ValuesHolder(ids);
+        return new Domain(ids);
     }
 
     /** Domain representation of a set of string values */
-    public ValuesHolder stringValuesAsDomain(Collection<String> stringDomain) {
+    public Domain stringValuesAsDomain(Collection<String> stringDomain) {
         List<Integer> ids = new LinkedList<>();
         for(String value : stringDomain) {
             ids.add(valuesIds.get(value));
         }
-        return new ValuesHolder(ids);
+        return new Domain(ids);
     }
 
     /**
      *  Restricts the domain of variable to the given one.
      *  The resulting domain will be the intersection of the existing and this one.
      */
-    public boolean restrictDomain(VarRef v, ValuesHolder domain) {
-        ValuesHolder old = variables.apply(v);
-        ValuesHolder newDom = old.intersect(domain);
+    public boolean restrictDomain(VarRef v, Domain domain) {
+        Domain old = variables.apply(v);
+        Domain newDom = old.intersect(domain);
         variables = variables.updated(v, newDom);
 
         if(newDom.isEmpty()) {
@@ -366,7 +366,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
                     "For instance \"instance A a1, a2, a3;\" and constant A v;\" should be in the same file.";
             valueIds.add(valuesIds.get(val));
         }
-        variables = variables.updated(var, new ValuesHolder(valueIds));
+        variables = variables.updated(var, new Domain(valueIds));
         types.put(var, type);
         domainModified(var);
         constraints.addVertex(var);
@@ -381,7 +381,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         assert defaultIntDomain[0].size() == intValues.size();
     }
 
-    private void addIntVariable(VarRef var, ValuesHolder domain) {
+    private void addIntVariable(VarRef var, Domain domain) {
         assert !variables.contains(var);
         variables = variables.updated(var, domain);
         types.put(var, "integer");
@@ -395,7 +395,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
             addPossibleValue(val);
             valueIds.add(intValuesIds.get(val));
         }
-        addIntVariable(var, new ValuesHolder(valueIds));
+        addIntVariable(var, new Domain(valueIds));
     }
 
     public void AddUnificationConstraint(VarRef a, VarRef b) {
@@ -464,7 +464,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         return domain;
     }
 
-    public ValuesHolder rawDomain(VarRef var) {
+    public Domain rawDomain(VarRef var) {
         return variables.apply(var);
     }
 
@@ -609,7 +609,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
         for(int i=0 ; i<variables.size() ; i++) {
             VarRef var = variables.get(i);
             HashSet<Integer> domain = domains.get(i);
-            this.restrictDomain(var, new ValuesHolder(domain));
+            this.restrictDomain(var, new Domain(domain));
         }
         for(VarRef v : variables) {
             domainModified(v);
@@ -641,7 +641,7 @@ public class ConservativeConstraintNetwork<VarRef> implements BindingCN<VarRef> 
     }
 
     public void assertGroundAndConsistent() {
-        for(ValuesHolder vals : JavaConversions.asJavaCollection(variables.values()))
+        for(Domain vals : JavaConversions.asJavaCollection(variables.values()))
             assert vals.size() == 1;
 
         for(List<VarRef> extConst : mappings.keySet()) {
