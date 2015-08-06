@@ -3,6 +3,7 @@ package fape.core.planning.planninggraph;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
+import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.heuristics.relaxed.DomainTransitionGraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
@@ -154,6 +155,7 @@ public class GroundDTGs {
     }
 
     Map<GStateVariable, DTG> dtgs = new HashMap<>();
+    Map<GStateVariable, DTGImpl> ds = new HashMap<>();
     final APlanner planner;
 
     public GroundDTGs(Collection<GAction> actions, AnmlProblem pb, APlanner planner) {
@@ -163,14 +165,24 @@ public class GroundDTGs {
 
             for(Fluent effect : ga.add) {
                 boolean added = false;
-                if(!dtgs.containsKey(effect.sv))
+                if(!dtgs.containsKey(effect.sv)) {
                     dtgs.put(effect.sv, new DTG(effect.sv));
+                    ds.put(effect.sv, new DTGImpl(1));
+                    // initialize nodes
+                    for(String val : pb.instances().instancesOfType(effect.sv.f.valueType())) {
+                        InstanceRef instance = pb.instance(val);
+                        Fluent f = planner.preprocessor.getFluent(effect.sv, instance);
+                        ds.get(effect.sv).addNode(f, 0, null, null);
+                    }
+
+                }
                 for(Fluent precondition : ga.pre) {
                     if(effect.sv.equals(precondition.sv)) {
 //                        assert !added : "A transition has two preconditions";
 
                         added = true;
                         dtgs.get(effect.sv).addEdge(precondition, effect, ga);
+                        ds.get(effect.sv).addEdge(precondition, 0, null, ga, effect, 0);
                     }
                 }
                 if(!added) // this is an unconditional transition
