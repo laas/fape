@@ -44,10 +44,10 @@ public class DTGImpl {
         }
         fluentByLvl[(fluent * numLevels)+lvl] = id; }
 
-    private int source(int edge) { return edges[edgeIndex(edge)]; }
-    private int dest(int edge) { return edges[edgeIndex(edge)+1]; }
-    private int laction(int edge) { return edges[edgeIndex(edge)+2]; }
-    private int gaction(int edge) { return edges[edgeIndex(edge)+3]; }
+    public final int source(int edge) { return edges[edgeIndex(edge)]; }
+    public final int dest(int edge) { return edges[edgeIndex(edge)+1]; }
+    public final int laction(int edge) { return edges[edgeIndex(edge)+2]; }
+    public final int gaction(int edge) { return edges[edgeIndex(edge)+3]; }
 
     private void setEdge(int edge, int source, int dest, int lifted, int ground) {
         assert source != -1 && dest != -1;
@@ -61,16 +61,15 @@ public class DTGImpl {
             inEdges[dest] = Arrays.copyOf(inEdges[dest], inEdges[dest].length*2);
         inEdges[dest][0] += 1; // increment number
         inEdges[dest][inEdges[dest][0]] = edge;
-        // TODO in out
     }
 
-    private int fluent(int node) { return nodes[nodeIndex(node)]; }
-    private int lvl(int node) { return nodes[nodeIndex(node)+1]; }
-    private int start(int node) { return nodes[nodeIndex(node)+2]; }
-    private int end(int node) { return nodes[nodeIndex(node)+3]; }
-    private boolean accepting(int node) { return nodes[nodeIndex(node)+4] == ACCEPTING; }
-    private boolean entryPoint(int node) { return nodes[nodeIndex(node)+5] == ENTRY_POINT; }
-    private int numInEdge(int node) { return inEdges[node][0]; }
+    public final int fluent(int node) { return nodes[nodeIndex(node)]; }
+    final int lvl(int node) { return nodes[nodeIndex(node)+1]; }
+    public final int start(int node) { return nodes[nodeIndex(node)+2]; }
+    public final int end(int node) { return nodes[nodeIndex(node)+3]; }
+    public final boolean accepting(int node) { return nodes[nodeIndex(node)+4] == ACCEPTING; }
+    public final boolean entryPoint(int node) { return nodes[nodeIndex(node)+5] == ENTRY_POINT; }
+    final int numInEdge(int node) { return inEdges[node][0]; }
 
     private void setAccepting(int node) { nodes[nodeIndex(node)+4] = ACCEPTING; }
     private void setEntryPoint(int node) { nodes[nodeIndex(node)+5] = ENTRY_POINT; }
@@ -100,6 +99,13 @@ public class DTGImpl {
         return nextNode++;
     }
 
+    public int addNodeIfAbsent(Fluent f, int lvl, TPRef start, TPRef end) {
+        if(hasNode(f, lvl))
+            return id(f, lvl);
+        else
+            return addNode(f, lvl, start, end);
+    }
+
     public int addNode(Fluent f, int lvl, TPRef start, TPRef end) {
         if(f == null) {
             assert lvl == 0 : "Null node can only exist at level 0.";
@@ -123,11 +129,13 @@ public class DTGImpl {
     int[] edges = new int[10*EDGE_SIZE];
     int[] nodes = new int[10*NODE_SIZE];
     final int numLevels;
+    public final boolean isSink;
     int[] fluentByLvl;
     int[][] inEdges = new int[10][];
 
-    public DTGImpl(int numLevels) {
+    public DTGImpl(int numLevels, boolean isSink) {
         this.numLevels = numLevels;
+        this.isSink = isSink;
         fluentByLvl = new int[10*numLevels];
         Arrays.fill(fluentByLvl, -1);
     }
@@ -163,11 +171,51 @@ public class DTGImpl {
         return true;
     }
 
+    private int nextNodeOfFluent(int fluent, int from) {
+        int i = from;
+        while(fluent(from) != fluent && i < nextNode)
+            i++;
+        if(i == nextNode)
+            return -1;
+        assert(fluent(i) == fluent);
+        return i;
+    }
+
+    public PrimitiveIterator.OfInt entryNodes(Fluent f) {
+        assert f != null : "Cannot enter with null fluent";
+        return entryNodes(f.ID);
+    }
+
+    public PrimitiveIterator.OfInt entryNodes(final int fluent) {
+        return new PrimitiveIterator.OfInt() {
+            private int nextFrom(int from) { // returns next entry point with same fluent
+                int i = from;
+                while(i < nextNode && (fluent(i) != fluent || !entryPoint(i)))
+                    i++;
+                if(i == nextNode)
+                    return -1;
+                assert(fluent(i) == fluent);
+                return i;
+            }
+            int curNode = nextFrom(0);
+            @Override
+            public int nextInt() {
+                int ret = curNode;
+                curNode = nextFrom(curNode+1);
+                return ret;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return curNode != -1;
+            }
+        };
+    }
 
 
 
     public static DTGImpl buildFromTimeline(Timeline tl, APlanner planner, State st) {
-        DTGImpl dtg = new DTGImpl(tl.numChanges()+1);
+        DTGImpl dtg = new DTGImpl(tl.numChanges()+1, true);
 
         FeasibilityReasoner reas = planner.preprocessor.getFeasibilityReasoner();
 

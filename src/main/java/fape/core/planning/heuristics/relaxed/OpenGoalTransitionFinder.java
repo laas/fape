@@ -25,22 +25,60 @@ public class OpenGoalTransitionFinder {
 
     protected static boolean debugging = false;
 
-    Map<Integer, DomainTransitionGraph> dtgs = new HashMap<>();
-    public List<DomainTransitionGraph.DTNode> startNodes = new LinkedList<>();
+    static public class DualNode {
+        public final int dtgID;
+        public final int nodeID;
+        public DualNode(int dtgID, int nodeID) {
+            this.dtgID = dtgID;
+            this.nodeID = nodeID;
+        }
+        public int hashCode() { return dtgID + nodeID * 64; }
+        public boolean equals(Object o) {
+            return o instanceof DualNode && ((DualNode) o).dtgID == dtgID && ((DualNode) o).nodeID == nodeID;
+        }
+    }
+    static public class DualEdge {
+        public final int dtgID;
+        public final int edgeID;
+        public DualEdge(int dtgID, int edgeID) {
+            this.dtgID = dtgID;
+            this.edgeID = edgeID;
+        }
+    }
 
-    public void addDTG(DomainTransitionGraph dtg) {
-        if(!dtgs.containsKey(dtg.id()))
-            dtgs.put(dtg.id(), dtg);
+    static public class Path {
+        public final DualNode start;
+        public final DualNode end;
+        public final List<DualEdge> edges;
+        public Path(DualNode start, DualNode end, List<DualEdge> edges) {
+            this.start = start; this.end = end; this.edges = edges;
+        }
+    }
+
+    public OpenGoalTransitionFinder(DTGCollection dtgs) {
+        allDtgs = dtgs;
+    }
+
+    /** all dtgs of the system */
+    final DTGCollection allDtgs;
+
+    /** IDs of the dtg I can use (built with setDTGUsable */
+    final List<Integer> dtgs = new ArrayList<>();
+    List<DualNode> startNodes = new ArrayList<>();
+
+    public void setDTGUsable(int dtgID) {
+        assert !dtgs.contains(dtgID);
+        dtgs.add(dtgID);
     }
 
     private class NodeCost implements Comparable<NodeCost> {
-        public final DomainTransitionGraph.DTNode n;
+        public final DualNode n;
         public final int externalCost;
         public final int accumulatedCost;
         public final NodeCost pred;
-        public final DomainTransitionGraph.DTEdge e;
+        public final DualEdge e;
 
-        public NodeCost(DomainTransitionGraph.DTNode n, int extCost, int accCost, NodeCost pred, DomainTransitionGraph.DTEdge edge) {
+        public NodeCost(DualNode n, int extCost, int accCost, NodeCost pred, DualEdge edge) {
             this.n = n;
             this.externalCost = extCost;
             this.accumulatedCost = accCost;
@@ -59,9 +97,9 @@ public class OpenGoalTransitionFinder {
     }
 
     public interface CostEvaluator {
-        int cost(Action a, GAction ga, GStateVariable sv);
-        int distTo(GAction ga);
-        boolean usable(GAction ga);
+        int cost(int liftedActionID, int gActionID, int fluentID);
+        int distTo(int gActionID);
+        boolean usable(int gActionID);
 
 //        public boolean usable(GAction ga);
     }
@@ -70,101 +108,52 @@ public class OpenGoalTransitionFinder {
 
     public void addTransitionTargets(Collection<Fluent> fluents, TPRef startTimePoint) {
         this.startTimePoint = startTimePoint;
-        for(DomainTransitionGraph dtg : dtgs.values()) {
-            for (Fluent f : fluents) {
-                DomainTransitionGraph.DTNode start = dtg.startNodeForFluent(f);
-                if(start != null) {
-                    assert dtg instanceof GroundDTGs.DTG;
-                    startNodes.add(start);
-                }
-            }
-        }
+        startNodes.addAll(allDtgs.entryPoints(dtgs, fluents));
     }
 
     public void addPersistenceTargets(Collection<Fluent> fluents, TPRef start, TPRef end, State st) {
         this.startTimePoint = start;
-        for(Fluent f : fluents) {
-            for(DomainTransitionGraph dtg : dtgs.values()) {
-                startNodes.addAll(dtg.unifiableNodes(f, start, end, st));
-            }
-        }
+        startNodes.addAll(allDtgs.startPointForPersistence(dtgs, fluents, start, end));
     }
 
-    final class EdgeWithCost {
-        public EdgeWithCost(DomainTransitionGraph.DTEdge e, int distCost, int directCost) {
-            this.e = e; this.distanceCost = distCost; this.directCost = directCost;
-        }
-        public final DomainTransitionGraph.DTEdge e;
-        public final int distanceCost;
-        public final int directCost;
-
-        @Override public String toString() { return distanceCost+" "+directCost; }
-    }
-
-    public Collection<EdgeWithCost> inEdges(DomainTransitionGraph.DTNode n, CostEvaluator ce) {
-        List<EdgeWithCost> edges = new LinkedList<>();
-        DomainTransitionGraph container = dtgs.get(n.containerID);
-        Iterator<DomainTransitionGraph.DTEdge> it = container.inEdges(n);
-        while(it.hasNext()) {
-            DomainTransitionGraph.DTEdge e = it.next();
-            edges.add(new EdgeWithCost(e, e.ga!=null ? ce.distTo(e.ga) : 0,  ce.cost(e.act, e.ga, e.sv())));
-        }
-        if(container instanceof GroundDTGs.DTG) {
-            for (DomainTransitionGraph dtg : dtgs.values()) {
-                if (dtg != container) {
-                    DomainTransitionGraph.DTNode nNext = dtg.possibleEntryPointFrom(n);
-                    if (nNext != null) {
-                        int transitionCost = dtg.hasBeenExtended ? 999 : 0;
-                        edges.add(new EdgeWithCost(new DomainTransitionGraph.DTEdge(nNext, n, null, null), 0, transitionCost));
-                    }
-                }
-            }
-        }
-        return edges;
-    }
-
-
-    public PartialPathDTG bestPath(CostEvaluator ce) throws NoSolutionException {
+    public Path bestPath(CostEvaluator ce) throws NoSolutionException {
         Queue<NodeCost> q = new PriorityQueue<>();
-        Map<DomainTransitionGraph.DTNode, NodeCost> costs = new HashMap<>();
-        for (DomainTransitionGraph.DTNode n : startNodes) {
-            int baseCost;
-            if(dtgs.get(n.containerID).hasBeenExtended)
-                baseCost = 999;
-            else
-                baseCost = 0;
-            NodeCost nc = new NodeCost(n, 0, baseCost, null, null);
+        Map<DualNode, NodeCost> costs = new HashMap<>();
+        for (DualNode n : startNodes) {
+            NodeCost nc = new NodeCost(n, 0, 0, null, null);
             costs.put(n, nc);
             q.add(nc);
         }
 
-        DomainTransitionGraph.DTNode dest = null;
+        DualNode dest = null;
         while (dest == null && !q.isEmpty()) {
 
             NodeCost nc = q.poll();
-            DomainTransitionGraph current = dtgs.get(nc.n.containerID);
+            DTGImpl current = allDtgs.get(nc.n.dtgID);
+            final int fluent = current.fluent(nc.n.nodeID);
 
-            if (current.isAccepting(nc.n)) {
+            if (current.accepting(nc.n.nodeID)) {
+                // best accepting node: finished!
                 dest = nc.n;
             } else {
-                Iterator<DomainTransitionGraph.DTEdge> it = current.inEdges(nc.n);
+                PrimitiveIterator.OfInt it = current.inEdgesIterator(nc.n.nodeID);
                 while(it.hasNext()) {
-                    DomainTransitionGraph.DTEdge e = it.next();
+                    final int edgeID = it.next();
+                    final int ga = current.gaction(edgeID);
+                    final int lifted = current.laction(edgeID);
+                    final int src = current.source(edgeID);
+                    final int edgeDest = current.dest(edgeID);
+                    assert edgeDest == nc.n.nodeID;
 
-                    if(e.ga != null && !ce.usable(e.ga))
+                    if(ga != -1 && !ce.usable(ga))
                         continue; // this action is not allowed
 
-                    int accCost;
-                    int extCost;
-                    if(current.isFree(e)) {
-                        accCost = nc.accumulatedCost;
-                        extCost = nc.externalCost;
-                    } else {
-                        accCost = nc.accumulatedCost + ce.cost(e.act, e.ga, e.sv());
-                        int actionCost = e.ga != null ? ce.distTo(e.ga) : 0;
-                        extCost = (actionCost > nc.externalCost) ? actionCost : nc.externalCost;
-                    }
-                    NodeCost ncNext = new NodeCost(e.from, extCost, accCost, nc, e);
+                    int accCost = nc.accumulatedCost + ce.cost(lifted, ga, current.fluent(edgeDest));
+                    int actionCost = ga != -1 ? ce.distTo(ga) : 0;
+                    int extCost = (actionCost > nc.externalCost) ? actionCost : nc.externalCost;
+
+                    DualNode dualSource = new DualNode(nc.n.dtgID, src);
+                    NodeCost ncNext = new NodeCost(dualSource, extCost, accCost, nc, new DualEdge(dualSource.dtgID, edgeID));
 
                     if(!costs.containsKey(ncNext.n)) { // no existing label, put it in queue whatever
                         costs.put(ncNext.n, ncNext);
@@ -175,22 +164,23 @@ public class OpenGoalTransitionFinder {
                         q.add(ncNext);
                     }
                 }
-                if(current instanceof GroundDTGs.DTG) {
-                    for (DomainTransitionGraph dtg : dtgs.values()) {
-                        if (dtg != current) {
-                            DomainTransitionGraph.DTNode nNext = dtg.possibleEntryPointFrom(nc.n);
-                            if (nNext != null) {
-                                // give a very high cost to any path going through an already extended path.
-                                int transitionCost = dtg.hasBeenExtended ? 999 : 0;
-                                NodeCost ncNext = new NodeCost(nNext, nc.externalCost, nc.accumulatedCost + transitionCost, nc, null);
-                                if (!costs.containsKey(ncNext.n)) { // no existing label, put it in queue whatever
-                                    costs.put(ncNext.n, ncNext);
-                                    q.add(ncNext);
-                                } else if (costs.get(ncNext.n).cost() > ncNext.cost()) { // existing label, update if better
-                                    q.remove(costs.get(ncNext.n));
-                                    costs.put(ncNext.n, ncNext);
-                                    q.add(ncNext);
-                                }
+                if(!current.isSink) {
+                    for(int i : dtgs) {
+                        DTGImpl dtg = allDtgs.get(i);
+                        if(dtg == current)
+                            continue;
+                        PrimitiveIterator.OfInt itEntryNodes =  dtg.entryNodes(fluent);
+                        while(itEntryNodes.hasNext()) {
+                            final DualNode entryPoint = new DualNode(i, itEntryNodes.nextInt());
+                            // give a very high cost to any path going through an already extended path.
+                            final NodeCost ncNext = new NodeCost(entryPoint, nc.externalCost, nc.accumulatedCost, nc, null);
+                            if (!costs.containsKey(ncNext.n)) { // no existing label, put it in queue whatever
+                                costs.put(ncNext.n, ncNext);
+                                q.add(ncNext);
+                            } else if (costs.get(ncNext.n).cost() > ncNext.cost()) { // existing label, update if better
+                                q.remove(costs.get(ncNext.n));
+                                costs.put(ncNext.n, ncNext);
+                                q.add(ncNext);
                             }
                         }
                     }
@@ -199,60 +189,31 @@ public class OpenGoalTransitionFinder {
         }
 
         if(dest == null) {
-//            print("no-path.dot", ce);
-//            throw new FAPEException("aaaaaaaaaaaaaaaaaaa");
-//            if(RelaxedPlanExtractor.debugging2)
-//                System.out.println("qsdqsdqksl");
             throw new NoSolutionException();
         }
-//            throw new FAPEException("NO SOLUTION! !!!!");
 
         NodeCost cur = costs.get(dest);
         assert startTimePoint != null;
-        DomainTransitionGraph containingDTG = dtgs.get(cur.n.containerID);
-
-        PartialPathDTG partialPathDTG = new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
-        return partialPathDTG;
+        return extractEdgeSequence(cur);
+//        DomainTransitionGraph containingDTG = dtgs.get(cur.n.containerID);
+//
+//        PartialPathDTG partialPathDTG = new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
+//        return partialPathDTG;
     }
 
-    private List<DomainTransitionGraph.DTEdge> extractEdgeSequence(NodeCost nc) {
-        List<DomainTransitionGraph.DTEdge> edges = new LinkedList<>();
+    private Path extractEdgeSequence(NodeCost nc) {
+        final DualNode start = nc.n;
+        final List<DualEdge> edges = new ArrayList<>();
+        DualNode end = null;
         NodeCost cur = nc;
         while(cur != null) {
-            if(cur.e == null && cur.pred != null) {
-                edges.add(new DomainTransitionGraph.DTEdge(cur.n, cur.pred.n, null, null));
-            } else if(cur.e != null){
+            end = cur.n;
+            if(cur.e != null){
                 edges.add(cur.e);
             }
             cur = cur.pred;
         }
-        return edges;
-    }
-
-    public void print(String filename, CostEvaluator ce) {
-        MultiLabeledDigraph<DomainTransitionGraph.DTNode, EdgeWithCost> fullGraph = GraphFactory.getMultiLabeledDigraph();
-
-        for(DomainTransitionGraph dtg : dtgs.values()) {
-            for(DomainTransitionGraph.DTNode n : dtg.getAllNodes()) {
-                if(!fullGraph.contains(n))
-                    fullGraph.addVertex(n);
-                for(EdgeWithCost e : inEdges(n, ce)) {
-                    if(!fullGraph.contains(e.e.from))
-                        fullGraph.addVertex(e.e.from);
-                    assert n.equals(e.e.to);
-                    fullGraph.addEdge(e.e.from, e.e.to, e);
-                }
-            }
-        }
-        fullGraph.exportToDotFile(filename, new NodeEdgePrinterInterface<DomainTransitionGraph.DTNode, EdgeWithCost, LabeledEdge<DomainTransitionGraph.DTNode, EdgeWithCost>>() {
-
-            @Override public String printNode(DomainTransitionGraph.DTNode node) {
-                return startNodes.contains(node) ? "start - "+node : node.toString();
-            }
-
-            @Override public String printEdge(EdgeWithCost edge) { return edge.toString(); }
-            @Override public boolean excludeNode(DomainTransitionGraph.DTNode node) { return false; }
-            @Override public boolean excludeEdge(LabeledEdge<DomainTransitionGraph.DTNode, EdgeWithCost> edge) { return false; }
-        });
+        assert end != null : "Error: no end to this path.";
+        return new Path(start, end, edges);
     }
 }

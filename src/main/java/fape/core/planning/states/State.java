@@ -1115,6 +1115,15 @@ public class State implements Reporter {
 
     public List<Action> getAllActions() { return taskNet.getAllActions(); }
 
+    public Action getAction(int actionID) {
+        if(actionID == -1)
+            return null;
+        for(Action a : getAllActions())
+            if(a.id().id() == actionID)
+                return a;
+        throw new FAPEException("Action with id: "+actionID+" was not found.");
+    }
+
     public List<Action> getOpenLeaves() { return taskNet.getUndecomposedActions(); }
 
     public List<Task> getOpenTaskConditions() { return taskNet.getOpenTasks(); }

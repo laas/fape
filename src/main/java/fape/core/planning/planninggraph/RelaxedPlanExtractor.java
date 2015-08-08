@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
+import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.relaxed.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.Printer;
@@ -40,6 +41,7 @@ public class RelaxedPlanExtractor {
     public RelaxedPlanExtractor(APlanner planner, State st) {
         this.planner = planner;
         this.st = st;
+        this.dtgs = new DTGCollection(planner, st);
         allowedActions = new HashSet<>(planner.preprocessor.getFeasibilityReasoner().getAllActions(st));
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
@@ -467,11 +469,16 @@ public class RelaxedPlanExtractor {
         }
     }
 
-    public static int next = 0;
+    final DTGCollection dtgs;
 
-    public PartialPathDTG getPathToPersistence(Timeline og) throws NoSolutionException {
+    /** maps a timeline to its DTG */
+    Map<Timeline, Integer> dtgsOgTimelines = new HashMap<>();
+
+    Map<GStateVariable, Integer> dtgsOfStateVariables= new HashMap<>();
+
+    public OpenGoalTransitionFinder.Path getPathToPersistence(Timeline og) throws NoSolutionException {
         assert og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs);
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for (Fluent f : ogs)
@@ -479,10 +486,16 @@ public class RelaxedPlanExtractor {
 //            transitions.addStartNodes(ogs); TODO
 
         for (GStateVariable sv : possibleStateVariables) {
-            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
-            if (previousPaths.containsKey(sv))
-                for (PartialPathDTG dtg : previousPaths.get(sv))
-                    pathFinder.addDTG(dtg);
+            if(!dtgsOfStateVariables.containsKey(sv)) {
+                final DTGImpl dtg = planner.preprocessor.getDTG(sv);
+                final int dtgID = dtgs.add(dtg);
+                dtgsOfStateVariables.put(sv, dtgID);
+            }
+            pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv));
+//            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
+//            if (previousPaths.containsKey(sv))
+//                for (PartialPathDTG dtg : previousPaths.get(sv))
+//                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -525,10 +538,11 @@ public class RelaxedPlanExtractor {
         potentialIndirectSupporters.removeAll(toRemove);
 
         for (Timeline tl : potentialIndirectSupporters) {
-            pathFinder.addDTG(timelineDTGs.get(tl));
-            for (PartialPathDTG dtg : previousSolutions.get(tl)) {
-                pathFinder.addDTG(dtg);
-            }
+            pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
+//            pathFinder.addDTG(timelineDTGs.get(tl));
+//            for (PartialPathDTG dtg : previousSolutions.get(tl)) {
+//                pathFinder.addDTG(dtg);
+//            }
         }
         assert og.chain.length == 1;
         pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint(), st);
@@ -544,19 +558,25 @@ public class RelaxedPlanExtractor {
         return pathFinder.bestPath(actionCostEvaluator);
     }
 
-    public PartialPathDTG getPathToTransition(Timeline og) throws NoSolutionException {
+    public OpenGoalTransitionFinder.Path getPathToTransition(Timeline og) throws NoSolutionException {
         assert !og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder();
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs);
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for(Fluent f : ogs)
             possibleStateVariables.add(f.sv);
 
         for(GStateVariable sv : possibleStateVariables) {
-            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
-            if(previousPaths.containsKey(sv))
-                for(PartialPathDTG dtg : previousPaths.get(sv))
-                    pathFinder.addDTG(dtg);
+            if(!dtgsOfStateVariables.containsKey(sv)) {
+                final DTGImpl dtg = planner.preprocessor.getDTG(sv);
+                final int dtgID = dtgs.add(dtg);
+                dtgsOfStateVariables.put(sv, dtgID);
+            }
+            pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv)); // TODO: might need to be built?
+//            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
+//            if(previousPaths.containsKey(sv))
+//                for(PartialPathDTG dtg : previousPaths.get(sv))
+//                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -599,10 +619,11 @@ public class RelaxedPlanExtractor {
         potentialIndirectSupporters.removeAll(toRemove);
 
         for(Timeline tl : potentialIndirectSupporters) {
-            pathFinder.addDTG(timelineDTGs.get(tl));
-            for(PartialPathDTG dtg : previousSolutions.get(tl)) {
-                pathFinder.addDTG(dtg);
-            }
+            pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
+//            pathFinder.addDTG(timelineDTGs.get(tl));
+//            for(PartialPathDTG dtg : previousSolutions.get(tl)) {
+//                pathFinder.addDTG(dtg);
+//            }
         }
 
         pathFinder.addTransitionTargets(ogs, og.getFirstChangeTimePoint());
@@ -623,25 +644,37 @@ public class RelaxedPlanExtractor {
     }
 
     OpenGoalTransitionFinder.CostEvaluator actionCostEvaluator = new OpenGoalTransitionFinder.CostEvaluator() {
+        public int cost(int liftedActionID, int gActionID, int fluentID) {
+            return cost(st.getAction(liftedActionID), planner.preprocessor.getGroundAction(gActionID), planner.preprocessor.getFluent(fluentID).sv);
+        }
+
         @Override
+        public int distTo(int gActionID) {
+            return distTo(planner.preprocessor.getGroundAction(gActionID));
+        }
+
+        @Override
+        public boolean usable(int gActionID) {
+            return usable(planner.preprocessor.getGroundAction(gActionID));
+        }
+
         public int cost(Action a, GAction ga, GStateVariable sv) {
             return costOfAction(a, ga, sv);
         }
 
-        @Override
         public int distTo(GAction ga) {
             return costOfPreconditions(ga);
         }
 
-        @Override
         public boolean usable(GAction ga) {
             return allowedActions.contains(ga);
         }
     };
 
-    Map<Timeline, TimelineDTG> timelineDTGs;
-    Map<Timeline, List<PartialPathDTG>> previousSolutions;
-    Map<GStateVariable, List<PartialPathDTG>> previousPaths;
+//    Map<Timeline, TimelineDTG> timelineDTGs;
+//    Map<Timeline, List<PartialPathDTG>> previousSolutions;
+//    Map<GStateVariable, List<PartialPathDTG>> previousPaths;
+
 
     HashSet<Fluent> achievedFluents = new HashSet<>();
 
@@ -668,91 +701,68 @@ public class RelaxedPlanExtractor {
         achievedFluents = new HashSet<>();
     }
 
-    public List<PartialPathDTG> getPaths() throws NoSolutionException {
-        timelineDTGs = new HashMap<>();
-        previousSolutions = new HashMap<>();
-        previousPaths = new HashMap<>();
-
-//        if(debugging2 && st.mID == 148) {
-//            System.out.println(Printer.temporalDatabaseManager(st));
-//        }
+    public List<OpenGoalTransitionFinder.Path> getPaths() throws NoSolutionException {
+        List<OpenGoalTransitionFinder.Path> allPaths = new ArrayList<>();
 
         for(Timeline tl : st.getTimelines()) {
             if(!tl.hasSinglePersistence()) {
-                timelineDTGs.put(tl, new TimelineDTG(tl, st, planner));
-                previousSolutions.put(tl, new LinkedList<PartialPathDTG>());
+                final DTGImpl tlDtg = DTGImpl.buildFromTimeline(tl, planner, st);
+                final int tlDtgID = dtgs.add(tlDtg);
+                assert !dtgsOgTimelines.containsKey(tl);
+                dtgsOgTimelines.put(tl, tlDtgID);
             }
         }
 
-        List<Timeline> opengoals = new LinkedList<>(st.tdb.getConsumers());
-        Collections.sort(opengoals, new Comparator<Timeline>() {
-            @Override
-            public int compare(Timeline t1, Timeline t2) {
-                return st.getEarliestStartTime(t1.getFirst().getFirst().start()) - st.getEarliestStartTime(t2.getFirst().getFirst().start());
-            }
-        });
-//        System.out.println();
+        List<Timeline> opengoals = new ArrayList<>(st.tdb.getConsumers());
+        opengoals.sort(Comparator.comparing((Timeline tl) -> st.getEarliestStartTime(tl.getFirst().getFirst().start()))
+                                 .thenComparing(tl -> tl.mID));
+
         for(Timeline og : opengoals) {
             if(displayResolution()) {
                 System.out.println("og: "+Printer.inlineTemporalDatabase(st, og));
             }
 //            System.out.println(Printer.inlineTemporalDatabase(st, og));
-            PartialPathDTG path;
+            OpenGoalTransitionFinder.Path path;
             if(og.hasSinglePersistence()) {
                 path = getPathToPersistence(og);
             } else {
                 path = getPathToTransition(og);
-                path.extendWith(timelineDTGs.get(og));
-                timelineDTGs.get(og).hasBeenExtended = true; //TODO add tiempoint infomation ?
-                previousSolutions.get(og).add(path);
+//                path.extendWith(timelineDTGs.get(og));
+//                timelineDTGs.get(og).hasBeenExtended = true;
+//                previousSolutions.get(og).add(path);
             }
-//            if(debugging2) {
-//                System.out.println(Printer.inlineTemporalDatabase(st, og));
-//                System.out.println(path);
-//            }
-            if(path.extendedTimeline() != null) { //TODO handle case with no supporter
-                previousSolutions.get(path.extendedTimeline()).add(path);
-            } else {
-                if(!previousPaths.containsKey(path.getStateVariable()))
-                    previousPaths.put(path.getStateVariable(), new LinkedList<>());
-                previousPaths.get(path.getStateVariable()).add(path);
-            }
-//            System.out.println("OpenGoal: "+Printer.inlineTemporalDatabase(st, og));
-            for(DomainTransitionGraph.DTEdge addedEdge : path.additionalEdges()) {
-                if(addedEdge.ga != null) {
-                    setActionUsed(addedEdge.ga);
-                    if(addedEdge.act == null) {// not an instantiation
-                        counter.addActionOccurrence(addedEdge.ga, path.getStateVariable());
-//                        System.out.println("  " + addedEdge.ga);
-                    } else {// instantiation
-                        counter.addActionInstantiation(addedEdge.act, addedEdge.ga);
-//                        System.out.println("  " + addedEdge.ga + "    (--" + addedEdge.act + "--)");
-                        if(!instantiated.contains(addedEdge.act)) {
-                            assert actionInstantiations.get(addedEdge.act).contains(addedEdge.ga);
-                            actionInstantiations.get(addedEdge.act).clear();
-                            actionInstantiations.get(addedEdge.act).add(addedEdge.ga);
-                            instantiated.add(addedEdge.act);
-                        } else {
-                            assert actionInstantiations.get(addedEdge.act).size() == 1;
-                        }
+            allPaths.add(path);
+            assert dtgs.isAccepting(path.start);
+            final GStateVariable sv = dtgs.stateVariable(path);
+            for(OpenGoalTransitionFinder.DualEdge edge : path.edges) {
+                final Action lifted = dtgs.liftedAction(edge);
+                final GAction ground = dtgs.groundAction(edge);
+
+                if(ground == null) // not corresponding to any ground action
+                    continue;
+
+                setActionUsed(ground);
+                if(lifted == null) { // not an instantiation
+                    counter.addActionOccurrence(ground, sv);
+                } else { // instantiation of the lifted action
+                    counter.addActionInstantiation(lifted, ground);
+                    if(!instantiated.contains(lifted)) {
+                        assert actionInstantiations.get(lifted).contains(ground) : "First instantiation is not in the domain.";
+                        actionInstantiations.get(lifted).clear();
+                        actionInstantiations.get(lifted).add(ground);
+                        instantiated.add(lifted);
+                    } else {
+                        assert actionInstantiations.get(lifted).size() == 1;
                     }
                 }
             }
-
-            next ++;
         }
 
-        List<PartialPathDTG> allPaths = new LinkedList<>();
-        for(Timeline tl : previousSolutions.keySet())
-            allPaths.addAll(previousSolutions.get(tl));
-        for(GStateVariable sv : previousPaths.keySet())
-            allPaths.addAll(previousPaths.get(sv));
         return allPaths;
     }
+
     Set<Action> instantiated = new HashSet<>();
     ActionUsageTracker counter = null;
-
-    int breakState = 82;
 
     public int myPerfectHeuristic() {
         counter = new ActionUsageTracker();
@@ -763,7 +773,7 @@ public class RelaxedPlanExtractor {
             initActionUsage();
             currentCausalReasoner = getCausalModelOfInitialDefinitions();
             actionInstantiations = getInitialPossibleActionsInstantiations();
-            List<PartialPathDTG> paths = getPaths();
+            List<OpenGoalTransitionFinder.Path> paths = getPaths();
 
             Set<GAction> allGroundActions = new HashSet<>(counter.getAllUsedAction());
 
@@ -848,27 +858,27 @@ public class RelaxedPlanExtractor {
         }
     }
 
-    public String report() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\nState: "+st.mID+"\n");
-        sb.append("-------------- Timelines -----------\n");
-        for(Timeline tl : previousSolutions.keySet()) {
-            sb.append(Printer.inlineTemporalDatabase(st, tl)+"\n");
-            for(PartialPathDTG ppd : previousSolutions.get(tl)) {
-                sb.append("  ");
-                sb.append(ppd.startPath+"\n");
-            }
-        }
-        sb.append("\n-------------- State variables -----------\n");
-        for(GStateVariable sv : previousPaths.keySet()) {
-            sb.append(sv+"\n");
-            for(PartialPathDTG ppd : previousPaths.get(sv)) {
-                sb.append("  "+ppd.startPath+"\n");
-            }
-        }
-        sb.append("\n");
-        return sb.toString();
-    }
+//    public String report() {
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("\nState: "+st.mID+"\n");
+//        sb.append("-------------- Timelines -----------\n");
+//        for(Timeline tl : previousSolutions.keySet()) {
+//            sb.append(Printer.inlineTemporalDatabase(st, tl)+"\n");
+//            for(PartialPathDTG ppd : previousSolutions.get(tl)) {
+//                sb.append("  ");
+//                sb.append(ppd.startPath+"\n");
+//            }
+//        }
+//        sb.append("\n-------------- State variables -----------\n");
+//        for(GStateVariable sv : previousPaths.keySet()) {
+//            sb.append(sv+"\n");
+//            for(PartialPathDTG ppd : previousPaths.get(sv)) {
+//                sb.append("  "+ppd.startPath+"\n");
+//            }
+//        }
+//        sb.append("\n");
+//        return sb.toString();
+//    }
 
     /** Returns the expected cost of either:
      *    - binding lifted to ga (if lifted != null)

@@ -167,12 +167,12 @@ public class GroundDTGs {
                 boolean added = false;
                 if(!dtgs.containsKey(effect.sv)) {
                     dtgs.put(effect.sv, new DTG(effect.sv));
-                    ds.put(effect.sv, new DTGImpl(1));
+                    ds.put(effect.sv, initDTGForStateVariable(effect.sv));
                     // initialize nodes
                     for(String val : pb.instances().instancesOfType(effect.sv.f.valueType())) {
                         InstanceRef instance = pb.instance(val);
                         Fluent f = planner.preprocessor.getFluent(effect.sv, instance);
-                        ds.get(effect.sv).addNode(f, 0, null, null);
+                        ds.get(effect.sv).addNodeIfAbsent(f, 0, null, null);
                     }
 
                 }
@@ -195,18 +195,29 @@ public class GroundDTGs {
         return dtgs.containsKey(sv);
     }
 
-    public DTG getDTGOf(GStateVariable sv) {
-        if(!dtgs.containsKey(sv)) {
+    public DTGImpl getDTGOf(GStateVariable sv) {
+        if(!ds.containsKey(sv)) {
             // the dtg was not initialized because no actions have an effect on it
-            DTG newDTG = new DTG(sv);
-            dtgs.put(sv, newDTG);
+             dtgs.put(sv, new DTG(sv));
+            ds.put(sv, initDTGForStateVariable(sv));
         }
-        return dtgs.get(sv);
+        return ds.get(sv);
     }
 
     public void print() {
         for(DTG dtg : dtgs.values()) {
             System.out.println(dtg+"\n");
         }
+    }
+
+    public DTGImpl initDTGForStateVariable(GStateVariable sv) {
+        DTGImpl dtg = new DTGImpl(1, false);
+        // initialize nodes
+        for(String val : pb.instances().instancesOfType(sv.f.valueType())) {
+            InstanceRef instance = pb.instance(val);
+            dtg.addNode(planner.preprocessor.getFluent(sv, instance), 0, null, null);
+        }
+        dtg.addNode(null, 0, null, null);
+        return dtg;
     }
 }
