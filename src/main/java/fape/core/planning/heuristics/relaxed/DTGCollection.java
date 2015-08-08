@@ -76,4 +76,13 @@ public final class DTGCollection {
     public Collection<OpenGoalTransitionFinder.DualNode> startPointForPersistence(Collection<Integer> usableDTGs, Collection<Fluent> fluents, TPRef start, TPRef end) {
         return entryPoints(usableDTGs, fluents); //TODO FIXME BADLY
     }
+
+    public Collection<Fluent> fluentsInDTG(int dtgID) {
+        DTGImpl dtg = get(dtgID);
+        Set<Fluent> fluents = new HashSet<>();
+        for(int i=1 ; i<dtg.getNumNodes() ; i++) {
+            fluents.add(planner.preprocessor.getFluent(dtg.fluent(i)));
+        }
+        return fluents;
+    }
 }

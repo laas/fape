@@ -163,7 +163,7 @@ public class TimelineDTG extends DomainTransitionGraph {
         }
         if(entryPoints.isEmpty())
             // There exist no path
-            throw new NoSolutionException();
+            throw new NoSolutionException("");
     }
 
     @Override

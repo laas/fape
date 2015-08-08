@@ -104,7 +104,7 @@ public class HLeveledReasoner<Clause, Fact> {
                 disFacts.add(factsIds.get(f));
         }
         if(disFacts.isEmpty())
-            throw new NoSolutionException();
+            throw new NoSolutionException("");
 
         List<Integer> usedClauses = new LinkedList<>();
         for(Clause c : alreadyUsedClauses) {
@@ -134,7 +134,7 @@ public class HLeveledReasoner<Clause, Fact> {
             }
         }
         if(candidates.isEmpty())
-            throw new NoSolutionException();
+            throw new NoSolutionException("");
         return candidates;
     }
 

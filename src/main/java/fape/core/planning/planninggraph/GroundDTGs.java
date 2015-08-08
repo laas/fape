@@ -215,9 +215,12 @@ public class GroundDTGs {
         // initialize nodes
         for(String val : pb.instances().instancesOfType(sv.f.valueType())) {
             InstanceRef instance = pb.instance(val);
-            dtg.addNode(planner.preprocessor.getFluent(sv, instance), 0, null, null);
+            final Fluent f = planner.preprocessor.getFluent(sv, instance);
+            dtg.addNode(f, 0, null, null);
+            dtg.setEntryPoint(f, 0);
         }
         dtg.addNode(null, 0, null, null);
+        dtg.setEntryPoint(null, 0);
         return dtg;
     }
 }

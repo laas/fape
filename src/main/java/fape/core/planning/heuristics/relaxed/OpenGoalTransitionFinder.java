@@ -32,10 +32,11 @@ public class OpenGoalTransitionFinder {
             this.dtgID = dtgID;
             this.nodeID = nodeID;
         }
-        public int hashCode() { return dtgID + nodeID * 64; }
-        public boolean equals(Object o) {
+        @Override public int hashCode() { return dtgID + nodeID * 64; }
+        @Override public boolean equals(Object o) {
             return o instanceof DualNode && ((DualNode) o).dtgID == dtgID && ((DualNode) o).nodeID == nodeID;
         }
+        @Override public String toString() { return "("+dtgID+", "+nodeID+")"; }
     }
     static public class DualEdge {
         public final int dtgID;
@@ -106,14 +107,26 @@ public class OpenGoalTransitionFinder {
 
     public TPRef startTimePoint =null;
 
-    public void addTransitionTargets(Collection<Fluent> fluents, TPRef startTimePoint) {
+    public void addTransitionTargets(Collection<Fluent> fluents, TPRef startTimePoint) throws NoSolutionException {
         this.startTimePoint = startTimePoint;
         startNodes.addAll(allDtgs.entryPoints(dtgs, fluents));
+        if(startNodes.isEmpty()) {
+            for(int dtgID : dtgs) {
+                System.out.println(dtgID+" "+allDtgs.fluentsInDTG(dtgID));
+            }
+            throw new NoSolutionException("No start point for transition fluents: " + fluents);
+        }
     }
 
-    public void addPersistenceTargets(Collection<Fluent> fluents, TPRef start, TPRef end, State st) {
+    public void addPersistenceTargets(Collection<Fluent> fluents, TPRef start, TPRef end) throws NoSolutionException {
         this.startTimePoint = start;
         startNodes.addAll(allDtgs.startPointForPersistence(dtgs, fluents, start, end));
+        if(startNodes.isEmpty()) {
+            for(int dtgID : dtgs) {
+                System.out.println(dtgID+" "+allDtgs.fluentsInDTG(dtgID));
+            }
+            throw new NoSolutionException("No start point for persistence fluents: " + fluents);
+        }
     }
 
     public Path bestPath(CostEvaluator ce) throws NoSolutionException {
@@ -131,6 +144,8 @@ public class OpenGoalTransitionFinder {
             NodeCost nc = q.poll();
             DTGImpl current = allDtgs.get(nc.n.dtgID);
             final int fluent = current.fluent(nc.n.nodeID);
+
+            System.out.println(nc.n+" "+nc.cost());
 
             if (current.accepting(nc.n.nodeID)) {
                 // best accepting node: finished!
@@ -167,7 +182,7 @@ public class OpenGoalTransitionFinder {
                 if(!current.isSink) {
                     for(int i : dtgs) {
                         DTGImpl dtg = allDtgs.get(i);
-                        if(dtg == current)
+                        if(dtg == current || !dtg.isSink)
                             continue;
                         PrimitiveIterator.OfInt itEntryNodes =  dtg.entryNodes(fluent);
                         while(itEntryNodes.hasNext()) {
@@ -189,7 +204,7 @@ public class OpenGoalTransitionFinder {
         }
 
         if(dest == null) {
-            throw new NoSolutionException();
+            throw new NoSolutionException("Could not find a path in the DTGs.");
         }
 
         NodeCost cur = costs.get(dest);

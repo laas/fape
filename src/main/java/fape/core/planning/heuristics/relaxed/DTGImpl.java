@@ -74,6 +74,9 @@ public class DTGImpl {
     private void setAccepting(int node) { nodes[nodeIndex(node)+4] = ACCEPTING; }
     private void setEntryPoint(int node) { nodes[nodeIndex(node)+5] = ENTRY_POINT; }
 
+    public int getNumNodes() {
+        return nextNode;
+    }
 
     private void setNode(int node, int fluent, int lvl, int start, int end) {
         final int idx =nodeIndex(node);
@@ -151,7 +154,7 @@ public class DTGImpl {
 
             @Override
             public boolean hasNext() {
-                return current < edges[0];
+                return edges != null && current < edges[0];
             }
         };
     }

@@ -26,7 +26,7 @@ public class RelaxedPlanExtractor {
     final Set<GAction> allowedActions;
     Set<GAction> inPlanActions;
 
-    private boolean displayResolution() { return false; }
+    private boolean displayResolution() { return st.mID != 3; }
 
     Collection<GAction> alreadyUsed = new HashSet<>();
 
@@ -176,7 +176,7 @@ public class RelaxedPlanExtractor {
         if(bestFluent != null)
             return bestFluent;
         else
-            throw new NoSolutionException();
+            throw new NoSolutionException("No best fluent in: "+fluents);
     }
 
     public GAction selectMostInterestingAction(Collection<GAction> actions) throws NoSolutionException {
@@ -223,8 +223,7 @@ public class RelaxedPlanExtractor {
                 bestAction = ga;
             }
         }
-        if(displayResolution())
-            System.out.print("");
+
         if(bestAction != null) {
 //            if(st.mID == 16) {
 //                System.out.println(bestAction+"\n");
@@ -241,7 +240,7 @@ public class RelaxedPlanExtractor {
             return bestAction;
 
         } else {
-            throw new NoSolutionException();
+            throw new NoSolutionException("No best action in "+actions);
         }
     }
 
@@ -292,7 +291,7 @@ public class RelaxedPlanExtractor {
             return bestAction;
 
         } else
-            throw new NoSolutionException();
+            throw new NoSolutionException("No application actions in: "+actions);
     }
 
     Map<Action, Set<GAction>> actionInstantiations;
@@ -330,7 +329,7 @@ public class RelaxedPlanExtractor {
 
     //    static AnmlProblem lastProblem = null;
 //    static HLeveledReasoner<GAction,Fluent>
-    protected static boolean debugging = false;
+    protected boolean debugging = false;
     public static boolean debugging2 = false;
     public int relaxedGroundPlan(State st) {
         try {
@@ -529,7 +528,7 @@ public class RelaxedPlanExtractor {
                             toRemove.add(tl1);
                             if (toRemove.contains(tl2)) {
                                 if (!st.canBeBefore(tl1, tl2) && !st.canBeBefore(tl2, tl1) && st.unified(tl1, tl2))
-                                    throw new NoSolutionException(); // unsolvable threat
+                                    throw new NoSolutionException("Unsolvable threat: "+tl1+"   "+tl2); // unsolvable threat
                             }
                         }
                 }
@@ -545,7 +544,7 @@ public class RelaxedPlanExtractor {
 //            }
         }
         assert og.chain.length == 1;
-        pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint(), st);
+        pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint());
 
 //        if (debugging2 && pathFinder.startNodes.isEmpty()) {
 //            System.out.println(ogs);
@@ -610,7 +609,7 @@ public class RelaxedPlanExtractor {
                             toRemove.add(tl1);
                             if(toRemove.contains(tl2)) {
                                 if(!st.canBeBefore(tl1, tl2) && !st.canBeBefore(tl2, tl1) && st.unified(tl1,tl2))
-                                    throw new NoSolutionException(); // unsolvable threat
+                                    throw new NoSolutionException("Unsolvable threat: "+tl1+"  "+tl2); // unsolvable threat
                             }
                         }
                 }
@@ -852,6 +851,9 @@ public class RelaxedPlanExtractor {
 //            }
             return total - st.getNumActions();
         } catch (NoSolutionException e) {
+            if(displayResolution()) {
+                e.printStackTrace();
+            }
 //            if(debugging2)
 //                e.printStackTrace();
             return 99999;
