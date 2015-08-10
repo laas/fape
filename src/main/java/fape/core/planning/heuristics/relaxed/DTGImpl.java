@@ -22,7 +22,7 @@ import java.util.PrimitiveIterator;
 public class DTGImpl {
 
     private static int EDGE_SIZE = 4; /* src, dest, lifted act, ground act */
-    private static int NODE_SIZE = 6; /* fluent, level, start, end */
+    private static int NODE_SIZE = 6; /* fluent, level, start, end, accepting, entry-point */
     private static int EMPTY_NODE = -5;
 
     private static int ACCEPTING = 1, NON_ACCEPTING = 0;
@@ -59,7 +59,7 @@ public class DTGImpl {
 
         if(numInEdge(dest) >= inEdges[dest].length-1)
             inEdges[dest] = Arrays.copyOf(inEdges[dest], inEdges[dest].length*2);
-        inEdges[dest][0] += 1; // increment number
+        inEdges[dest][0] += 1; // increment number of incoming edges
         inEdges[dest][inEdges[dest][0]] = edge;
     }
 
