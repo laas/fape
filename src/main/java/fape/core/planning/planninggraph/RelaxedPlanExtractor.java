@@ -26,7 +26,7 @@ public class RelaxedPlanExtractor {
     final Set<GAction> allowedActions;
     Set<GAction> inPlanActions;
 
-    private boolean displayResolution() { return st.mID != 3; }
+    private boolean displayResolution() { return false; }
 
     Collection<GAction> alreadyUsed = new HashSet<>();
 
@@ -41,7 +41,7 @@ public class RelaxedPlanExtractor {
     public RelaxedPlanExtractor(APlanner planner, State st) {
         this.planner = planner;
         this.st = st;
-        this.dtgs = new DTGCollection(planner, st);
+        this.dtgs = new DTGCollection(planner, st, displayResolution());
         allowedActions = new HashSet<>(planner.preprocessor.getFeasibilityReasoner().getAllActions(st));
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
@@ -477,7 +477,7 @@ public class RelaxedPlanExtractor {
 
     public OpenGoalTransitionFinder.Path getPathToPersistence(Timeline og) throws NoSolutionException {
         assert og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs);
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs, displayResolution());
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for (Fluent f : ogs)
@@ -559,7 +559,7 @@ public class RelaxedPlanExtractor {
 
     public OpenGoalTransitionFinder.Path getPathToTransition(Timeline og) throws NoSolutionException {
         assert !og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs);
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs, displayResolution());
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for(Fluent f : ogs)

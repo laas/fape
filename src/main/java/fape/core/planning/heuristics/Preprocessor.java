@@ -119,7 +119,7 @@ public class Preprocessor {
             final Fluent f = new Fluent(sv, value, nextFluentID++);
             fluentsMap.get(sv).put(value, f);
             if(f.ID >= fluents.length)
-                fluents = Arrays.copyOf(fluents, fluents.length);
+                fluents = Arrays.copyOf(fluents, fluents.length*2);
             assert fluents[f.ID] == null : "Error recording to fluents with same ID.";
             fluents[f.ID] = f;
         }

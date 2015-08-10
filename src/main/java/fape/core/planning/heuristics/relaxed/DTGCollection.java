@@ -16,7 +16,7 @@ public final class DTGCollection {
     final APlanner planner;
     final State st;
 
-    public DTGCollection(APlanner planner, State st) {
+    public DTGCollection(APlanner planner, State st, boolean printDebugInformation) {
         this.planner = planner; this.st = st;
     }
 
@@ -74,7 +74,18 @@ public final class DTGCollection {
     }
 
     public Collection<OpenGoalTransitionFinder.DualNode> startPointForPersistence(Collection<Integer> usableDTGs, Collection<Fluent> fluents, TPRef start, TPRef end) {
-        return entryPoints(usableDTGs, fluents); //TODO FIXME BADLY
+        Set<Integer> fluentIDs = new HashSet<>();
+        List<OpenGoalTransitionFinder.DualNode> entryPoints = new ArrayList<>();
+        for(Fluent fluent : fluents)
+            fluentIDs.add(fluent.ID);
+        for(int dtgID : usableDTGs) {
+            DTGImpl dtg = get(dtgID);
+            for(int node=0 ; node < dtg.getNumNodes() ; node++) {
+                if(fluentIDs.contains(dtg.fluent(node)))
+                    entryPoints.add(new OpenGoalTransitionFinder.DualNode(dtgID, node));
+            }
+        }
+        return entryPoints;
     }
 
     public Collection<Fluent> fluentsInDTG(int dtgID) {
@@ -84,5 +95,21 @@ public final class DTGCollection {
             fluents.add(planner.preprocessor.getFluent(dtg.fluent(i)));
         }
         return fluents;
+    }
+
+    public String fluentsByLevels(int dtgID) {
+        DTGImpl dtg = get(dtgID);
+        StringBuilder sb = new StringBuilder();
+        for(int lvl=0 ; lvl<dtg.getNumLevels() ; lvl++) {
+            sb.append("{"+lvl+" ");
+            for(int node=1 ; node<dtg.getNumNodes() ; node++) {
+                if(dtg.lvl(node) == lvl) {
+                    sb.append("("+node+") "+planner.preprocessor.getFluent(dtg.fluent(node))+", ");
+                }
+            }
+            sb.append("} ");
+
+        }
+        return sb.toString();
     }
 }

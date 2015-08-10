@@ -1,25 +1,11 @@
 package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planninggraph.GroundDTGs;
-import fape.core.planning.planninggraph.RelaxedPlanExtractor;
-import fape.core.planning.states.State;
-import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NoSolutionException;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
-import planstack.graph.GraphFactory;
-import planstack.graph.core.LabeledEdge;
-import planstack.graph.core.MultiLabeledDigraph;
-import planstack.graph.printers.NodeEdgePrinter;
-import planstack.graph.printers.NodeEdgePrinterInterface;
 
-import javax.swing.text.html.HTMLDocument;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class OpenGoalTransitionFinder {
 
@@ -56,12 +42,14 @@ public class OpenGoalTransitionFinder {
         }
     }
 
-    public OpenGoalTransitionFinder(DTGCollection dtgs) {
-        allDtgs = dtgs;
+    public OpenGoalTransitionFinder(DTGCollection dtgs, boolean printDebugInformation) {
+        allDtgs = dtgs; this.printDebugInformation = printDebugInformation;
     }
 
     /** all dtgs of the system */
     final DTGCollection allDtgs;
+
+    final boolean printDebugInformation;
 
     /** IDs of the dtg I can use (built with setDTGUsable */
     final List<Integer> dtgs = new ArrayList<>();
@@ -95,14 +83,13 @@ public class OpenGoalTransitionFinder {
         public int compareTo(NodeCost o) {
             return cost() - o.cost();
         }
+        @Override public String toString() { return n +" "+cost(); }
     }
 
     public interface CostEvaluator {
         int cost(int liftedActionID, int gActionID, int fluentID);
         int distTo(int gActionID);
         boolean usable(int gActionID);
-
-//        public boolean usable(GAction ga);
     }
 
     public TPRef startTimePoint =null;
@@ -114,7 +101,7 @@ public class OpenGoalTransitionFinder {
             for(int dtgID : dtgs) {
                 System.out.println(dtgID+" "+allDtgs.fluentsInDTG(dtgID));
             }
-            throw new NoSolutionException("No start point for transition fluents: " + fluents);
+            throw new FAPEException("No start point for transition fluents: " + fluents);
         }
     }
 
@@ -125,7 +112,7 @@ public class OpenGoalTransitionFinder {
             for(int dtgID : dtgs) {
                 System.out.println(dtgID+" "+allDtgs.fluentsInDTG(dtgID));
             }
-            throw new NoSolutionException("No start point for persistence fluents: " + fluents);
+            throw new FAPEException("No start point for persistence fluents: " + fluents);
         }
     }
 
@@ -138,6 +125,12 @@ public class OpenGoalTransitionFinder {
             q.add(nc);
         }
 
+        if(printDebugInformation) {
+            System.out.println("Looking for est path in DTG: ");
+            for (int dtgID : dtgs)
+                System.out.println(dtgID + " " + allDtgs.fluentsByLevels(dtgID));
+        }
+
         DualNode dest = null;
         while (dest == null && !q.isEmpty()) {
 
@@ -145,7 +138,8 @@ public class OpenGoalTransitionFinder {
             DTGImpl current = allDtgs.get(nc.n.dtgID);
             final int fluent = current.fluent(nc.n.nodeID);
 
-            System.out.println(nc.n+" "+nc.cost());
+            if(printDebugInformation)
+                System.out.println(nc.n+" "+nc.cost());
 
             if (current.accepting(nc.n.nodeID)) {
                 // best accepting node: finished!
@@ -160,15 +154,23 @@ public class OpenGoalTransitionFinder {
                     final int edgeDest = current.dest(edgeID);
                     assert edgeDest == nc.n.nodeID;
 
-                    if(ga != -1 && !ce.usable(ga))
-                        continue; // this action is not allowed
+                    if(printDebugInformation)
+                        System.out.print("  "+edgeDest);
 
+                    if(ga != -1 && !ce.usable(ga)) {
+                        if(printDebugInformation)
+                            System.out.println("  not usable ground act");
+                        continue; // this action is not allowed
+                    }
                     int accCost = nc.accumulatedCost + ce.cost(lifted, ga, current.fluent(edgeDest));
                     int actionCost = ga != -1 ? ce.distTo(ga) : 0;
                     int extCost = (actionCost > nc.externalCost) ? actionCost : nc.externalCost;
 
                     DualNode dualSource = new DualNode(nc.n.dtgID, src);
                     NodeCost ncNext = new NodeCost(dualSource, extCost, accCost, nc, new DualEdge(dualSource.dtgID, edgeID));
+
+                    if(printDebugInformation)
+                        System.out.println("  added: "+ncNext);
 
                     if(!costs.containsKey(ncNext.n)) { // no existing label, put it in queue whatever
                         costs.put(ncNext.n, ncNext);

@@ -78,6 +78,10 @@ public class DTGImpl {
         return nextNode;
     }
 
+    public int getNumLevels() {
+        return numLevels;
+    }
+
     private void setNode(int node, int fluent, int lvl, int start, int end) {
         final int idx =nodeIndex(node);
         nodes[idx] = fluent;
