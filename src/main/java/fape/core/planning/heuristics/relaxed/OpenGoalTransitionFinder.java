@@ -126,7 +126,7 @@ public class OpenGoalTransitionFinder {
         }
 
         if(printDebugInformation) {
-            System.out.println("Looking for est path in DTG: ");
+            System.out.println("Looking for a path in DTGs: ");
             for (int dtgID : dtgs)
                 System.out.println(dtgID + " " + allDtgs.fluentsByLevels(dtgID));
         }

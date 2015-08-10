@@ -13,6 +13,7 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.Domain;
 import planstack.structures.Pair;
+import fape.core.inference.Predicate.PredicateName.*;
 
 import java.util.*;
 
@@ -93,7 +94,7 @@ public class FeasibilityReasoner {
         HReasoner<Term> r = getReasoner(st);
         HashSet<GAction> feasibles = new HashSet<>();
         for(Term t : r.trueFacts()) {
-            if(t instanceof Predicate && ((Predicate) t).name.equals("possible_in_plan")) //TODO make a selector for this
+            if(t instanceof Predicate && ((Predicate) t).name.equals(Predicate.PredicateName.POSSIBLE_IN_PLAN)) //TODO make a selector for this
                 feasibles.add((GAction) ((Predicate) t).var);
         }
 
@@ -160,22 +161,22 @@ public class FeasibilityReasoner {
         }
 
         for(GAction acc : acceptable)
-            r.set(new Predicate("acceptable", acc));
+            r.set(new Predicate(Predicate.PredicateName.ACCEPTABLE, acc));
 
         for(GTaskCond tc : getDerivableTasks(st)) {
-            r.set(new Predicate("derivable_task", tc));
+            r.set(new Predicate(Predicate.PredicateName.DERIVABLE_TASK, tc));
         }
 
         for(Action a : st.getAllActions()) {
             for(GAction ga : getGroundActions(a, st)) {
-                r.set(new Predicate("in_plan", ga));
+                r.set(new Predicate(Predicate.PredicateName.IN_PLAN, ga));
             }
         }
 
         Set<GAction> feasibles = new HashSet<>();
 
         for(Term t : r.trueFacts()) {
-            if(t instanceof Predicate && ((Predicate) t).name.equals("possible_in_plan")) //TODO make a selector for this
+            if(t instanceof Predicate && ((Predicate) t).name.equals(Predicate.PredicateName.POSSIBLE_IN_PLAN)) //TODO make a selector for this
                 feasibles.add((GAction) ((Predicate) t).var);
         }
 
@@ -210,7 +211,7 @@ public class FeasibilityReasoner {
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
             for(GAction ga : getGroundActions(a, st)) {
-                if(st.reasoner.isTrue(new Predicate("possible_in_plan", ga))) {
+                if(st.reasoner.isTrue(new Predicate(Predicate.PredicateName.POSSIBLE_IN_PLAN, ga))) {
                     feasibleAct = true;
                     break;
                 }

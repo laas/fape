@@ -1,11 +1,16 @@
 package fape.core.inference;
 
 public class Predicate implements Term {
-    public final String name;
+    public enum PredicateName {
+        POSSIBLE_IN_PLAN, ACCEPTABLE, DERIVABLE_TASK, IN_PLAN, SUPPORTED, FEASIBLE, DECOMPOSABLE, DERIVABLE
+    }
+
+
+    public final PredicateName name;
     public final Object var;
     private final int hash;
 
-    public Predicate(String name, Object var) {
+    public Predicate(PredicateName name, Object var) {
         this.name = name;
         this.var = var;
         hash = name.hashCode() + 42*var.hashCode();
