@@ -27,6 +27,9 @@ class InstanceManager(refCounter: RefCounter) {
   addInstance("false", "boolean", refCounter)
   addType("typeOfUnknown", "")
   addInstance("unknown", "typeOfUnknown", refCounter)
+  addType("_decompositionID_", "")
+  for(i <- 0 until 20)
+    addInstance("decnum:"+i, "_decompositionID_", refCounter)
 
 
   /** Creates a new instance of a certain type.

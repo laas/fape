@@ -42,6 +42,9 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
+  val instantiationVar : VarRef = new VarRef(refCounter)
+  val decompositionVar : VarRef = new VarRef(refCounter)
+
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
   private var mStatus = ActionStatus.PENDING

@@ -128,11 +128,10 @@ abstract class AbstractContext {
     assert(statements.contains(localRef) && statements(localRef) != null)
     statements(localRef)
   }
-  def getRefOfStatement(statement: Statement) : LStatementRef = {
-
-    for((curRef, curStatement) <- statements if statement == curStatement)
-      return curRef
-    throw new ANMLException("Unable to find reference of statement "+statement)
+  def getRefOfStatement(statement: Statement) : LStatementRef =
+    statements.find(_._2 == statement) match {
+      case Some((ref, statement2)) => ref
+      case None => throw new ANMLException("Unable to find reference of statement "+statement)
   }
 
   def contains(statement: Statement) : Boolean =
