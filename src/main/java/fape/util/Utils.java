@@ -55,6 +55,13 @@ public class Utils {
         throw new FAPEException("Unknown problem with flaw comparison function");
     }
 
+    public static final int[] copyIntoBigger(int[] array, int newSize, int defaultValue) {
+        assert newSize > array.length;
+        int[] bigger = Arrays.copyOf(array, newSize);
+        Arrays.fill(bigger, array.length, newSize, defaultValue);
+        return bigger;
+    }
+
     /** Reads an integer from standard input. Default to 0 if an empty line is given */
     public static int readInt() {
         String line = null;

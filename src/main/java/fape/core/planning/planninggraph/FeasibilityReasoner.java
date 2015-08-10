@@ -4,6 +4,7 @@ import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.*;
+import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -33,7 +34,7 @@ public class FeasibilityReasoner {
         GroundProblem base = planner.preprocessor.getGroundProblem();
         allActions = new HashSet<>(base.gActions);
 
-        baseReasoner = new HReasoner<>();
+        baseReasoner = new HReasoner<>(new DefaultIntRepresentation<>()); // TODO: a specialized int representation would be much more efficient
         for(GAction ga : allActions) {
             ga.addClauses(baseReasoner);
         }

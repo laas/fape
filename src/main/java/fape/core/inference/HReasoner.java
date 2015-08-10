@@ -1,27 +1,40 @@
 package fape.core.inference;
 
+import fape.core.planning.heuristics.DefaultIntRepresentation;
+import fape.core.planning.heuristics.IntRepresentation;
+import fape.util.Utils;
+
 import java.util.*;
 
 public class HReasoner<T> {
     private static final int baseNumVars = 100;
     private static final int baseNumClause = 1000;
 
-    private final HashMap<T,Integer> varsIds;
-    private T[] vars;
+    /** This allows a one to one mapping between terms and integers. Those are used for faster access using primitive type. */
+    private final IntRepresentation<T> termIntRep;
+
+    /** Maps a termID to its identifier into its identifier in the underlying reasoner */
+    private int[] varsIds;
+
+    /** Maps a identifiers of the underlying reasoner into termIDs. */
+    private int[] vars;
     private final Reasoner res;
 
     private int numVars = 0;
 
     private boolean locked = false;
 
-    public HReasoner() {
-        vars = (T[]) new Object[baseNumVars];
-        varsIds = new HashMap<>();
+    public HReasoner(IntRepresentation<T> termIntRep) {
+        this.termIntRep = termIntRep;
+        vars = new int[baseNumVars];
+        varsIds = new int[100];
+        Arrays.fill(varsIds, -1);
         res = new Reasoner(baseNumVars, baseNumClause);
     }
 
     public HReasoner(HReasoner<T> toCopy, boolean lock) {
         locked = lock;
+        this.termIntRep = toCopy.termIntRep;
         this.numVars = toCopy.numVars;
         this.res = new Reasoner(toCopy.res, lock);
 
@@ -29,7 +42,7 @@ public class HReasoner<T> {
             this.varsIds = toCopy.varsIds;
             this.vars = toCopy.vars;
         } else {
-            this.varsIds = new HashMap<>(toCopy.varsIds);
+            this.varsIds = Arrays.copyOf(toCopy.varsIds, toCopy.numVars);
             this.vars = Arrays.copyOfRange(toCopy.vars, 0, numVars);
         }
     }
@@ -39,8 +52,8 @@ public class HReasoner<T> {
         res.lock();
     }
 
-    public boolean hasTerm(T term) {
-        return varsIds.containsKey(term);
+    public final boolean hasTerm(T term) {
+        return termIntRep.hasRepresentation(term) && varsIds[termIntRep.asInt(term)] != -1;
     }
 
     public void addHornClause(T left, Collection<T> right) {
@@ -50,58 +63,70 @@ public class HReasoner<T> {
 
     public final void addHornClause(final T left, final T... right) {
         assert !locked;
-        if(!varsIds.containsKey(left))
-            addVar(left);
+        addVarIfAbsent(left);
         int[] rightIds = new int[right.length];
         for(int i=0 ; i<right.length ; i++) {
-            if (!varsIds.containsKey(right[i]))
-                addVar(right[i]);
-            rightIds[i] = id(right[i]);
+            addVarIfAbsent(right[i]);
+            rightIds[i] = inReasonerID(right[i]);
         }
 
-        res.addHornClause(id(left), rightIds);
+        res.addHornClause(inReasonerID(left), rightIds);
     }
 
     public void set(T o) {
-        if(!varsIds.containsKey(o))
+        if(!hasTerm(o))
             addVar(o);
-        res.set(id(o));
+        res.set(inReasonerID(o));
     }
 
     public Collection<T> trueFacts() {
         List<T> facts = new ArrayList<>();
         for(int var=0 ; var< numVars; var++) {
             if(res.varsStatus[var]) {
-                facts.add(vars[var]);
+                facts.add(fromReasonerID(var));
             }
         }
         return facts;
     }
 
     public boolean isTrue(T term) {
-        assert varsIds.containsKey(term) : "Term "+term+" is not a recorded variable.";
-        return res.varsStatus[id(term)];
+        assert hasTerm(term) : "Term "+term+" is not a recorded variable.";
+        return res.varsStatus[inReasonerID(term)];
     }
 
-    private int id(T o) {
-        return varsIds.get(o);
+    /** Returns the identifier of a term in the underlying reasoner */
+    private int inReasonerID(T o) {
+        return varsIds[termIntRep.asInt(o)];
+    }
+
+    private T fromReasonerID(int reasonerTermID) {
+        return termIntRep.fromInt(vars[reasonerTermID]);
+    }
+
+    public void addVarIfAbsent(T term) {
+        if(!hasTerm(term))
+            addVar(term);
     }
 
     public void addVar(T o) {
         assert !locked : "Error adding variable to locked Reasoner: "+o;
-        assert !varsIds.containsKey(o) : "Var already registered";
+        assert !hasTerm(o) : "Var already registered";
         if(vars.length <= numVars) {
             vars = Arrays.copyOf(vars, vars.length*2);
         }
         int id = numVars++;
-        vars[id] = o;
-        varsIds.put(o, id);
+        vars[id] = termIntRep.asInt(o);
+        final int intRepOfTerm = termIntRep.asInt(o);
+        if(intRepOfTerm >= varsIds.length) {
+            varsIds = Utils.copyIntoBigger(varsIds, Math.max(intRepOfTerm, varsIds.length*2), -1);
+        }
+        varsIds[termIntRep.asInt(o)] =  id;
         res.addVar(id);
     }
 
 
     public static void main(String[] args) {
-        HReasoner<String> res = new HReasoner<>();
+        HReasoner<String> res = new HReasoner<>(new DefaultIntRepresentation<String>());
         res.addHornClause("A", "a", "b");
         res.addHornClause("c", "A");
         res.addHornClause("B", "c", "b");

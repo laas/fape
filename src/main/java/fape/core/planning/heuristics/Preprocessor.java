@@ -7,6 +7,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
+import org.apache.batik.gvt.text.GVTAttributedCharacterIterator;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
@@ -70,6 +71,14 @@ public class Preprocessor {
         return groundActions[groundActionID];
     }
 
+    public IntRepresentation<GAction> groundActionIntRepresentation() {
+        return new IntRepresentation<GAction>() {
+            @Override public final int asInt(GAction gAction) { return gAction.id; }
+            @Override public final GAction fromInt(int id) { return getGroundAction(id); }
+            @Override public boolean hasRepresentation(GAction gAction) { assert groundActions[gAction.id] == gAction; return true; }
+        };
+    }
+
     public DTGImpl getDTG(GStateVariable groundStateVariable) {
         if(dtgs == null) {
             dtgs = new GroundDTGs(getAllActions(), planner.pb, planner);
@@ -129,6 +138,14 @@ public class Preprocessor {
     public Fluent getFluent(int fluentID) {
         assert fluentID < fluents.length && fluents[fluentID] != null : "No fluent with ID "+fluentID+" recorded.";
         return fluents[fluentID];
+    }
+
+    public IntRepresentation<Fluent> fluentIntRepresentation() {
+        return new IntRepresentation<Fluent>() {
+            @Override public final int asInt(Fluent fluent) { return fluent.ID; }
+            @Override public final Fluent fromInt(int id) { return getFluent(id); }
+            @Override public boolean hasRepresentation(Fluent fluent) { assert fluents[fluent.ID] == fluent; return true; }
+        };
     }
 
     public GStateVariable getStateVariable(Function f, VarRef[] params) {
