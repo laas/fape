@@ -85,6 +85,7 @@ public class State implements Reporter {
     public final MetaCSP<GlobalRef> csp;
 
     public final TaskNetworkManager taskNet;
+    private final ArrayList<Action> actions;
 
     protected final ResourceManager resMan;
 
@@ -163,6 +164,7 @@ public class State implements Reporter {
         this.pb = pb;
         this.controllability = controllability;
         this.refCounter = new RefCounter(pb.refCounter());
+        this.actions = new ArrayList<>();
         depth = 0;
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
@@ -188,6 +190,7 @@ public class State implements Reporter {
         this.controllability = st.controllability;
         this.refCounter = new RefCounter(st.refCounter);
         this.pgr = st.pgr;
+        this.actions = new ArrayList<>(st.actions);
         depth = st.depth + 1;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -266,13 +269,13 @@ public class State implements Reporter {
         if(s.container() instanceof Action) {
             Action a = (Action) s.container();
             assert a.contains(s);
-            assert taskNet.getAllActions().contains(a);
+            assert getAllActions().contains(a);
             return a;
         } else if(s.container() instanceof Decomposition) {
             Decomposition d = (Decomposition) s.container();
             return taskNet.getContainingAction(d);
         } else {
-            for (Action a : taskNet.getAllActions()) {
+            for (Action a : getAllActions()) {
                 assert !a.contains(s);
             }
             return null;
@@ -402,6 +405,9 @@ public class State implements Reporter {
      */
     public void insert(Action act) {
         taskNet.insert(act);
+        actions.add(act);
+        assert taskNet.getNumActions() == actions.size();
+        assert actions.get(act.id().id()) == act;
         apply(act);
 
         // make sure that this action is executed after earliest execution.
@@ -1102,17 +1108,15 @@ public class State implements Reporter {
 
     /********* Wrapper around the task network **********/
 
-    public Action getAction(ActRef actionID) { return taskNet.getAction(actionID); }
+    public Action getAction(ActRef actionID) { return getAction(actionID.id()); }
 
-    public List<Action> getAllActions() { return taskNet.getAllActions(); }
+    public List<Action> getAllActions() { return actions; }
 
     public Action getAction(int actionID) {
         if(actionID == -1)
             return null;
-        for(Action a : getAllActions())
-            if(a.id().id() == actionID)
-                return a;
-        throw new FAPEException("Action with id: "+actionID+" was not found.");
+        assert actions.get(actionID).id().id() == actionID;
+        return actions.get(actionID);
     }
 
     public List<Action> getOpenLeaves() { return taskNet.getUndecomposedActions(); }
