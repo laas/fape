@@ -2,6 +2,7 @@ package fape.core.planning.planninggraph;
 
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
+import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.relaxed.*;
 import fape.core.planning.planner.APlanner;
@@ -65,7 +66,7 @@ public class RelaxedPlanExtractor {
 
     /** initial "facts" are actions with no subtasks */
     public HLeveledReasoner<GAction, GTaskCond> decomposabilityReasoner(State st) {
-        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>();
+        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
         for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             GTaskCond[] effect = new GTaskCond[1];
             effect[0] = ga.task;
@@ -81,7 +82,7 @@ public class RelaxedPlanExtractor {
 
     /** initial facts opened tasks and initial clauses are non-motivated actions*/
     public HLeveledReasoner<GAction, GTaskCond> derivabilityReasoner(State st) {
-        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>();
+        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
         for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
             if(ga.abs.motivated()) {
                 GTaskCond[] condition = new GTaskCond[1];

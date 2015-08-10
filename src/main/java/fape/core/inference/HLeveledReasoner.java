@@ -22,13 +22,13 @@ public class HLeveledReasoner<Clause, Fact> {
     private final IntRepresentation<Clause> clauseIntRep;
     private final IntRepresentation<Fact>   factIntRep;
 
-    public HLeveledReasoner() {
+    public HLeveledReasoner(IntRepresentation<Clause> clauseRep, IntRepresentation<Fact> factRep) {
         clausesIds = Utils.copyIntoBigger(new int[0], 100, -1);
         clauses = Utils.copyIntoBigger(new int[0], 100, -1);
         factsIds = Utils.copyIntoBigger(new int[0], 100, -1);
         facts = Utils.copyIntoBigger(new int[0], 100, -1);
-        clauseIntRep = new DefaultIntRepresentation<>();
-        factIntRep = new DefaultIntRepresentation<>();
+        clauseIntRep = clauseRep;
+        factIntRep = factRep;
     }
 
     public HLeveledReasoner(HLeveledReasoner<Clause,Fact> toClone, Collection<Clause> allowed) {

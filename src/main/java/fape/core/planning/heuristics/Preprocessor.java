@@ -109,7 +109,7 @@ public class Preprocessor {
 
     public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
         if(baseCausalReasoner == null) {
-            baseCausalReasoner = new HLeveledReasoner<>();
+            baseCausalReasoner = new HLeveledReasoner<>(this.groundActionIntRepresentation(), this.fluentIntRepresentation());
             for(GAction ga : getAllActions()) {
                 baseCausalReasoner.addClause(ga.pre, ga.add, ga);
             }
