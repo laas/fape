@@ -12,28 +12,7 @@ import java.util.List;
 public class AllThreatFinder implements FlawFinder {
 
     public List<Flaw> getFlaws(State st, APlanner planner) {
-//        return getAllThreats(st); // non-incremental version
         return st.getAllThreats(); // incremental version
-    }
-
-    /** Finds all threats in a state, this can be used to check that the incremental threat resolution works a expected */
-    public static List<Flaw> getAllThreats(State st) {
-        List<Flaw> flaws = new LinkedList<>();
-
-        List<Timeline> dbs = st.getTimelines();
-        for (int i = 0; i < dbs.size(); i++) {
-            Timeline db1 = dbs.get(i);
-            for (int j = i + 1; j < dbs.size(); j++) {
-                Timeline db2 = dbs.get(j);
-                if (isThreatening(st, db1, db2)) {
-                    flaws.add(new Threat(db1, db2));
-                } else {
-                    assert !isThreatening(st, db2, db1) : "Is threatening is not symmetrical";
-                }
-            }
-        }
-
-        return flaws;
     }
 
     public static boolean isThreatening(State st, Timeline tl1, Timeline tl2) {

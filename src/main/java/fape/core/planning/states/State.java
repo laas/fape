@@ -254,12 +254,7 @@ public class State implements Reporter {
      * @return The timeline with the same ID.
      */
     public Timeline getTimeline(int timelineID) {
-        for (Timeline db : tdb.getTimelines()) {
-            if (db.mID == timelineID) {
-                return db;
-            }
-        }
-        throw new FAPEException("Reference to unknown database.");
+        return tdb.getTimeline(timelineID);
     }
 
     /**
@@ -501,13 +496,9 @@ public class State implements Reporter {
      * @param s Statement to insert
      */
     private void apply(LogStatement s) {
-        csp.stn().enforceBefore(s.start(), s.end());
-
         assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
-
-        Timeline db = new Timeline(s);
-
-        tdb.addTimeline(db);
+        csp.stn().enforceBefore(s.start(), s.end());
+        tdb.addNewTimeline(s);
     }
 
     /**
@@ -1193,7 +1184,7 @@ public class State implements Reporter {
 
     /************ Wrapper around TemporalDatabaseManager **********************/
 
-    public List<Timeline> getTimelines() { return tdb.getTimelines(); }
+    public Iterable<Timeline> getTimelines() { return tdb.getTimelines(); }
 
     public void insertTimelineAfter(Timeline supporter, Timeline consumer, ChainComponent precedingComponent) {
         tdb.insertTimelineAfter(this, supporter, consumer, precedingComponent);

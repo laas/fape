@@ -19,36 +19,45 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
-public class TimelinesManager implements Reporter {
+public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
 
     /**
      * All temporal timelines.
      */
-    private List<Timeline> vars = new LinkedList<>();
+//    private List<Timeline> vars = new LinkedList<>();
+    private Timeline[] timelines;
     private final State listener;
 
     private final List<Timeline> consumers;
 
+    private int nextTimelineID;
+
     public TimelinesManager(TimelinesManager toCopy, State containingState) {
         listener = containingState;
         this.consumers = new LinkedList<>(toCopy.consumers);
-        this.vars = new LinkedList<>(toCopy.getTimelines());
+        this.timelines = (Timeline[]) Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
+        this.nextTimelineID = toCopy.nextTimelineID;
 
         if(APlanner.debugging) {
-            for (Timeline a : consumers) assert vars.contains(a);
-            for (Timeline a : vars) if (a.isConsumer()) assert consumers.contains(a);
+            for (Timeline a : consumers) assert hasTimeline(a);
+            for (Timeline a : timelines) if (a != null && a.isConsumer()) assert consumers.contains(a);
         }
     }
 
     public TimelinesManager(State containingState) {
+        timelines = new Timeline[100];
         listener = containingState;
         consumers = new LinkedList<>();
+    }
+
+    private boolean hasTimeline(Timeline tl) {
+        for(Timeline o : timelines)
+            if(o == tl)
+                return true;
+        return false;
     }
 
     public Collection<Timeline> getConsumers() {
@@ -58,16 +67,19 @@ public class TimelinesManager implements Reporter {
     /**
      * Creates a new timeline containing the Statement s and adds it to this Manager
      */
-    public Timeline getNewTimeline(LogStatement s) {
-        Timeline tl = new Timeline(s);
+    public Timeline addNewTimeline(LogStatement s) {
+        Timeline tl = new Timeline(s, nextTimelineID++);
         addTimeline(tl);
         return tl;
     }
 
+
+
     public void addTimeline(Timeline tl) {
-        for(Timeline existing : vars)
-            assert existing.mID != tl.mID : "Timeline already recorded";
-        vars.add(tl);
+        assert !hasTimeline(tl);
+        if(tl.mID >= timelines.length)
+            timelines = Arrays.copyOf(timelines, timelines.length*2);
+        timelines[tl.mID] = tl;
         if(tl.isConsumer())
             consumers.add(tl);
 
@@ -75,41 +87,34 @@ public class TimelinesManager implements Reporter {
     }
 
     public void removeTimeline(Timeline tl) {
-        assert vars.contains(tl);
-        vars.remove(tl);
+        assert timelines[tl.mID] == tl;
+        timelines[tl.mID] = null;
         consumers.remove(tl);
 
         listener.timelineRemoved(tl);
     }
 
     public Timeline getTimeline(int tdbID) {
-        for(Timeline db : vars) {
-            if(db.mID == tdbID)
-                return db;
-        }
-        throw new FAPEException("DB with id "+tdbID+" does not appears in vars \n"+ report());
+        assert timelines[tdbID].mID == tdbID;
+        return timelines[tdbID];
     }
 
     public Timeline getTimelineContaining(LogStatement s) {
-        for(Timeline db : vars) {
-            if(db.contains(s)) {
-                return db;
-            }
+        for(Timeline tl : timelines) {
+            if(tl != null && tl.contains(s))
+                return tl;
         }
         throw new FAPEException("Unable to find a timeline containing the statement "+s);
     }
 
     private void update(Timeline tl) {
-        boolean wasPresent = false;
+        assert timelines[tl.mID] != null;
+        assert timelines[tl.mID].mID == tl.mID;
+
         // replace var with the same ID
-        for(int i=0 ; i<vars.size() ; i++) {
-            if(vars.get(i).mID == tl.mID) {
-                vars.set(i, tl);
-                wasPresent = true;
-                break;
-            }
-        }
-        assert wasPresent;
+        timelines[tl.mID] = tl;
+
+        // update consumer list if necessary
         if(tl.size() == 0 || tl.isConsumer()) {
             boolean found = false;
             for(int i=0 ; i<consumers.size() ; i++) {
@@ -269,7 +274,7 @@ public class TimelinesManager implements Reporter {
         assert db == getTimelineContaining(consumer) : "The statements are not in the same database.";
 
         int index = db.indexOfContainer(consumer);
-        Timeline newTL = new Timeline(consumer.sv());
+        Timeline newTL = new Timeline(consumer.sv(), nextTimelineID++);
         //add all extra chain components to the new database
 
         List<ChainComponent> toRemove = new LinkedList<>();
@@ -308,7 +313,7 @@ public class TimelinesManager implements Reporter {
                 //this was not the last element, we need to create another database and make split
 
                 // the two databases share the same state variable
-                Timeline newDB = new Timeline(theDatabase.stateVariable);
+                Timeline newDB = new Timeline(theDatabase.stateVariable, nextTimelineID++);
 
                 //add all extra chain components to the new database
                 List<ChainComponent> remove = new LinkedList<>();
@@ -363,14 +368,33 @@ public class TimelinesManager implements Reporter {
     public String report() {
         String ret = "";
 
-        ret += "  size: " + this.vars.size() + "\n";
-        for (Timeline b : vars) {
-            ret += b.Report();
+        for (Timeline b : timelines) {
+            if(b != null)
+                ret += b.Report();
         }
         ret += "\n";
 
         return ret;
     }
 
-    public List<Timeline> getTimelines() { return Collections.unmodifiableList(vars); }
+    public Iterable<Timeline> getTimelines() { return this; }
+
+    @Override
+    public Iterator<Timeline> iterator() {
+        return new Iterator<Timeline>() {
+            int next = 0;
+            @Override
+            public boolean hasNext() {
+                while(next < timelines.length && timelines[next] == null) next++;
+                return next < timelines.length;
+            }
+
+            @Override
+            public Timeline next() {
+                Timeline ret = timelines[next];
+                next += 1;
+                return ret;
+            }
+        };
+    }
 }

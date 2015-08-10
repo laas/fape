@@ -26,22 +26,21 @@ import java.util.*;
  */
 public class Timeline {
 
-    private static int nextID = 0;
     public final int mID;
 
     public final ParameterizedStateVariable stateVariable;
 
     public final ChainComponent[] chain;
 
-    public Timeline(LogStatement s) {
+    public Timeline(LogStatement s, int timelineID) {
         chain = new ChainComponent[1];
         chain[0] = new ChainComponent(s);
-        mID = nextID++;
+        mID = timelineID;
         stateVariable = s.sv();
     }
 
-    public Timeline(ParameterizedStateVariable sv) {
-        mID = nextID++;
+    public Timeline(ParameterizedStateVariable sv, int timelineID) {
+        mID =timelineID;
         stateVariable = sv;
         chain = new ChainComponent[0];
     }
