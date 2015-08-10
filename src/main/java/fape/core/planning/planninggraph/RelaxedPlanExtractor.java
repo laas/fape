@@ -226,9 +226,6 @@ public class RelaxedPlanExtractor {
         }
 
         if(bestAction != null) {
-//            if(st.mID == 16) {
-//                System.out.println(bestAction+"\n");
-//            }
             if(planner.preprocessor.isHierarchical()) {
                 if (!inPlanActions.contains(bestAction))
                     for (GTaskCond task : derivReaas.conditionsOf(bestAction))
@@ -328,146 +325,6 @@ public class RelaxedPlanExtractor {
     }
 
 
-    //    static AnmlProblem lastProblem = null;
-//    static HLeveledReasoner<GAction,Fluent>
-    protected boolean debugging = false;
-    public static boolean debugging2 = false;
-    public int relaxedGroundPlan(State st) {
-        try {
-            alreadyUsed = new HashSet<>();
-            inPlanActions = new HashSet<>();
-
-            actionInstantiations = getInitialPossibleActionsInstantiations();
-            currentCausalReasoner = getCausalModelOfInitialDefinitions();
-
-            for (Timeline tl : st.tdb.getConsumers()) {
-                if(debugging)
-                    System.out.println("opengoal: "+Printer.inlineTemporalDatabase(st, tl));
-                Collection<Action> possiblyBefore = new LinkedList<>();
-                for(Action a : st.getAllActions()) {
-                    if(st.canAllBeBefore(a.start(), tl.getFirstTimePoints())) {
-                        possiblyBefore.add(a);
-                    }
-                }
-                assert causalPending.isEmpty();
-                causalPending = new HashSet<>();
-
-                Collection<Fluent> disjunctiveGoals = DisjunctiveFluent.fluentsOf(tl.stateVariable, tl.getGlobalConsumeValue(), st, planner);
-                Fluent selectedGoal = selectMostInterestingFluent(disjunctiveGoals);
-                causalPending.add(selectedGoal);
-                if(debugging) {
-                    System.out.println("  goals: "+disjunctiveGoals);
-                    System.out.println("  selected: "+selectedGoal);
-                }
-
-                while (!causalPending.isEmpty()) {
-                    Fluent og = causalPending.iterator().next();
-                    if(debugging)
-                        System.out.println("    current subgoal: "+og);
-                    causalPending.remove(og);
-                    GAction ga = selectMostInterestingActionForRelaxedPlan(currentCausalReasoner.candidatesFor(og), possiblyBefore, actionInstantiations);
-                    if(debugging)
-                        System.out.println("    action for sub goal: "+ga);
-
-                    // if we need action (ga !=null) and we didn't already used it
-                    if (ga != null && !alreadyUsed.contains(ga)) {
-                        // find if we can use the instantiation of an action already in the plan
-                        for(Action a : possiblyBefore) {
-                            if(actionInstantiations.get(a).contains(ga)) {
-                                actionInstantiations.get(a).clear();
-                                actionInstantiations.get(a).add(ga); // this action is instantiated with that
-                                break;
-                            }
-                        }
-
-                        causalPending.addAll(ga.pre);
-                        if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
-                            // deriv all actions that are not already in the plan
-                            derivPending.addAll(derivReaas.conditionsOf(ga));
-
-                        decompPending.addAll(decompReas.conditionsOf(ga));
-                        alreadyUsed.add(ga);
-                    }
-                }
-            }
-
-            for(Action a : actionInstantiations.keySet()) {
-                assert actionInstantiations.get(a).size() > 0;
-
-                Collection<Action> possiblyBefore = new LinkedList<>();
-                for(Action lifted : st.getAllActions()) {
-                    if(st.canBeBefore(a.start(), lifted.start())) {
-                        possiblyBefore.add(lifted);
-                    }
-                }
-
-                if(actionInstantiations.get(a).size() != 1 || !alreadyUsed.contains(actionInstantiations.get(a).iterator().next())) {
-                    // this lifted action is not instantiated or not recorded as part of the plan
-                    GAction instantiation = selectMostInterestingAction(actionInstantiations.get(a));
-                    actionInstantiations.get(a).clear();
-                    actionInstantiations.get(a).add(instantiation);
-                    assert instantiation != null;
-                    causalPending.addAll(currentCausalReasoner.conditionsOf(instantiation));
-
-                    while (!causalPending.isEmpty()) {
-                        Fluent og = causalPending.iterator().next();
-                        causalPending.remove(og);
-                        GAction ga = selectMostInterestingActionForRelaxedPlan(currentCausalReasoner.candidatesFor(og), possiblyBefore, actionInstantiations);
-
-                        // if we need action (ga !=null) and we didn't already used it
-                        if (ga != null && !alreadyUsed.contains(ga)) {
-                            // find if we can use the instantiation of an action already in the plan
-                            for (Action liftedAction : possiblyBefore) {
-                                if (actionInstantiations.get(liftedAction).contains(ga)) {
-                                    actionInstantiations.get(liftedAction).clear();
-                                    actionInstantiations.get(liftedAction).add(ga); // this action is instantiated with that
-                                    break;
-                                }
-                            }
-
-                            causalPending.addAll(ga.pre);
-                            if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
-                                // deriv all actions that are not already in the plan
-                                derivPending.addAll(derivReaas.conditionsOf(ga));
-
-                            decompPending.addAll(decompReas.conditionsOf(ga));
-                            alreadyUsed.add(ga);
-                        }
-                    }
-                }
-                assert actionInstantiations.get(a).size() == 1;
-            }
-//            if(debugging)
-//                System.out.println("    state: "+st.mID);
-            for(Action a : st.getAllActions()) {
-                assert actionInstantiations.get(a).size() == 1;
-                GAction instantiated = actionInstantiations.get(a).iterator().next();
-                alreadyUsed.remove(instantiated);
-                if(debugging) {
-                    System.out.println("    " + instantiated + "  <-  " + a);
-                }
-            }
-
-//            if(debugging)
-//                for(GAction ga : alreadyUsed)
-//                    System.out.println("    "+ga+"      additional");
-
-//            if(debugging)
-//                System.out.println("    Size: "+(alreadyUsed.size()+st.getNumActions()));
-//            System.out.println("Size of relaxed plan: "+alreadyUsed.size());
-//            System.out.println(alreadyUsed);
-//            System.out.println(actionInstantiations);
-            currentCausalReasoner = null;
-            return alreadyUsed.size();
-        } catch (NoSolutionException e) {
-//            e.printStackTrace();
-            return 999999;
-
-//            throw new FAPEException("");
-//            System.out.println("no-solutions");
-//            return null;
-        }
-    }
 
     final DTGCollection dtgs;
 
@@ -483,7 +340,6 @@ public class RelaxedPlanExtractor {
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for (Fluent f : ogs)
             possibleStateVariables.add(f.sv);
-//            transitions.addStartNodes(ogs); TODO
 
         for (GStateVariable sv : possibleStateVariables) {
             if(!dtgsOfStateVariables.containsKey(sv)) {
@@ -492,22 +348,13 @@ public class RelaxedPlanExtractor {
                 dtgsOfStateVariables.put(sv, dtgID);
             }
             pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv));
-//            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
-//            if (previousPaths.containsKey(sv))
-//                for (PartialPathDTG dtg : previousPaths.get(sv))
-//                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
 
         for (Timeline tl : st.getTimelines()) {
-            if (tl == og)
-                continue;
-            if (tl.hasSinglePersistence())
-                continue;
-            if (!st.unifiable(tl, og))
-                continue;
-            if (!st.canAllBeBefore(tl.getFirstChange().end(), og.getFirstTimePoints()))
+            if (tl == og || tl.hasSinglePersistence() || !st.unifiable(tl, og)
+                    || !st.canAllBeBefore(tl.getFirstChange().end(), og.getFirstTimePoints()))
                 continue;
 
             potentialIndirectSupporters.add(tl);
@@ -539,21 +386,9 @@ public class RelaxedPlanExtractor {
 
         for (Timeline tl : potentialIndirectSupporters) {
             pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
-//            pathFinder.addDTG(timelineDTGs.get(tl));
-//            for (PartialPathDTG dtg : previousSolutions.get(tl)) {
-//                pathFinder.addDTG(dtg);
-//            }
         }
         assert og.chain.length == 1;
         pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint());
-
-//        if (debugging2 && pathFinder.startNodes.isEmpty()) {
-//            System.out.println(ogs);
-//            System.out.println(Printer.temporalDatabase(st, og));
-//            for (Timeline t : toRemove)
-//                System.out.println("  " + Printer.inlineTemporalDatabase(st, t));
-//            System.out.println("BREAK HERE");
-//        }
 
         return pathFinder.bestPath(actionCostEvaluator);
     }
@@ -573,10 +408,6 @@ public class RelaxedPlanExtractor {
                 dtgsOfStateVariables.put(sv, dtgID);
             }
             pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv)); // TODO: might need to be built?
-//            pathFinder.addDTG(planner.preprocessor.getDTG(sv));
-//            if(previousPaths.containsKey(sv))
-//                for(PartialPathDTG dtg : previousPaths.get(sv))
-//                    pathFinder.addDTG(dtg);
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -600,45 +431,22 @@ public class RelaxedPlanExtractor {
             for(Timeline tl2 : potentialIndirectSupporters) {
                 if(tl1 == tl2)
                     continue;
-                if(st.unified(tl1, tl2)) {
-                    // if the last time points of tl2 cannot be before the first of tl1, then tl1 can't be after tl2.
-//                        if(!st.canAllBeBefore(tl2.getLastTimePoints(), tl1.getFirstChangeTimePoint()))
-                    if(!st.canBeBefore(tl2, tl1))
-                        // in addition og can't be before tl2
-                        if(!st.canBeBefore(og, tl2)) {
-                            // the order is necessarily tl1 -> tl2 -> og hence tl1 can be removed from the set of potential supporters
-                            toRemove.add(tl1);
-                            if(toRemove.contains(tl2)) {
-                                if(!st.canBeBefore(tl1, tl2) && !st.canBeBefore(tl2, tl1) && st.unified(tl1,tl2))
-                                    throw new NoSolutionException("Unsolvable threat: "+tl1+"  "+tl2); // unsolvable threat
-                            }
-                        }
+                if(st.unified(tl1, tl2) && !st.canBeBefore(tl2, tl1) && !st.canBeBefore(og, tl2)) {
+                    // the order is necessarily tl1 -> tl2 -> og. Hence tl1 can be removed from the set of potential supporters
+                    toRemove.add(tl1);
+                    if(toRemove.contains(tl2)) {
+                        if(!st.canBeBefore(tl1, tl2) && !st.canBeBefore(tl2, tl1) && st.unified(tl1,tl2))
+                            throw new NoSolutionException("Unsolvable threat: "+tl1+"  "+tl2); // unsolvable threat
+                    }
                 }
             }
         }
         potentialIndirectSupporters.removeAll(toRemove);
 
-        for(Timeline tl : potentialIndirectSupporters) {
+        for(Timeline tl : potentialIndirectSupporters)
             pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
-//            pathFinder.addDTG(timelineDTGs.get(tl));
-//            for(PartialPathDTG dtg : previousSolutions.get(tl)) {
-//                pathFinder.addDTG(dtg);
-//            }
-        }
 
         pathFinder.addTransitionTargets(ogs, og.getFirstChangeTimePoint());
-//        if(debugging2 && pathFinder.startNodes.isEmpty()) {
-//            System.out.println(ogs);
-//            System.out.println(Printer.temporalDatabase(st, og));
-//            for(Timeline t : toRemove)
-//                System.out.println("  "+Printer.inlineTemporalDatabase(st, t));
-//
-//        }
-
-
-
-//        if(st.mID == 322 && og.numChanges() > 30)
-//            pathFinder.print("coucou.dot", actionCostEvaluator);
 
         return pathFinder.bestPath(actionCostEvaluator);
     }
@@ -671,17 +479,12 @@ public class RelaxedPlanExtractor {
         }
     };
 
-//    Map<Timeline, TimelineDTG> timelineDTGs;
-//    Map<Timeline, List<PartialPathDTG>> previousSolutions;
-//    Map<GStateVariable, List<PartialPathDTG>> previousPaths;
-
-
     HashSet<Fluent> achievedFluents = new HashSet<>();
 
     private void setActionUsed(GAction ga) {
-        if(!alreadyUsed.contains(ga) && displayResolution()) {
+        if(!alreadyUsed.contains(ga) && displayResolution())
             System.out.println("  act: "+ga);
-        }
+
         alreadyUsed.add(ga);
         for(Fluent f : ga.add) {
             achievedFluents.add(f);
@@ -689,9 +492,8 @@ public class RelaxedPlanExtractor {
         for(Fluent f : ga.pre) {
             if(!causalPending.contains(f) && !achievedFluents.contains(f)) {
                 causalPending.add(f);
-                if (displayResolution()) {
+                if (displayResolution())
                     System.out.println("    pending: " + f);
-                }
             }
         }
     }
@@ -718,18 +520,14 @@ public class RelaxedPlanExtractor {
                                  .thenComparing(tl -> tl.mID));
 
         for(Timeline og : opengoals) {
-            if(displayResolution()) {
+            if(displayResolution())
                 System.out.println("og: "+Printer.inlineTemporalDatabase(st, og));
-            }
-//            System.out.println(Printer.inlineTemporalDatabase(st, og));
+
             OpenGoalTransitionFinder.Path path;
             if(og.hasSinglePersistence()) {
                 path = getPathToPersistence(og);
             } else {
                 path = getPathToTransition(og);
-//                path.extendWith(timelineDTGs.get(og));
-//                timelineDTGs.get(og).hasBeenExtended = true;
-//                previousSolutions.get(og).add(path);
             }
             allPaths.add(path);
             assert dtgs.isAccepting(path.start);
@@ -791,9 +589,7 @@ public class RelaxedPlanExtractor {
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
                     instantiated.add(actInst.getKey());
-                    GAction ga = selectMostInterestingAction(actInst.getValue());
-//                    if(st.mID == 16)
-//                        System.out.print("");
+                    final GAction ga = selectMostInterestingAction(actInst.getValue());
                     setActionUsed(ga);
                     actInst.getValue().clear();
                     actInst.getValue().add(ga);
@@ -802,7 +598,7 @@ public class RelaxedPlanExtractor {
                 }
             }
             for(GAction ga : allGroundActions)
-                    setActionUsed(ga);
+                setActionUsed(ga);
 
             for(GAction ga : alreadyUsed) {
                 causalPending.addAll(currentCausalReasoner.conditionsOf(ga));
@@ -822,9 +618,6 @@ public class RelaxedPlanExtractor {
                 // if we need action (ga !=null) and we didn't already used it
                 if (ga != null && !alreadyUsed.contains(ga)) {
                     // find if we can use the instantiation of an action already in the plan
-
-//                    if(debugging)
-//                        System.out.println(st.mID+"    New action from RPG: "+ga);
                     setActionUsed(ga);
                     causalPending.addAll(ga.pre);
                     if(planner.preprocessor.isHierarchical()) {
@@ -841,47 +634,18 @@ public class RelaxedPlanExtractor {
                 }
             }
             int total = 0;
-//            if(debugging2)
-//                System.out.println("State id : "+st.mID);
             for(GAction ga : counter.getAllUsedAction()) {
                 total += counter.totalOccurrences(ga);
             }
-//            if(debugging2) {
-//                System.out.println(total);
-//                System.out.println("not inst: " + (st.getAllActions().size() - instantiated.size()));
-//            }
+
             return total - st.getNumActions();
         } catch (NoSolutionException e) {
-            if(displayResolution()) {
+            if(displayResolution())
                 e.printStackTrace();
-            }
-//            if(debugging2)
-//                e.printStackTrace();
+
             return 99999;
         }
     }
-
-//    public String report() {
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("\nState: "+st.mID+"\n");
-//        sb.append("-------------- Timelines -----------\n");
-//        for(Timeline tl : previousSolutions.keySet()) {
-//            sb.append(Printer.inlineTemporalDatabase(st, tl)+"\n");
-//            for(PartialPathDTG ppd : previousSolutions.get(tl)) {
-//                sb.append("  ");
-//                sb.append(ppd.startPath+"\n");
-//            }
-//        }
-//        sb.append("\n-------------- State variables -----------\n");
-//        for(GStateVariable sv : previousPaths.keySet()) {
-//            sb.append(sv+"\n");
-//            for(PartialPathDTG ppd : previousPaths.get(sv)) {
-//                sb.append("  "+ppd.startPath+"\n");
-//            }
-//        }
-//        sb.append("\n");
-//        return sb.toString();
-//    }
 
     /** Returns the expected cost of either:
      *    - binding lifted to ga (if lifted != null)
