@@ -50,8 +50,10 @@ public class GAction {
         }
     }
 
-    public List<Fluent> pre = new LinkedList<>();
-    public List<Fluent> add = new LinkedList<>();
+    public final List<Fluent> pre = new LinkedList<>();
+    public final List<Fluent> add = new LinkedList<>();
+    public final int[] preconditions;
+    public final int[] additions;
     public final AbstractAction abs;
     public final GTaskCond task;
 
@@ -204,6 +206,13 @@ public class GAction {
         this.id = nextID++;
         this.subTasks = initSubTasks(gPb.liftedPb);
         this.task = initTask(gPb.liftedPb);
+        this.preconditions = new int[pre.size()];
+        for(int i=0 ; i<pre.size() ; i++)
+            this.preconditions[i] = pre.get(i).ID;
+        this.additions = new int[add.size()];
+        for(int i=0 ; i<add.size() ; i++)
+            this.additions[i] = add.get(i).ID;
+
     }
 
     @Override

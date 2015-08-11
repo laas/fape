@@ -179,6 +179,59 @@ public class RelaxedPlanExtractor {
             throw new NoSolutionException("No best fluent in: "+fluents);
     }
 
+    private int[] numOfActionsInstantiationsProducingFluent = null;
+
+    private void setActionInstantiation(Action lifted, GAction ground) {
+        counter.addActionInstantiation(lifted, ground);
+        if(!instantiated.contains(lifted)) {
+            // check if we need to update the possible addition count
+            if(numOfActionsInstantiationsProducingFluent != null) {
+                for(GAction ga : actionInstantiations.get(lifted)) {
+                    for(int fluent : ga.additions)
+                        numOfActionsInstantiationsProducingFluent[fluent]--;
+                }
+            }
+
+            assert actionInstantiations.get(lifted).contains(ground) : "First instantiation is not in the domain.";
+            actionInstantiations.get(lifted).clear();
+            actionInstantiations.get(lifted).add(ground);
+            instantiated.add(lifted);
+        } else {
+            assert actionInstantiations.get(lifted).size() == 1;
+        }
+    }
+
+    private boolean achievableByLiftedAction(int fluent) {
+        if(numOfActionsInstantiationsProducingFluent == null) {
+            numOfActionsInstantiationsProducingFluent = new int[planner.preprocessor.getApproximateNumFluents()];
+            for(Action a : actionInstantiations.keySet()) {
+                if(instantiated.contains(a))
+                    continue;
+                for(GAction ga : actionInstantiations.get(a)) {
+                    for(int f : ga.additions)
+                        numOfActionsInstantiationsProducingFluent[f]++;
+                }
+            }
+        }
+//        boolean isAvailable = false;
+//        for(Action a : actionInstantiations.keySet()) {
+//            if(instantiated.contains(a))
+//                continue;
+//            for(GAction candidate : actionInstantiations.get(a)) {
+//                for(Fluent gaAddition : candidate.add) {
+//                    if(gaAddition.ID == fluent) {
+//                        isAvailable = true;
+//                    }
+//                }
+//            }
+//        }
+//        if(isAvailable)
+//            assert numOfActionsInstantiationsProducingFluent[fluent] > 0;
+//        else
+//            assert numOfActionsInstantiationsProducingFluent[fluent] == 0;
+        return numOfActionsInstantiationsProducingFluent[fluent] > 0;
+    }
+
     public GAction selectMostInterestingAction(Collection<GAction> actions) throws NoSolutionException {
         GAction bestAction = null;
         int bestActionCost = Integer.MAX_VALUE;
@@ -191,23 +244,7 @@ public class RelaxedPlanExtractor {
             int maxCostOfAchieved = 0;
             int sumPreconditionsCosts = 0;
             for(Fluent f : ga.pre) {
-                int base = costOfFluent(f);
-                if(base != 0) {
-                    for(Action a : actionInstantiations.keySet()) {
-                        for(GAction candidate : actionInstantiations.get(a)) {
-                            for(Fluent gaAddition : candidate.add) {
-                                if(gaAddition.equals(f)) {
-                                    base = 0;
-                                    break;
-                                }
-                            }
-                            if(base == 0)
-                                break;
-                        }
-                        if(base == 0)
-                            break;
-                    }
-                }
+                int base = achievableByLiftedAction(f.ID) ? 0 : costOfFluent(f);
                 sumPreconditionsCosts += base;
             }
             for(Fluent f : ga.add) {
@@ -412,13 +449,7 @@ public class RelaxedPlanExtractor {
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
 
         for(Timeline tl : st.getTimelines()) {
-            if(tl == og)
-                continue;
-            if(tl.hasSinglePersistence())
-                continue;
-            if(!st.unifiable(tl, og))
-                continue;
-            if(!st.canBeBefore(tl, og))
+            if(tl == og || tl.hasSinglePersistence() || !st.unifiable(tl, og) || !st.canBeBefore(tl, og))
                 continue;
 
             potentialIndirectSupporters.add(tl);
@@ -544,15 +575,7 @@ public class RelaxedPlanExtractor {
                 if(lifted == null) { // not an instantiation
                     counter.addActionOccurrence(ground, sv);
                 } else { // instantiation of the lifted action
-                    counter.addActionInstantiation(lifted, ground);
-                    if(!instantiated.contains(lifted)) {
-                        assert actionInstantiations.get(lifted).contains(ground) : "First instantiation is not in the domain.";
-                        actionInstantiations.get(lifted).clear();
-                        actionInstantiations.get(lifted).add(ground);
-                        instantiated.add(lifted);
-                    } else {
-                        assert actionInstantiations.get(lifted).size() == 1;
-                    }
+                    setActionInstantiation(lifted, ground);
                 }
             }
         }
@@ -589,8 +612,8 @@ public class RelaxedPlanExtractor {
 
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
-                    instantiated.add(actInst.getKey());
                     final GAction ga = selectMostInterestingAction(actInst.getValue());
+                    setActionInstantiation(actInst.getKey(), ga);
                     setActionUsed(ga);
                     actInst.getValue().clear();
                     actInst.getValue().add(ga);

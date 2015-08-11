@@ -140,6 +140,8 @@ public class Preprocessor {
         return fluents[fluentID];
     }
 
+    public int getApproximateNumFluents() { return fluents.length; }
+
     public IntRepresentation<Fluent> fluentIntRepresentation() {
         return new IntRepresentation<Fluent>() {
             @Override public final int asInt(Fluent fluent) { return fluent.ID; }
