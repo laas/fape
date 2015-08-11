@@ -37,8 +37,9 @@ public class OpenGoalTransitionFinder {
         public final DualNode start;
         public final DualNode end;
         public final List<DualEdge> edges;
-        public Path(DualNode start, DualNode end, List<DualEdge> edges) {
-            this.start = start; this.end = end; this.edges = edges;
+        public final int dtgOfStart;
+        public Path(DualNode start, DualNode end, List<DualEdge> edges, int dtgOfStart) {
+            this.start = start; this.end = end; this.edges = edges; this.dtgOfStart = dtgOfStart;
         }
     }
 
@@ -131,6 +132,8 @@ public class OpenGoalTransitionFinder {
                 System.out.println(dtgID + " " + allDtgs.fluentsByLevels(dtgID));
         }
 
+        int dtgOfStart = -1;
+
         DualNode dest = null;
         while (dest == null && !q.isEmpty()) {
 
@@ -143,6 +146,12 @@ public class OpenGoalTransitionFinder {
 
             if (current.accepting(nc.n.nodeID)) {
                 // best accepting node: finished!
+                dest = nc.n;
+                dtgOfStart = nc.n.dtgID;
+            } else if(!current.isSink && allDtgs.dtgWithPathEnd(fluent, dtgs) != -1) {
+                // this fluent represents the end of path taken for another open goal. We can stop here
+                //TODO: this might benefit from a penalty if it was not the latest added
+                dtgOfStart = allDtgs.dtgWithPathEnd(fluent, dtgs);
                 dest = nc.n;
             } else {
                 PrimitiveIterator.OfInt it = current.inEdgesIterator(nc.n.nodeID);
@@ -211,14 +220,11 @@ public class OpenGoalTransitionFinder {
 
         NodeCost cur = costs.get(dest);
         assert startTimePoint != null;
-        return extractEdgeSequence(cur);
-//        DomainTransitionGraph containingDTG = dtgs.get(cur.n.containerID);
-//
-//        PartialPathDTG partialPathDTG = new PartialPathDTG(extractEdgeSequence(cur), containingDTG);
-//        return partialPathDTG;
+        assert dtgOfStart != -1;
+        return extractEdgeSequence(cur, dtgOfStart);
     }
 
-    private Path extractEdgeSequence(NodeCost nc) {
+    private Path extractEdgeSequence(NodeCost nc, int dtgOfStart) {
         final DualNode start = nc.n;
         final List<DualEdge> edges = new ArrayList<>();
         DualNode end = null;
@@ -231,6 +237,6 @@ public class OpenGoalTransitionFinder {
             cur = cur.pred;
         }
         assert end != null : "Error: no end to this path.";
-        return new Path(start, end, edges);
+        return new Path(start, end, edges, dtgOfStart);
     }
 }

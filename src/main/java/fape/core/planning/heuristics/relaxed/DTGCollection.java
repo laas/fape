@@ -5,6 +5,7 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
+import fape.util.EffSet;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 
@@ -13,6 +14,7 @@ import java.util.*;
 public final class DTGCollection {
 
     final List<DTGImpl> dtgs = new ArrayList<>();
+    final List<EffSet<Fluent>> previousPathEnds = new ArrayList<>();
     final APlanner planner;
     final State st;
 
@@ -23,6 +25,7 @@ public final class DTGCollection {
     public int add(DTGImpl dtg) {
         assert !dtgs.contains(dtg);
         dtgs.add(dtg);
+        previousPathEnds.add(new EffSet<>(planner.preprocessor.fluentIntRepresentation()));
         return dtgs.size()-1;
     }
 
@@ -111,5 +114,23 @@ public final class DTGCollection {
 
         }
         return sb.toString();
+    }
+
+    public int fluentOf(OpenGoalTransitionFinder.DualNode n) {
+        return dtgs.get(n.dtgID).fluent(n.nodeID);
+    }
+
+    public void addPathEnd(int dtgID, int fluent) {
+        previousPathEnds.get(dtgID).add(fluent);
+    }
+
+
+    public int dtgWithPathEnd(int fluent, Collection<Integer> usableDTGs) {
+        for(int dtgID : usableDTGs) {
+            final EffSet<Fluent> pathEnds = previousPathEnds.get(dtgID);
+            if(pathEnds.contains(fluent))
+                return dtgID;
+        }
+        return -1;
     }
 }

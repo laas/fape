@@ -3,7 +3,6 @@ package fape.core.planning.planninggraph;
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.DefaultIntRepresentation;
-import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.relaxed.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.Printer;
@@ -329,7 +328,7 @@ public class RelaxedPlanExtractor {
     final DTGCollection dtgs;
 
     /** maps a timeline to its DTG */
-    Map<Timeline, Integer> dtgsOgTimelines = new HashMap<>();
+    Map<Timeline, Integer> dtgsOfTimelines = new HashMap<>();
 
     Map<GStateVariable, Integer> dtgsOfStateVariables= new HashMap<>();
 
@@ -385,7 +384,7 @@ public class RelaxedPlanExtractor {
         potentialIndirectSupporters.removeAll(toRemove);
 
         for (Timeline tl : potentialIndirectSupporters) {
-            pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
+            pathFinder.setDTGUsable(dtgsOfTimelines.get(tl));
         }
         assert og.chain.length == 1;
         pathFinder.addPersistenceTargets(ogs, og.getFirst().getConsumeTimePoint(), og.getFirst().getSupportTimePoint());
@@ -407,7 +406,7 @@ public class RelaxedPlanExtractor {
                 final int dtgID = dtgs.add(dtg);
                 dtgsOfStateVariables.put(sv, dtgID);
             }
-            pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv)); // TODO: might need to be built?
+            pathFinder.setDTGUsable(dtgsOfStateVariables.get(sv));
         }
 
         Collection<Timeline> potentialIndirectSupporters = new LinkedList<>();
@@ -444,7 +443,7 @@ public class RelaxedPlanExtractor {
         potentialIndirectSupporters.removeAll(toRemove);
 
         for(Timeline tl : potentialIndirectSupporters)
-            pathFinder.setDTGUsable(dtgsOgTimelines.get(tl));
+            pathFinder.setDTGUsable(dtgsOfTimelines.get(tl));
 
         pathFinder.addTransitionTargets(ogs, og.getFirstChangeTimePoint());
 
@@ -510,8 +509,8 @@ public class RelaxedPlanExtractor {
             if(!tl.hasSinglePersistence()) {
                 final DTGImpl tlDtg = DTGImpl.buildFromTimeline(tl, planner, st);
                 final int tlDtgID = dtgs.add(tlDtg);
-                assert !dtgsOgTimelines.containsKey(tl);
-                dtgsOgTimelines.put(tl, tlDtgID);
+                assert !dtgsOfTimelines.containsKey(tl);
+                dtgsOfTimelines.put(tl, tlDtgID);
             }
         }
 
@@ -526,11 +525,13 @@ public class RelaxedPlanExtractor {
             OpenGoalTransitionFinder.Path path;
             if(og.hasSinglePersistence()) {
                 path = getPathToPersistence(og);
+                assert path.start.dtgID == path.dtgOfStart || (!dtgs.get(path.start.dtgID).isSink || dtgs.get(path.dtgOfStart).isSink);
+                dtgs.addPathEnd(path.dtgOfStart, dtgs.fluentOf(path.start));
             } else {
                 path = getPathToTransition(og);
             }
             allPaths.add(path);
-            assert dtgs.isAccepting(path.start);
+
             final GStateVariable sv = dtgs.stateVariable(path);
             for(OpenGoalTransitionFinder.DualEdge edge : path.edges) {
                 final Action lifted = dtgs.liftedAction(edge);
@@ -637,7 +638,6 @@ public class RelaxedPlanExtractor {
             for(GAction ga : counter.getAllUsedAction()) {
                 total += counter.totalOccurrences(ga);
             }
-
             return total - st.getNumActions();
         } catch (NoSolutionException e) {
             if(displayResolution())
