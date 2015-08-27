@@ -22,18 +22,18 @@ abstract class AbstractContext {
   protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
   protected val actions = mutable.Map[LActRef, Action]()
-  protected val actionConditions = mutable.Map[LActRef, Task]()
+  protected val tasks = mutable.Map[LActRef, Task]()
 
   protected val statements = mutable.Map[LStatementRef, Statement]()
 
   def getIntervalWithID(ref:LocalRef) : TemporalInterval = {
-    if(actions.contains(new LActRef(ref.id)) && !actionConditions.contains(new LActRef(ref.id))) {
+    if(actions.contains(new LActRef(ref.id)) && !tasks.contains(new LActRef(ref.id))) {
       //TODO above line is a ugly hack
       actions(new LActRef(ref.id))
     } else if(statements.contains(new LStatementRef(ref.id))) {
       statements(new LStatementRef(ref.id))
-    } else if(actionConditions.contains(new LActRef(ref.id))) {
-      actionConditions(new LActRef(ref.id))
+    } else if(tasks.contains(new LActRef(ref.id))) {
+      tasks(new LActRef(ref.id))
     } else {
       parentContext match {
         case Some(context) => context.getIntervalWithID(ref)
@@ -152,8 +152,8 @@ abstract class AbstractContext {
 
   def addActionCondition(localID:LActRef, globalDef:Task) {
     assert(!actions.contains(localID) || actions(localID) == null)
-    assert(!actionConditions.contains(localID) || actionConditions(localID) == null)
-    actionConditions(localID) = globalDef
+    assert(!tasks.contains(localID) || tasks(localID) == null)
+    tasks(localID) = globalDef
   }
 
 

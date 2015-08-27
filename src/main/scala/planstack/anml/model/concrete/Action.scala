@@ -96,11 +96,6 @@ class Action(
   val actions = new util.LinkedList[Action]()
   val actionConditions = new util.LinkedList[Task]()
 
-  def decompositions = seqAsJavaList(abs.decompositions)
-
-    /** Returns True if this action as possible decompositions */
-  def decomposable = !decompositions.isEmpty
-
   /** Returns true if the statement `s` is contained in this action */
   def contains(s: Statement) = statements.contains(s)
 
@@ -121,8 +116,6 @@ class Action(
   lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
-
-  assert(decompositions.isEmpty)
 }
 
 /** Expresses either the min or max duration of an action. */

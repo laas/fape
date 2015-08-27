@@ -3,7 +3,6 @@ package planstack.anml.model.concrete;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractDecomposition;
 
 import java.util.List;
 
@@ -47,19 +46,4 @@ public class Factory {
     public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters, ActRef id) {
         return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), id, null, null);
     }*/
-
-    /**
-     * Returns a concrete decomposition.
-     * A Decomposition implements the StateModifier interface to explicitly define what changes have to
-     * be made to a search state in which it is applied.
-     *
-     * @param pb Problem containing the action/decomposition
-     * @param parent Action in which the decomposition appears
-     * @param abs Abstract version of the decomposition.
-     * @return A fully instantiated Decomposition
-     */
-    public static Decomposition getDecomposition(AnmlProblem pb, Action parent, AbstractDecomposition abs, RefCounter refCounter) {
-        return Decomposition$.MODULE$.apply(pb, parent, abs, refCounter);
-    }
-
 }

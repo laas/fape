@@ -90,7 +90,6 @@ trait Chronicle {
         case s:AbstractTask =>
           val parent = this match {
               case x: Action => Some(x)
-              case decomposition: Decomposition => Some(decomposition.container)
               case _ => None
             }
           if (pb.usesActionConditions)

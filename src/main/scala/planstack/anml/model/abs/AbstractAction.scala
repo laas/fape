@@ -40,19 +40,13 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
 
-  /** All abstract decompositions appearing in this action */
-  val decompositions = mutable.ArrayBuffer[AbstractDecomposition]()
-
-  /** Java-friendly version of [[planstack.anml.model.abs.AbstractAction#decompositions]]. */
-  def jDecompositions = seqAsJavaList(decompositions)
-
   /** All abstract temporal statements appearing in this action */
   val statements = mutable.ArrayBuffer[AbstractStatement]()
 
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jTemporalStatements = seqAsJavaList(statements)
 
-  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
+  def jSubTasks = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
   def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
