@@ -12,7 +12,6 @@ import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.Domain;
-import planstack.structures.Pair;
 
 import java.util.*;
 
@@ -49,8 +48,8 @@ public class FeasibilityReasoner {
 
         for(GAction ga : allActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.baseVars);
-                initialState.csp.bindings().recordEmptyNAryConstraint(ga.abs.name(), true, ga.baseVars.length+1);
+                varsOfAction.put(ga.abs.name(), ga.variables);
+                initialState.csp.bindings().recordEmptyNAryConstraint(ga.abs.name(), true, ga.variables.length+1);
             }
         }
 
@@ -60,7 +59,7 @@ public class FeasibilityReasoner {
 
         for(GAction ga : allActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.baseVars);
+                varsOfAction.put(ga.abs.name(), ga.variables);
             }
 
             // all variables of this action

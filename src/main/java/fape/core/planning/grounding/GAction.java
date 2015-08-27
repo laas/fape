@@ -13,7 +13,6 @@ import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
-import scala.collection.JavaConversions;
 
 import java.util.*;
 
@@ -58,8 +57,8 @@ public class GAction {
 
     public final List<Pair<LStatementRef, GLogStatement>> gStatements = new LinkedList<>();
 
-    public final LVarRef[] baseVars;
-    protected final InstanceRef[] baseValues;
+    public final LVarRef[] variables;
+    protected final InstanceRef[] values;
 
     public final ArrayList<GTaskCond> subTasks;
 
@@ -100,26 +99,19 @@ public class GAction {
     @Deprecated
     public String decomposedName() { return abs.name(); }
 
-    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> vars, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
+    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
 
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
 
-        int numBaseVariables = 0;
-        for(LVarRef ref : vars.keySet()) {
-            assert abs.context().contains(ref);
-            numBaseVariables += 1;
-        }
+        assert bindings.size() == abs.allVars().length : "Some variables seem to be missing.";
 
-        this.baseVars = new LVarRef[numBaseVariables];
-        this.baseValues = new InstanceRef[numBaseVariables];
+        variables = abs.allVars();
+        values = new InstanceRef[variables.length];
 
-        int iBase = 0, iDec=0;
-        for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
-            assert abs.context().contains(binding.getKey());
-            baseVars[iBase] = binding.getKey();
-            baseValues[iBase] = binding.getValue();
-            iBase++;
+        for(int i=0 ; i<variables.length ; i++) {
+            assert bindings.containsKey(variables[i]);
+            values[i] = bindings.get(variables[i]);
         }
 
         List<AbstractStatement> statements = abs.jTemporalStatements();
@@ -146,28 +138,26 @@ public class GAction {
                 if(valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
                     throw new NotValidGroundAction("Action not valid4");
             } else if(as instanceof AbstractTransition) {
-
                 AbstractTransition t = (AbstractTransition) as;
                 gStatements.add(new Pair<>(
                         t.id(),
                         (GLogStatement) new GTransition(sv(t.sv(), pb), valueOf(t.from(), pb), valueOf(t.to(), pb))));
-
-                pre.add(fluent(t.sv(), t.from(), vars, planner));
-                if(!fluent(t.sv(), t.from(), vars, planner).equals(fluent(t.sv(), t.to(), vars, planner))) {
-                    add.add(fluent(t.sv(), t.to(), vars, planner));
+                pre.add(fluent(t.sv(), t.from(), bindings, planner));
+                if(!fluent(t.sv(), t.from(), bindings, planner).equals(fluent(t.sv(), t.to(), bindings, planner))) {
+                    add.add(fluent(t.sv(), t.to(), bindings, planner));
                 }
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
                 gStatements.add(new Pair<>(
                         p.id(),
                         (GLogStatement) new GPersistence(sv(p.sv(), pb), valueOf(p.value(), pb))));
-                pre.add(fluent(p.sv(), p.value(), vars, planner));
+                pre.add(fluent(p.sv(), p.value(), bindings, planner));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
                 gStatements.add(new Pair<>(
                         a.id(),
                         (GLogStatement) new GAssignement(sv(a.sv(), pb), valueOf(a.value(), pb))));
-                add.add(fluent(a.sv(), a.value(), vars, planner));
+                add.add(fluent(a.sv(), a.value(), bindings, planner));
             }
         }
 
@@ -196,9 +186,9 @@ public class GAction {
                 ret += ", ";
         }
         ret +=") ";
-        for(int i=0 ; i<baseVars.length ; i++) {
-            if(!abs.args().contains(baseVars[i]))
-                ret += baseVars[i] +":"+ baseValues[i]+" ";
+        for(int i=0 ; i< variables.length ; i++) {
+            if(!abs.args().contains(variables[i]))
+                ret += variables[i] +":"+ values[i]+" ";
         }
         return ret;
     }
@@ -206,9 +196,9 @@ public class GAction {
     /** Returns the instance corresponding to this local variable.
      *  This instance must have been declared in the action (ie. not a global variable. */
     public InstanceRef valueOf(LVarRef v) {
-        for(int i=0 ; i<baseVars.length ; i++)
-            if(baseVars[i].equals(v))
-                return baseValues[i];
+        for(int i=0 ; i< variables.length ; i++)
+            if(variables[i].equals(v))
+                return values[i];
         throw new FAPEException("This local variable was not found: "+v);
     }
 
@@ -216,9 +206,9 @@ public class GAction {
      *  If this ref was not declared in the action, it will look for global variables. */
     public InstanceRef valueOf(LVarRef v, AnmlProblem pb) {
         // first look in local variables
-        for(int i=0 ; i<baseVars.length ; i++)
-            if(baseVars[i].equals(v))
-                return baseValues[i];
+        for(int i=0 ; i< variables.length ; i++)
+            if(variables[i].equals(v))
+                return values[i];
 
         // it does not appear in local variables, it is a global one
         return (InstanceRef) pb.context().getDefinition(v)._2();
@@ -248,12 +238,6 @@ public class GAction {
     public static List<Map<LVarRef, InstanceRef>> getPossibleInstantiations(GroundProblem gPb, AbstractAction aa) {
         AnmlProblem pb = gPb.liftedPb;
 
-        // this will store all local variables, those can be defined as action parameters, inside the action or within the given decomposition
-        List<LVarRef> allLocalVars = new LinkedList<>();
-        // local vars from the action
-        for(LVarRef ref : JavaConversions.asJavaIterable(aa.context().variables().keys()))
-            allLocalVars.add(ref);
-
         // context from which to look for the definition of local variable
         PartialContext context = aa.context();
 
@@ -264,7 +248,7 @@ public class GAction {
         List<List<InstanceRef>> possibleValues = new LinkedList<>();
 
         // get all variables and domains
-        for(LVarRef ref : allLocalVars) {
+        for(LVarRef ref : aa.allVars()) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
             if(!context.getDefinition(ref)._2().isEmpty()) {
