@@ -46,7 +46,7 @@ public class Printer {
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
         else if(o instanceof UnsupportedTaskCond)
-            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).actCond);
+            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).task);
         else if(o instanceof UnsupportedTimeline)
             return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
@@ -153,12 +153,12 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String taskCondition(State st, Task act) {
-        if(act == null)
+    public static String taskCondition(State st, Task task) {
+        if(task == null)
             return "null";
 
-        String ret = act.abs().name()+"(";
-        for(VarRef arg : act.args()) {
+        String ret = task.name()+"(";
+        for(VarRef arg : task.args()) {
             ret += variable(st, arg);
         }
         return ret + ")";

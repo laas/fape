@@ -46,24 +46,12 @@ public class UnmotivatedAction extends Flaw {
             return resolvers;
 
         resolvers = new LinkedList<>();
-        assert(st.taskNet.getNumOpenTasks() == st.getOpenTaskConditions().size());
+        assert(st.taskNet.getNumOpenTasks() == st.getOpenTasks().size());
 
         // any task condition unifiable with act
-        for(Task ac : st.getOpenTaskConditions()) {
-            boolean unifiable = true;
-            if(ac.abs() != act.abs())
-                continue;
-
-            assert act.args().size() == ac.args().size();
-            for(int i=0 ; i<act.args().size() ; i++) {
-                unifiable &= st.unifiable(act.args().get(i), ac.args().get(i));
-            }
-            unifiable &= st.canBeBefore(act.start(), ac.start());
-            unifiable &= st.canBeBefore(ac.start(), act.start());
-            unifiable &= st.canBeBefore(act.end(), ac.end());
-            unifiable &= st.canBeBefore(ac.end(), act.end());
-            if(unifiable)
-                resolvers.add(new ExistingTaskSupporter(ac, act));
+        for(Task task : st.getOpenTasks()) {
+            if(st.canSupport(act, task))
+                resolvers.add(new ExistingTaskSupporter(task, act));
         }
 
         ActionDecompositions preproc = new ActionDecompositions(st.pb);

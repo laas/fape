@@ -5,6 +5,7 @@ import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.NewTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
 
@@ -20,9 +21,9 @@ import java.util.List;
  */
 public class UnsupportedTaskCond extends Flaw {
 
-    public final Task actCond;
+    public final Task task;
 
-    public UnsupportedTaskCond(Task ac) { actCond = ac; }
+    public UnsupportedTaskCond(Task ac) { task = ac; }
 
     @Override
     public List<Resolver> getResolvers(State st, APlanner planner) {
@@ -32,25 +33,16 @@ public class UnsupportedTaskCond extends Flaw {
         resolvers = new LinkedList<>();
 
         // inserting a new action is always a resolver.
-        if(st.isAddable(actCond.abs()))
-            resolvers.add(new NewTaskSupporter(actCond, actCond.abs()));
+        for(AbstractAction abs : st.pb.getSupportersForTask(task.name()))
+            if(st.isAddable(abs))
+                resolvers.add(new NewTaskSupporter(task, abs));
 
         // existing action can be a supporter if every one of its parameters
         // are unifiable with the task condition
         if(planner.useActionConditions())
             for (Action act : st.getAllActions()) {
-                if (act.abs() == actCond.abs()) {
-                    boolean unifiable = true;
-                    for (int i = 0; i < act.args().size(); i++) {
-                        unifiable &= st.unifiable(act.args().get(i), actCond.args().get(i));
-                    }
-                    unifiable &= st.canBeBefore(act.start(), actCond.start());
-                    unifiable &= st.canBeBefore(actCond.start(), act.start());
-                    unifiable &= st.canBeBefore(act.end(), actCond.end());
-                    unifiable &= st.canBeBefore(actCond.end(), act.end());
-                    if (unifiable)
-                        resolvers.add(new ExistingTaskSupporter(actCond, act));
-                }
+                if (st.canSupport(act, task))
+                    resolvers.add(new ExistingTaskSupporter(task, act));
             }
 
         return resolvers;
@@ -59,6 +51,6 @@ public class UnsupportedTaskCond extends Flaw {
     @Override
     public int compareTo(Flaw o) {
         assert o instanceof UnsupportedTaskCond;
-        return ((UnsupportedTaskCond) o).actCond.start().id() - actCond.start().id();
+        return ((UnsupportedTaskCond) o).task.start().id() - task.start().id();
     }
 }

@@ -158,7 +158,7 @@ public class UnsupportedTimeline extends Flaw {
             }
         }
 
-        assert planner.useActionConditions() || st.getOpenTaskConditions().size() == 0 :
+        assert planner.useActionConditions() || st.getOpenTasks().size() == 0 :
           "We are trying to solve an open goal while we still have opened tasks in HTN planner.";
 
         //now we can look for adding the actions ad-hoc ...

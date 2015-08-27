@@ -14,7 +14,7 @@ public class UnsupportedTaskConditionFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
 
-        for(Task ac : st.getOpenTaskConditions())
+        for(Task ac : st.getOpenTasks())
             flaws.add(new UnsupportedTaskCond(ac));
 
         return flaws;

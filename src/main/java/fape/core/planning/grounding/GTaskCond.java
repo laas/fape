@@ -6,13 +6,12 @@ import planstack.anml.model.concrete.InstanceRef;
 import java.util.Collection;
 
 public class GTaskCond {
-    public final AbstractAction act;
+    public final String name;
     public final InstanceRef[] args;
 
-    public GTaskCond(AbstractAction abs, Collection<InstanceRef> args) {
-        this.act = abs;
+    public GTaskCond(String name, Collection<InstanceRef> args) {
+        this.name = name;
         this.args = new InstanceRef[args.size()];
-        assert args.size() == abs.args().size();
         int i=0;
         for(InstanceRef arg : args) {
             this.args[i] = arg;
@@ -22,7 +21,7 @@ public class GTaskCond {
 
     @Override
     public String toString() {
-        String ret = act.name()+"(";
+        String ret = name+"(";
         for(InstanceRef arg : args)
             ret+= arg+",";
         return ret+")";
@@ -30,7 +29,7 @@ public class GTaskCond {
 
     @Override
     public int hashCode() {
-        int ret = act.hashCode();
+        int ret = name.hashCode();
         for(int i=0 ; i<args.length ; i++) {
             ret += 42^i * args[i].hashCode();
         }
@@ -41,7 +40,7 @@ public class GTaskCond {
     public boolean equals(Object o) {
         if(o instanceof GTaskCond) {
             GTaskCond gtc = (GTaskCond) o;
-            if(act != gtc.act)
+            if(!name.equals(gtc.name))
                 return false;
             for(int i=0 ; i<args.length ; i++)
                 if(args[i] != gtc.args[i])

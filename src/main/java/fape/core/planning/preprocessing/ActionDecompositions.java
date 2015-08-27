@@ -3,7 +3,7 @@ package fape.core.planning.preprocessing;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractActionRef;
+import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 import scala.Tuple2;
@@ -65,7 +65,7 @@ public class ActionDecompositions {
      */
     private boolean mightContains(AbstractDecomposition dec, Collection<AbstractAction> targets, List<AbstractAction> treated) {
 
-        for(AbstractActionRef actRef : dec.jActions()) {
+        for(AbstractTask actRef : dec.jActions()) {
 
             AbstractAction abs = pb.getAction(actRef.name());
             if(treated.contains(abs))
@@ -75,7 +75,7 @@ public class ActionDecompositions {
             if(targets.contains(abs)) {
                 return true;
             }
-            for(AbstractActionRef ref : abs.jActions()) {
+            for(AbstractTask ref : abs.jActions()) {
                 AbstractAction subAct = pb.getAction(ref.name());
                 if(targets.contains(subAct))
                     return true;
@@ -103,14 +103,14 @@ public class ActionDecompositions {
     public List<Tuple3<AbstractAction, Integer, LActRef>> supporterForMotivatedAction(Action a) {
         List<Tuple3<AbstractAction, Integer, LActRef>> supporters = new LinkedList<>();
         for(AbstractAction abs : pb.abstractActions()) {
-            for(AbstractActionRef actRef : abs.jActions()) {
-                if(actRef.name().equals(a.name()))
+            for(AbstractTask actRef : abs.jActions()) {
+                if(actRef.name().equals(a.taskName()))
                     supporters.add(new Tuple3<AbstractAction, Integer, LActRef>(abs, -1, actRef.localId()));
             }
             for(int decID=0 ; decID<abs.jDecompositions().size() ; decID++) {
                 AbstractDecomposition dec = abs.jDecompositions().get(decID);
-                for(AbstractActionRef actRef : dec.jActions()) {
-                    if(actRef.name().equals(a.name())) {
+                for(AbstractTask actRef : dec.jActions()) {
+                    if(actRef.name().equals(a.taskName())) {
                         supporters.add(new Tuple3<AbstractAction, Integer, LActRef>(abs, decID, actRef.localId()));
                     }
                 }
@@ -134,7 +134,7 @@ public class ActionDecompositions {
         List<Tuple2<Integer, LActRef>> supporters = new LinkedList<>();
         for(int decID=0 ; decID<supporting.abs().jDecompositions().size() ; decID++) {
             AbstractDecomposition dec = supporting.abs().jDecompositions().get(decID);
-            for(AbstractActionRef actRef : dec.jActions()) {
+            for(AbstractTask actRef : dec.jActions()) {
                 if(actRef.name().equals(consuming.name())) {
                     supporters.add(new Tuple2<Integer, LActRef>(decID, actRef.localId()));
                 }

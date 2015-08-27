@@ -142,10 +142,10 @@ public abstract class APlanner {
     public List<Flaw> getFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
 
-        if(!useActionConditions() && !st.getOpenTaskConditions().isEmpty()) {
+        if(!useActionConditions() && !st.getOpenTasks().isEmpty()) {
             // we are not using action condition (htn planner),
             // hence every opened task must be solved with an action insertion which is done first
-            for(Task ac : st.getOpenTaskConditions()) {
+            for(Task ac : st.getOpenTasks()) {
                 flaws.add(new UnsupportedTaskCond(ac));
             }
         } else {

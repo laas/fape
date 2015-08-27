@@ -13,7 +13,6 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.Domain;
 import planstack.structures.Pair;
-import fape.core.inference.Predicate.PredicateName.*;
 
 import java.util.*;
 
@@ -81,6 +80,13 @@ public class FeasibilityReasoner {
 
             initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
         }
+
+        for(AbstractAction abstractAction : planner.pb.abstractActions()) { // TODO: this is a bit hacky to replace something that should be done with every action
+            if(varsOfAction.containsKey(abstractAction.name()))
+                continue;
+            LVarRef[] vars = abstractAction.args().toArray(new LVarRef[abstractAction.args().size()]);
+            varsOfAction.put(abstractAction.name(), vars);
+        }
     }
 
     public static String decCSPValue(int decNumber) {
@@ -126,7 +132,7 @@ public class FeasibilityReasoner {
         }
         List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
         for(List<InstanceRef> instantiation : instantiations) {
-            GTaskCond task = new GTaskCond(liftedTask.abs(), instantiation);
+            GTaskCond task = new GTaskCond(liftedTask.name(), instantiation);
             tasks.add(task);
         }
         return tasks;
@@ -134,7 +140,7 @@ public class FeasibilityReasoner {
 
     public Iterable<GTaskCond> getDerivableTasks(State st) {
         List<GTaskCond> derivableTasks = new LinkedList<>();
-        for(Task ac : st.getOpenTaskConditions()) {
+        for(Task ac : st.getOpenTasks()) {
             derivableTasks.addAll(getGroundedTasks(ac, st));
         }
 

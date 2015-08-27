@@ -1121,7 +1121,7 @@ public class State implements Reporter {
 
     public List<Action> getOpenLeaves() { return taskNet.getUndecomposedActions(); }
 
-    public List<Task> getOpenTaskConditions() { return taskNet.getOpenTasks(); }
+    public List<Task> getOpenTasks() { return taskNet.getOpenTasks(); }
 
     public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
 
@@ -1144,6 +1144,20 @@ public class State implements Reporter {
     public void exportTaskNetwork(String filename) { taskNet.exportToDot(this, filename); }
 
     /******** Wrapper around the constraint network ***********/
+
+    public boolean canSupport(Action act, Task task) {
+        if(!act.taskName().equals(task.name()))
+            return false;
+        assert act.args().size() == task.args().size();
+        for(int i=0 ; i<act.args().size() ; i++)
+            if(!unifiable(act.args().get(i), task.args().get(i)))
+                return false;
+
+        return canBeBefore(act.start(), task.start()) &&
+                canBeBefore(task.start(), act.start()) &&
+                canBeBefore(act.end(), task.end()) &&
+                canBeBefore(task.end(), act.end());
+    }
 
     public List<String> domainOf(VarRef var) { return csp.bindings().domainOf(var); }
 

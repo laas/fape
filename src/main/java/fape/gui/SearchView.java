@@ -6,13 +6,10 @@ import fape.drawing.TimedCanvas;
 import fape.drawing.gui.ChartWindow;
 import prefuse.Visualization;
 import prefuse.controls.ControlAdapter;
-import prefuse.controls.ToolTipControl;
 import prefuse.data.Node;
 import prefuse.data.Table;
 import prefuse.data.Tree;
 import prefuse.data.tuple.TupleSet;
-import prefuse.util.FontLib;
-import prefuse.util.ui.JFastLabel;
 import prefuse.visual.VisualItem;
 
 import javax.swing.*;
@@ -235,7 +232,7 @@ public class SearchView {
         h.append(" num-open-goals: "); h.append(st.tdb.getConsumers().size());
         h.append(" num-threats: "); h.append(st.getAllThreats().size());
         h.append(" num-undecomposed: "); h.append(st.getOpenLeaves().size());
-        h.append(" num-opentasks: "); h.append(st.getOpenTaskConditions().size());
+        h.append(" num-opentasks: "); h.append(st.getOpenTasks().size());
         h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
         h.append(" num-unbound: "); h.append(st.getUnboundVariables().size()); h.append("\n");
         h.append(planner.stateComparator().reportOnState(st));

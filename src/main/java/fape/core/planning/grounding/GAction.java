@@ -10,7 +10,7 @@ import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractActionRef;
+import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
@@ -491,7 +491,7 @@ public class GAction {
         for(LVarRef v : abs.args()) {
             args.add(valueOf(v, pb));
         }
-        return new GTaskCond(abs, args);
+        return new GTaskCond(abs.taskName(), args);
     }
 
     public ArrayList<GTaskCond> getActionRefs() {
@@ -499,7 +499,7 @@ public class GAction {
     }
 
     public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb) {
-        List<AbstractActionRef> refs;
+        List<AbstractTask> refs;
         List<GTaskCond> ret = new LinkedList<>();
         if(decID == -1)
             refs = this.abs.jActions();
@@ -507,12 +507,12 @@ public class GAction {
             refs = new LinkedList<>(this.abs.jActions());
             refs.addAll(this.abs.jDecompositions().get(decID).jActions());
         }
-        for(AbstractActionRef ref : refs) {
+        for(AbstractTask ref : refs) {
             List<InstanceRef> args = new LinkedList<>();
             for(LVarRef v : ref.jArgs()) {
                 args.add(valueOf(v, pb));
             }
-            ret.add(new GTaskCond(pb.getAction(ref.name()), args));
+            ret.add(new GTaskCond(ref.name(), args));
         }
 
         ArrayList<GTaskCond> subTasks = new ArrayList<>(ret.size());
