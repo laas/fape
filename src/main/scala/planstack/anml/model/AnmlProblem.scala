@@ -1,6 +1,7 @@
 package planstack.anml.model
 
 import java.io.File
+import java.{util => ju}
 
 import planstack.anml.model.abs.{AbstractAction, AbstractTemporalConstraint, StatementsFactory}
 import planstack.anml.model.concrete._
@@ -10,6 +11,7 @@ import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /** Description of an ANML problem.
   *
@@ -71,7 +73,9 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
   context.setInterval(this)
 
   /** All abstract actions appearing in the problem */
-  val abstractActions = new java.util.LinkedList[AbstractAction]()
+  val abstractActions = new ju.LinkedList[AbstractAction]()
+
+  val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]()
 
   /**
    * All [[planstack.anml.model.concrete.Chronicle]] that need to be applied to a state for it to represent this problem.
@@ -101,6 +105,12 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
   def getAction(name:String) = abstractActions.find(_.name == name) match {
     case Some(act) => act
     case None => throw new ANMLException("No action named "+name)
+  }
+
+  def getSupportersForTask(taskName: String) : ju.List[AbstractAction] = {
+    assert(actionsByTask.contains(taskName), "Task: "+taskName+" is not registered.")
+    assert(actionsByTask(taskName).nonEmpty, "There is no action registered for task: "+taskName)
+    actionsByTask(taskName)
   }
 
   /** Returns true if this problem definition contains an action with the given name */
@@ -197,12 +207,11 @@ class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
 
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
       val abs = AbstractAction(actionDecl, this, refCounter)
-      abstractActions += abs
-
-      // if the action is a seed, add it to the chronicle to make sure it appears in the initial plan.
-      if(abs.name == "Seed" || abs.name == "seed") {
-        throw new ANMLException("Seed action is depreciated.")
-      }
+      assert(abs.nonEmpty)
+      val task = abs.head.taskName
+      assert(!actionsByTask.contains(task), "Task is already registered")
+      abstractActions ++= abs
+      actionsByTask += ((task, abs.asJava))
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {

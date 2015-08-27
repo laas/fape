@@ -4,7 +4,7 @@ import java.util
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.{AbstractAction, AbstractActionRef, AbstractDuration}
+import planstack.anml.model.abs.{AbstractAction, AbstractTask, AbstractDuration}
 import planstack.anml.model.concrete.statements.{BindingConstraint, Statement}
 
 import scala.collection.JavaConversions._
@@ -91,6 +91,7 @@ class Action(
 
   val container = this
 
+  def taskName = abs.taskName
   def name = abs.name
   val actions = new util.LinkedList[Action]()
   val actionConditions = new util.LinkedList[Task]()
@@ -120,6 +121,8 @@ class Action(
   lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
+
+  assert(decompositions.isEmpty)
 }
 
 /** Expresses either the min or max duration of an action. */
@@ -161,7 +164,7 @@ object Action {
    * @param contextOpt Option: Context of the decomposition
    * @return concrete action as a StateModifier
    */
-  def apply(pb:AnmlProblem, ref:AbstractActionRef, refCounter: RefCounter, parentAction:Option[Action]=None, contextOpt:Option[Context]=None) : Action = {
+  def apply(pb:AnmlProblem, ref:AbstractTask, refCounter: RefCounter, parentAction:Option[Action]=None, contextOpt:Option[Context]=None) : Action = {
     val parentContext = contextOpt match {
       case Some(parentContext) => parentContext
       case None => pb.context

@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
   * @param args Parameters of the action as instances of local variables
   * @param localId Local reference to the action.
   */
-class AbstractActionRef(val name:String, val args:List[LVarRef], val localId:LActRef) extends AbstractStatement(localId) {
+class AbstractTask(val name:String, val args:List[LVarRef], val localId:LActRef) extends AbstractStatement(localId) {
   require(localId nonEmpty)
   require(name nonEmpty, s"Emptyname: args: ${args.mkString(", ")}  localid: $localId")
 

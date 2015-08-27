@@ -3,7 +3,7 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.concrete.RefCounter
-import planstack.anml.parser
+import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -14,14 +14,19 @@ import scala.collection.mutable
   * Hence all components of an action refer either to local references (such as an argument of the action) or problem
   * instances (defined in the ANML problem).
   *
-  * @param name
+  * @param taskName Name of the task this action supports
+  * @param decID index of the decomposition this action was issued from. If decID == 0, then there was no decompositions.
   * @param mArgs
   * @param context
   */
-class AbstractAction(val name:String, private val mArgs:List[LVarRef], val context:PartialContext)  {
+class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[LVarRef], val context:PartialContext)  {
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
   protected var motivated = false
+
+  val name =
+    if(decID == 0) "a-"+taskName
+    else "m-"+taskName+decID
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
   def mustBeMotivated = motivated
@@ -47,7 +52,7 @@ class AbstractAction(val name:String, private val mArgs:List[LVarRef], val conte
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jTemporalStatements = seqAsJavaList(statements)
 
-  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractActionRef]).map(_.asInstanceOf[AbstractActionRef]))
+  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
   def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
@@ -91,37 +96,59 @@ object AbstractAction {
     * @param pb Problem in which the action is defined
     * @return
     */
-  def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : AbstractAction = {
-    val action = new AbstractAction(act.name, act.args.map(a => new LVarRef(a.name)), new PartialContext(Some(pb.context)))
+  def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractAction] = {
+    val taskName = act.name
+    val args = act.args.map(a => new LVarRef(a.name))
 
-    act.args foreach(arg => {
-      action.context.addUndefinedVar(new LVarRef(arg.name), arg.tipe)
-    })
+    val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
+    val content = act.content.filterNot(_.isInstanceOf[parser.Decomposition])
 
-    act.content foreach( _ match {
-      case ts:parser.TemporalStatement => {
-        action.statements ++= StatementsFactory(ts, action.context, pb, refCounter)
-      }
-      case dec:parser.Decomposition => {
-        action.decompositions += AbstractDecomposition(pb, action.context, dec, refCounter)
-      }
-      case tempConstraint:parser.TemporalConstraint => {
-        action.statements += AbstractTemporalConstraint(tempConstraint)
-      }
-      case parser.Motivated =>
-        action.motivated = true
-      case parser.ExactDuration(e) => {
-        val dur = AbstractDuration(e, action.context, pb)
-        action._minDur = dur
-        action._maxDur = dur
-      }
-      case parser.BoundedDuration(min, max) => {
-        action._minDur = AbstractDuration(min, action.context, pb)
-        action._maxDur = AbstractDuration(max, action.context, pb)
-      }
-      case const:parser.Constant => action.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
-    })
+    val decIdsAndStatements : Seq[(Int,Seq[parser.DecompositionContent])] = decompositions.size match {
+      case 0 => List((0,Nil))
+      case n => (1 to n).zip(decompositions.map(_.content))
+    }
 
-    action
+    val acts = for((decID, additionalStatements) <- decIdsAndStatements) yield {
+
+      val action = new AbstractAction(taskName, decID, act.args.map(a => new LVarRef(a.name)), new PartialContext(Some(pb.context)))
+
+      act.args foreach(arg => {
+        action.context.addUndefinedVar(new LVarRef(arg.name), arg.tipe)
+      })
+
+      content foreach {
+        case ts:parser.TemporalStatement => {
+          action.statements ++= StatementsFactory(ts, action.context, pb, refCounter)
+        }
+        case tempConstraint:parser.TemporalConstraint => {
+          action.statements += AbstractTemporalConstraint(tempConstraint)
+        }
+        case parser.Motivated =>
+          action.motivated = true
+        case parser.ExactDuration(e) => {
+          val dur = AbstractDuration(e, action.context, pb)
+          action._minDur = dur
+          action._maxDur = dur
+        }
+        case parser.BoundedDuration(min, max) => {
+          action._minDur = AbstractDuration(min, action.context, pb)
+          action._maxDur = AbstractDuration(max, action.context, pb)
+        }
+        case const:parser.Constant => action.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
+        case _:parser.Decomposition => throw new ANMLException("Decomposition should have been filtered out previously")
+      }
+
+      additionalStatements foreach {
+        case constraint:parser.TemporalConstraint => action.statements += AbstractTemporalConstraint(constraint)
+        // constant function with no arguments is interpreted as local variable
+        case const:parser.Constant => action.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
+        case statement:parser.TemporalStatement => {
+          action.statements ++= StatementsFactory(statement, action.context, pb, refCounter)
+        }
+      }
+
+      action
+    }
+    acts.toList
   }
 }

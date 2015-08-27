@@ -14,7 +14,7 @@ class AbstractDecomposition(parentContext:PartialContext) {
   val statements = ListBuffer[AbstractStatement]()
   def jStatements = seqAsJavaList(statements)
 
-  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractActionRef]).map(_.asInstanceOf[AbstractActionRef]))
+  def jActions = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
   def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))

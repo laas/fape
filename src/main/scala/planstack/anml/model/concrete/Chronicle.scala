@@ -4,7 +4,7 @@ import java.util
 
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.statements.{AbstractBindingConstraint, AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
-import planstack.anml.model.abs.{AbstractActionRef, AbstractTemporalConstraint}
+import planstack.anml.model.abs.{AbstractTask, AbstractTemporalConstraint}
 import planstack.anml.model.concrete.statements.{BindingConstraint, LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
 import planstack.structures.IList
@@ -87,7 +87,7 @@ trait Chronicle {
         case s:AbstractTemporalConstraint =>
           temporalConstraints += s.bind(context, pb, this, refCounter)
 
-        case s:AbstractActionRef =>
+        case s:AbstractTask =>
           val parent = this match {
               case x: Action => Some(x)
               case decomposition: Decomposition => Some(decomposition.container)
