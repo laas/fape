@@ -51,6 +51,7 @@ public class FeasibilityReasoner {
         for(GAction ga : allActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
                 varsOfAction.put(ga.abs.name(), ga.baseVars);
+                initialState.csp.bindings().recordEmptyNAryConstraint(ga.abs.name(), true, ga.baseVars.length+1);
             }
         }
 
@@ -78,14 +79,16 @@ public class FeasibilityReasoner {
             for(LVarRef var : varsOfAction.get(ga.abs.name()))
                 values.add(ga.valueOf(var).instance());
 
-            initialState.csp.bindings().addValuesToValuesSet(ga.abs.name(), values, ga.id);
+            initialState.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.name(), values, ga.id);
         }
 
-        for(AbstractAction abstractAction : planner.pb.abstractActions()) { // TODO: this is a bit hacky to replace something that should be done with every action
+        // TODO: this is a bit hacky to replace something that should be done with every action
+        for(AbstractAction abstractAction : planner.pb.abstractActions()) {
             if(varsOfAction.containsKey(abstractAction.name()))
                 continue;
             LVarRef[] vars = abstractAction.args().toArray(new LVarRef[abstractAction.args().size()]);
             varsOfAction.put(abstractAction.name(), vars);
+            initialState.csp.bindings().recordEmptyNAryConstraint(abstractAction.name(), true, vars.length+1);
         }
     }
 

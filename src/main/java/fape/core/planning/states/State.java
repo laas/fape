@@ -435,7 +435,7 @@ public class State implements Reporter {
                 csp.bindings().AddIntVariable(min);
                 List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(min);
-                csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
+                csp.bindings().addNAryConstraint(varsOfExtConst, sv.func().name());
             } else {
                 // create a var with a singleton domain
                 min = new VarRef(refCounter);
@@ -456,7 +456,7 @@ public class State implements Reporter {
                 csp.bindings().AddIntVariable(max);
                 List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
                 varsOfExtConst.add(max);
-                csp.bindings().addValuesSetConstraint(varsOfExtConst, sv.func().name());
+                csp.bindings().addNAryConstraint(varsOfExtConst, sv.func().name());
             } else {
                 // create a var with a singleton domain
                 max = new VarRef(refCounter);
@@ -524,7 +524,7 @@ public class State implements Reporter {
             }
             assert c.variable() instanceof InstanceRef;
             values.add(((InstanceRef) c.variable()).instance());
-            csp.bindings().addValuesToValuesSet(c.sv().func().name(), values);
+            csp.bindings().addAllowedTupleToNAryConstraint(c.sv().func().name(), values);
         } else if (bc instanceof VarEqualityConstraint) {
             VarEqualityConstraint c = (VarEqualityConstraint) bc;
             csp.bindings().AddUnificationConstraint(c.leftVar(), c.rightVar());
@@ -535,7 +535,7 @@ public class State implements Reporter {
             EqualityConstraint c = (EqualityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             variables.add(c.variable());
-            csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
+            csp.bindings().addNAryConstraint(variables, c.sv().func().name());
         } else if (bc instanceof InequalityConstraint) {
             // create a new value tmp such that
             // c.sv == tmp and tmp != c.variable
@@ -544,7 +544,7 @@ public class State implements Reporter {
             VarRef tmp = new VarRef(refCounter);
             csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
             variables.add(tmp);
-            csp.bindings().addValuesSetConstraint(variables, c.sv().func().name());
+            csp.bindings().addNAryConstraint(variables, c.sv().func().name());
             csp.bindings().AddSeparationConstraint(tmp, c.variable());
         } else if (bc instanceof IntegerAssignmentConstraint) {
             IntegerAssignmentConstraint c = (IntegerAssignmentConstraint) bc;
@@ -554,7 +554,7 @@ public class State implements Reporter {
                 values.add(((InstanceRef) v).instance());
             }
             csp.bindings().addPossibleValue(c.value());
-            csp.bindings().addValuesToValuesSet(c.sv().func().name(), values, c.value());
+            csp.bindings().addAllowedTupleToNAryConstraint(c.sv().func().name(), values, c.value());
         } else {
             throw new FAPEException("Unhandled constraint type: "+bc);
         }
@@ -1195,9 +1195,9 @@ public class State implements Reporter {
 
     public boolean separable(VarRef a, VarRef b) { return csp.bindings().separable(a, b); }
 
-    public void addValuesToValuesSet(String setID, List<String> values) { csp.bindings().addValuesToValuesSet(setID, values);}
+    public void addValuesToValuesSet(String setID, List<String> values) { csp.bindings().addAllowedTupleToNAryConstraint(setID, values);}
 
-    public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addValuesSetConstraint(variables, setID);}
+    public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addNAryConstraint(variables, setID);}
 
 
     /************ Wrapper around TemporalDatabaseManager **********************/
