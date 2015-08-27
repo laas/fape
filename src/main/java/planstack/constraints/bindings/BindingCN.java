@@ -129,13 +129,7 @@ public interface BindingCN<VarRef> {
      */
     public List<VarRef> getUnboundVariables();
 
-    /**
-     * Adds a new tuple of value to an extension constraint.
-     * If no constraint with this ID exists, it is created.
-     * @param setID ID of the extension constraint.
-     * @param values A tuple of value to be added.
-     */
-    public void addValuesToValuesSet(String setID, List<String> values);
+    void recordEmptyNAryConstraint(String setID, boolean isLastValInteger, int numVariables);
 
     /**
      * Adds a new tuple of value to an extension constraint.
@@ -143,14 +137,22 @@ public interface BindingCN<VarRef> {
      * @param setID ID of the extension constraint.
      * @param values A tuple of value to be added.
      */
-    public void addValuesToValuesSet(String setID, List<String> values, int lastVal);
+    public void addAllowedTupleToNAryConstraint(String setID, List<String> values);
+
+    /**
+     * Adds a new tuple of value to an extension constraint.
+     * If no constraint with this ID exists, it is created.
+     * @param setID ID of the extension constraint.
+     * @param values A tuple of value to be added.
+     */
+    public void addAllowedTupleToNAryConstraint(String setID, List<String> values, int lastVal);
 
     /**
      * Forces the given tuple of variable to respect an extension constraint
      * @param variables a tuple of variable.
-     * @param setID ID of the extension cosntraint to respect.
+     * @param setID ID of the n-ary cosntraint to respect.
      */
-    public void addValuesSetConstraint(List<VarRef> variables, String setID);
+    public void addNAryConstraint(List<VarRef> variables, String setID);
     public String Report();
 
     public void assertGroundAndConsistent();

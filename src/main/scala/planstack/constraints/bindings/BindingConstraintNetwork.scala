@@ -196,17 +196,22 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   override def unified(a: VarRef, b: VarRef): Boolean =
     domID(a) == domID(b) || domainSize(a) == 1 && domainSize(b) == 1 && rawDomain(a).head() == rawDomain(b).head()
 
-  override def addValuesToValuesSet(setID: String, values: util.List[String]): Unit = {
-    if(!extensionConstraints.contains(setID)) {
-      extensionConstraints += ((setID, new ExtensionConstraint(false)))
+  override def recordEmptyNAryConstraint(setID: String, isLastValInteger: Boolean, numVariables: Int) = {
+    assert(!extensionConstraints.contains(setID))
+    extensionConstraints += ((setID, new ExtensionConstraint(isLastValInteger, numVariables)))
+  }
+
+  override def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String]): Unit = {
+    if(!extensionConstraints.contains(setID)) { //TODO: should force usage of record
+      extensionConstraints += ((setID, new ExtensionConstraint(false, values.size())))
     }
     val valuesAsIDs = values.asScala.map(valuesIds(_).asInstanceOf[Integer]).toList.asJava
     extensionConstraints(setID).addValues(valuesAsIDs)
   }
 
-  override def addValuesToValuesSet(setID: String, values: util.List[String], lastVal: Int): Unit = {
+  override def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String], lastVal: Int): Unit = {
     if(!extensionConstraints.contains(setID)) {
-      extensionConstraints += ((setID, new ExtensionConstraint(true)))
+      extensionConstraints += ((setID, new ExtensionConstraint(true, values.size()+1)))
     }
     val valuesAsIDs = values.asScala
       .map(valuesIds(_).asInstanceOf[Integer]).toBuffer
@@ -239,7 +244,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     }
   }
 
-  override def addValuesSetConstraint(variables: util.List[VarRef], setID: String): Unit = {
+  override def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
     val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID(_))
     mapping += ((asIDs, setID))
     extToCheck += mapping.size-1

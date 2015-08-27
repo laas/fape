@@ -2,7 +2,7 @@ package planstack.constraints
 
 import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.{TPRef, VarRef}
-import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, ConservativeConstraintNetwork, IntBindingListener}
+import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, IntBindingListener}
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
 import scala.collection.JavaConverters._
 

@@ -5,12 +5,10 @@ import planstack.UniquelyIdentified;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.constraints.bindings.BindingConstraintNetwork;
-import planstack.constraints.bindings.ConservativeConstraintNetwork;
 import planstack.constraints.stnu.Controllability;
 import planstack.constraints.stnu.MinimalSTNUManager;
 import planstack.constraints.stnu.PseudoSTNUManager;
 import planstack.constraints.stnu.STNUManager;
-import scala.None$;
 import scala.collection.immutable.List;
 import scala.collection.immutable.Map$;
 

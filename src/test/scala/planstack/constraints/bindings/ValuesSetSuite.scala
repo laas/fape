@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 class ValuesSetSuite extends FunSuite {
   def S(vals : Integer*) : java.util.Set[Integer] = setAsJavaSet(vals.toSet)
 
-  val ext1 = new ExtensionConstraint(false)
+  val ext1 = new ExtensionConstraint(false, 3)
 
   ext1.addValues(List[Integer](11, 12, 13))
   ext1.addValues(List[Integer](21, 22, 23))
@@ -37,7 +37,7 @@ class ValuesSetSuite extends FunSuite {
     assert(ext1.restrictedDomains(c)(1) == S(12))
   }
 
-  val ext2 = new ExtensionConstraint(false)
+  val ext2 = new ExtensionConstraint(false, 3)
 
   ext2.addValues(List[Integer](11, 12, 13))
   ext2.addValues(List[Integer](11, 22, 23))

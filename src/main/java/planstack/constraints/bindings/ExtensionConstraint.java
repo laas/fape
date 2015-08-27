@@ -15,20 +15,21 @@ public class ExtensionConstraint {
      * tuples of values.
      */
     public int[][] bindings = new int[100][];
+    final int numVariables;
     int numBindings = 0;
 
     public final boolean isLastVarInteger;
 
-    public ExtensionConstraint(boolean isLastVarInteger) {
+    public ExtensionConstraint(boolean isLastVarInteger, int numVariables) {
         this.isLastVarInteger = isLastVarInteger;
+        this.numVariables = numVariables;
     }
 
     public boolean isEmpty() { return numBindings == 0; }
 
     /** Number of variables involved in this constraint */
     public int numVars() {
-        assert numBindings > 0;
-        return bindings[0].length;
+        return numVariables;
     }
 
     /** Matches the possible values of a variable to the bindings they appear in. For instance:
@@ -44,7 +45,7 @@ public class ExtensionConstraint {
 
     /** Add a possible binding <a,b,c...> to this constraint */
     public void addValues(List<Integer> vals) {
-        assert numBindings == 0 || bindings[0].length == vals.size();
+        assert vals.size() == numVariables;
 
         if(numBindings == bindings.length)
             bindings = Arrays.copyOf(bindings, bindings.length*2);
@@ -72,6 +73,15 @@ public class ExtensionConstraint {
      */
     public Set<Integer>[] restrictedDomains(Set<Integer>[] domains) {
         assert domains.length == numVars();
+
+        if(numBindings == 0) { // no possible value in this constraint, all domains are empty
+            Set<Integer>[] emptyDoms = new Set[domains.length];
+            for(int i=0 ; i<emptyDoms.length ; i++)
+                emptyDoms[i] = new HashSet<>();
+            return emptyDoms;
+        }
+
+
         // will contain a booleans stating if the ith binding is valid according to the given domains
         BitSet toConsider = new BitSet(numBindings);
         // at first they are all interesting
