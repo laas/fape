@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 abstract class AbstractContext {
 
   def parentContext : Option[AbstractContext]
-  protected val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
+  val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
 
   protected val actions = mutable.Map[LActRef, Action]()
   protected val tasks = mutable.Map[LActRef, Task]()

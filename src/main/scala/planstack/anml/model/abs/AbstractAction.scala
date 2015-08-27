@@ -51,6 +51,12 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
   def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]))
 
+  lazy private val _allVars : Array[LVarRef] = context.variables.keys.toArray
+  def allVars : Array[LVarRef] = {
+    assert(_allVars.length == context.variables.keys.size)
+    return _allVars
+  }
+
   override def toString = name
 }
 
