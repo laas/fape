@@ -17,7 +17,6 @@ import fape.util.Reporter;
 import planstack.anml.model.concrete.ActRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
-import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.graph.GraphFactory;
 import planstack.graph.core.Edge;
@@ -36,26 +35,23 @@ public class TaskNetworkManager implements Reporter {
     final UnlabeledDigraph<TNNode> network;
 
     private int numActions;
-    private int numOpenLeaves;
     private int numRoots;
-    private int numOpenedActionConditions;
+    private int numOpenTasks;
     private int numUnmotivatedActions;
 
     public TaskNetworkManager() {
         network = GraphFactory.getSimpleUnlabeledDigraph();
         numActions = 0;
-        numOpenLeaves = 0;
         numRoots = 0;
-        numOpenedActionConditions = 0;
+        numOpenTasks = 0;
         numUnmotivatedActions = 0;
     }
 
     public TaskNetworkManager(TaskNetworkManager base) {
         this.network = base.network.cc();
         this.numActions = base.numActions;
-        this.numOpenLeaves = base.numOpenLeaves;
         this.numRoots = base.numRoots;
-        this.numOpenedActionConditions = base.numOpenedActionConditions;
+        this.numOpenTasks = base.numOpenTasks;
         this.numUnmotivatedActions = base.numUnmotivatedActions;
     }
 
@@ -65,14 +61,6 @@ public class TaskNetworkManager implements Reporter {
     private void clearCache() {
         openTasks = null;
         undecomposed = null;
-    }
-
-    /**
-     * O(1)
-     * @return The number of undecomposed method.
-     */
-    public int getNumUndecomposed() {
-        return numOpenLeaves;
     }
 
     /**
@@ -95,7 +83,7 @@ public class TaskNetworkManager implements Reporter {
      * O(1)
      * @return Number of opened action conditions.
      */
-    public int getNumOpenTasks() { return numOpenedActionConditions; }
+    public int getNumOpenTasks() { return numOpenTasks; }
 
     /**
      * O(1)
@@ -130,24 +118,6 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
-     * @param a Action to lookup
-     * @return True if the action is decomposed
-     */
-    public boolean isDecomposed(Action a) {
-        for(TNNode child : network.jChildren(new TNNode(a))) {
-            if(child.isDecomposition()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public Decomposition getDecomposition(Action a) {
-        assert isDecomposed(a);
-        return getDecompositionNode(a).asDecomposition();
-    }
-
-    /**
      * @param ac ActionCondition to lookup
      * @return True if the action condition is supported (i.e. there is an edge
      *         from ac to an action.
@@ -159,43 +129,6 @@ public class TaskNetworkManager implements Reporter {
             }
         }
         return false;
-    }
-
-    /**
-     * Retrieves the decomposition of an action.
-     * @throws FAPEException if the action has no decomposition.
-     * @param a The action for which to retrieve the decomposition.
-     * @return The decomposition of the action.
-     */
-    private TNNode getDecompositionNode(Action a) {
-        assert isDecomposed(a) : "Error: action "+a+" has no decomposition.";
-        for(TNNode child : network.jChildren(new TNNode(a))) {
-            if(child.isDecomposition()) {
-                return child;
-            }
-        }
-        throw new FAPEException("Action "+a+" has no known decomposition.");
-    }
-
-    /**
-     * O(n)
-     * @return All decomposable actions that are not decomposed yet.
-     */
-    public List<Action> getUndecomposedActions() {
-        if(undecomposed == null) {
-            ArrayList<Action> l = new ArrayList<>();
-            for (TNNode n : network.jVertices()) {
-                if (n.isAction()) {
-                    Action a = n.asAction();
-                    if (a.decomposable() && !isDecomposed(a)) {
-                        l.add(a);
-                    }
-                }
-            }
-            undecomposed = l;
-        }
-        assert undecomposed.size() == numOpenLeaves : "Error: wrong number of opened leaves.";
-        return undecomposed;
     }
 
     /**
@@ -215,7 +148,7 @@ public class TaskNetworkManager implements Reporter {
             }
             openTasks = l;
         }
-        assert openTasks.size() == numOpenedActionConditions;
+        assert openTasks.size() == numOpenTasks;
         return openTasks;
     }
 
@@ -235,12 +168,12 @@ public class TaskNetworkManager implements Reporter {
      * @return All actions that have a motivated statements but are not yet
      *         part of any decomposition.
      */
-    public List<Action> getUnmotivatedActions() {
+    public List<Action> getNonSupportedMotivatedActions() {
         LinkedList<Action> l = new LinkedList<>();
         for (TNNode n : network.jVertices()) {
             if(n.isAction()) {
                 Action a = n.asAction();
-                if(a.mustBeMotivated() && !isMotivated(a)) {
+                if(a.mustBeMotivated() && !isSupporting(a)) {
                     l.add(a);
                 }
             }
@@ -249,37 +182,13 @@ public class TaskNetworkManager implements Reporter {
         return l;
     }
 
-    public Action getContainingAction(Decomposition d) {
-        TNNode n = new TNNode(d);
-        assert network.contains(n);
-        assert network.inDegree(n) == 1 : "Decomposition with 0 or more than one parent in the task network.";
-        for(TNNode parent : network.jParents(n)) {
-            assert parent.isAction();
-            return parent.asAction();
-        }
-        throw new FAPEException("Decomposition "+d+" has no containing action");
-    }
-
     /**
-     * @return True if this action is motivated: it is part of an action or a decomposition.
+     * @return True if this action supports a task
      */
-    public boolean isMotivated(Action a) {
+    public boolean isSupporting(Action a) {
         assert a.mustBeMotivated();
         TNNode n = new TNNode(a);
-        if(network.inDegree(n) == 0) {
-            return false;
-        } else {
-            for(TNNode parent : network.jParents(n)) {
-                if(true) return true;
-                // it is part of an action or a decomposition
-                if(parent.isAction() || parent.isDecomposition())
-                    return true;
-                // it is an action condition which it self is part of an action or decomposition
-                if(network.inDegree(parent) > 0)
-                    return true;
-            }
-            return false;
-        }
+        return network.inDegree(n) > 0;
     }
 
     /**
@@ -300,7 +209,7 @@ public class TaskNetworkManager implements Reporter {
             if(a.mustBeMotivated())
                 numUnmotivatedActions--;
         }
-        numOpenedActionConditions--;
+        numOpenTasks--;
         clearCache();
     }
 
@@ -312,41 +221,14 @@ public class TaskNetworkManager implements Reporter {
     public void insert(Action a) {
         network.addVertex(new TNNode(a));
         numActions++;
-        if(a.decomposable())
-            numOpenLeaves++;
 
         if(a.hasParent()) {
             network.addEdge(new TNNode(a.parent()), new TNNode(a));
         } else {
             numRoots++;
         }
-        if(a.mustBeMotivated() && !isMotivated(a))
+        if(a.mustBeMotivated() && !isSupporting(a))
             numUnmotivatedActions++;
-        clearCache();
-    }
-
-    /**
-     * Adds a Decomposition of an action.
-     * @param dec The decomposition.
-     * @param parent The action containing the decomposition.
-     */
-    public void insert(Decomposition dec, Action parent) {
-        network.addVertex(new TNNode(dec));
-        network.addEdge(new TNNode(parent), new TNNode(dec));
-        this.numOpenLeaves--;
-        clearCache();
-    }
-
-    /**
-     * Adds an action condition to a decomposition.
-     * @param ac The action condition.
-     * @param parent The decomposition in which ac appears. This decomposition must be already
-     *               present in the task network.
-     */
-    public void insert(Task ac, Decomposition parent) {
-        network.addVertex(new TNNode(ac));
-        network.addEdge(new TNNode(parent), new TNNode(ac));
-        numOpenedActionConditions++;
         clearCache();
     }
 
@@ -359,7 +241,7 @@ public class TaskNetworkManager implements Reporter {
     public void insert(Task ac, Action parent) {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
-        numOpenedActionConditions++;
+        numOpenTasks++;
         clearCache();
     }
 
@@ -369,20 +251,8 @@ public class TaskNetworkManager implements Reporter {
      */
     public void insert(Task ac) {
         network.addVertex(new TNNode(ac));
-        numOpenedActionConditions++;
+        numOpenTasks++;
         clearCache();
-    }
-
-
-    /**
-     * Checks if the action is a descendant of the decomposition (i.e. there
-     * is a path from the decomposition to the action in the task network.)
-     * @param child Descendant action.
-     * @param dec Potential ancestor.
-     * @return True if dec is an ancestor of child.
-     */
-    public boolean isDescendantOf(Action child, Decomposition dec) {
-        return isDescendantOf(new TNNode(child), new TNNode(dec));
     }
 
     /**

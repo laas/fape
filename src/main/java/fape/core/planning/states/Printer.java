@@ -41,8 +41,6 @@ public class Printer {
         // Flaws
         else if(o instanceof Threat)
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
-        else if(o instanceof UndecomposedAction)
-            return "Undecomposed: "+action(st, ((UndecomposedAction) o).action);
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
         else if(o instanceof UnsupportedTaskCond)
@@ -58,8 +56,6 @@ public class Printer {
                     +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
         else if(o instanceof SupportingTimeline)
             return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.getTimeline(((SupportingTimeline) o).supporterID));
-        else if(o instanceof DecomposeAction)
-            return "Decompose: no "+((DecomposeAction) o).decID;
         else if(o instanceof VarBinding)
             return "VarBinding: "+((VarBinding) o).var.id()+"="+((VarBinding) o).value;
         else if(o instanceof BindingSeparation)
@@ -68,8 +64,6 @@ public class Printer {
             return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
         else if(o instanceof ExistingTaskSupporter)
             return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
-        else if(o instanceof SupportingActionDecomposition)
-            return "SupportingActionDecomposition: "+action(st, ((SupportingActionDecomposition) o).act)+" dec: "+((SupportingActionDecomposition) o).decID;
         else
             return o.toString();
     }
@@ -94,8 +88,6 @@ public class Printer {
             ret += variable(st, arg);
         }
         ret += "):"+act.id();
-        if(st.taskNet.isDecomposed(act))
-            ret += "[dec]";
         return ret;
     }
 

@@ -5,7 +5,6 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
-import fape.core.planning.search.flaws.resolvers.SupportingActionDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
@@ -151,13 +150,6 @@ public class UnsupportedTimeline extends Flaw {
         for(fape.core.planning.preprocessing.SupportingAction sa : potentialSupporters)
             potentiallySupportingAction.add(sa.absAct);
 
-
-        for (Action leaf : st.getOpenLeaves()) {
-            for (Integer decID : decompositions.possibleDecompositions(leaf, potentiallySupportingAction)) {
-                resolvers.add(new SupportingActionDecomposition(leaf, decID, consumer));
-            }
-        }
-
         assert planner.useActionConditions() || st.getOpenTasks().size() == 0 :
           "We are trying to solve an open goal while we still have opened tasks in HTN planner.";
 
@@ -168,7 +160,7 @@ public class UnsupportedTimeline extends Flaw {
                 // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
                 if (planner.useActionConditions() || !aa.absAct.mustBeMotivated()) {
                     if(st.isAddable(aa.absAct))
-                        resolvers.add(new SupportingAction(aa.absAct, aa.decID, aa.statementRef, consumer));
+                        resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
                 }
             }
         }

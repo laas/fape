@@ -16,7 +16,6 @@ public class PlanningOptions {
      */
     public FlawFinder[] flawFinders = {
             new OpenGoalFinder(),
-            new UndecomposedActionFinder(),
             new UnsupportedTaskConditionFinder(),
             new UnmotivatedActionFinder(),
             new AllThreatFinder(),

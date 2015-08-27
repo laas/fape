@@ -20,7 +20,6 @@ public class FeasibilityReasoner {
 
     final APlanner planner;
     public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
-    public Map<String, LVarRef[]> varsOfDecomposition = new HashMap<>();
     private Set<GAction> allActions;
 
     /** Maps ground actions from their ID */
@@ -59,19 +58,9 @@ public class FeasibilityReasoner {
         base.gActions.clear();
         base.gActions.addAll(allActions);
 
-        // get the maximum number of decompositions in the domain
-        int maxNumDecompositions = 0;
-        for(AbstractAction aa : initialState.pb.abstractActions()) {
-            maxNumDecompositions = maxNumDecompositions > aa.jDecompositions().size() ?
-                    maxNumDecompositions : aa.jDecompositions().size();
-        }
-
         for(GAction ga : allActions) {
             if(!varsOfAction.containsKey(ga.abs.name())) {
                 varsOfAction.put(ga.abs.name(), ga.baseVars);
-            }
-            if(ga.decID != -1 && !varsOfDecomposition.containsKey(new Pair<>(ga.baseName(), ga.decID))) {
-                varsOfDecomposition.put(ga.decomposedName(), ga.decVars);
             }
 
             // all variables of this action
@@ -147,14 +136,6 @@ public class FeasibilityReasoner {
             derivableTasks.addAll(getGroundedTasks(ac, st));
         }
 
-        for(Action a : st.getOpenLeaves()) {
-            for(Integer gActID : st.csp.bindings().domainOfIntVar(a.instantiationVar())) {
-                GAction ga = gactions.get(gActID);
-                for(GTaskCond tc : ga.subTasks) {
-                    derivableTasks.add(tc);
-                }
-            }
-        }
         return derivableTasks;
     }
 
@@ -281,17 +262,7 @@ public class FeasibilityReasoner {
         LVarRef[] vars = varsOfAction.get(act.abs().name());
         List<VarRef> values = new ArrayList<>();
         for(LVarRef v : vars) {
-            if(v.id().equals("__dec__")) {
-                assert act.decomposable();
-                VarRef decVar = act.decompositionVar();
-                List<String> domain = new LinkedList<>();
-                for(int i=0 ; i< act.decompositions().size() ; i++)
-                    domain.add(decCSPValue(i));
-                st.csp.bindings().AddVariable(decVar, domain, "decomposition_variable");
-                values.add(decVar);
-            } else {
-                values.add(act.context().getDefinition(v)._2());
-            }
+            values.add(act.context().getDefinition(v)._2());
         }
 
         // Variable representing the ground versions of this action
@@ -300,7 +271,6 @@ public class FeasibilityReasoner {
         st.addValuesSetConstraint(values, act.abs().name());
 
         assert st.csp.bindings().isRecorded(act.instantiationVar());
-        assert !act.decomposable() || st.csp.bindings().isRecorded(act.decompositionVar());
     }
 
     private Map<AbstractAction, List<GAction>> groundedActs = new HashMap<>();

@@ -26,10 +26,6 @@ public class ExtendPlanFirst implements FlawComparator {
                     r instanceof TemporalSeparation ||
                     r instanceof VarBinding) {
                 return false;
-            } else if(r instanceof DecomposeAction) {
-                DecomposeAction da = (DecomposeAction) r;
-                if(da.act.decompositions().get(da.decID).jActions().size() == 0)
-                    return false;
             }
         }
         return true;

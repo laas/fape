@@ -19,8 +19,7 @@ public class SOCA implements PartialPlanComparator, Heuristic {
         if(s.f < 0)
             s.f = threatFinder.getFlaws(s, planner).size()*3 +
                     s.getNumActions()*10 +
-                    s.tdb.getConsumers().size()*3 +
-                    s.getNumOpenLeaves()*3;
+                    s.tdb.getConsumers().size()*3;
         return s.f;
     }
 
@@ -62,8 +61,7 @@ public class SOCA implements PartialPlanComparator, Heuristic {
     public float h(State s) {
         if(s.h < 0)
             s.h = threatFinder.getFlaws(s, planner).size() * 3 +
-                    s.tdb.getConsumers().size()*3 +
-                    s.getNumOpenLeaves()*3;
+                    s.tdb.getConsumers().size()*3;
         return s.h;
     }
 

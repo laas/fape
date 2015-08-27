@@ -268,15 +268,8 @@ public class DTGImpl {
                 Collection<GAction> acts = reas.getGroundActions(containingAction, st);
 
                 // local reference of the statement, used to extract the corresponding ground statement from the GAction
-                LStatementRef statementRef;
-                if(containingAction.context().contains(s)) {
-                    // statement defined in the action
-                    statementRef = containingAction.context().getRefOfStatement(s);
-                } else {
-                    // statement not defined in the action, it is necesarily defined in the decomposition of this action
-                    assert st.taskNet.isDecomposed(containingAction) && st.taskNet.getDecomposition(containingAction).context().contains(s);
-                    statementRef = st.taskNet.getDecomposition(containingAction).context().getRefOfStatement(s);
-                }
+                assert containingAction.context().contains(s);
+                LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
 
                 for(GAction ga : acts) {
                     GAction.GLogStatement gs = ga.statementWithRef(statementRef);

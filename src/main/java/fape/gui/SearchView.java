@@ -231,7 +231,6 @@ public class SearchView {
         h.append("num-actions: "); h.append(st.getNumActions());
         h.append(" num-open-goals: "); h.append(st.tdb.getConsumers().size());
         h.append(" num-threats: "); h.append(st.getAllThreats().size());
-        h.append(" num-undecomposed: "); h.append(st.getOpenLeaves().size());
         h.append(" num-opentasks: "); h.append(st.getOpenTasks().size());
         h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
         h.append(" num-unbound: "); h.append(st.getUnboundVariables().size()); h.append("\n");

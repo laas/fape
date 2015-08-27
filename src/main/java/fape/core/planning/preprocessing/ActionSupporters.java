@@ -5,7 +5,6 @@ import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
 
@@ -56,14 +55,6 @@ public class ActionSupporters implements ActionSupporterFinder {
             for (AbstractLogStatement s : act.jLogStatements()) {
                 if (s.sv().func() == f && !(s instanceof AbstractPersistence)) {
                     ret.add(new SupportingAction(act, s.id()));
-                }
-            }
-            for(int decID=0 ; decID < act.jDecompositions().size() ; decID++) {
-                AbstractDecomposition dec = act.jDecompositions().get(decID);
-                for (AbstractLogStatement s : act.jLogStatements()) {
-                    if (s.sv().func() == f && !(s instanceof AbstractPersistence)) {
-                        ret.add(new SupportingAction(act, decID, s.id()));
-                    }
                 }
             }
         }

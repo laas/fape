@@ -11,12 +11,6 @@ import planstack.anml.model.concrete.Action;
  */
 public abstract class Resolver implements Comparable<Resolver> {
 
-    public boolean representsCausalLinkAddition() {
-        return this instanceof SupportingTimeline ||
-                this instanceof SupportingAction ||
-                this instanceof SupportingActionDecomposition;
-    }
-
     public boolean hasDecomposition() {
         return false;
     }

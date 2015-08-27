@@ -6,6 +6,7 @@ import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
+import fape.util.Pair;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -58,16 +59,9 @@ public class UnmotivatedAction extends Flaw {
 
         // resolvers: any action we add to the plan and that might provide (through decomposition)
         // a task condition
-        for(Tuple3<AbstractAction, Integer, LActRef> insertion : preproc.supporterForMotivatedAction(act)) {
-            if(st.isAddable(insertion._1()))
-                resolvers.add(new MotivatedSupport(act, insertion._1(), insertion._2(), insertion._3()));
-        }
-
-        // resolvers: any action in the plan that can be refined to a task condition
-        for(Action a : st.getOpenLeaves()) {
-            for (Tuple2<Integer, LActRef> insertion : preproc.supporterForMotivatedAction(a, act)) {
-                resolvers.add(new MotivatedSupport(act, a, insertion._1(), insertion._2()));
-            }
+        for(Pair<AbstractAction, LActRef> insertion : preproc.supporterForMotivatedAction(act)) {
+            if(st.isAddable(insertion.value1))
+                resolvers.add(new MotivatedSupport(act, insertion.value1, insertion.value2));
         }
 
         return resolvers;

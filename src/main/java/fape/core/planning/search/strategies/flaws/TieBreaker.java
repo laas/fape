@@ -17,10 +17,6 @@ public class TieBreaker implements FlawComparator {
             return -1;
         if(f2 instanceof UnsupportedTimeline && !(f1 instanceof UnsupportedTimeline))
             return 1;
-        if(f1 instanceof UndecomposedAction && !(f2 instanceof UndecomposedAction))
-            return -1;
-        if(f2 instanceof UndecomposedAction && !(f1 instanceof UndecomposedAction))
-            return 1;
         if(f1 instanceof UnsupportedTaskCond && !(f2 instanceof UnsupportedTaskCond))
             return -1;
         if(f2 instanceof UnsupportedTaskCond && !(f1 instanceof UnsupportedTaskCond))

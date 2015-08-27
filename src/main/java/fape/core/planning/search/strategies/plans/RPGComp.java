@@ -30,7 +30,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
     @Override
     public float hc(State st) {
         if(!hc.containsKey(st.mID)) {
-            int numFlaws = st.tdb.getConsumers().size() + st.getNumOpenLeaves();// + threatFinder.getFlaws(st, null).size();
+            int numFlaws = st.tdb.getConsumers().size();// + threatFinder.getFlaws(st, null).size();
             hc.put(st.mID, numAdditionalSteps(st));// + numFlaws);
         }
         return hc.get(st.mID);
@@ -60,7 +60,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
     @Override
     public String reportOnState(State st) {
-        return String.format("RPGComp\tg: %s, h: %s, num-add-steps: %s", g(st), h(st), h(st)-st.tdb.getConsumers().size() - st.getNumOpenLeaves()); //numAdditionalSteps(st));
+        return String.format("RPGComp\tg: %s, h: %s, num-add-steps: %s", g(st), h(st), h(st)-st.tdb.getConsumers().size()); //numAdditionalSteps(st));
     }
 
     HashMap<Integer, Integer> hc = new HashMap<>();

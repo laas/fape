@@ -4,10 +4,8 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
-import planstack.anml.model.concrete.Decomposition;
 import planstack.anml.model.concrete.Factory;
 
 /**
@@ -31,12 +29,6 @@ public class MotivatedSupport extends Resolver {
     public Action act;
 
     /**
-     * Id of the decomposition in which the action reference appears. If set to -1, it means that it appears
-     * in the main body of the action.
-     */
-    public final int decID;
-
-    /**
      * ID of the action condition we want for support.
      * It might be in the main action or in one of its decomposition if decID != -1
      */
@@ -45,30 +37,28 @@ public class MotivatedSupport extends Resolver {
     /** The motivated action that should be supported. */
     public final Action toSupport;
 
-    public MotivatedSupport(Action toSupport, Action act, int decID, LActRef actRef) {
+    public MotivatedSupport(Action toSupport, Action act, LActRef actRef) {
         assert act != null;
         this.toSupport = toSupport;
         this.act = act;
         this.abs = null;
-        this.decID = decID;
         this.actRef = actRef;
     }
 
-    public MotivatedSupport(Action toSupport, AbstractAction abs, int decID, LActRef actRef) {
+    public MotivatedSupport(Action toSupport, AbstractAction abs, LActRef actRef) {
         assert abs != null;
         this.toSupport = toSupport;
         this.act = null;
         this.abs = abs;
-        this.decID = decID;
         this.actRef = actRef;
     }
 
     @Override
     public String toString() {
         if(act == null)
-            return "new: "+abs.toString()+":"+decID+":"+actRef;
+            return "new: "+abs.toString()+":"+actRef;
         else
-            return "existing: "+act+":"+decID+":"+actRef;
+            return "existing: "+act+":"+actRef;
     }
 
     @Override
@@ -84,20 +74,7 @@ public class MotivatedSupport extends Resolver {
         }
 
         // Look for the action condition with ID actRef
-        Task ac;
-        if(decID == -1) {
-            // the action condition is directly in the main body
-            ac = act.context().actionConditions().apply(actRef);
-        } else {
-            // we need to make one decomposition
-            // decompose the action with the given decomposition ID
-            AbstractDecomposition absDec = act.decompositions().get(decID);
-            Decomposition dec = Factory.getDecomposition(st.pb, act, absDec, st.refCounter);
-            st.applyDecomposition(dec);
-
-            // Get the action condition we wanted
-            ac = dec.context().actionConditions().apply(actRef);
-        }
+        Task ac = act.context().tasks().apply(actRef);
 
         // add equality constraint between all args
         for (int i = 0; i < ac.args().size(); i++) {
@@ -128,9 +105,6 @@ public class MotivatedSupport extends Resolver {
             return 1;
         if(abs != null && o.abs != null && abs != o.abs)
             return abs.name().compareTo(o.abs.name());
-
-        if(decID != o.decID)
-            return decID - o.decID;
 
         assert actRef != o.actRef;
         return actRef.id().compareTo(o.actRef.id());

@@ -99,7 +99,7 @@ public class State implements Reporter {
      * decomposition). This map is populated when a decomposition is chosen as a
      * resolver for an unsupported database.
      */
-    private LinkedList<Pair<Integer, Decomposition>> supportConstraints;
+    private LinkedList<Pair<Integer, Action>> supportConstraints;
 
     public final AnmlProblem pb;
 
@@ -271,13 +271,8 @@ public class State implements Reporter {
             assert a.contains(s);
             assert getAllActions().contains(a);
             return a;
-        } else if(s.container() instanceof Decomposition) {
-            Decomposition d = (Decomposition) s.container();
-            return taskNet.getContainingAction(d);
         } else {
-            for (Action a : getAllActions()) {
-                assert !a.contains(s);
-            }
+            assert getAllActions().stream().noneMatch(a -> a.contains(s));
             return null;
         }
     }
@@ -634,29 +629,6 @@ public class State implements Reporter {
         }
     }
 
-    /**
-     * Applies the given decomposition to the current state. It mainly consists
-     * in inserting the decomposition's timepoints and link them to the
-     * containing action. Then the chronicle is applied.
-     *
-     * @param dec Decomposition to insert
-     */
-    public void applyDecomposition(Decomposition dec) {
-//        recordTimePoints(dec);
-//
-//        interval of the decomposition is equal to the one of the containing action.
-//        csp.stn().enforceConstraint(dec.start(), dec.container().start(), 0, 0);
-//        csp.stn().enforceConstraint(dec.end(), dec.container().end(), 0, 0);
-
-        taskNet.insert(dec, dec.container());
-
-        apply(dec);
-        if(pgr != null) {
-            // bind de decomposition variable introduced by reachability checking
-            bindVariable(dec.container().decompositionVar(), FeasibilityReasoner.decCSPValue(dec.decNum()));
-        }
-    }
-
     public void applyChronicle(Chronicle chron) {
         assert chron instanceof BaseChronicle : "Other chronicles should have specialized methods.";
 
@@ -731,9 +703,7 @@ public class State implements Reporter {
         for(Task ac : mod.actionConditions()) {
             csp.stn().enforceBefore(ac.start(), ac.end());
 
-            if(mod instanceof Decomposition)
-                taskNet.insert(ac, (Decomposition) mod);
-            else if(mod instanceof Action)
+            if(mod instanceof Action)
                 taskNet.insert(ac, (Action) mod);
             else
                 taskNet.insert(ac);
@@ -753,7 +723,7 @@ public class State implements Reporter {
      * @param f The flaw for which the resolvers are emitted.
      * @param opts The set of resolvers to address the flaw
      * @return A list of resolvers containing only the valid ones.
-     */
+     * TODO
     public List<Resolver> retainValidOptions(Flaw f, List<Resolver> opts) {
         if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable ||
                 f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
@@ -774,24 +744,23 @@ public class State implements Reporter {
         } else {
             throw new FAPEException("Error: Unrecognized flaw type.");
         }
-    }
+    }*/
 
     /**
      * Checks if there is a support constraint for a temporal database.
      *
      * @param db The temporal database that needs to be supported.
-     * @return A decomposition if the resolvers for this database must derive
-     * from a decomposition (e.g. this flaw was previously addressed by
-     * decomposing a method. null if there is no constraints.
+     * @return An action if the resolvers for this database must derive
+     * from this action (e.g. this flaw was previously addressed by
+     * decomposing a task with this action. null if there is no constraints.
      */
-    private Decomposition getSupportConstraint(Timeline db) {
-        Decomposition dec = null;
-        for (Pair<Integer, Decomposition> constraint : supportConstraints) {
+    private Action getSupportConstraint(Timeline db) {
+        for (Pair<Integer, Action> constraint : supportConstraints) {
             if (constraint.value1 == mID) {
-                dec = constraint.value2;
+                return constraint.value2;
             }
         }
-        return dec;
+        return null;
     }
 
     /**
@@ -810,7 +779,9 @@ public class State implements Reporter {
      * @param dec Decomposition from which the resolver must be derived.
      * @return True if the resolver is valid, False otherwise.
      */
-    private boolean isOptionDerivedFrom(Resolver opt, Decomposition dec) {
+    private boolean isOptionDerivedFrom(Resolver opt, Action act) {
+        return true; //TODO
+        /*
         // this unsupported db must be supported by a descendant of a decomposition
         // this is a consequence of an earlier commitment.
         if (opt.hasDecomposition()) {
@@ -831,11 +802,11 @@ public class State implements Reporter {
             return a != null && taskNet.isDescendantOf(a, dec);
         } else {
             return false;
-        }
+        }*/
     }
 
-    public void addSupportConstraint(ChainComponent cc, Decomposition dec) {
-        this.supportConstraints.add(new Pair<>(cc.mID, dec));
+    public void addSupportConstraint(ChainComponent cc, Action act) {
+        this.supportConstraints.add(new Pair<>(cc.mID, act));
     }
 
 
@@ -1119,11 +1090,9 @@ public class State implements Reporter {
         return actions.get(actionID);
     }
 
-    public List<Action> getOpenLeaves() { return taskNet.getUndecomposedActions(); }
-
     public List<Task> getOpenTasks() { return taskNet.getOpenTasks(); }
 
-    public List<Action> getUnmotivatedActions() { return taskNet.getUnmotivatedActions(); };
+    public List<Action> getUnmotivatedActions() { return taskNet.getNonSupportedMotivatedActions(); };
 
     /**
      *  Unifies the time points of the action condition and those of the action, and add
@@ -1136,8 +1105,6 @@ public class State implements Reporter {
     }
 
     public int getNumActions() { return taskNet.getNumActions(); }
-
-    public int getNumOpenLeaves() { return taskNet.getNumUndecomposed(); }
 
     public int getNumRoots() { return taskNet.getNumRoots(); }
 

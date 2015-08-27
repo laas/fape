@@ -4,7 +4,6 @@ import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
@@ -61,10 +60,7 @@ public class GAction {
 
     public final LVarRef[] baseVars;
     protected final InstanceRef[] baseValues;
-    public final LVarRef[] decVars;
-    protected final InstanceRef[] decValues;
 
-    public final int decID;
     public final ArrayList<GTaskCond> subTasks;
 
     private static int nextID = 0;
@@ -101,57 +97,32 @@ public class GAction {
 
     public String baseName() { return abs.name(); }
 
-    public String decomposedName() { return abs.name()+"["+decID+"]"; }
+    @Deprecated
+    public String decomposedName() { return abs.name(); }
 
-    public GAction(AbstractAction abs, int decID, Map<LVarRef, InstanceRef> vars, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
-        assert !(decID == -1 && abs.decompositions().size() != 0);
+    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> vars, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
+
         AnmlProblem pb = gPb.liftedPb;
         this.abs = abs;
-        assert decID < abs.jDecompositions().size();
-        this.decID = decID;
 
         int numBaseVariables = 0;
-        int numDecVariables = 0;
         for(LVarRef ref : vars.keySet()) {
-            if(abs.context().contains(ref))
-                numBaseVariables += 1;
-            else
-                numDecVariables += 1;
+            assert abs.context().contains(ref);
+            numBaseVariables += 1;
         }
-        assert numDecVariables == 0 || decID != -1;
-
-        if(decID != -1) // leave space for the decomposition variable
-            numBaseVariables++;
 
         this.baseVars = new LVarRef[numBaseVariables];
         this.baseValues = new InstanceRef[numBaseVariables];
-        this.decVars = new LVarRef[numDecVariables];
-        this.decValues = new InstanceRef[numDecVariables];
 
         int iBase = 0, iDec=0;
         for(Map.Entry<LVarRef,InstanceRef> binding : vars.entrySet()) {
-            if(abs.context().contains(binding.getKey())) {
-                baseVars[iBase] = binding.getKey();
-                baseValues[iBase] = binding.getValue();
-                iBase++;
-            } else {
-                decVars[iDec] = binding.getKey();
-                decValues[iDec] = binding.getValue();
-                iDec++;
-            }
-        }
-        if(decID != -1) { // the last one is a variable representing the number of the decomposition.
-            baseVars[iBase] = new LVarRef("__dec__");
-            baseValues[iBase] = planner.pb.instance(FeasibilityReasoner.decCSPValue(decID));
+            assert abs.context().contains(binding.getKey());
+            baseVars[iBase] = binding.getKey();
+            baseValues[iBase] = binding.getValue();
+            iBase++;
         }
 
-        List<AbstractStatement> statements;
-        if(decID == -1) {
-            statements = abs.jTemporalStatements();
-        } else {
-            statements = new LinkedList<>(abs.jTemporalStatements());
-            statements.addAll(abs.jDecompositions().get(decID).jStatements());
-        }
+        List<AbstractStatement> statements = abs.jTemporalStatements();
 
         for(AbstractStatement as : statements) {
             if(as instanceof AbstractEqualityConstraint) {
@@ -218,7 +189,7 @@ public class GAction {
     @Override
     public String toString() {
         String ret = "("+id+")";
-        ret += abs.name()+ (decID == -1 ? "" : "-"+decID) + "(";
+        ret += abs.name()+ "(";
         for(int j=0 ; j<abs.args().size() ; j++) {
             ret += valueOf(abs.args().get(j));
             if(j < abs.args().size()-1)
@@ -229,19 +200,12 @@ public class GAction {
             if(!abs.args().contains(baseVars[i]))
                 ret += baseVars[i] +":"+ baseValues[i]+" ";
         }
-        for(int i=0 ; i<decVars.length ; i++) {
-            if(!abs.args().contains(decVars[i]))
-                ret += decVars[i] +":"+ decValues[i]+" ";
-        }
         return ret;
     }
 
     /** Returns the instance corresponding to this local variable.
      *  This instance must have been declared in the action (ie. not a global variable. */
     public InstanceRef valueOf(LVarRef v) {
-        for(int i=0 ; i<decVars.length ; i++)
-            if(decVars[i].equals(v))
-                return decValues[i];
         for(int i=0 ; i<baseVars.length ; i++)
             if(baseVars[i].equals(v))
                 return baseValues[i];
@@ -252,9 +216,6 @@ public class GAction {
      *  If this ref was not declared in the action, it will look for global variables. */
     public InstanceRef valueOf(LVarRef v, AnmlProblem pb) {
         // first look in local variables
-        for(int i=0 ; i<decVars.length ; i++)
-            if(decVars[i].equals(v))
-                return decValues[i];
         for(int i=0 ; i<baseVars.length ; i++)
             if(baseVars[i].equals(v))
                 return baseValues[i];
@@ -284,7 +245,7 @@ public class GAction {
      *
      * If the decoposition ID is not -1, variables declared inside the decomposition will be accounted for as well.
      */
-    public static List<Map<LVarRef, InstanceRef>> getPossibleInstantiations(GroundProblem gPb, AbstractAction aa, int decID) {
+    public static List<Map<LVarRef, InstanceRef>> getPossibleInstantiations(GroundProblem gPb, AbstractAction aa) {
         AnmlProblem pb = gPb.liftedPb;
 
         // this will store all local variables, those can be defined as action parameters, inside the action or within the given decomposition
@@ -292,16 +253,9 @@ public class GAction {
         // local vars from the action
         for(LVarRef ref : JavaConversions.asJavaIterable(aa.context().variables().keys()))
             allLocalVars.add(ref);
-        if(decID >= 0) // local vars from the definition
-            for(LVarRef ref : JavaConversions.asJavaIterable(aa.jDecompositions().get(decID).context().variables().keys()))
-                allLocalVars.add(ref);
 
         // context from which to look for the definition of local variable
-        PartialContext context;
-        if(decID == -1) // no decomposition, take the action's context
-            context = aa.context();
-        else // take the context of the decomposition (which include the one of the action
-            context = aa.jDecompositions().get(decID).context();
+        PartialContext context = aa.context();
 
         // will contain all vars of this action
         List<LVarRef> vars = new LinkedList<>();
@@ -327,9 +281,6 @@ public class GAction {
         }
 
         List<AbstractStatement> statements = new LinkedList<>(aa.jTemporalStatements());
-        if(decID != -1) {
-            statements.addAll(aa.jDecompositions().get(decID).jStatements());
-        }
 
         List<PartialBindings> partialBindingses = new LinkedList<>();
 
@@ -465,22 +416,11 @@ public class GAction {
         // all ground actions corresponding to aa
         List<GAction> actions = new LinkedList<>();
 
-        if(aa.jDecompositions().size() == 0) {
-            List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, -1);
-            for(Map<LVarRef, InstanceRef> params : paramsLists) {
-                try {
-                    actions.add(new GAction(aa, -1, params, gPb, planner));
-                } catch (NotValidGroundAction e) {}
-            }
-        } else {
-            for(int decID=0 ; decID<aa.jDecompositions().size() ; decID++) {
-                List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa, decID);
-                for(Map<LVarRef, InstanceRef> params : paramsLists) {
-                    try {
-                        actions.add(new GAction(aa, decID, params, gPb, planner));
-                    } catch (NotValidGroundAction e) {}
-                }
-            }
+        List<Map<LVarRef, InstanceRef>> paramsLists = getPossibleInstantiations(gPb, aa);
+        for(Map<LVarRef, InstanceRef> params : paramsLists) {
+            try {
+                actions.add(new GAction(aa, params, gPb, planner));
+            } catch (NotValidGroundAction e) {}
         }
 
         return actions;
@@ -499,14 +439,9 @@ public class GAction {
     }
 
     public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb) {
-        List<AbstractTask> refs;
+        List<AbstractTask> refs = this.abs.jSubTasks();
         List<GTaskCond> ret = new LinkedList<>();
-        if(decID == -1)
-            refs = this.abs.jActions();
-        else {
-            refs = new LinkedList<>(this.abs.jActions());
-            refs.addAll(this.abs.jDecompositions().get(decID).jActions());
-        }
+
         for(AbstractTask ref : refs) {
             List<InstanceRef> args = new LinkedList<>();
             for(LVarRef v : ref.jArgs()) {

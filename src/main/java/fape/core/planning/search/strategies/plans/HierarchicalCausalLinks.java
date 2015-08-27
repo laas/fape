@@ -62,7 +62,7 @@ public class HierarchicalCausalLinks implements PartialPlanComparator {
     }
 
     public float f(State s) {
-        return weightCausalLinks(s) + s.getNumRoots() *4+ s.tdb.getConsumers().size() + s.getNumOpenLeaves();
+        return weightCausalLinks(s) + s.getNumRoots() *4+ s.tdb.getConsumers().size();
     }
 
     @Override

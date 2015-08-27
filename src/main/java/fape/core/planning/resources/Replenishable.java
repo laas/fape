@@ -14,7 +14,6 @@ import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.search.flaws.flaws.ResourceFlaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.ResourceSupportingAction;
-import fape.core.planning.search.flaws.resolvers.ResourceSupportingDecomposition;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -107,18 +106,6 @@ public class Replenishable extends Resource {
                     o.unifyingResourceVariable = var;
                     ret.add(o);
                 }
-            }
-        }
-        //we may also achieve the action through decomposition
-        ActionDecompositions decompositions = new ActionDecompositions(st.pb);
-        for (Action leaf : st.getOpenLeaves()) {
-            for (Integer decID : decompositions.possibleDecompositions(leaf, candidates)) {
-                ResourceSupportingDecomposition opt = new ResourceSupportingDecomposition();
-                opt.resourceMotivatedActionToDecompose = leaf;
-                opt.decompositionID = decID;
-                opt.when = when;
-                opt.before = !after;
-                ret.add(opt);
             }
         }
 

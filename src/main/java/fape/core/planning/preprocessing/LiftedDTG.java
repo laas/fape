@@ -9,7 +9,6 @@ import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.SymFunction;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractDecomposition;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
@@ -53,22 +52,6 @@ public class LiftedDTG implements ActionSupporterFinder{
                             if(!dag.contains(eff))
                                 dag.addVertex(eff);
                             dag.addEdge(prec, eff, new SupportingAction(aa, s.id()));
-                        }
-                    }
-                }
-            }
-            for(int decID=0 ; decID < aa.jDecompositions().size() ; decID++) {
-                AbstractDecomposition dec = aa.jDecompositions().get(decID);
-                for (AbstractLogStatement s : dec.jLogStatements()) {
-                    if (s instanceof AbstractTransition || s instanceof AbstractAssignment) {
-                        for (FluentType prec : getPreconditions(aa, s)) {
-                            for (FluentType eff : getEffects(aa, s)) {
-                                if (!dag.contains(prec))
-                                    dag.addVertex(prec);
-                                if (!dag.contains(eff))
-                                    dag.addVertex(eff);
-                                dag.addEdge(prec, eff, new SupportingAction(aa, decID, s.id()));
-                            }
                         }
                     }
                 }

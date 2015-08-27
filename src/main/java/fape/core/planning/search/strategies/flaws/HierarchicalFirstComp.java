@@ -2,7 +2,6 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UndecomposedAction;
 import fape.core.planning.search.flaws.flaws.UnmotivatedAction;
 import fape.core.planning.search.flaws.flaws.UnsupportedTaskCond;
 import fape.core.planning.states.State;
@@ -25,8 +24,6 @@ public class HierarchicalFirstComp implements FlawComparator {
     private int priority(Flaw flaw) {
         if(flaw instanceof UnsupportedTaskCond)
             return 3;
-        else if(flaw instanceof UndecomposedAction)
-            return 2;
         else if(flaw instanceof UnmotivatedAction)
             return 4;
         else
