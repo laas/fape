@@ -386,7 +386,7 @@ public class State implements Reporter {
      * and the consume/produce values must be unifiable.
      *
      * @param s The logical statement (enabler)
-     * @param db the temporal database (to be enabled)
+     * @param db the timeline (to be enabled)
      */
     public boolean canBeEnabler(LogStatement s, Timeline db) {
         boolean canSupport = s instanceof Transition || s instanceof Assignment;
@@ -469,7 +469,7 @@ public class State implements Reporter {
         }
 
         if(pgr != null)
-            pgr.createGroundActionVariables(act, this);
+            pgr.createActionInstantiationVariable(act, this);
 
         csp.isConsistent();
     }
@@ -709,6 +709,9 @@ public class State implements Reporter {
                 taskNet.insert(ac, (Action) mod);
             else
                 taskNet.insert(ac);
+
+            if(pgr != null)
+                pgr.createTaskSupportersVariables(ac, this);
         }
 
         // needs its timepoints to be defined

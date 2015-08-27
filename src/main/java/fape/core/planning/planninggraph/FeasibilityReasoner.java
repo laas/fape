@@ -14,11 +14,11 @@ import planstack.anml.model.concrete.*;
 import planstack.constraints.bindings.Domain;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FeasibilityReasoner {
 
     final APlanner planner;
-    public Map<String, LVarRef[]> varsOfAction = new HashMap<>();
     private Set<GAction> allActions;
 
     /** Maps ground actions from their ID */
@@ -30,6 +30,18 @@ public class FeasibilityReasoner {
         this.planner = planner;
         // this Problem contains all the ground actions
         GroundProblem base = planner.preprocessor.getGroundProblem();
+
+        // record all n ary constraints (action instantiations and task supporters)
+        Set<String> recordedTask = new HashSet<>();
+        for(AbstractAction aa : planner.pb.abstractActions()) {
+            initialState.csp.bindings().recordEmptyNAryConstraint(aa.name(), true, aa.allVars().length+1);
+            initialState.csp.bindings().addPossibleValue(aa.name());
+            if(!recordedTask.contains(aa.taskName())) {
+                initialState.csp.bindings().recordEmptyNAryConstraint(aa.taskName(), true, aa.args().size()+2);
+                recordedTask.add(aa.taskName());
+            }
+        }
+
         allActions = new HashSet<>(base.gActions);
 
         baseReasoner = new HReasoner<>(new DefaultIntRepresentation<>()); // TODO: a specialized int representation would be much more efficient
@@ -46,42 +58,26 @@ public class FeasibilityReasoner {
             gactions.put(ga.id, ga);
         }
 
-        for(GAction ga : allActions) {
-            if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.variables);
-                initialState.csp.bindings().recordEmptyNAryConstraint(ga.abs.name(), true, ga.variables.length+1);
-            }
-        }
-
         allActions = getAllActions(initialState);
         base.gActions.clear();
         base.gActions.addAll(allActions);
 
         for(GAction ga : allActions) {
-            if(!varsOfAction.containsKey(ga.abs.name())) {
-                varsOfAction.put(ga.abs.name(), ga.variables);
-            }
-
-            // all variables of this action
+            // values for all variables of this action
             List<String> values = new LinkedList<>();
-            for(LVarRef var : varsOfAction.get(ga.abs.name()))
+            for(LVarRef var : ga.variables)
                 values.add(ga.valueOf(var).instance());
-
+            // add possible tuple to instantiation constraints
             initialState.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.name(), values, ga.id);
-        }
 
-        // TODO: this is a bit hacky to replace something that should be done with every action
-        for(AbstractAction abstractAction : planner.pb.abstractActions()) {
-            if(varsOfAction.containsKey(abstractAction.name()))
-                continue;
-            LVarRef[] vars = abstractAction.args().toArray(new LVarRef[abstractAction.args().size()]);
-            varsOfAction.put(abstractAction.name(), vars);
-            initialState.csp.bindings().recordEmptyNAryConstraint(abstractAction.name(), true, vars.length+1);
+            // values for arguments of this action
+            List<String> argValues = new LinkedList<>();
+            for(LVarRef var : ga.abs.args())
+                argValues.add(ga.valueOf(var).instance());
+            argValues.add(ga.abs.name());
+            // add possible tuple to supporter constraints
+            initialState.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.taskName(), argValues, ga.id);
         }
-    }
-
-    public static String decCSPValue(int decNumber) {
-        return "decnum:"+decNumber;
     }
 
     public Set<GAction> getAllActions(State st) {
@@ -253,12 +249,11 @@ public class FeasibilityReasoner {
      * @param act Action for which we need to create the variable.
      * @param st  State in which the action appears (needed to update the CSP)
      */
-    public void createGroundActionVariables(Action act, State st) {
+    public void createActionInstantiationVariable(Action act, State st) {
         assert !st.csp.bindings().isRecorded(act.instantiationVar()) : "The action already has a variable for its ground versions.";
-        assert !st.csp.bindings().isRecorded(act.decompositionVar()) : "The action already has a variable for its decompostions.";
 
         // all ground versions of this actions (represented by their ID)
-        LVarRef[] vars = varsOfAction.get(act.abs().name());
+        LVarRef[] vars = act.abs().allVars();
         List<VarRef> values = new ArrayList<>();
         for(LVarRef v : vars) {
             values.add(act.context().getDefinition(v)._2());
@@ -272,34 +267,19 @@ public class FeasibilityReasoner {
         assert st.csp.bindings().isRecorded(act.instantiationVar());
     }
 
-    private Map<AbstractAction, List<GAction>> groundedActs = new HashMap<>();
+    public void createTaskSupportersVariables(Task task, State st) {
+        assert !st.csp.bindings().isRecorded(task.methodSupportersVar());
+        assert !st.csp.bindings().isRecorded(task.groundSupportersVar());
+        Collection<String> supportingMethods = planner.pb.getSupportersForTask(task.name()).stream()
+                .map(aa -> aa.name()).collect(Collectors.toList());
 
-    public List<GAction> getGrounded(AbstractAction abs) {
-        if(!groundedActs.containsKey(abs)) {
-            List<GAction> grounded = new LinkedList<>();
-            for (GAction a : allActions)
-                if (a.abs == abs)
-                    grounded.add(a);
-            groundedActs.put(abs, grounded);
-        }
-        return groundedActs.get(abs);
-    }
+        st.csp.bindings().AddVariable(task.methodSupportersVar(), supportingMethods, "Methods");
+        st.csp.bindings().AddIntVariable(task.groundSupportersVar());
 
-    public Set<GAction> actionsInState(State st, Set<GAction> rpgFeasibleActions) {
-        Set<GAction> ret = new HashSet<>();
-        Domain current = new Domain(new LinkedList<Integer>());
-        for(Action a : st.getAllActions()) {
-            Domain toAdd = st.csp.bindings().rawDomain(a.decompositionVar());
-            current = current.union(toAdd);
-        }
-        for(Integer gaRawID : current.values()) {
-            Integer gaID = st.csp.bindings().intValueOfRawID(gaRawID);
-            assert(gactions.containsKey(gaID));
-            GAction ga = gactions.get(gaID);
-            assert ga != null;
-            if(rpgFeasibleActions.contains(ga))
-                ret.add(gactions.get(gaID));
-        }
-        return ret;
+        List<VarRef> variables = new LinkedList<>();
+        variables.addAll(task.args());
+        variables.add(task.methodSupportersVar());
+        variables.add(task.groundSupportersVar());
+        st.addValuesSetConstraint(variables, task.name());
     }
 }
