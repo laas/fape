@@ -10,7 +10,6 @@
  */
 package fape.core.planning.resources;
 
-import fape.core.planning.preprocessing.ActionDecompositions;
 import fape.core.planning.search.flaws.flaws.ResourceFlaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.ResourceSupportingAction;
@@ -21,7 +20,6 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractConsumeResource;
 import planstack.anml.model.abs.statements.AbstractProduceResource;
 import planstack.anml.model.abs.statements.AbstractResourceStatement;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
 
 import java.util.ArrayList;

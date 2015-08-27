@@ -22,6 +22,7 @@ import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
@@ -51,6 +52,7 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 import java.util.*;
+import java.util.stream.Collectors;
 //import scala.collection.immutable.HashMap;
 
 /**
@@ -723,28 +725,25 @@ public class State implements Reporter {
      * @param f The flaw for which the resolvers are emitted.
      * @param opts The set of resolvers to address the flaw
      * @return A list of resolvers containing only the valid ones.
-     * TODO
-    public List<Resolver> retainValidOptions(Flaw f, List<Resolver> opts) {
-        if (f instanceof UndecomposedAction || f instanceof Threat || f instanceof UnboundVariable ||
+     */
+    public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
+        if (f instanceof Threat || f instanceof UnboundVariable ||
                 f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
             return opts;
         } else if (f instanceof UnsupportedTimeline) {
-            Decomposition mustDeriveFrom = getSupportConstraint(((UnsupportedTimeline) f).consumer);
-            if (mustDeriveFrom == null) {
+            Action requiredAncestor = getSupportConstraint(((UnsupportedTimeline) f).consumer);
+            if (requiredAncestor == null) {
                 return opts;
             } else {
-                List<Resolver> retained = new LinkedList<>();
-                for (Resolver opt : opts) {
-                    if (isOptionDerivedFrom(opt, mustDeriveFrom)) {
-                        retained.add(opt);
-                    }
-                }
-                return retained;
+                // we have a constraint stating that any resolver must be deriving from this action, filter resolvers
+                return opts.stream()
+                        .filter(res -> isOptionDerivedFrom(res, requiredAncestor))
+                        .collect(Collectors.toList());
             }
         } else {
             throw new FAPEException("Error: Unrecognized flaw type.");
         }
-    }*/
+    }
 
     /**
      * Checks if there is a support constraint for a temporal database.
@@ -776,18 +775,14 @@ public class State implements Reporter {
      * consequence of the decomposition.
      *
      * @param opt Resolver whose validity is to be checked.
-     * @param dec Decomposition from which the resolver must be derived.
+     * @param requiredAncestor Action from which the resolver must be issued
+     *                         (either task or action in its descendants)
      * @return True if the resolver is valid, False otherwise.
      */
-    private boolean isOptionDerivedFrom(Resolver opt, Action act) {
-        return true; //TODO
-        /*
+    private boolean isOptionDerivedFrom(Resolver opt, Action requiredAncestor) {
         // this unsupported db must be supported by a descendant of a decomposition
         // this is a consequence of an earlier commitment.
-        if (opt.hasDecomposition()) {
-            // decomposition is allowed only if the decomposed action is issued from dec.
-            return taskNet.isDescendantOf(opt.actionToDecompose(), dec);
-        } else if (opt instanceof SupportingTimeline) {
+        if (opt instanceof SupportingTimeline) {
             // DB supporters are limited to those coming from an action descending from dec.
             Timeline db = getTimeline(((SupportingTimeline) opt).supporterID);
 
@@ -799,14 +794,17 @@ public class State implements Reporter {
             assert cc.size() == 1;
             Action a = getActionContaining(cc.getFirst());
 
-            return a != null && taskNet.isDescendantOf(a, dec);
-        } else {
+            return a != null && taskNet.isDescendantOf(a, requiredAncestor);
+        } else if(opt instanceof SupportingTaskDecomposition) {
+            return taskNet.isDescendantOf(((SupportingTaskDecomposition) opt).task, requiredAncestor);
+        }else {
             return false;
-        }*/
+        }
     }
 
     public void addSupportConstraint(ChainComponent cc, Action act) {
-        this.supportConstraints.add(new Pair<>(cc.mID, act));
+        supportConstraints.removeIf(p -> p.value1 == cc.mID);
+        supportConstraints.add(new Pair<>(cc.mID, act));
     }
 
 

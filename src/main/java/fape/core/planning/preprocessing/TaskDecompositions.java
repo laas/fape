@@ -6,6 +6,7 @@ import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.Task;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -17,7 +18,7 @@ import java.util.*;
  *
  * In the current state, no preprocessing is done and analyse is repeated on every method invocation.
  */
-public class ActionDecompositions {
+public class TaskDecompositions {
 
     final AnmlProblem pb;
 
@@ -25,31 +26,46 @@ public class ActionDecompositions {
      * Creates a new ActionDecompositions tied to an AnmlProblem
      * @param pb Problem to be inspected.
      */
-    public ActionDecompositions(AnmlProblem pb) {
+    public TaskDecompositions(AnmlProblem pb) {
         this.pb = pb;
     }
 
     /**
-     * Returns a set of decomposition index that might produce one of the actions in targets.
-     * @param act The action whose decompositions will be inspected.
-     * @param targets Actions to look for
-     * @return Index of all decompositions that might produce on action in target.
+     * Return true if the action aa can be refined into an action in targets.
+     * Actions in alreadyChecked are those for which we know they cannot be refined into on of targets.
      */
-    public Collection<Integer> possibleDecompositions(Action act, Collection<AbstractAction> targets) {
-        return possibleDecompositions(act.abs(), targets);
+    public boolean canBeRefinedInto(AbstractAction aa, Collection<AbstractAction> targets, Collection<AbstractAction> alreadyChecked) {
+        if(targets.contains(aa))
+            return true;
+        if(alreadyChecked.contains(aa))
+            return false;
+
+        alreadyChecked.add(aa);
+        for(AbstractTask subTask : aa.jSubTasks()) {
+            for(AbstractAction derivableAction : pb.getSupportersForTask(subTask.name())) {
+                if(canBeRefinedInto(derivableAction, targets, alreadyChecked))
+                    return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Returns a set of decomposition index that might produce one of the actions in targets.
-     * @param act The action whose decompositions will be inspected.
+     * Returns a set of method that might produce one of the actions in targets.
+     * @param task The action whose decompositions will be inspected.
      * @param targets Actions to look for
-     * @return Index of all decompositions that might produce on action in target.
+     * @return All actions supporting the task that can be refined into an action in targets.
      */
-    public Collection<Integer> possibleDecompositions(AbstractAction act, Collection<AbstractAction> targets) {
-        Set<Integer> decompositionIDs = new HashSet<>();
+    public Collection<AbstractAction> possibleMethodsToDeriveTargetActions(Task task, Collection<AbstractAction> targets) {
+        Set<AbstractAction> actions = new HashSet<>();
+
+        for(AbstractAction supportingAction : pb.getSupportersForTask(task.name())) {
+            if(canBeRefinedInto(supportingAction, targets, new HashSet<>()))
+                actions.add(supportingAction);
+        }
 
         //TODO: this sgould be transfered to tasks
-        return decompositionIDs;
+        return actions;
     }
 
     /**

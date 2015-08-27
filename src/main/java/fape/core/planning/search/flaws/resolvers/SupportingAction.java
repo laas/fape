@@ -11,9 +11,6 @@ import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Statement;
 
-import java.util.Collection;
-import java.util.Map;
-
 /**
  * A resolver for an open goal. The supporting statement is brought by a new action to be inserted.
  * Optionally, a decomposition ID might be provided (decID != -1). If this is the case,

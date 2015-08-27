@@ -1,18 +1,19 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
+import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.TPRef;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
@@ -140,7 +141,7 @@ public class UnsupportedTimeline extends Flaw {
         //they are those that I can find in the virtual decomposition tree
         //first get the action names from the abstract dtgs
         ActionSupporterFinder supporters = planner.getActionSupporterFinder();
-        ActionDecompositions decompositions = new ActionDecompositions(st.pb);
+        TaskDecompositions decompositions = new TaskDecompositions(st.pb);
 
         // a list of (abstract-action, decompositionID) of supporters
         Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
@@ -150,8 +151,15 @@ public class UnsupportedTimeline extends Flaw {
         for(fape.core.planning.preprocessing.SupportingAction sa : potentialSupporters)
             potentiallySupportingAction.add(sa.absAct);
 
-        assert planner.useActionConditions() || st.getOpenTasks().size() == 0 :
-          "We are trying to solve an open goal while we still have opened tasks in HTN planner.";
+        // look for task decomposition that might produce a desired action in the future
+        if(planner.useActionConditions()) {
+            for (Task t : st.getOpenTasks()) {
+                Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
+                for (AbstractAction dec : decs) {
+                    resolvers.add(new SupportingTaskDecomposition(t, dec, consumer));
+                }
+            }
+        }
 
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
@@ -163,6 +171,11 @@ public class UnsupportedTimeline extends Flaw {
                         resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
                 }
             }
+        }
+
+        // make sure all resolvers validate the constraints built by previous resolvers.
+        if(planner.useActionConditions()) {
+            resolvers = st.retainValidResolvers(this, resolvers);
         }
 
         return this.resolvers;

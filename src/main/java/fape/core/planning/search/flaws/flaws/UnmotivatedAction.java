@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.ActionDecompositions;
+import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -11,8 +11,6 @@ import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
-import scala.Tuple2;
-import scala.Tuple3;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +53,7 @@ public class UnmotivatedAction extends Flaw {
                 resolvers.add(new ExistingTaskSupporter(task, act));
         }
 
-        ActionDecompositions preproc = new ActionDecompositions(st.pb);
+        TaskDecompositions preproc = new TaskDecompositions(st.pb);
 
         // resolvers: any action we add to the plan and that might provide (through decomposition)
         // a task condition

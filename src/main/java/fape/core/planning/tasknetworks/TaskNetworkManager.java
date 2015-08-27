@@ -255,6 +255,14 @@ public class TaskNetworkManager implements Reporter {
         clearCache();
     }
 
+    public boolean isDescendantOf(Action child, Action potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
+    }
+
+    public boolean isDescendantOf(Task child, Action potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
+    }
+
     /**
      * Checks if the first node is a descendant of the second one.
      * (i.e. there is a path from n2 to n1).

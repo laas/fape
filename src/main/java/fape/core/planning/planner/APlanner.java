@@ -73,7 +73,7 @@ public abstract class APlanner {
 
     public static boolean debugging = false;
     public static boolean logging = false;
-    public static boolean actionResolvers = true; // do we add actions to resolve flaws?
+    public final static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
     public int GeneratedStates = 1; //count the initial state
     public int expandedStates = 0;
@@ -194,13 +194,12 @@ public abstract class APlanner {
 
         int currentMaxDepth;
         if(incrementalDeepening)
-        currentMaxDepth=1;
+            currentMaxDepth = 1;
         else
-        currentMaxDepth=maxDepth;
+            currentMaxDepth = maxDepth;
 
         State solution = null;
-        while(currentMaxDepth<=maxDepth&&solution==null&&planState!=EPlanState.TIMEOUT)
-
+        while(currentMaxDepth <= maxDepth && solution == null && planState != EPlanState.TIMEOUT)
         {
             queue.clear();
             queue.addAll(toRestore);

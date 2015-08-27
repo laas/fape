@@ -11,13 +11,6 @@ import planstack.anml.model.concrete.Action;
  */
 public abstract class Resolver implements Comparable<Resolver> {
 
-    public boolean hasDecomposition() {
-        return false;
-    }
-    public Action actionToDecompose() {
-        throw new FAPEException("This resolver does not provide decomposition");
-    }
-
     /**
      * Modifies the state so that the flaw this resolver was created from is fixed.
      * @param st State to modify
