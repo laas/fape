@@ -2,6 +2,7 @@ package fape.core.inference;
 
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
+import fape.util.EffSet;
 import fape.util.Utils;
 
 import java.util.*;

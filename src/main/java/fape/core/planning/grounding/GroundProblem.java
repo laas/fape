@@ -6,6 +6,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
+import fape.util.EffSet;
 import org.jfree.chart.plot.AbstractPieLabelDistributor;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
@@ -95,8 +96,8 @@ public class GroundProblem {
         return fluents;
     }
 
-    public Set<Fluent> allFluents(State st) {
-        Set<Fluent> fluents = new HashSet<>();
+    public EffSet<Fluent> allFluents(State st) {
+        EffSet<Fluent> fluents = new EffSet<Fluent>(planner.preprocessor.fluentIntRepresentation());
         for(TempFluents tf : tempsFluents(st))
             fluents.addAll(tf.fluents);
         return fluents;

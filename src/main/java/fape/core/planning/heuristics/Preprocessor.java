@@ -7,9 +7,11 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
+import fape.util.EffSet;
 import org.apache.batik.gvt.text.GVTAttributedCharacterIterator;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
@@ -21,7 +23,7 @@ public class Preprocessor {
 
     private FeasibilityReasoner fr;
     private GroundProblem gPb;
-    private Set<GAction> allActions;
+    private EffSet<GAction> allActions;
     private GroundDTGs dtgs;
     private Fluent[] fluents = new Fluent[1000];
     private GAction[] groundActions = new GAction[1000];
@@ -47,19 +49,19 @@ public class Preprocessor {
     public GroundProblem getGroundProblem() {
         if(gPb == null) {
             gPb = new GroundProblem(initialState.pb, planner);
-        }
-        return gPb;
-    }
-
-    public Set<GAction> getAllActions() {
-        if(allActions == null) {
-            allActions = getFeasibilityReasoner().getAllActions(initialState);
-            for(GAction ga : allActions) {
+            for(GAction ga : gPb.allActions()) {
                 if(ga.id >= groundActions.length)
                     groundActions = Arrays.copyOf(groundActions, Math.max(ga.id+1, groundActions.length*2));
                 assert groundActions[ga.id] == null;
                 groundActions[ga.id] = ga;
             }
+        }
+        return gPb;
+    }
+
+    public EffSet<GAction> getAllActions() {
+        if(allActions == null) {
+            allActions = getFeasibilityReasoner().getAllActions(initialState);
         }
         return allActions;
     }
@@ -103,18 +105,56 @@ public class Preprocessor {
         return isHierarchical;
     }
 
-    public Set<GAction> getAllPossibleActionFromState(State st) {
+    public EffSet<GAction> getAllPossibleActionFromState(State st) {
         return getFeasibilityReasoner().getAllActions(st);
     }
 
-    public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
+    public HLeveledReasoner<GAction, Fluent> getRestrictedCausalReasoner(EffSet<GAction> allowedActions) {
         if(baseCausalReasoner == null) {
             baseCausalReasoner = new HLeveledReasoner<>(this.groundActionIntRepresentation(), this.fluentIntRepresentation());
             for(GAction ga : getAllActions()) {
                 baseCausalReasoner.addClause(ga.pre, ga.add, ga);
             }
         }
-        return new HLeveledReasoner<>(baseCausalReasoner, getAllPossibleActionFromState(st));
+        return baseCausalReasoner.cloneWithRestriction(allowedActions);
+    }
+
+    public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
+
+        return getRestrictedCausalReasoner(getAllPossibleActionFromState(st));
+    }
+
+    HLeveledReasoner<GAction, GTaskCond> baseDecomposabilityReasoner = null;
+    /** initial "facts" are actions with no subtasks */
+    public HLeveledReasoner<GAction, GTaskCond> getRestrictedDecomposabilityReasoner(EffSet<GAction> allowedActions) {
+        if(baseDecomposabilityReasoner == null) {
+            baseDecomposabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
+            for (GAction ga : this.getAllActions()) {
+                GTaskCond[] effect = new GTaskCond[1];
+                effect[0] = ga.task;
+                baseDecomposabilityReasoner.addClause(ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), effect, ga);
+            }
+        }
+        return baseDecomposabilityReasoner.cloneWithRestriction(allowedActions);
+    }
+
+    HLeveledReasoner<GAction, GTaskCond> baseDerivabilityReasoner = null;
+
+    /** initial facts opened tasks and initial clauses are non-motivated actions*/
+    public HLeveledReasoner<GAction, GTaskCond> getRestrictedDerivabilityReasoner(EffSet<GAction> allowedActions) {
+        if(baseDerivabilityReasoner == null) {
+            baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
+            for (GAction ga : getAllActions()) {
+                if (ga.abs.motivated()) {
+                    GTaskCond[] condition = new GTaskCond[1];
+                    condition[0] = ga.task;
+                    baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
+                } else {
+                    baseDerivabilityReasoner.addClause(new GTaskCond[0], ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
+                }
+            }
+        }
+        return baseDerivabilityReasoner.cloneWithRestriction(allowedActions);
     }
 
     public Fluent getFluent(GStateVariable sv, InstanceRef value) {

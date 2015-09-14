@@ -236,29 +236,4 @@ public class LeveledReasoner {
         }
         return clauses;
     }
-
-    public Collection<Integer> getPathToAnyOf(Collection<Integer> disjunctionOfFacts, Collection<Integer> alreadyUsedClauses) {
-        Set<Integer> achievedFacts = new HashSet<>();
-        for(Integer clause : alreadyUsedClauses) {
-            for(int eff : clausesEffects[clause]) {
-                achievedFacts.add(eff);
-            }
-        }
-        int easierToAchieveFact = -1;
-        int bestLevel = Integer.MAX_VALUE;
-        for(int fact : disjunctionOfFacts) {
-            if(achievedFacts.contains(fact)) {
-                easierToAchieveFact = fact;
-                break;
-            } else {
-                if(levelOfFact(fact) < bestLevel) {
-                    easierToAchieveFact = fact;
-                    bestLevel = levelOfFact(fact);
-                }
-            }
-        }
-        assert easierToAchieveFact != -1;
-        return getPathTo(easierToAchieveFact, alreadyUsedClauses);
-    }
-
 }

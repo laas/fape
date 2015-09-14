@@ -74,7 +74,7 @@ public class RelaxedPlanExtractor {
 
         baseHLR.infer();
         for(GAction ga : allowedActions) {
-            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
+//            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
         }
         return baseHLR;
     }
@@ -101,7 +101,7 @@ public class RelaxedPlanExtractor {
 //        }
         baseHLR.infer();
         for(GAction ga : allowedActions) {
-            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
+//            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
         }
         return baseHLR;
     }
@@ -587,6 +587,9 @@ public class RelaxedPlanExtractor {
     ActionUsageTracker counter = null;
 
     public int myPerfectHeuristic() {
+        planner.preprocessor.getFeasibilityReasoner().getAddableActions(st, planner.preprocessor.getAllActions());
+
+
         counter = new ActionUsageTracker();
         try {
             if(displayResolution()) {

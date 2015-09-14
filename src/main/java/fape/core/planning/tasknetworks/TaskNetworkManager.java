@@ -186,7 +186,6 @@ public class TaskNetworkManager implements Reporter {
      * @return True if this action supports a task
      */
     public boolean isSupporting(Action a) {
-        assert a.mustBeMotivated();
         TNNode n = new TNNode(a);
         return network.inDegree(n) > 0;
     }

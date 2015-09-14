@@ -1,5 +1,6 @@
 package fape.core.planning.planninggraph;
 
+import fape.core.inference.HLeveledReasoner;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
@@ -8,6 +9,7 @@ import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
+import fape.util.EffSet;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 public class FeasibilityReasoner {
 
     final APlanner planner;
-    private Set<GAction> allActions;
+    private EffSet<GAction> allActions;
 
     /** Maps ground actions from their ID */
     public final HashMap<Integer, GAction> gactions = new HashMap<>();
@@ -42,7 +44,8 @@ public class FeasibilityReasoner {
             }
         }
 
-        allActions = new HashSet<>(base.gActions);
+        allActions = new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation());//new HashSet<>(base.gActions);
+        allActions.addAll(base.gActions);
 
         baseReasoner = new HReasoner<>(new DefaultIntRepresentation<>()); // TODO: a specialized int representation would be much more efficient
         for(GAction ga : allActions) {
@@ -59,8 +62,6 @@ public class FeasibilityReasoner {
         }
 
         allActions = getAllActions(initialState);
-        base.gActions.clear();
-        base.gActions.addAll(allActions);
 
         for(GAction ga : allActions) {
             // values for all variables of this action
@@ -78,24 +79,32 @@ public class FeasibilityReasoner {
             // add possible tuple to supporter constraints
             initialState.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.taskName(), argValues, ga.id);
         }
+
+        for(Task t : initialState.getOpenTasks()) {
+            if(!initialState.csp.bindings().contains(t.groundSupportersVar()))
+                createTaskSupportersVariables(t, initialState);
+        }
     }
 
-    public Set<GAction> getAllActions(State st) {
+    public EffSet<GAction> getAllActions(State st) {
         if(st.addableGroundActions != null)
             return st.addableGroundActions;
 
         HReasoner<Term> r = getReasoner(st);
-        HashSet<GAction> feasibles = new HashSet<>();
+        HashSet<GAction> feasibles2 = new HashSet<>();
+        EffSet<GAction> feasibles = new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation());
+
         for(Term t : r.trueFacts()) {
             if(t instanceof Predicate && ((Predicate) t).name.equals(Predicate.PredicateName.POSSIBLE_IN_PLAN)) //TODO make a selector for this
                 feasibles.add((GAction) ((Predicate) t).var);
         }
 
-        List<Integer> allowedDomainOfActions = new LinkedList<>();
-        for(GAction ga : feasibles) {
-            allowedDomainOfActions.add(ga.id);
-        }
-        Domain dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
+//        List<Integer> allowedDomainOfActions = new LinkedList<>();
+//        for(GAction ga : feasibles) {
+//            allowedDomainOfActions.add(ga.id);
+//        }
+//        Domain dom = st.csp.bindings().intValuesAsDomain(allowedDomainOfActions);
+        Domain dom = new Domain(feasibles.toBitSet());
         for(Action a : st.getAllActions()) {
             st.csp.bindings().restrictDomain(a.instantiationVar(), dom);
         }
@@ -104,8 +113,49 @@ public class FeasibilityReasoner {
         return feasibles;
     }
 
+    public EffSet<GAction> getAddableActions(State st, EffSet<GAction> allowed) {
+        boolean print = false;
+        EffSet<GAction> restrictedAllowed = allowed.clone();
+
+        if(print) System.out.println("\nInit: "+allowed);
+
+
+        HLeveledReasoner<GAction,GTaskCond> derivGraph = planner.preprocessor.getRestrictedDerivabilityReasoner(restrictedAllowed);
+        for(Task t : st.getOpenTasks())
+            for(GAction ga : getPossibleSupporters(t, st))
+                derivGraph.set(ga.task);
+        derivGraph.infer();
+        restrictedAllowed = derivGraph.validClauses();
+
+        if(print) System.out.println(restrictedAllowed);
+
+        HLeveledReasoner<GAction,Fluent> causalGraph = planner.preprocessor.getRestrictedCausalReasoner(restrictedAllowed);
+        causalGraph.setAll(planner.preprocessor.getGroundProblem().allFluents(st));
+        causalGraph.infer();
+        restrictedAllowed = causalGraph.validClauses();
+
+        if(print) System.out.println(restrictedAllowed);
+
+        HLeveledReasoner<GAction,GTaskCond> decompGraph = planner.preprocessor.getRestrictedDecomposabilityReasoner(restrictedAllowed);
+        for(Action a : st.getUnmotivatedActions())
+            for(GAction ga : getGroundActions(a, st))
+                decompGraph.set(ga.task);
+        decompGraph.infer();
+        restrictedAllowed = decompGraph.validClauses();
+
+        if(print) System.out.println(restrictedAllowed);
+
+
+        return restrictedAllowed;
+    }
+
     public HReasoner<Term> getReasoner(State st) {
         return getReasoner(st, allActions);
+    }
+
+    public EffSet<GAction> getPossibleSupporters(Task t, State st) {
+        assert st.csp.bindings().isRecorded(t.groundSupportersVar());
+        return new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation(), st.csp.bindings().rawDomain(t.groundSupportersVar()).toBitSet());
     }
 
     public Collection<GTaskCond> getGroundedTasks(Task liftedTask, State st) {
@@ -149,7 +199,9 @@ public class FeasibilityReasoner {
             r.set(new Predicate(Predicate.PredicateName.ACCEPTABLE, acc));
 
         for(GTaskCond tc : getDerivableTasks(st)) {
-            r.set(new Predicate(Predicate.PredicateName.DERIVABLE_TASK, tc));
+            Predicate p = new Predicate(Predicate.PredicateName.DERIVABLE_TASK, tc);
+            if(r.hasTerm(p))
+                r.set(p);
         }
 
         for(Action a : st.getAllActions()) {
@@ -233,15 +285,10 @@ public class FeasibilityReasoner {
         return true;
     }
 
-    public Set<GAction> getGroundActions(Action liftedAction, State st) {
-        Set<GAction> ret = new HashSet<>();
+    public EffSet<GAction> getGroundActions(Action liftedAction, State st) {
         assert st.csp.bindings().isRecorded(liftedAction.instantiationVar());
-        for(Integer i : st.csp.bindings().domainOfIntVar(liftedAction.instantiationVar())) {
-            if(gactions.containsKey(i)) // the domain might contain any int variable
-                ret.add(gactions.get(i));
-        }
-
-        return ret;
+        Domain dom = st.csp.bindings().rawDomain(liftedAction.instantiationVar());
+        return new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation(), dom.toBitSet());
     }
 
     /** This will associate with an action a variable in the CSP representing its
@@ -260,7 +307,7 @@ public class FeasibilityReasoner {
         }
 
         // Variable representing the ground versions of this action
-        st.csp.bindings().AddIntVariable(act.instantiationVar());
+        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(allActions.toBitSet()));
         values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
 

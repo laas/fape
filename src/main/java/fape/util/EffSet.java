@@ -6,10 +6,15 @@ import java.util.*;
 
 public class EffSet<T> implements Set<T> {
     private final IntRepresentation<T> intRep;
-    private final BitSet bitset = new BitSet();
+    private final BitSet bitset;
 
     public EffSet(IntRepresentation<T> intRep) {
         this.intRep = intRep;
+        bitset = new BitSet();
+    }
+    public EffSet(IntRepresentation<T> intRep, BitSet values) {
+        this.intRep = intRep;
+        bitset = values;
     }
     @Override
     public int size() {
@@ -40,7 +45,7 @@ public class EffSet<T> implements Set<T> {
             @Override
             public T next() {
                 final int toRet = current;
-                current += bitset.nextSetBit(current+1);
+                current = bitset.nextSetBit(current+1);
                 return intRep.fromInt(toRet);
             }
         };
@@ -55,11 +60,13 @@ public class EffSet<T> implements Set<T> {
             @Override
             public int nextInt() {
                 final int toRet = current;
-                current += bitset.nextSetBit(current+1);
+                current = bitset.nextSetBit(current+1);
                 return toRet;
             }
         };
     }
+
+    public BitSet toBitSet() { return BitSet.valueOf(bitset.toLongArray()); }
 
     @Override
     public Object[] toArray() {
@@ -102,7 +109,10 @@ public class EffSet<T> implements Set<T> {
 
     @Override
     public boolean containsAll(Collection<?> collection) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        for(Object o : collection)
+            if(!contains(o))
+                return false;
+        return true;
     }
 
     @Override
@@ -145,5 +155,25 @@ public class EffSet<T> implements Set<T> {
     @Override
     public void clear() {
         bitset.clear();
+    }
+
+    @Override
+    public EffSet<T> clone() {
+        return new EffSet<T>(intRep, this.toBitSet());
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        Iterator<T> it = iterator();
+        while(it.hasNext()) {
+            T o = it.next();
+            sb.append(o.toString());
+            if(it.hasNext())
+                sb.append(", ");
+        }
+        sb.append("}");
+        return sb.toString();
     }
 }

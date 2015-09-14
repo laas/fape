@@ -3,6 +3,7 @@ package fape.core.inference;
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
 import fape.exceptions.NoSolutionException;
+import fape.util.EffSet;
 import fape.util.Utils;
 
 import javax.rmi.CORBA.Util;
@@ -16,8 +17,8 @@ public class HLeveledReasoner<Clause, Fact> {
     private int[]  factsIds;
     private int[] facts;
 
-    int nextFact = 0;
-    int nextClause = 0;
+    int nextFact;
+    int nextClause;
 
     private final IntRepresentation<Clause> clauseIntRep;
     private final IntRepresentation<Fact>   factIntRep;
@@ -29,6 +30,8 @@ public class HLeveledReasoner<Clause, Fact> {
         facts = Utils.copyIntoBigger(new int[0], 100, -1);
         clauseIntRep = clauseRep;
         factIntRep = factRep;
+        nextClause = 0;
+        nextFact = 0;
     }
 
     public HLeveledReasoner(HLeveledReasoner<Clause,Fact> toClone, Collection<Clause> allowed) {
@@ -38,6 +41,8 @@ public class HLeveledReasoner<Clause, Fact> {
         this.factIntRep = toClone.factIntRep;
         this.facts = toClone.facts;
         this.factsIds = toClone.factsIds;
+        this.nextClause = toClone.nextClause;
+        this.nextFact = toClone.nextFact;
         boolean[] allowedClause = null;
         if(allowed != null) {
             allowedClause = new boolean[toClone.lr.nextClause];
@@ -49,9 +54,12 @@ public class HLeveledReasoner<Clause, Fact> {
     }
 
     public HLeveledReasoner<Clause,Fact> clone() { return new HLeveledReasoner<>(this, null); }
+    public HLeveledReasoner<Clause,Fact> cloneWithRestriction(Collection<Clause> allowed) { return new HLeveledReasoner<>(this, allowed); }
 
     private int inReasonerClauseId(Clause cl) { return clausesIds[clauseIntRep.asInt(cl)]; }
+    private int inReasonerClauseId(int cl) { return clausesIds[cl]; }
     private int inReasonerFactId(Fact f) { return factsIds[factIntRep.asInt(f)]; }
+    private int inReasonerFactId(int f) { return factsIds[f]; }
     private Clause clauseFromReasonerId(int clauseReasID) { return clauseIntRep.fromInt(clauses[clauseReasID]); }
     private Fact factFromReasId(int factReasID) { return factIntRep.fromInt(facts[factReasID]); }
 
@@ -63,11 +71,23 @@ public class HLeveledReasoner<Clause, Fact> {
             lr.set(inReasonerFactId(f));
     }
 
-    /** Returns true if this fact has been recorded (part of a clause previously added). */
-    public boolean knowsFact(Fact f) {
-        return factIntRep.hasRepresentation(f) && factIntRep.asInt(f) < factsIds.length && factsIds[factIntRep.asInt(f)] != -1;
+    public void setAll(EffSet<Fact> facts) {
+        PrimitiveIterator.OfInt it = facts.primitiveIterator();
+        while (it.hasNext()) {
+            final int f = it.nextInt();
+            if(knowsFact(f))
+                lr.set(inReasonerFactId(f));
+        }
     }
 
+    /** Returns true if this fact has been recorded (part of a clause previously added). */
+    public boolean knowsFact(Fact f) {
+        return factIntRep.hasRepresentation(f) && knowsFact(factIntRep.asInt(f));
+    }
+
+    private boolean knowsFact(int fact) {
+        return fact < factsIds.length && factsIds[fact] != -1;
+    }
     public boolean knowsClause(Clause cl) {
         return clauseIntRep.asInt(cl) < clausesIds.length && clausesIds[clauseIntRep.asInt(cl)] != -1;
     }
@@ -108,6 +128,7 @@ public class HLeveledReasoner<Clause, Fact> {
             Fact f = conditions.get(i);
             addFactIfUnknown(f);
             conds[i] = inReasonerFactId(f);
+            assert conds[i] != -1;
         }
         int[] effs = new int[effects.size()];
         for(int i=0 ; i<effects.size() ; i++) {
@@ -176,6 +197,16 @@ public class HLeveledReasoner<Clause, Fact> {
     public int levelOfClause(Clause c) {
         assert c != null && knowsClause(c);
         return lr.levelOfClause(inReasonerClauseId(c));
+    }
+
+    public EffSet<Clause> validClauses() {
+        EffSet<Clause> set = new EffSet<Clause>(clauseIntRep);
+        for(int cl=0; cl<nextClause ; cl++) {
+            assert clauseIntRep.fromInt(clauses[cl]).equals(clauseFromReasonerId(cl));
+            if(lr.levelOfClause(cl) >= 0)
+                set.add(clauses[cl]);
+        }
+        return set;
     }
 /*
     public String report() {

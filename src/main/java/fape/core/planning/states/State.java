@@ -34,6 +34,7 @@ import fape.drawing.RectElem;
 import fape.drawing.TextLabel;
 import fape.drawing.TimedCanvas;
 import fape.exceptions.FAPEException;
+import fape.util.EffSet;
 import fape.util.Pair;
 import fape.util.Reporter;
 import planstack.anml.model.AbstractContext;
@@ -113,7 +114,7 @@ public class State implements Reporter {
      * (ii) be derivable from an reachable action if motivated.
      * This field is filled by PlanningGraphReachibility when needed.
      */
-    public Set<GAction> addableGroundActions = null;
+    public EffSet<GAction> addableGroundActions = null;
 
     /**
      * Contains all ground versions of fluents in the state with their associated time points
