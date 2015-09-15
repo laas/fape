@@ -19,11 +19,7 @@ import java.util.*;
 public class RelaxedPlanExtractor {
 
     final APlanner planner;
-    final HLeveledReasoner<GAction,GTaskCond> decompReas;
-    final HLeveledReasoner<GAction,GTaskCond> derivReaas;
-    final HLeveledReasoner<GAction,Fluent> baseCausalReas;
     final State st;
-    final Set<GAction> allowedActions;
     Set<GAction> inPlanActions;
 
     private boolean displayResolution() { return false; }
@@ -34,86 +30,15 @@ public class RelaxedPlanExtractor {
     Set<GTaskCond> decompPending = new HashSet<>();
     Set<Fluent> causalPending = new HashSet<>();
 
-    /** a causal reasoner for the current operations, this will change overtime */
-    HLeveledReasoner<GAction,Fluent> currentCausalReasoner = null;
-
-
     public RelaxedPlanExtractor(APlanner planner, State st) {
         this.planner = planner;
         this.st = st;
         this.dtgs = new DTGCollection(planner, st, displayResolution());
-        allowedActions = new HashSet<>(planner.preprocessor.getFeasibilityReasoner().getAllActions(st));
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
             for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
                 inPlanActions.add(ga);
         }
-        if(planner.preprocessor.isHierarchical()) {
-            decompReas = decomposabilityReasoner(st);
-            derivReaas = derivabilityReasoner(st);
-        } else {
-            decompReas = null;
-            derivReaas = null;
-        }
-//        baseCausalReas = new HLeveledReasoner<>();
-//        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
-//            baseCausalReas.addClause(ga.pre, ga.add, ga);
-//        }
-        baseCausalReas = planner.preprocessor.getLeveledCausalReasoner(st);
-    }
-
-
-    /** initial "facts" are actions with no subtasks */
-    public HLeveledReasoner<GAction, GTaskCond> decomposabilityReasoner(State st) {
-        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
-        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
-            GTaskCond[] effect = new GTaskCond[1];
-            effect[0] = ga.task;
-            baseHLR.addClause(ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), effect, ga);
-        }
-
-        baseHLR.infer();
-        for(GAction ga : allowedActions) {
-//            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
-        }
-        return baseHLR;
-    }
-
-    /** initial facts opened tasks and initial clauses are non-motivated actions*/
-    public HLeveledReasoner<GAction, GTaskCond> derivabilityReasoner(State st) {
-        HLeveledReasoner<GAction, GTaskCond> baseHLR = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
-        for (GAction ga : planner.preprocessor.getFeasibilityReasoner().getAllActions(st)) {
-            if(ga.abs.motivated()) {
-                GTaskCond[] condition = new GTaskCond[1];
-                condition[0] = ga.task;
-                baseHLR.addClause(condition, ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
-            } else {
-                baseHLR.addClause(new GTaskCond[0], ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
-            }
-        }
-        // all tasks (for complete relaxed plan)
-        for(Task liftedTask : st.taskNet.getAllTasks()) {
-            for(GTaskCond task : planner.preprocessor.getFeasibilityReasoner().getGroundedTasks(liftedTask, st))
-                baseHLR.set(task);
-        }
-//        for(GTaskCond tc : planner.reachability.getDerivableTasks(st)) {
-//            baseHLR.set(tc);
-//        }
-        baseHLR.infer();
-        for(GAction ga : allowedActions) {
-//            assert baseHLR.levelOfClause(ga) > -1 || inPlanActions.contains(ga);
-        }
-        return baseHLR;
-    }
-
-    public HLeveledReasoner<GAction,Fluent> causalReasonerForOpenGoal(State st, Timeline consumer) {
-        HLeveledReasoner<GAction, Fluent> hlr = baseCausalReas.clone();
-        Collection<Fluent> init = planner.preprocessor.getGroundProblem().fluentsBefore(st, consumer.getFirstTimePoints());
-        for (Fluent i : init) {
-            hlr.set(i);
-        }
-        hlr.infer();
-        return hlr;
     }
 
     private int costOfFluent(Fluent f) {
@@ -124,7 +49,7 @@ public class RelaxedPlanExtractor {
             // we already need to achieve it
             return 0;
         else
-            return currentCausalReasoner.levelOfFact(f);
+            return st.reachabilityGraphs.causalLevelOfFluent(f);
     }
 
     private int costOfPreconditions(GAction ga) {
@@ -132,51 +57,13 @@ public class RelaxedPlanExtractor {
         if(alreadyUsed.contains(ga))
             return 0;
         int maxPreconditionCost = 0;
-        for(Fluent f : currentCausalReasoner.conditionsOf(ga)) {
+        for(Fluent f : ga.pre) {
             int cost = costOfFluent(f);
             if (cost > maxPreconditionCost)
                 maxPreconditionCost = cost;
         }
         assert maxPreconditionCost >= 0;
         return maxPreconditionCost;
-    }
-
-    private int costOfTask(GTaskCond t) {
-        assert t != null;
-        if(!derivReaas.knowsFact(t))
-            return -1;
-        if(!decompReas.knowsFact(t))
-            return -1;
-        if(derivReaas.levelOfFact(t) == -1 || decompReas.levelOfFact(t) == -1)
-            return -1;
-        return derivReaas.levelOfFact(t) + decompReas.levelOfFact(t);
-    }
-
-    public Fluent selectMostInterestingFluent(Collection<Fluent> fluents) throws NoSolutionException {
-        Fluent bestFluent = null;
-        int bestFluentCost = Integer.MAX_VALUE;
-        for(Fluent f : fluents) {
-            if(currentCausalReasoner.knowsFact(f) && currentCausalReasoner.levelOfFact(f) != -1) {
-                int bestEnablerCost = Integer.MAX_VALUE;
-                for(GAction ga : currentCausalReasoner.candidatesFor(f)) {
-                    if(ga == null)
-                        return f; // init fact, we can not do better
-                    assert allowedActions.contains(ga);
-                    int cost = costOfPreconditions(ga);
-                    if(cost >= 0 && cost < bestEnablerCost)
-                        bestEnablerCost = cost;
-                }
-                assert bestEnablerCost >= 0;
-                if(bestEnablerCost < bestFluentCost) {
-                    bestFluent = f;
-                    bestFluentCost = bestEnablerCost;
-                }
-            }
-        }
-        if(bestFluent != null)
-            return bestFluent;
-        else
-            throw new NoSolutionException("No best fluent in: "+fluents);
     }
 
     private int[] numOfActionsInstantiationsProducingFluent = null;
@@ -213,22 +100,7 @@ public class RelaxedPlanExtractor {
                 }
             }
         }
-//        boolean isAvailable = false;
-//        for(Action a : actionInstantiations.keySet()) {
-//            if(instantiated.contains(a))
-//                continue;
-//            for(GAction candidate : actionInstantiations.get(a)) {
-//                for(Fluent gaAddition : candidate.add) {
-//                    if(gaAddition.ID == fluent) {
-//                        isAvailable = true;
-//                    }
-//                }
-//            }
-//        }
-//        if(isAvailable)
-//            assert numOfActionsInstantiationsProducingFluent[fluent] > 0;
-//        else
-//            assert numOfActionsInstantiationsProducingFluent[fluent] == 0;
+
         return numOfActionsInstantiationsProducingFluent[fluent] > 0;
     }
 
@@ -238,18 +110,24 @@ public class RelaxedPlanExtractor {
         for(GAction ga : actions) {
             if(ga == null)
                 return null; // init fact, we can not do better
-            if(alreadyUsed.contains(ga))
-                return ga; // no additional cost as the action is already part of the relaxed plan
+            if(st.reachabilityGraphs.causalLevelOf(ga) < 0)
+                continue; // action is not feasible
 
+            if(alreadyUsed.contains(ga)) {
+                return ga; // no additional cost as the action is already part of the relaxed plan
+            }
             int maxCostOfAchieved = 0;
             int sumPreconditionsCosts = 0;
+
             for(Fluent f : ga.pre) {
+                assert st.reachabilityGraphs.causalLevelOfFluent(f) >= 0;
                 int base = achievableByLiftedAction(f.ID) ? 0 : costOfFluent(f);
                 sumPreconditionsCosts += base;
             }
+
             for(Fluent f : ga.add) {
                 if(causalPending.contains(f) && !achievedFluents.contains(f)) {
-                    int c = currentCausalReasoner.levelOfFact(f);
+                    int c = st.reachabilityGraphs.causalLevelOfFluent(f);
                     if(c >= 0) // only account for possible ones TODO: should never be not achievable?
                         maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
                 }
@@ -262,70 +140,12 @@ public class RelaxedPlanExtractor {
         }
 
         if(bestAction != null) {
-            if(planner.preprocessor.isHierarchical()) {
-                if (!inPlanActions.contains(bestAction))
-                    for (GTaskCond task : derivReaas.conditionsOf(bestAction))
-                        assert derivReaas.levelOfFact(task) >= 0;
-
-                for (GTaskCond task : decompReas.conditionsOf(bestAction))
-                    assert decompReas.levelOfFact(task) >= 0;
-            }
-
+            assert st.reachabilityGraphs.causalLevelOf(bestAction) >= 0;
             return bestAction;
 
         } else {
             throw new NoSolutionException("No best action in "+actions);
         }
-    }
-
-    public GTaskCond selectMostInterestingTask(Collection<GTaskCond> tasks) {
-        GTaskCond best = null;
-        int bestCost = Integer.MAX_VALUE;
-        for(GTaskCond t : tasks) {
-            int cost = costOfTask(t);
-            if(cost != -1 && cost < bestCost) {
-                best = t;
-                bestCost = cost;
-            }
-        }
-        assert best != null;
-        return best;
-    }
-
-    public GAction selectMostInterestingActionForRelaxedPlan(Collection<GAction> actions, Collection<Action> possiblyBfore,
-                                                             Map<Action,Set<GAction>> actionInstantiations) throws NoSolutionException {
-
-        GAction bestAction = null;
-        int bestActionCost = Integer.MAX_VALUE;
-        for(GAction ga : actions) {
-            if(ga == null)
-                return null; // init fact, we can not do better
-            if(alreadyUsed.contains(ga))
-                return ga; // no additional cost as the action is already part of the relaxed plan
-
-            for(Action a : possiblyBfore) {
-                if(actionInstantiations.get(a).contains(ga))
-                    return ga; // this corresponds to an action we need to instantiate anyway
-            }
-
-            int cost = costOfPreconditions(ga);
-            if(cost >= 0 && cost < bestActionCost) {
-                bestActionCost = cost;
-                bestAction = ga;
-            }
-        }
-        if(bestAction != null) {
-            if(!inPlanActions.contains(bestAction))
-                for(GTaskCond task : derivReaas.conditionsOf(bestAction))
-                    assert derivReaas.levelOfFact(task) >= 0;
-
-            for(GTaskCond task : decompReas.conditionsOf(bestAction))
-                assert decompReas.levelOfFact(task) >= 0;
-
-            return bestAction;
-
-        } else
-            throw new NoSolutionException("No application actions in: "+actions);
     }
 
     Map<Action, Set<GAction>> actionInstantiations;
@@ -339,29 +159,6 @@ public class RelaxedPlanExtractor {
         return instantiations;
     }
 
-    private HLeveledReasoner<GAction, Fluent> getCausalModelOfInitialDefinitions() {
-        HLeveledReasoner<GAction, Fluent> causalModel = planner.preprocessor.getLeveledCausalReasoner(st); //baseCausalReas.clone();
-
-        for (Timeline tl : st.getTimelines()) {
-            for (ChainComponent cc : tl.getComponents()) {
-                if (cc.change) {
-                    LogStatement s = cc.getFirst();
-                    if (st.getActionContaining(s) == null) {
-                        // statement part of the initial problem definition
-                        Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
-                        for (Fluent f : fluents) {
-                            causalModel.set(f);
-                        }
-                    }
-                }
-            }
-        }
-        causalModel.infer();
-        return causalModel;
-    }
-
-
-
     final DTGCollection dtgs;
 
     /** maps a timeline to its DTG */
@@ -371,7 +168,7 @@ public class RelaxedPlanExtractor {
 
     public OpenGoalTransitionFinder.Path getPathToPersistence(Timeline og) throws NoSolutionException {
         assert og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs, displayResolution());
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(planner, dtgs, displayResolution());
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for (Fluent f : ogs)
@@ -431,7 +228,7 @@ public class RelaxedPlanExtractor {
 
     public OpenGoalTransitionFinder.Path getPathToTransition(Timeline og) throws NoSolutionException {
         assert !og.hasSinglePersistence();
-        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(dtgs, displayResolution());
+        OpenGoalTransitionFinder pathFinder = new OpenGoalTransitionFinder(planner, dtgs, displayResolution());
         Collection<Fluent> ogs = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner);
         Set<GStateVariable> possibleStateVariables = new HashSet<>();
         for(Fluent f : ogs)
@@ -492,8 +289,13 @@ public class RelaxedPlanExtractor {
         }
 
         @Override
-        public boolean usable(int gActionID) {
-            return usable(planner.preprocessor.getGroundAction(gActionID));
+        public boolean addable(int gActionID) {
+            return st.addableActions.contains(gActionID);
+        }
+
+        @Override
+        public boolean possibleInPlan(int gActionID) {
+            return st.reachabilityGraphs.causalLevelOf(planner.preprocessor.getGroundAction(gActionID)) >= 0;
         }
 
         public int cost(Action a, GAction ga, GStateVariable sv) {
@@ -503,17 +305,14 @@ public class RelaxedPlanExtractor {
         public int distTo(GAction ga) {
             return costOfPreconditions(ga);
         }
-
-        public boolean usable(GAction ga) {
-            return allowedActions.contains(ga);
-        }
     };
 
     HashSet<Fluent> achievedFluents = new HashSet<>();
 
     private void setActionUsed(GAction ga) {
+        assert st.reachabilityGraphs.causalLevelOf(ga) >= 0 : "Trying to use an action that is not feasible.";
         if(!alreadyUsed.contains(ga) && displayResolution())
-            System.out.println("  act: "+ga);
+            System.out.println("  act: "+ga+" (causal level: "+st.reachabilityGraphs.causalLevelOf(ga)+")");
 
         alreadyUsed.add(ga);
         for(Fluent f : ga.add) {
@@ -522,6 +321,7 @@ public class RelaxedPlanExtractor {
         for(Fluent f : ga.pre) {
             if(!causalPending.contains(f) && !achievedFluents.contains(f)) {
                 causalPending.add(f);
+                assert st.reachabilityGraphs.causalLevelOfFluent(f) >= 0;
                 if (displayResolution())
                     System.out.println("    pending: " + f);
             }
@@ -594,9 +394,10 @@ public class RelaxedPlanExtractor {
         try {
             if(displayResolution()) {
                 System.out.println("\n\n ---- state: "+st.mID+"   -----");
+                System.out.println("-> lifted in plan: "+st.getAllActions());
+                System.out.println("-> addable actions: "+st.addableActions);
             }
             initActionUsage();
-            currentCausalReasoner = getCausalModelOfInitialDefinitions();
             actionInstantiations = getInitialPossibleActionsInstantiations();
             List<OpenGoalTransitionFinder.Path> paths = getPaths();
 
@@ -606,12 +407,14 @@ public class RelaxedPlanExtractor {
                 assert instantiated.contains(a) && actionInstantiations.get(a).size() == 1;
 
             for(GAction ga : alreadyUsed) {
-                causalPending.addAll(currentCausalReasoner.conditionsOf(ga));
+                causalPending.addAll(ga.pre);
             }
 
             if(displayResolution()) {
                 System.out.println("\n---- Instantiation -----");
             }
+
+            for(GAction ga : alreadyUsed) assert st.reachabilityGraphs.causalLevelOf(ga) >= 0;
 
             for(Map.Entry<Action, Set<GAction>> actInst : actionInstantiations.entrySet()) {
                 if(!instantiated.contains(actInst.getKey())) {
@@ -628,7 +431,7 @@ public class RelaxedPlanExtractor {
                 setActionUsed(ga);
 
             for(GAction ga : alreadyUsed) {
-                causalPending.addAll(currentCausalReasoner.conditionsOf(ga));
+                causalPending.addAll(ga.pre);
             }
 
             if(displayResolution()) {
@@ -638,9 +441,14 @@ public class RelaxedPlanExtractor {
             while (!causalPending.isEmpty()) {
                 Fluent og = causalPending.iterator().next();
                 if(displayResolution())
-                    System.out.println("pending: "+og);
+                    System.out.println("pending: "+og+" (causal level = "+st.reachabilityGraphs.causalLevelOfFluent(og)+")");
                 causalPending.remove(og);
-                GAction ga = selectMostInterestingAction(currentCausalReasoner.candidatesFor(og));
+                GAction ga;
+                assert st.reachabilityGraphs.causalLevelOfFluent(og) != -1 : "Fluent "+og+" has been added to pending list but is not achievable";
+                if(st.reachabilityGraphs.causalLevelOfFluent(og) == 0)
+                    ga = null; // initial fact
+                else
+                    ga = selectMostInterestingAction(st.reachabilityGraphs.addableAndInPlanSupporters(og));
 
                 // if we need action (ga !=null) and we didn't already used it
                 if (ga != null && !alreadyUsed.contains(ga)) {
@@ -650,10 +458,10 @@ public class RelaxedPlanExtractor {
                     if(planner.preprocessor.isHierarchical()) {
                         if (!inPlanActions.contains(ga)) // TODO this ignores unmotivated actions
                             // deriv all actions that are not already in the plan
-                            derivPending.addAll(derivReaas.conditionsOf(ga));
+                            derivPending.add(ga.task);
 
 //                        System.out.println("2"+ga+" "+derivPending);
-                        decompPending.addAll(decompReas.conditionsOf(ga));
+                        decompPending.addAll(ga.subTasks);
                     }
                     alreadyUsed.add(ga);
                     assert counter.totalOccurrences(ga) == 0; //!actionCount.containsKey(ga);

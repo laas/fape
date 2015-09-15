@@ -240,10 +240,12 @@ public class SearchView {
         h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
         h.append(" num-unbound: "); h.append(st.getUnboundVariables().size());
         h.append("\n");
-        h.append(planner.stateComparator().reportOnState(st));
-        if(planner.definesHeuristicsValues()) {
-            h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
-        }
+        try {
+            h.append(planner.stateComparator().reportOnState(st));
+            if (planner.definesHeuristicsValues()) {
+                h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
+            }
+        } catch (Exception e) {} // just to make sure the planner does not crash because of the view
 
         n.setString(LABEL, label);
         n.setString(NODE_STATUS, "inqueue");

@@ -1,6 +1,7 @@
 package fape.core.planning.heuristics.relaxed;
 
 import fape.core.planning.grounding.Fluent;
+import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NoSolutionException;
 import planstack.anml.model.concrete.TPRef;
@@ -42,9 +43,11 @@ public class OpenGoalTransitionFinder {
             this.start = start; this.end = end; this.edges = edges; this.dtgOfStart = dtgOfStart;
         }
     }
+    final APlanner planner;
 
-    public OpenGoalTransitionFinder(DTGCollection dtgs, boolean printDebugInformation) {
+    public OpenGoalTransitionFinder(APlanner planner, DTGCollection dtgs, boolean printDebugInformation) {
         allDtgs = dtgs; this.printDebugInformation = printDebugInformation;
+        this.planner = planner;
     }
 
     /** all dtgs of the system */
@@ -90,7 +93,8 @@ public class OpenGoalTransitionFinder {
     public interface CostEvaluator {
         int cost(int liftedActionID, int gActionID, int fluentID);
         int distTo(int gActionID);
-        boolean usable(int gActionID);
+        boolean addable(int gActionID);
+        boolean possibleInPlan(int gActionID);
     }
 
     public TPRef startTimePoint =null;
@@ -166,11 +170,17 @@ public class OpenGoalTransitionFinder {
                     if(printDebugInformation)
                         System.out.print("  "+edgeDest);
 
-                    if(ga != -1 && !ce.usable(ga)) {
+                    if(lifted == -1 && ga != -1 && !ce.addable(ga)) {
                         if(printDebugInformation)
-                            System.out.println("  not usable ground act");
+                            System.out.println("  not usable ground act: "+planner.preprocessor.getGroundAction(ga));
                         continue; // this action is not allowed
                     }
+                    if(lifted != -1 && ga != -1 && !ce.possibleInPlan(ga)) {
+                        if(printDebugInformation)
+                            System.out.println("  not usable instantiation into :"+planner.preprocessor.getGroundAction(ga));
+                        continue; // this action is not allowed
+                    }
+
                     int accCost = nc.accumulatedCost + ce.cost(lifted, ga, current.fluent(edgeDest));
                     int actionCost = ga != -1 ? ce.distTo(ga) : 0;
                     int extCost = (actionCost > nc.externalCost) ? actionCost : nc.externalCost;

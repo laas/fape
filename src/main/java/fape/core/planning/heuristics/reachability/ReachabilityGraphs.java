@@ -31,6 +31,7 @@ public class ReachabilityGraphs {
     HLeveledReasoner<GAction,GTaskCond> decompGraph;
 
     EffSet<GAction> addableActions = null;
+    EffSet<GAction> inPlan = null;
     EffSet<GAction> unsupporting;
     EffSet<GAction> openTasksActs;
     EffSet<Fluent> inPlanFluents;
@@ -53,6 +54,10 @@ public class ReachabilityGraphs {
         st.addableTemplates = new HashSet<>();
         for(GAction ga : addableActions) {
             st.addableTemplates.add(ga.abs);
+        }
+        inPlan = new EffSet<GAction>(pp.groundActionIntRepresentation());
+        for(Action a : st.getAllActions()) {
+            inPlan.addAll(new EffSet<GAction>(pp.groundActionIntRepresentation(), st.csp.bindings().rawDomain(a.instantiationVar()).toBitSet()));
         }
     }
 
@@ -81,7 +86,7 @@ public class ReachabilityGraphs {
     }
 
     private void initGraphs(EffSet<GAction> allowed) {
-        boolean print = true;
+        boolean print = false;
         EffSet<GAction> restrictedAllowed = allowed.clone();
 
         if(print) System.out.println("\nInit: "+st.mID+"\n"+allowed);
@@ -128,6 +133,8 @@ public class ReachabilityGraphs {
         for(Timeline og : st.tdb.getConsumers()) {
             boolean doable = false;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner)) {
+                if(!causalGraph.knowsFact(f))
+                    continue;
                 if (causalGraph.levelOfFact(f) >= 0) {
                     doable = true;
                     break;
@@ -194,6 +201,10 @@ public class ReachabilityGraphs {
         }
     }
 
+    public int causalLevelOfFluent(Fluent f) {
+        return causalGraph.levelOfFact(f);
+    }
+
     public int derivLevelOf(GAction ga) {
         if(!ga.abs.mustBeMotivated())
             return 0;
@@ -218,5 +229,19 @@ public class ReachabilityGraphs {
             }
             return max;
         }
+    }
+
+    public Set<GAction> addableAndInPlanSupporters(Fluent f) {
+        EffSet<GAction> all = addableActions.clone();
+        all.addAll(inPlan);
+
+        Set<GAction> supporters = new HashSet<>();
+
+        for(GAction ga : all) {
+            if(ga.add.contains(f) && causalLevelOf(ga) >= 0) {
+                supporters.add(ga);
+            }
+        }
+        return supporters;
     }
 }
