@@ -37,11 +37,9 @@ public class UnsupportedTaskCond extends Flaw {
             if(st.isAddable(abs))
                 resolvers.add(new NewTaskSupporter(task, abs));
 
-        // existing action can be a supporter if every one of its parameters
-        // are unifiable with the task condition
         if(planner.useActionConditions())
             for (Action act : st.getAllActions()) {
-                if (st.canSupport(act, task))
+                if (!st.taskNet.isSupporting(act) && st.canSupport(act, task))
                     resolvers.add(new ExistingTaskSupporter(task, act));
             }
 

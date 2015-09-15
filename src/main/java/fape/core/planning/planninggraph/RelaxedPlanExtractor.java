@@ -250,8 +250,8 @@ public class RelaxedPlanExtractor {
             for(Fluent f : ga.add) {
                 if(causalPending.contains(f) && !achievedFluents.contains(f)) {
                     int c = currentCausalReasoner.levelOfFact(f);
-                    assert c >= 0;
-                    maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
+                    if(c >= 0) // only account for possible ones TODO: should never be not achievable?
+                        maxCostOfAchieved = maxCostOfAchieved > c ? maxCostOfAchieved : c;
                 }
             }
             int cost = sumPreconditionsCosts - maxCostOfAchieved;

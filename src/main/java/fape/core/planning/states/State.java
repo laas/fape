@@ -1103,6 +1103,8 @@ public class State implements Reporter {
     public void addSupport(Task cond, Action act) {
         csp.stn().enforceConstraint(cond.start(), act.start(), 0, 0);
         csp.stn().enforceConstraint(cond.end(), act.end(), 0, 0);
+        if(this.pgr != null)
+            addUnificationConstraint(cond.groundSupportersVar(), act.instantiationVar());
         taskNet.addSupport(cond, act);
     }
 

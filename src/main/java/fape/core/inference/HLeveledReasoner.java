@@ -159,7 +159,10 @@ public class HLeveledReasoner<Clause, Fact> {
      */
     public Collection<Clause> candidatesFor(Fact f) throws NoSolutionException {
         List<Clause> candidates = new LinkedList<>();
-        for(LeveledReasoner.Enabler enabler : lr.enablers[inReasonerFactId(f)]) {
+        int id = inReasonerFactId(f);
+        if(lr.enablers[id] == null)
+            throw new NoSolutionException("No candidates for this fact.");
+        for(LeveledReasoner.Enabler enabler : lr.enablers[id]) {
             if(enabler.isInitEnabler()) {
                 candidates.add(null);
             } else {
