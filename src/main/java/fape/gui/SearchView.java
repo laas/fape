@@ -26,6 +26,7 @@ public class SearchView {
     public final static String SELECTED_FLAW = "selected-flaw";
     public final static String HEURISTIC_VALUES ="heuristic-values";
     public final static String ACTIONS_CANVAS = "actions-canvas";
+    public final static String COMMENT = "comment";
     final static Color BACKGROUND = Color.WHITE;
     final static Color FOREGROUND = Color.BLACK;
 
@@ -65,6 +66,7 @@ public class SearchView {
         nodeData.addColumn(LAST_APPLIED_RESOLVER, String.class);
         nodeData.addColumn(SELECTED_FLAW, String.class);
         nodeData.addColumn(HEURISTIC_VALUES, String.class);
+        nodeData.addColumn(COMMENT, String.class);
         nodeData.addColumn(ACTIONS_CANVAS, TimedCanvas.class);
         edgeData.addColumn(Tree.DEFAULT_SOURCE_KEY, int.class);
         edgeData.addColumn(Tree.DEFAULT_TARGET_KEY, int.class);
@@ -91,7 +93,10 @@ public class SearchView {
                     sb.append("Status: "); sb.append(item.getString(NODE_STATUS));; sb.append("\n");
                     sb.append(item.getString(HEURISTIC_VALUES)); sb.append("\n");
                     sb.append("Last resolver: "); sb.append(item.getString(LAST_APPLIED_RESOLVER)); sb.append("\n");
-                    sb.append("Selected flaw: "); sb.append(item.getString(SELECTED_FLAW));
+                    sb.append("Selected flaw: "); sb.append(item.getString(SELECTED_FLAW)); sb.append("\n");
+                    if(!item.getString(COMMENT).isEmpty()) {
+                        sb.append("Comment: "); sb.append(item.getString(COMMENT));
+                    }
                 }
                 title.setText(sb.toString());
             }
@@ -233,7 +238,8 @@ public class SearchView {
         h.append(" num-threats: "); h.append(st.getAllThreats().size());
         h.append(" num-opentasks: "); h.append(st.getOpenTasks().size());
         h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
-        h.append(" num-unbound: "); h.append(st.getUnboundVariables().size()); h.append("\n");
+        h.append(" num-unbound: "); h.append(st.getUnboundVariables().size());
+        h.append("\n");
         h.append(planner.stateComparator().reportOnState(st));
         if(planner.definesHeuristicsValues()) {
             h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
@@ -244,6 +250,7 @@ public class SearchView {
         n.setString(HEURISTIC_VALUES, h.toString());
         n.setString(SELECTED_FLAW, "???");
         n.setString(LAST_APPLIED_RESOLVER, "???");
+        n.setString(COMMENT, "");
         n.set(ACTIONS_CANVAS, st.getCanvasOfActions());
     }
 }

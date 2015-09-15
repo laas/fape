@@ -16,6 +16,8 @@ import fape.core.inference.Term;
 import fape.core.planning.Plan;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
+import fape.core.planning.heuristics.Preprocessor;
+import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
@@ -94,8 +96,6 @@ public class State implements Reporter {
 
     public final RefCounter refCounter;
 
-    public Set<AbstractAction> notAddable = new HashSet<>();
-
     /**
      * Keep tracks of statements that must be supported by a particular
      * decomposition. (e.g. by a statements which is a consequence of that
@@ -114,7 +114,8 @@ public class State implements Reporter {
      * (ii) be derivable from an reachable action if motivated.
      * This field is filled by PlanningGraphReachibility when needed.
      */
-    public EffSet<GAction> addableGroundActions = null;
+    public EffSet<GAction> addableActions;
+    public Set<AbstractAction> addableTemplates;
 
     /**
      * Contains all ground versions of fluents in the state with their associated time points
@@ -123,6 +124,7 @@ public class State implements Reporter {
 
     public HReasoner<Term> reasoner = null;
 
+    public ReachabilityGraphs reachabilityGraphs = null;
 
     class PotentialThreat {
         private final int id1, id2;
@@ -157,6 +159,7 @@ public class State implements Reporter {
      */
     private int problemRevision;
 
+    @Deprecated
     public FeasibilityReasoner pgr = null;
 
     /**
@@ -175,6 +178,8 @@ public class State implements Reporter {
         resMan = new ResourceManager();
         threats = new HashSet<>();
         potentialSupporters = new HashMap<>();
+        addableActions = null;
+        addableTemplates = null;
 
         supportConstraints = new LinkedList<>();
 
@@ -203,6 +208,8 @@ public class State implements Reporter {
         resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
         potentialSupporters = new HashMap<>(st.potentialSupporters);
+        addableActions = st.addableActions != null ? st.addableActions.clone() : null;
+        addableTemplates = st.addableTemplates != null ? st.addableTemplates : null;
     }
 
     public State cc() {
@@ -214,7 +221,12 @@ public class State implements Reporter {
      * depending on the planner used.
      */
     public boolean isAddable(AbstractAction a) {
-        return !notAddable.contains(a);
+        if(addableTemplates == null) {
+            assert addableActions == null : "Addable action where added without generating the related templates.";
+            return true; // addable by default
+        } else {
+            return addableTemplates.contains(a);
+        }
     }
 
     /**

@@ -193,6 +193,11 @@ public class HLeveledReasoner<Clause, Fact> {
         return lr.levelOfFact(inReasonerFactId(f));
     }
 
+    public int levelOfFact(int factID) {
+        assert factID >= 0 && knowsFact(factID); //TODO return -1 when unknown fact?
+        return lr.levelOfFact(inReasonerFactId(factID));
+    }
+
     /**
      *  Returns the minimum level in which this clause is valid
      *  -1 meaning it is never valid

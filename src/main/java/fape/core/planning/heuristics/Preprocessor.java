@@ -105,6 +105,7 @@ public class Preprocessor {
         return isHierarchical;
     }
 
+    @Deprecated
     public EffSet<GAction> getAllPossibleActionFromState(State st) {
         return getFeasibilityReasoner().getAllActions(st);
     }

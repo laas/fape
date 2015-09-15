@@ -86,9 +86,10 @@ public class FeasibilityReasoner {
         }
     }
 
+    @Deprecated
     public EffSet<GAction> getAllActions(State st) {
-        if(st.addableGroundActions != null)
-            return st.addableGroundActions;
+        if(st.addableActions != null)
+            return st.addableActions;
 
         HReasoner<Term> r = getReasoner(st);
         HashSet<GAction> feasibles2 = new HashSet<>();
@@ -109,10 +110,11 @@ public class FeasibilityReasoner {
             st.csp.bindings().restrictDomain(a.instantiationVar(), dom);
         }
 
-        st.addableGroundActions = feasibles;
+        st.addableActions = feasibles;
         return feasibles;
     }
 
+    @Deprecated
     public EffSet<GAction> getAddableActions(State st, EffSet<GAction> allowed) {
         boolean print = false;
         EffSet<GAction> restrictedAllowed = allowed.clone();
@@ -228,6 +230,7 @@ public class FeasibilityReasoner {
         }
     }
 
+    @Deprecated
     public boolean checkFeasibility(State st) {
         Set<GAction> acts = getAllActions(st);
 
@@ -278,13 +281,11 @@ public class FeasibilityReasoner {
         Set<AbstractAction> addableActions = new HashSet<>();
         for(GAction ga : getAllActions(st))
             addableActions.add(ga.abs);
-        Set<AbstractAction> nonAddable = new HashSet<>(st.pb.abstractActions());
-        nonAddable.removeAll(addableActions);
-        st.notAddable = nonAddable;
 
         return true;
     }
 
+    @Deprecated
     public EffSet<GAction> getGroundActions(Action liftedAction, State st) {
         assert st.csp.bindings().isRecorded(liftedAction.instantiationVar());
         Domain dom = st.csp.bindings().rawDomain(liftedAction.instantiationVar());

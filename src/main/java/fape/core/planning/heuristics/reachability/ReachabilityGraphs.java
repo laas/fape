@@ -15,6 +15,9 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
 import planstack.constraints.bindings.Domain;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class ReachabilityGraphs {
 
     final APlanner planner;
@@ -29,16 +32,32 @@ public class ReachabilityGraphs {
 
     EffSet<GAction> addableActions = null;
     EffSet<GAction> unsupporting;
+    EffSet<GAction> openTasksActs;
     EffSet<Fluent> inPlanFluents;
 
     public ReachabilityGraphs(APlanner pl, State st) {
+        assert st.reachabilityGraphs == null : "Rebuilding a reachability graph.";
         this.planner = pl;
         this.st = st;
         this.fr = pl.preprocessor.getFeasibilityReasoner();
         this.pp = pl.preprocessor;
         initUnsupporting();
         initInPlanFluents();
-        initGraphs(pp.getAllActions()); // TODO: reuse from set of previous state
+        initGraphs(st.addableActions != null ? st.addableActions : pp.getAllActions());
+
+        restrictTaskSupporters();
+        restrictUnattachedActions();
+
+        st.reachabilityGraphs = this;
+        st.addableActions = addableActions;
+        st.addableTemplates = new HashSet<>();
+        for(GAction ga : addableActions) {
+            st.addableTemplates.add(ga.abs);
+        }
+    }
+
+    public boolean isRefinableToSolution() {
+        return st.isConsistent() && !hasUnreachableGoal();
     }
 
     private void initUnsupporting() {
@@ -46,6 +65,15 @@ public class ReachabilityGraphs {
         for(Action a : st.getAllActions())
             if(!st.taskNet.isSupporting(a))
                 unsupporting.addAll(fr.getGroundActions(a, st));
+    }
+
+    private void initOpenTasksActs() {
+        assert openTasksActs == null;
+        openTasksActs = new EffSet<GAction>(pp.groundActionIntRepresentation());
+        for(Task t : st.getOpenTasks()) {
+            Domain dom = st.csp.bindings().rawDomain(t.groundSupportersVar());
+            openTasksActs.addAll(new EffSet<GAction>(pp.groundActionIntRepresentation(), dom.toBitSet()));
+        }
     }
 
     public void initInPlanFluents() {
@@ -88,7 +116,7 @@ public class ReachabilityGraphs {
             addableActions = restrictedAllowed;
     }
 
-    public void restrictTaskSupporters() {
+    private void restrictTaskSupporters() {
         EffSet<GAction> potentialSupporters = unsupporting.clone();
         potentialSupporters.addAll(addableActions);
         Domain dom = new Domain(potentialSupporters.toBitSet());
@@ -96,7 +124,7 @@ public class ReachabilityGraphs {
             st.csp.bindings().restrictDomain(t.groundSupportersVar(), dom);
     }
 
-    public boolean hasUnreachableGoal() { //TODO: should just restrict the domain?
+    private boolean hasUnreachableGoal() { //TODO: should just restrict the domain?
         for(Timeline og : st.tdb.getConsumers()) {
             boolean doable = false;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, planner)) {
@@ -111,7 +139,26 @@ public class ReachabilityGraphs {
         return false;
     }
 
-    public boolean hasNonMotivableAction() { // TODO: this should just restrict the domain
+    private void restrictUnattachedActions() { // TODO: this method could be optimized
+        initOpenTasksActs();
+        EffSet<GAction> attachable = openTasksActs.clone();
+        // a dependent action
+        Set<GTaskCond> tasks = new HashSet<>();
+        for(GAction ga : addableActions) {
+            tasks.addAll(ga.subTasks);
+        }
+        for(GAction ga : pp.getAllActions()) {
+            if(tasks.contains(ga.task))
+                attachable.add(ga);
+        }
+
+        Domain unattachedDomain = new Domain(attachable.toBitSet());
+        for(Action a : st.getUnmotivatedActions()) {
+            st.csp.bindings().restrictDomain(a.instantiationVar(), unattachedDomain);
+        }
+    }
+
+    private boolean hasNonAttachableAction() { // TODO: this should just restrict the domain
         for(Action a : st.getUnmotivatedActions()) {
             boolean motivable = false;
             for(GAction ga : fr.getGroundActions(a, st)) {
@@ -124,5 +171,52 @@ public class ReachabilityGraphs {
                 return true;
         }
         return false;
+    }
+
+
+    public boolean isAddable(GAction ga) {
+        return addableActions.contains(ga);
+    }
+
+    public int causalLevelOf(GAction ga) {
+        if(addableActions.contains(ga)) {
+            return causalGraph.levelOfClause(ga);
+        } else {
+            int max = 0;
+            for(int precondition : ga.preconditions) {
+                int lvl = causalGraph.levelOfFact(precondition);
+                if(lvl == -1)
+                    return -1;
+                max = max > lvl ? max : lvl;
+            }
+
+            return max;
+        }
+    }
+
+    public int derivLevelOf(GAction ga) {
+        if(!ga.abs.mustBeMotivated())
+            return 0;
+
+        if(addableActions.contains(ga)) {
+            return derivGraph.levelOfClause(ga);
+        } else {
+            return derivGraph.levelOfFact(ga.task);
+        }
+    }
+
+    public int decompLevelOf(GAction ga) {
+        if(addableActions.contains(ga)) {
+            return decompGraph.levelOfClause(ga);
+        } else {
+            int max = 0;
+            for(GTaskCond subtask : ga.subTasks) {
+                int lvl = decompGraph.levelOfFact(subtask);
+                if(lvl == -1)
+                    return -1;
+                max = max > lvl ? max : lvl;
+            }
+            return max;
+        }
     }
 }

@@ -46,6 +46,7 @@ public abstract class APlanner {
         preprocessor = new Preprocessor(this, initialState);
         if(options.usePlanningGraphReachability) {
             initialState.pgr = preprocessor.getFeasibilityReasoner();
+            initialState.reachabilityGraphs = new ReachabilityGraphs(this, initialState);
         }
 
         if(options.displaySearch) {
@@ -61,9 +62,13 @@ public abstract class APlanner {
         this.pb = new AnmlProblem(useActionConditions());
         this.dtg = new LiftedDTG(this.pb);
         this.queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new State(pb, controllability));
 
-        this.preprocessor = new Preprocessor(this, queue.peek());
+        State initState = new State(pb, controllability);
+        queue.add(initState);
+
+        this.preprocessor = new Preprocessor(this, initState);
+        if(options.usePlanningGraphReachability)
+            initState.reachabilityGraphs = new ReachabilityGraphs(this, initState);
     }
 
     public final PlanningOptions options;
@@ -320,14 +325,14 @@ public abstract class APlanner {
 
         expandedStates++;
 
-        if(options.usePlanningGraphReachability) {
-            if (!preprocessor.getFeasibilityReasoner().checkFeasibility(st)) {
-                TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
-                if (options.displaySearch)
-                    searchView.setDeadEnd(st);
-                return children;
-            }
-        }
+//        if(options.usePlanningGraphReachability) {
+//            if (!preprocessor.getFeasibilityReasoner().checkFeasibility(st)) {
+//                TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
+//                if (options.displaySearch)
+//                    searchView.setDeadEnd(st);
+//                return children;
+//            }
+//        }
 
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
@@ -364,8 +369,10 @@ public abstract class APlanner {
         if (resolvers.isEmpty()) {
             // dead end, keep going
             TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
-            if(options.displaySearch)
+            if(options.displaySearch) {
+                searchView.setProperty(st, SearchView.COMMENT, "Pruned by old reachability");
                 searchView.setDeadEnd(st);
+            }
             return children;
         }
 
@@ -378,25 +385,39 @@ public abstract class APlanner {
             State next = st.cc();
             TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, res);
             boolean success = applyResolver(next, res);
+            String hrComment = "";
 
+            if(!success)
+                hrComment = "Non consistent resolver application.";
+
+            // if we use fast forward, solve any flaw with at most one resolver
+            if(success && options.useFastForward) {
+                success &= fastForward(next, 10);
+                if(!success) {
+                    hrComment = "Inconsistency or flaw with no resolvers when fast forwarding.";
+                }
+            }
+
+            // build reachibility graphs
+            if(success && options.usePlanningGraphReachability) {
+                next.reachabilityGraphs = new ReachabilityGraphs(this, next);
+                success &= next.reachabilityGraphs.isRefinableToSolution();
+                if(!success)
+                    hrComment = "Pruned by reachability.";
+            }
+
+            if(options.displaySearch) {
+                searchView.addNode(next, st);
+                searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st, res));
+                searchView.setProperty(next, SearchView.COMMENT, hrComment);
+            }
             if (success) {
-                if(options.useFastForward) {
-                    if(fastForward(next, 10)) {
-                        children.add(next);
-                        GeneratedStates++;
-                    } else {
-                        TinyLogger.LogInfo(st, "     ff: Dead-end reached for state: %s", next.mID);
-                    }
-                } else {
-                    children.add(next);
-                    GeneratedStates++;
-                }
-                if(options.displaySearch) {
-                    searchView.addNode(next, st);
-                    searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st, res));
-                }
+                children.add(next);
+                GeneratedStates++;
             } else {
                 TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
+                if (options.displaySearch)
+                    searchView.setDeadEnd(next);
                 //inconsistent state, doing nothing
             }
         }
