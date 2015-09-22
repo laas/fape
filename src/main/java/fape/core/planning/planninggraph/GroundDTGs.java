@@ -70,7 +70,7 @@ public class GroundDTGs {
             dtg.setEntryPoint(f, 0);
         }
         dtg.addNode(null, 0, null, null);
-        dtg.setEntryPoint(null, 0);
+        dtg.setAccepting(null, 0);
         return dtg;
     }
 }

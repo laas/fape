@@ -21,12 +21,12 @@ import java.util.PrimitiveIterator;
 
 public class DTGImpl {
 
-    private static int EDGE_SIZE = 4; /* src, dest, lifted act, ground act */
-    private static int NODE_SIZE = 6; /* fluent, level, start, end, accepting, entry-point */
-    private static int EMPTY_NODE = -5;
+    private static final int EDGE_SIZE = 4; /* src, dest, lifted act, ground act */
+    private static final int NODE_SIZE = 6; /* fluent, level, start, end, accepting, entry-point */
+    private static final int EMPTY_NODE = -5;
 
-    private static int ACCEPTING = 1, NON_ACCEPTING = 0;
-    private static int ENTRY_POINT =1, NOT_ENTRY_POINT = 0;
+    private static final int ACCEPTING = 1, NON_ACCEPTING = 0;
+    private static final int ENTRY_POINT =1, NOT_ENTRY_POINT = 0;
 
     private int nextNode = 1;
     private int nextEdge = 0;
