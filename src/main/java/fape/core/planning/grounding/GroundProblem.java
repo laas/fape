@@ -7,7 +7,6 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.EffSet;
-import org.jfree.chart.plot.AbstractPieLabelDistributor;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;

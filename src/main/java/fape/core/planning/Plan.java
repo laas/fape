@@ -6,7 +6,6 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
-import fape.util.ActionsChart;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.STNUDispatcher;
