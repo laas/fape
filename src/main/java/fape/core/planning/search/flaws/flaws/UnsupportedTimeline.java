@@ -10,13 +10,19 @@ import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.LVarRef;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
+import planstack.anml.model.abs.statements.AbstractAssignment;
+import planstack.anml.model.abs.statements.AbstractLogStatement;
+import planstack.anml.model.abs.statements.AbstractStatement;
+import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class UnsupportedTimeline extends Flaw {
 
@@ -164,12 +170,21 @@ public class UnsupportedTimeline extends Flaw {
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (fape.core.planning.preprocessing.SupportingAction aa : potentialSupporters) {
-                // only considere action that are not marked motivated.
-                // TODO: make it complete (consider a task hierarchy where an action is a descendant of unmotivated action)
-                if (planner.useActionConditions() || !aa.absAct.mustBeMotivated()) {
-                    if(st.isAddable(aa.absAct))
-                        resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
-                }
+                if (!planner.useActionConditions() && aa.absAct.mustBeMotivated())
+                    continue;
+                if(!st.isAddable(aa.absAct))
+                    continue;
+
+                // if the supporting variable is defined already (typically a constant) check if it is unifiable with our consumer
+                AbstractLogStatement supporter = aa.absAct.jLogStatements().stream()
+                        .filter(p -> p.id() == aa.statementRef).findFirst().get();
+                LVarRef supportingCar = supporter instanceof AbstractAssignment
+                        ? ((AbstractAssignment) supporter).value()
+                        : ((AbstractTransition) supporter).to();
+                if(aa.absAct.context().hasGlobalVar(supportingCar) && !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
+                    continue;
+                
+                resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
             }
         }
 
