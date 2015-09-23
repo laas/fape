@@ -53,11 +53,10 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
                                 .setLongFlag("planner")
-                                .setDefault("taskcond")
+                                .setDefault("fape")
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + "  - htn: subtasks will be replaced with a matching action directly inserted in the plan\n"
-                                        + "  - taskcond: The actions in decompositions are replaced with task conditions that "
-                                        + "are fulfilled through search be linking with other actions in the plan\n"),
+                                        + "  - topdown: Traditional top-down HTN planning.\n"
+                                        + "  - fape: Cool planning \\o/.\n"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -83,24 +82,24 @@ public class Planning {
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("fast-forward")
-                                .setDefault("false")
+                                .setDefault("true")
                                 .setHelp("If true, all trivial flaws (with one resolver) will be solved before inserting a state into the queue." +
                                         "This results in additional computations as some time is spent computing flaws and resolver for partial plans that " +
-                                        "might never be expanded. On the other hand, it can result in a better herristic information because states in " +
-                                        "the queue are more advanced. Also the total number of states in the queue is often reduces which means less" +
+                                        "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
+                                        "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
                         new FlaggedOption("A-Epsilon")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("ae")
-                                .setDefault("false")
+                                .setDefault("true")
                                 .setHelp("The planner will use an A-Epsilon search with epsilon = 0.3. The epsilon can not be " +
                                         "parameterized through command line yet."),
                         new FlaggedOption("reachability")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("reachability")
-                                .setDefault("false")
+                                .setDefault("true")
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
                                         "consists in an analysis on a ground version of the problem, checking both causal and" +
                                         "hierarchical properties of a partial plan."),
@@ -109,7 +108,9 @@ public class Planning {
                                 .setShortFlag('n')
                                 .setLongFlag(JSAP.NO_LONGFLAG)
                                 .setDefault("1")
-                                .setHelp("Number of times to repeat all planning activities"),
+                                .setHelp("Number of times to repeat all planning activities. This might be used to (i) " +
+                                        "check that FAPE indeed get the same plan/search space (ii) get realistic runtime" +
+                                        " after warming up the JVM."),
                         new FlaggedOption("strategies")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)

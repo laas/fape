@@ -183,7 +183,7 @@ public class UnsupportedTimeline extends Flaw {
                         : ((AbstractTransition) supporter).to();
                 if(aa.absAct.context().hasGlobalVar(supportingCar) && !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
                     continue;
-                
+
                 resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
             }
         }

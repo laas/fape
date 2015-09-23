@@ -8,7 +8,7 @@ import planstack.constraints.stnu.Controllability;
 public class PlannerFactory {
 
     public static final String defaultPlanner = "taskcond";
-    public static final String[] defaultPlanSelStrategies = { "soca" };
+    public static final String[] defaultPlanSelStrategies = { "rplan","soca" };
     public static final String[] defaultFlawSelStrategies = { "hf", "ogf", "abs", "lcf", "eogf" };
     public static final Controllability defaultControllabilityStrategy = Controllability.PSEUDO_CONTROLLABILITY;
 
@@ -23,12 +23,9 @@ public class PlannerFactory {
 
     public static APlanner getPlanner(String name, PlanningOptions options, Controllability controllability) {
         switch (name) {
-            case "htn":
-            case "base+dtg":
+            case "topdown":
                 return new BaseDTG(controllability, options);
-            case "base":
-                return new Planner(controllability, options);
-            case "taskcond":
+            case "fape":
                 return new TaskConditionPlanner(controllability,options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
@@ -37,12 +34,9 @@ public class PlannerFactory {
 
     public static APlanner getPlannerFromInitialState(String name, State state, PlanningOptions options) {
          switch (name) {
-            case "htn":
-            case "base+dtg":
+            case "topdown":
                 return new BaseDTG(state, options);
-            case "base":
-                return new Planner(state, options);
-            case "taskcond":
+            case "fape":
                 return new TaskConditionPlanner(state, options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
