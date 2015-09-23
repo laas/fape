@@ -7,7 +7,7 @@ import planstack.constraints.stnu.Controllability;
 
 public class PlannerFactory {
 
-    public static final String defaultPlanner = "taskcond";
+    public static final String defaultPlanner = "fape";
     public static final String[] defaultPlanSelStrategies = { "rplan","soca" };
     public static final String[] defaultFlawSelStrategies = { "hf", "ogf", "abs", "lcf", "eogf" };
     public static final Controllability defaultControllabilityStrategy = Controllability.PSEUDO_CONTROLLABILITY;
