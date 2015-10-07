@@ -50,16 +50,13 @@ trait Chronicle {
   /** Returns all logical statements */
   def resourceStatements : java.util.List[ResourceStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[ResourceStatement]).map(_.asInstanceOf[ResourceStatement]))
 
-  /** Actions to be inserted in the plan */
-  def actions : java.util.List[Action]
-
   /** Actions conditions that must be fulfilled by the plan.
     *
     * An action condition has an action name, a set of parameters and two timepoints.
     * It can be fulfilled/supported by an action with the same whose parameters and
     * time points are equal to those of the action condition.
     */
-  def actionConditions : java.util.List[Task]
+  def tasks : java.util.List[Task]
 
   /** (Type, Reference) of global variables to be declared */
   def vars : java.util.List[Pair[String, VarRef]]
@@ -92,10 +89,7 @@ trait Chronicle {
               case x: Action => Some(x)
               case _ => None
             }
-          if (pb.usesActionConditions)
-            actionConditions += Task(pb, s, context, parent, refCounter)
-          else
-            actions += Action(pb, s, refCounter, parent, Some(context))
+          tasks += Task(pb, s, context, parent, refCounter)
 
         case s:AbstractBindingConstraint =>
           bindingConstraints += s.bind(context, pb, this, refCounter)
@@ -110,11 +104,7 @@ trait Chronicle {
     */
   def getTemporalObjects: TemporalObjects = {
     // we can make virtual the time points of actions and those of the container
-    val fixedTPs = (
-      for(interval:TemporalInterval <- container :: actions.asScala.toList) yield
-        List(interval.start,interval.end)
-      ).flatten.toSet
-
+    val fixedTPs = Set(container.start,container.end)
 
     val equalities = temporalConstraints.filter(_.op == "=")
     val rigidsRawConstraints =
@@ -144,7 +134,7 @@ trait Chronicle {
     }
 
     // statements and action conditions are regular time point (if they are not virtual)
-    for(s <- statements ++ actionConditions) {
+    for(s <- statements ++ tasks) {
       if(!virtualTimePoints.contains(s.start)) tps.append((s.start, "controllable"))
       if(!virtualTimePoints.contains(s.end)) tps.append((s.end, "controllable"))
     }
@@ -181,7 +171,7 @@ class BaseChronicle(val container: TemporalInterval) extends Chronicle {
   val statements = new util.LinkedList[Statement]()
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
   val actions = new util.LinkedList[Action]()
-  val actionConditions = new util.LinkedList[Task]()
+  val tasks = new util.LinkedList[Task]()
   val vars = new util.LinkedList[Pair[String, VarRef]]()
   override val instances = new util.LinkedList[String]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()

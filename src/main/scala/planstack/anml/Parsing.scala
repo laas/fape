@@ -18,7 +18,7 @@ object Parsing extends App {
 
     val start = System.currentTimeMillis()
 
-    val pb = new AnmlProblem(usesActionConditions = true)
+    val pb = new AnmlProblem()
     val parsed = System.currentTimeMillis()
     pb.extendWithAnmlFile(file)
     val extended = System.currentTimeMillis()

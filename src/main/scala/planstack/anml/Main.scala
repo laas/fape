@@ -22,7 +22,7 @@ object Main extends App {
 //    case x => println("Failure: "+x)
 //  }
 
-  val pb = new AnmlProblem(usesActionConditions = true)
+  val pb = new AnmlProblem()
   pb.extendWithAnmlFile("resources/text.anml")
 
 //  val ref = new AbstractActionRef("Move", List("R0", "L0", "L1"), "")

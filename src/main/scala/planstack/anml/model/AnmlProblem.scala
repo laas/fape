@@ -38,10 +38,8 @@ import scala.collection.mutable
   * A first one is added in the constructor containing predefined instances of the problem (such as true and false).
   * Every time an `addAnml(...)` method it called, the problem's components are updated accordingly and a new
   * [[planstack.anml.model.concrete.Chronicle]] is added to represent the changes in the problems.
-  *
-  * @param usesActionConditions If set to true, the ANML problem will use ActionCondition instead of Action for representing subtasks.
   */
-class AnmlProblem(val usesActionConditions : Boolean) extends TemporalInterval {
+class AnmlProblem extends TemporalInterval {
 
   val refCounter = new RefCounter()
 

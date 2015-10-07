@@ -93,6 +93,9 @@ abstract class AbstractContext {
       globalName
   }
 
+  def hasGlobalVar(localRef: LVarRef) : Boolean =
+    getDefinition(localRef)._2.nonEmpty
+
   def getLocalVar(globalRef: VarRef) : LVarRef = {
     for((lv, (typ, v)) <- variables ; if v == globalRef)
       return lv

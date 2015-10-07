@@ -43,7 +43,6 @@ class Action(
   val statements = new util.LinkedList[Statement]()
 
   val instantiationVar : VarRef = new VarRef(refCounter)
-  val decompositionVar : VarRef = new VarRef(refCounter)
 
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
@@ -94,7 +93,7 @@ class Action(
   def taskName = abs.taskName
   def name = abs.name
   val actions = new util.LinkedList[Action]()
-  val actionConditions = new util.LinkedList[Task]()
+  val tasks = new util.LinkedList[Task]()
 
   /** Returns true if the statement `s` is contained in this action */
   def contains(s: Statement) = statements.contains(s)

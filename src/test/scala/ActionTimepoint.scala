@@ -24,7 +24,7 @@ class ActionTimepoint extends FunSuite {
     """.stripMargin
 
   test("none") {
-    val pb = new AnmlProblem(usesActionConditions = true)
+    val pb = new AnmlProblem()
     pb.extendWithAnmlText(dom)
   }
 }

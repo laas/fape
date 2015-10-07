@@ -125,7 +125,11 @@ class InstanceManager(refCounter: RefCounter) {
 
   /** Returns all instances of the given type */
   private def instancesOfTypeRec(tipe:String) : List[String] = {
-    instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
+    try {
+      instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
+    } catch {
+      case e: java.util.NoSuchElementException => throw new ANMLException("Unable to find a type: "+e.getMessage)
+    }
   }
 
   /**
