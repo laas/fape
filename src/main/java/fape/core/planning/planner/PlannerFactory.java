@@ -1,6 +1,5 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.Planner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.constraints.stnu.Controllability;
@@ -24,9 +23,9 @@ public class PlannerFactory {
     public static APlanner getPlanner(String name, PlanningOptions options, Controllability controllability) {
         switch (name) {
             case "topdown":
-                return new BaseDTG(controllability, options);
+                return new TopDownPlanner(controllability, options);
             case "fape":
-                return new TaskConditionPlanner(controllability,options);
+                return new FAPEPlanner(controllability,options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }
@@ -35,9 +34,9 @@ public class PlannerFactory {
     public static APlanner getPlannerFromInitialState(String name, State state, PlanningOptions options) {
          switch (name) {
             case "topdown":
-                return new BaseDTG(state, options);
+                return new TopDownPlanner(state, options);
             case "fape":
-                return new TaskConditionPlanner(state, options);
+                return new FAPEPlanner(state, options);
             default:
                 throw new FAPEException("Unknown planner name: "+name);
         }

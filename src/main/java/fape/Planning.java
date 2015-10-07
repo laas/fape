@@ -258,7 +258,7 @@ public class Planning {
                 conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
                 conf.options.displaySearch = config.getBoolean("display-search");
 
-                final AnmlProblem pb = new AnmlProblem(true); //todo clean up AnmlProblem as the parameter is now useless
+                final AnmlProblem pb = new AnmlProblem();
                 try {
                     pb.extendWithAnmlFile(anmlFile);
 

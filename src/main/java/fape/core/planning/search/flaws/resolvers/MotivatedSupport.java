@@ -64,8 +64,6 @@ public class MotivatedSupport extends Resolver {
     @Override
     public boolean apply(State st, APlanner planner) {
         assert toSupport.mustBeMotivated();
-        assert planner.useActionConditions() :
-                "Error: looking for motivated support in a planner that does not use action conditions.";
 
         // action that will be decomposed. Either it is already in the plan or we add it now
         if(act == null) {

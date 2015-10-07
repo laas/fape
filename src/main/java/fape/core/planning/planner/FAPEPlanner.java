@@ -12,23 +12,23 @@ import planstack.constraints.stnu.Controllability;
  * by unifying all there arguments and time points. To reflect that, a support link from the action condition
  * to the action is added in the task network.
  */
-public class TaskConditionPlanner extends BaseDTG {
+public class FAPEPlanner extends TopDownPlanner {
 
-    public TaskConditionPlanner(State initialState, PlanningOptions options) {
+    public FAPEPlanner(State initialState, PlanningOptions options) {
         super(initialState, options);
     }
 
-    public TaskConditionPlanner(Controllability controllability, PlanningOptions options) {
+    public FAPEPlanner(Controllability controllability, PlanningOptions options) {
         super(controllability, options);
     }
 
     @Override
     public String shortName() {
-        return "taskcond";
+        return "fape";
     }
 
     @Override
-    public boolean useActionConditions() {
-        return true;
+    public boolean isTopDownOnly() {
+        return false;
     }
 }

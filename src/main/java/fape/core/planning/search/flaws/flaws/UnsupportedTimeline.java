@@ -158,7 +158,7 @@ public class UnsupportedTimeline extends Flaw {
             potentiallySupportingAction.add(sa.absAct);
 
         // look for task decomposition that might produce a desired action in the future
-        if(!planner.useActionConditions()) {
+        if(planner.isTopDownOnly()) {
             for (Task t : st.getOpenTasks()) {
                 Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
                 for (AbstractAction dec : decs) {
@@ -170,7 +170,7 @@ public class UnsupportedTimeline extends Flaw {
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (fape.core.planning.preprocessing.SupportingAction aa : potentialSupporters) {
-                if (!planner.useActionConditions() && aa.absAct.mustBeMotivated())
+                if (planner.isTopDownOnly() && aa.absAct.mustBeMotivated())
                     continue;
                 if(!st.isAddable(aa.absAct))
                     continue;
@@ -189,7 +189,7 @@ public class UnsupportedTimeline extends Flaw {
         }
 
         // make sure all resolvers validate the constraints built by previous resolvers.
-        if(!planner.useActionConditions()) {
+        if(planner.isTopDownOnly()) {
             resolvers = st.retainValidResolvers(this, resolvers);
         }
 

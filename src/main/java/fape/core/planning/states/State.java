@@ -16,7 +16,6 @@ import fape.core.inference.Term;
 import fape.core.planning.Plan;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
-import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;
@@ -699,11 +698,6 @@ public class State implements Reporter {
         for(BindingConstraint bc : mod.bindingConstraints())
             apply(mod, bc);
 
-        for (Action act : mod.actions()) {
-            insert(act);
-        }
-
-
         // last: virtual time points might refer to start/end of nested actions
         for(Tuple3<TPRef,TPRef,Integer> virtual : timedObjects.virtualTimePoints()) {
             csp.stn().addVirtualTimePoint(virtual._1(), virtual._2(), virtual._3());
@@ -715,7 +709,7 @@ public class State implements Reporter {
         }
 
         // needs time points to be defined
-        for(Task ac : mod.actionConditions()) {
+        for(Task ac : mod.tasks()) {
             csp.stn().enforceBefore(ac.start(), ac.end());
 
             if(mod instanceof Action)

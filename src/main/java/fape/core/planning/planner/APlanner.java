@@ -1,7 +1,6 @@
 package fape.core.planning.planner;
 
 import fape.core.planning.Plan;
-import fape.core.planning.Planner;
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
@@ -59,7 +58,7 @@ public abstract class APlanner {
     public APlanner(Controllability controllability, PlanningOptions options) {
         this.options = options;
         this.controllability = controllability;
-        this.pb = new AnmlProblem(useActionConditions());
+        this.pb = new AnmlProblem();
         this.dtg = new LiftedDTG(this.pb);
         this.queue = new PriorityQueue<>(100, this.stateComparator());
 
@@ -101,18 +100,6 @@ public abstract class APlanner {
 
     public abstract ActionSupporterFinder getActionSupporterFinder();
 
-    /**
-     * If this returns true, decomposition will yield ActionConditions instead of Actions.
-     * ActionConditions results in flaws that can be solved by unifying the action condition with
-     * an action.
-     */
-    public boolean useActionConditions() {
-        return false;
-    }
-
-    /**
-     *
-     */
     protected final PriorityQueue<State> queue;
 
     /**
@@ -125,6 +112,8 @@ public abstract class APlanner {
      */
     public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) {
     }
+
+    public abstract boolean isTopDownOnly();
 
     /**
      * All possible state of the planner.
@@ -148,19 +137,12 @@ public abstract class APlanner {
     public List<Flaw> getFlaws(State st) {
         List<Flaw> flaws = new LinkedList<>();
 
-        if(!useActionConditions() && !st.getOpenTasks().isEmpty()) {
-            // we are not using action condition (htn planner),
-            // hence every opened task must be solved with an action insertion which is done first
-            for(Task ac : st.getOpenTasks()) {
-                flaws.add(new UnsupportedTaskCond(ac));
-            }
-        } else {
-            for (FlawFinder fd : options.flawFinders)
-                flaws.addAll(fd.getFlaws(st, this));
+        for (FlawFinder fd : options.flawFinders)
+            flaws.addAll(fd.getFlaws(st, this));
 
-            //find the resource flaws
-            flaws.addAll(st.resourceFlaws());
-        }
+        //find the resource flaws
+        flaws.addAll(st.resourceFlaws());
+
         return flaws;
     }
 
@@ -288,8 +270,6 @@ public abstract class APlanner {
             List<Flaw> flaws = getFlaws(st);
             if (flaws.isEmpty()) {
                 // this is a solution state
-                if(Planner.debugging)
-                    st.assertConstraintNetworkGroundAndConsistent();
                 if(options.displaySearch)
                     searchView.setSolution(st);
 
@@ -527,8 +507,6 @@ public abstract class APlanner {
             List<Flaw> flaws = getFlaws(current);
             if (flaws.isEmpty()) {
                 // this is a solution state
-                if(Planner.debugging)
-                    current.assertConstraintNetworkGroundAndConsistent();
                 if(options.displaySearch)
                     searchView.setSolution(current);
 

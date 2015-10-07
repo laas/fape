@@ -10,23 +10,15 @@
  */
 package fape.util;
 
-//import fape.core.planning.Planner;
-
-import fape.core.planning.Planner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 
-/**
- *
- * @author Filip Dvořák
- */
 public class TinyLogger {
+    public static boolean logging = false;
 
     public static void LogInfo(State st, String toFormat, Object... objects) {
-        if(!Planner.logging)
+        if(!logging)
             return;
-
-        String inFormating = toFormat;
 
         Object[] printables = new Object[objects.length];
         for(int i=0 ; i<objects.length ; i++) {
@@ -38,13 +30,13 @@ public class TinyLogger {
 
     //public static boolean logging = false;
     public static void LogInfo(String st) {
-        if (Planner.logging) {
+        if (logging) {
             System.out.println("Logger:" + st);
         }
     }
 
     public static void LogInfo(Reporter o) {
-        if(Planner.logging) {
+        if(logging) {
             System.out.println("Logger: "+o.report());
         }
     }
