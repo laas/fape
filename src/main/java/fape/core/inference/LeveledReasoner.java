@@ -1,7 +1,6 @@
 package fape.core.inference;
 
 import java.util.*;
-import java.util.function.*;
 
 public class LeveledReasoner {
 

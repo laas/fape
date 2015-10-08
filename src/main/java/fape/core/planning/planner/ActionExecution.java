@@ -1,11 +1,11 @@
 package fape.core.planning.planner;
 
 
-import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.ActRef;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.ActionStatus;
 
-import java.util.LinkedList;
 import java.util.List;
 
 public class ActionExecution {

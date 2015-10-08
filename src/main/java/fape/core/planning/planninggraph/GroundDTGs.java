@@ -8,7 +8,9 @@ import fape.core.planning.planner.APlanner;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.InstanceRef;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GroundDTGs {
 

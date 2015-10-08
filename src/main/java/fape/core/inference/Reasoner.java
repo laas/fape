@@ -1,6 +1,5 @@
 package fape.core.inference;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Reasoner {

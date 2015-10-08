@@ -8,13 +8,13 @@ import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
-import org.apache.batik.gvt.text.GVTAttributedCharacterIterator;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Preprocessor {
 

@@ -1,18 +1,16 @@
 package fape.core.planning.planninggraph;
 
-import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
-import fape.core.planning.heuristics.DefaultIntRepresentation;
-import fape.core.planning.heuristics.relaxed.*;
+import fape.core.planning.heuristics.relaxed.ActionUsageTracker;
+import fape.core.planning.heuristics.relaxed.DTGCollection;
+import fape.core.planning.heuristics.relaxed.DTGImpl;
+import fape.core.planning.heuristics.relaxed.OpenGoalTransitionFinder;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.NoSolutionException;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.Task;
-import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
 

@@ -7,7 +7,6 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedTaskCond;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -19,7 +18,6 @@ import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 

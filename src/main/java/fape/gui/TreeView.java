@@ -1,12 +1,5 @@
 package fape.gui;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseEvent;
-import java.awt.geom.Point2D;
-
-import javax.swing.AbstractAction;
-import javax.swing.KeyStroke;
-
 import fape.exceptions.FAPEException;
 import prefuse.Constants;
 import prefuse.Display;
@@ -15,32 +8,33 @@ import prefuse.action.Action;
 import prefuse.action.ActionList;
 import prefuse.action.ItemAction;
 import prefuse.action.RepaintAction;
-import prefuse.action.animate.ColorAnimator;
-import prefuse.action.animate.LocationAnimator;
-import prefuse.action.animate.QualityControlAnimator;
-import prefuse.action.animate.VisibilityAnimator;
 import prefuse.action.assignment.ColorAction;
 import prefuse.action.assignment.FontAction;
-import prefuse.action.filter.FisheyeTreeFilter;
 import prefuse.action.layout.CollapsedSubtreeLayout;
 import prefuse.action.layout.graph.NodeLinkTreeLayout;
-import prefuse.activity.SlowInSlowOutPacer;
-import prefuse.controls.*;
-import prefuse.data.*;
+import prefuse.controls.PanControl;
+import prefuse.controls.WheelZoomControl;
+import prefuse.controls.ZoomControl;
+import prefuse.controls.ZoomToFitControl;
+import prefuse.data.Tree;
+import prefuse.data.Tuple;
 import prefuse.data.event.TupleSetListener;
 import prefuse.data.search.PrefixSearchTupleSet;
 import prefuse.data.tuple.TupleSet;
+import prefuse.render.AbstractShapeRenderer;
 import prefuse.render.DefaultRendererFactory;
 import prefuse.render.EdgeRenderer;
-import prefuse.render.AbstractShapeRenderer;
 import prefuse.render.LabelRenderer;
 import prefuse.util.ColorLib;
 import prefuse.util.FontLib;
-import prefuse.util.ui.JCustomTooltip;
 import prefuse.visual.VisualItem;
 import prefuse.visual.VisualTree;
 import prefuse.visual.expression.InGroupPredicate;
 import prefuse.visual.sort.TreeDepthItemSorter;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.geom.Point2D;
 
 
 /**

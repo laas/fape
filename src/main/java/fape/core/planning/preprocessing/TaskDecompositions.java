@@ -7,8 +7,6 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
-import scala.Tuple2;
-import scala.Tuple3;
 
 import java.util.*;
 

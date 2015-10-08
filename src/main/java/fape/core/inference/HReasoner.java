@@ -2,10 +2,12 @@ package fape.core.inference;
 
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
-import fape.util.EffSet;
 import fape.util.Utils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 public class HReasoner<T> {
     private static final int baseNumVars = 100;

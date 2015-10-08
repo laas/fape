@@ -1,10 +1,10 @@
 package fape.core.inference;
 
 
-import static org.junit.Assert.assertEquals;
-
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class HLeveledReasonerTests {

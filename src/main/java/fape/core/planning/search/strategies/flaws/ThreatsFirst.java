@@ -2,7 +2,6 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.Threat;
-import fape.core.planning.search.flaws.flaws.UnsupportedTimeline;
 
 public class ThreatsFirst implements FlawComparator {
     @Override

@@ -12,7 +12,10 @@ import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.statements.*;
+import planstack.anml.model.concrete.statements.Assignment;
+import planstack.anml.model.concrete.statements.LogStatement;
+import planstack.anml.model.concrete.statements.Persistence;
+import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
 

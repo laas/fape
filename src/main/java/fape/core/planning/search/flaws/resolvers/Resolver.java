@@ -2,8 +2,6 @@ package fape.core.planning.search.flaws.resolvers;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
-import fape.exceptions.FAPEException;
-import planstack.anml.model.concrete.Action;
 
 /**
  * A resolver is recipe to fix a Flaw.

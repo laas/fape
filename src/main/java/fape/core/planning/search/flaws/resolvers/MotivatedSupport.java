@@ -5,8 +5,8 @@ import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.Task;
 
 /**
  * Given an action marked as "motivated" to support, this resolvers select an action condition

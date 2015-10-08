@@ -1,12 +1,10 @@
 package fape.core.inference;
 
-import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
 import fape.exceptions.NoSolutionException;
 import fape.util.EffSet;
 import fape.util.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.util.*;
 
 public class HLeveledReasoner<Clause, Fact> {

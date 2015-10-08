@@ -1,6 +1,5 @@
 package fape.core.planning.grounding;
 
-import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Collection;

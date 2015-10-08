@@ -1,8 +1,8 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
@@ -15,14 +15,12 @@ import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
-import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 public class UnsupportedTimeline extends Flaw {
 

@@ -9,7 +9,10 @@ import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.*;
-import planstack.anml.model.abs.statements.*;
+import planstack.anml.model.abs.statements.AbstractAssignment;
+import planstack.anml.model.abs.statements.AbstractPersistence;
+import planstack.anml.model.abs.statements.AbstractStatement;
+import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 

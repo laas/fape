@@ -2,7 +2,9 @@ package fape;
 
 import com.martiansoftware.jsap.*;
 import fape.core.planning.Plan;
-import fape.core.planning.planner.*;
+import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PlannerFactory;
+import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;

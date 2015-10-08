@@ -12,7 +12,10 @@ import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.*;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.Task;
+import planstack.anml.model.concrete.VarRef;
 import planstack.constraints.bindings.Domain;
 
 import java.util.*;

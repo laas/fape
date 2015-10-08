@@ -10,7 +10,6 @@
  */
 package fape.core.planning.timelines;
 
-import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -19,7 +18,10 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 
 /**
  * records the events for one state variable

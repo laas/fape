@@ -4,8 +4,8 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.Factory;
+import planstack.anml.model.concrete.Task;
 
 /**
  * Inserts a new action to support an action condition.
