@@ -22,11 +22,4 @@ object AbstractTemporalAnnotation {
   def apply(annot:parser.TemporalAnnotation) : AbstractTemporalAnnotation = {
     new AbstractTemporalAnnotation(AbstractRelativeTimePoint(annot.start), AbstractRelativeTimePoint(annot.end), annot.flag)
   }
-
-  def apply(s:String, e:String) = {
-    new AbstractTemporalAnnotation(
-      new AbstractRelativeTimePoint(new AbsTP(s,new LocalRef("")),0),
-      new AbstractRelativeTimePoint(new AbsTP(e,new LocalRef("")),0),
-      "is")
-  }
 }

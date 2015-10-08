@@ -18,7 +18,7 @@ class AbstractRelativeTimePoint(val timepoint:AbsTP, val delta:Int) {
 object AbstractRelativeTimePoint {
 
   def apply(rtp:parser.RelativeTimepoint) = rtp.tp match {
-    case None => new AbstractRelativeTimePoint(new AbsTP("GStart", new LocalRef("")), rtp.delta)
+    case None => new AbstractRelativeTimePoint(TimeOrigin, rtp.delta)
     case Some(tpRef) => new AbstractRelativeTimePoint(AbsTP(tpRef), rtp.delta)
   }
 }

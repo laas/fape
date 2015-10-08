@@ -3,7 +3,7 @@ package planstack.anml.model.abs
 import planstack.FullSTN
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
-import planstack.anml.model.abs.time.AbsTP
+import planstack.anml.model.abs.time._
 import planstack.anml.model.concrete.RefCounter
 import planstack.anml.{ANMLException, parser}
 import planstack.structures.IList
@@ -54,7 +54,6 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   def jSubTasks = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
-  def jTempConstraints = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay]))
 
   lazy private val _allVars : Array[LVarRef] = context.variables.keys.toArray
   def allVars : Array[LVarRef] = {
@@ -122,8 +121,8 @@ object AbstractAction {
       })
       val allConstraints = ArrayBuffer[AbstractConstraint]()
 
-      val actionStart = new AbsTP("start", new LocalRef(""))
-      val actionEnd = new AbsTP("end", new LocalRef(""))
+      val actionStart = ContainerStart
+      val actionEnd = ContainerEnd
       allConstraints += new AbstractMinDelay(actionStart, actionEnd, 1)
 
       content foreach {
@@ -177,8 +176,8 @@ object AbstractAction {
       val simpleTempConst = allConstraints.filter(s => s.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay])
       val otherConsts = allConstraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])
       val timepoints = action.statements
-        .flatMap(s => List(new AbsTP("start", s.id), new AbsTP("end", s.id))) ++
-        List(AbsTP("start", new LocalRef("")), AbsTP("end", new LocalRef("")))
+        .flatMap(s => List(s.start, s.end)) ++
+        List(ContainerStart, ContainerEnd)
 
       val stn = new FullSTN(timepoints)
       for(AbstractMinDelay(from, to, minDelay) <- simpleTempConst)

@@ -2,7 +2,7 @@ package planstack.anml.model.abs.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation}
+import planstack.anml.model.abs.time.{IntervalEnd, IntervalStart, AbsTP, AbstractTemporalAnnotation}
 import planstack.anml.model.abs.{AbstractMaxDelay, AbstractMinDelay}
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.concrete.{Chronicle, RefCounter}
@@ -18,14 +18,13 @@ abstract class AbstractStatement(val id:LocalRef) {
    */
   def bind(context:Context, pb:AnmlProblem, container: Chronicle, refCounter: RefCounter) : Any
 
-  def isTemporalInterval : Boolean
+  def start : AbsTP = IntervalStart(id)
+  def end : AbsTP = IntervalEnd(id)
 
   /** Produces the temporal constraints by applying the temporal annotation to this statement. */
   def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractMinDelay] = {
-    if(!isTemporalInterval)
-      throw new ANMLException("This statement cannot be temporally qualified because it has no start/end timepoints: "+this)
-    val stStart = new AbsTP("start", id)
-    val stEnd = new AbsTP("end", id)
+    val stStart = IntervalStart(id)
+    val stEnd = IntervalEnd(id)
     annot.flag match {
       case "is" => List(
         AbstractMinDelay(annot.start.timepoint, stStart, annot.start.delta),

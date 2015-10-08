@@ -1,19 +1,21 @@
 package planstack
 
+import planstack.anml.model.abs.time.AbsTP
+
 import scala.reflect.ClassTag
 
 
-class FullSTN[TP : ClassTag](timepointList: Seq[TP]) {
+class FullSTN(timepointList: Seq[AbsTP]) {
 
-  case class AnchoredTimepointDefinition(timepoint: TP, anchor: TP, delay: Int)
-  case class STNLikeConstraint(src: TP, dst: TP, label: Int)
+  case class AnchoredTimepointDefinition(timepoint: AbsTP, anchor: AbsTP, delay: Int)
+  case class STNLikeConstraint(src: AbsTP, dst: AbsTP, label: Int)
 
-  type Result = List[(TP,List[TP])]
+  type Result = List[(AbsTP,List[AbsTP])]
 
-  implicit def toIndex(tp:TP) : Int = tpIndexes(tp)
+  implicit def toIndex(tp:AbsTP) : Int = tpIndexes(tp)
 
   val tpIndexes = timepointList.zipWithIndex.toMap
-  val tps : Array[TP] = timepointList.toArray
+  val tps : Array[AbsTP] = timepointList.toArray
   val size = tps.length
 
   val inf = 9999999
@@ -23,10 +25,10 @@ class FullSTN[TP : ClassTag](timepointList: Seq[TP]) {
   for(i <- 0 until size)
     dist(i)(i) = 0
 
-  def addMinDelay(from:TP, to:TP, minDelay:Int) =
+  def addMinDelay(from:AbsTP, to:AbsTP, minDelay:Int) =
     addEdge(to, from, -minDelay)
 
-  def addEdge(src:TP, dst :TP, t:Int): Unit = {
+  def addEdge(src:AbsTP, dst :AbsTP, t:Int): Unit = {
     dist(src)(dst) = t
   }
 
@@ -44,7 +46,7 @@ class FullSTN[TP : ClassTag](timepointList: Seq[TP]) {
     }
   }
 
-  private def extractFlex(prio: List[TP], pending:Set[TP], result: Result) : Result = {
+  private def extractFlex(prio: List[AbsTP], pending:Set[AbsTP], result: Result) : Result = {
     prio match {
       case cur::tail if pending.contains(cur) => // next priority is in pending remove it with all timepoints rigidly fixed to it
         val rigids = pending.filter(tp => cur != tp && dist(cur)(tp) == -dist(tp)(cur)).toList
@@ -73,11 +75,11 @@ class FullSTN[TP : ClassTag](timepointList: Seq[TP]) {
    *   - a list of constraints between flexible timepoints (APSP)
    * @param priorityForFlexibleTimepoints Those time points will be the first to be considered to enter the set of flexible
    */
-  def minimalRepresentation(priorityForFlexibleTimepoints: List[TP]) : (List[TP], List[STNLikeConstraint], List[AnchoredTimepointDefinition]) = {
+  def minimalRepresentation(priorityForFlexibleTimepoints: List[AbsTP]) : (List[AbsTP], List[STNLikeConstraint], List[AnchoredTimepointDefinition]) = {
     floydWarshall()
     val res = extractFlex(priorityForFlexibleTimepoints, tps.toSet, Nil)
     val flexibleTps = res.map(_._1)
-    val rigidTps = res.foldLeft[List[TP]](Nil)((allRigids, flexRigidPair) => allRigids ++ flexRigidPair._2)
+    val rigidTps = res.foldLeft[List[AbsTP]](Nil)((allRigids, flexRigidPair) => allRigids ++ flexRigidPair._2)
 
     val delays : List[STNLikeConstraint] =
       for(flex1 <- flexibleTps ; flex2 <- flexibleTps ; if flex1 != flex2 && dist(flex1)(flex2) < inf)
