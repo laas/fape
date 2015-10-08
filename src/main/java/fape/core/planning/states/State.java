@@ -493,7 +493,7 @@ public class State implements Reporter {
             // c.sv == tmp and tmp != c.variable
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
-            VarRef tmp = new VarRef(refCounter);
+            VarRef tmp = new VarRef(c.sv().func().valueType(), refCounter);
             csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
             variables.add(tmp);
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());
@@ -578,7 +578,7 @@ public class State implements Reporter {
             ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
             assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
             assert pmd.minDelay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-            VarRef var = new VarRef(refCounter);
+            VarRef var = new VarRef("integer", refCounter);
             csp.bindings().AddIntVariable(var);
             List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.minDelay().args()));
             varsOfExtConst.add(var);
