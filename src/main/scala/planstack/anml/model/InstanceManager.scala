@@ -41,7 +41,7 @@ class InstanceManager(refCounter: RefCounter) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
 
-    instancesDef(name) = (t, new InstanceRef(name, refCounter))
+    instancesDef(name) = (t, new InstanceRef(name, t, refCounter))
     instancesByType(t) = name :: instancesByType(t)
   }
 

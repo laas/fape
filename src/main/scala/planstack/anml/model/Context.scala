@@ -200,7 +200,7 @@ class Context(
   def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
 
   override def addUndefinedVar(name: LVarRef, typeName: String, refCounter: RefCounter): Unit = {
-    val globalVar = new VarRef(refCounter)
+    val globalVar = new VarRef(typeName, refCounter)
     addVar(name, typeName, globalVar)
     addVarToCreate(typeName, globalVar)
   }

@@ -188,7 +188,7 @@ class AnmlProblem extends TemporalInterval {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val newVar = new VarRef(refCounter)
+        val newVar = new VarRef(funcDecl.tipe, refCounter)
         context.addVar(LVarRef(funcDecl.name), funcDecl.tipe, newVar)
         chronicle.vars += ((funcDecl.tipe, newVar))
       } else {
@@ -266,7 +266,7 @@ class AnmlProblem extends TemporalInterval {
     for(block <- blocks.filter(_.isInstanceOf[parser.Function])) block match {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
-        val newVar = new VarRef(refCounter)
+        val newVar = new VarRef(func.tipe, refCounter)
         localContext.addVar(LVarRef(func.name), func.tipe, newVar)
         chron.vars += ((func.tipe, newVar))
 

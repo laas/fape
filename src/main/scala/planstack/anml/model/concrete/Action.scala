@@ -43,7 +43,7 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
-  val instantiationVar : VarRef = new VarRef(refCounter)
+  val instantiationVar : VarRef = new VarRef("integer", refCounter)
 
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
@@ -262,7 +262,8 @@ object Action {
     * @return The new concrete action.
     */
   def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction, refCounter: RefCounter) : Action = {
-    val act = newAction(pb, abs, abs.args.map(x => new VarRef(refCounter)), new LActRef(), refCounter, None, Some(pb.context))
+
+    val act = newAction(pb, abs, abs.args.map(x => new VarRef(abs.context.getType(x), refCounter)), new LActRef(), refCounter, None, Some(pb.context))
 
     // for all created vars, make sure those are present in [[StateModifier#vars]]
     for(localArg <- abs.args) {

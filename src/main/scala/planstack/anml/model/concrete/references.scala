@@ -55,8 +55,8 @@ object EmptyActRef extends ActRef(NullID)
   * binding constraints).
   * @param id Unique id of the reference.
   */
-class VarRef(id:Int) extends GlobalRef(id) { //TODO: this should be typed
-  def this(refCounter: RefCounter) = this(refCounter.nextVar())
+class VarRef(id:Int, val typ :String) extends GlobalRef(id) { //TODO: this should be typed
+  def this(typ :String, refCounter: RefCounter) = this(refCounter.nextVar(), typ)
 }
 
 /** Reference to a problem instance that takes the form of a variable.
@@ -67,13 +67,13 @@ class VarRef(id:Int) extends GlobalRef(id) { //TODO: this should be typed
   * @param id Unique id of the reference.
   * @param instance Name of the instance.
   */
-class InstanceRef(id:Int, val instance:String) extends VarRef(id) {
-  def this(instance :String, refCounter: RefCounter) = this(refCounter.nextVar(), instance)
+class InstanceRef(id:Int, val instance:String, typ :String) extends VarRef(id, typ) {
+  def this(instance :String, typ :String, refCounter: RefCounter) = this(refCounter.nextVar(), instance, typ)
 
   override def toString = instance
 }
 
-object EmptyVarRef extends VarRef(NullID)
+class EmptyVarRef(typ :String) extends VarRef(NullID, typ)
 
 /** Reference to a time-point: an temporal variable typically denoting the start or end time of an action
   * and that appears in Simple Temporal Problems.
