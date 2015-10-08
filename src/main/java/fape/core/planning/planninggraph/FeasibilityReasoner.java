@@ -307,7 +307,7 @@ public class FeasibilityReasoner {
         LVarRef[] vars = act.abs().allVars();
         List<VarRef> values = new ArrayList<>();
         for(LVarRef v : vars) {
-            values.add(act.context().getDefinition(v)._2());
+            values.add(act.context().getDefinition(v));
         }
 
         // Variable representing the ground versions of this action
@@ -324,7 +324,7 @@ public class FeasibilityReasoner {
         Collection<String> supportingMethods = planner.pb.getSupportersForTask(task.name()).stream()
                 .map(aa -> aa.name()).collect(Collectors.toList());
 
-        st.csp.bindings().AddVariable(task.methodSupportersVar(), supportingMethods, "Methods");
+        st.csp.bindings().AddVariable(task.methodSupportersVar(), supportingMethods);
         st.csp.bindings().AddIntVariable(task.groundSupportersVar());
 
         List<VarRef> variables = new LinkedList<>();

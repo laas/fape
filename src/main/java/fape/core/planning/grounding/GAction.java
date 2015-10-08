@@ -214,7 +214,7 @@ public class GAction {
                 return values[i];
 
         // it does not appear in local variables, it is a global one
-        return (InstanceRef) pb.context().getDefinition(v)._2();
+        return (InstanceRef) pb.context().getDefinition(v);
     }
 
     public GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb) {
@@ -254,9 +254,9 @@ public class GAction {
         for(LVarRef ref : aa.allVars()) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
-            if(!context.getDefinition(ref)._2().isEmpty()) {
-                assert (context.getDefinition(ref)._2() instanceof InstanceRef) : "ERRROR: "+context.getDefinition(ref)._2();
-                varSet.add((InstanceRef) context.getDefinition(ref)._2());
+            if(!context.getDefinition(ref).isEmpty()) {
+                assert (context.getDefinition(ref) instanceof InstanceRef) : "ERRROR: "+context.getDefinition(ref);
+                varSet.add((InstanceRef) context.getDefinition(ref));
             } else {
                 // get the type of the argument and add all possible values to the argument list.
                 List<String> instanceSet = pb.instances().instancesOfType(context.getType(ref));

@@ -317,24 +317,6 @@ public class State implements Reporter {
     }
 
     /**
-     * Returns all possible values of local variable
-     *
-     * @param locVar Reference to the local variable.
-     * @param context Context in which the variables appears (such as action or
-     * problem). This is used to retrieve the type or the global variable linked
-     * to the local var.
-     * @return all possible values of local variable (based on its type).
-     */
-    public Collection<String> possibleValues(LVarRef locVar, AbstractContext context) {
-        Tuple2<String, VarRef> def = context.getDefinition(locVar);
-        if (def._2().isEmpty()) {
-            return pb.instances().jInstancesOfType(def._1());
-        } else {
-            return possibleValues(def._2());
-        }
-    }
-
-    /**
      * True if the state variables on which those databases apply are necessarily unified (i.e. same functions and same variables).
      */
     public boolean unified(Timeline a, Timeline b) {
@@ -494,7 +476,7 @@ public class State implements Reporter {
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             VarRef tmp = new VarRef(c.sv().func().valueType(), refCounter);
-            csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(c.sv().func().valueType()), c.sv().func().valueType());
+            csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(tmp.typ()));
             variables.add(tmp);
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());
             csp.bindings().AddSeparationConstraint(tmp, c.variable());
@@ -627,13 +609,13 @@ public class State implements Reporter {
             csp.bindings().addPossibleValue(instance);
             List<String> domain = new LinkedList<>();
             domain.add(instance);
-            csp.bindings().AddVariable(pb.instances().referenceOf(instance), domain, pb.instances().typeOf(instance));
+            csp.bindings().AddVariable(pb.instances().referenceOf(instance), domain);
         }
 
         // Declare new variables to the constraint network.
-        for (Tuple2<String, VarRef> declaration : mod.vars()) {
-            Collection<String> domain = pb.instances().jInstancesOfType(declaration._1());
-            csp.bindings().AddVariable(declaration._2(), domain, declaration._1());
+        for (VarRef var : mod.vars()) {
+            Collection<String> domain = pb.instances().jInstancesOfType(var.typ());
+            csp.bindings().AddVariable(var, domain);
         }
 
         for(BindingConstraint bc : mod.bindingConstraints())
