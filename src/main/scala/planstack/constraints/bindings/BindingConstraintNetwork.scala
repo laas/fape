@@ -17,7 +17,7 @@ object BindingConstraintNetwork {
   var cnt = 0
 }
 
-class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends BindingCN[VarRef] {
+class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def this() = this(None)
 
@@ -26,7 +26,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   private val increment = 10
 
   var domIds : Array[DomID] = null
-  var types : Array[String] = null
   var variables : Array[VarRef] = null
   var domains : Array[Domain] = null
 
@@ -53,7 +52,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   toCopy match {
     case Some(o) =>
       domIds = o.domIds.clone()
-      types = o.types.clone()
       domains = o.domains.clone()
       variables = o.variables.clone()
       vars = o.vars.map(x => x.clone())
@@ -68,7 +66,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     case None =>
       BindingConstraintNetwork.cnt += 1
       domIds = Array.fill(10)(-1) //mutable.Map[VarRef, DomID]()
-      types = Array.fill(10)(null) //mutable.Map[VarRef, String]()
       variables = Array.fill(10)(null)
       domains = Array.fill(10)(null) //mutable.Map[DomID, ValuesHolder]()
       vars = ArrayBuffer[ArrayBuffer[VarRef]]()
@@ -121,7 +118,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     id
   }
 
-  override def rawDomain(v: VarRef) : Domain = domains(domID(v))
+  def rawDomain(v: VarRef) : Domain = domains(domID(v))
 
   def isDiff(v1: VarRef, v2: VarRef) = {
     assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
@@ -166,36 +163,36 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   }
 
 
-  override def setListener(listener: IntBindingListener[VarRef]) { this.listener = listener }
+  def setListener(listener: IntBindingListener[VarRef]) { this.listener = listener }
 
-  override def domainOfIntVar(v: VarRef): util.List[Integer] = {
+  def domainOfIntVar(v: VarRef): util.List[Integer] = {
     assert(isIntegerVar(v))
     rawDomain(v).vals.map(_.asInstanceOf[Integer]).toList.asJava
   }
 
-  override def isIntegerVar(v: VarRef): Boolean =
+  def isIntegerVar(v: VarRef): Boolean =
     typeOf(v) == "integer" || typeOf(v) == "int"
 
-  override def stringValuesAsDomain(stringDomain: util.Collection[String]): Domain =
+  def stringValuesAsDomain(stringDomain: util.Collection[String]): Domain =
     new Domain(stringDomain.asScala.map(valuesIds(_)))
 
-  override def typeOf(v: VarRef): String = types(v.id)
+  def typeOf(v: VarRef): String = v.typ
 
-  override def unifiable(a: VarRef, b: VarRef): Boolean =
+  def unifiable(a: VarRef, b: VarRef): Boolean =
     domID(a) == domID(b) || (!isDiff(a, b) && rawDomain(a).hasOneCommonElement(rawDomain(b)))
 
-  override def domainOf(v: VarRef): util.List[String] =
+  def domainOf(v: VarRef): util.List[String] =
     rawDomain(v).values().asScala.map(values(_)).toList.asJava
 
-  override def unified(a: VarRef, b: VarRef): Boolean =
+  def unified(a: VarRef, b: VarRef): Boolean =
     domID(a) == domID(b) || domainSize(a) == 1 && domainSize(b) == 1 && rawDomain(a).head() == rawDomain(b).head()
 
-  override def recordEmptyNAryConstraint(setID: String, isLastValInteger: Boolean, numVariables: Int) = {
+  def recordEmptyNAryConstraint(setID: String, isLastValInteger: Boolean, numVariables: Int) = {
     assert(!extensionConstraints.contains(setID))
     extensionConstraints += ((setID, new ExtensionConstraint(isLastValInteger, numVariables)))
   }
 
-  override def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String]): Unit = {
+  def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String]): Unit = {
     if(!extensionConstraints.contains(setID)) { //TODO: should force usage of record
       extensionConstraints += ((setID, new ExtensionConstraint(false, values.size())))
     }
@@ -203,7 +200,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     extensionConstraints(setID).addValues(valuesAsIDs)
   }
 
-  override def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String], lastVal: Int): Unit = {
+  def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String], lastVal: Int): Unit = {
     if(!extensionConstraints.contains(setID)) {
       extensionConstraints += ((setID, new ExtensionConstraint(true, values.size()+1)))
     }
@@ -217,34 +214,34 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   }
 
 
-  override def separated(a: VarRef, b: VarRef): Boolean =
+  def separated(a: VarRef, b: VarRef): Boolean =
     isDiff(a, b)
 
-  override def separable(a: VarRef, b: VarRef): Boolean =
+  def separable(a: VarRef, b: VarRef): Boolean =
     !isDiff(a, b) && !unified(a, b)
 
-  override def addPossibleValue(value: String) {
+  def addPossibleValue(value: String) {
     assert(!valuesIds.contains(value))
     valuesIds += ((value, values.size))
     values += value
   }
 
-  override def addPossibleValue(value: Int): Unit = {
+  def addPossibleValue(value: Int): Unit = {
     if(!defaultIntDomain(0).contains(value)) {
       defaultIntDomain(0) = defaultIntDomain(0).add(value)
     }
   }
 
-  override def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
+  def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
     val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID(_))
     mapping += ((asIDs, setID))
     extToCheck += mapping.size-1
   }
 
-  override def restrictIntDomain(v: VarRef, toValues: util.Collection[Integer]): Unit =
+  def restrictIntDomain(v: VarRef, toValues: util.Collection[Integer]): Unit =
     restrictDomain(v, intValuesAsDomain(toValues))
 
-  override def AddSeparationConstraint(a: VarRef, b: VarRef): Unit = {
+  def AddSeparationConstraint(a: VarRef, b: VarRef): Unit = {
     if(domID(a) == domID(b))
       hasEmptyDomains = true
 
@@ -257,7 +254,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       domainChanged(domID(b), None)
   }
 
-  override def isConsistent: Boolean = {
+  def isConsistent: Boolean = {
     while(extToCheck.nonEmpty && !hasEmptyDomains) {
       val cur = extToCheck.head
       extToCheck -= cur
@@ -295,13 +292,13 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       i
   }
 
-  override def domainAsString(v: VarRef): String =
+  def domainAsString(v: VarRef): String =
     if(isIntegerVar(v))
       "{" + rawDomain(v).vals.mkString(", ") + "}"
     else
       "{"+ rawDomain(v).vals.map(values(_)).mkString(", ") +"}"
 
-  override def Report(): String =
+  def Report(): String =
     allDomIds.map(id => (id, "["+ vars(id).mkString(", ") +"]", "  "+domainAsString(vars(id).head))).mkString("\n")
 
   private def merge(id1: DomID, id2: DomID) : Unit = {
@@ -338,13 +335,13 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     assert(allDomIds.forall(id => vars(id).nonEmpty))
   }
 
-  override def AddUnificationConstraint(a: VarRef, b: VarRef): Unit = {
+  def AddUnificationConstraint(a: VarRef, b: VarRef): Unit = {
     if(domID(a) != domID(b)) {
       merge(domID(a), domID(b))
     }
   }
 
-  override def restrictDomain(v: VarRef, domain: Domain): Boolean = {
+  def restrictDomain(v: VarRef, domain: Domain): Boolean = {
     val newDom = rawDomain(v).intersect(domain)
     val modified = newDom.size() < rawDomain(v).size()
     if(modified) {
@@ -354,10 +351,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     modified
   }
 
-  override def restrictDomain(v: VarRef, toValues: util.Collection[String]): Unit =
+  def restrictDomain(v: VarRef, toValues: util.Collection[String]): Unit =
     restrictDomain(v, stringValuesAsDomain(toValues))
 
-  override def keepValuesAboveOrEqualTo(v: VarRef, min: Int): Unit = {
+  def keepValuesAboveOrEqualTo(v: VarRef, min: Int): Unit = {
     assert(isIntegerVar(v))
 
     val initialDomain = domainOfIntVar(v).asScala
@@ -367,7 +364,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       domainChanged(domID(v), None)
     }
   }
-  override def keepValuesBelowOrEqualTo(v: VarRef, max: Int): Unit = {
+  def keepValuesBelowOrEqualTo(v: VarRef, max: Int): Unit = {
     assert(isIntegerVar(v))
 
     val initialDomain = domainOfIntVar(v).asScala
@@ -378,20 +375,20 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     }
   }
 
-  override def getUnboundVariables: util.List[VarRef] = {
+  def getUnboundVariables: util.List[VarRef] = {
     val unboundDomains =
       for (domId <- domains.indices ; if domains(domId) != null && domains(domId).size() != 1)
         yield domId
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
-  override def AddVariable(v: VarRef, domain: util.Collection[String], typ: String): Unit = {
-    addVariable(v, stringValuesAsDomain(domain), typ)
+  def AddVariable(v: VarRef, domain: util.Collection[String]): Unit = {
+    assert(v.typ != "integer")
+    addVariable(v, stringValuesAsDomain(domain))
   }
 
   private def ensureSpaceForVar(v:VarRef, futureDomID: Int): Unit = {
-    if(v.id >= types.length) {
-      types = util.Arrays.copyOf(types, types.length * 2)
+    if(v.id >= domIds.length) {
       val tmp = domIds
       domIds = Array.fill(domIds.length * 2)(-1)
       Array.copy(tmp, 0, domIds, 0, tmp.length)
@@ -401,18 +398,16 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
       domains = util.Arrays.copyOf(domains, domains.length * 2)
     }
 
-    assert(types(v.id) == null)
     assert(domIds(v.id) == -1)
     assert(variables(v.id) == null)
     assert(domains(futureDomID) == null)
   }
 
-  private def addVariable(v:VarRef, dom: Domain, typ: String) {
+  private def addVariable(v:VarRef, dom: Domain) {
     assert(!contains(v))
     val domID = newDomID()
     ensureSpaceForVar(v, domID)
 
-    types(v.id) = typ
     domIds(v.id) = domID
     variables(v.id) = v
     vars(domID) += v
@@ -422,28 +417,34 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
     assert(vars(domID).size == 1)
   }
 
-  def isRecorded(v: VarRef) : Boolean = types.length > v.id && types(v.id) != null
+  def isRecorded(v: VarRef) : Boolean = domIds.length > v.id && domIds(v.id) != -1
 
-  override def contains(v: VarRef): Boolean = types.length > v.id && types(v.id) != null
+  def contains(v: VarRef): Boolean = isRecorded(v)
 
-  override def DeepCopy(): BindingConstraintNetwork =
+  def DeepCopy(): BindingConstraintNetwork =
     new BindingConstraintNetwork(Some(this))
 
-  override def assertGroundAndConsistent(): Unit = ???
+  def assertGroundAndConsistent(): Unit = ???
 
-  override def domainSize(v: VarRef): Integer = rawDomain(v).size()
+  def domainSize(v: VarRef): Integer = rawDomain(v).size()
 
-  override def AddIntVariable(v: VarRef): Unit =
-    addVariable(v, defaultIntDomain.head, "integer")
+  def AddIntVariable(v: VarRef): Unit = {
+    assert(v.typ == "integer")
+    addVariable(v, defaultIntDomain.head)
+  }
 
-  override def addIntVariable(v: VarRef, dom: Domain) : Unit =
-    addVariable(v, dom, "integer")
+  def addIntVariable(v: VarRef, dom: Domain) : Unit = {
+    assert(v.typ == "integer")
+    addVariable(v, dom)
+  }
 
-  override def AddIntVariable(v: VarRef, domain: util.Collection[Integer]): Unit =
-    addVariable(v, intValuesAsDomain(domain), "integer")
+  def AddIntVariable(v: VarRef, domain: util.Collection[Integer]): Unit = {
+    assert(v.typ == "integer")
+    addVariable(v, intValuesAsDomain(domain))
+  }
 
   @Deprecated
-  override def intValuesAsDomain(intDomain: util.Collection[Integer]): Domain = {
+  def intValuesAsDomain(intDomain: util.Collection[Integer]): Domain = {
     val valuesIds =
       for(value <- intDomain.asScala) yield {
         if(!defaultIntDomain.head.contains(value))
@@ -454,5 +455,5 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) extends
   }
 
   @Deprecated
-  override def intValueOfRawID(valueID: Integer): Integer = valueID
+  def intValueOfRawID(valueID: Integer): Integer = valueID
 }

@@ -2,7 +2,7 @@ package planstack.constraints
 
 import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.{TPRef, VarRef}
-import planstack.constraints.bindings.{BindingConstraintNetwork, BindingCN, IntBindingListener}
+import planstack.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
 import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
 import scala.collection.JavaConverters._
 
@@ -30,12 +30,10 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @param bindings A binding constraints network.
  * @param stn A simple temporal network.
  * @param varsToConstraints Mixed bindings/STN constraints that have not been propagated yet.
- * @tparam VarRef Type of the variables in the binding constraint network.
- * @tparam TPRef Type of the time points in the STN
  * @tparam ID Type of identifiers for constraints in the STN.
  */
 class MetaCSP[ID](
-                          val bindings: BindingCN[VarRef],
+                          val bindings: BindingConstraintNetwork,
                           val stn: GenSTNUManager[ID],
                           protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]])
   extends IntBindingListener[VarRef]
