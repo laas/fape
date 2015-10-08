@@ -70,7 +70,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       domains = Array.fill(10)(null) //mutable.Map[DomID, ValuesHolder]()
       vars = ArrayBuffer[ArrayBuffer[VarRef]]()
       different = new Array[Array[Boolean]](increment)
-      for(i <- 0 until different.size)
+      for(i <- different.indices)
         different(i) = Array.fill(increment)(false)
 
       values = ArrayBuffer[String]()
@@ -88,7 +88,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   private def domID(v: VarRef) : DomID = domIds(v.id)
 
-  private def allDomIds = (0 until vars.size).filterNot(unusedDomainIds.contains(_))
+  private def allDomIds = vars.indices.filterNot(unusedDomainIds.contains)
 
   private def newDomID() : DomID = {
     val id =
@@ -104,14 +104,14 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     if(vars.size > id) vars(id) = ArrayBuffer[VarRef]()
     else vars += ArrayBuffer[VarRef]()
 
-    if(id == different.size) {
+    if(id == different.length) {
       // replace with bigger
-      val newConstraints = new Array[Array[Boolean]](different.size *2)
-      for(i <- 0 until newConstraints.size)
-        newConstraints(i) = Array.fill(different.size *2)(false)
+      val newConstraints = new Array[Array[Boolean]](different.length *2)
+      for(i <- newConstraints.indices)
+        newConstraints(i) = Array.fill(different.length *2)(false)
 
-      for(i <- 0 until different.size)
-        Array.copy(different(i), 0, newConstraints(i), 0, different(i).size)
+      for(i <- different.indices)
+        Array.copy(different(i), 0, newConstraints(i), 0, different(i).length)
       different = newConstraints
     }
 
@@ -132,7 +132,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     if(domains(id).size() == 1) {
       // check difference constraints
       val uniqueValue = domains(id).head()
-      for (o <- 0 until vars.size
+      for (o <- vars.indices
            if !unusedDomainIds.contains(o)
            if different(id)(o)
            if domains(o).contains(uniqueValue))
@@ -205,7 +205,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       extensionConstraints += ((setID, new ExtensionConstraint(true, values.size()+1)))
     }
     val valuesAsIDs = values.asScala
-      .map(valuesIds(_).asInstanceOf[Integer]).toBuffer
+      .map(valuesIds(_).asInstanceOf[Integer])
 
     addPossibleValue(lastVal)
     valuesAsIDs.append(lastVal)
@@ -228,12 +228,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def addPossibleValue(value: Int): Unit = {
     if(!defaultIntDomain(0).contains(value)) {
-      defaultIntDomain(0) = defaultIntDomain(0).add(value)
+      defaultIntDomain(0) = defaultIntDomain.head.add(value)
     }
   }
 
   def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
-    val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID(_))
+    val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID)
     mapping += ((asIDs, setID))
     extToCheck += mapping.size-1
   }
@@ -288,7 +288,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   }
 
   private def extendedInvolving(domID: DomID) : Iterable[ExtID]= {
-    for(i <- 0 until mapping.size ; if mapping(i)._1.contains(domID)) yield
+    for(i <- mapping.indices ; if mapping(i)._1.contains(domID)) yield
       i
   }
 
@@ -316,13 +316,13 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
     unusedDomainIds += id2
     vars(id2) = new ArrayBuffer[VarRef]()
-    for(i <- 0 until different.size) {
+    for(i <- different.indices) {
       different(i)(id2) = false
       different(id2)(i) = false
     }
     domains(id2) = null // -= id2
 
-    for(i <- 0 until mapping.size) {
+    for(i <- mapping.indices) {
       if(mapping(i)._1.contains(id2)) {
         val newDef = mapping(i)._1.map(id => if(id == id2) id1 else id)
         mapping(i) = (newDef, mapping(i)._2)
@@ -423,8 +423,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def DeepCopy(): BindingConstraintNetwork =
     new BindingConstraintNetwork(Some(this))
-
-  def assertGroundAndConsistent(): Unit = ???
 
   def domainSize(v: VarRef): Integer = rawDomain(v).size()
 
