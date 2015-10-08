@@ -45,20 +45,20 @@ object StatementsFactory {
    * @param pb Problem in which the statement appears
    * @return An equivalent list of AbstractStatement
    */
-  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractStatement] = {
-    val s = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
+  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, pb:AnmlProblem, refCounter: RefCounter) : (Option[AbstractStatement],List[AbstractConstraint]) = {
+    val (optStatement, constraints) = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
 
     annotatedStatement.annotation match {
-      case None => s
+      case None => (optStatement, constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
-        assert(s.size == 1, "Applying annotation to more than one statement. There's probably something wrong.")
-        s ::: s.head.getTemporalConstraints(annot)
+        assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task.")
+        (optStatement, optStatement.get.getTemporalConstraints(annot) ::: constraints)
       }
     }
   }
 
-  def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem, refCounter: RefCounter) : List[AbstractStatement] = {
+  def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem, refCounter: RefCounter) : (Option[AbstractStatement], List[AbstractConstraint]) = {
     statement match {
       case s:parser.SingleTermStatement => {
         if (isStateVariable(s.term, context, pb)) {
@@ -66,14 +66,14 @@ object StatementsFactory {
           val sv = asStateVariable(s.term, context, pb)
           assert(sv.func.valueType == "boolean", "Non-boolean function as a single term statement: "+s)
           if(sv.func.isConstant)
-            List(new AbstractEqualityConstraint(sv, LVarRef("true"), LStatementRef(s.id)))
+            (None, List(new AbstractEqualityConstraint(sv, LVarRef("true"), LStatementRef(s.id))))
           else
-            List(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id)))
+            (Some(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id))), Nil)
         } else {
           // it should be an action, but we can't check since this action might not have been parsed yet
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
           val e = normalizeExpr(s.term, context, pb)
-          List(new AbstractTask(s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id)))
+          (Some(new AbstractTask(s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))), Nil)
         }
       }
       case parser.TwoTermsStatement(e1, op, e2, id) => {
@@ -84,16 +84,17 @@ object StatementsFactory {
             val rightValue = e2.asInstanceOf[NumExpr].value
             op.op match {
               case ":use" =>
-                List(new AbstractUseResource(sv, rightValue, LStatementRef(id)))
+                (Some(new AbstractUseResource(sv, rightValue, LStatementRef(id))), Nil)
               case ":produce" =>
-                List(new AbstractProduceResource(sv, rightValue, LStatementRef(id)))
+                (Some(new AbstractProduceResource(sv, rightValue, LStatementRef(id))), Nil)
               case ":lend" =>
-                List(new AbstractLendResource(sv, rightValue, LStatementRef(id)))
+                (Some(new AbstractLendResource(sv, rightValue, LStatementRef(id))), Nil)
               case ":consume" =>
-                List(new AbstractConsumeResource(sv, rightValue, LStatementRef(id)))
-              case ":=" => List(new AbstractSetResource(sv, rightValue, LStatementRef(id)))
+                (Some(new AbstractConsumeResource(sv, rightValue, LStatementRef(id))), Nil)
+              case ":=" =>
+                (Some(new AbstractSetResource(sv, rightValue, LStatementRef(id))), Nil)
               case op if Set("<","<=",">",">=").contains(op) =>
-                List(new AbstractRequireResource(sv, op, rightValue, LStatementRef(id)))
+                (Some(new AbstractRequireResource(sv, op, rightValue, LStatementRef(id))), Nil)
               case x =>
                 throw new ANMLException("Operator "+x+" is not valid in the resource statement: "+statement)
             }
@@ -105,15 +106,15 @@ object StatementsFactory {
                   assert(sv.func.valueType == "integer")
                   assert(op.op == ":=")
                   val value = e2.asInstanceOf[NumExpr].value.toInt
-                  List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id)))
+                  (None, List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id))))
                 }
                 case e2: VarExpr => {
                   // f(a, b) == c  and f(a, b) != c
                   val variable = LVarRef(e2.functionName)
                   op.op match {
-                    case "==" => List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id)))
-                    case "!=" => List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id)))
-                    case ":=" => List(new AbstractAssignmentConstraint(sv, variable, LStatementRef(id)))
+                    case "==" => (None, List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id))))
+                    case "!=" => (None, List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id))))
+                    case ":=" => (None, List(new AbstractAssignmentConstraint(sv, variable, LStatementRef(id))))
                     case x => throw new ANMLException("Wrong operator in statement: " + statement)
                   }
                 }
@@ -137,21 +138,21 @@ object StatementsFactory {
 
                     val variable = new LVarRef()
                     context.addUndefinedVar(variable, sharedType, refCounter)
-                    List(
+                    (None, List(
                       new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
-                    )
+                    ))
                   } else {
                     assert(op.op == "!=", "Unsupported operator in statement: " + statement)
                     val v1 = new LVarRef()
                     context.addUndefinedVar(v1, sv.func.valueType, refCounter)
                     val v2 = new LVarRef()
                     context.addUndefinedVar(v2, rightSv.func.valueType, refCounter)
-                    List(
+                    (None, List(
                       new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),
                       new AbstractVarInequalityConstraint(v1, v2, new LStatementRef())
-                    )
+                    ))
                   }
                 }
               }
@@ -163,8 +164,8 @@ object StatementsFactory {
 
               //logical statement
               op.op match {
-                case "==" => List(new AbstractPersistence(sv, variable, LStatementRef(id)))
-                case ":=" => List(new AbstractAssignment(sv, variable, LStatementRef(id)))
+                case "==" => (Some(new AbstractPersistence(sv, variable, LStatementRef(id))), Nil)
+                case ":=" => (Some(new AbstractAssignment(sv, variable, LStatementRef(id))), Nil)
                 case _ => throw new ANMLException("Invalid operator in: " + statement)
               }
             }
@@ -177,8 +178,8 @@ object StatementsFactory {
           val v1 = LVarRef(e1.functionName)
           val v2 = LVarRef(e2.functionName)
           op.op match {
-            case "==" => List(new AbstractVarEqualityConstraint(v1, v2, LStatementRef(id)))
-            case "!=" => List(new AbstractVarInequalityConstraint(v1, v2, LStatementRef(id)))
+            case "==" => (None, List(new AbstractVarEqualityConstraint(v1, v2, LStatementRef(id))))
+            case "!=" => (None, List(new AbstractVarInequalityConstraint(v1, v2, LStatementRef(id))))
             case _ => throw new ANMLException("Unsupported statement: "+statement)
           }
         }
@@ -198,7 +199,7 @@ object StatementsFactory {
         assert(pb.instances.isValueAcceptableForType(v2, tipe, context),
           "Type: "+context.getType(v2)+" is not a subtype of "+tipe+
             " which is the type of the state variable. In statement: "+statement)
-        List(new AbstractTransition(sv, v1, v2, LStatementRef(id)))
+        (Some(new AbstractTransition(sv, v1, v2, LStatementRef(id))), Nil)
       }
     }
   }

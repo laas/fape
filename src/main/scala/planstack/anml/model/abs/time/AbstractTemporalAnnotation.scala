@@ -25,8 +25,8 @@ object AbstractTemporalAnnotation {
 
   def apply(s:String, e:String) = {
     new AbstractTemporalAnnotation(
-      new AbstractRelativeTimePoint(new AbstractTimepointRef(s,new LocalRef("")),0),
-      new AbstractRelativeTimePoint(new AbstractTimepointRef(e,new LocalRef("")),0),
+      new AbstractRelativeTimePoint(new AbsTP(s,new LocalRef("")),0),
+      new AbstractRelativeTimePoint(new AbsTP(e,new LocalRef("")),0),
       "is")
   }
 }

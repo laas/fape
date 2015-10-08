@@ -3,7 +3,8 @@ package planstack.anml.model
 import java.io.File
 import java.{util => ju}
 
-import planstack.anml.model.abs.{AbstractAction, AbstractTemporalConstraint, StatementsFactory}
+import planstack.anml.model.abs._
+import planstack.anml.model.abs.statements.AbstractStatement
 import planstack.anml.model.concrete._
 import planstack.anml.parser.{ANMLFactory, ParseResult}
 import planstack.anml.{ANMLException, parser}
@@ -12,13 +13,14 @@ import planstack.anml.{ANMLException, parser}
 import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /** Description of an ANML problem.
   *
   * An ANML problem comes with three time points: start (global start of the world the problem takes place in),
   * end (global end of the world) and earliestExecution which represent the earliest time at which an action can be executed.
   * Temporal intervals (such as actions, statements, ...) are placed relatively to the start and end time points using
-  * [[planstack.anml.model.concrete.TemporalConstraint]].
+  * [[planstack.anml.model.concrete.MinDelayConstraint]].
   * The earliestExecution time point will not have any explicit constraints linked to it (we consider this choice is
   * plannner-dependent and is not explicitly defined in ANML).
   *
@@ -92,6 +94,7 @@ class AnmlProblem extends TemporalInterval {
       context.addVar(new LVarRef(name), tipe, instances.referenceOf(name))
     }
 
+    initialChronicle.initTemporalObjects()
     chronicles += initialChronicle
   }
 
@@ -212,16 +215,22 @@ class AnmlProblem extends TemporalInterval {
       actionsByTask += ((task, abs.asJava))
     })
 
+    val absStatements = ArrayBuffer[AbstractStatement]()
+    val absConstraints = ArrayBuffer[AbstractConstraint]()
+
     blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
-      val absStatements = StatementsFactory(tempStatement, this.context, this, refCounter)
-      chronicle.addAll(absStatements, context, this, refCounter)
+      val (statement, constraints) = StatementsFactory(tempStatement, this.context, this, refCounter)
+      absStatements ++= statement
+      absConstraints ++= constraints
     })
 
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
-      val abs = AbstractTemporalConstraint(constraint)
-      chronicle.temporalConstraints += TemporalConstraint(this, context, abs)
+      absConstraints ++= AbstractTemporalConstraint(constraint)
     })
+    chronicle.addAll(absStatements, context, this, refCounter)
+    chronicle.addAll(absConstraints, context, this)
 
+    chronicle.initTemporalObjects()
     chronicles += chronicle
   }
 
@@ -267,19 +276,25 @@ class AnmlProblem extends TemporalInterval {
         throw new ANMLException("Declaration of functions is not allow as it would modify the problem.")
     }
 
+    val statements = ArrayBuffer[AbstractStatement]()
+    val constraints = ArrayBuffer[AbstractConstraint]()
+
     for(block <- blocks.filter(!_.isInstanceOf[parser.Function])) block match {
       case ts: parser.TemporalStatement =>
-        val absStatements = StatementsFactory(ts, localContext, this, refCounter)
-        chron.addAll(absStatements, localContext, this, refCounter)
+        val (stats, csts) = StatementsFactory(ts, localContext, this, refCounter)
+        statements ++= stats
+        constraints ++= csts
 
       case tc: parser.TemporalConstraint =>
-        val abs = AbstractTemporalConstraint(tc)
-        chron.temporalConstraints += TemporalConstraint(this, localContext, abs)
+        constraints ++= AbstractTemporalConstraint(tc)
 
       case _ =>
         throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
           "change the problem definition: "+block)
     }
+    chron.addAll(statements, localContext, this, refCounter)
+    chron.addAll(constraints, localContext, this)
+
 
     chron
   }

@@ -6,6 +6,8 @@ import planstack.anml.ANMLException
 import planstack.anml.model._
 import planstack.anml.model.abs.{AbstractAction, AbstractTask, AbstractDuration}
 import planstack.anml.model.concrete.statements.{BindingConstraint, Statement}
+import planstack.anml.model.concrete.time.TimepointRef
+import planstack.structures.IList
 
 import scala.collection.JavaConversions._
 
@@ -57,13 +59,6 @@ class Action(
   /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
   def mustBeMotivated = abs.mustBeMotivated
 
-  val minDuration =
-    if(abs.minDur != null) Duration(abs.minDur, context)
-    else null
-  val maxDuration =
-    if(abs.maxDur != null) Duration(abs.maxDur, context)
-    else null
-
   /** Assigns a new status to the action.
     * Allowed transitions are
     *  - PENDING -> EXECUTING
@@ -85,8 +80,6 @@ class Action(
   private val mVars = context.varsToCreate.clone()
 
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
-
-  temporalConstraints += new TemporalConstraint(start, "<", end, 0)
 
   val container = this
 
@@ -123,6 +116,7 @@ sealed trait Duration {
   def sv : ParameterizedStateVariable = null
 
   def isFunction = sv != null
+  def isConstant = sv == null
 }
 
 object Duration {
@@ -230,6 +224,12 @@ object Action {
     val act = new Action(abs, context, id, parentAction, refCounter)
 
     act.addAll(abs.statements, context, pb, refCounter)
+    act.addAll(abs.constraints, context, pb)
+    act.flexibleTimepoints = abs.flexibleTimepoints
+      .map(tp => TimepointRef(pb, context, tp))
+      .map(tp => if(tp == act.start) (tp, "dispatchable") else (tp, "controllable"))
+    act.anchoredTimepoints = abs.anchoredTimepoints
+      .map(at => new AnchoredTimepoint(TimepointRef(pb, context, at.timepoint), TimepointRef(pb, context, at.anchor), at.delay))
 
     // if there is a parent action, add a mapping localId -> globalID to its context
     contextOpt match {

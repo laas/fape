@@ -2,10 +2,12 @@ package planstack.anml.model.abs.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.AbstractTemporalConstraint
-import planstack.anml.model.abs.time.{AbstractTemporalAnnotation, AbstractTimepointRef}
+import planstack.anml.model.abs.{AbstractMaxDelay, AbstractMinDelay, AbstractMinDelay$}
+import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation, AbsTP$}
 import planstack.anml.model.concrete.{RefCounter, Chronicle}
 import planstack.anml.model.concrete.statements._
+
+abstract trait ChronicleComponent
 
 abstract class AbstractStatement(val id:LocalRef) {
   /**
@@ -19,19 +21,23 @@ abstract class AbstractStatement(val id:LocalRef) {
   def isTemporalInterval : Boolean
 
   /** Produces the temporal constraints by applying the temporal annotation to this statement. */
-  def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractTemporalConstraint] = {
+  def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractMinDelay] = {
     if(!isTemporalInterval)
       throw new ANMLException("This statement cannot be temporally qualified because it has no start/end timepoints: "+this)
+    val stStart = new AbsTP("start", id)
+    val stEnd = new AbsTP("end", id)
     annot.flag match {
       case "is" => List(
-        new AbstractTemporalConstraint(new AbstractTimepointRef("start", id), "=", annot.start.timepoint, annot.start.delta),
-        new AbstractTemporalConstraint(new AbstractTimepointRef("end", id), "=", annot.end.timepoint, annot.end.delta)
+        AbstractMinDelay(annot.start.timepoint, stStart, annot.start.delta),
+        AbstractMaxDelay(annot.start.timepoint, stStart, annot.start.delta),
+        AbstractMinDelay(annot.end.timepoint, stEnd, annot.end.delta),
+        AbstractMaxDelay(annot.end.timepoint, stEnd, annot.end.delta)
       )
       case "contains" => List(
         // start(id) >= start+delta <=> start(id) +1 > start+delta <=> start < start(id)+1-delta
-        new AbstractTemporalConstraint(annot.start.timepoint, "<", new AbstractTimepointRef("start", id), -annot.start.delta +1),
+        new AbstractMinDelay(annot.start.timepoint, stStart, annot.start.delta),
         // end(id) <= end+delta <=> end(id) < end+delta=1
-        new AbstractTemporalConstraint(new AbstractTimepointRef("end", id), "<", annot.end.timepoint, annot.end.delta+1)
+        new AbstractMinDelay(annot.end.timepoint, stEnd, -annot.end.delta)
       )
     }
   }

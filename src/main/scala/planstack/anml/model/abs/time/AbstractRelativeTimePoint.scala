@@ -3,7 +3,7 @@ package planstack.anml.model.abs.time
 import planstack.anml.model.LocalRef
 import planstack.anml.parser
 
-class AbstractRelativeTimePoint(val timepoint:AbstractTimepointRef, val delta:Int) {
+class AbstractRelativeTimePoint(val timepoint:AbsTP, val delta:Int) {
 
  override def toString =
    if(delta == 0)
@@ -18,7 +18,7 @@ class AbstractRelativeTimePoint(val timepoint:AbstractTimepointRef, val delta:In
 object AbstractRelativeTimePoint {
 
   def apply(rtp:parser.RelativeTimepoint) = rtp.tp match {
-    case None => new AbstractRelativeTimePoint(new AbstractTimepointRef("GStart", new LocalRef("")), rtp.delta)
-    case Some(tpRef) => new AbstractRelativeTimePoint(AbstractTimepointRef(tpRef), rtp.delta)
+    case None => new AbstractRelativeTimePoint(new AbsTP("GStart", new LocalRef("")), rtp.delta)
+    case Some(tpRef) => new AbstractRelativeTimePoint(AbsTP(tpRef), rtp.delta)
   }
 }

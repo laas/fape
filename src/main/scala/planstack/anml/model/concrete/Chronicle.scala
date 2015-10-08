@@ -2,9 +2,10 @@ package planstack.anml.model.concrete
 
 import java.util
 
+import planstack.FullSTN
 import planstack.anml.ANMLException
 import planstack.anml.model.abs.statements.{AbstractBindingConstraint, AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
-import planstack.anml.model.abs.{AbstractTask, AbstractTemporalConstraint}
+import planstack.anml.model.abs._
 import planstack.anml.model.concrete.statements.{BindingConstraint, LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
 import planstack.structures.IList
@@ -16,8 +17,7 @@ import scala.collection.mutable.ListBuffer
 
 /** A chronicle decribes modifications to be made to plan.
   *
-  * Notable classes implementing it are [[planstack.anml.model.concrete.Action]]
-  * and [[planstack.anml.model.concrete.Decomposition]].
+  * Notable classes implementing it are [[planstack.anml.model.concrete.Action]] and [[planstack.anml.model.AnmlProblem]]
   * Updates to a problem (such as the happening of exogeneous events) are also encoded as StateModifiers
   * in [[planstack.anml.model.AnmlProblem]].
   *
@@ -61,6 +61,9 @@ trait Chronicle {
   /** (Type, Reference) of global variables to be declared */
   def vars : java.util.List[Pair[String, VarRef]]
 
+  var flexibleTimepoints : IList[(TPRef,String)] = null
+  var anchoredTimepoints : IList[AnchoredTimepoint] = null
+
   /** All problem instances to be declared
     * Problem instances are typically a global variable with a domain containing only one value (itself).
     */
@@ -81,9 +84,6 @@ trait Chronicle {
           statements += binded
           context.addStatement(s.id, binded)
 
-        case s:AbstractTemporalConstraint =>
-          temporalConstraints += s.bind(context, pb, this, refCounter)
-
         case s:AbstractTask =>
           val parent = this match {
               case x: Action => Some(x)
@@ -91,80 +91,56 @@ trait Chronicle {
             }
           tasks += Task(pb, s, context, parent, refCounter)
 
-        case s:AbstractBindingConstraint =>
-          bindingConstraints += s.bind(context, pb, this, refCounter)
-          
         case _ => throw new ANMLException("unsupported yet:" + absStatement)
       }
     }
   }
 
-  /** Builds an object containing all temporal operations (time point creations and constraints) that must be applied
-    * by this chronicle
-    */
-  def getTemporalObjects: TemporalObjects = {
-    // we can make virtual the time points of actions and those of the container
-    val fixedTPs = Set(container.start,container.end)
+  def addAll(absConstraints : Seq[AbstractConstraint], context:Context, pb:AnmlProblem): Unit = {
+    for(absConstraint <- absConstraints) {
+      absConstraint match {
+        case s:AbstractTemporalConstraint =>
+          temporalConstraints += s.bind(context, pb)
 
-    val equalities = temporalConstraints.filter(_.op == "=")
-    val rigidsRawConstraints =
-      equalities
-        .filter(tc => fixedTPs.contains(tc.tp1) || fixedTPs.contains(tc.tp2)) // at least one must be fixed
-        .filter(tc => !fixedTPs.contains(tc.tp1) || !fixedTPs.contains(tc.tp2)) // at least one must not be fixed
+        case s:AbstractBindingConstraint =>
+          bindingConstraints += s.bind(context, pb)
 
-    // a list of (virt, real, dist(virt, real))
-    val rigids = rigidsRawConstraints.map(tc => {
-      if (fixedTPs contains tc.tp2)
-        (tc.tp1, tc.tp2, -tc.plus :Integer)
-      else
-        (tc.tp2, tc.tp1, tc.plus :Integer)
-    }).asScala
-
-    val virtualTimePoints = rigids.map(_._1)
-
-    val tps = new ListBuffer[(TPRef, String)]
-    val pendingVirtuals = new ListBuffer[TPRef]
-
-    this match {
-      case _:Action => {
-        tps.append((container.start, "dispatchable"))
-        tps.append((container.end, "contingent"))
+        case _ => throw new ANMLException("unsupported yet:" + absConstraint)
       }
-      case _ => //start/end are those of the containing action or of the problem
     }
-
-    // statements and action conditions are regular time point (if they are not virtual)
-    for(s <- statements ++ tasks) {
-      if(!virtualTimePoints.contains(s.start)) tps.append((s.start, "controllable"))
-      if(!virtualTimePoints.contains(s.end)) tps.append((s.end, "controllable"))
-    }
-//    Let action conditions be regular time points for now
-//    for(tc <- actionConditions) {
-//      pendingVirtuals.append(tc.start, tc.end)
-//    }
+  }
 
 
-    val nonRigidConstraints = temporalConstraints.filter(c => !rigidsRawConstraints.contains(c))
+  def initTemporalObjects() {
+    assert(flexibleTimepoints == null)
+    assert(anchoredTimepoints == null)
+    assert(!this.isInstanceOf[Action], "Error: action should do that themselves")
 
-    new TemporalObjects(tps.toList, rigids.toList, pendingVirtuals, nonRigidConstraints)
+    val intervals : List[TemporalInterval] = container :: tasks.toList.asInstanceOf[List[TemporalInterval]] ++ statements.toList.asInstanceOf[List[TemporalInterval]]
+    val timepoints = intervals.flatMap(int => List(int.start, int.end))
+
+    this.flexibleTimepoints = timepoints.map(tp => (tp, "controllable"))
+
+    // no anchored tps
+    this.anchoredTimepoints = new IList[AnchoredTimepoint]()
   }
 }
+
+case class AnchoredTimepoint(timepoint:TPRef, anchor :TPRef, delay :Int)
 
 /**
  * This object sums all time points and constraints in a state modifier.
  * Note that some constraints might apply on time points not defined here
  * (e.g. start of a nested action or global start of the problem).
  *
- * @param timePoints Non virtual time points that chould be recorded.
- * @param virtualTimePoints Virtual time points, those are defined wrt to another time point. It comes as a tuple
- *                          (virt, real, d) where real is a non-virtual timepoint d is the distance from virt to real
- * @param pendingVirtuals Timepoints that will be tied later on to another timepoint.
- * @param nonRigidConstraints All constraints that are not represented as a virtual time point and its rigid relations.
+ * @param timepoints Non virtual time points that should be recorded.
+ * @param anchoredTimpepoints Virtual time points, those are defined wrt to another time point. It comes as a tuple
+ *                          (virt, anchor, d) where anchor is a non-anchored timepoint d is the distance from virt to anchor
+ * @param constraints All constraints between timepoints (excluding constraints involving anchored timepoints)
  */
-class TemporalObjects(val timePoints: IList[Pair[TPRef, String]],
-                      val virtualTimePoints: IList[(TPRef, TPRef, Integer)],
-                      val pendingVirtuals: IList[TPRef],
-                      val nonRigidConstraints: IList[TemporalConstraint])
+class TemporalObjects(val timepoints: IList[Pair[TPRef, String]],
+                      val anchoredTimpepoints: IList[AnchoredTimepoint],
+                      val constraints: IList[MinDelayConstraint])
 
 class BaseChronicle(val container: TemporalInterval) extends Chronicle {
 
@@ -176,3 +152,5 @@ class BaseChronicle(val container: TemporalInterval) extends Chronicle {
   override val instances = new util.LinkedList[String]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 }
+
+

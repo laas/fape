@@ -2,7 +2,7 @@ package planstack.anml.model.concrete.time
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.time.AbstractTimepointRef
+import planstack.anml.model.abs.time.{AbsTP, AbsTP$}
 import planstack.anml.model.concrete.{GlobalRef, TPRef, TemporalInterval}
 
 /** Reference to a time point, it is used to represent timepoints such as the beginning of an action
@@ -29,7 +29,7 @@ class TimepointRef(val extractor:String, val id:GlobalRef) {
 
 object TimepointRef {
 
-  def apply(pb:AnmlProblem, context:Context, abs:AbstractTimepointRef) : TPRef = {
+  def apply(pb:AnmlProblem, context:Context, abs:AbsTP) : TPRef = {
     abs.extractor match {
       case "GStart" => pb.start
       case "GEnd" => pb.end

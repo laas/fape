@@ -11,7 +11,7 @@ import planstack.anml.{ANMLException, parser}
   * @param extractor Either "start", "end", "GStart" or "GEnd"
   * @param id Local identifier of the action. If empty, the extractor is to be applied on the interval containing the event
   */
-class AbstractTimepointRef(val extractor:String, val id:LocalRef) {
+case class AbsTP(extractor:String, id:LocalRef) {
   require(Set("GStart","GEnd","start","end").contains(extractor))
 
   override def toString = (extractor, id) match {
@@ -21,18 +21,31 @@ class AbstractTimepointRef(val extractor:String, val id:LocalRef) {
       if(ident.isEmpty) ext
       else "%s(%s)".format(ext, ident)
   }
+
+  override def equals(obj: Any) = obj match {
+    case AbsTP("GStart", _) => extractor == "GStart"
+    case AbsTP("GEnd", _) => extractor == "GEnd"
+    case AbsTP(oExtr, oId) => extractor == oExtr && oId == id
+    case _ => false
+  }
+
+  override def hashCode =
+    if(extractor == "GStart" || extractor == "GEnd")
+      extractor.hashCode
+    else
+      extractor.hashCode + id.hashCode
 }
 
-object AbstractTimepointRef {
+object AbsTP {
 
   def apply(parsed:parser.TimepointRef) = {
     parsed match {
-      case parser.TimepointRef("", "") => new AbstractTimepointRef("GStart", new LocalRef(""))
+      case parser.TimepointRef("", "") => new AbsTP("GStart", new LocalRef(""))
       case parser.TimepointRef("", _) => throw new ANMLException("Invalid timepoint reference: "+parsed)
-      case parser.TimepointRef(extractor, "") => new AbstractTimepointRef(extractor, new LocalRef(""))
-      case parser.TimepointRef(extractor, id) => new AbstractTimepointRef(extractor, new LocalRef(id))
+      case parser.TimepointRef(extractor, "") => new AbsTP(extractor, new LocalRef(""))
+      case parser.TimepointRef(extractor, id) => new AbsTP(extractor, new LocalRef(id))
     }
   }
 
-  def apply(extractor:String) = new AbstractTimepointRef(extractor, new LActRef(""))
+  def apply(extractor:String) = new AbsTP(extractor, new LActRef(""))
 }

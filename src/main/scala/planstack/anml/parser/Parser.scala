@@ -63,7 +63,7 @@ case class ExactDuration(dur : Expr) extends Duration {
   override def maxDur = dur
 }
 
-case class BoundedDuration(minDur : Expr, maxDur : Expr) extends Duration
+case class UncertainDuration(minDur : Expr, maxDur : Expr) extends Duration
 
 
 case class Argument(tipe:String, name:String)
@@ -255,7 +255,7 @@ object AnmlParser extends JavaTokenParsers {
       case tipe~name => List(new Constant(name, tipe)) }
       | "duration"~":="~>expr<~";" ^^ (x => List(ExactDuration(x)))
       | "duration"~":in"~"["~>expr~","~expr<~"]"~";" ^^ {
-        case min~","~max => List(BoundedDuration(min, max))
+        case min~","~max => List(UncertainDuration(min, max))
       }
     )
 

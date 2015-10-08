@@ -22,10 +22,10 @@ class LocalRef(val id:T) {
   override def equals(o:Any) = {
     if(o.isInstanceOf[T]) {
       id == o
-    } else if(this.getClass != o.getClass) {
-      false
-    } else {
+    } else if(o.isInstanceOf[LocalRef]) {
       this.id == o.asInstanceOf[LocalRef].id
+    } else {
+      false
     }
   }
 }

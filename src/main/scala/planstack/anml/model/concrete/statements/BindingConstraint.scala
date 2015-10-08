@@ -1,9 +1,9 @@
 package planstack.anml.model.concrete.statements
 
 import planstack.anml.model.ParameterizedStateVariable
-import planstack.anml.model.concrete.VarRef
+import planstack.anml.model.concrete.{Constraint, VarRef}
 
-abstract class BindingConstraint
+abstract class BindingConstraint extends Constraint
 
 class AssignmentConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
 
