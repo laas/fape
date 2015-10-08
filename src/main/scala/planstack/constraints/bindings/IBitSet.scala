@@ -79,7 +79,7 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
   }
 
   def |(o: IBitSet) : IBitSet = {
-    val newSize = Math.min(nwords, o.nwords)
+    val newSize = Math.max(nwords, o.nwords)
     val union = new Array[Long](newSize)
     var i = 0
     while(i < newSize) {

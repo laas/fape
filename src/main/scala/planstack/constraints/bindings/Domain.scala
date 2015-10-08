@@ -30,6 +30,12 @@ class Domain(val vals: scala.collection.Set[Int]) {
 
   def this(values: util.Collection[Integer]) = this(Domain.convert(values))
   def this(values: Iterable[Int]) = this(values.map(_.asInstanceOf[Integer]).asJavaCollection)
+  def this(values: java.util.BitSet) = this(new IBitSet(values.toLongArray))
+
+  def toBitSet : java.util.BitSet = vals match {
+    case bs: IBitSet => java.util.BitSet.valueOf(bs.elems)
+    case _ => throw new RuntimeException("Unsupported conversion from non-IBitSet collection.")
+  }
 
   lazy private val _isEmpty = vals.isEmpty
   lazy private val _size = vals.size
