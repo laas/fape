@@ -1,7 +1,6 @@
 package planstack.anml
 
 import planstack.anml.model.AnmlProblem
-import planstack.anml.parser.ANMLFactory
 
 object Parsing extends App {
 

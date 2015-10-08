@@ -1,10 +1,9 @@
 package planstack.anml.model.abs
 
-import planstack.anml.model.abs.statements.AbstractStatement
+import planstack.anml.model._
 import planstack.anml.model.abs.time.AbsTP
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.time.TimepointRef
-import planstack.anml.model._
 import planstack.anml.parser
 
 abstract class AbstractConstraint {
@@ -68,17 +67,71 @@ object AbstractTemporalConstraint {
   }
 }
 
-object AbstractMinDelay {
 
-  /** Returns a new Abstract temporal constraint enforcing action1 to be before action2
-    *
-    * @param action1 local id of an action
-    * @param action2 local id of an action
-    * @return
-    */
-  def before(action1:LActRef, action2:LActRef) =
-    new AbstractMinDelay(
-      new AbsTP("start", action1),
-      new AbsTP("end", action2),
-      1)
+abstract class AbstractBindingConstraint
+  extends AbstractConstraint
+{
+  override def bind(context: Context, pb: AnmlProblem): BindingConstraint
+}
+
+class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  require(sv.func.isConstant)
+
+  override def toString = "%s := %s".format(sv, variable)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new AssignmentConstraint(sv.bind(context), context.getGlobalVar(variable))
+}
+
+class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val value : Int, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  require(sv.func.isConstant && sv.func.valueType == "integer")
+
+  override def toString = "%s := %s".format(sv, value)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new IntegerAssignmentConstraint(sv.bind(context), value)
+}
+
+class AbstractEqualityConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  require(sv.func.isConstant)
+
+  override def toString = "%s == %s".format(sv, variable)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new EqualityConstraint(sv.bind(context), context.getGlobalVar(variable))
+}
+
+class AbstractVarEqualityConstraint(val leftVar : LVarRef, val rightVar : LVarRef, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  override def toString = "%s == %s".format(leftVar, rightVar)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new VarEqualityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
+}
+
+class AbstractInequalityConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  require(sv.func.isConstant)
+
+  override def toString = "%s != %s".format(sv, variable)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new InequalityConstraint(sv.bind(context), context.getGlobalVar(variable))
+}
+
+class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVarRef, id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  override def toString = "%s != %s".format(leftVar, rightVar)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new VarInequalityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
 }

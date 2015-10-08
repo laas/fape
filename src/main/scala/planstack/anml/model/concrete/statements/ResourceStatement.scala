@@ -1,6 +1,6 @@
 package planstack.anml.model.concrete.statements
 
-import planstack.anml.model.concrete.{TPRef, RefCounter, Chronicle}
+import planstack.anml.model.concrete.{Chronicle, RefCounter, TPRef}
 import planstack.anml.model.{NumFunction, ParameterizedStateVariable}
 
 /** A concrete ANML resource Statement.

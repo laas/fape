@@ -1,7 +1,7 @@
 package planstack.anml.model.abs.statements
 
-import planstack.anml.model.concrete.{RefCounter, Chronicle}
 import planstack.anml.model.concrete.statements._
+import planstack.anml.model.concrete.{Chronicle, RefCounter}
 import planstack.anml.model.{AbstractParameterizedStateVariable, AnmlProblem, Context, LStatementRef}
 
 /** An abstract ANML resource Statement.

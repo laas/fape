@@ -409,7 +409,7 @@ object Test extends App {
 
   import java.io.FileReader
 
-import planstack.anml.parser.AnmlParser._
+  import planstack.anml.parser.AnmlParser._
 
 
   val arg = ""

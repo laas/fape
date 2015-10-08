@@ -1,7 +1,7 @@
 package planstack.anml.model
 
 import planstack.anml.ANMLException
-import planstack.anml.model.concrete.{RefCounter, InstanceRef, VarRef}
+import planstack.anml.model.concrete.{InstanceRef, RefCounter}
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 
 import scala.collection.JavaConversions._

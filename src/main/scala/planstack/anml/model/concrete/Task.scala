@@ -1,7 +1,6 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.ANMLException
-import planstack.anml.model.abs.{AbstractAction, AbstractTask}
+import planstack.anml.model.abs.AbstractTask
 import planstack.anml.model.{AnmlProblem, Context}
 
 import scala.collection.JavaConversions._

@@ -9,9 +9,8 @@ import planstack.anml.model.concrete._
 import planstack.anml.parser.{ANMLFactory, ParseResult}
 import planstack.anml.{ANMLException, parser}
 
-
-import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 

@@ -2,10 +2,10 @@ package planstack.anml.model.abs.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.{AbstractMaxDelay, AbstractMinDelay, AbstractMinDelay$}
-import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation, AbsTP$}
-import planstack.anml.model.concrete.{RefCounter, Chronicle}
+import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation}
+import planstack.anml.model.abs.{AbstractMaxDelay, AbstractMinDelay}
 import planstack.anml.model.concrete.statements._
+import planstack.anml.model.concrete.{Chronicle, RefCounter}
 
 abstract trait ChronicleComponent
 

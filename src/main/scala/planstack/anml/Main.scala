@@ -1,12 +1,8 @@
 package planstack.anml
 
-import java.io.FileReader
-
 import planstack.anml.model.AnmlProblem
-import planstack.anml.model.concrete.{Action}
+import planstack.anml.model.concrete.Action
 import planstack.anml.parser.AnmlParser._
-
-import scala.collection.JavaConversions._
 
 object Main extends App {
 

@@ -2,7 +2,7 @@ package planstack.anml.model.abs
 
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.AbstractStatement
-import planstack.anml.model.concrete.{RefCounter, Chronicle}
+import planstack.anml.model.concrete.{Chronicle, RefCounter}
 
 import scala.collection.JavaConverters._
 

@@ -1,8 +1,8 @@
 package planstack.anml.model
 
 import planstack.anml.ANMLException
-import planstack.anml.model.concrete.statements.Statement
 import planstack.anml.model.concrete._
+import planstack.anml.model.concrete.statements.Statement
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

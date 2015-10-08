@@ -1,8 +1,5 @@
 import org.scalatest.FunSuite
 import planstack.anml.model.AnmlProblem
-import planstack.anml.model.concrete.Factory
-
-import planstack.anml.parser.AnmlParser._
 
 class ActionTimepoint extends FunSuite {
 

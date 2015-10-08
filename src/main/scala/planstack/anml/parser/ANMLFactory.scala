@@ -1,9 +1,6 @@
 package planstack.anml.parser
 
-import java.io.File
-
 import planstack.anml.ANMLException
-import planstack.anml.model.AnmlProblem
 import planstack.anml.parser.AnmlParser._
 
 import scala.util.matching.Regex.Match

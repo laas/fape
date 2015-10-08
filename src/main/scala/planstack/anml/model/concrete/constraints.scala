@@ -1,8 +1,6 @@
 package planstack.anml.model.concrete
 
-import planstack.anml.model.abs.{AbstractParameterizedMinDelay, AbstractMinDelay, AbstractMinDelay$}
-import planstack.anml.model.concrete.time.TimepointRef
-import planstack.anml.model.{ParameterizedStateVariable, AnmlProblem, Context}
+import planstack.anml.model.ParameterizedStateVariable
 
 
 abstract class Constraint
@@ -21,10 +19,24 @@ case class ContingentConstraint(src :TPRef, dst :TPRef, min :Int, max :Int) exte
   override def toString = s"$src == [$min, $max] ==> $dst"
 }
 
-
 case class ParameterizedContingentConstraint(src :TPRef, dst :TPRef, min :ParameterizedStateVariable,
                                 max :ParameterizedStateVariable, minTrans: (Int => Int), maxTrans: (Int => Int))
   extends TemporalConstraint
 {
   override def toString = s"$src == [$min, $max] ==> $dst"
 }
+
+
+abstract class BindingConstraint extends Constraint
+
+class AssignmentConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
+
+class IntegerAssignmentConstraint(val sv : ParameterizedStateVariable, val value : Int) extends BindingConstraint
+
+class VarEqualityConstraint(val leftVar : VarRef, val rightVar : VarRef) extends BindingConstraint
+
+class EqualityConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
+
+class VarInequalityConstraint(val leftVar : VarRef, val rightVar : VarRef) extends BindingConstraint
+
+class InequalityConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint

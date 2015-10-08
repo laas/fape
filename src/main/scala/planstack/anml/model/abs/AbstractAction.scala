@@ -4,7 +4,7 @@ import planstack.FullSTN
 import planstack.anml.model._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.abs.time.AbsTP
-import planstack.anml.model.concrete.{AnchoredTimepoint, RefCounter}
+import planstack.anml.model.concrete.RefCounter
 import planstack.anml.{ANMLException, parser}
 import planstack.structures.IList
 

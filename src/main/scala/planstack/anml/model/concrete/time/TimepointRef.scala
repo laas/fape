@@ -2,7 +2,7 @@ package planstack.anml.model.concrete.time
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.time.{AbsTP, AbsTP$}
+import planstack.anml.model.abs.time.AbsTP
 import planstack.anml.model.concrete.{GlobalRef, TPRef, TemporalInterval}
 
 /** Reference to a time point, it is used to represent timepoints such as the beginning of an action

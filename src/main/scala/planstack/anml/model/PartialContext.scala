@@ -1,6 +1,6 @@
 package planstack.anml.model
 
-import planstack.anml.model.concrete.{RefCounter, EmptyVarRef, VarRef}
+import planstack.anml.model.concrete.{EmptyVarRef, RefCounter, VarRef}
 
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {

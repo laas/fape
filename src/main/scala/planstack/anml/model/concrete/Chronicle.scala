@@ -2,18 +2,15 @@ package planstack.anml.model.concrete
 
 import java.util
 
-import planstack.FullSTN
 import planstack.anml.ANMLException
-import planstack.anml.model.abs.statements.{AbstractBindingConstraint, AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.abs._
-import planstack.anml.model.concrete.statements.{BindingConstraint, LogStatement, ResourceStatement, Statement}
+import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.concrete.statements.{LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
-import planstack.structures.IList
 import planstack.structures.Converters._
+import planstack.structures.IList
 
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ListBuffer
 
 /** A chronicle decribes modifications to be made to plan.
   *

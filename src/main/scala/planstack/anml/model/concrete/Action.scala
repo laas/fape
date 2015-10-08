@@ -4,10 +4,9 @@ import java.util
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.{AbstractAction, AbstractTask, AbstractDuration}
-import planstack.anml.model.concrete.statements.{BindingConstraint, Statement}
+import planstack.anml.model.abs.{AbstractAction, AbstractDuration, AbstractTask}
+import planstack.anml.model.concrete.statements.Statement
 import planstack.anml.model.concrete.time.TimepointRef
-import planstack.structures.IList
 
 import scala.collection.JavaConversions._
 
