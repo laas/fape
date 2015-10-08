@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import org.junit.Test;
-import planstack.anml.model.concrete.statements.IntegerAssignmentConstraint;
 
 
 public class HLeveledReasonerTests {

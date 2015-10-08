@@ -11,10 +11,7 @@ import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.concrete.Chronicle;
-import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.TPRef;
-import planstack.anml.model.concrete.VarRef;
+import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 
 import java.util.*;

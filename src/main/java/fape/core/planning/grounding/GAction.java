@@ -8,8 +8,7 @@ import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
 import planstack.anml.model.*;
-import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.AbstractTask;
+import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
@@ -114,30 +113,31 @@ public class GAction {
             values[i] = bindings.get(variables[i]);
         }
 
-        List<AbstractStatement> statements = abs.jTemporalStatements();
-
-        for(AbstractStatement as : statements) {
-            if(as instanceof AbstractEqualityConstraint) {
+        for(AbstractConstraint as : abs.jConstraints()) {
+            if (as instanceof AbstractEqualityConstraint) {
                 AbstractEqualityConstraint ec = (AbstractEqualityConstraint) as;
                 GroundProblem.Invariant inv = invariantOf(ec.sv(), gPb);
-                if(inv == null || inv.value != valueOf(ec.variable(), pb)) {
+                if (inv == null || inv.value != valueOf(ec.variable(), pb)) {
                     throw new NotValidGroundAction("Action not valid1");
                 }
-            } else if(as instanceof AbstractInequalityConstraint) {
+            } else if (as instanceof AbstractInequalityConstraint) {
                 AbstractInequalityConstraint ec = (AbstractInequalityConstraint) as;
                 GroundProblem.Invariant inv = invariantOf(ec.sv(), gPb);
-                if(inv == null || inv.value == valueOf(ec.variable(), pb)) {
+                if (inv == null || inv.value == valueOf(ec.variable(), pb)) {
                     throw new NotValidGroundAction("Action not valid2");
                 }
-            } else if(as instanceof AbstractVarEqualityConstraint) {
+            } else if (as instanceof AbstractVarEqualityConstraint) {
                 AbstractVarEqualityConstraint ec = (AbstractVarEqualityConstraint) as;
-                if(valueOf(ec.leftVar(), pb) != valueOf(ec.rightVar(), pb))
+                if (valueOf(ec.leftVar(), pb) != valueOf(ec.rightVar(), pb))
                     throw new NotValidGroundAction("Action not valid3");
-            } else if(as instanceof AbstractVarInequalityConstraint) {
+            } else if (as instanceof AbstractVarInequalityConstraint) {
                 AbstractVarInequalityConstraint ec = (AbstractVarInequalityConstraint) as;
-                if(valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
+                if (valueOf(ec.leftVar(), pb) == valueOf(ec.rightVar(), pb))
                     throw new NotValidGroundAction("Action not valid4");
-            } else if(as instanceof AbstractTransition) {
+            }
+        }
+        for(AbstractStatement as : abs.jStatements()) {
+            if(as instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) as;
                 gStatements.add(new Pair<>(
                         t.id(),
@@ -264,12 +264,10 @@ public class GAction {
             possibleValues.add(varSet);
         }
 
-        List<AbstractStatement> statements = new LinkedList<>(aa.jTemporalStatements());
-
         List<PartialBindings> partialBindingses = new LinkedList<>();
 
         // look at all static equality constraints to infer partial bindings
-        for(AbstractStatement s : statements) {
+        for(AbstractConstraint s : aa.jConstraints()) {
             if(s instanceof AbstractEqualityConstraint) {
                 AbstractEqualityConstraint c = (AbstractEqualityConstraint) s;
 
@@ -345,7 +343,7 @@ public class GAction {
             partialBindingses.add(new PartialBindings(vars.toArray(new LVarRef[vars.size()]), new LVarRef[0], possibleValues));
 
         // treat equalities between variables. those are merge into existing partial bindings
-        for(AbstractStatement s : statements) {
+        for(AbstractConstraint s : aa.jConstraints()) {
             if(s instanceof AbstractVarEqualityConstraint) {
                 AbstractVarEqualityConstraint c = (AbstractVarEqualityConstraint) s;
                 // find a partial binding in which to merge, this is the one with shares the maximum of variables with this equality constraint

@@ -44,7 +44,7 @@ predicate communicated_rock_data(Waypoint p);
 predicate communicated_image_data(Objective o, Mode m);
 
 action navigate(Rover x, Waypoint y, Waypoint z) {
-  duration :in [10,13];
+  duration := 15;
     x.can_traverse(y, z) == true;
     visible(y, z) == true;
     [all] {
@@ -54,7 +54,7 @@ action navigate(Rover x, Waypoint y, Waypoint z) {
 };
 
 action sample_soil(Rover x, Store s, Waypoint p) {
-  duration :in [5,7];
+  duration := 6;
     x.equipped_for_soil_analysis == true;
     s.store_of == x;
     [all] {
@@ -66,7 +66,7 @@ action sample_soil(Rover x, Store s, Waypoint p) {
 };
 
 action sample_rock(Rover x, Store s, Waypoint p) {
-  duration :in [5,7];
+ duration := 5;
     x.equipped_for_rock_analysis == true;
     s.store_of == x;
     [all] {
@@ -96,7 +96,7 @@ action calibrate(Rover r, Camera i, Objective t, Waypoint w) {
 };
 
 action take_image(Rover r, Waypoint p, Objective o, Camera i, Mode m) {
-  duration :in [2,3];
+  duration := 3;
     i.on_board(r) == true;
     r.equipped_for_imaging() == true;
     i.supports(m) == true;

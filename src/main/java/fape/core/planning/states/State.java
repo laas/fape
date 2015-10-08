@@ -51,7 +51,6 @@ import planstack.constraints.stnu.STNUDispatcher;
 import planstack.structures.IList;
 import scala.Option;
 import scala.Tuple2;
-import scala.Tuple3;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -424,62 +423,6 @@ public class State implements Reporter {
         // (when an action is executed)
         csp.stn().enforceMinDelayWithID(pb.earliestExecution(), act.start(), 0, act.start());
 
-        // creates constraints associated with the action duration.
-        // all those constraints are given the action's reference as ID to allow for later removal.
-        if(act.minDuration() != null) {
-            assert act.maxDuration() != null : "Error: a min duration without a max duration.";
-
-            // variables in the CSP representing the min/max value of the duration.
-            VarRef min, max;
-
-            // create domain/constraints for the min variable
-            if(act.minDuration().isFunction()) {
-                // create a constraint defined in extension sv(a1,...,an) = tmp
-                // add a constraint act.start +tmp < act.end
-                // the last one will be propagated in the CSP when tmp is binded in the CSP
-                ParameterizedStateVariable sv = act.minDuration().sv();
-                assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-                assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-                min = new VarRef(refCounter);
-                csp.bindings().AddIntVariable(min);
-                List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
-                varsOfExtConst.add(min);
-                csp.bindings().addNAryConstraint(varsOfExtConst, sv.func().name());
-            } else {
-                // create a var with a singleton domain
-                min = new VarRef(refCounter);
-                List<Integer> domain = new LinkedList<>();
-                domain.add(act.minDuration().d());
-                csp.bindings().AddIntVariable(min, domain);
-            }
-
-            // create domain/constraints for the max variable
-            if(act.maxDuration().isFunction()) {
-                // create a constraint defined in extension sv(a1,...,an) = tmp
-                // add a constraint act.start +tmp > act.end
-                // the last one will be propagated in the STN when tmp is binded in the CSP
-                ParameterizedStateVariable sv = act.maxDuration().sv();
-                assert sv.func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-                assert sv.func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-                max = new VarRef(refCounter);
-                csp.bindings().AddIntVariable(max);
-                List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(sv.args()));
-                varsOfExtConst.add(max);
-                csp.bindings().addNAryConstraint(varsOfExtConst, sv.func().name());
-            } else {
-                // create a var with a singleton domain
-                max = new VarRef(refCounter);
-                List<Integer> domain = new LinkedList<>();
-                domain.add(act.maxDuration().d());
-                csp.bindings().AddIntVariable(max, domain);
-            }
-
-            csp.addContingentConstraintWithID(act.start(), act.end(), min, max, act.id());
-        } else {
-            assert act.maxDuration() == null : "Error: max duration was defined without a min duration.";
-            csp.stn().enforceMinDelayWithID(act.start(), act.end(), 1, act.id());
-        }
-
         if(pgr != null)
             pgr.createActionInstantiationVariable(act, this);
 
@@ -628,18 +571,21 @@ public class State implements Reporter {
      * @param tc The TemporalConstraint to insert.
      */
     private void apply(Chronicle mod, TemporalConstraint tc) {
-        TPRef tp1 = tc.tp1();
-        TPRef tp2 = tc.tp2();
 
-        switch (tc.op()) {
-            case "<":
-                // tp1 < tp2 + x   <=>   tp1 -x +1 <= tp2 (the inequality is strict)
-                // tp1 -- [-x+1, inf] --> tp2
-                csp.stn().enforceMinDelay(tp1, tp2, -tc.plus()+1);
-                break;
-            case "=":
-                // tp1 --- [x, x] ---> tp2
-                csp.stn().enforceConstraint(tp2, tp1, tc.plus(), tc.plus());
+        if(tc instanceof MinDelayConstraint) {
+            csp.stn().enforceMinDelay(((MinDelayConstraint) tc).src(), ((MinDelayConstraint) tc).dst(), ((MinDelayConstraint) tc).minDelay());
+        } else if(tc instanceof ParameterizedMinDelayConstraint) {
+            ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
+            assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
+            assert pmd.minDelay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
+            VarRef var = new VarRef(refCounter);
+            csp.bindings().AddIntVariable(var);
+            List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.minDelay().args()));
+            varsOfExtConst.add(var);
+            csp.bindings().addNAryConstraint(varsOfExtConst, pmd.minDelay().func().name());
+            csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+        } else {
+            throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }
     }
 
@@ -656,12 +602,11 @@ public class State implements Reporter {
      */
     private void apply(Chronicle mod) {
 
-        // get all timepoints to be declared (in categories real, virtual and pending-virtual)
-        // add the time points tight away, the constraints will be add last as they might apply on
-        // time points not included yet (e.g. start/end of nested actions)
-        TemporalObjects timedObjects = mod.getTemporalObjects();
+        for (Tuple2<TPRef, String> tp : mod.flexibleTimepoints()) {
+            final TPRef t = tp._1();
+            if(t.equals(pb.start()) || t.equals(pb.end()) || t.equals(pb.earliestExecution()))
+                continue;
 
-        for (Tuple2<TPRef, String> tp : timedObjects.timePoints()) {
             switch (tp._2()) {
                 case "dispatchable":
                     csp.stn().addControllableTimePoint(tp._1());
@@ -673,13 +618,9 @@ public class State implements Reporter {
                     csp.stn().recordTimePoint(tp._1());
                     break;
                 default:
-                    throw new FAPEException("Unknown time point tipe: " + tp._2());
+                    throw new FAPEException("Unknown time point type: " + tp._2());
             }
         }
-
-        for(TPRef pendingVirt : timedObjects.pendingVirtuals())
-            csp.stn().addPendingVirtualTimePoint(pendingVirt);
-
 
         // for every instance declaration, create a new CSP Var with itself as domain
         for (String instance : mod.instances()) {
@@ -699,12 +640,12 @@ public class State implements Reporter {
             apply(mod, bc);
 
         // last: virtual time points might refer to start/end of nested actions
-        for(Tuple3<TPRef,TPRef,Integer> virtual : timedObjects.virtualTimePoints()) {
-            csp.stn().addVirtualTimePoint(virtual._1(), virtual._2(), virtual._3());
+        for(AnchoredTimepoint anchored : mod.anchoredTimepoints()) {
+            csp.stn().addVirtualTimePoint(anchored.timepoint(), anchored.anchor(), anchored.delay());
         }
 
         // apply all remaining temporal constraints (those not represented with rigid time points)
-        for (TemporalConstraint tc : timedObjects.nonRigidConstraints()) {
+        for (TemporalConstraint tc : mod.temporalConstraints()) {
             apply(mod, tc);
         }
 
