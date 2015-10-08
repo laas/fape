@@ -77,7 +77,19 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
   /** Returns the earliest time for the time point with id u */
   override protected def earliestStart(u: Int): Int = stn.earliestStart(u)
 
-  override def getMinDelay(u: TPRef, v: TPRef): Int = stn.minDelay(id(u.id), id(v.id))
+  private def dist(u :TPRef, v:TPRef) : Int = {
+    val (src, addDelay) =
+      if(u.isVirtual) u.attachmentToReal
+      else (u, 0)
+    val (dst, subDelay) =
+      if(v.isVirtual) v.attachmentToReal
+      else (v, 0)
+    (- addDelay) + stn.maxDelay(id(src.id), id(dst.id)) + subDelay
+  }
 
-  override def getMaxDelay(u: TPRef, v: TPRef): Int = stn.maxDelay(id(u.id), id(v.id))
+  override def getMinDelay(u: TPRef, v: TPRef): Int =
+    - dist(v, u)
+
+
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = dist(u,v)
 }
