@@ -18,7 +18,7 @@ class Task(val name: String, val args :java.util.List[VarRef], val parent:Option
   override val end : TPRef = new TPRef(refCounter)
 
   val groundSupportersVar = new VarRef("integer", refCounter)
-  val methodSupportersVar = new VarRef("integer", refCounter)
+  val methodSupportersVar = new VarRef("Methods", refCounter)
 
   override def toString = name+args.toString
 }

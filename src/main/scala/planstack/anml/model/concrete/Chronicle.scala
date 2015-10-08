@@ -56,7 +56,7 @@ trait Chronicle {
   def tasks : java.util.List[Task]
 
   /** (Type, Reference) of global variables to be declared */
-  def vars : java.util.List[Pair[String, VarRef]]
+  def vars : java.util.List[VarRef]
 
   var flexibleTimepoints : IList[(TPRef,String)] = null
   var anchoredTimepoints : IList[AnchoredTimepoint] = null
@@ -145,7 +145,7 @@ class BaseChronicle(val container: TemporalInterval) extends Chronicle {
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
   val actions = new util.LinkedList[Action]()
   val tasks = new util.LinkedList[Task]()
-  val vars = new util.LinkedList[Pair[String, VarRef]]()
+  val vars = new util.LinkedList[VarRef]()
   override val instances = new util.LinkedList[String]()
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 }

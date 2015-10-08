@@ -267,7 +267,7 @@ object Action {
 
     // for all created vars, make sure those are present in [[StateModifier#vars]]
     for(localArg <- abs.args) {
-      act.mVars += ((act.context.getType(localArg), act.context.getGlobalVar(localArg)))
+      act.mVars += act.context.getGlobalVar(localArg)
     }
 
     act

@@ -7,7 +7,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
   def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter = null) {
     assert(!variables.contains(name), "Local variable already defined: "+name)
-    variables.put(name, (typeName, new EmptyVarRef(typeName)))
+    variables.put(name, new EmptyVarRef(typeName))
   }
 
   def addUndefinedAction(localID:LActRef) {
@@ -42,15 +42,15 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
   def buildContext(pb:AnmlProblem, parent:Option[Context], refCounter: RefCounter, newVars:Map[LVarRef, VarRef] = Map()) = {
     val context = new Context(parent)
 
-    for((local, (tipe, global)) <- variables) {
+    for((local, global) <- variables) {
       if(global.isEmpty && newVars.contains(local)) {
-        context.addVar(local, tipe, newVars(local))
+        context.addVar(local, newVars(local))
       } else if(global.isEmpty) {
-        val globalVar = new VarRef(tipe, refCounter)
-        context.addVar(local, tipe, globalVar)
-        context.addVarToCreate(tipe, globalVar)
+        val globalVar = new VarRef(global.typ, refCounter)
+        context.addVar(local, globalVar)
+        context.addVarToCreate(globalVar)
       } else {
-        context.addVar(local, tipe, global)
+        context.addVar(local, global)
       }
     }
 

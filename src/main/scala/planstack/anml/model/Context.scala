@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 abstract class AbstractContext {
 
   def parentContext : Option[AbstractContext]
-  val variables = mutable.Map[LVarRef, Pair[String, VarRef]]()
+  val variables = mutable.Map[LVarRef, VarRef]()
 
   protected val actions = mutable.Map[LActRef, Action]()
   protected val tasks = mutable.Map[LActRef, Task]()
@@ -48,7 +48,7 @@ abstract class AbstractContext {
    * @param localName Name of the local variable to look up
    * @return a pair (type, globalName) of the local variable
    */
-  protected def getDefinition(localName:LVarRef) : Pair[String, VarRef] = {
+  protected def getDefinition(localName:LVarRef) : VarRef = {
     if(variables.contains(localName)) {
       variables(localName)
     } else {
@@ -77,7 +77,7 @@ abstract class AbstractContext {
     * @return The type of this local variable. Trows an ANMLException if this variable is
     *         not defined.
     */
-  def getType(localRef:LVarRef) : String = getDefinition(localRef)._1
+  def getType(localRef:LVarRef) : String = getDefinition(localRef).typ
 
   /** Looks up the global reference associated to this local variable.
     * 
@@ -86,18 +86,18 @@ abstract class AbstractContext {
     *         local variable is not defined.
     */
   def getGlobalVar(localRef:LVarRef) : VarRef = {
-    val (tipe, globalName) = getDefinition(localRef)
-    if(globalName.isEmpty)
+    val (globalVar) = getDefinition(localRef)
+    if(globalVar.isEmpty)
       throw new ANMLException("Variable %s has no global definition".format(localRef))
     else
-      globalName
+      globalVar
   }
 
   def hasGlobalVar(localRef: LVarRef) : Boolean =
-    getDefinition(localRef)._2.nonEmpty
+    getDefinition(localRef).nonEmpty
 
   def getLocalVar(globalRef: VarRef) : LVarRef = {
-    for((lv, (typ, v)) <- variables ; if v == globalRef)
+    for((lv, v) <- variables ; if v == globalRef)
       return lv
 
     parentContext match {
@@ -106,9 +106,9 @@ abstract class AbstractContext {
     }
   }
 
-  def addVar(localName:LVarRef, typeName:String, globalName:VarRef) {
+  def addVar(localName:LVarRef, globalName:VarRef) {
     assert(!variables.contains(localName), "Error: Context already contains local variable: "+localName)
-    variables.put(localName, (typeName, globalName))
+    variables.put(localName, globalName)
   }
 
   def getAction(localID:LActRef) : Action = {
@@ -190,19 +190,19 @@ abstract class AbstractContext {
   */
 class Context(
     val parentContext:Option[Context],
-    val varsToCreate :ListBuffer[Pair[String,VarRef]] = ListBuffer())
+    val varsToCreate :ListBuffer[VarRef] = ListBuffer())
   extends AbstractContext {
 
   var interval :TemporalInterval = null
 
   def setInterval(interval : TemporalInterval) { this.interval = interval}
 
-  def addVarToCreate(tipe:String, globalName:VarRef) = varsToCreate += ((tipe, globalName))
+  def addVarToCreate(globalVar:VarRef) = varsToCreate += globalVar
 
   override def addUndefinedVar(name: LVarRef, typeName: String, refCounter: RefCounter): Unit = {
     val globalVar = new VarRef(typeName, refCounter)
-    addVar(name, typeName, globalVar)
-    addVarToCreate(typeName, globalVar)
+    addVar(name, globalVar)
+    addVarToCreate(globalVar)
   }
 }
 
