@@ -1087,8 +1087,6 @@ public class State implements Reporter {
 
     public List<VarRef> getUnboundVariables() { return csp.bindings().getUnboundVariables(); }
 
-    public void assertConstraintNetworkGroundAndConsistent() { csp.bindings().assertGroundAndConsistent(); }
-
     public boolean unified(VarRef a, VarRef b) { return csp.bindings().unified(a, b); }
 
     public boolean unifiable(VarRef a, VarRef b) { return csp.bindings().unifiable(a, b); }
