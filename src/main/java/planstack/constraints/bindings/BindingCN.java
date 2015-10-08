@@ -69,6 +69,8 @@ public interface BindingCN<VarRef> {
      */
     public void AddIntVariable(VarRef var);
 
+    void addIntVariable(VarRef var, Domain domain);
+
     public void AddIntVariable(VarRef var, Collection<Integer> domain);
 
     public void AddUnificationConstraint(VarRef a, VarRef b);

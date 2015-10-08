@@ -53,15 +53,7 @@ class MetaCSP[ID](
 
   /** Add a constraint u < v + d */
   def addMaxDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](u, v, None, d, (x:Int)=>x)
-    varsToConstraints =
-      if(varsToConstraints.contains(d))
-        varsToConstraints.updated(d, pending :: varsToConstraints(d))
-      else
-        varsToConstraints.updated(d, List(pending))
-
-    if(bindings.domainOfIntVar(d).size() == 1)
-      onBinded(d, bindings.domainOfIntVar(d).get(0))
+    addRequirement(u, v, d, x => x)
   }
 
   /** Add a constraint u +d >= v */
@@ -77,8 +69,8 @@ class MetaCSP[ID](
       onBinded(d, bindings.domainOfIntVar(d).get(0))
   }
 
-  def addMinDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](v, u, None, d, (x:Int)=> -x)
+  def addRequirement(u :TPRef, v:TPRef, d :VarRef, trans: (Int => Int)): Unit = {
+    val pending = new PendingRequirement[VarRef,TPRef,ID](v, u, None, d, trans)
     varsToConstraints =
       if(varsToConstraints.contains(d))
         varsToConstraints.updated(d, pending :: varsToConstraints(d))
@@ -87,6 +79,13 @@ class MetaCSP[ID](
 
     if(bindings.domainOfIntVar(d).size() == 1)
       onBinded(d, bindings.domainOfIntVar(d).get(0))
+  }
+
+  def addMinDelay(u :TPRef, v:TPRef, d:VarRef, trans: (Int => Int)): Unit = {
+    addRequirement(v, u, d, x => -trans(x))
+  }
+  def addMinDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
+    addRequirement(v, u, d, (x:Int) => -x)
   }
 
   def addMinDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
@@ -171,7 +170,9 @@ class MetaCSP[ID](
         case req:PendingRequirement[VarRef,TPRef,ID] => req.optID match {
           // requirement (only one variable), propagate it
           case Some(id) => stn.enforceMaxDelayWithID(req.from, req.to, req.f(value), id)
-          case None => stn.enforceMaxDelay(req.from, req.to, req.f(value))
+          case None =>
+            println(req.from+" "+req.to+" "+req.f(value)+"   -- "+value)
+            stn.enforceMaxDelay(req.from, req.to, req.f(value))
         }
       }
       // remove the entries of this variable from the table
@@ -189,6 +190,8 @@ class MetaCSP[ID](
           val maxDuration = stn.getMaxDelay(cont.from, cont.to)
           bindings.keepValuesBelowOrEqualTo(cont.min, maxDuration)
           bindings.keepValuesAboveOrEqualTo(cont.max, minDuration)
+          println("mindom: "+bindings.domainOfIntVar(cont.min))
+          println("maxdom: "+bindings.domainOfIntVar(cont.max))
           val minDelay = bindings.domainOfIntVar(cont.min).asScala.foldLeft(Int.MaxValue)((x, y) => if (x < y) x else y)
           val maxDelay = bindings.domainOfIntVar(cont.max).asScala.foldLeft(Int.MinValue)((x, y) => if (x > y) x else y)
           cont.optID match {
