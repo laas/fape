@@ -40,3 +40,13 @@ com.github.retronym.SbtOneJar.oneJarSettings
 exportJars := true
 
 mainClass in oneJar := Some("fape.Planning")
+
+packSettings
+
+packMain := Map(
+  "planner" -> "fape.Planning"
+)
+
+packJvmOpts := Map(
+  "planner" -> Seq("-ea")
+)
