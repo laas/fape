@@ -61,8 +61,8 @@ action sample_soil(Rover x, Store s, Waypoint p) {
         x.at == p;
         at_soil_sample(p) == true :-> false;
         s.empty == true :-> false;
-        x.have_soil_analysis(p) := true;
     };
+    [end] x.have_soil_analysis(p) := true;
 };
 
 action sample_rock(Rover x, Store s, Waypoint p) {
@@ -73,8 +73,8 @@ action sample_rock(Rover x, Store s, Waypoint p) {
         x.at == p;
         at_rock_sample(p) == true :-> false;
         s.empty == true :-> false;
-        x.have_rock_analysis(p) := true;
     };
+    [end] x.have_rock_analysis(p) := true;
 };
 
 action drop(Rover x, Store y) {
@@ -91,8 +91,8 @@ action calibrate(Rover r, Camera i, Objective t, Waypoint w) {
     [all] {
         calibration_target(i, t) == true;
         r.at == w;
-        Camera.calibrated(i, r) := true;
     };
+    [end] Camera.calibrated(i, r) := true;
 };
 
 action take_image(Rover r, Waypoint p, Objective o, Camera i, Mode m) {
@@ -104,8 +104,8 @@ action take_image(Rover r, Waypoint p, Objective o, Camera i, Mode m) {
     [all] {
         Camera.calibrated(i, r) == true :-> false;
         r.at() == p;
-        r.have_image(o, m) := true;
     };
+    [end] r.have_image(o, m) := true;
 };
 
 action communicate_soil_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint y) {
@@ -117,8 +117,8 @@ action communicate_soil_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint
         r.available() == true :-> true;
         r.at == x;
         r.have_soil_analysis(p) == true;
-        communicated_soil_data(p) := true;
     };
+    [end] communicated_soil_data(p) := true;
 };
 
 action communicate_image_data(Rover r, Lander l, Objective o, Mode m, Waypoint x, Waypoint y) {
@@ -130,8 +130,8 @@ action communicate_image_data(Rover r, Lander l, Objective o, Mode m, Waypoint x
         r.available() == true :-> true;
         r.at == x;
         r.have_image(o, m) == true;
-        communicated_image_data(o, m) := true;
     };
+    [end] communicated_image_data(o, m) := true;
 };
 
 action communicate_rock_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint y) {
@@ -143,6 +143,6 @@ action communicate_rock_data(Rover r, Lander l, Waypoint p, Waypoint x, Waypoint
         r.available() == true :-> true;
         r.at == x;
         r.have_rock_analysis(p) == true;
-        communicated_rock_data(p) := true;
     };
+    [end] communicated_rock_data(p) := true;
 };
