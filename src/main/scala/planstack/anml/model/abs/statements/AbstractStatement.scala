@@ -32,7 +32,7 @@ abstract class AbstractStatement(val id:LocalRef) {
         assert(s == e, "Non instantaneous assignment: "+this)
         AbstractExactDelay(annot.start.timepoint, stEnd, annot.start.delta) ++
           AbstractExactDelay(stStart, stEnd, 1)
-      case (AbstractTemporalAnnotation(s, e, "is"), st:AbstractLogStatement) =>
+      case (AbstractTemporalAnnotation(s, e, "is"), _) =>
         AbstractExactDelay(annot.start.timepoint, stStart, annot.start.delta) ++
           AbstractExactDelay(annot.end.timepoint, stEnd, annot.end.delta)
       case ((AbstractTemporalAnnotation(_, _, "contains"), s:AbstractTransition)) =>
