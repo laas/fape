@@ -23,8 +23,6 @@ public class GroundProblem {
 
     public final AnmlProblem liftedPb;
     public final APlanner planner;
-    public final GroundState initState = new GroundState();
-    public final GroundState goalState = new GroundState();
 
     public final List<GAction> gActions;
 
@@ -133,15 +131,6 @@ public class GroundProblem {
 
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
             this.gActions.addAll(GAction.groundActions(this, liftedAct, planner));
-        }
-
-        for(Chronicle mod : liftedPb.chronicles()) {
-            for(LogStatement s : mod.logStatements()) {
-                for(Fluent addition : statementToAddition(s, null))
-                    initState.fluents.add(addition);
-                for(Fluent precondition : statementToPrecondition(s, null))
-                    goalState.fluents.add(precondition);
-            }
         }
     }
 

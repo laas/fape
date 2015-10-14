@@ -24,9 +24,9 @@ action fire(Kiln k){
     motivated;
 	duration := fireTime(k);
     [all] energy == true;
-    [start] k.ready := true ;
+    [start,start+1] k.ready := true ;
     [start+1,end-1] k.ready == true; 
-    [end] k.ready == true :-> false;
+    [end-1,end] k.ready == true :-> false;
 };
 
 action bake(Kiln k, Piece p){

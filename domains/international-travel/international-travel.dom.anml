@@ -110,7 +110,7 @@ action ByCar(Place a, Place b) {
 action RentCar(Place p) {
     duration := 1;
     [all] at == p;
-    [end] hasCar == false :-> true;
+    [all] hasCar == false :-> true;
     [end] carLocation := p;
 
     // if I rent a car, I must return it at the same place
@@ -123,7 +123,7 @@ action ReturnCar(Place p) {
     motivated;
 
     [all] at == p;
-    [end] hasCar == true :-> false;
+    [all] hasCar == true :-> false;
     [start] carLocation == p;
 };
 
