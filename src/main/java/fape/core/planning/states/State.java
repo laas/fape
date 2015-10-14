@@ -566,6 +566,9 @@ public class State implements Reporter {
             varsOfExtConst.add(var);
             csp.bindings().addNAryConstraint(varsOfExtConst, pmd.minDelay().func().name());
             csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+        } else if(tc instanceof ContingentConstraint) {
+            ContingentConstraint cc = (ContingentConstraint) tc;
+            csp.stn().enforceContingent(cc.src(), cc.dst(), cc.min(), cc.max());
         } else {
             throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }
