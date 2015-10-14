@@ -3,7 +3,7 @@ package planstack.anml.model.abs.time
 import planstack.anml.model.LocalRef
 import planstack.anml.parser
 
-class AbstractRelativeTimePoint(val timepoint:AbsTP, val delta:Int) {
+case class AbstractRelativeTimePoint(timepoint:AbsTP, delta:Int) {
 
  override def toString =
    if(delta == 0)

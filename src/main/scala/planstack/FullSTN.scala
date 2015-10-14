@@ -38,8 +38,10 @@ class FullSTN(timepointList: Seq[AbsTP]) {
       for(i <- 0 until size) {
         for(j <- 0 until size) {
           if(dist(i)(k) < inf && dist(k)(j) < inf) {
-            if(dist(i)(j) > dist(i)(k) + dist(k)(j))
+            if(dist(i)(j) > dist(i)(k) + dist(k)(j)) {
               dist(i)(j) = dist(i)(k) + dist(k)(j)
+              assert(dist(i)(j) +dist(j)(i) >= 0, "Error: temporal inconsistency in the definition of this action")
+            }
           }
         }
       }

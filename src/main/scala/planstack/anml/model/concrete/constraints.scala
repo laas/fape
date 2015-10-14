@@ -8,11 +8,15 @@ abstract class Constraint
 abstract class TemporalConstraint extends Constraint
 
 case class MinDelayConstraint(src:TPRef, dst:TPRef, minDelay:Integer) extends TemporalConstraint {
-  override def toString = "%s >= %s + %s".format(dst, src, minDelay)
+  override def toString = s"$src + $minDelay <= $dst"
 }
 
 case class ParameterizedMinDelayConstraint(src:TPRef, dst:TPRef, minDelay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
-  override def toString = "%s >= %s + %s".format(dst, src, minDelay)
+  override def toString = "%s >= %s + f(%s)".format(dst, src, minDelay)
+}
+
+case class ParameterizedExactDelayConstraint(src:TPRef, dst:TPRef, minDelay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
+  override def toString = "%s = %s + f(%s)".format(dst, src, minDelay)
 }
 
 case class ContingentConstraint(src :TPRef, dst :TPRef, min :Int, max :Int) extends TemporalConstraint {

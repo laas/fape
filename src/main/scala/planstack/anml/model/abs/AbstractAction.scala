@@ -47,6 +47,9 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   var flexibleTimepoints : IList[AbsTP] = null
   var anchoredTimepoints : IList[AnchoredTimepoint] = null
 
+  def start = ContainerStart
+  def end = ContainerEnd
+
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jStatements = seqAsJavaList(statements)
   def jConstraints = seqAsJavaList(constraints)
@@ -143,8 +146,7 @@ object AbstractAction {
             allConstraints += AbstractMaxDelay(actionStart, actionEnd, dur.constantDur)
           } else {
             val sv = StatementsFactory.asStateVariable(e, action.context, pb)
-            allConstraints += AbstractParameterizedMinDelay(actionStart, actionEnd, sv, (x:Int) => -x)
-            allConstraints += AbstractParameterizedMinDelay(actionEnd, actionStart, sv, (x:Int) => x)
+            allConstraints += AbstractParameterizedExactDelay(actionStart, actionEnd, sv, (x:Int) => x)
           }
         }
         case parser.UncertainDuration(min, max) => {

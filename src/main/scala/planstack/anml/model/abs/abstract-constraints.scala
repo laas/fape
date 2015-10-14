@@ -1,7 +1,7 @@
 package planstack.anml.model.abs
 
 import planstack.anml.model._
-import planstack.anml.model.abs.time.AbsTP
+import planstack.anml.model.abs.time.{IntervalEnd, ContainerEnd, AbsTP}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser
@@ -17,6 +17,8 @@ abstract class AbstractTemporalConstraint extends AbstractConstraint {
       new MinDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), minDelay)
     case AbstractParameterizedMinDelay(from, to, minDelay, trans) =>
       new ParameterizedMinDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), minDelay.bind(context), trans)
+    case AbstractParameterizedExactDelay(from, to, delay, trans) =>
+      new ParameterizedExactDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), delay.bind(context), trans)
     case AbstractContingentConstraint(from, to, min, max) =>
       new ContingentConstraint(TimepointRef(pb,context,from), TimepointRef(pb,context,to), min, max)
   }
@@ -32,6 +34,12 @@ case class AbstractParameterizedMinDelay(from :AbsTP, to :AbsTP, minDelay :Abstr
   extends AbstractTemporalConstraint
 {
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
+}
+
+case class AbstractParameterizedExactDelay(from :AbsTP, to :AbsTP, delay :AbstractParameterizedStateVariable, trans: (Int => Int))
+  extends AbstractTemporalConstraint
+{
+  override def toString = "%s + %s = %s".format(from, delay, to)
 }
 
 case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :Int, max:Int)
@@ -54,6 +62,11 @@ case class AbstractParameterizedContingentConstraint(from :AbsTP,
 object AbstractMaxDelay {
   def apply(from:AbsTP, to:AbsTP, maxDelay:Int) =
     new AbstractMinDelay(to, from, -maxDelay)
+}
+
+object AbstractExactDelay {
+  def apply(from:AbsTP, to:AbsTP, delay:Int) =
+    List(AbstractMinDelay(from, to, delay), AbstractMaxDelay(from,to,delay))
 }
 
 object AbstractTemporalConstraint {

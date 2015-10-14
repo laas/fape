@@ -9,7 +9,7 @@ import planstack.anml.parser
 
 
 
-class AbstractTemporalAnnotation(val start:AbstractRelativeTimePoint, val end:AbstractRelativeTimePoint, val flag:String) {
+case class AbstractTemporalAnnotation(start:AbstractRelativeTimePoint, end:AbstractRelativeTimePoint, flag:String) {
   require(flag =="is" || flag == "contains")
 
   override def toString =
