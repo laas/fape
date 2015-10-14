@@ -3,6 +3,7 @@ package fape.core.planning.grounding;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
+import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
@@ -407,6 +408,9 @@ public class GAction {
                 actions.add(new GAction(aa, params, gPb, planner));
             } catch (NotValidGroundAction e) {}
         }
+
+//        DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
+//        f.getDeleteFrees(aa, actions);
 
         return actions;
     }

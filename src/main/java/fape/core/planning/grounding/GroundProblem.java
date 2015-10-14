@@ -29,6 +29,7 @@ public class GroundProblem {
     public final List<GAction> gActions;
 
     final List<Invariant> invariants = new LinkedList<>();
+    final Map<IntegerInvariantKey, Integer> intInvariants = new HashMap<>();
 
     public class Invariant {
         public final Function f;
@@ -53,23 +54,33 @@ public class GroundProblem {
         }
     }
 
-    /**
-     * Gets an upper bound on the number of ground actions that might appear in this problem.
-     * @param pb Problem to inspect.
-     * @return Upper on the number of ground actions.
-     */
-    public static int sizeEvaluation(AnmlProblem pb) {
-        int total = 0;
-        for(AbstractAction a : pb.abstractActions()) {
-            int nemActInstances = 1;
-            for(LVarRef arg : a.args()) {
-                String argTYpe = a.context().getType(arg);
-                nemActInstances *= pb.instances().instancesOfType(argTYpe).size();
+    public class IntegerInvariantKey {
+        public final Function f;
+        public final List<InstanceRef> params;
+        public int hash;
+        public IntegerInvariantKey(Function f, VarRef[] params) {
+            this.f =  f;
+            this.params = new LinkedList<>();
+            int i = 0;
+            hash = f.hashCode();
+            for(VarRef v : params) {
+                this.params.add((InstanceRef) v);
+                hash += (++i) * 42 * v.hashCode();
             }
-            total += nemActInstances;
         }
-        return total;
+        public int hashCode() { return hash; }
+        public boolean equals(Object o) {
+            if(!(o instanceof IntegerInvariantKey))
+                return false;
+            if(!(((IntegerInvariantKey) o).f == f))
+                return false;
+            for(int i=0 ; i<params.size() ; i++)
+                if(!params.get(i).equals(((IntegerInvariantKey) o).params.get(i)))
+                    return false;
+            return true;
+        }
     }
+
 
     private List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
@@ -102,23 +113,6 @@ public class GroundProblem {
         return fluents;
     }
 
-
-    public GroundProblem(GroundProblem pb, State st) {
-        this.liftedPb = pb.liftedPb;
-        this.gActions = new LinkedList<>(pb.gActions);
-        this.planner = pb.planner;
-
-        initState.fluents.addAll(allFluents(st));
-    }
-
-    public GroundProblem(GroundProblem pb, State st, Timeline og) {
-        this.liftedPb = pb.liftedPb;
-        this.gActions = pb.gActions;
-        this.planner = pb.planner;
-
-        initState.fluents.addAll(fluentsBefore(st, og.getFirstTimePoints()));
-    }
-
     public GroundProblem(AnmlProblem liftedPb, APlanner planner) {
         this.liftedPb = liftedPb;
         this.gActions = new LinkedList<>();
@@ -129,6 +123,10 @@ public class GroundProblem {
                 if(bc instanceof AssignmentConstraint) {
                     AssignmentConstraint ac = (AssignmentConstraint) bc;
                     invariants.add(new Invariant(ac.sv().func(), ac.sv().args(), ac.variable()));
+                }
+                if(bc instanceof IntegerAssignmentConstraint) {
+                    IntegerAssignmentConstraint iac = (IntegerAssignmentConstraint) bc;
+                    intInvariants.put(new IntegerInvariantKey(iac.sv().func(), iac.sv().args()), iac.value());
                 }
             }
         }
@@ -149,48 +147,6 @@ public class GroundProblem {
 
     public List<GAction> allActions() {
         return gActions;
-    }
-
-    public List<List<VarRef>> possibleParams(AbstractAction a) {
-        // the ith list contains the possible values for the ith parameter
-        List<List<VarRef>> possibleValues = new LinkedList<>();
-        for(LVarRef ref : a.args()) {
-            // get type of the argument and add all possible values to the argument list.
-            List<String> instanceSet = liftedPb.instances().instancesOfType(a.context().getType(ref));
-            List<VarRef> varSet = new LinkedList<>();
-            for(String instance : instanceSet) {
-                varSet.add(liftedPb.instances().referenceOf(instance));
-            }
-            possibleValues.add(varSet);
-        }
-
-        return PGUtils.allCombinations(possibleValues);
-    }
-
-
-
-    String valueOf(VarRef var) {
-        for(String instance : liftedPb.instances().allInstances()) {
-            if(liftedPb.instances().referenceOf(instance).equals(var)) {
-                return instance;
-            }
-        }
-        throw new FAPEException("Unable to find the instance referred to by "+var);
-    }
-
-    /**
-     * Finds which instance correspond to the given local variable reference.
-     * @param ref Reference to the variable to lookup.
-     * @param argMap A map from local variables to instances (those typically represent the parameters given to an action.
-     * @return The instance the local reference maps to.
-     */
-    public VarRef getInstance(LVarRef ref, Map<LVarRef, VarRef> argMap) {
-        if(argMap == null || !argMap.containsKey(ref)) {
-            assert liftedPb.instances().containsInstance(ref.id());
-            return liftedPb.instances().referenceOf(ref.id());
-        } else {
-            return argMap.get(ref);
-        }
     }
 
     protected Collection<Fluent> statementToPrecondition(LogStatement s, Map<LVarRef, InstanceRef> argMap) {
