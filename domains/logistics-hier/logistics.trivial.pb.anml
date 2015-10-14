@@ -1,0 +1,13 @@
+instance airport apt1;
+instance location pos1;
+instance city cit1;
+instance truck tru1;
+instance package obj23, obj22, obj21, obj13, obj12, obj11;
+[start] at(tru1) := apt1;
+[start] at(obj11) := pos1;
+[start] at(obj12) := pos1;
+[start] at(obj13) := pos1;
+incity(pos1) := cit1;
+incity(apt1) := cit1;
+Transport(obj11, apt1);
+
