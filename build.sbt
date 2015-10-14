@@ -44,9 +44,9 @@ mainClass in oneJar := Some("fape.Planning")
 packSettings
 
 packMain := Map(
-  "planner" -> "fape.Planning"
+  "fape" -> "fape.Planning"
 )
 
 packJvmOpts := Map(
-  "planner" -> Seq("-ea")
+  "fape" -> Seq("-ea")
 )
