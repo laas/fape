@@ -4,6 +4,8 @@ organization := "fr.laas.fape"
 
 version := "0.2-SNAPSHOT"
 
+resolvers += "FAPE Nightly" at "http://www.laas.fr/~abitmonn/maven/"
+
 libraryDependencies ++= Seq(
   "com.martiansoftware" % "jsap" % "2.1",
   "junit" % "junit" % "4.12" % "test",
