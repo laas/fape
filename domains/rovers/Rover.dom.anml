@@ -44,7 +44,7 @@ predicate communicated_rock_data(Waypoint p);
 predicate communicated_image_data(Objective o, Mode m);
 
 action navigate(Rover x, Waypoint y, Waypoint z) {
-  duration := 15;
+    duration := 15;
     x.can_traverse(y, z) == true;
     visible(y, z) == true;
     [all] {

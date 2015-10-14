@@ -892,6 +892,16 @@ public class State implements Reporter {
 
     public void enforceBefore(TPRef a, TPRef b) { csp.stn().enforceBefore(a, b); }
 
+    public void enforceBefore(Collection<TPRef> as, TPRef b) {
+        for(TPRef a : as)
+            enforceBefore(a, b);
+    }
+
+    public void enforceBefore(TPRef a, Collection<TPRef> bs) {
+        for(TPRef b : bs)
+            enforceBefore(a, b);
+    }
+
     public void enforceStrictlyBefore(TPRef a, TPRef b) { csp.stn().enforceStrictlyBefore(a, b); }
 
     public boolean canBeBefore(Timeline tl1, Timeline tl2) {
@@ -946,6 +956,24 @@ public class State implements Reporter {
     public boolean canAnyBeBefore(TPRef a, Collection<TPRef> bs) {
         for(TPRef b : bs) {
             if(canBeBefore(a, b))
+                return true;
+        }
+        return false;
+    }
+
+    /** Returns true if any time point in as can be before b */
+    public boolean canAnyBeStrictlyBefore(Collection<TPRef> as, TPRef b) {
+        for(TPRef a : as) {
+            if(canBeStrictlyBefore(a, b))
+                return true;
+        }
+        return false;
+    }
+
+    /** Returns true if a can be before a time point in bs */
+    public boolean canAnyBeStrictlyBefore(TPRef a, Collection<TPRef> bs) {
+        for(TPRef b : bs) {
+            if(canBeStrictlyBefore(a, b))
                 return true;
         }
         return false;

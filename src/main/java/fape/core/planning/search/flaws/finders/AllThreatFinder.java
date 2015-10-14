@@ -31,12 +31,12 @@ public class AllThreatFinder implements FlawFinder {
 
         else {
             boolean firstNecessarilyAfterSecond =
-                    !st.canAnyBeBefore(tl2.getFirstTimePoints(), tl1.getSupportTimePoint()) &&
-                            !st.canAnyBeBefore(tl2.getFirstChange().start(), tl1.getLastTimePoints());
+                    !st.canAnyBeStrictlyBefore(tl2.getFirstTimePoints(), tl1.getSupportTimePoint()) &&
+                            !st.canAnyBeStrictlyBefore(tl2.getFirstChange().start(), tl1.getLastTimePoints());
 
             boolean secondNecessarilyAfterFirst =
-                    !st.canAnyBeBefore(tl1.getFirstTimePoints(), tl2.getSupportTimePoint()) &&
-                            !st.canAnyBeBefore(tl1.getFirstChange().start(), tl2.getLastTimePoints());
+                    !st.canAnyBeStrictlyBefore(tl1.getFirstTimePoints(), tl2.getSupportTimePoint()) &&
+                            !st.canAnyBeStrictlyBefore(tl1.getFirstChange().start(), tl2.getLastTimePoints());
 
             return !(firstNecessarilyAfterSecond || secondNecessarilyAfterFirst);
         }

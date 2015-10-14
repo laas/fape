@@ -79,9 +79,6 @@ public class AbstractionHierarchy {
 //                System.out.println(level+"  "+ft);
             }
         }
-
-        if(APlanner.logging)
-            exportToDot("abs.dot");
     }
 
     /**

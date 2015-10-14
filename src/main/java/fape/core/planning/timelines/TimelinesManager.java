@@ -248,7 +248,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
             // Enforce all statements of first to be before all statements of second
             for(LogStatement sa : first.statements) {
                 for(LogStatement sb : second.statements) {
-                    st.enforceStrictlyBefore(sa.end(), sb.start());
+                    st.enforceBefore(sa.end(), sb.start());
                 }
             }
         }
@@ -261,7 +261,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
             //for(int j=i+1 ; j<tdb.chain.size() ; j++) {
                 for(LogStatement a : tdb.get(i).statements) {
                     for(LogStatement b : tdb.get(j).statements) {
-                        st.enforceStrictlyBefore(a.end(), b.start());
+                        st.enforceBefore(a.end(), b.start());
                     }
                 }
             //}

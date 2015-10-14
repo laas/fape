@@ -8,6 +8,7 @@ import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;
+import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
@@ -179,7 +180,7 @@ public class Planning {
             writer = new FileWriter(commandLineConfig.getString("output"));
         }
 
-        APlanner.logging = commandLineConfig.getBoolean("verbose");
+        TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
         Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
 

@@ -21,11 +21,11 @@ public class TemporalSeparation extends Resolver {
         assert firstDB != null && secondDB != null;
         assert !firstDB.hasSinglePersistence() && !secondDB.hasSinglePersistence();
 
-        st.enforceStrictlyBefore(
+        st.enforceBefore(
                 firstDB.getSupportTimePoint(),
                 secondDB.getFirstTimePoints()
         );
-        st.enforceStrictlyBefore(
+        st.enforceBefore(
                 firstDB.getLastTimePoints(),
                 secondDB.getFirstChange().start()
         );
