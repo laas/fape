@@ -102,47 +102,7 @@ public class FullSTN<ID> extends ISTN<ID> {
         System.arraycopy(s.edge_a, 0, edge_a, 0, top*(top-1)/2);
         System.arraycopy(s.edge_b, 0, edge_b, 0, top*(top-1)/2);
     }
-    /**
-     * corresponds to tp1 is necessarily before tp2
-     * @param tp1 time point
-     * @param tp2 time point
-     * @return tp1 is necessarily before tp2
-     */
-    protected boolean fless(int tp1, int tp2){ // tp1 <= tp2
-        return !edge_consistent(tp1,tp2,inf,-1);
-    }
-    /**
-     * corresponds to tp1 is possibly before tp2
-     * @param tp1 time point
-     * @param tp2 time point
-     * @return tp1 is possibly before tp2
-     */
-    protected boolean pless(int tp1, int tp2){ // tp1 <= tp2
-        return edge_consistent(tp1,tp2,0,sup);
-    }
-    /**
-     * corresponds to tp1 is undefined to tp2
-     * @param tp1 time point
-     * @param tp2 time point
-     * @return tp1 is undefined to tp2
-     */
-    protected boolean pnfless(int tp1, int tp2){ // tp1 <= tp2
-        return (edge_consistent(tp1,tp2,inf,0) && edge_consistent(tp1,tp2,0,sup));
-    }
-    /**
-     * enforces tp1 is necessarily before tp2
-     * @param tp1 time point
-     * @param tp2 time point
-     */
-    protected void eless(int tp1, int tp2){
-        enforceBefore(tp1, tp2);
-    }
-    /**
-     * returns the lower bound on time between time point var1 and var2, uses symmetry of the network
-     * @param var1 time point
-     * @param var2 time point
-     * @return lower bound on time between time point var1 and var2
-     */
+
     protected int minDelay(int var1, int var2){
         if(var1 == var2) return 0;
         else if(var1 < var2) return (- maxDelay(var2, var1));
@@ -206,8 +166,6 @@ public class FullSTN<ID> extends ISTN<ID> {
             edge_a[i] = inf;
             edge_b[i] = sup;
         }
-        if(top != 0)
-            eless(0,top);
         top++;
         return top-1;
     }
@@ -309,7 +267,7 @@ public class FullSTN<ID> extends ISTN<ID> {
 
     @Override
     public boolean consistent() {
-        return consistent;
+        return isConsistent();
     }
 
     @Override
@@ -321,7 +279,6 @@ public class FullSTN<ID> extends ISTN<ID> {
             u = emptySpots.head();
             emptySpots = emptySpots.without(u);
         }
-        enforceBefore(start(), u);
         enforceBefore(u, end());
         return u;
     }

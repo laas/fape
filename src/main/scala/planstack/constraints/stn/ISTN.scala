@@ -14,7 +14,7 @@ abstract class ISTN[ID] {
   def consistent : Boolean
 
   /**
-   * Creates a new time point and returns its ID. New constraints are inserted to place it before end and after start.
+   * Creates a new time point and returns its ID. New constraints are inserted to place it before end.
    *
    * @return ID of the created time point
    */

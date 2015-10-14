@@ -274,6 +274,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     // process this constraint // TODO check if there is anything new since last time
     val ext = extensionConstraints(constraintName)
     val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
+    assert(initialDomains.nonEmpty, "Domain of constraint "+constraintName+" is empty")
     val restrictedDomains = ext.restrictedDomains(initialDomains)
 
     for(i <- initialDomains.indices) {
