@@ -1,6 +1,6 @@
 package planstack.graph.core
 
-import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinter}
+import planstack.graph.printers.{NodeEdgePrinterInterface, GraphDotPrinter, NodeEdgePrinter}
 
 import scala.collection.JavaConversions._
 
@@ -70,7 +70,7 @@ trait Graph[V, +EL, E <: Edge[V]] {
     */
   def exportToDotFile(fileName: String) { new GraphDotPrinter(this).print2Dot(fileName) }
 
-  def exportToDotFile[EdgeLabel >: EL](fileName :String, customPrinter :NodeEdgePrinter[V,EdgeLabel,E]) {
+  def exportToDotFile[EdgeLabel >: EL](fileName :String, customPrinter :NodeEdgePrinterInterface[V,EdgeLabel,E]) {
     new GraphDotPrinter(this, customPrinter).print2Dot(fileName)
   }
 }

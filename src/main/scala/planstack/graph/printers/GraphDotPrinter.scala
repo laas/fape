@@ -35,7 +35,7 @@ class GraphDotPrinter[V,EL,E <: Edge[V]](val g: Graph[V,EL,E],
                                          val excludeNode : (V => Boolean),
                                          val excludeEdge : (E => Boolean)) {
 
-  def this (g :Graph[V,EL,E], nep :NodeEdgePrinter[V, EL, E]) =
+  def this (g :Graph[V,EL,E], nep :NodeEdgePrinterInterface[V, EL, E]) =
     this(g, nep.printNode, nep.printEdge, nep.excludeNode, nep.excludeEdge)
 
   def this(g :Graph[V,EL,E]) = this(g, new NodeEdgePrinter[V,EL,E])

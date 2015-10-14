@@ -39,6 +39,9 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
   def filter(f: T => Boolean) : IList[T] =
     new IList[T](l.filter(f))
 
+  def map[T2](f: T => T2) : IList[T2] =
+    new IList[T2](l.map(f))
+
   def contains(p1: scala.Any): Boolean =
     l.contains(p1)
 
