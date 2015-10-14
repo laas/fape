@@ -13,8 +13,8 @@ type Door with {
 action Unlock(Door d) {
   duration := 10;
 
-  [start] { d.locked == true :-> false; };
-  [end]   { d.locked == false :-> true; };
+  [start,start+1] d.locked == true :-> false;
+  [end-1,end] d.locked == false :-> true;
 };
 
 action Open(Door d) {
@@ -23,12 +23,8 @@ action Open(Door d) {
   [start] { d.locked == true; };
   [end]   { d.locked == true; };
 
-  [all] contains {
-    unlockedID : d.locked == false;
-    openID : d.opened == false :-> true;
-  };
-  start(unlockedID) < start(openID);
-  start(openID) < end(unlockedID);
+  [all] contains d.locked == false;
+  [all] d.opened == false :-> true;
 };
 
 instance Door d;
