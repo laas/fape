@@ -13,7 +13,8 @@ libraryDependencies ++= Seq(
   "fr.laas.fape" %% "anml-parser" % "0.8-SNAPSHOT",
   "fr.laas.fape" %% "constraints" % "0.8-SNAPSHOT",
   "fr.laas.fape" %% "svg-plot"    % "0.1-SNAPSHOT",
-  "de.sciss" % "prefuse-core" % "1.0.0"
+  "de.sciss" % "prefuse-core" % "1.0.0",
+  "org.projectlombok" % "lombok" % "1.16.6"
 )
 
 javaOptions in run ++= Seq("-Xmx3000m", "-ea")

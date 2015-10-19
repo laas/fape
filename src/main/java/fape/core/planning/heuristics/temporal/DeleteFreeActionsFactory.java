@@ -3,6 +3,7 @@ package fape.core.planning.heuristics.temporal;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.exceptions.FAPEException;
+import lombok.Value;
 import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -24,42 +25,23 @@ public class DeleteFreeActionsFactory {
 
     public static LVarRef truth = new LVarRef("true");
 
-    class Time {
-        final int value;
+    abstract static class Time {
+        public static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
+            return new ParameterizedTime(sv.func(), sv.jArgs(), trans);
+        }
+        public static IntTime of(int value) {
+            return new IntTime(value);
+        }
+    }
+
+    @Value static class IntTime extends Time {
+        public final int value;
+    }
+
+    @Value static class ParameterizedTime extends Time {
         final Function f;
-        final LVarRef[] params;
-        public Time(int value) {
-            this.value = value;
-            this.f = null; params = null;
-        }
-        public Time(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
-            this.f = sv.func();
-            this.params = sv.jArgs().toArray(new LVarRef[sv.jArgs().size()]);
-            value = 9999999;
-        }
-//        public Time(Function f, LVarRef[] params) {
-//            this.f = f;
-//            this.params = params;
-//            value = 9999999;
-//        }
-        @Override public boolean equals(Object o) {
-            if(!(o instanceof Time))
-                return false;
-            if(f != ((Time) o).f)
-                return false;
-            if(f != null) {
-                for(int i=0 ; i<params.length ; i++)
-                    if(params[i] != ((Time) o).params[i])
-                        return false;
-                return true;
-            }
-            return value == ((Time) o).value;
-        }
-        @Override public String toString() {
-            if(f != null) return "f("+f.name()+Arrays.toString(params)+")";
-            else if(value > 99999) return "inf";
-            else return ""+value;
-        }
+        final List<LVarRef> args;
+        final java.util.function.Function<Integer,Integer> trans;
     }
 
     class TempFluentTemplate {
@@ -69,7 +51,7 @@ public class DeleteFreeActionsFactory {
         final Time time;
         public TempFluentTemplate(String funcName, LVarRef[] args, LVarRef value, int time) {
             this.funcName = funcName; this.args = args;
-            this.value = value; this.time = new Time(time);
+            this.value = value; this.time = Time.of(time);
         }
         public TempFluentTemplate(String funcName, LVarRef[] args, LVarRef value, Time time) {
             this.funcName = funcName; this.args = args;
@@ -82,7 +64,7 @@ public class DeleteFreeActionsFactory {
         public LVarRef[] args() { return args; }
     }
 
-    class RActTemplate {
+    public class RActTemplate {
         final AbstractAction abs;
         final AbsTP tp;
         public RActTemplate(AbstractAction abs, AbsTP mainTimepoint) {
@@ -211,12 +193,14 @@ public class DeleteFreeActionsFactory {
             RActTemplate leftAct = templates.get(leftAnchor);
             RActTemplate rightAct = templates.get(rightAnchor);
             for(TempFluentTemplate f : rightAct.conditions) {
-                Time newTime = new Time(ped.delay(), t -> f.time.value - leftDelay + rightDelay + (Integer) ped.trans().apply(t));
+                assert f.time instanceof IntTime;
+                Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
                 TempFluentTemplate cond = new TempFluentTemplate(f.funcName, f.args, f.value, newTime);
                 leftAct.conditions.add(cond);
             }
             for(TempFluentTemplate f : rightAct.effects) {
-                Time newTime = new Time(ped.delay(), t -> f.time.value - leftDelay + rightDelay + (Integer) ped.trans().apply(t));
+                assert f.time instanceof IntTime;
+                Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
                 TempFluentTemplate eff = new TempFluentTemplate(f.funcName, f.args, f.value, newTime);
                 leftAct.effects.add(eff);
             }
@@ -231,7 +215,7 @@ public class DeleteFreeActionsFactory {
                     .map(c -> (AbstractMinDelay) c)
                     .filter(c -> c.from().equals(x) && c.to().equals(y))
                     .map(c -> c.minDelay())
-                    .max(Integer::compare) //TODO: get the min
+                    .max(Integer::compare)
                     .orElse(-9999999);
         };
         BiFunction<AbsTP, AbsTP, Integer> fMaxDelay = (x, y) -> {
@@ -239,7 +223,7 @@ public class DeleteFreeActionsFactory {
                     .filter(c -> c instanceof AbstractMinDelay)
                     .map(c -> (AbstractMinDelay) c)
                     .filter(c -> c.from().equals(y) && c.to().equals(x))
-                    .map(c -> -c.minDelay()) //TODO: get the max !!!
+                    .map(c -> -c.minDelay())
                     .min(Integer::compare)
                     .orElse(9999999);
         };
@@ -254,8 +238,8 @@ public class DeleteFreeActionsFactory {
                 RActTemplate rightAct = templates.get(right);
                 int minDelay = fMinDelay.apply(right, left);
                 for(TempFluentTemplate f : leftAct.effects) {
-                    assert f.time.f == null;
-                    Time newTime = new Time(minDelay + f.time.value);
+                    assert f.time instanceof IntTime;
+                    Time newTime = Time.of(minDelay + ((IntTime) f.time).value);
                     TempFluentTemplate eff = new TempFluentTemplate(f.funcName, f.args, f.value, newTime);
                     rightAct.effects.add(eff);
                 }
