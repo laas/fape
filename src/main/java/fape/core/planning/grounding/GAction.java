@@ -409,8 +409,8 @@ public class GAction {
             } catch (NotValidGroundAction e) {}
         }
 
-//        DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
-//        f.getDeleteFrees(aa, actions);
+        DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
+        f.getDeleteFrees(aa, actions, gPb);
 
         return actions;
     }

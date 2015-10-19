@@ -7,6 +7,7 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.EffSet;
+import lombok.Value;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -27,7 +28,7 @@ public class GroundProblem {
     public final List<GAction> gActions;
 
     final List<Invariant> invariants = new LinkedList<>();
-    final Map<IntegerInvariantKey, Integer> intInvariants = new HashMap<>();
+    public final Map<IntegerInvariantKey, Integer> intInvariants = new HashMap<>();
 
     public class Invariant {
         public final Function f;
@@ -52,33 +53,21 @@ public class GroundProblem {
         }
     }
 
-    public class IntegerInvariantKey {
+    @Value public static class IntegerInvariantKey {
         public final Function f;
         public final List<InstanceRef> params;
-        public int hash;
+        public IntegerInvariantKey(Function f, List<InstanceRef> params) {
+            this.f = f;
+            this.params = params;
+        }
         public IntegerInvariantKey(Function f, VarRef[] params) {
             this.f =  f;
             this.params = new LinkedList<>();
-            int i = 0;
-            hash = f.hashCode();
             for(VarRef v : params) {
                 this.params.add((InstanceRef) v);
-                hash += (++i) * 42 * v.hashCode();
             }
         }
-        public int hashCode() { return hash; }
-        public boolean equals(Object o) {
-            if(!(o instanceof IntegerInvariantKey))
-                return false;
-            if(!(((IntegerInvariantKey) o).f == f))
-                return false;
-            for(int i=0 ; i<params.size() ; i++)
-                if(!params.get(i).equals(((IntegerInvariantKey) o).params.get(i)))
-                    return false;
-            return true;
-        }
     }
-
 
     private List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {

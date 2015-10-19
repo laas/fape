@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
 import lombok.Value;
 import planstack.anml.model.AbstractParameterizedStateVariable;
@@ -25,23 +26,23 @@ public class DeleteFreeActionsFactory {
 
     public static LVarRef truth = new LVarRef("true");
 
-    abstract static class Time {
-        public static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
+    interface Time {
+        static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
             return new ParameterizedTime(sv.func(), sv.jArgs(), trans);
         }
-        public static IntTime of(int value) {
+        static IntTime of(int value) {
             return new IntTime(value);
         }
     }
 
-    @Value static class IntTime extends Time {
+    @Value static class IntTime implements Time {
         public final int value;
     }
 
-    @Value static class ParameterizedTime extends Time {
-        final Function f;
-        final List<LVarRef> args;
-        final java.util.function.Function<Integer,Integer> trans;
+    @Value static class ParameterizedTime implements Time {
+        public final Function f;
+        public final List<LVarRef> args;
+        public final java.util.function.Function<Integer,Integer> trans;
     }
 
     class TempFluentTemplate {
@@ -130,7 +131,7 @@ public class DeleteFreeActionsFactory {
         throw new FAPEException("Unable to find the timepoint: "+tp);
     }
 
-    public List<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds) {
+    public List<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, GroundProblem pb) {
         Map<AbsTP, RActTemplate> templates = new HashMap<>();
         for(AbsTP tp : abs.flexibleTimepoints()) {
             templates.put(tp, new RActTemplate(abs, tp));
@@ -145,7 +146,7 @@ public class DeleteFreeActionsFactory {
             if(s.hasEffectAfterEnd()) {
                 AbsTP main = anchorOf(s.end(), abs);
                 int delay = -relativeTimeOf(s.end(), abs);
-                templates.get(main).addEffect(s.sv(), s.effectValue(), delay+1);
+                templates.get(main).addEffect(s.sv(), s.effectValue(), delay);
             }
         }
 
@@ -250,7 +251,7 @@ public class DeleteFreeActionsFactory {
         // add inter subactions conditions
         for(AbsTP left : templates.keySet()) {
             RActTemplate leftAct = templates.get(left);
-            leftAct.addEffect("done__"+leftAct.name(), leftAct.args(), truth, 0);
+            leftAct.addEffect("done__" + leftAct.name(), leftAct.args(), truth, 0);
             for(AbsTP right : templates.keySet()) {
                 if(left == right) continue;
                 RActTemplate rightAct = templates.get(right);
@@ -268,6 +269,12 @@ public class DeleteFreeActionsFactory {
         System.out.println("\n-----------------\n");
         for(RActTemplate at : templates.values()) {
             System.out.println(at);
+        }
+
+        for(GAction ground : grounds) {
+            for(RActTemplate template : templates.values()) {
+               System.out.println(RAct.from(template, ground, pb));
+            }
         }
         return null;
     }
