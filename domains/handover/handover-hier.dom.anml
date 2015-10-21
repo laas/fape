@@ -82,8 +82,7 @@ action Exchange(Robot r1, Robot r2, Item i) {
         r == r1;
     };
     :decomposition {
-      [all] contains ex : Exchange(r1, r, i);
-        end(ex) < start(h1);
+      [start,start(h1)] contains ex : Exchange(r1, r, i);
     };
 };
 
