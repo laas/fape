@@ -9,7 +9,7 @@ import planstack.anml.model.abs.time.AbsTP;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Value public class RAct {
+@Value public class RAct implements DepGraph.ActionNode {
 
     public final GAction act;
     public final AbsTP tp;
@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
     public final List<TempFluent> effects;
 
     @Override public String toString() {
-        String s = act+"--"+tp.toString()+"\n";
-        s += "  conditions:\n";
-        for(TempFluent tf : conditions) s += "    "+tf+"\n";
-        s += "  effects:\n";
-        for(TempFluent tf : effects) s += "    "+tf+"\n";
+        String s = act+"--"+tp.toString();
+//        s += "  conditions:\n";
+//        for(TempFluent tf : conditions) s += "    "+tf+"\n";
+//        s += "  effects:\n";
+//        for(TempFluent tf : effects) s += "    "+tf+"\n";
         return s;
     }
 

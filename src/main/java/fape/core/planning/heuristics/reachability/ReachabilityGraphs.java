@@ -6,6 +6,8 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GTaskCond;
 import fape.core.planning.heuristics.Preprocessor;
+import fape.core.planning.heuristics.temporal.DepGraph;
+import fape.core.planning.heuristics.temporal.TempFluent;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.states.State;
@@ -16,7 +18,10 @@ import planstack.anml.model.concrete.Task;
 import planstack.constraints.bindings.Domain;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ReachabilityGraphs {
 
@@ -59,6 +64,26 @@ public class ReachabilityGraphs {
         for(Action a : st.getAllActions()) {
             inPlan.addAll(new EffSet<GAction>(pp.groundActionIntRepresentation(), st.csp.bindings().rawDomain(a.instantiationVar()).toBitSet()));
         }
+
+        List<TempFluent> tempFluents = pp.getGroundProblem().tempsFluents(st).stream()
+                .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
+                                        st.getEarliestStartTime(tfs.timepoints.iterator().next()),
+                                        TempFluent.Fluent.from(f))))
+                .collect(Collectors.toList());
+//                inPlanFluents.stream()
+//                .map(f -> new TempFluent(0, TempFluent.Fluent.from(f)))
+//                .collect(Collectors.toList());
+
+                        Set < TempFluent > tasks = openTasksActs.stream()
+                                .map(ga -> new TempFluent(0, TempFluent.Fluent.from(ga.task, pl.pb)))
+                                .collect(Collectors.toSet());
+
+        List<TempFluent> allFacts = new LinkedList<>();
+        allFacts.addAll(tempFluents);
+        allFacts.addAll(tasks);
+
+        DepGraph dg = new DepGraph(pl.preprocessor.getGroundProblem().relaxedActions, allFacts);
+        dg.propagate();
     }
 
     public boolean isRefinableToSolution() {
@@ -127,6 +152,7 @@ public class ReachabilityGraphs {
         Domain dom = new Domain(potentialSupporters.toBitSet());
         for(Task t : st.getOpenTasks())
             st.csp.bindings().restrictDomain(t.groundSupportersVar(), dom);
+        st.isConsistent();
     }
 
     private boolean hasUnreachableGoal() { //TODO: should just restrict the domain?

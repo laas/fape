@@ -1,5 +1,7 @@
 package fape.core.planning.grounding;
 
+import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
+import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
@@ -26,6 +28,7 @@ public class GroundProblem {
     public final APlanner planner;
 
     public final List<GAction> gActions;
+    public final List<RAct> relaxedActions = new LinkedList<>();
 
     final List<Invariant> invariants = new LinkedList<>();
     public final Map<IntegerInvariantKey, Integer> intInvariants = new HashMap<>();
@@ -69,7 +72,7 @@ public class GroundProblem {
         }
     }
 
-    private List<TempFluents> tempsFluents(State st) {
+    public List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
@@ -119,7 +122,12 @@ public class GroundProblem {
         }
 
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
-            this.gActions.addAll(GAction.groundActions(this, liftedAct, planner));
+            List<GAction> grounded = GAction.groundActions(this, liftedAct, planner);
+            this.gActions.addAll(grounded);
+
+
+            DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
+            relaxedActions.addAll(f.getDeleteFrees(liftedAct, grounded, this));
         }
     }
 

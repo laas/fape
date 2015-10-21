@@ -131,7 +131,7 @@ public class DeleteFreeActionsFactory {
         throw new FAPEException("Unable to find the timepoint: "+tp);
     }
 
-    public List<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, GroundProblem pb) {
+    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, GroundProblem pb) {
         Map<AbsTP, RActTemplate> templates = new HashMap<>();
         for(AbsTP tp : abs.flexibleTimepoints()) {
             templates.put(tp, new RActTemplate(abs, tp));
@@ -230,6 +230,7 @@ public class DeleteFreeActionsFactory {
         };
 
         // merge all subactions with no conditions into others
+        /*
         for(AbsTP left : new HashSet<AbsTP>(templates.keySet())) {
             RActTemplate leftAct = templates.get(left);
             if(!leftAct.conditions.isEmpty())
@@ -246,7 +247,7 @@ public class DeleteFreeActionsFactory {
                 }
             }
             templates.remove(left);
-        }
+        }*/
 
         // add inter subactions conditions
         for(AbsTP left : templates.keySet()) {
@@ -271,11 +272,15 @@ public class DeleteFreeActionsFactory {
             System.out.println(at);
         }
 
+        List<RAct> relaxedGround = new LinkedList<>();
+
         for(GAction ground : grounds) {
             for(RActTemplate template : templates.values()) {
-               System.out.println(RAct.from(template, ground, pb));
+                RAct a = RAct.from(template, ground, pb);
+                relaxedGround.add(a);
+//                System.out.println(a);
             }
         }
-        return null;
+        return relaxedGround;
     }
 }
