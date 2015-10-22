@@ -299,6 +299,8 @@ public abstract class APlanner {
         if(options.displaySearch)
             searchView.setCurrentFocus(st);
 
+        DepGraph.of(st, this);
+
         assert st.isConsistent() : "Expand was given an inconsistent state.";
 
         expandedStates++;

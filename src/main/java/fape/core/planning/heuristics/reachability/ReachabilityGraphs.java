@@ -64,26 +64,6 @@ public class ReachabilityGraphs {
         for(Action a : st.getAllActions()) {
             inPlan.addAll(new EffSet<GAction>(pp.groundActionIntRepresentation(), st.csp.bindings().rawDomain(a.instantiationVar()).toBitSet()));
         }
-
-        List<TempFluent> tempFluents = pp.getGroundProblem().tempsFluents(st).stream()
-                .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
-                                        st.getEarliestStartTime(tfs.timepoints.iterator().next()),
-                                        TempFluent.Fluent.from(f))))
-                .collect(Collectors.toList());
-//                inPlanFluents.stream()
-//                .map(f -> new TempFluent(0, TempFluent.Fluent.from(f)))
-//                .collect(Collectors.toList());
-
-                        Set < TempFluent > tasks = openTasksActs.stream()
-                                .map(ga -> new TempFluent(0, TempFluent.Fluent.from(ga.task, pl.pb)))
-                                .collect(Collectors.toSet());
-
-        List<TempFluent> allFacts = new LinkedList<>();
-        allFacts.addAll(tempFluents);
-        allFacts.addAll(tasks);
-
-        DepGraph dg = new DepGraph(pl.preprocessor.getGroundProblem().relaxedActions, allFacts);
-        dg.propagate();
     }
 
     public boolean isRefinableToSolution() {

@@ -17,6 +17,7 @@ import fape.core.planning.Plan;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
+import fape.core.planning.heuristics.temporal.DepGraph;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
@@ -123,6 +124,7 @@ public class State implements Reporter {
     public HReasoner<Term> reasoner = null;
 
     public ReachabilityGraphs reachabilityGraphs = null;
+    public Optional<Map<DepGraph.Node, Integer>> depGraphESTs;
 
     class PotentialThreat {
         private final int id1, id2;
@@ -178,6 +180,7 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>();
         addableActions = null;
         addableTemplates = null;
+        depGraphESTs = Optional.empty();
 
         supportConstraints = new LinkedList<>();
 
@@ -208,6 +211,8 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>(st.potentialSupporters);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? st.addableTemplates : null;
+
+        this.depGraphESTs = st.depGraphESTs.map(HashMap::new);
     }
 
     public State cc() {
@@ -637,6 +642,7 @@ public class State implements Reporter {
         // needs time points to be defined
         for(Task ac : mod.tasks()) {
             csp.stn().enforceBefore(ac.start(), ac.end());
+            enforceBefore(pb.start(), ac.start());
 
             if(mod instanceof Action)
                 taskNet.insert(ac, (Action) mod);
