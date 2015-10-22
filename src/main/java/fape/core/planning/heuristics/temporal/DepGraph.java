@@ -5,6 +5,7 @@ import lombok.ToString;
 import lombok.Value;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import fape.core.planning.heuristics.temporal.TempFluent.Fluent;
 
@@ -125,6 +126,7 @@ public class DepGraph {
         for(int i=0 ; i<20 ; i++) {
             for (MaxEdge e : ignored) {
                 if (isActive(e.act)) {
+                    assert isEnabled(e.act);
                     int dstTime = optimisticEST.get(e.fluent) + e.delay;
                     if (dstTime > optimisticEST.get(e.act)) {
                         System.out.println("Updating: " + optimisticEST.get(e.act) + " -> " + dstTime + " for " + e.act.toString()+
@@ -175,11 +177,16 @@ public class DepGraph {
             fluentOut.get(n).stream()
                     .filter(e -> !isEnabled(e.act))
                     .forEach(e -> delete(e.act));
-        } else {
-            actOut.get(n).stream()
-                    .filter(e -> !isEnabled(e.fluent))
+
+            ignored.stream()
+                    .filter(e -> e.fluent == n)
                     .forEach(e -> delete(e.act));
+        } else {
+            actOut.get((ActionNode) n).stream()
+                    .filter(e -> !isEnabled(e.fluent))
+                    .forEach(e -> delete(e.fluent));
         }
+        assert !isActive(n);
     }
 
     public void dijkstra() {
