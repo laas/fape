@@ -83,7 +83,6 @@ public class DepGraph {
                 if(tf.getTime() <= 0) {
                     assert tf.getTime() == 0 : "Effect with negative delay in: \n"+act;
                     intantaneousEffects.add(f);
-//                    System.out.println("instantaneous effect: "+f);
                 }
             }
         }
@@ -121,24 +120,26 @@ public class DepGraph {
 
             for (ActionNode act : allActs) {
                 optimisticEST.put(act, -1);
-                if (isEnabled(act)) {
-//                System.out.println("[_start_] no conditions: "+act.act);
-                    setTime(act, 0);
-                }
+            }
+        }
+        for (ActionNode act : allActs) {
+            if (isEnabled(act)) {
+                setTime(act, 0);
             }
         }
 
     }
+    boolean isFirstDijkstraFinished = false;
 
     public void propagate() {
         // run a dijkstra first to initialize everything
         dijkstra();
+        isFirstDijkstraFinished = true;
         assert queue.isEmpty();
         // delete everything that was not marked by dijkstra
         Set<Node> nodes = new HashSet<>(optimisticEST.keySet());
         for(Node n : nodes) {
             if(!labels.containsKey(n))
-                //optimisticEST.remove(n);
                 delete(n);
         }
 
@@ -146,14 +147,13 @@ public class DepGraph {
         for(MaxEdge e : ignored) {
             if(!isActive(e.fluent)) {
                 assert !optimisticEST.containsKey(e.fluent);
-//                System.out.println("deleting: "+e.act + " because of " + e);
                 delete(e.act);
                 assert !optimisticEST.containsKey(e.act);
                 assert !isActive(e.act);
             }
         }
 
-        for(int i=0 ; i<5 ; i++) {
+        for(int i=0 ; i<2 ; i++) {
             for (MaxEdge e : ignored) {
                 if (isActive(e.act)) {
                     assert isEnabled(e.act);
@@ -171,44 +171,15 @@ public class DepGraph {
                 }
             }
         }
-
-//        assert actOut.keySet().stream()
-//                .filter(a -> a instanceof FactAction)
-//                .allMatch(a -> a.getEffects().stream().allMatch(eff -> isActive(eff.fluent)));
-//        actOut.keySet().stream()
-//                .filter(a -> a instanceof FactAction)
-//                .forEach(a -> {
-//                    System.out.println(a);
-//                    a.getEffects().stream().forEach(eff -> {
-//                        System.out.println("  eff: " + eff + " " + optimisticEST.get(eff));
-//                    });
-//                });
-
-//        optimisticEST.entrySet().stream()
-//                .filter(e -> e.getValue() >= 0)
-//                .sorted((e1, e2) -> e1.getValue() - e2.getValue())
-//                .forEach(e -> System.out.println(e.getValue() + "  " + e.getKey()));
-//
-//        System.out.println("-------------- tasks:");
-//        optimisticEST.entrySet().stream()
-////                .filter(e -> e.getKey() instanceof Fluent && ((Fluent) e.getKey()).isTask())
-//                .filter(e -> e.getKey() instanceof ActionNode)
-//                .sorted((e1, e2) -> e1.getValue() - e2.getValue())
-//                .forEach(e -> System.out.println(e.getValue() + "  " + e.getKey()));
-
     }
 
     public void delete(Node n) {
         if(!isActive(n)) {
             optimisticEST.remove(n);
             assert !labels.containsKey(n);
-            assert !optimisticEST.containsKey(n);
             return;
         }
-//        if(!labels.containsKey(n))
-//            return; // node has already been deleted
 
-//        System.out.println("Deleting: " + n);
         labels.remove(n);
         optimisticEST.remove(n);
         if(n instanceof Fluent) {
@@ -234,10 +205,8 @@ public class DepGraph {
     }
 
     private void setTime(Node n, int newTime) {
-        if(!optimisticEST.containsKey(n)) {
-            System.out.println("impossible, not setting time: "+n);
-            return;
-        }
+        if(!optimisticEST.containsKey(n))
+            return; // only enqueue node that are "optimistically feasible"
 
         // real time is the max of optimistic and newTime
         int time = newTime > optimisticEST.get(n) ? newTime : optimisticEST.get(n);
@@ -266,7 +235,7 @@ public class DepGraph {
         assert lbl.time >= optimisticEST.get(lbl.n);
 
         // only propagate if this increases our best known time
-        if(lbl.time > optimisticEST.get(lbl.n)) {
+        if(!isFirstDijkstraFinished || lbl.time > optimisticEST.get(lbl.n)) {
             optimisticEST.put(lbl.n, lbl.time);
 
             if (lbl.n instanceof Fluent) {
@@ -345,12 +314,14 @@ public class DepGraph {
         if (!st.depGraphESTs.isPresent())
             st.depGraphESTs = Optional.of(dg.optimisticEST);
 
-        System.out.println("\nall: " + dg.optimisticEST.keySet());
-        System.out.println("\nactions: "+
-                dg.optimisticEST.keySet().stream()
-                        .filter(n -> n instanceof RAct)
-                        .map(a -> "["+dg.optimisticEST.get(a)+"] "+ ((RAct) a)+"\n")
-                        .collect(Collectors.toSet()));
+//        System.out.println("\nall: " + dg.optimisticEST.keySet());
+        System.out.println("\nactions: " +
+                dg.optimisticEST.entrySet().stream()
+                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+//                        .filter(n -> n.getKey() instanceof RAct)
+                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
+                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
+                        .collect(Collectors.toList()));
 
         return dg;
     }
