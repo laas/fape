@@ -1,0 +1,30 @@
+type Operation;
+
+
+constant integer dur(Operation op);
+variable boolean ready;
+predicate objective();
+
+
+
+action Do(Operation op) {
+  duration := dur(op);
+
+  [start,start+1]  ready == false :-> true;
+  [end-1,end] ready == true :-> false;
+};
+
+action Goal() {
+  duration := 10;
+  [all] ready == true;
+  objective := true;
+};
+
+instance Operation o1, o2, o3;
+dur(o1) := 5;
+dur(o2) := 7;
+dur(o3) := 15;
+
+[start] ready := false;
+
+[end] objective == true;
