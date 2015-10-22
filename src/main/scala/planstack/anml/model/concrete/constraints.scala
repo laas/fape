@@ -15,8 +15,8 @@ case class ParameterizedMinDelayConstraint(src:TPRef, dst:TPRef, minDelay:Parame
   override def toString = "%s >= %s + f(%s)".format(dst, src, minDelay)
 }
 
-case class ParameterizedExactDelayConstraint(src:TPRef, dst:TPRef, minDelay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
-  override def toString = "%s = %s + f(%s)".format(dst, src, minDelay)
+case class ParameterizedExactDelayConstraint(src:TPRef, dst:TPRef, delay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
+  override def toString = "%s = %s + f(%s)".format(dst, src, delay)
 }
 
 case class ContingentConstraint(src :TPRef, dst :TPRef, min :Int, max :Int) extends TemporalConstraint {
