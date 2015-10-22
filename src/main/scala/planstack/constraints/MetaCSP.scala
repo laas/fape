@@ -53,6 +53,10 @@ class MetaCSP[ID](
   def addMaxDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
     addRequirement(u, v, d, x => x)
   }
+  /** Add a constraint u < v + d */
+  def addMaxDelay(u:TPRef, v:TPRef, d:VarRef, trans: Int => Int): Unit = {
+    addRequirement(u, v, d, trans)
+  }
 
   /** Add a constraint u +d >= v */
   def addMaxDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
