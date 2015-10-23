@@ -14,6 +14,8 @@ object DCMorris {
 
 }
 
+class NotDC extends Exception
+
 class DCMorris {
   import DCMorris._
   val infty = 999999999
@@ -34,39 +36,67 @@ class DCMorris {
   def addEdge(e: Edge): Unit = {
     ensureSpaceForNode(e.from)
     ensureSpaceForNode(e.to)
-    edges += e
-    inEdges(e.to) += e
-    outEdges(e.from) += e
+    if (!dominated(e)) {
+      edges += e
+      inEdges(e.to) += e
+      outEdges(e.from) += e
+      println("    adding edge: " + e)
+    }
+  }
+
+  private def dominated(e:Edge): Boolean = {
+    e.isInstanceOf[Req] && outEdges(e.from)
+      .filter(e2 => e2.to == e.to && e.isInstanceOf[Req])
+      .exists(e2 => e2.d <= e.d)
   }
 
 
   def determineDC(): Boolean = {
-    val propagated = Buff[Node]()
-    for(n <- nodes ; if isNegative(n))
-      if(!dcBackprop(n, propagated, Nil))
-        return false
+    try {
+      val propagated = Buff[Node]()
+      for (n <- nodes; if isNegative(n))
+        dcBackprop(n, propagated, Nil)
+    } catch {
+      case e:NotDC => return false
+    }
     true
   }
 
-  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node]) : Boolean = {
+  @throws[NotDC]
+  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node]): Unit = {
+    println("current: "+source)
+    val negReq = inEdges(source).filter(e => e.isInstanceOf[Req] && e.d < 0).map(_.asInstanceOf[Req]).toList
+    dcBackprop(source, propagated, callHistory, Right(negReq))
+    for(e <- inEdges(source) if e.d < 0 && e.isInstanceOf[Upper])
+      dcBackprop(source, propagated, callHistory, Left(e.asInstanceOf[Upper]))
+    println("end: "+source)
+  }
+
+  @throws[NotDC]
+  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node], curEdges: Either[Upper, List[Req]]) : Unit = {
     case class QueueElem(n: Node, dist: Int)
-    def suitable(e: Edge) = e match  {
-      case Lower(_, _, _, lbl) if lbl == source => false
+    def suitable(e: Edge) = (curEdges, e) match  {
+      case (Left(Upper(_, _, _, upLbl)) ,Lower(_, _, _, downLbl)) if upLbl == downLbl => false
       case _ => true
     }
 
     val visited = MSet[Node]()
     if(callHistory contains source)
-      return false
+      throw new NotDC
     if(propagated contains source)
-      return true
-    val queue = Queue[QueueElem]()(Ordering.by(_.dist))
+      return ;
+    val queue = Queue[QueueElem]()(Ordering.by(- _.dist))
 
-    for(e <- inEdges(source))
+    val toProp = curEdges match {
+      case Left(up) => List(up)
+      case Right(reqs) => reqs
+    }
+    for(e <- toProp)
       queue += QueueElem(e.from, e.d)
 
     while(queue.nonEmpty) {
       val QueueElem(cur, dist) = queue.dequeue()
+      println(s"  dequeue: $cur ($dist)")
       if(!visited.contains(cur)) {
         visited += cur
 
@@ -74,14 +104,12 @@ class DCMorris {
           addEdge(new Req(cur, source, dist))
         } else {
           if(isNegative(cur))
-            if(!dcBackprop(cur, propagated, source :: callHistory))
-              return false
+            dcBackprop(cur, propagated, source :: callHistory)
           for(e <- inEdges(cur) ; if e.d >= 0 && suitable(e))
             queue += QueueElem(e.from, dist + e.d)
         }
       }
     }
-    true
   }
 
 
@@ -105,19 +133,22 @@ object DCMorrisTest extends App {
   val stnu = new DCMorris()
 
   val edges = List(
-//    Req(E,B,4),
+    Req(E,B,4),
     Upper(B, A, -2, B),
-    Lower(A, B, 0, B)
-//    Req(B, D, 1),
-//    Upper(D, C, -3, D),
-//    Lower(C, D, 0, D),
-//    Req(D, B, 3),
-//    Upper(B, A, -2, B),
-//    Lower(A, B, 0, B),
-//    Req(B, E, -5)
+    Lower(A, B, 0, B),
+    Req(B, D, 1),
+    Upper(D, C, -3, D),
+    Lower(C, D, 0, D),
+    Req(D, B, 3),
+    Upper(B, A, -2, B),
+    Lower(A, B, 0, B),
+    Req(B, E, -2)
   )
   for(e <- edges)
     stnu.addEdge(e)
 
-  println(stnu.determineDC())
+  println()
+
+  val props = Buff[Node]()
+  stnu.dcBackprop(E, props, Nil)
 }
