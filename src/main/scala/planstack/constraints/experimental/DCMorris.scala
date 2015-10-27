@@ -214,20 +214,19 @@ object DCMorrisTest extends App {
   }
 
   def makeNonObservable(edges: List[Edge], node: Node) : List[Edge] = {
+    // extract contingent edges on "node"
     val upper = edges.find(e => e.isInstanceOf[Upper] && e.asInstanceOf[Upper].lbl == node).get
     val lower = edges.find(e => e.isInstanceOf[Lower] && e.asInstanceOf[Lower].lbl == node).get
 
     val l = lower.d
-    val lowerProjs = lower.proj + MinProj(node)
     val u = upper.d
-    val upperProjs = upper.proj + MaxProj(node)
     val src = lower.from
 
     edges.filter(e => e != upper && e != lower).map {
-      case Req(`node`,y,d, projs) => Req(src, y, l+d, projs ++ lowerProjs)
-      case Req(x,`node`,d, projs) => Req(x, src, d+u, projs ++ upperProjs)
-      case Lower(`node`, y, d, lbl, projs) => Lower(src, y, l+d, lbl, projs ++ lowerProjs)
-      case Upper(x, `node`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upperProjs)
+      case Req(`node`,y,d, projs) => Req(src, y, l+d, projs ++ lower.proj + MinProj(node))
+      case Req(x,`node`,d, projs) => Req(x, src, d+u, projs ++ upper.proj + MaxProj(node))
+      case Lower(`node`, y, d, lbl, projs) => Lower(src, y, l+d, lbl, projs ++ lower.proj + MinProj(node))
+      case Upper(x, `node`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upper.proj + MaxProj(node))
       case e => assert(e.from != node && e.to != node); e
     }
   }
