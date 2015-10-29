@@ -85,10 +85,13 @@ case class NumExpr(value : Float) extends Expr {
   override def functionName = value.toString
 }
 
-case class TemporalConstraint(tp1:TimepointRef, operator:String, tp2:TimepointRef, delta:Int)
-  extends DecompositionContent with ActionContent with AnmlBlock {
+trait TemporalConstraint extends DecompositionContent with ActionContent with AnmlBlock
+
+case class ReqTemporalConstraint(tp1:TimepointRef, operator:String, tp2:TimepointRef, delta:Int)
+  extends TemporalConstraint  {
   require(operator == "=" || operator == "<")
 }
+case class ContingentConstraint(src:TimepointRef, dst:TimepointRef, min:Int, max:Int) extends TemporalConstraint
 
 class Function(val name:String, val args:List[Argument], val tipe:String, val isConstant:Boolean) extends AnmlBlock with TypeContent
 
@@ -207,9 +210,12 @@ object AnmlParser extends JavaTokenParsers {
     */
   lazy val tempConstraint : Parser[TemporalConstraint] =
     timepointRef~("<"|"=")~timepointRef~opt(constantAddition)<~";" ^^ {
-      case tp1~op~tp2~None => TemporalConstraint(tp1, op, tp2, 0)
-      case tp1~op~tp2~Some(delta) => TemporalConstraint(tp1, op, tp2, delta)
-    }
+      case tp1~op~tp2~None => ReqTemporalConstraint(tp1, op, tp2, 0)
+      case tp1~op~tp2~Some(delta) => ReqTemporalConstraint(tp1, op, tp2, delta)
+    } |
+      timepointRef~":in"~timepointRef~"+"~"["~decimalNumber~","~decimalNumber~"]"<~";" ^^ {
+        case dst~":in"~src~"+"~"["~min~","~max~"]" => ContingentConstraint(src,dst,min.toInt,max.toInt)
+      }
 
   /** Any string of the form `+ 10`, `- 2`, ... Returns an integer*/
   def constantAddition[Int] = ("+"|"-")~decimalNumber ^^ {

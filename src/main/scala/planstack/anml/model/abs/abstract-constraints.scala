@@ -73,10 +73,12 @@ object AbstractTemporalConstraint {
   private implicit def atr(tp: planstack.anml.parser.TimepointRef) = AbsTP(tp)
 
   def apply(parsed: parser.TemporalConstraint) : List[AbstractTemporalConstraint] = parsed match {
-    case parser.TemporalConstraint(tp1, "=", tp2, d) =>
+    case parser.ReqTemporalConstraint(tp1, "=", tp2, d) =>
       List(AbstractMinDelay(tp2,tp1,d), AbstractMaxDelay(tp2,tp1,d))
-    case parser.TemporalConstraint(tp1, "<", tp2, d) =>
+    case parser.ReqTemporalConstraint(tp1, "<", tp2, d) =>
       List(AbstractMaxDelay(tp2, tp1, d-1))
+    case parser.ContingentConstraint(src,dst,min,max) =>
+      List(AbstractContingentConstraint(src,dst,min,max))
   }
 }
 
