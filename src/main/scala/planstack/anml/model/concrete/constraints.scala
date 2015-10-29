@@ -5,7 +5,10 @@ import planstack.anml.model.ParameterizedStateVariable
 
 abstract class Constraint
 
-abstract class TemporalConstraint extends Constraint
+abstract class TemporalConstraint extends Constraint {
+  def src : TPRef
+  def dst : TPRef
+}
 
 case class MinDelayConstraint(src:TPRef, dst:TPRef, minDelay:Integer) extends TemporalConstraint {
   override def toString = s"$src + $minDelay <= $dst"

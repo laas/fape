@@ -12,6 +12,9 @@ case object ContainerStart extends AbsTP
 case object ContainerEnd extends AbsTP
 case class IntervalStart(id :LocalRef) extends AbsTP
 case class IntervalEnd(id :LocalRef) extends AbsTP
+case class StandaloneTP(id: String) extends AbsTP {
+  require(id != "start" && id != "end" && !id.contains("(") && !id.contains(")"))
+}
 
 
 
@@ -19,12 +22,13 @@ object AbsTP {
 
   def apply(parsed:parser.TimepointRef) = {
     parsed match {
-      case parser.TimepointRef("", "") => TimeOrigin
-      case parser.TimepointRef("", _) => throw new ANMLException("Invalid timepoint reference: "+parsed)
-      case parser.TimepointRef("start", "") => ContainerStart
-      case parser.TimepointRef("end", "") => ContainerEnd
-      case parser.TimepointRef("start", id) => IntervalStart(new LocalRef(id))
-      case parser.TimepointRef("end", id) => IntervalEnd(new LocalRef(id))
+      case parser.Timepoint("") => TimeOrigin
+      case parser.Timepoint("start") => ContainerStart
+      case parser.Timepoint("end") => ContainerEnd
+      case parser.Timepoint(name) => StandaloneTP(name)
+      case parser.ExtractedTimepoint("start", id) => IntervalStart(new LocalRef(id))
+      case parser.ExtractedTimepoint("end", id) => IntervalEnd(new LocalRef(id))
+      case x => throw new ANMLException("No match for timepoint: "+x)
     }
   }
 }

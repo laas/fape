@@ -41,6 +41,12 @@ abstract class AbstractContext {
       }
     }
   }
+  protected val standaloneTimepoints = mutable.Map[String, TPRef]()
+
+  def getTimepoint(id: String, refCounter: RefCounter) = {
+    assert(id != "start" && id != "end")
+    standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
+  }
 
   def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter)
 

@@ -114,7 +114,7 @@ trait Chronicle {
     assert(!this.isInstanceOf[Action], "Error: action should do that themselves")
 
     val intervals : List[TemporalInterval] = container :: tasks.toList.asInstanceOf[List[TemporalInterval]] ++ statements.toList.asInstanceOf[List[TemporalInterval]]
-    val timepoints = intervals.flatMap(int => List(int.start, int.end))
+    val timepoints = (intervals.flatMap(int => List(int.start, int.end)) ++ temporalConstraints.flatMap(tc => List(tc.src, tc.dst))).toSet
 
     this.flexibleTimepoints = timepoints.map(tp => (tp, "controllable"))
 

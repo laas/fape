@@ -20,14 +20,15 @@ case class TemporalAnnotation(start:RelativeTimepoint, end:RelativeTimepoint, fl
 }
 
 case class RelativeTimepoint(tp:Option[TimepointRef], delta:Int) {
-  def this(str:String) = this(Some(new TimepointRef(str)), 0)
+  def this(str:String) = this(Some(new Timepoint(str)), 0)
   def this(abs:Int) = this(None, abs)
 }
 
-
-case class TimepointRef(extractor:String, id:String) {
-  def this(extractor:String) = this(extractor, "")
+trait TimepointRef
+case class ExtractedTimepoint(extractor:String, intervalId:String) extends TimepointRef {
+  require(extractor == "start" || extractor == "end")
 }
+case class Timepoint(id: String) extends TimepointRef
 
 case class Operator(op:String)
 
@@ -179,12 +180,9 @@ object AnmlParser extends JavaTokenParsers {
       | failure("illegal timepoint")
     )
 
-  lazy val timepointRef : Parser[TimepointRef] = (
-    kwTempAnnot~"("~word<~")" ^^ {
-      case kw~"("~id => TimepointRef(kw, id) }
-      | kwTempAnnot ^^
-      (kw => TimepointRef(kw, ""))
-    )
+  lazy val timepointRef : Parser[TimepointRef] =
+    kwTempAnnot~"("~word<~")" ^^ { case kw~"("~id => ExtractedTimepoint(kw, id) } |
+    ident ^^ (kw => Timepoint(kw))
 
   lazy val statement : Parser[Statement] = (
       statementWithoutID
