@@ -12,6 +12,7 @@ import lombok.ToString;
 import lombok.Value;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,7 +21,9 @@ import planstack.anml.model.concrete.Task;
 
 public class DepGraph {
 
-    public interface Node {};
+    private static boolean isInfty(int num) { return num > 99999; }
+
+    public interface Node {}
     public interface ActionNode extends Node {
         List<TempFluent> getConditions();
         List<TempFluent> getEffects();
@@ -66,7 +69,7 @@ public class DepGraph {
     }
 
     public DepGraph(Collection<RAct> actions, List<TempFluent> facts, Optional<Map<Node,Integer>> earliestStarts) {
-        Set<Fluent> intantaneousEffects = new HashSet<>();
+        Set<Fluent> instantaneousEffects = new HashSet<>();
         FactAction init = new FactAction(facts);
         List<ActionNode> allActs = new LinkedList<>(actions);
         allActs.add(init);
@@ -76,13 +79,14 @@ public class DepGraph {
             actIn.put(act, new ArrayList<>());
             for (TempFluent tf : act.getEffects()) {
                 Fluent f = tf.fluent;
+                assert !isInfty(tf.getTime()) : "Effect with infinite delay.";
                 actOut.get(act).add(new MinEdge(act, f, tf.getTime()));
                 fluentIn.putIfAbsent(f, new ArrayList<>());
                 fluentOut.putIfAbsent(f, new ArrayList<>());
                 fluentIn.get(f).add(new MinEdge(act, f, tf.getTime()));
                 if(tf.getTime() <= 0) {
                     assert tf.getTime() == 0 : "Effect with negative delay in: \n"+act;
-                    intantaneousEffects.add(f);
+                    instantaneousEffects.add(f);
                 }
             }
         }
@@ -91,7 +95,7 @@ public class DepGraph {
                 Fluent f = tf.fluent;
 
                 // ignore potential zero length loops and potential negative loop
-                if((intantaneousEffects.contains(f) && tf.getTime() >= 0) || tf.getTime() > 0) {
+                if((instantaneousEffects.contains(f) && tf.getTime() >= 0) || tf.getTime() > 0) {
                     ignored.add(new MaxEdge(f, act, -tf.getTime()));
                     continue;
                 }
@@ -127,8 +131,19 @@ public class DepGraph {
                 setTime(act, 0);
             }
         }
-
     }
+
+    private int extractMaxLabel() {
+        return Stream.concat(
+                actOut.values().stream().flatMap(List::stream)
+                        .filter(minEdge -> !isInfty(-minEdge.delay))
+                        .map(e -> Math.abs(e.delay)),
+                Stream.concat(ignored.stream(), actIn.values().stream().flatMap(List::stream))
+                        .filter(maxEdge -> !isInfty(-maxEdge.delay))
+                        .map(e -> Math.abs(e.delay)))
+                .max(Integer::compare).get();
+    }
+
     boolean isFirstDijkstraFinished = false;
 
     public void propagate() {
@@ -152,6 +167,8 @@ public class DepGraph {
                 assert !isActive(e.act);
             }
         }
+        final int D = extractMaxLabel();
+        assert !isInfty(D);
 
         for(int i=0 ; i<2 ; i++) {
             for (MaxEdge e : ignored) {
@@ -167,6 +184,26 @@ public class DepGraph {
                         queue.clear();
                         setTime(e.act, dstTime);
                         dijkstra();
+                    }
+                }
+            }
+            Function<Stream<Integer>, Optional<Integer>> lateThreshold = s -> {
+                Optional<Integer> prev = Optional.empty();
+                for (Integer v : s.sorted().collect(Collectors.toList())) {
+                    if (prev.isPresent() && (v - prev.get()) > D) {
+                        // gap of at least D between v and its predecessor, v is the late threshold
+                        return Optional.of(v);
+                    }
+                    prev = Optional.of(v);
+                }
+                return Optional.empty();
+            };
+            Optional<Integer> cutThreshold = lateThreshold.apply(optimisticEST.values().stream());
+            if(cutThreshold.isPresent()) {
+                for(Node n : new ArrayList<>(optimisticEST.keySet())) {
+                    if(optimisticEST.containsKey(n) && optimisticEST.get(n) > cutThreshold.get()) {
+                        System.out.println("Late cutting: "+n);
+                        delete(n);
                     }
                 }
             }
@@ -318,8 +355,8 @@ public class DepGraph {
         System.out.println("\nactions: " +
                 dg.optimisticEST.entrySet().stream()
                         .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-//                        .filter(n -> n.getKey() instanceof RAct)
-                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
+                        .filter(n -> n.getKey() instanceof RAct)
+//                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
                         .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
                         .collect(Collectors.toList()));
 
