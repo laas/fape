@@ -82,24 +82,27 @@ abstract class GenSTNUManager[ID]
     commit(c2)
   }
 
-  final def addControllableTimePoint(tp : TPRef) : Int = {
-    assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
-    ensureSpaceFor(tp)
-    tp.setControllable()
-    id(tp.id) = stn.addVar()
-    add(tp)
-    id(tp.id)
+  final def addDispatchableTimePoint(tp : TPRef) : Int = {
+    tp.setDispatchable() //TODO: change to assert
+    record(tp)
   }
   final def addContingentTimePoint(tp : TPRef) : Int = {
+    tp.setContingent() //TODO: change to assert
+    record(tp)
+  }
+
+  override final def recordTimePoint(tp: TPRef): Int = {
+    tp.setStructural() //TODO: change to assert
+    record(tp)
+  }
+
+  private def record(tp:TPRef): Int = {
     assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
     ensureSpaceFor(tp)
-    tp.setContingent()
     id(tp.id) = stn.addVar()
     add(tp)
     id(tp.id)
   }
-
-  override final def recordTimePoint(tp: TPRef): Int = addControllableTimePoint(tp)
 
   override final def removeTimePoint(tp: TPRef): Unit = {
     stn.removeVar(tp.id)
