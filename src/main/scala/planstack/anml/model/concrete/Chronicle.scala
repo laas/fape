@@ -58,7 +58,7 @@ trait Chronicle {
   /** (Type, Reference) of global variables to be declared */
   def vars : java.util.List[VarRef]
 
-  var flexibleTimepoints : IList[(TPRef,String)] = null
+  var flexibleTimepoints : IList[TPRef] = null
   var anchoredTimepoints : IList[AnchoredTimepoint] = null
 
   /** All problem instances to be declared
@@ -115,8 +115,16 @@ trait Chronicle {
 
     val intervals : List[TemporalInterval] = container :: tasks.toList.asInstanceOf[List[TemporalInterval]] ++ statements.toList.asInstanceOf[List[TemporalInterval]]
     val timepoints = (intervals.flatMap(int => List(int.start, int.end)) ++ temporalConstraints.flatMap(tc => List(tc.src, tc.dst))).toSet
+    val contingentTimepoints = temporalConstraints
+      .filter(tc => tc.isInstanceOf[ContingentConstraint] || tc.isInstanceOf[ContingentConstraint])
+      .map(tc => tc.dst)
 
-    this.flexibleTimepoints = timepoints.map(tp => (tp, "controllable"))
+    timepoints.foreach(tp =>
+      if(contingentTimepoints.contains(tp)) tp.setContingent()
+      else tp.setStructural()
+    )
+
+    this.flexibleTimepoints = new IList(timepoints)
 
     // no anchored tps
     this.anchoredTimepoints = new IList[AnchoredTimepoint]()

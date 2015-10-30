@@ -86,13 +86,13 @@ class TPRef(id:Int) extends GlobalRef(id) {
   private var typ = 0
   final def isVirtual = typ == 1
   final def isContingent = typ == 2
-  final def isControllable = typ == 3
   final def isStructural = typ == 4
+  final def isDispatchable = typ == 5
   final def isOfUndefinedType = typ == 0
-  final def setVirtual() { assert(typ == 0) ; typ = 1 }
-  final def setContingent() { assert(typ == 0) ; typ = 2 }
-  final def setControllable() { assert(typ == 0) ; typ = 3 }
-  final def setStructural() { assert(typ == 0) ; typ = 4 }
+  final def setVirtual() { assert(typ == 0 || typ==1) ; typ = 1 }
+  final def setContingent() { assert(typ == 0 || typ==2) ; typ = 2 }
+  final def setStructural() { assert(typ == 0 || typ==4) ; typ = 4 }
+  final def setDispatchable() { assert(typ == 0 || typ==5) ; typ = 5 }
 
   private var realTP : TPRef = null
   private var distToReal : Int = 0

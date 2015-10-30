@@ -222,13 +222,26 @@ object Action {
     val id = new ActRef(refCounter)
     val act = new Action(abs, context, id, parentAction, refCounter)
 
+    val ctgTimepoints = act.temporalConstraints
+      .filter(tc => tc.isInstanceOf[ParameterizedContingentConstraint] || tc.isInstanceOf[ContingentConstraint])
+      .map(tc => tc.dst)
+      .toSet
+
     act.addAll(abs.statements, context, pb, refCounter)
     act.addAll(abs.constraints, context, pb)
     act.flexibleTimepoints = abs.flexibleTimepoints
       .map(tp => TimepointRef(pb, context, tp))
-      .map(tp => if(tp == act.start) (tp, "dispatchable") else (tp, "controllable"))
+
+    act.flexibleTimepoints.foreach(tp =>
+      if(tp == act.start) tp.setDispatchable()
+      else if(ctgTimepoints.contains(tp)) tp.setContingent()
+      else tp.setStructural()
+    )
+
     act.anchoredTimepoints = abs.anchoredTimepoints
       .map(at => new AnchoredTimepoint(TimepointRef(pb, context, at.timepoint), TimepointRef(pb, context, at.anchor), at.delay))
+
+    act.anchoredTimepoints.foreach(at => at.timepoint.setVirtual())
 
     // if there is a parent action, add a mapping localId -> globalID to its context
     contextOpt match {
