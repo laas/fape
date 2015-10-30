@@ -586,24 +586,18 @@ public class State implements Reporter {
      */
     private void apply(Chronicle mod) {
 
-        for (Tuple2<TPRef, String> tp : mod.flexibleTimepoints()) {
-            final TPRef t = tp._1();
-            if(t.equals(pb.start()) || t.equals(pb.end()) || t.equals(pb.earliestExecution()))
+        for (TPRef tp : mod.flexibleTimepoints()) {
+            if(tp.equals(pb.start()) || tp.equals(pb.end()) || tp.equals(pb.earliestExecution()))
                 continue;
 
-            switch (tp._2()) {
-                case "dispatchable":
-                    csp.stn().addControllableTimePoint(tp._1());
-                    break;
-                case "contingent":
-                    csp.stn().addContingentTimePoint(tp._1());
-                    break;
-                case "controllable":
-                    csp.stn().recordTimePoint(tp._1());
-                    break;
-                default:
-                    throw new FAPEException("Unknown time point type: " + tp._2());
-            }
+            if(tp.isDispatchable())
+                csp.stn().addDispatchableTimePoint(tp);
+            else if(tp.isContingent())
+                csp.stn().addContingentTimePoint(tp);
+            else if(tp.isStructural())
+                csp.stn().recordTimePoint(tp);
+            else
+                throw new FAPEException("Unknown time point type: " + tp);
         }
 
         // for every instance declaration, create a new CSP Var with itself as domain
