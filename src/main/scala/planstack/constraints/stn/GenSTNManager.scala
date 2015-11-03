@@ -50,7 +50,7 @@ abstract class GenSTNManager[TPRef,ID] {
   final def enforceConstraint(u:TPRef, v:TPRef, min:Int, max:Int) : Boolean = {
     enforceMinDelay(u, v, min)
     enforceMaxDelay(u, v, max)
-    isConsistent
+    isConsistent()
   }
 
   /** Removes all constraints that were recorded with this id */

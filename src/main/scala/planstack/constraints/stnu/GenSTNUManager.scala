@@ -256,14 +256,7 @@ abstract class GenSTNUManager[ID]
 
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */
-  final def timepoints : IList[(TPRef, ElemStatus)] =
-    (for(tp <- tps ; if tp != null) yield
-      if(start.nonEmpty && tp == start.get) (tp, START)
-      else if(end.nonEmpty && tp == end.get) (tp, END)
-      else if(tp.isControllable) (tp, CONTROLLABLE)
-      else if(tp.isContingent) (tp, CONTINGENT)
-      else if(tp.isVirtual) (tp, RIGID)
-      else (tp, NO_FLAG)).toList
+  final def timepoints : IList[TPRef] = tps.filter(_ != null).toList
 
   /** Returns the number of timep oints, exclding virtual time points */
   final def numRealTimePoints = id.size
@@ -307,10 +300,7 @@ abstract class GenSTNUManager[ID]
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  final def constraints : IList[Const] = new IList[Const]()
-    rawConstraints ++
-      (for(tp <- tps.toList if tp != null if tp.isVirtual if tp.isAttached) yield
-        new Const(tp.attachmentToReal._1, tp, tp.attachmentToReal._2, RIGID, None))
+  final def constraints : IList[Const] = new IList[Const](rawConstraints)
 }
 
 

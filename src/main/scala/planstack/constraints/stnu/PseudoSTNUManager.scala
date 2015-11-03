@@ -1,18 +1,12 @@
 package planstack.constraints.stnu
 
-import net.openhft.koloboke.collect.map.hash.{HashIntIntMap, HashIntObjMap}
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.Kolokobe
-import planstack.constraints.stn.ISTN
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 import Controllability._
-import planstack.structures.IList
 import ElemStatus._
-import planstack.structures.Converters._
 
-protected class TConstraint[TPRef,ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
+protected class TConstraint[ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
 class PseudoSTNUManager[ID](val stn : FullSTN[ID],
                                   _tps : Array[TPRef],
@@ -87,9 +81,7 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
     (- addDelay) + stn.maxDelay(id(src.id), id(dst.id)) + subDelay
   }
 
-  override def getMinDelay(u: TPRef, v: TPRef): Int =
-    - dist(v, u)
-
+  override def getMinDelay(u: TPRef, v: TPRef): Int = - dist(v, u)
 
   override def getMaxDelay(u: TPRef, v: TPRef): Int = dist(u,v)
 }

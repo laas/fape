@@ -307,13 +307,6 @@ public class FullSTN<ID> extends ISTN<ID> {
         return list;
     }
 
-    /*
-        @Override
-        public IList<Tuple5<Object, Object, Object, Enumeration.Value>> constraints() {
-            List<Tuple5<Object, Object, Object, Enumeration.Value>> all = new LinkedList<>();
-
-        }
-    */
     @Override
     public int size() {
         return this.top - emptySpots.size();
