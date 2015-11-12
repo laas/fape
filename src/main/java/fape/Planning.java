@@ -1,7 +1,6 @@
 package fape;
 
 import com.martiansoftware.jsap.*;
-import fape.core.planning.Plan;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
@@ -131,19 +130,19 @@ public class Planning {
                                 .setLongFlag("output")
                                 .setDefault("stdout")
                                 .setHelp("File to which the CSV formatted output will be written"),
-                        new FlaggedOption("stnu-consistency")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
-                                .setLongFlag("stnu")
-                                .setRequired(false)
-                                .setDefault("pseudo")
-                                .setHelp("Selects which type of STNU controllability should be checked while searching for a solution. "
-                                        +"Note that dynamic controllability will be checked when a plan is found regardless of this option. "
-                                        +"This is simply used to define which algorithm is used while searching, with an impact on earliness "
-                                        +"of failures and computation time. Accepted options are:\n"
-                                        +"  - 'stn': simply enforces requirement constraints.\n"
-                                        +"  - 'pseudo': enforces pseudo controllability.\n"
-                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.\n"),
+//                        new FlaggedOption("stnu-consistency")
+//                                .setStringParser(JSAP.STRING_PARSER)
+//                                .setShortFlag(JSAP.NO_SHORTFLAG)
+//                                .setLongFlag("stnu")
+//                                .setRequired(false)
+//                                .setDefault("pseudo")
+//                                .setHelp("Selects which type of STNU controllability should be checked while searching for a solution. "
+//                                        +"Note that dynamic controllability will be checked when a plan is found regardless of this option. "
+//                                        +"This is simply used to define which algorithm is used while searching, with an impact on earliness "
+//                                        +"of failures and computation time. Accepted options are:\n"
+//                                        +"  - 'stn': simply enforces requirement constraints.\n"
+//                                        +"  - 'pseudo': enforces pseudo controllability.\n"
+//                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.\n"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setRequired(isAnmlFileRequired)
@@ -182,7 +181,7 @@ public class Planning {
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
-        Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
+//        Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -219,13 +218,7 @@ public class Planning {
 
                 Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
 
-                Controllability controllability;
-                switch (config.getString("stnu-consistency")) {
-                    case "stn": controllability = Controllability.STN_CONSISTENCY; break;
-                    case "pseudo": controllability = Controllability.PSEUDO_CONTROLLABILITY; break;
-                    case "dynamic": controllability = Controllability.DYNAMIC_CONTROLLABILITY; break;
-                    default: throw new RuntimeException("Unsupport option for stnu consistency: "+config.getString("stnu-consistency"));
-                }
+                Controllability controllability = Controllability.PSEUDO_CONTROLLABILITY;
 
                 // creates all planners that will be tested for this problem
                 String strategy = config.getString("strategies");
@@ -306,12 +299,6 @@ public class Planning {
                 if (!failure && !config.getBoolean("quiet")) {
                     System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
-
-                    Plan plan = new Plan(sol);
-                    plan.exportToDot("plan.dot");
-                    sol.exportTemporalNetwork("stn.dot");
-                    sol.exportTaskNetwork("task-network.dot");
-                    System.out.println("Look at stn.dot and task-network.dot for more details.");
                 }
 
                 final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";

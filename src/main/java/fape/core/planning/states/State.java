@@ -3,7 +3,6 @@ package fape.core.planning.states;
 import fape.core.execution.model.AtomicAction;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
-import fape.core.planning.Plan;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
@@ -35,13 +34,13 @@ import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import planstack.constraints.MetaCSP;
 import planstack.constraints.stnu.Controllability;
-import planstack.constraints.stnu.STNUDispatcher;
 import planstack.structures.IList;
 import scala.Option;
 import scala.Tuple2;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 //import scala.collection.immutable.HashMap;
 
 /**
@@ -112,6 +111,8 @@ public class State implements Reporter {
 
     public ReachabilityGraphs reachabilityGraphs = null;
 
+    final List<StateExtension> extensions;
+
     class PotentialThreat {
         private final int id1, id2;
         public PotentialThreat(Timeline tl1, Timeline tl2) {
@@ -168,6 +169,7 @@ public class State implements Reporter {
         addableTemplates = null;
 
         supportConstraints = new LinkedList<>();
+        extensions = new LinkedList<>();
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -196,6 +198,7 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>(st.potentialSupporters);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? st.addableTemplates : null;
+        extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
 
     public State cc() {
@@ -213,6 +216,18 @@ public class State implements Reporter {
         } else {
             return addableTemplates.contains(a);
         }
+    }
+
+    public Stream<StateExtension> extensions() { return extensions.stream(); }
+    public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
+    public <T> T getExtension(Class<T> clazz) {
+        return (T) extensions().filter(ext -> ext.getClass() == clazz)
+                .findFirst().get(); //.orElseGet(() -> { throw new FAPEException(""); } );
+    }
+    public void addExtension(StateExtension ext) {
+        for(StateExtension e : extensions)
+            assert e.getClass() != ext.getClass() : "Already an extension with the same class: " + ext;
+        extensions.add(ext);
     }
 
     /**
@@ -1023,10 +1038,6 @@ public class State implements Reporter {
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
 
-    public STNUDispatcher<GlobalRef> getDispatchableSTNU() {
-        return new STNUDispatcher<>(csp.stn());
-    }
-
     public Option<Tuple2<Integer,Integer>> getDurationBounds(Action a) {
         return csp.stn().contingentDelay(a.start(), a.end());
     }
@@ -1215,69 +1226,5 @@ public class State implements Reporter {
                 }
             }
         }
-    }
-
-    /**
-     * Returns all actions that are dispatchable at "currentTime".
-     * This also updates the earliest execution to the currentTime and propagates the temporal constraints.
-     * This might make the state inconsistent (in which case an empty list of actions is returned).
-     * @return List of dispatchable actions.
-     */
-    public IList<AtomicAction> getDispatchableActions(int currentTime) {
-        IList<AtomicAction> toDispatch = new IList<>();
-        assert isConsistent() : "Trying to get dispatchable actions from an inconsistent state.";
-        setCurrentTime(currentTime);
-
-        if(!isConsistent()) {
-            // propagation made the plan inconsistent
-            System.err.println("Error: propagation (during dispatching) made the state inconsistent.");
-            return toDispatch;
-        }
-
-        Plan plan = new Plan(this);
-        return plan.getDispatchableActions(currentTime);
-    }
-
-    /**
-     * Builds from scratch a new state based on the problem only. This state will also contains
-     * all executing or executed actions since they are now part of the problem.
-     *
-     * This state should be readily usable for replanning.
-     *
-     * @return A new state containing only the problem definition and executing/executed actions.
-     */
-    public State getCleanState() {
-        State st = new State(pb, controllability);
-
-        for(Action oldAction : getAllActions()) {
-
-            if(oldAction.status() == ActionStatus.EXECUTING || oldAction.status() == ActionStatus.EXECUTED) {
-                // we need to insert it in the new state
-
-                // make a copy with the same ID and parameters
-                List<VarRef> params = new LinkedList<>();
-                for(VarRef arg : oldAction.args()) {
-                    List<String> possibleValues = new LinkedList<>(domainOf(arg));
-                    assert possibleValues.size() == 1 : "Argument "+arg+" of action "+oldAction+" has more than one possible value.";
-                    params.add(pb.instances().referenceOf(possibleValues.get(0)));
-                }
-                Action copy = null; //Factory.getInstantiatedAction(pb, oldAction.abs(), params, oldAction.id()); TODO: depecated, action should be immutable
-
-                st.insert(copy);
-                st.setActionExecuting(copy.id(), getEarliestStartTime(oldAction.start()));
-
-
-                if(oldAction.status() == ActionStatus.EXECUTED) {
-                    st.setActionSuccess(copy.id(), getEarliestStartTime(oldAction.end()));
-                }
-            }
-
-        }
-        // set earliest start
-        st.enforceDelay(pb.start(), pb.earliestExecution(), getEarliestStartTime(pb.earliestExecution()));
-        // propagate
-        st.isConsistent();
-
-        return st;
     }
 }

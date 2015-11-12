@@ -10,6 +10,8 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
@@ -368,6 +370,10 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
     }
 
     public Iterable<Timeline> getTimelines() { return this; }
+
+    public Stream<LogStatement> allStatements() {
+        return StreamSupport.stream(getTimelines().spliterator(), false).flatMap(Timeline::allStatements);
+    }
 
     @Override
     public Iterator<Timeline> iterator() {

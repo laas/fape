@@ -19,7 +19,8 @@ public class PlanningOptions {
             new UnsupportedTaskConditionFinder(),
             new UnmotivatedActionFinder(),
             new AllThreatFinder(),
-            new UnboundVariableFinder()
+            new UnboundVariableFinder(),
+            new NeededObservationsFinder()
     };
 
     /**
