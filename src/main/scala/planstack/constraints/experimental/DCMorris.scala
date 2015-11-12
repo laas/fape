@@ -276,7 +276,7 @@ object DCMorrisTest extends App {
         Lower(virt, to, 0, lbl, projs) ::
           Req(from, virt, d, Set()) :: Req(virt, from, -d, Set()) ::Nil
       case Upper(from, to, d, lbl, projs) =>
-        Upper(addNodes(to)._1, from, d-addNodes(to)._2, lbl, projs) :: Nil
+        Upper(addNodes(to)._1, from, d+addNodes(to)._2, lbl, projs) :: Nil
       case r:Req =>
         r :: Nil
     }
@@ -291,7 +291,6 @@ object DCMorrisTest extends App {
     while(queue.nonEmpty) {
       val candidate = queue.head
       queue -= candidate
-      println("new candidate: "+candidate)
 
       val nonObs = ctgs -- candidate -- observed
       val allObsEdges = putInNormalForm(makePossiblyObservable(edges, nonObs.toList))
@@ -299,6 +298,10 @@ object DCMorrisTest extends App {
       val stnu = new DCMorris()
       for(e <- allObsEdges)
         stnu.addEdge(e)
+
+      if(candidate.nonEmpty)
+        println("new candidate: "+candidate)
+
 
       log(s"Candidate: $candidate")
       stnu.determineDC() match {

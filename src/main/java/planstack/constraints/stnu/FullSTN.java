@@ -187,8 +187,8 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param b time
      * @return product of addition operation on a and b
      */
-    protected int lim_plus(int a, int b){
-        return (a == inf || b == inf)?inf:(a == sup || b == sup)?sup:a+b;
+    private static int lim_plus(int a, int b){
+        return (a == inf || b == inf) ? inf : (a == sup || b == sup)?sup:a+b;
     }
 
     /**
