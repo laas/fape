@@ -3,7 +3,7 @@ package planstack.constraints.experimental
 import java.util.Optional
 
 import planstack.anml.model.concrete.{GlobalRef, TPRef}
-import planstack.constraints.experimental.DCMorris.Proj
+import planstack.constraints.experimental.DCMorris._
 import planstack.constraints.stnu.{ElemStatus, Constraint, PseudoSTNUManager}
 
 import scala.collection.immutable.Set
@@ -28,8 +28,6 @@ object DCMorris {
     extends Edge(from, to, d, proj)
   case class Upper(override val from: Node, override val to: Node, override val d: Int, lbl: Node, override val proj:Set[Proj]) extends Edge(from, to, d, proj)
   case class Lower(override val from: Node, override val to: Node, override val d: Int, lbl: Node, override val proj:Set[Proj]) extends Edge(from, to, d, proj)
-
-  def log(msg: String) = Unit //println(msg)
 }
 
 class NotDC(val involvedProjections: Set[Proj]) extends Exception
@@ -58,7 +56,6 @@ class DCMorris {
       edges += e
       inEdges(e.to) += e
       outEdges(e.from) += e
-      log("    adding edge: " + e)
     }
   }
 
@@ -86,13 +83,11 @@ class DCMorris {
 
   @throws[NotDC]
   def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node]): Unit = {
-    log("current: "+source)
     val negReq = inEdges(source).filter(e => e.isInstanceOf[Req] && e.d < 0).map(_.asInstanceOf[Req]).toList
     dcBackprop(source, propagated, callHistory, Right(negReq))
     for(e <- inEdges(source) if e.d < 0 && e.isInstanceOf[Upper])
       dcBackprop(source, propagated, callHistory, Left(e.asInstanceOf[Upper]))
     propagated += source
-    log("end: "+source)
   }
 
   @throws[NotDC]
@@ -119,7 +114,6 @@ class DCMorris {
 
     while(queue.nonEmpty) {
       val QueueElem(cur, dist, projs) = queue.dequeue()
-      log(s"  dequeue: $cur ($dist) $projs")
       if(!visited.contains(cur)) {
         visited += cur
 
@@ -137,86 +131,13 @@ class DCMorris {
       }
     }
   }
-
-
-
-
+  
   private def nodes = inEdges.keys
   private def isNegative(n: Node) : Boolean = inEdges(n).exists(e => e.d < 0)
 }
 
-object DCMorrisTest extends App {
+object PartialObservability {
   import DCMorris._
-  val A = 1
-  val B = 2
-  val C = 3
-  val D = 4
-  val E: Node = 5
-  val F = 6
-
-  val notDCs = List(
-    List(Req(A,B,5, Set()), Req(B,A,-6, Set())),
-    List(Req(C, B, 3, Set()), Req(B, C, -1, Set()), Upper(B,A,-5,B, Set()), Lower(A,B,1,B, Set())),
-    List(Req(C, B, 3, Set()), Req(B, C, -1, Set()), Upper(B,A,-5,B, Set()), Lower(A,B,1,B, Set()))
-  )
-
-  val DCs = List(
-    List(Req(B,C, 5, Set()), Req(C,B, -5, Set()), Upper(B,A,-5,B, Set()), Lower(A,B,1,B, Set()))
-  )
-
-  def assertNotDC(edges: List[Edge]): Unit = {
-    val stnu = new DCMorris()
-    for(e <- edges)
-      stnu.addEdge(e)
-    val (dc,obs) = stnu.determineDC()
-    assert(!dc)
-    log(s"You should observe at least one of events: $obs")
-  }
-  def assertDC(edges: List[Edge]): Unit = {
-    val stnu = new DCMorris()
-    for(e <- edges)
-      stnu.addEdge(e)
-    val (dc,_) = stnu.determineDC()
-    assert(dc)
-  }
-//  for(notDC <- notDCs) {
-//    assertNotDC(notDC)
-//  }
-//  for(dc <- DCs) {
-//    assertDC(dc)
-//  }
-
-
-//  val stnu = new DCMorris()
-//
-//  val edges = List(
-//    Req(E,B,4),
-//    Upper(B, A, -2, B),
-//    Lower(A, B, 0, B),
-//    Req(B, D, 1),
-//    Upper(D, C, -3, D),
-//    Lower(C, D, 0, D),
-//    Req(D, B, 3),
-//    Upper(B, A, -2, B),
-//    Lower(A, B, 0, B),
-//    Req(B, E, -2)
-//  )
-//  for(e <- edges)
-//    stnu.addEdge(e)
-//
-//  log()
-//
-//  val props = Buff[Node]()
-//  try {
-//    stnu.dcBackprop(E, props, Nil)
-//    log("DC")
-//  } catch {
-//    case e:NotDC => log("Not DC")
-//  }
-
-//  def convertFrom(stnu: PseudoSTNUManager) : List[Edge] = {
-//    for(n <- stnu.timepoints)
-//  }
 
   case class NeededObservations(resolvingObs: ju.Collection[ju.Set[TPRef]])
 
@@ -282,15 +203,26 @@ object DCMorrisTest extends App {
     }
   }
 
+  var useLabelsForFocus : Boolean = true
+  var instrument : Boolean = false
+  var numIterations : Int = 0
+
   def getMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
     val ctgs = edges.filter(_.isInstanceOf[Upper]).map(_.asInstanceOf[Upper].lbl).toSet
     val solutions = MSet[Set[Node]]()
+    val expanded = MSet[Set[Node]]() // to avoid duplicates
     var queue = MSet[Set[Node]]()
     queue += Set()
+
+    if(instrument)
+      numIterations = 0
 
     while(queue.nonEmpty) {
       val candidate = queue.head
       queue -= candidate
+      expanded += candidate
+      if(instrument)
+        numIterations += 1
 
       val nonObs = ctgs -- candidate -- observed
       val allObsEdges = putInNormalForm(makePossiblyObservable(edges, nonObs.toList))
@@ -299,54 +231,23 @@ object DCMorrisTest extends App {
       for(e <- allObsEdges)
         stnu.addEdge(e)
 
-      if(candidate.nonEmpty)
-        println("new candidate: "+candidate)
-
-
-      log(s"Candidate: $candidate")
       stnu.determineDC() match {
         case (true, None) =>
-          log("  Valid")
           solutions.add(candidate)
         case (false, Some(possiblyObservable)) =>
-          for(n <- possiblyObservable) {
-            log(s"new: ${candidate+n}")
-            queue += candidate + n
+          val nextToConsider =
+            if(useLabelsForFocus) possiblyObservable
+            else nonObs
+          for(n <- nextToConsider) {
+            val nextCandidate = candidate + n
+            if(!expanded.contains(nextCandidate))
+              queue += nextCandidate
           }
       }
     }
     val minSols = solutions.filterNot(s => solutions.exists(s2 => s2 != s && s2.subsetOf(s))).toList
-    log(s"Solutions: $minSols, all: $solutions")
 
     minSols
-  }
-
-  val ex1 = List(
-    cont(A,B,0,5), reqs(B,C,20,25), reqs(B,D,20,25), cont(F,E,0,5), reqs(E,C,1,6), reqs(E,D,0,5)
-  ).flatten
-  val ex2 = List(
-    cont(A,B,0,2), cont(B,C,0,2), reqs(C,D,0,2)
-  ).flatten
-
-//  log("\nObserve example:")
-//  assertDC(ex1)
-
-//  log("\nTwo non-obs:")
-//  assertNotDC(makeNonObservable(ex1, List(B,E)))
-
-//  log("\nOne non-obs:")
-//  assertDC(makeNonObservable(ex1, List(E)))
-//  assertNotDC(makeNonObservable(ex1, List(B)))
-//
-//  getMinimalObservationSets(ex1)
-
-  getMinimalObservationSets(ex2, Set())
-
-  def cont(src:Node, dst: Node, minDur:Int, maxDur:Int) = {
-    List(Upper(dst, src, -maxDur, dst, Set()), Lower(src, dst, minDur, dst, Set()))
-  }
-  def reqs(src:Node, dst:Node, min:Int, max:Int) = {
-    List(Req(src, dst, max, Set()), Req(dst, src, -min, Set()))
   }
 
   def get[ID](constraints: Seq[Constraint[ID]], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
@@ -388,4 +289,47 @@ object DCMorrisTest extends App {
   }
 
 
+}
+
+/** Utils in order to benchark the gains of inserting labels to extract needed observations */
+object NeededObsBenchmarking extends App {
+  import PartialObservability._
+  val A = 1
+  val B = 2
+  val C = 3
+  val D = 4
+  val E = 5
+  val F = 6
+
+  def cont(src:Node, dst: Node, minDur:Int, maxDur:Int) = {
+    List(Upper(dst, src, -maxDur, dst, Set()), Lower(src, dst, minDur, dst, Set()))
+  }
+  def reqs(src:Node, dst:Node, min:Int, max:Int) = {
+    List(Req(src, dst, max, Set()), Req(dst, src, -min, Set()))
+  }
+
+  val ex1 = List(
+    cont(A,B,0,5), reqs(B,C,20,25), reqs(B,D,20,25), cont(F,E,0,5), reqs(E,C,1,6), reqs(E,D,0,5)
+  ).flatten
+
+  val ex2 = List(
+    cont(B,13,0,2), cont(B,12,0,2), cont(B,11,0,2), cont(B,10,0,2), cont(B,E,0,2), cont(A,F,0,2), cont(A,B,0,2), cont(B,C,0,2), reqs(C,D,0,2)
+  ).flatten
+
+  println(instrumentedGetMinimalObservationSets(ex1, Set()))
+  println(instrumentedGetMinimalObservationSets(ex2, Set()))
+
+  def instrumentedGetMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
+    PartialObservability.instrument = true
+    PartialObservability.useLabelsForFocus = true
+    val ret = getMinimalObservationSets(edges, observed)
+    println(s"----> Smart: ${PartialObservability.numIterations}")
+    PartialObservability.useLabelsForFocus = false
+    getMinimalObservationSets(edges, observed)
+    println(s"----> Dumb: ${PartialObservability.numIterations}")
+    PartialObservability.useLabelsForFocus = true
+    PartialObservability.instrument = false
+
+    ret
+  }
 }
