@@ -98,6 +98,9 @@ class DCMorris {
       case _ => true
     }
 
+    if(PartialObservability.debug)
+      println("    dcBackprop: "+source)
+
     val visited = MSet[Node]()
     assert(!callHistory.contains(source), "This should have been caught earlier")
 
@@ -116,6 +119,9 @@ class DCMorris {
       val QueueElem(cur, dist, projs) = queue.dequeue()
       if(!visited.contains(cur)) {
         visited += cur
+
+        if(PartialObservability.debug)
+          println("      pivot: "+cur+"  dist: "+dist)
 
         if(dist >= 0) {
           addEdge(new Req(cur, source, dist, projs))
@@ -186,18 +192,19 @@ object PartialObservability {
     }
   }
 
+
   def putInNormalForm(edges: List[Edge]) : List[Edge] = {
     var nextNode = edges.flatMap(e => List(e.from,e.to)).max +1
     def newNode() :Node = {nextNode+=1 ; nextNode-1}
-    val addNodes = edges.collect { case l:Lower => (l.from, (newNode(), l.d)) }.toMap
+    val addNodes = edges.collect { case l:Lower => (l.to, (newNode(), l.d)) }.toMap
     edges.flatMap {
       case Lower(from, to, d, lbl, projs) =>
-        val (virt, dist) = addNodes(from)
-        assert(dist == d)
+        val (virt, dist) = addNodes(to)
+        assert(dist == d, edges.mkString("\n"))
         Lower(virt, to, 0, lbl, projs) ::
           Req(from, virt, d, Set()) :: Req(virt, from, -d, Set()) ::Nil
       case Upper(from, to, d, lbl, projs) =>
-        Upper(addNodes(to)._1, from, d+addNodes(to)._2, lbl, projs) :: Nil
+        Upper(from, addNodes(from)._1, d+addNodes(from)._2, lbl, projs) :: Nil
       case r:Req =>
         r :: Nil
     }
@@ -206,6 +213,7 @@ object PartialObservability {
   var useLabelsForFocus : Boolean = true
   var instrument : Boolean = false
   var numIterations : Int = 0
+  val debug = false
 
   def getMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
     val ctgs = edges.filter(_.isInstanceOf[Upper]).map(_.asInstanceOf[Upper].lbl).toSet
@@ -224,8 +232,15 @@ object PartialObservability {
       if(instrument)
         numIterations += 1
 
+
       val nonObs = ctgs -- candidate -- observed
       val allObsEdges = putInNormalForm(makePossiblyObservable(edges, nonObs.toList))
+
+      if(debug) {
+        println("  candidate: " + candidate)
+        println("    "+allObsEdges.mkString("\n    "))
+      }
+
 
       val stnu = new DCMorris()
       for(e <- allObsEdges)
@@ -234,7 +249,11 @@ object PartialObservability {
       stnu.determineDC() match {
         case (true, None) =>
           solutions.add(candidate)
+          if(debug)
+            println("  Solution!")
         case (false, Some(possiblyObservable)) =>
+          if(debug)
+            println("  Lets keep searching")
           val nextToConsider =
             if(useLabelsForFocus) possiblyObservable
             else nonObs
@@ -243,6 +262,8 @@ object PartialObservability {
             if(!expanded.contains(nextCandidate))
               queue += nextCandidate
           }
+        case x =>
+          throw new RuntimeException("Should be non reachable")
       }
     }
     val minSols = solutions.filterNot(s => solutions.exists(s2 => s2 != s && s2.subsetOf(s))).toList
@@ -291,7 +312,7 @@ object PartialObservability {
 
 }
 
-/** Utils in order to benchark the gains of inserting labels to extract needed observations */
+/** Utils in order to benchmark the gains of inserting labels to extract needed observations */
 object NeededObsBenchmarking extends App {
   import PartialObservability._
   val A = 1
