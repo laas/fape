@@ -35,12 +35,12 @@ public class NeededObservationsFinder implements FlawFinder {
         Set<TPRef> observed = Stream.concat(actionEnds, obs.observed.stream()).collect(Collectors.toSet());
         Set<TPRef> observable = contingents.filter(tp -> !observed.contains(tp)).collect(Collectors.toSet());
 
-        System.out.println("Observed: "+observed);
-        System.out.println("Observable: "+observable);
+//        System.out.println("Observed: "+observed);
+//        System.out.println("Observable: "+observable);
         Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().constraints().stream().collect
                 (Collectors.toList()), observed, observable);
 
-        System.out.println("Option: "+opt);
+//        System.out.println("Option: "+opt);
         if(opt.isPresent())
             return Collections.singletonList(new NeededObservationFlaw(opt.get(), st));
         else
@@ -64,13 +64,14 @@ public class NeededObservationsFinder implements FlawFinder {
 
         public NeededObservationFlaw(PartialObservability.NeededObservations no, State st) {
             possibleObservationsSets = no.resolvingObs();
-            Stream<TPRef> obsCandidates = st.tdb.allStatements()
-                    .filter(s -> s.sv().func().name().equals("Bird.at"))
+            List<TPRef> obsCandidates = st.tdb.allStatements()
+                    .filter(s -> s.sv().func().name().equals("Rabbit.at"))
                     .filter(s -> !s.needsSupport())
                     .map(LogStatement::end)
-                    .filter(TPRef::isVirtual);
+                    .filter(TPRef::isVirtual)
+                    .collect(Collectors.toList());
             for(TPRef ctg : possibleObservationsSets.stream().flatMap(Set::stream).collect(Collectors.toSet())) {
-                TPRef endOfObservableEvent = obsCandidates
+                TPRef endOfObservableEvent = obsCandidates.stream()
                         .filter(tp -> tp.isVirtual() && tp.isAttached())
                         .filter(tp -> tp.attachmentToReal()._1().equals(ctg) && tp.attachmentToReal()._2().equals(0))
 //                        .filter(tp -> st.csp.stn().constraints().stream().anyMatch(c ->
@@ -81,7 +82,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 LogStatement event = st.tdb.allStatements().filter(s -> s.end() == endOfObservableEvent).findAny().get();
                 obsLoc.put(ctg, event.endValue());
             }
-            obsFunc = st.pb.functions().get("Robot.observing");
+            obsFunc = st.pb.functions().get("Agent.at");
         }
 
         @Override
@@ -105,8 +106,8 @@ public class NeededObservationsFinder implements FlawFinder {
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);
                 toObserve.stream().forEach(tp -> {
                     assert obsLoc.containsKey(tp) : "Timepoint cannot be observed?";
-                    VarRef observerVar = new VarRef("Robot", st.refCounter);
-                    st.csp.bindings().AddVariable(observerVar, st.pb.instances().instancesOfType("Robot"));
+                    VarRef observerVar = new VarRef("Agent", st.refCounter);
+                    st.csp.bindings().AddVariable(observerVar, st.pb.instances().instancesOfType("Agent"));
                     ParameterizedStateVariable sv = new ParameterizedStateVariable(obsFunc, new VarRef[]{observerVar});
                     Persistence p = new Persistence(sv, obsLoc.get(tp), st.pb.chronicles().element(), st.refCounter);
                     ch.statements().add(p);
@@ -119,13 +120,12 @@ public class NeededObservationsFinder implements FlawFinder {
                 st.applyChronicle(ch);
                 for(Pair<TPRef,TPRef> prec : precedences) {
                     st.enforceBefore(prec.value1, prec.value2);
-//                    st.enforceConstraint(eq.value1, eq.value2, 0, 0);
                     st.isConsistent();
-                    System.out.println(prec.value1 + " : " + st.getEarliestStartTime(prec.value1) + "  " + st.getLatestStartTime(prec.value1));
-                    System.out.println(prec.value2+" : "+st.getEarliestStartTime(prec.value2)+"  "+st.getLatestStartTime(prec.value2));
+//                    System.out.println(prec.value1 + " : " + st.getEarliestStartTime(prec.value1) + "  " + st.getLatestStartTime(prec.value1));
+//                    System.out.println(prec.value2+" : "+st.getEarliestStartTime(prec.value2)+"  "+st.getLatestStartTime(prec.value2));
                 }
 
-                System.out.println("ret == " + new NeededObservationsFinder().getFlaws(st, planner));
+//                System.out.println("ret == " + new NeededObservationsFinder().getFlaws(st, planner));
                 return true;
             }
 
