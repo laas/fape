@@ -181,11 +181,17 @@ object AbstractAction {
         .flatMap(s => List(s.start, s.end)) ++
         List(ContainerStart, ContainerEnd)
 
+      // find all contingent timepoints
+      val contingents = allConstraints.collect {
+        case AbstractParameterizedContingentConstraint(_, ctg, _, _, _, _) => ctg
+        case AbstractContingentConstraint(_, ctg, _, _) => ctg
+      }
+
       val stn = new FullSTN(timepoints)
       for(AbstractMinDelay(from, to, minDelay) <- simpleTempConst)
         stn.addMinDelay(from, to, minDelay)
 
-      val (flexs, constraints, anchored) =stn.minimalRepresentation(List(actionStart, actionEnd))
+      val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
       action.flexibleTimepoints = new IList(flexs)
       action.anchoredTimepoints = new IList(anchored.map(a => action.AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))
 

@@ -2,6 +2,7 @@ package planstack.anml.model.concrete
 
 import java.util
 
+import planstack.FullSTN
 import planstack.anml.ANMLException
 import planstack.anml.model.abs._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
@@ -115,19 +116,34 @@ trait Chronicle {
 
     val intervals : List[TemporalInterval] = container :: tasks.toList.asInstanceOf[List[TemporalInterval]] ++ statements.toList.asInstanceOf[List[TemporalInterval]]
     val timepoints = (intervals.flatMap(int => List(int.start, int.end)) ++ temporalConstraints.flatMap(tc => List(tc.src, tc.dst))).toSet
-    val contingentTimepoints = temporalConstraints
-      .filter(tc => tc.isInstanceOf[ContingentConstraint] || tc.isInstanceOf[ContingentConstraint])
-      .map(tc => tc.dst)
+
+    val contingents = temporalConstraints.collect {
+      case ParameterizedContingentConstraint(_, ctg, _, _, _, _) => ctg
+      case ContingentConstraint(_, ctg, _, _) => ctg
+    }
+
+    val stn = new FullSTN[TPRef](timepoints.toSeq)
+    val tConstraintsCopy = new util.ArrayList[TemporalConstraint](temporalConstraints)
+    this.temporalConstraints.clear()
+    tConstraintsCopy.foreach {
+      case MinDelayConstraint(from, to, minDelay) => stn.addEdge(to, from, -minDelay)
+      case x => this.temporalConstraints.add(x)
+    }
+
+    val (flexs, constraints, anchored) = stn.minimalRepresentation(container.start :: container.end :: contingents.toList)
 
     timepoints.foreach(tp =>
-      if(contingentTimepoints.contains(tp)) tp.setContingent()
-      else tp.setStructural()
+      if(contingents.contains(tp)) tp.setContingent()
+      else if(flexs.contains(tp)) tp.setStructural()
+      else tp.setVirtual()
     )
 
-    this.flexibleTimepoints = new IList(timepoints)
+    this.flexibleTimepoints = new IList(flexs)
+    for(tc <- constraints)
+      this.temporalConstraints.add(new MinDelayConstraint(tc.dst, tc.src, -tc.label))
 
     // no anchored tps
-    this.anchoredTimepoints = new IList[AnchoredTimepoint]()
+    this.anchoredTimepoints = new IList[AnchoredTimepoint](anchored.map(a => new AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))
   }
 }
 

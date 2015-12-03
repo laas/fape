@@ -5,7 +5,7 @@ import planstack.anml.model.abs.time.AbsTP
 import scala.reflect.ClassTag
 
 
-class FullSTN(timepointList: Seq[AbsTP]) {
+class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 
   case class AnchoredTimepointDefinition(timepoint: AbsTP, anchor: AbsTP, delay: Int)
   case class STNLikeConstraint(src: AbsTP, dst: AbsTP, label: Int)
@@ -15,7 +15,7 @@ class FullSTN(timepointList: Seq[AbsTP]) {
   implicit def toIndex(tp:AbsTP) : Int = tpIndexes(tp)
 
   val tpIndexes = timepointList.zipWithIndex.toMap
-  val tps : Array[AbsTP] = timepointList.toArray
+  val tps : Seq[AbsTP] = timepointList
   val size = tps.length
 
   val inf = 9999999
