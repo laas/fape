@@ -1,6 +1,7 @@
 package planstack.constraints.experimental
 
 import java.util.Optional
+import java.util.concurrent.TimeoutException
 
 import planstack.anml.model.concrete.{GlobalRef, TPRef}
 import planstack.constraints.experimental.DCMorris._
@@ -98,8 +99,8 @@ class DCMorris {
       case _ => true
     }
 
-    if(PartialObservability.debug)
-      println("    dcBackprop: "+source)
+//    if(PartialObservability.debug)
+//      println("    dcBackprop: "+source)
 
     val visited = MSet[Node]()
     assert(!callHistory.contains(source), "This should have been caught earlier")
@@ -120,8 +121,8 @@ class DCMorris {
       if(!visited.contains(cur)) {
         visited += cur
 
-        if(PartialObservability.debug)
-          println("      pivot: "+cur+"  dist: "+dist)
+//        if(PartialObservability.debug)
+//          println("      pivot: "+cur+"  dist: "+dist)
 
         if(dist >= 0) {
           addEdge(new Req(cur, source, dist, projs))
@@ -211,9 +212,10 @@ object PartialObservability {
   }
 
   var useLabelsForFocus : Boolean = true
+  var allSolutions : Boolean = true
   var instrument : Boolean = false
   var numIterations : Int = 0
-  val debug = false
+  var debug = false
 
   def getMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
     val ctgs = edges.filter(_.isInstanceOf[Upper]).map(_.asInstanceOf[Upper].lbl).toSet
@@ -222,48 +224,57 @@ object PartialObservability {
     var queue = MSet[Set[Node]]()
     queue += Set()
 
-    if(instrument)
-      numIterations = 0
+    // track the number of iterations to detect a timeout
+    numIterations = 0
 
     while(queue.nonEmpty) {
       val candidate = queue.head
       queue -= candidate
       expanded += candidate
-      if(instrument)
+
+
+      val alreadyKnowSimplerSolution =
+        solutions.exists(sol => sol.forall(elem => candidate.contains(elem)))
+
+      if (!alreadyKnowSimplerSolution) {
         numIterations += 1
+        if (numIterations > 5000)
+          return Nil // took to long lets say we have no solution
+
+        val nonObs = ctgs -- candidate -- observed
+        val allObsEdges = putInNormalForm(makePossiblyObservable(edges, nonObs.toList))
+
+        if (debug) {
+          println("  candidate: " + candidate)
+        }
 
 
-      val nonObs = ctgs -- candidate -- observed
-      val allObsEdges = putInNormalForm(makePossiblyObservable(edges, nonObs.toList))
 
-      if(debug) {
-        println("  candidate: " + candidate)
-        println("    "+allObsEdges.mkString("\n    "))
-      }
+        val stnu = new DCMorris()
+        for (e <- allObsEdges)
+          stnu.addEdge(e)
 
-
-      val stnu = new DCMorris()
-      for(e <- allObsEdges)
-        stnu.addEdge(e)
-
-      stnu.determineDC() match {
-        case (true, None) =>
-          solutions.add(candidate)
-          if(debug)
-            println("  Solution!")
-        case (false, Some(possiblyObservable)) =>
-          if(debug)
-            println("  Lets keep searching")
-          val nextToConsider =
-            if(useLabelsForFocus) possiblyObservable
-            else nonObs
-          for(n <- nextToConsider) {
-            val nextCandidate = candidate + n
-            if(!expanded.contains(nextCandidate))
-              queue += nextCandidate
-          }
-        case x =>
-          throw new RuntimeException("Should be non reachable")
+        stnu.determineDC() match {
+          case (true, None) =>
+            solutions.add(candidate)
+            if (debug)
+              println("  Solution!")
+            if (!allSolutions)
+              return solutions.toList
+          case (false, Some(possiblyObservable)) =>
+            //          if(debug)
+            //            println("  Lets keep searching")
+            val nextToConsider =
+              if (useLabelsForFocus) possiblyObservable
+              else nonObs
+            for (n <- nextToConsider) {
+              val nextCandidate = candidate + n
+              if (!expanded.contains(nextCandidate))
+                queue += nextCandidate
+            }
+          case x =>
+            throw new RuntimeException("Should be non reachable")
+        }
       }
     }
     val minSols = solutions.filterNot(s => solutions.exists(s2 => s2 != s && s2.subsetOf(s))).toList
@@ -297,6 +308,7 @@ object PartialObservability {
     val delNonObs = makeNonObservable(edges, nonObservable.map(toInt).toList)
 //    val finalEdges = makePossiblyObservable(delNonObs, observable.map(toInt).toList)
 
+//    NeededObsBenchmarking.instrumentedGetMinimalObservationSets(delNonObs, observed.map(_.id)) // can be used for benchmarking
     getMinimalObservationSets(delNonObs, observed.map(_.id))
       .map(sets => sets.map(i => tpsFromInt(i)))
   }
@@ -340,16 +352,49 @@ object NeededObsBenchmarking extends App {
   println(instrumentedGetMinimalObservationSets(ex1, Set()))
   println(instrumentedGetMinimalObservationSets(ex2, Set()))
 
+
+
+  /** Drop in replacement for getMinimalObservationSet that will display some runtime information
+    * on each invocation. */
   def instrumentedGetMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
     PartialObservability.instrument = true
     PartialObservability.useLabelsForFocus = true
     val ret = getMinimalObservationSets(edges, observed)
-    println(s"----> Smart: ${PartialObservability.numIterations}")
+    val smartIter = PartialObservability.numIterations
     PartialObservability.useLabelsForFocus = false
-    getMinimalObservationSets(edges, observed)
-    println(s"----> Dumb: ${PartialObservability.numIterations}")
+
+    PartialObservability.debug = false
+    val dumbIter = try {
+      getMinimalObservationSets(edges, observed)
+      PartialObservability.numIterations
+    } catch {
+      case ex:TimeoutException => 9999999
+    }
     PartialObservability.useLabelsForFocus = true
     PartialObservability.instrument = false
+    if(smartIter != 1 && dumbIter != 1)
+      println(s"allsols ($smartIter, $dumbIter)")
+    PartialObservability.debug = false
+
+
+    PartialObservability.allSolutions = false
+    PartialObservability.instrument = true
+    PartialObservability.useLabelsForFocus = true
+    getMinimalObservationSets(edges, observed)
+    val smartIterOne = PartialObservability.numIterations
+    PartialObservability.useLabelsForFocus = false
+
+    val dumbIterOne = try {
+      getMinimalObservationSets(edges, observed)
+      PartialObservability.numIterations
+    } catch {
+      case ex:TimeoutException => 9999999
+    }
+    PartialObservability.useLabelsForFocus = true
+    PartialObservability.instrument = false
+    PartialObservability.allSolutions = true
+    if(smartIterOne != 1 && dumbIterOne != 1)
+      println(s"onesol ($smartIterOne, $dumbIterOne)")
 
     ret
   }
