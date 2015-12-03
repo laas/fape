@@ -349,7 +349,7 @@ public class DepGraph {
         allFacts.addAll(tasks);
 
         Optional<StateExt> stateExtOptional = st.hasExtension(StateExt.class) ? Optional.of(st.getExtension(StateExt.class)) : Optional.empty();
-        DepGraph dg = new DepGraph(pl.preprocessor.getGroundProblem().relaxedActions, allFacts, stateExtOptional);
+        DepGraph dg = new DepGraph(pl.preprocessor.getRelaxedActions(), allFacts, stateExtOptional);
         dg.propagate();
         if(!st.hasExtension(StateExt.class))
             st.addExtension(new StateExt(dg.optimisticEST));

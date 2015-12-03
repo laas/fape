@@ -3,18 +3,20 @@ package fape.core.planning.heuristics;
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.relaxed.DTGImpl;
+import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
+import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
 import planstack.anml.model.Function;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Preprocessor {
 
@@ -24,6 +26,7 @@ public class Preprocessor {
     private FeasibilityReasoner fr;
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
+    private Collection<RAct> relaxedActions;
     private GroundDTGs dtgs;
     private Fluent[] fluents = new Fluent[1000];
     private GAction[] groundActions = new GAction[1000];
@@ -71,6 +74,18 @@ public class Preprocessor {
             return null;
         assert groundActionID < groundActions.length && groundActions[groundActionID] != null : "No recorded ground action with ID: "+groundActionID;
         return groundActions[groundActionID];
+    }
+
+    public Collection<RAct> getRelaxedActions() {
+        if(relaxedActions == null) {
+            relaxedActions = new ArrayList<>();
+            for(AbstractAction aa : planner.pb.abstractActions()) {
+                DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
+                List<GAction> gacts = this.getAllActions().stream().filter(ga -> ga.abs == aa).collect(Collectors.toList());
+                relaxedActions.addAll(f.getDeleteFrees(aa, gacts, this.getGroundProblem()));
+            }
+        }
+        return relaxedActions;
     }
 
     public IntRepresentation<GAction> groundActionIntRepresentation() {

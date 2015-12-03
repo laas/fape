@@ -1,6 +1,5 @@
 package fape.core.planning.heuristics.temporal;
 
-import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
@@ -8,21 +7,17 @@ import lombok.Value;
 import planstack.anml.model.AbstractParameterizedStateVariable;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
-import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
-import planstack.anml.model.abs.statements.AbstractStatement;
 import planstack.anml.model.abs.time.AbsTP;
-import planstack.anml.model.abs.time.ContainerStart;
-import planstack.anml.model.concrete.VarRef;
 
-import javax.lang.model.type.ArrayType;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DeleteFreeActionsFactory {
+
+    private static final boolean dbg = false;
 
     public static LVarRef truth = new LVarRef("true");
 
@@ -266,10 +261,11 @@ public class DeleteFreeActionsFactory {
         }
 
 
-
-        System.out.println("\n-----------------\n");
-        for(RActTemplate at : templates.values()) {
-            System.out.println(at);
+        if(dbg) {
+            System.out.println("\n-----------------\n");
+            for (RActTemplate at : templates.values()) {
+                System.out.println(at);
+            }
         }
 
         List<RAct> relaxedGround = new LinkedList<>();

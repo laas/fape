@@ -28,7 +28,6 @@ public class GroundProblem {
     public final APlanner planner;
 
     public final List<GAction> gActions;
-    public final List<RAct> relaxedActions = new LinkedList<>();
 
     final List<Invariant> invariants = new LinkedList<>();
     public final Map<IntegerInvariantKey, Integer> intInvariants = new HashMap<>();
@@ -124,10 +123,6 @@ public class GroundProblem {
         for(AbstractAction liftedAct : liftedPb.abstractActions()) {
             List<GAction> grounded = GAction.groundActions(this, liftedAct, planner);
             this.gActions.addAll(grounded);
-
-
-            DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
-            relaxedActions.addAll(f.getDeleteFrees(liftedAct, grounded, this));
         }
     }
 
