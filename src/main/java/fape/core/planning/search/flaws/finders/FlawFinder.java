@@ -23,5 +23,5 @@ public interface FlawFinder {
      *                problem knowledge (typically coming from preprocessing).
      * @return All flaws this finder found.
      */
-    abstract public List<Flaw> getFlaws(State st, APlanner planner);
+    List<Flaw> getFlaws(State st, APlanner planner);
 }

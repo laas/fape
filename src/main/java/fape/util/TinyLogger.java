@@ -1,13 +1,3 @@
-/*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2011 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using of this program is prohibited
- * without previous written permission of author. Publishing or providing further
- * of the contents of this file is prohibited without previous written permission
- * of the author.
- */
 package fape.util;
 
 import fape.core.planning.states.Printer;

@@ -36,23 +36,6 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
         return hc.get(st.mID);
     }
 
-    static class OpenGoal implements Comparable<OpenGoal> {
-        public final Timeline tl;
-        public final int earliestStart;
-
-        public OpenGoal(Timeline tl, int earliestStart) {
-            this.tl = tl;
-            this.earliestStart = earliestStart;
-        }
-        @Override
-        public int compareTo(OpenGoal openGoal) {
-            return this.earliestStart - openGoal.earliestStart;
-        }
-    }
-
-    public static GroundProblem gpb = null;
-    private static final AllThreatFinder threatFinder = new AllThreatFinder();
-
     @Override
     public String shortName() {
         return "rplan";

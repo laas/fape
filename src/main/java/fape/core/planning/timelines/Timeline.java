@@ -1,13 +1,3 @@
-/*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
 package fape.core.planning.timelines;
 
 import fape.exceptions.FAPEException;
@@ -22,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.stream.Stream;
 
 /**
  * records the events for one state variable
@@ -389,5 +380,9 @@ public class Timeline {
         }
 
         return cls;
+    }
+
+    public Stream<LogStatement> allStatements() {
+        return Arrays.stream(chain).flatMap(cc -> Arrays.stream(cc.statements));
     }
 }

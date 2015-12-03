@@ -1,6 +1,5 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.Plan;
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.heuristics.temporal.DepGraph;
@@ -190,18 +189,6 @@ public abstract class APlanner {
             queue.clear();
             queue.addAll(toRestore);
             solution = depthBoundedAStar(deadline, currentMaxDepth);
-
-            if (solution != null) {
-                // here we check that the plan is indeed a solution
-                // it might not be the case if are looking for DC plans (Plan.makeDispatchable)
-                // and the STNU does not check dynamic controllability
-                Plan plan = new Plan(solution);
-                if (!plan.isConsistent()) {
-                    System.err.println("Returned state is not consistent or not DC. We keep searching.");
-                    planState = EPlanState.INCONSISTENT;
-                    solution = null;
-                }
-            }
 
             if (currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
                 break;

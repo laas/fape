@@ -1,13 +1,3 @@
-/*
- * Author:  Filip Dvořák <filip.dvorak@runbox.com>
- *
- * Copyright (c) 2013 Filip Dvořák <filip.dvorak@runbox.com>, all rights reserved
- *
- * Publishing, providing further or using this program is prohibited
- * without previous written permission of the author. Publishing or providing
- * further the contents of this file is prohibited without previous written
- * permission of the author.
- */
 package fape.core.planning.timelines;
 
 import fape.core.planning.planner.APlanner;
@@ -20,6 +10,8 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
@@ -378,6 +370,10 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
     }
 
     public Iterable<Timeline> getTimelines() { return this; }
+
+    public Stream<LogStatement> allStatements() {
+        return StreamSupport.stream(getTimelines().spliterator(), false).flatMap(Timeline::allStatements);
+    }
 
     @Override
     public Iterator<Timeline> iterator() {
