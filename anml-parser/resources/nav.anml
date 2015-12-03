@@ -1,0 +1,101 @@
+
+
+type Location < object;
+
+type Gripper < Location with {
+  variable boolean empty;
+};
+
+type Robot < object with {
+  variable Location mLocation;
+  constant Gripper left;
+  constant Gripper right;
+};
+
+type Item < object with {
+  variable Location mLocation;
+  variable boolean onTable;
+};
+
+constant boolean connected(Location a, Location b);
+
+/**
+ * defining actions
+ */
+ 
+ 
+/**
+ * pick some item s with robor r, at location l 
+ */  
+
+action PickWithRightGripper(Robot r, Gripper g, Item s, Location l){
+        
+  [all]{
+    r.right == g;
+    g.empty == true :-> false;
+    r.mLocation == l;
+    s.mLocation == l :-> g; 
+  };
+};
+
+action DropWithRightGripper(Robot r, Gripper g, Item s, Location l){
+  [all]{
+    r.right == g;
+    g.empty == false :-> true;
+    r.mLocation == l;
+    s.mLocation == g :-> l; 
+  };
+   
+}; 
+
+action Move(Robot r, Location a, Location b){
+  
+  [all]{
+    connected(a, b) == true;
+    r.mLocation == a :-> b;
+  };
+  
+};  
+
+action Transport(Robot r, Item i, Location a, Location b){
+
+  :decomposition{ordered(
+    PickWithRightGripper(r, r.right,i, a),
+    DropWithRightGripper(r, r.right,i, b)
+  )};
+
+};
+
+instance Robot R0;
+instance Gripper G0, G1;
+instance Item I0;
+instance Location L0, L1, L2;
+
+[start] {
+G0.empty := true;
+G1.empty := true;
+R0.mLocation := L0;
+I0.mLocation := L1;
+R0.left := G0;
+R0.right := G1;
+};
+
+[start] {
+ connected(L0, L1) := true;
+ connected(L1, L0) := true;
+ connected(L0, L2) := true;
+ connected(L2, L0) := true;
+};
+
+[end] {
+I0.mLocation == L2;
+};
+
+/*
+action Seed(){
+  :decomposition{ unordered(
+   Transport(r0_, I0, loc1_, L3),
+   Transport(r2_, I1, loc3_, L3)
+  )};
+};
+*/

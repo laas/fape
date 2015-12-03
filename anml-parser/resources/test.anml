@@ -1,0 +1,15 @@
+
+type Country;
+
+type Place with {
+  constant Country country();
+};
+
+
+
+action move(Place a, Place b, Place c, Place d) {
+  a.country == b.country;
+  d.country != a.country;
+  a == b;
+  a != c;
+};

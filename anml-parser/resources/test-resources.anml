@@ -1,0 +1,10 @@
+variable integer energy;
+
+[start] {
+energy >= 50;
+energy := 1;
+energy :use 10;     
+energy :consume 10;  
+id :energy :lend 10     ;    
+energy :produce 10;  
+}; 
