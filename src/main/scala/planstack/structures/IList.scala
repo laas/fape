@@ -60,5 +60,7 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
 
   def get(i: Int): T = l(i)
 
+  def stream : java.util.stream.Stream[T] = l.asJavaCollection.stream()
+
   override def toString = l.toString()
 }
