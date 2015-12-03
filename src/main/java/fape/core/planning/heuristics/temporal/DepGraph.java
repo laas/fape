@@ -6,6 +6,7 @@ import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
+import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -68,7 +69,7 @@ public class DepGraph {
         public int compareTo(Label label) { return time - label.time; }
     }
 
-    public DepGraph(Collection<RAct> actions, List<TempFluent> facts, Optional<Map<Node,Integer>> earliestStarts) {
+    public DepGraph(Collection<RAct> actions, List<TempFluent> facts, Optional<StateExt> stateExtOptional) {
         Set<Fluent> instantaneousEffects = new HashSet<>();
         FactAction init = new FactAction(facts);
         List<ActionNode> allActs = new LinkedList<>(actions);
@@ -107,8 +108,8 @@ public class DepGraph {
             }
         }
 
-        if(earliestStarts.isPresent()) {
-            optimisticEST = earliestStarts.get();
+        if(stateExtOptional.isPresent()) {
+            optimisticEST = stateExtOptional.get().getDepGraphEarliestAppearances();
 
             // remove any existing fact action
             optimisticEST.keySet().stream().collect(Collectors.toSet()).stream()
@@ -346,10 +347,11 @@ public class DepGraph {
         allFacts.addAll(tempFluents);
         allFacts.addAll(tasks);
 
-        DepGraph dg = new DepGraph(pl.preprocessor.getGroundProblem().relaxedActions, allFacts, st.depGraphESTs);
+        Optional<StateExt> stateExtOptional = st.hasExtension(StateExt.class) ? Optional.of(st.getExtension(StateExt.class)) : Optional.empty();
+        DepGraph dg = new DepGraph(pl.preprocessor.getGroundProblem().relaxedActions, allFacts, stateExtOptional);
         dg.propagate();
-        if (!st.depGraphESTs.isPresent())
-            st.depGraphESTs = Optional.of(dg.optimisticEST);
+        if(!st.hasExtension(StateExt.class))
+            st.addExtension(new StateExt(dg.optimisticEST));
 
 //        System.out.println("\nall: " + dg.optimisticEST.keySet());
         System.out.println("\nactions: " +
@@ -361,5 +363,17 @@ public class DepGraph {
                         .collect(Collectors.toList()));
 
         return dg;
+    }
+
+    /**
+     * An instance of this class is to be attached to
+     */
+    @Value public static class StateExt implements StateExtension {
+        public final Map<Node,Integer> depGraphEarliestAppearances;
+
+        @Override
+        public StateExtension clone() {
+            return new StateExt(new HashMap<>(depGraphEarliestAppearances));
+        }
     }
 }

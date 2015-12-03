@@ -1,6 +1,5 @@
 package fape.core.planning.states;
 
-import fape.core.execution.model.AtomicAction;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.GAction;
@@ -42,19 +41,10 @@ import scala.Tuple2;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-//import scala.collection.immutable.HashMap;
 
-/**
- *
- * @author FD
- */
 public class State implements Reporter {
 
-
-
     public float h = -1, g = -1, f=-1;
-
-    
 
     private static int idCounter = 0;
 
@@ -111,7 +101,6 @@ public class State implements Reporter {
     public HReasoner<Term> reasoner = null;
 
     public ReachabilityGraphs reachabilityGraphs = null;
-    public Optional<Map<DepGraph.Node, Integer>> depGraphESTs;
 
     final List<StateExtension> extensions;
 
@@ -169,7 +158,6 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>();
         addableActions = null;
         addableTemplates = null;
-        depGraphESTs = Optional.empty();
 
         supportConstraints = new LinkedList<>();
         extensions = new LinkedList<>();
@@ -202,7 +190,6 @@ public class State implements Reporter {
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? st.addableTemplates : null;
 
-        this.depGraphESTs = st.depGraphESTs.map(HashMap::new);
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
 
