@@ -1,5 +1,6 @@
 package fape.core.planning.planner;
 
+import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.*;
 
 import java.util.ArrayList;
@@ -18,13 +19,15 @@ public class PlanningOptions {
      * The getFlaws method will typically use all of those
      * to generate the flaws that need to be solved in a given state.
      */
-    public List<FlawFinder> flawFinders = new ArrayList<>(Arrays.asList(
+    public final List<FlawFinder> flawFinders = new ArrayList<>(Arrays.asList(
             new OpenGoalFinder(),
             new UnsupportedTaskConditionFinder(),
             new UnmotivatedActionFinder(),
             new AllThreatFinder(),
             new UnboundVariableFinder()
     ));
+
+    public final List<Handler> handlers = new ArrayList<>();
 
     /**
      * Used to build comparators for flaws. Default to a least commiting first.

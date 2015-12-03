@@ -2,9 +2,9 @@ package fape.core.planning.planner;
 
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
-import fape.core.planning.heuristics.temporal.DepGraph;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
+import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -246,6 +246,10 @@ public abstract class APlanner {
             //get the best state and continue the search
             State st = queue.remove();
 
+            // let all handlers know that this state was selected for expansion
+            for(Handler h : options.handlers)
+                h.apply(st, Handler.StateLifeTime.SELECTION, this);
+
             if(!st.isConsistent()) {
                 if(options.displaySearch)
                     searchView.setDeadEnd(st);
@@ -286,8 +290,6 @@ public abstract class APlanner {
         if(options.displaySearch)
             searchView.setCurrentFocus(st);
 
-        DepGraph.of(st, this);
-
         assert st.isConsistent() : "Expand was given an inconsistent state.";
 
         expandedStates++;
@@ -315,7 +317,7 @@ public abstract class APlanner {
             System.exit(1);
         }
 
-        //we just take the first flaw and its resolvers
+        // just take the first flaw and its resolvers (unless the flaw is chosen on command line)
         Flaw f;
         if(options.chooseFlawManually) {
             System.out.print("STATE :" + st.mID + "\n");
@@ -327,7 +329,7 @@ public abstract class APlanner {
             f = flaws.get(0);
         }
         List<Resolver> resolvers = f.getResolvers(st, this);
-        // put resolvers are always in the same order (for reproducibility)
+        // make sure resolvers are always in the same order (for reproducibility)
         Collections.sort(resolvers);
 
         if(options.displaySearch)
@@ -484,6 +486,10 @@ public abstract class APlanner {
                 current = AX.poll();
                 queue.remove(current);
             }
+
+            // let all handlers know that this state was selected for expansion
+            for(Handler h : options.handlers)
+                h.apply(current, Handler.StateLifeTime.SELECTION, this);
 
             if(!current.isConsistent()) {
                 if(options.displaySearch)

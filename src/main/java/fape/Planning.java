@@ -1,6 +1,7 @@
 package fape;
 
 import com.martiansoftware.jsap.*;
+import fape.core.planning.heuristics.temporal.DepGraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
@@ -19,23 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Planning {
-
-    static class PlannerConf {
-        final String plannerID;
-        final PlanningOptions options;
-        final Controllability controllability;
-
-        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability,
-                           boolean fastForward, boolean aEpsilon, boolean neededObs) {
-            this.plannerID = plannerID;
-            this.options = new PlanningOptions(planStrat, flawStrat);
-            this.options.useFastForward = fastForward;
-            this.controllability = controllability;
-            this.options.useAEpsilon = aEpsilon;
-            if(neededObs)
-                this.options.flawFinders.add(new NeededObservationsFinder());
-        }
-    }
 
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
@@ -90,7 +74,7 @@ public class Planning {
                                         "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
                                         "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
-                        new FlaggedOption("A-Epsilon")
+                        new FlaggedOption("a-epsilon")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("ae")
@@ -105,6 +89,13 @@ public class Planning {
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
                                         "consists in an analysis on a ground version of the problem, checking both causal and" +
                                         "hierarchical properties of a partial plan."),
+                        new FlaggedOption("dependency-graph")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("dep-graph")
+                                .setDefault("false")
+                                .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
+                                        "and compute admissible temporal heuristics."),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -135,23 +126,10 @@ public class Planning {
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("needed-observations")
                                 .setDefault("false")
-                                .setHelp("Warning: This is an EXPERIMENTAL feature that currently works only on the rabbits domain. " +
+                                .setHelp("[experimental] This is an EXPERIMENTAL feature that currently works only on the rabbits domain. " +
                                         "Setting this option to true will make the planner assume that a contingent event is observable " +
                                         "only if an agent is in the area where this event occurs. Consequently modification to the plan might " +
                                         "be required to make sure the plan is dynamically controllable."),
-//                        new FlaggedOption("stnu-consistency")
-//                                .setStringParser(JSAP.STRING_PARSER)
-//                                .setShortFlag(JSAP.NO_SHORTFLAG)
-//                                .setLongFlag("stnu")
-//                                .setRequired(false)
-//                                .setDefault("pseudo")
-//                                .setHelp("Selects which type of STNU controllability should be checked while searching for a solution. "
-//                                        +"Note that dynamic controllability will be checked when a plan is found regardless of this option. "
-//                                        +"This is simply used to define which algorithm is used while searching, with an impact on earliness "
-//                                        +"of failures and computation time. Accepted options are:\n"
-//                                        +"  - 'stn': simply enforces requirement constraints.\n"
-//                                        +"  - 'pseudo': enforces pseudo controllability.\n"
-//                                        +"  - 'dynamic': [experimental] enforces dynamic controllability.\n"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setRequired(isAnmlFileRequired)
@@ -190,7 +168,6 @@ public class Planning {
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
-//        Plan.makeDispatchable = commandLineConfig.getBoolean("dispatchable");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -224,10 +201,8 @@ public class Planning {
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
-
+                // read default conf from file and add command line options on top
                 Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
-
-                Controllability controllability = Controllability.PSEUDO_CONTROLLABILITY;
 
                 // creates all planners that will be tested for this problem
                 String strategy = config.getString("strategies");
@@ -247,22 +222,27 @@ public class Planning {
 
                 String plannerID = config.getString("plannerID");
 
-                final boolean fastForward = config.getBoolean("fast-forward");
-                final boolean aEpsilon = config.getBoolean("A-Epsilon");
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
                 final boolean neededObs = config.getBoolean("needed-observations");
                 long planningStart = 0;
 
-                PlannerConf conf = new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon, neededObs);
-
                 System.gc(); // clean up previous runs to avoid impact on performance measure
 
                 long start = System.currentTimeMillis();
 
-                conf.options.usePlanningGraphReachability = config.getBoolean("reachability");
-                conf.options.displaySearch = config.getBoolean("display-search");
+                PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
+                options.useFastForward = config.getBoolean("fast-forward");
+                options.useAEpsilon = config.getBoolean("a-epsilon");
+                options.usePlanningGraphReachability = config.getBoolean("reachability");
+                options.displaySearch = config.getBoolean("display-search");
+
+                if(config.getBoolean("needed-observations"))
+                    options.flawFinders.add(new NeededObservationsFinder());
+
+                if(config.getBoolean("dependency-graph"))
+                    options.handlers.add(new DepGraph.Handler());
 
                 final AnmlProblem pb = new AnmlProblem();
                 try {
@@ -274,8 +254,8 @@ public class Planning {
                     System.err.println((new File(anmlFile)).getAbsolutePath());
                     return;
                 }
-                final State iniState = new State(pb, conf.controllability);
-                final APlanner planner = PlannerFactory.getPlannerFromInitialState(conf.plannerID, iniState, conf.options);
+                final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
+                final APlanner planner = PlannerFactory.getPlannerFromInitialState(plannerID, iniState, options);
                 APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
 
                 boolean failure;
@@ -312,8 +292,8 @@ public class Planning {
                 }
 
                 final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";
-                final String ffStr = fastForward ? "ff" : "no-ff";
-                final String aeStr = aEpsilon ? "ae" : "no-ae";
+                final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
+                final String aeStr = config.getBoolean("a-epsilon") ? "ae" : "no-ae";
 
                 writer.write(
                         i + ", "

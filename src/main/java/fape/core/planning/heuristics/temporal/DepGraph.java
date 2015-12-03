@@ -5,6 +5,7 @@ import fape.core.planning.grounding.GTaskCond;
 import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.heuristics.Preprocessor;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
@@ -374,6 +375,16 @@ public class DepGraph {
         @Override
         public StateExtension clone() {
             return new StateExt(new HashMap<>(depGraphEarliestAppearances));
+        }
+    }
+
+    public static class Handler implements fape.core.planning.search.Handler {
+
+        @Override
+        public void apply(State st, StateLifeTime time, APlanner planner) {
+            if(time == StateLifeTime.SELECTION) {
+                DepGraph.of(st, planner);
+            }
         }
     }
 }
