@@ -4,6 +4,7 @@ import com.martiansoftware.jsap.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
+import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;
@@ -24,16 +25,15 @@ public class Planning {
         final PlanningOptions options;
         final Controllability controllability;
 
-        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability, boolean fastForward, boolean aEpsilon) {
+        public PlannerConf(String plannerID, String[] planStrat, String[] flawStrat, Controllability controllability,
+                           boolean fastForward, boolean aEpsilon, boolean neededObs) {
             this.plannerID = plannerID;
             this.options = new PlanningOptions(planStrat, flawStrat);
             this.options.useFastForward = fastForward;
             this.controllability = controllability;
             this.options.useAEpsilon = aEpsilon;
-        }
-
-        public boolean usesActionConditions() {
-            return this.plannerID.equals("taskcond") || this.plannerID.equals("pgr");
+            if(neededObs)
+                this.options.flawFinders.add(new NeededObservationsFinder());
         }
     }
 
@@ -130,6 +130,15 @@ public class Planning {
                                 .setLongFlag("output")
                                 .setDefault("stdout")
                                 .setHelp("File to which the CSV formatted output will be written"),
+                        new FlaggedOption("needed-observations")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setLongFlag("needed-observations")
+                                .setDefault("false")
+                                .setHelp("Warning: This is an EXPERIMENTAL feature that currently works only on the rabbits domain. " +
+                                        "Setting this option to true will make the planner assume that a contingent event is observable " +
+                                        "only if an agent is in the area where this event occurs. Consequently modification to the plan might " +
+                                        "be required to make sure the plan is dynamically controllable."),
 //                        new FlaggedOption("stnu-consistency")
 //                                .setStringParser(JSAP.STRING_PARSER)
 //                                .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -243,9 +252,10 @@ public class Planning {
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
+                final boolean neededObs = config.getBoolean("needed-observations");
                 long planningStart = 0;
 
-                PlannerConf conf = new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon);
+                PlannerConf conf = new PlannerConf(plannerID, planStrat, flawStrat, controllability, fastForward, aEpsilon, neededObs);
 
                 System.gc(); // clean up previous runs to avoid impact on performance measure
 
@@ -297,7 +307,7 @@ public class Planning {
                 }
 
                 if (!failure && !config.getBoolean("quiet")) {
-                    System.out.println("=== Temporal databases === \n" + Printer.temporalDatabaseManager(sol));
+                    System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
                 }
 

@@ -20,6 +20,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
+/**
+ * This flaw finder and the associated resolvers are experimental and will right now only work in the rabbits domain.
+ */
 public class NeededObservationsFinder implements FlawFinder {
 
 
