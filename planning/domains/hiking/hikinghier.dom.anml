@@ -1,0 +1,176 @@
+type Location;
+
+type Place < Location;
+
+type Car < Location with{
+	variable Location at;
+};
+type Something with{
+	variable Location at;
+};
+	
+type Object < Something ;
+instance Object tent;
+
+type Hiker < Something with {
+	predicate canWalk();
+};
+	
+action walk(Hiker h,Place l1,Place l2){
+motivated;
+	duration := 20;
+	[all] h.at == l1 :-> l2;
+};
+
+action goInCar(Hiker h,Car c,Place l){
+motivated;
+	duration := 1;
+	[all] {
+		h.at == l :-> c;
+		c.at ==l;
+	};
+};
+
+action goOutCar(Hiker h,Car c,Place l){
+motivated;
+	duration := 1;
+	[all] {
+		h.at == c :-> l;
+		c.at ==l;
+	};
+};
+
+action driving(Hiker h,Car c,Place l1,Place l2){
+motivated;
+	duration := 5;
+	[all] {
+		h.at == c;
+		c.at == l1 :-> l2;
+	};
+};
+
+action sleep(Hiker h,Object o,Place l){
+motivated;
+	duration := 15;
+	o == tent;
+	[all] {
+		h.at == l;
+	};	
+};
+
+action putInCar(Hiker h,Car c, Object o,Place l){
+motivated;
+	duration := 1;
+	[all] {
+		h.at == l;
+		c.at == l;	
+                o.at == l :-> c;
+	};		
+};
+action putOutCar(Hiker h,Car c, Object o,Place l){
+motivated;
+	duration := 1;
+	[all] {
+		h.at == l;
+		c.at == l;	
+                o.at == c :-> l;
+	};		
+};
+
+/** parameter l3 is not used but kept to remain compatible with the problem definitions */
+action oneStep(Object o, Place l1, Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Car c2){
+  motivated;
+  h1 != h2;
+  c1 != c2;
+  l1 != l2;
+  // place where the first car is
+  constant Place car1Loc;
+  [start] c1.at == car1Loc;
+
+  // decomposition to decide in which order the cars should appear
+  // with the constraint that the first car should be in l1
+  :decomposition {
+    car1Loc == l1;
+    [all] oneStepOrdered(o, l1, l2, h1, h2, c1, c2);
+  };
+  :decomposition {
+    car1Loc != l1;
+    [all] oneStepOrdered(o, l1, l2, h1, h2, c2, c1);
+  }; 
+};
+
+action oneStepOrdered(Object o, Place l1, Place l2, Hiker h1, Hiker h2, Car c1, Car c2){
+  motivated;
+  h1 != h2;
+  c1 != c2;
+  l1 != l2;
+  // place from which we need to get car2
+  constant Place carLoc;
+  [start] { 
+    c2.at == carLoc;
+    c1.at == l1;
+  };
+
+  [all] contains {
+     p0 : putInCar(h1,c1,o,l1);
+     g1 : goInCar(h1, c1, l1);
+     g2 : goInCar(h2, c1, l1);
+     d3 : driving(h1, c1, l1, carLoc);
+     g4 : goOutCar(h1, c1, carLoc);
+     g5 : goInCar(h1, c2, carLoc);
+     d6 : driving(h1, c2, carLoc, l2);
+     d7 : driving(h2, c1, carLoc, l2);
+     g8 : goOutCar(h2, c1, l2);
+     p9 : putOutCar(h2, c1, o, l2);
+     g10: goInCar(h2, c2, l2);
+     d11: driving(h1, c2, l2, l1);
+     g12: goOutCar(h1, c2, l1);
+     g13: goOutCar(h2, c2, l1);
+     w14: walk(h1, l1, l2);
+     w15: walk(h2, l1, l2);
+  };
+
+  // other constraints can be added to avoid branching on infeasible resolvers
+  end(p0) < start(g1);
+     
+};
+
+
+/* Previous method by martin: false because missing some actions
+action oneStep(Object o, Place l1,Place l2,Place l3,Hiker h1,Hiker h2,Car c1,Car c2){
+
+	[all] contains {
+		m0 : moveObject(o,l1,l2,c1,h1);
+		d0 : driving(h1,c1,l2,l1);
+		w1 : walk(h1,l1,l2);
+		w2 : walk(h2,l1,l2);
+		s1 : sleep(h1,o,l2);
+		s2 : sleep(h2,o,l2);
+		g0: goInCar(h2,c2,l2);
+		d1 : driving(h1,c2,l2,l1);
+		d2 : driving(h1,c2,l1,l3);
+		d3 : driving(h2,c1,l1,l3);
+		g2 : goOutCar(h2,c1,l3);
+		g3 : goInCar(h2,c2,l3);
+		d4 : driving(h1,c2,l3,l2);
+		g4: goOutCar(h1,c2,l2);
+		g5: goOutCar(h2,c2,l2);
+	};
+	end(m0) < start(d0);
+	end(d0) < start(w1);
+	start(w1) = start(w2);
+	end(w1) < start(s1);
+	end(w2) < start(s2);
+	end(s2) < start(g0);
+	start(s1) < start(s2);
+	end(g0) < start(d1);
+	end(d1) < start(d2);
+	start(d2) = start(d3);
+	end(d3) < start(g2);
+	end(g2) < start(g3);
+	end(g3) < start(d4);
+	end(d4) < start(g4);
+	end(d4) < start(g5);
+	
+};
+*/

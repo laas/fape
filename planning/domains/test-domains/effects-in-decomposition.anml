@@ -1,0 +1,15 @@
+// effects are placed in a decomposition
+
+predicate done();
+
+action DoUndo() {
+  :decomposition {
+    [all] done := true;
+  };
+  :decomposition {
+    // nothing
+  };
+};
+
+[end] done == true;
+

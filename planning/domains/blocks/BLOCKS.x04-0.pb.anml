@@ -1,0 +1,13 @@
+instance Block D, B, A, C;
+[start] clear(C) := true;
+[start] clear(A) := true;
+[start] clear(B) := true;
+[start] clear(D) := true;
+[start] on(C) := TABLE;
+[start] on(A) := TABLE;
+[start] on(B) := TABLE;
+[start] on(D) := TABLE;
+[start] handempty := true;
+[end] on(D) == C;
+[end] on(C) == B;
+[end] on(B) == A;

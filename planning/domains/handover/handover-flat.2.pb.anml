@@ -1,0 +1,12 @@
+instance Item I2;
+
+[start] I2.location := D0;
+
+
+/** Ra must be in A1 at the end of the plan */
+[end] {
+  I2.location == A0;
+  I.location == D0;
+};
+
+

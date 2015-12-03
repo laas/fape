@@ -1,0 +1,83 @@
+// Domain : Hieerachical version of Temporal Machine Shop Time (Temporally Expressive)
+
+type Piece with{
+	predicate baking();
+	predicate treated();
+	predicate baked();
+};
+
+type Kiln with{
+	predicate ready();
+	predicate empty();
+};
+
+variable boolean energy;
+predicate structured(Piece p1, Piece p2);
+predicate bakedStructure(Piece p1, Piece p2);
+
+
+constant integer fireTime(Kiln k);
+constant integer bakeTime(Piece p);
+constant integer treatTime(Piece p);
+
+action fire(Kiln k){
+    motivated;
+	duration := fireTime(k);
+    [all] energy == true;
+    [start,start+1] k.ready := true ;
+    [start+1,end-1] k.ready == true; 
+    [end-1,end] k.ready == true :-> false;
+};
+
+action bake(Kiln k, Piece p){
+	motivated;
+	duration := bakeTime(p);
+	[all] k.ready == true;
+	[all] k.empty == true :-> true;
+	[end] {
+       	 p.baked == false :-> true;
+	};
+};
+
+action treat(Piece p){
+	motivated;
+	duration := treatTime(p);
+	[end] p.treated == false :-> true;
+};
+
+action makeStructure(Piece p1, Piece p2){
+	motivated;
+	p1!=p2;
+
+	bakeAndTreatPiece(p1);
+	bakeAndTreatPiece(p2);
+};
+
+action bakeAndTreatPiece(Piece p) {
+    motivated;
+    constant Kiln uk;
+    [all] contains f : fire(uk);
+    [start(f),end(f)] contains b : bake(uk,p);
+    [start(b), end(b)] contains treat(p);
+};
+
+action bakeStructure(Piece p1, Piece p2, Kiln k){
+	motivated;
+	p1!=p2;
+	duration := 18;
+	f : fire(k);
+	start(f) < start;
+	end < end(f);
+	[all] k.ready == true;
+	[all] k.empty == true :-> true;
+        [end] bakedStructure(p1,p2) == false :-> true;
+};
+
+action bakeStructureH(Piece p1, Piece p2, Kiln k){
+	motivated;
+	[all] contains {
+		m : makeStructure(p1,p2);
+		b : bakeStructure(p1, p2, k);
+	};
+	end(m) < start(b);
+};

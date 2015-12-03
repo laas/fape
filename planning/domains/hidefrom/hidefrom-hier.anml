@@ -1,0 +1,184 @@
+// -*-c++-*-
+
+/** WARNING: only guaranted to work with the 'taskcond' planner.
+ *           Others planners might seem to work but they will be
+ *           dependent on the order in which flaws are processed.
+ *
+ * This domain shows a basic reasonning on the mental state of another robot.
+ * A robot (bob) must move an object around without the other one (max)
+ * noticing.
+ */
+
+// Locations where an item can be (places and agents)
+type Location;
+
+// A location where a robot can be. It a subtype of
+// 'Location' since objects can be there as well.
+type NavLocation < Location;
+
+type Item;
+
+// An agent (robot). It is a subtype of Location since it can hold objects.
+type Agent < Location with {
+    function NavLocation loc();
+};
+
+
+// Location of an item
+function Location at(Item i);
+
+// Where agent 'a' thinks this item is
+function Location thinks_at(Agent a, Item i);
+
+// minimal and maximal duration of a Move from two locations.
+constant integer nav_dur_min(Location a, Location b);
+constant integer nav_dur_max(Location a, Location b);
+
+action Go(Agent a, NavLocation l1, NavLocation l2) {
+    // uncertain (i.e. not controllable) duration of an action.
+    duration :in [nav_dur_min(l1,l2), nav_dur_max(l1,l2)];
+    
+    [all] a.loc == l1 :-> l2;
+};
+
+action Pick(Agent a, Item i, NavLocation l) {
+  duration :in [10,13];
+    [all] {
+        a.loc == l;
+        thinks_at(a, i) := a;
+        at(i) == l:-> a;
+    };
+
+    // the other agent, constraint to be different of a
+    constant Agent other_agent;
+    other_agent != a;
+
+    // two possible decomposition to represent the fact that this action is
+    // either seen (changes the belief of the other agent) or not
+    :decomposition{
+        // temporal annotation specifies that UnseenPick must start and end
+        // at the same times than Pick
+        [all] UnseenPick(other_agent, l);
+    };
+    :decomposition{
+        // temporal annotation specifies that UnseenPick must start and end
+        // at the same times than Pick
+        [all] SeenPick(other_agent, a, i, l);
+    };
+};
+
+action SeenPick(Agent me, Agent actor, Item i, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid only if the agent is at the picking place at some point during
+    // the pick
+    [all] contains me.loc == l;
+    // update the belief of the agent
+    [all] thinks_at(me, i) := actor;
+};
+
+
+action UnseenPick(Agent me, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid if I'm not in the room where the pick happened
+    // for the whole duration of the action.
+    constant NavLocation my_pos;
+    my_pos != l;
+    [all] me.loc == my_pos;
+};
+
+/*********************************************/
+
+action Drop(Agent a, Item i, NavLocation l) {
+  duration :in [7,10];
+    [all] {
+        a.loc == l;
+        thinks_at(a, i) := l;
+        at(i) == a :-> l;
+    };
+
+    constant Agent other_agent;
+    other_agent != a;
+  
+    :decomposition{  
+        [all] UnseenDrop(other_agent, l);
+    };
+    :decomposition{
+        [all] SeenDrop(other_agent, a, i, l);
+    };
+};
+
+action SeenDrop(Agent me, Agent actor, Item i, NavLocation l) {
+    motivated;
+    [all] contains me.loc == l;
+    [all] thinks_at(me, i) := l;
+};
+
+
+action UnseenDrop(Agent me, NavLocation l) {
+    motivated;
+
+    constant NavLocation my_pos;
+    my_pos != l;
+    [all] me.loc == my_pos;
+};
+
+
+
+
+
+
+
+
+instance NavLocation A, B, C, D;
+// warning: the model for seen/unseen only works with two agents
+instance Agent bob, max;
+instance Item cup;
+
+// travel times between locations
+nav_dur_min(A,B) := 20;
+nav_dur_min(B,A) := 20;
+nav_dur_min(A,C) := 30;
+nav_dur_min(C,A) := 30;
+nav_dur_min(A,D) := 40;
+nav_dur_min(D,A) := 40;
+nav_dur_min(B,C) := 50;
+nav_dur_min(C,B) := 50;
+nav_dur_min(B,D) := 25;
+nav_dur_min(D,B) := 25;
+nav_dur_min(C,D) := 35;
+nav_dur_min(D,C) := 35;
+
+nav_dur_max(A,B) := 24;
+nav_dur_max(B,A) := 24;
+nav_dur_max(A,C) := 34;
+nav_dur_max(C,A) := 34;
+nav_dur_max(A,D) := 44;
+nav_dur_max(D,A) := 44;
+nav_dur_max(B,C) := 54;
+nav_dur_max(C,B) := 54;
+nav_dur_max(B,D) := 29;
+nav_dur_max(D,B) := 29;
+nav_dur_max(C,D) := 39;
+nav_dur_max(D,C) := 39;
+
+
+[start] {
+    bob.loc := A;
+    max.loc := A;
+    at(cup) := A;
+    thinks_at(bob, cup) := A;
+    thinks_at(max, cup) := A;
+};
+
+
+// before time 80, the object must be in a given location
+// and max must think it is in another one.
+constant NavLocation final_loc;
+constant NavLocation expected_final_loc;
+final_loc != expected_final_loc;
+[80] {
+    at(cup) == final_loc;
+    thinks_at(max, cup) == expected_final_loc;
+};

@@ -1,0 +1,6 @@
+depth is a benchmarck inspired from http://tlpgp.free.fr/benchmarks.html
+
+This domain represents a problem where actions are classified by level, there is three actions per level and the first action at a level t(except t=0) need the execution of the three actions at level t-1.
+Moreover the tird action at a level t need the second action at this level and the second the the first.
+
+The output of depthGenrator.py is a flat domain and a hierarchic domain with the problem at the end of it, you can also indicate the number of depth you want ( ex : python depthGenerator.py 5) (default :2)

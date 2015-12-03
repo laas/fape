@@ -1,0 +1,8 @@
+This directory contains the anml domain and problem specifications that can be used to generate flat and hierarchical domains.
+
+Those needs preprocessing with GPP. This is automated with the `./make` script below.
+
+For every file "docks.XXXX.gpp", if will create
+
+../docks-flat.XXXX
+../docks-hier.XXXX

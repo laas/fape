@@ -1,0 +1,25 @@
+instance Item I2;
+
+[start] I2.location := D0;
+
+#ifndef HIER
+
+/** Ra must be in A1 at the end of the plan */
+[end] {
+  I2.location == A0;
+  I.location == D0;
+};
+
+#endif
+
+#ifdef HIER
+constant Robot r1;
+constant Robot r2;
+constant NavLocation l1;
+Transport(r1, r2, l1, A0, I2);
+
+constant Robot r3;
+constant Robot r4;
+constant NavLocation l2;
+Transport(r3, r4, l2, D0, I);
+#endif

@@ -1,0 +1,65 @@
+[all] contains sort();
+action sortPair(){
+	[all] contains {
+		sort2(l0_0,l0_1);
+	};
+};
+action sortOdd(){
+	[all] contains {
+		sort2(l0_1,l0_2);
+	};
+};
+action sort(){
+	:decomposition{
+		[all] contains {
+			s0 : sortPair();
+			s1 : sortOdd();
+		};
+		end(s0) < start(s1);
+	};
+	:decomposition{
+		true == false;
+/*
+		constant Location l0;
+		constant Location l1;
+		constant Location l2;
+		constant Location l3;
+		constant Location l4;
+		constant Location l5;
+		[all]contains newShelf(l0, l1, l2, l3, l4, l5);
+*/
+	};
+};
+instance Object book0_0, book0_1, book0_2;
+instance Arm arm0, arm1;
+instance Location l0_0, l0_1, l0_2;
+instance Position p0;
+pos(l0_0) := p0;
+pos(l0_1) := p0;
+pos(l0_2) := p0;
+pos(arm0) := robot;
+pos(arm1) := robot;
+
+atRightl(l0_0, l0_1) := true;
+atRightl(l0_0, l0_2) := true;
+atRightl(l0_1, l0_0) := false;
+atRightl(l0_1, l0_2) := true;
+atRightl(l0_2, l0_0) := false;
+atRightl(l0_2, l0_1) := false;
+atRightb(book0_0, book0_1) := true;
+atRightb(book0_0, book0_2) := true;
+atRightb(book0_1, book0_0) := false;
+atRightb(book0_1, book0_2) := true;
+atRightb(book0_2, book0_0) := false;
+atRightb(book0_2, book0_1) := false;
+[start] {
+	robotPos := p0;
+	l0_1.empty := false;
+	l0_2.empty := false;
+	l0_0.empty := false;
+	book0_0.at := l0_1;
+	book0_1.at := l0_2;
+	book0_2.at := l0_0;
+	arm0.empty := true;
+	arm1.empty := true;
+};

@@ -1,0 +1,30 @@
+instance Location l0, l1, l2;
+instance Car c0, c1, c2;
+instance Hiker h0, h1, h2;
+[all] contains {
+	w0h0 : walk(h0,l0,l1);
+	s0h0 : sleep(h0,tent,l1);
+	w0h1 : walk(h1,l0,l1);
+	s0h1 : sleep(h1,tent,l1);
+	w1h0 : walk(h0,l1,l2);
+	s1h0 : sleep(h0,tent,l2);
+	w1h1 : walk(h1,l1,l2);
+	s1h1 : sleep(h1,tent,l2);
+};
+start(w0h0) = start(w0h1);
+start(w1h0) = start(w1h1);
+end(w0h0) < start(w1h0);
+
+end(w0h0) < start(s0h0);
+end(w0h1) < start(s0h1);
+end(w1h0) < start(s1h0);
+end(w1h1) < start(s1h1);
+[start] {
+	tent.at := l0;
+	c0.at := l0;
+	c1.at := l0;
+	h0.at := l0;
+	h0.canWalk := true;
+	h1.at := l0;
+	h1.canWalk := true;
+};

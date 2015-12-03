@@ -1,0 +1,15 @@
+#!/bin/bash
+
+out=null
+
+for in in *.gpp;
+do
+out="${in//.gpp/}"
+out_flat="${out//docks/docks-flat}"
+out_hier="${out//docks/docks-hier}"
+out_hier_pers="${out//docks/docks-hier-pers}"
+
+gpp -o ../$out_flat $in
+gpp -o ../$out_hier $in -DHIER
+gpp -o ../$out_hier_pers $in -DHIER -DPERSISTENCES
+done 

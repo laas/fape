@@ -1,0 +1,24 @@
+
+type Area;
+type Rabbit with {
+  variable Area at;
+  predicate dead();
+};
+type Agent with {
+  variable Area at;
+};
+
+action go(Agent bot, Area from, Area to) {
+  duration := 1;
+  [all] bot.at == from :-> to;
+};
+
+action shoot(Agent bot, Rabbit rabbit, Area area) {
+  area != NONE;
+  duration := 1;
+  [all] bot.at == area;
+  [all] rabbit.at == area;
+  [end] rabbit.dead := true;
+};
+
+instance Area NONE;

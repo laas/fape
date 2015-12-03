@@ -1,0 +1,39 @@
+
+instance Country France, US;
+instance Place Paris, Toulouse, Boston, NY;
+
+
+can_go_by_car(Toulouse, Paris) := true;
+can_go_by_car(Paris, Toulouse) := true;
+
+can_go_by_bus(Boston, NY) := true;
+can_go_by_bus(NY, Boston) := true;
+can_go_by_plane(Toulouse, NY) := true;
+can_go_by_plane(NY, Toulouse) := true;
+can_go_by_plane(Boston, Paris) := true;
+can_go_by_plane(Paris, Boston) := true;
+can_go_by_plane(Boston, NY) := true;
+can_go_by_plane(NY, Boston) := true;
+
+
+
+Paris.country := France;
+Toulouse.country := France;
+Boston.country := US;
+NY.country := US;
+
+
+
+
+[start] {
+  hasCar := false;
+  at := Toulouse;
+  in := France;
+};
+
+[all] contains { 
+    at == NY;
+    in == US;
+    at == Paris;
+    at == Boston;
+};

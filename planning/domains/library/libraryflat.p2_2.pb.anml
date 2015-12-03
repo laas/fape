@@ -1,0 +1,34 @@
+instance Object book0_0, book0_1, book1_0, book1_1;
+instance Arm arm0, arm1;
+instance Location l0_0, l0_1, l1_0, l1_1;
+instance Position p0, p1;
+pos(l0_0) := p0;
+pos(l0_1) := p0;
+pos(l1_0) := p1;
+pos(l1_1) := p1;
+
+atRight(l0_0) := l0_1;
+atRight(l1_0) := l1_1;
+[start] {
+	robotPos := p0;
+	l0_1.empty := false;
+	l1_1.empty := false;
+	l0_0.empty := false;
+	l1_0.empty := false;
+	book0_0.at := l0_1;
+	book0_1.at := l1_1;
+	book1_0.at := l0_0;
+	book1_1.at := l1_0;
+	arm0.empty := true;
+	arm1.empty := true;
+};
+constant Location l001;
+constant Location l101;
+[end] book0_0.at == l001;
+[end] book0_1.at == l101;
+atRight(l001) == l101;
+constant Location l011;
+constant Location l111;
+[end] book1_0.at == l011;
+[end] book1_1.at == l111;
+atRight(l011) == l111;

@@ -1,0 +1,20 @@
+
+type Robot with{
+	variable boolean available;
+};
+type Wp;
+type Intersection < Wp;
+
+action communicate(Robot r1, Robot r2, Wp l){
+	r1 != r2;
+        [all] r1.available == true;
+};
+
+ instance Robot mana, minnie;
+ instance Intersection pt1, pt2;
+ instance Wp pt0, pt4;
+
+[start] mana.available := true;
+
+constant Wp unbinded;
+[50, 100] contains communicate(mana, minnie, unbinded);

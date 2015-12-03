@@ -1,0 +1,16 @@
+
+
+//[end] as1.state == complete;
+
+//[end] as2.state == complete;
+
+constant Robot r;
+constant Human h;
+constant Glue g;
+ProcessSurface(h, r, as1, g);
+
+ // constant Robot r2;
+ // constant Human h2;
+ // constant Glue g2;
+ // ProcessSurface(h2, r2, as2, g2);
+

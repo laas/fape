@@ -1,0 +1,7 @@
+
+
+
+constant Robot r3;
+constant Robot r4;
+constant NavLocation l2;
+Transport(r3, r4, l2, D0, I);

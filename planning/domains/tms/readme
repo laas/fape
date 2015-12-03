@@ -1,0 +1,17 @@
+tms is a benchmarck inspired from http://tlpgp.free.fr/benchmarks.html
+
+Quickly, this domain represent the use of kilns to bake some ceramic pieces, we can have some different piece which differs by the time they needed to be baked and diffenrent kilns which differ by the time they can be used 
+
+The output of problemGenerator.py are flat problem and a hiérarchic problem with 3 types of pieces, you can indicate the number of each piece( ex : python problemGenerator.py 3 3 3)(by default 1 1 1)
+Open it and you can change others parameters like the different times or the goal (by default :bakedStructure(p0_0,p1_0) == true;)
+
+We can notice Fape can quickly find a plan to one goal of the type "bakedStructure(p0_0,p1_0) == true;" but can't if there are two goals of this type ( where all the pieces are différents)
+
+21/04/2015 
+	0, htn, 3.38, 2.16, ./tmsflat.p1.pb.anml, 873, 992, 0, 33, ogf:abs:lcf:eogf, soca
+	0, htn, 3.427, 3.319, ./tmsflat.p2.pb.anml, 6346, 7000, 0, 62, ogf:abs:lcf:eogf, soca
+	0, htn, TIMEOUT, 60.001, ./tmsflat.p3.pb.anml, 105641, 116103, 0, -, ogf:abs:lcf:eogf, soca
+	0, htn, 0.282, 0.19, ./tmshier.p1.pb.anml, 723, 770, 0, 17, ogf:abs:lcf:eogf, soca
+	0, htn, 13.821, 13.765, ./tmshier.p2.pb.anml, 61477, 63658, 0, 34, ogf:abs:lcf:eogf, soca
+	0, htn, TIMEOUT, 60.001, ./tmshier.p3.pb.anml, 171830, 178767, 0, -, ogf:abs:lcf:eogf, soca
+

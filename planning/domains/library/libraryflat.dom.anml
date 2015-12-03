@@ -1,0 +1,44 @@
+type Object with{
+    variable Loc at;
+};
+type Loc with {
+    predicate empty();
+};
+type Location < Loc ;
+type Arm < Loc;
+constant Location atRight(Location l);
+
+type Position;
+ 
+function Position robotPos();
+
+function Position pos(Loc l);
+
+action goto(Position p1, Position p2){
+	duration :in [3,4];
+	[all]robotPos == p1 :-> p2;
+};
+
+action place (Object o, Location l, Arm a, Position p){
+	[all] robotPos == p;
+	pos(l) == p;
+	duration := 5;
+	[all] {
+		a.empty == false :-> true;
+        o.at == a :-> l;
+		l.empty == true :-> false;
+	};
+};
+
+action pick (Object o, Location l, Arm a, Position p){
+	[all] robotPos == p;
+	pos(l) == p;
+	duration := 5;
+	[all] {
+		l.empty == false :-> true;
+		o.at == l :-> a;
+		a.empty == true :-> false;
+	};
+};
+
+
