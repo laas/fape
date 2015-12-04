@@ -33,6 +33,10 @@ lazy val svgPlot = Project("svg-plot", file("svg-plot"))
      .settings(commonSettings: _*)
      .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3")
 
+lazy val structures = Project("structures", file("structures"))
+     .settings(commonSettings: _*)
+
+
 libraryDependencies ++= Seq(
   "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7" % "runtime")
 
