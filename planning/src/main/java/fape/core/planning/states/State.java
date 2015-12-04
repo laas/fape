@@ -188,7 +188,7 @@ public class State implements Reporter {
         threats = new HashSet<>(st.threats);
         potentialSupporters = new HashMap<>(st.potentialSupporters);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
-        addableTemplates = st.addableTemplates != null ? st.addableTemplates : null;
+        addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
 
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
@@ -203,15 +203,14 @@ public class State implements Reporter {
      */
     public boolean isAddable(AbstractAction a) {
         if(addableTemplates == null) {
-            assert addableActions == null : "Addable action where added without generating the related templates.";
+//            assert addableActions == null : "Addable action where added without generating the related templates.";
             return true; // addable by default
         } else {
             return addableTemplates.contains(a);
         }
     }
 
-    public Stream<StateExtension> extensions() { return extensions.stream(); }
-    public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
+    @SuppressWarnings("unchecked")
     public <T> T getExtension(Class<T> clazz) {
         return (T) extensions().filter(ext -> ext.getClass() == clazz)
                 .findFirst().get(); //.orElseGet(() -> { throw new FAPEException(""); } );
@@ -221,6 +220,9 @@ public class State implements Reporter {
             assert e.getClass() != ext.getClass() : "Already an extension with the same class: " + ext;
         extensions.add(ext);
     }
+    public Stream<StateExtension> extensions() { return extensions.stream(); }
+    public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
+
 
     /**
      * @return True if the state is consistent (ie. stn and bindings

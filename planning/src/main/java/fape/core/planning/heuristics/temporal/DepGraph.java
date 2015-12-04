@@ -10,6 +10,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
 
@@ -349,19 +350,22 @@ public class DepGraph {
         allFacts.addAll(tasks);
 
         Optional<StateExt> stateExtOptional = st.hasExtension(StateExt.class) ? Optional.of(st.getExtension(StateExt.class)) : Optional.empty();
+        long prevNumAct = stateExtOptional.isPresent() ? stateExtOptional.get().depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count() : 9999999;
         DepGraph dg = new DepGraph(pl.preprocessor.getRelaxedActions(), allFacts, stateExtOptional);
         dg.propagate();
         if(!st.hasExtension(StateExt.class))
             st.addExtension(new StateExt(dg.optimisticEST));
 
+        long newNumAct = stateExtOptional.isPresent() ? stateExtOptional.get().depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count() : 9999999;
+        System.out.println(prevNumAct+"  -->  "+newNumAct);
 //        System.out.println("\nall: " + dg.optimisticEST.keySet());
-        System.out.println("\nactions: " +
-                dg.optimisticEST.entrySet().stream()
-                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-                        .filter(n -> n.getKey() instanceof RAct)
-//                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
-                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
-                        .collect(Collectors.toList()));
+//        System.out.println("\nactions: " +
+//                dg.optimisticEST.entrySet().stream()
+//                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+//                        .filter(n -> n.getKey() instanceof RAct)
+////                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
+//                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
+//                        .collect(Collectors.toList()));
 
         return dg;
     }

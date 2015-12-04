@@ -55,6 +55,7 @@ public class ReachabilityGraphs {
         restrictUnattachedActions();
 
         st.reachabilityGraphs = this;
+        assert addableActions != null;
         st.addableActions = addableActions;
         st.addableTemplates = new HashSet<>();
         for(GAction ga : addableActions) {

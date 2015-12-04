@@ -113,6 +113,7 @@ public class FeasibilityReasoner {
             st.csp.bindings().restrictDomain(a.instantiationVar(), dom);
         }
 
+        assert feasibles != null;
         st.addableActions = feasibles;
         return feasibles;
     }
