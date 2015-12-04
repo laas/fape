@@ -9,7 +9,7 @@ public class IRStorage {
     Map<Class, ArrayList<Identifiable>> instances = new HashMap<>();
 
     protected static Class getIdentClass(Class clazz) {
-        assert clazz.getAnnotation(Ident.class) == null : clazz.toString()+" has no Ident annotation.";
+        assert clazz.getAnnotation(Ident.class) != null : clazz.toString()+" has no Ident annotation.";
         return ((Ident) clazz.getAnnotation(Ident.class)).value();
     }
 

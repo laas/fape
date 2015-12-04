@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public class HStructs {
 
+    @Ident(Top.class)
     public static class Top extends AbsIdentifiable {
 
     }
