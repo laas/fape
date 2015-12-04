@@ -18,7 +18,6 @@ class CCGraph(val g : SimpleUnlabeledDigraph[Int], var acyclic : Boolean) {
       g.addEdge(from, to)
       update(from, to)
     }
-    acyclic
   }
 
   def update(from:Int, to:Int) {

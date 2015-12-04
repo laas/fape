@@ -173,7 +173,7 @@ abstract class STN[ID](val g : LabeledDigraph[Int,Int],
   override def removeConstraintsWithID(id: ID): Boolean = {
     // function matching edges with the given id
     def hasID(e:LabeledEdge[Int,Int]) = e match {
-      case eID:LabeledEdgeWithID[Int,Int,ID] => eID.id == id
+      case eID:LabeledEdgeWithID[Int,Int,ID] @unchecked => eID.id == id
       case _ => false
     }
 
