@@ -36,6 +36,7 @@ public abstract class APlanner {
     public APlanner(State initialState, PlanningOptions options) {
         this.options = options;
         this.pb = initialState.pb;
+        initialState.setPlanner(this);
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());

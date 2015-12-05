@@ -53,7 +53,6 @@ import java.util.stream.Collectors;
     public final int time;
     public final Fluent fluent;
 
-
     public static TempFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, GroundProblem pb) {
         int time;
         if(template.time instanceof DeleteFreeActionsFactory.IntTime) {

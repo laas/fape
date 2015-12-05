@@ -9,6 +9,7 @@ import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
+import fr.laas.fape.structures.IRStorage;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -375,10 +376,11 @@ public class DepGraph {
      */
     @Value public static class StateExt implements StateExtension {
         public final Map<Node,Integer> depGraphEarliestAppearances;
+        public final IRStorage store;
 
         @Override
         public StateExtension clone() {
-            return new StateExt(new HashMap<>(depGraphEarliestAppearances));
+            return new StateExt(new HashMap<>(depGraphEarliestAppearances), store);
         }
     }
 

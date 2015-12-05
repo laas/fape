@@ -6,6 +6,7 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.heuristics.temporal.DepGraph;
+import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
@@ -81,6 +82,9 @@ public class State implements Reporter {
     private LinkedList<Pair<Integer, Action>> supportConstraints;
 
     public final AnmlProblem pb;
+
+    /** Current planner instane handling this state */
+    public APlanner pl;
 
     public final Controllability controllability;
 
@@ -174,6 +178,7 @@ public class State implements Reporter {
      */
     public State(State st) {
         pb = st.pb;
+        pl = st.pl;
         this.controllability = st.controllability;
         this.refCounter = new RefCounter(st.refCounter);
         this.pgr = st.pgr;
@@ -191,6 +196,11 @@ public class State implements Reporter {
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
 
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
+    }
+
+    public void setPlanner(APlanner planner) {
+        assert pl == null : "This state is already attached to a planner.";
+        this.pl = planner;
     }
 
     public State cc() {
