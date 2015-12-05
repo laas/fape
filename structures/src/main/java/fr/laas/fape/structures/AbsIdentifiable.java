@@ -7,8 +7,8 @@ public abstract class AbsIdentifiable implements Identifiable {
     @Override public int getID() { return id; }
     @Override public void setID(int id) { this.id = id; }
 
-    @Override public int hashCode() { assert getID() >= 0; return getID(); }
-    @Override public boolean equals(Object o) {
+    @Override final public int hashCode() { assert getID() >= 0; return getID(); }
+    @Override final public boolean equals(Object o) {
         return this.getClass() == o.getClass() &&
                 getID() == ((Identifiable) o).getID();
     }

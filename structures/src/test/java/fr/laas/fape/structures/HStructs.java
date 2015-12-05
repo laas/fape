@@ -32,6 +32,7 @@ public class HStructs {
 
         store.get(BotString.class, Arrays.asList("coucou"));
         store.get(BotInt.class, Arrays.asList(1));
+        store.get(BotString.class, Arrays.asList("coucou"));
 
         System.out.println(store.get(Top.class, 0));
         System.out.println(store.get(Top.class, 1));
