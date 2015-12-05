@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GroundProblem;
+import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import lombok.Value;
 import planstack.anml.model.AbstractParameterizedStateVariable;
@@ -126,7 +127,7 @@ public class DeleteFreeActionsFactory {
         throw new FAPEException("Unable to find the timepoint: "+tp);
     }
 
-    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, GroundProblem pb) {
+    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, APlanner pl) {
         Map<AbsTP, RActTemplate> templates = new HashMap<>();
         for(AbsTP tp : abs.flexibleTimepoints()) {
             templates.put(tp, new RActTemplate(abs, tp));
@@ -272,7 +273,7 @@ public class DeleteFreeActionsFactory {
 
         for(GAction ground : grounds) {
             for(RActTemplate template : templates.values()) {
-                RAct a = RAct.from(template, ground, pb);
+                RAct a = RAct.from(template, ground, pl);
                 relaxedGround.add(a);
 //                System.out.println(a);
             }

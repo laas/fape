@@ -9,11 +9,11 @@ import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
+import fr.laas.fape.structures.AbsIdentifiable;
 import fr.laas.fape.structures.IRStorage;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-import lombok.Value;
+import fr.laas.fape.structures.Ident;
+import fr.laas.fape.structures.ValueConstructor;
+import lombok.*;
 
 import java.util.*;
 import java.util.function.Function;
@@ -27,14 +27,19 @@ public class DepGraph {
 
     private static boolean isInfty(int num) { return num > 99999; }
 
-    public interface Node {}
-    public interface ActionNode extends Node {
-        List<TempFluent> getConditions();
-        List<TempFluent> getEffects();
+    public abstract static class Node extends AbsIdentifiable {}
+    public abstract static class ActionNode extends Node {
+        public abstract List<TempFluent> getConditions();
+        public abstract List<TempFluent> getEffects();
     }
 
-    @Value public static class FactAction implements ActionNode {
+    @Getter @Ident(Node.class)
+    public static class FactAction extends ActionNode {
         public final List<TempFluent> effects;
+
+        @ValueConstructor @Deprecated
+        public FactAction(List<TempFluent> effects) { this.effects = effects; }
+
         @Override public List<TempFluent> getConditions() { return new ArrayList<>(); }
     }
 
@@ -72,9 +77,9 @@ public class DepGraph {
         public int compareTo(Label label) { return time - label.time; }
     }
 
-    public DepGraph(Collection<RAct> actions, List<TempFluent> facts, Optional<StateExt> stateExtOptional) {
+    public DepGraph(Collection<RAct> actions, List<TempFluent> facts, State st) {
         Set<Fluent> instantaneousEffects = new HashSet<>();
-        FactAction init = new FactAction(facts);
+        FactAction init = (FactAction) st.pl.preprocessor.store.get(FactAction.class, Arrays.asList(facts)); // new FactAction(facts);
         List<ActionNode> allActs = new LinkedList<>(actions);
         allActs.add(init);
 
@@ -111,8 +116,8 @@ public class DepGraph {
             }
         }
 
-        if(stateExtOptional.isPresent()) {
-            optimisticEST = stateExtOptional.get().getDepGraphEarliestAppearances();
+        if(st.hasExtension(StateExt.class)) {
+            optimisticEST = st.getExtension(StateExt.class).getDepGraphEarliestAppearances();
 
             // remove any existing fact action
             optimisticEST.keySet().stream().collect(Collectors.toSet()).stream()
@@ -330,19 +335,21 @@ public class DepGraph {
     }
 
     public static DepGraph of(State st, APlanner pl) {
-        final Preprocessor pp = pl.preprocessor;
-        final GroundProblem gpb = pl.preprocessor.getGroundProblem();
+        final Preprocessor pp = st.pl.preprocessor;
+        final GroundProblem gpb = pp.getGroundProblem();
+
+
         List<TempFluent> tempFluents = gpb.tempsFluents(st).stream()
                 .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
                         st.getEarliestStartTime(tfs.timepoints.iterator().next()),
-                        TempFluent.Fluent.from(f))))
+                        TempFluent.Fluent.from(f, pp.store))))
                 .collect(Collectors.toList());
 
         Set<TempFluent> tasks = new HashSet<>();
         for(Task t : st.getOpenTasks()) {
             int est = st.getEarliestStartTime(t.start());
             for(GAction ga : new EffSet<>(pp.groundActionIntRepresentation(), st.csp.bindings().rawDomain(t.groundSupportersVar()).toBitSet())) {
-                tasks.add(new TempFluent(est, TempFluent.Fluent.from(ga.task, st.pb)));
+                tasks.add(new TempFluent(est, TempFluent.Fluent.from(ga.task, st.pb, pp.store)));
             }
         }
 
@@ -352,7 +359,7 @@ public class DepGraph {
 
         Optional<StateExt> stateExtOptional = st.hasExtension(StateExt.class) ? Optional.of(st.getExtension(StateExt.class)) : Optional.empty();
         long prevNumAct = stateExtOptional.isPresent() ? stateExtOptional.get().depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count() : 9999999;
-        DepGraph dg = new DepGraph(pl.preprocessor.getRelaxedActions(), allFacts, stateExtOptional);
+        DepGraph dg = new DepGraph(pl.preprocessor.getRelaxedActions(), allFacts, st);
         dg.propagate();
         if(!st.hasExtension(StateExt.class))
             st.addExtension(new StateExt(dg.optimisticEST));
@@ -376,11 +383,10 @@ public class DepGraph {
      */
     @Value public static class StateExt implements StateExtension {
         public final Map<Node,Integer> depGraphEarliestAppearances;
-        public final IRStorage store;
 
         @Override
         public StateExtension clone() {
-            return new StateExt(new HashMap<>(depGraphEarliestAppearances), store);
+            return new StateExt(new HashMap<>(depGraphEarliestAppearances));
         }
     }
 

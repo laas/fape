@@ -4,6 +4,7 @@ import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
+import fape.core.planning.heuristics.temporal.GStore;
 import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
@@ -22,6 +23,8 @@ public class Preprocessor {
 
     final APlanner planner;
     final State initialState;
+
+    public final GStore store = new GStore();
 
     private FeasibilityReasoner fr;
     private GroundProblem gPb;
@@ -82,7 +85,7 @@ public class Preprocessor {
             for(AbstractAction aa : planner.pb.abstractActions()) {
                 DeleteFreeActionsFactory f = new DeleteFreeActionsFactory();
                 List<GAction> gacts = this.getAllActions().stream().filter(ga -> ga.abs == aa).collect(Collectors.toList());
-                relaxedActions.addAll(f.getDeleteFrees(aa, gacts, this.getGroundProblem()));
+                relaxedActions.addAll(f.getDeleteFrees(aa, gacts, planner));
             }
         }
         return relaxedActions;
