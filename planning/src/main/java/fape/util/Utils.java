@@ -13,6 +13,14 @@ import java.util.*;
 
 public class Utils {
 
+    private static long lastTick = 0;
+    public static void tick() { lastTick = System.currentTimeMillis(); }
+    public static void printAndTick(String msg) {
+        long tmp = lastTick;
+        tick();
+        System.out.println(msg + " ["+(lastTick-tmp)+"]");
+    }
+
     public static boolean eq(Object o1, Object o2) {
         if(o1 == null) return o2 == null;
         else if(o2 == null) return o1 == null;

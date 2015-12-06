@@ -9,6 +9,7 @@ import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
+import fape.util.Utils;
 import fr.laas.fape.structures.AbsIdentifiable;
 import fr.laas.fape.structures.IRStorage;
 import fr.laas.fape.structures.Ident;
@@ -156,8 +157,10 @@ public class DepGraph {
     boolean isFirstDijkstraFinished = false;
 
     public void propagate() {
+        Utils.tick();
         // run a dijkstra first to initialize everything
         dijkstra();
+        Utils.printAndTick("\nDijkstra");
         isFirstDijkstraFinished = true;
         assert queue.isEmpty();
         // delete everything that was not marked by dijkstra
@@ -176,6 +179,7 @@ public class DepGraph {
                 assert !isActive(e.act);
             }
         }
+        Utils.printAndTick("Deletion");
         final int D = extractMaxLabel();
         assert !isInfty(D);
 
@@ -217,6 +221,7 @@ public class DepGraph {
                 }
             }
         }
+        Utils.printAndTick("Bellman-Ford");
     }
 
     public void delete(Node n) {
