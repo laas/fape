@@ -10,10 +10,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.EffSet;
 import fape.util.Utils;
-import fr.laas.fape.structures.AbsIdentifiable;
-import fr.laas.fape.structures.IRStorage;
-import fr.laas.fape.structures.Ident;
-import fr.laas.fape.structures.ValueConstructor;
+import fr.laas.fape.structures.*;
 import lombok.*;
 
 import java.util.*;
@@ -28,6 +25,7 @@ public class DepGraph {
 
     private static boolean isInfty(int num) { return num > 99999; }
 
+    @Ident(Node.class)
     public abstract static class Node extends AbsIdentifiable {}
     public abstract static class ActionNode extends Node {
         public abstract List<TempFluent> getConditions();
@@ -61,7 +59,7 @@ public class DepGraph {
     Map<ActionNode, List<MaxEdge>> actIn = new HashMap<>();
     Map<Fluent, List<MinEdge>> fluentIn = new HashMap<>();
 
-    final Map<Node, Integer> optimisticEST;
+    final IR2IntMap<Node> optimisticEST;
 
     List<MaxEdge> ignored = new ArrayList<>();
 
@@ -128,7 +126,7 @@ public class DepGraph {
             // add new fact action
             optimisticEST.put(init, 0);
         } else {
-            optimisticEST = new HashMap<>();
+            optimisticEST = new IR2IntMap<Node>(st.pl.preprocessor.store.getIntRep(Node.class)); //new HashMap<>();
             for (Fluent f : fluentIn.keySet())
                 optimisticEST.put(f, -1);
 
@@ -161,6 +159,8 @@ public class DepGraph {
         // run a dijkstra first to initialize everything
         dijkstra();
         Utils.printAndTick("\nDijkstra");
+        System.out.println("Expanded nodes: " + numExpandNodes);
+        System.out.println("expanded edges: " + numOutConsidered);
         isFirstDijkstraFinished = true;
         assert queue.isEmpty();
         // delete everything that was not marked by dijkstra
@@ -222,6 +222,9 @@ public class DepGraph {
             }
         }
         Utils.printAndTick("Bellman-Ford");
+        System.out.println("Expanded nodes: " + numExpandNodes);
+        System.out.println("expanded edges: "+numOutConsidered);
+        System.out.println("num earliest start: "+numEA);
     }
 
     public void delete(Node n) {
@@ -277,6 +280,10 @@ public class DepGraph {
         }
     }
 
+    private int numExpandNodes = 0;
+    private int numOutConsidered = 0;
+    private int numEA = 0;
+
     private void expandDijkstra(Label lbl) {
         assert !wasPruned(lbl.n);
         assert !lbl.finished;
@@ -289,6 +296,8 @@ public class DepGraph {
         if(!isFirstDijkstraFinished || lbl.time > optimisticEST.get(lbl.n)) {
             optimisticEST.put(lbl.n, lbl.time);
 
+            numExpandNodes++;
+
             if (lbl.n instanceof Fluent) {
                 Fluent f = (Fluent) lbl.n;
                 fluentOut.get(f).stream()
@@ -296,7 +305,7 @@ public class DepGraph {
                         .filter(a -> !wasPruned(a))
                         .filter(a -> actIn.get(a).stream().allMatch(e -> labels.containsKey(e.fluent)))
                         .filter(a -> isEnabled(a))
-                        .forEach(a -> setTime(a, earliestStart(a)));
+                        .forEach(a -> { numOutConsidered++ ; setTime(a, earliestStart(a)); });
             } else {
                 ActionNode act = (ActionNode) lbl.n;
                 actOut.get(act).stream()
@@ -324,19 +333,25 @@ public class DepGraph {
 
     private int earliestStart(ActionNode act) {
         assert isEnabled(act);
-        return actIn.get(act).stream()
-                .map(e -> optimisticEST.get(e.fluent) + e.delay)
-                .max(Integer::compare)
-                .orElse(0);
+//        System.out.println("  action in: "+act+"     "+actIn.get(act).size());
+//        numEA += actIn.get(act).size();
+        int max = 0;
+        for(MaxEdge e : actIn.get(act)) {
+            max = Math.max(max, optimisticEST.get(e.fluent.getID()) + e.delay);
+        }
+        return max;
     }
 
     private int earliestStart(Fluent f) {
         assert isEnabled(f);
-        return fluentIn.get(f).stream()
-                .filter(e -> isActive(e.act))
-                .map(e -> optimisticEST.get(e.act)+ e.delay)
-                .min(Integer::compare)
-                .get();
+//        if(fluentIn.get(f).size() > 30)
+//            System.out.println("  act in: "+"  "+fluentIn.get(f).size()+"   "+f);
+//        numEA += fluentIn.get(f).size();
+        int min = Integer.MAX_VALUE;
+        for(MinEdge e : fluentIn.get(f))
+            if(isActive(e.act))
+                min = Math.min(optimisticEST.get(e.act.getID()) + e.delay, min);
+        return min;
     }
 
     public static DepGraph of(State st, APlanner pl) {
@@ -387,11 +402,11 @@ public class DepGraph {
      * An instance of this class is to be attached to
      */
     @Value public static class StateExt implements StateExtension {
-        public final Map<Node,Integer> depGraphEarliestAppearances;
+        public final IR2IntMap<Node> depGraphEarliestAppearances;
 
         @Override
-        public StateExtension clone() {
-            return new StateExt(new HashMap<>(depGraphEarliestAppearances));
+        public StateExt clone() {
+            return new StateExt(depGraphEarliestAppearances.clone());
         }
     }
 
