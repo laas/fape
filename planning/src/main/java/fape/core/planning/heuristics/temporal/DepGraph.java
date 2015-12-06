@@ -159,8 +159,6 @@ public class DepGraph {
         // run a dijkstra first to initialize everything
         dijkstra();
         Utils.printAndTick("\nDijkstra");
-        System.out.println("Expanded nodes: " + numExpandNodes);
-        System.out.println("expanded edges: " + numOutConsidered);
         isFirstDijkstraFinished = true;
         assert queue.isEmpty();
         // delete everything that was not marked by dijkstra
@@ -222,9 +220,6 @@ public class DepGraph {
             }
         }
         Utils.printAndTick("Bellman-Ford");
-        System.out.println("Expanded nodes: " + numExpandNodes);
-        System.out.println("expanded edges: "+numOutConsidered);
-        System.out.println("num earliest start: "+numEA);
     }
 
     public void delete(Node n) {
@@ -280,10 +275,6 @@ public class DepGraph {
         }
     }
 
-    private int numExpandNodes = 0;
-    private int numOutConsidered = 0;
-    private int numEA = 0;
-
     private void expandDijkstra(Label lbl) {
         assert !wasPruned(lbl.n);
         assert !lbl.finished;
@@ -296,8 +287,6 @@ public class DepGraph {
         if(!isFirstDijkstraFinished || lbl.time > optimisticEST.get(lbl.n)) {
             optimisticEST.put(lbl.n, lbl.time);
 
-            numExpandNodes++;
-
             if (lbl.n instanceof Fluent) {
                 Fluent f = (Fluent) lbl.n;
                 fluentOut.get(f).stream()
@@ -305,12 +294,12 @@ public class DepGraph {
                         .filter(a -> !wasPruned(a))
                         .filter(a -> actIn.get(a).stream().allMatch(e -> labels.containsKey(e.fluent)))
                         .filter(a -> isEnabled(a))
-                        .forEach(a -> { numOutConsidered++ ; setTime(a, earliestStart(a)); });
+                        .forEach(a -> setTime(a, earliestStart(a)));
             } else {
                 ActionNode act = (ActionNode) lbl.n;
                 actOut.get(act).stream()
                         .filter(e -> !wasPruned(e.fluent))
-                        .forEach(e -> setTime(e.fluent, earliestStart(e.fluent)));
+                        .forEach(e -> setTime(e.fluent, lbl.time + e.delay));
             }
         }
     }
@@ -333,25 +322,11 @@ public class DepGraph {
 
     private int earliestStart(ActionNode act) {
         assert isEnabled(act);
-//        System.out.println("  action in: "+act+"     "+actIn.get(act).size());
-//        numEA += actIn.get(act).size();
         int max = 0;
         for(MaxEdge e : actIn.get(act)) {
             max = Math.max(max, optimisticEST.get(e.fluent.getID()) + e.delay);
         }
         return max;
-    }
-
-    private int earliestStart(Fluent f) {
-        assert isEnabled(f);
-//        if(fluentIn.get(f).size() > 30)
-//            System.out.println("  act in: "+"  "+fluentIn.get(f).size()+"   "+f);
-//        numEA += fluentIn.get(f).size();
-        int min = Integer.MAX_VALUE;
-        for(MinEdge e : fluentIn.get(f))
-            if(isActive(e.act))
-                min = Math.min(optimisticEST.get(e.act.getID()) + e.delay, min);
-        return min;
     }
 
     public static DepGraph of(State st, APlanner pl) {
