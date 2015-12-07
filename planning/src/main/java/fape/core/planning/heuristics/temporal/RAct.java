@@ -32,7 +32,7 @@ public class RAct extends DepGraph.ActionNode {
     }
 
     @Override public String toString() {
-        String s = act+"--"+tp.toString();
+        String s = "("+getID()+") "+act+"--"+tp.toString();
 //        s += "  conditions:\n";
 //        for(TempFluent tf : conditions) s += "    "+tf+"\n";
 //        s += "  effects:\n";

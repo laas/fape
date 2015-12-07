@@ -60,10 +60,14 @@ public class DepGraph {
 
     final IR2IntMap<Node> optimisticEST;
     final Map<Node,Node> predecessors = new HashMap<>();
+    final Set<Node> settledNodes = new HashSet<>();
 
     private int ea(Node n) { return optimisticEST.get(n.getID()); }
     private int pred(Fluent n) { return predecessors.containsKey(n) && predecessors.get(n) != null ? predecessors.get(n).getID() : -1; }
     private void setEa(Node n, int ea, Node pred) { optimisticEST.put(n, ea); predecessors.put(n, pred); }
+    private boolean isFinished(Node n) { return labels.containsKey(n) && labels.get(n).isFinished(); }
+    private void setSettled(Node n) { settledNodes.add(n); }
+    private boolean wasSettled(Node n) { return settledNodes.contains(n); }
 
     List<MaxEdge> ignored = new ArrayList<>();
 
@@ -125,7 +129,6 @@ public class DepGraph {
 
         if(st.hasExtension(StateExt.class)) {
             optimisticEST = st.getExtension(StateExt.class).getDepGraphEarliestAppearances();
-
             // remove any existing fact action
             optimisticEST.keySet().stream().collect(Collectors.toSet()).stream()
                     .filter(n -> n instanceof FactAction)
@@ -175,7 +178,7 @@ public class DepGraph {
             if(!labels.containsKey(n))
                 delete(n);
         }
-        if(dbgLvl >= 2) printActions();
+//        if(dbgLvl >= 2) printActions();
 
         // prune
         for(MaxEdge e : ignored) {
@@ -190,7 +193,7 @@ public class DepGraph {
         final int D = extractMaxLabel();
         assert !isInfty(D);
 
-        for(int i=0 ; i<2 ; i++) {
+        for(int i=0 ; i<20 ; i++) {
             for (MaxEdge e : ignored) {
                 if (isActive(e.act)) {
                     assert isEnabled(e.act);
@@ -218,6 +221,8 @@ public class DepGraph {
             };
             Optional<Integer> cutThreshold = lateThreshold.apply(optimisticEST.values().stream());
             if(cutThreshold.isPresent()) {
+                if(dbgLvl >= 1) System.out.println("Cut threshold: "+cutThreshold.get());
+//                if(dbgLvl >= 1) printActions();
                 for(Node n : new ArrayList<>(optimisticEST.keySet())) {
                     if(optimisticEST.containsKey(n) && optimisticEST.get(n) > cutThreshold.get()) {
                         if(dbgLvl >= 1) System.out.println("Late cutting: "+n);
@@ -228,6 +233,7 @@ public class DepGraph {
         }
         if(dbgLvl >= 1) Utils.printAndTick("Bellman-Ford");
         if(dbgLvl >= 2) printActions();
+        return;
     }
 
 
@@ -249,11 +255,38 @@ public class DepGraph {
                     .filter(e -> e.fluent.equals(n))
                     .forEach(e -> delete(e.act));
         } else {
-            actOut.get((ActionNode) n).stream()
-                    .filter(e -> !isEnabled(e.fluent))
-                    .forEach(e -> delete(e.fluent));
+            for(MinEdge e : actOut.get(n)) {
+                if(n.getID() == pred(e.fluent))
+                    updateFluent(e.fluent);
+            }
+//            actOut.get((ActionNode) n).stream()
+//                    .filter(e -> !isEnabled(e.fluent))
+//                    .forEach(e -> delete(e.fluent));
         }
         assert !isActive(n);
+    }
+
+    private boolean updateFluent(Fluent f) {
+        int min = Integer.MAX_VALUE;
+        Node pred = null;
+        for(MinEdge e : fluentIn.get(f)) {
+            if(isActive(e.act) && ea(e.act) + e.delay < min) {
+                min = ea(e.act) + e.delay;
+                pred = e.act;
+            }
+        }
+        if(min == Integer.MAX_VALUE) {
+            delete(f);
+            return true;
+        } else if(min > ea(f)) {
+            setEa(f, min, pred);
+            return true;
+        } else if(min == ea(f) && pred(f) == -1) {
+            setEa(f, min, pred);
+            return false; // just set a missing predecessor without changing the value
+        } else {
+            return false;
+        }
     }
 
     public void dijkstra() {
@@ -298,6 +331,7 @@ public class DepGraph {
         if(!isFirstDijkstraFinished || lbl.getTime() > optimisticEST.get(lbl.n)) {
 //            optimisticEST.put(lbl.n, lbl.getTime());
             setEa(lbl.n, lbl.getTime(), lbl.getPred());
+            setSettled(lbl.n);
 
             if (lbl.n instanceof Fluent) {
                 Fluent f = (Fluent) lbl.n;
@@ -318,15 +352,29 @@ public class DepGraph {
 
                             // if the fluent already has a predecessor (incremental version) and it is the current action
                             // then check all enablers for the fluent to make we don't get pessimistic
-                            if(pred(e.fluent) != -1 && pred(e.fluent) == act.getID()) {
+//                            if(wasSettled(e.fluent) && (pred(e.fluent) == -1 || pred(e.fluent) == act.getID())) { //TODO: this is needed for efficiency but is broken right now
+                            if(isFirstDijkstraFinished && (pred(e.fluent) == act.getID() || pred(e.fluent) == -1)) {
+                                assert wasSettled(e.fluent);
+//                                System.out.println("  "+t+"  "+act);
+//                                System.out.println("----pr: "+predecessors.get(e.fluent));
                                 for(MinEdge fIn : fluentIn.get(e.fluent)) {
-                                    if(ea(fIn.act)+fIn.delay < t) {
+//                                    System.out.println("--------> "+fIn.act);
+                                    if(wasSettled(fIn.act) && isActive(fIn.act) && ea(fIn.act)+fIn.delay < t) {
+//                                        if((pred(e.fluent) == -1 || pred(e.fluent) != act.getID()) && isFinished(fIn.act)) {
+//                                            assert labels.containsKey(e.fluent) : e.fluent+" has an another enabler ("+fIn.act
+//                                                    +") providing a better time than the current one ("+act+").";
+//                                            assert labels.get(e.fluent).time <= t;
+//                                        }
+
                                         t = ea(fIn.act) + fIn.delay;
                                         pred = fIn.act;
+//                                        System.out.println("                              up: "+t);
                                     }
                                 }
+                                updateLabel(e.fluent, t, pred);
+                            } else if(!isFirstDijkstraFinished) {
+                                updateLabel(e.fluent, t, pred);
                             }
-                            updateLabel(e.fluent, t, pred);
                         });
             }
         }
@@ -390,7 +438,7 @@ public class DepGraph {
             long newNumAct = st.getExtension(StateExt.class).depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count();
             System.out.println("Num actions:  " + newNumAct);
         }
-        if(dbgLvl >= 2) dg.printActions();
+//        if(dbgLvl >= 2) dg.printActions();
         return dg;
     }
 
@@ -398,9 +446,9 @@ public class DepGraph {
         System.out.println("\nactions: " +
                 optimisticEST.entrySet().stream()
                         .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-//                        .filter(n -> n.getKey() instanceof RAct)
+                        .filter(n -> n.getKey() instanceof RAct)
 //                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
-                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
+                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey() + "\t\t\tpred:" + predecessors.get(a.getKey()))
                         .collect(Collectors.toList()));
     }
 
