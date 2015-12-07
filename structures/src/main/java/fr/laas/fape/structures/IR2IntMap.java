@@ -3,6 +3,7 @@ package fr.laas.fape.structures;
 import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class IR2IntMap<K> implements Map<K, Integer> {
     private static int NIL = Integer.MIN_VALUE;
@@ -167,7 +168,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
 
     @Override
     public Set<Entry<K, Integer>> entrySet() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return keySet().stream().map(k -> new AbstractMap.SimpleEntry<K,Integer>(k, get(k))).collect(Collectors.toSet());
     }
 }
 
