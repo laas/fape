@@ -167,6 +167,7 @@ public class DepGraph {
             if(!labels.containsKey(n))
                 delete(n);
         }
+        printActions();
 
         // prune
         for(MaxEdge e : ignored) {
@@ -220,7 +221,10 @@ public class DepGraph {
             }
         }
         Utils.printAndTick("Bellman-Ford");
+        printActions();
     }
+
+
 
     public void delete(Node n) {
         if(!isActive(n)) {
@@ -254,6 +258,9 @@ public class DepGraph {
     }
 
     private void setTime(Node n, int newTime) {
+        if(n.getID() == 1)
+            System.out.println(n+" BBBBBBBBBBBB  "+newTime);
+
         if(!optimisticEST.containsKey(n))
             return; // only enqueue node that are "optimistically feasible"
 
@@ -263,15 +270,21 @@ public class DepGraph {
         if(labels.containsKey(n)) {
             Label lbl = labels.get(n);
             assert !lbl.finished || time >= lbl.time : "Updating a finished label";
-            if(time < lbl.time) {
+            if(!lbl.finished && time < lbl.time) {
                 queue.remove(lbl);
                 lbl.time = time;
                 queue.add(lbl);
+                if(n.getID() == 1)
+                    System.out.println(n+" AAAAA  "+newTime);
+
             }
         } else {
             Label lbl = new Label(n, time, false);
             labels.put(n, lbl);
             queue.add(lbl);
+            if(n.getID() == 1)
+                System.out.println(n+" AAAAA   "+newTime);
+
         }
     }
 
@@ -299,7 +312,11 @@ public class DepGraph {
                 ActionNode act = (ActionNode) lbl.n;
                 actOut.get(act).stream()
                         .filter(e -> !wasPruned(e.fluent))
-                        .forEach(e -> setTime(e.fluent, lbl.time + e.delay));
+                        .forEach(e -> {
+                            if(e.fluent.getID() == 1)
+                                System.err.println("AAAAAAA");
+                            setTime(e.fluent, lbl.time + e.delay);
+                        });
             }
         }
     }
@@ -362,15 +379,18 @@ public class DepGraph {
         long newNumAct = stateExtOptional.isPresent() ? stateExtOptional.get().depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count() : 9999999;
         System.out.println(prevNumAct+"  -->  "+newNumAct);
 //        System.out.println("\nall: " + dg.optimisticEST.keySet());
-//        System.out.println("\nactions: " +
-//                dg.optimisticEST.entrySet().stream()
-//                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-//                        .filter(n -> n.getKey() instanceof RAct)
-////                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
-//                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
-//                        .collect(Collectors.toList()));
-
+        dg.printActions();
         return dg;
+    }
+
+    private void printActions() {
+        System.out.println("\nactions: " +
+                optimisticEST.entrySet().stream()
+                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+//                        .filter(n -> n.getKey() instanceof RAct)
+//                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
+                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
+                        .collect(Collectors.toList()));
     }
 
     /**
