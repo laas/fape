@@ -6,6 +6,7 @@ import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class GStore extends IRStorage {
@@ -16,5 +17,9 @@ public class GStore extends IRStorage {
 
     public RAct getRAct(GAction act, AbsTP tp, List<TempFluent> conditions, List<TempFluent> effects) {
         return (RAct) this.get(RAct.class, Arrays.asList(act, tp, conditions, effects));
+    }
+
+    public DependencyGraph.FactAction getFactAction(List<TempFluent> facts) {
+        return (DependencyGraph.FactAction) this.get(DependencyGraph.FactAction.class, Collections.singletonList(facts));
     }
 }

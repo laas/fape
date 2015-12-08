@@ -111,6 +111,14 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return v;
     }
 
+    @Override public Integer putIfAbsent(K k, Integer v) {
+        if (v == null || NIL == ((int) v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
+        if(!containsKey(k))
+            return put(k, v);
+        else
+            return get(k);
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public Integer remove(Object o) {

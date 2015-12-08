@@ -1,29 +1,24 @@
 package fape.core.planning.heuristics.temporal;
 
-import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GTaskCond;
 import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
-import fr.laas.fape.structures.AbsIdentifiable;
-import fr.laas.fape.structures.IRStorage;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.ValueConstructor;
 import lombok.ToString;
 import lombok.Value;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.InstanceRef;
-import scala.Array;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Value public class TempFluent {
 
-    @Ident(DepGraph.Node.class) @ToString
-    public static class Fluent extends DepGraph.Node {
+    @Ident(DepGraphCore.Node.class) @ToString
+    public static class Fluent extends DepGraphCore.Node {
         public final String funcName;
         public final List<InstanceRef> argsAndValue;
 

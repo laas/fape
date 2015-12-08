@@ -1,7 +1,7 @@
 package fape;
 
 import com.martiansoftware.jsap.*;
-import fape.core.planning.heuristics.temporal.DepGraph;
+import fape.core.planning.heuristics.temporal.DepGraphCore;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
@@ -242,7 +242,7 @@ public class Planning {
                     options.flawFinders.add(new NeededObservationsFinder());
 
                 if(config.getBoolean("dependency-graph"))
-                    options.handlers.add(new DepGraph.Handler());
+                    options.handlers.add(new DepGraphCore.Handler());
 
                 final AnmlProblem pb = new AnmlProblem();
                 try {

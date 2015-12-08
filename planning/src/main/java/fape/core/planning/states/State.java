@@ -5,7 +5,6 @@ import fape.core.inference.Term;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
-import fape.core.planning.heuristics.temporal.DepGraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;

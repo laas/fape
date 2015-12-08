@@ -1,22 +1,17 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
-import fr.laas.fape.structures.AbsIdentifiable;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.ValueConstructor;
 import lombok.Getter;
-import lombok.ToString;
-import lombok.Value;
-import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.time.AbsTP;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Ident(DepGraph.Node.class) @Getter
-public class RAct extends DepGraph.ActionNode {
+@Ident(DepGraphCore.Node.class) @Getter
+public class RAct extends DepGraphCore.ActionNode {
 
     public final GAction act;
     public final AbsTP tp;
