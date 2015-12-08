@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
             this.argsAndValue = argsAndValue;
         }
 
+        @Override public String toString() { return String.format("(%d) %s%s", getID(), funcName, argsAndValue); }
+
         public boolean isTask() { return funcName.startsWith("task-"); }
         public boolean isActionStart() { return funcName.startsWith("started-"); }
 
