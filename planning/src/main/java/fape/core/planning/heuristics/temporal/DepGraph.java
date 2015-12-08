@@ -17,7 +17,7 @@ import fape.core.planning.heuristics.temporal.TempFluent.Fluent;
 import planstack.anml.model.concrete.Task;
 
 public class DepGraph {
-    private static int dbgLvl = 2;
+    private static int dbgLvl = 0;
 
     private static boolean isInfty(int num) { return num > 99999; }
 
@@ -62,7 +62,6 @@ public class DepGraph {
 
     public DepGraph(Collection<RAct> actions, List<TempFluent> facts, State st) {
         store = st.pl.preprocessor.store;
-        Set<Fluent> instantaneousEffects = new HashSet<>();
         FactAction init = (FactAction) st.pl.preprocessor.store.get(FactAction.class, Arrays.asList(facts)); // new FactAction(facts);
         List<ActionNode> allActs = new LinkedList<>(actions);
         allActs.add(init);
@@ -92,7 +91,7 @@ public class DepGraph {
         }
 
         if(st.hasExtension(StateExt.class)) {
-            optimisticEST = st.getExtension(StateExt.class).getDepGraphEarliestAppearances();
+            optimisticEST = st.getExtension(StateExt.class).getEarliestAppearances();
             // remove any existing fact action
             optimisticEST.keySet().stream().collect(Collectors.toSet()).stream()
                     .filter(n -> n instanceof FactAction)
@@ -141,14 +140,15 @@ public class DepGraph {
         allFacts.addAll(tempFluents);
         allFacts.addAll(tasks);
 
-        Optional<StateExt> stateExtOptional = st.hasExtension(StateExt.class) ? Optional.of(st.getExtension(StateExt.class)) : Optional.empty();
         DepGraph dg = new DepGraph(pl.preprocessor.getRelaxedActions(), allFacts, st);
         dg.propagate();
         if(!st.hasExtension(StateExt.class))
             st.addExtension(new StateExt(dg.optimisticEST));
+        else
+            st.getExtension(StateExt.class).setEarliestAppearances(dg.optimisticEST);
 
         if(dbgLvl >= 1) {
-            long newNumAct = st.getExtension(StateExt.class).depGraphEarliestAppearances.keySet().stream().filter(k -> k instanceof RAct).count();
+            long newNumAct = st.getExtension(StateExt.class).getEarliestAppearances().keySet().stream().filter(k -> k instanceof RAct).count();
             System.out.println("Num actions:  " + newNumAct);
         }
 //        if(dbgLvl >= 2) dg.printActions();
@@ -178,12 +178,12 @@ public class DepGraph {
     /**
      * An instance of this class is to be attached to
      */
-    @Value public static class StateExt implements StateExtension {
-        public final IR2IntMap<Node> depGraphEarliestAppearances;
+    @Data @AllArgsConstructor public static class StateExt implements StateExtension {
+        private  IR2IntMap<Node> earliestAppearances;
 
         @Override
         public StateExt clone() {
-            return new StateExt(depGraphEarliestAppearances.clone());
+            return new StateExt(earliestAppearances.clone());
         }
     }
 
