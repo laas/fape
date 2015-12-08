@@ -156,13 +156,23 @@ public class DepGraph {
     }
 
     private void printActions() {
+//        // actions split at each controllable timepoint
+//        System.out.println("\nactions: " +
+//                optimisticEST.entrySet().stream()
+//                        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+//                        .filter(n -> n.getKey() instanceof RAct)
+////                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
+//                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
+//                        .collect(Collectors.toList()));
+
+        // complete action: show start
         System.out.println("\nactions: " +
                 optimisticEST.entrySet().stream()
                         .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
                         .filter(n -> n.getKey() instanceof RAct)
-//                        .filter(n -> n.getKey().toString().contains("at") && n.getKey().toString().contains("tru1") && !(n.getKey() instanceof FactAction))
-                        .map(a -> "\n  [" + a.getValue() + "] " + a.getKey())
-                        .collect(Collectors.toList()));
+                        .filter(n -> ((RAct) n.getKey()).tp.toString().equals("ContainerStart"))
+                        .map(a -> "\n  [" + a.getValue() + "] " + ((RAct) a.getKey()).act)
+                                .collect(Collectors.toList()));
     }
 
     /**
@@ -201,7 +211,8 @@ public class DepGraph {
         private void setEa(int nid, int t) { assert ea(nid) <= t; eas.put(nid, t); }
         private boolean possible(Node n) { return possible(n.getID()); }
         private boolean possible(int nid) { return possible.contains(nid); }
-        private void setImpossible(int nid) { possible.remove(nid); eas.remove(nid); }
+        private void setImpossible(int nid) {
+            possible.remove(nid); eas.remove(nid); }
         private void setImpossible(Node n) { setImpossible(n.getID()); }
 
         public BellmanFord(IR2IntMap<Node> optimisticValues) {
@@ -231,6 +242,7 @@ public class DepGraph {
                         cut_threshold = val;
                         break;
                     }
+                    prevValue = val;
                 }
                 if(cut_threshold != Integer.MAX_VALUE) {
                     PrimitiveIterator.OfInt nodes = possible.primitiveIterator();
@@ -247,7 +259,7 @@ public class DepGraph {
         }
 
         private boolean update(int nid) {
-            Node n = (Node) store.get(Node.class, nid); //TODO: remove
+            Node n = (Node) store.get(Node.class, nid); //TODO: keep to primitive types
             if(n instanceof Fluent)
                 return updateFluent((Fluent) n);
             else
