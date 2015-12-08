@@ -1,6 +1,5 @@
 package fr.laas.fape.structures;
 
-import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -156,8 +155,25 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return keys;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
+    public PrimitiveIterator.OfInt keysIterator() {
+        return new PrimitiveIterator.OfInt() {
+            int i = 0;
+            @Override
+            public int nextInt() {
+                while(i<values.length && !containsKey(i))
+                    i++;
+                return i++;
+            }
+
+            @Override
+            public boolean hasNext() {
+                while(i<values.length && !containsKey(i))
+                    i++;
+                return i<values.length;
+            }
+        };
+    }
+
     public Collection<Integer> values() {
         List<Integer> vals = new ArrayList<>();
         for (int val : values)
