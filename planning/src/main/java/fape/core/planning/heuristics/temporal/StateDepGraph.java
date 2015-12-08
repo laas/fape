@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class StateDepGraph implements DependencyGraph {
 
-    static int dbgLvl = 2;
+    static final int dbgLvl = 0;
 
     public final DepGraphCore core;
     public final FactAction facts;
