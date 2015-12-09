@@ -2,6 +2,8 @@ package fape.core.planning.search;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
+import planstack.anml.model.concrete.Action;
+import planstack.anml.model.concrete.Task;
 
 /**
  * A handler is a computation unit that implements specific (and usually optional) aspects of the
@@ -22,4 +24,7 @@ public interface Handler {
      * The handler can start any computation he wants to do at that point.
      */
     void apply(State st, StateLifeTime time, APlanner planner);
+
+    default void actionInserted(Action a, State st, APlanner planner) {}
+    default void taskInserted(Task a, State st, APlanner planner) {}
 }

@@ -61,6 +61,16 @@ public class IRStorage {
         }
     }
 
+    public void record(Identifiable o) {
+        Class identClazz = getIdentClass(o.getClass());
+        instances.putIfAbsent(identClazz, new ArrayList<>(50));
+        ArrayList<Identifiable> allVals = instances.get(identClazz);
+        while(allVals.size() <= 1+o.getID())
+            allVals.add(null);
+        assert allVals.get(o.getID()) == null || allVals.get(o.getID()) == o;
+        allVals.set(o.getID(), o);
+    }
+
     public <T extends Identifiable> IntRep<T> getIntRep(Class<T> clazz) {
         final Class identClazz = getIdentClass(clazz);
         instancesByParams.putIfAbsent(identClazz, new HashMap<>());

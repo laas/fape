@@ -1,5 +1,6 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.core.planning.grounding.GAction;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
@@ -14,10 +15,11 @@ public class StateDepGraph implements DependencyGraph {
     public final DepGraphCore core;
     public final FactAction facts;
     List<MinEdge> initMinEdges = new ArrayList<>();
-    Map<TempFluent.Fluent, List<MinEdge>> initFluents = new HashMap<>();
+    Map<TempFluent.DGFluent, List<MinEdge>> initFluents = new HashMap<>();
     int dmax;
 
     IR2IntMap<Node> earliestAppearances = null;
+    IRSet<GAction> addableActs = null;
 
     public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts) {
         this.core = core;
@@ -62,7 +64,7 @@ public class StateDepGraph implements DependencyGraph {
     }
 
     @Override
-    public Iterator<MinEdge> inEdges(TempFluent.Fluent f) {
+    public Iterator<MinEdge> inEdges(TempFluent.DGFluent f) {
         if(initFluents.containsKey(f))
             return new IteratorConcat<>(core.inEdges(f), initFluents.get(f).iterator());
         else
@@ -70,7 +72,7 @@ public class StateDepGraph implements DependencyGraph {
     }
 
     @Override
-    public Iterator<MaxEdge> outEdges(TempFluent.Fluent f) {
+    public Iterator<MaxEdge> outEdges(TempFluent.DGFluent f) {
         return core.outEdges(f); // no such edge can be added by a fact action
     }
 
@@ -84,7 +86,7 @@ public class StateDepGraph implements DependencyGraph {
         } else {
             optimisticEST = core.getDefaultEarliestApprearances();
             optimisticEST.put(facts, 0);
-            for(TempFluent.Fluent f : initFluents.keySet())
+            for(TempFluent.DGFluent f : initFluents.keySet())
                 optimisticEST.putIfAbsent(f, 0);
         }
         Propagator p = new BellmanFord(optimisticEST);
@@ -159,17 +161,22 @@ public class StateDepGraph implements DependencyGraph {
                 if(dbgLvl >= 3) printActions();
             }
             if(dbgLvl >= 1) System.out.println(String.format("Num iterations: %d\tNum removed: %d", numIter, numCut));
+
+            addableActs = new IRSet<GAction>(core.store.getIntRep(GAction.class));
+            for(Node n : possible)
+                if(n instanceof RAct)
+                    addableActs.add(((RAct) n).getAct());
         }
 
         private boolean update(int nid) {
             Node n = (Node) core.store.get(Node.class, nid); //TODO: keep to primitive types
-            if(n instanceof TempFluent.Fluent)
-                return updateFluent((TempFluent.Fluent) n);
+            if(n instanceof TempFluent.DGFluent)
+                return updateFluent((TempFluent.DGFluent) n);
             else
                 return updateAction((ActionNode) n);
         }
 
-        private boolean updateFluent(TempFluent.Fluent f) {
+        private boolean updateFluent(TempFluent.DGFluent f) {
             if(!possible(f)) return false;
             assert eas.containsKey(f.getID()) : "Possible fluent with no earliest appearance time.";
 

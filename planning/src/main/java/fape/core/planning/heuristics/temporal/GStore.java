@@ -11,8 +11,8 @@ import java.util.List;
 
 public class GStore extends IRStorage {
 
-    public TempFluent.Fluent getFluent(String funcName, List<InstanceRef> argsAndValues) {
-        return (TempFluent.Fluent) this.get(TempFluent.Fluent.class, Arrays.asList(funcName, argsAndValues));
+    public TempFluent.DGFluent getFluent(String funcName, List<InstanceRef> argsAndValues) {
+        return (TempFluent.DGFluent) this.get(TempFluent.DGFluent.class, Arrays.asList(funcName, argsAndValues));
     }
 
     public RAct getRAct(GAction act, AbsTP tp, List<TempFluent> conditions, List<TempFluent> effects) {

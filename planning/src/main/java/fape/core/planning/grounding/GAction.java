@@ -8,6 +8,8 @@ import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
+import fr.laas.fape.structures.Ident;
+import fr.laas.fape.structures.Identifiable;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractAssignment;
@@ -19,7 +21,8 @@ import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 
-public class GAction {
+@Ident(GAction.class)
+public class GAction implements Identifiable {
 
     public abstract class GLogStatement {
         public final GStateVariable sv;
@@ -85,6 +88,16 @@ public class GAction {
                 return p.value2;
         }
         throw new FAPEException("Unable to find statement with ref: "+ref);
+    }
+
+    @Override
+    public void setID(int i) {
+        throw new FAPEException("Can't modify the ID of a GAction");
+    }
+
+    @Override
+    public int getID() {
+        return id;
     }
 
     @Override
@@ -408,6 +421,9 @@ public class GAction {
                 actions.add(new GAction(aa, params, gPb, planner));
             } catch (NotValidGroundAction e) {}
         }
+
+        for(GAction ga : actions)
+            planner.preprocessor.store.record(ga);
 
         return actions;
     }

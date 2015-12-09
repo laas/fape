@@ -9,6 +9,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
+import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -71,6 +72,8 @@ public class State implements Reporter {
     protected final ResourceManager resMan;
 
     public final RefCounter refCounter;
+
+    private boolean isDeadEnd = false;
 
     /**
      * Keep tracks of statements that must be supported by a particular
@@ -183,6 +186,7 @@ public class State implements Reporter {
         this.pgr = st.pgr;
         this.actions = new ArrayList<>(st.actions);
         depth = st.depth + 1;
+        isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
         tdb = new TimelinesManager(st.tdb, this); //st.tdb.deepCopy();
@@ -202,8 +206,14 @@ public class State implements Reporter {
         this.pl = planner;
     }
 
+    public void setDeadEnd() { isDeadEnd = true; }
+
     public State cc() {
         return new State(this);
+    }
+
+    private List<Handler> getHandlers() {
+        return pl != null ? pl.getHandlers() : Collections.EMPTY_LIST;
     }
 
     /**
@@ -238,7 +248,7 @@ public class State implements Reporter {
      * consistent), False otherwise.
      */
     public boolean isConsistent() {
-        return csp.isConsistent() && resMan.isConsistent(this);
+        return !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
     }
 
     public String report() {
@@ -413,6 +423,9 @@ public class State implements Reporter {
 
         if(pgr != null)
             pgr.createActionInstantiationVariable(act, this);
+
+        for(Handler h : getHandlers())
+            h.actionInserted(act, this, pl);
 
         csp.isConsistent();
     }
@@ -646,17 +659,20 @@ public class State implements Reporter {
         }
 
         // needs time points to be defined
-        for(Task ac : mod.tasks()) {
-            csp.stn().enforceBefore(ac.start(), ac.end());
-            enforceBefore(pb.start(), ac.start());
+        for(Task t : mod.tasks()) {
+            csp.stn().enforceBefore(t.start(), t.end());
+            enforceBefore(pb.start(), t.start());
 
             if(mod instanceof Action)
-                taskNet.insert(ac, (Action) mod);
+                taskNet.insert(t, (Action) mod);
             else
-                taskNet.insert(ac);
+                taskNet.insert(t);
+
+            for(Handler h : getHandlers())
+                h.taskInserted(t, this, pl);
 
             if(pgr != null)
-                pgr.createTaskSupportersVariables(ac, this);
+                pgr.createTaskSupportersVariables(t, this);
         }
 
         // needs its timepoints to be defined

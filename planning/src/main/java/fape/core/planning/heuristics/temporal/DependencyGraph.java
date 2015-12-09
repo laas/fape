@@ -35,18 +35,18 @@ public interface DependencyGraph {
 
     @Value
     class MaxEdge {
-        public final TempFluent.Fluent fluent;
+        public final TempFluent.DGFluent fluent;
         public final ActionNode act;
         public final int delay;
     }
     @Value class MinEdge {
         public final ActionNode act;
-        public final TempFluent.Fluent fluent;
+        public final TempFluent.DGFluent fluent;
         public final int delay;
     }
 
     Iterator<MaxEdge> inEdges(ActionNode n);
     Iterator<MinEdge> outEdges(ActionNode n);
-    Iterator<MinEdge> inEdges(TempFluent.Fluent f);
-    Iterator<MaxEdge> outEdges(TempFluent.Fluent f);
+    Iterator<MinEdge> inEdges(TempFluent.DGFluent f);
+    Iterator<MaxEdge> outEdges(TempFluent.DGFluent f);
 }

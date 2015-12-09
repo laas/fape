@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
 @Value public class TempFluent {
 
     @Ident(DepGraphCore.Node.class) @ToString
-    public static class Fluent extends DepGraphCore.Node {
+    public static class DGFluent extends DepGraphCore.Node {
         public final String funcName;
         public final List<InstanceRef> argsAndValue;
 
         @ValueConstructor @Deprecated
-        public Fluent(String funcName, List<InstanceRef> argsAndValue) {
+        public DGFluent(String funcName, List<InstanceRef> argsAndValue) {
             this.funcName = funcName;
             this.argsAndValue = argsAndValue;
         }
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
         public boolean isTask() { return funcName.startsWith("task-"); }
         public boolean isActionStart() { return funcName.startsWith("started-"); }
 
-        public static Fluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, AnmlProblem pb, GStore store) {
+        public static DGFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, AnmlProblem pb, GStore store) {
             InstanceRef[] argsAndValue = new InstanceRef[template.args.length+1];
             for(int i=0 ; i<template.args.length ; i++) {
                 argsAndValue[i] = container.valueOf(template.args[i], pb);
@@ -42,12 +42,12 @@ import java.util.stream.Collectors;
             return store.getFluent(template.funcName, Arrays.asList(argsAndValue)); //new Fluent(template.funcName, argsAndValue);
         }
 
-        public static Fluent from(fape.core.planning.grounding.Fluent f, GStore store) {
+        public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
             InstanceRef[] args = Arrays.copyOf(f.sv.params, f.sv.params.length+1);
             args[args.length-1] = f.value;
             return store.getFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
         }
-        public static Fluent from(GTaskCond task, AnmlProblem pb, GStore store) {
+        public static DGFluent from(GTaskCond task, AnmlProblem pb, GStore store) {
             InstanceRef[] args = Arrays.copyOf(task.args, task.args.length+1);
             args[args.length-1] = pb.instance("true"); //TODO: fix this hack
             return store.getFluent("task-"+task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
     }
 
     public final int time;
-    public final Fluent fluent;
+    public final DGFluent fluent;
 
     public static TempFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, GroundProblem pb, GStore store) {
         int time;
@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
             throw new FAPEException("Unsupported time template: "+template.time);
         }
 
-        Fluent fluent = Fluent.from(template, container, pb.liftedPb, store);
+        DGFluent fluent = DGFluent.from(template, container, pb.liftedPb, store);
 
         return new TempFluent(time, fluent);
     }

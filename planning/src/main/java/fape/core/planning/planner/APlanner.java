@@ -125,6 +125,8 @@ public abstract class APlanner {
      */
     public EPlanState planState = EPlanState.INCONSISTENT;
 
+    public List<Handler> getHandlers() { return options.handlers; }
+
     /**
      * Finds all flaws of a given state. Currently, threats and unbound
      * variables are considered only if no other flaws are present.
