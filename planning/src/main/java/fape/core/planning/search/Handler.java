@@ -16,7 +16,7 @@ public interface Handler {
 
     /** Represent all possible points in a State life time at which a handler can be executed. */
     enum StateLifeTime {
-        SELECTION // when a state is selected from the queue as the next one to be expandedx
+        SELECTION // when a state is selected from the queue as the next one to be expanded
     }
 
     /**
@@ -27,4 +27,7 @@ public interface Handler {
 
     default void actionInserted(Action a, State st, APlanner planner) {}
     default void taskInserted(Task a, State st, APlanner planner) {}
+
+    /** Notifies the handler that in this action was set to support this task in the given state */
+    default void supportLinkAdded(Action a, Task t, State st) {}
 }

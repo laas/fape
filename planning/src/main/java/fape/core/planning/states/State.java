@@ -1084,12 +1084,14 @@ public class State implements Reporter {
      *  Unifies the time points of the action condition and those of the action, and add
      * the support link in the task network.
      */
-    public void addSupport(Task cond, Action act) {
-        csp.stn().enforceConstraint(cond.start(), act.start(), 0, 0);
-        csp.stn().enforceConstraint(cond.end(), act.end(), 0, 0);
+    public void addSupport(Task task, Action act) {
+        csp.stn().enforceConstraint(task.start(), act.start(), 0, 0);
+        csp.stn().enforceConstraint(task.end(), act.end(), 0, 0);
         if(this.pgr != null)
-            addUnificationConstraint(cond.groundSupportersVar(), act.instantiationVar());
-        taskNet.addSupport(cond, act);
+            addUnificationConstraint(task.groundSupportersVar(), act.instantiationVar());
+        taskNet.addSupport(task, act);
+        for(Handler h : getHandlers())
+            h.supportLinkAdded(act, task, this);
     }
 
     public int getNumActions() { return taskNet.getNumActions(); }

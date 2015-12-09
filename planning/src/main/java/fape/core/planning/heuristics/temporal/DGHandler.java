@@ -91,6 +91,11 @@ public class DGHandler implements fape.core.planning.search.Handler {
         st.addValuesSetConstraint(variables, task.name());
     }
 
+    @Override
+    public void supportLinkAdded(Action act, Task task, State st) {
+        st.addUnificationConstraint(task.groundSupportersVar(), act.instantiationVar());
+    }
+
     private void propagateNetwork(State st, APlanner pl) {
         final IntRep<GAction> gactsRep = pl.preprocessor.store.getIntRep(GAction.class);
         initState(st, pl);
