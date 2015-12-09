@@ -6,6 +6,7 @@ import fape.core.inference.Predicate;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.DefaultIntRepresentation;
+import fape.core.planning.heuristics.temporal.DGHandler;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -36,6 +37,9 @@ public class FeasibilityReasoner {
         // this Problem contains all the ground actions
         GroundProblem base = planner.preprocessor.getGroundProblem();
 
+        assert !planner.getHandlers().stream().filter(h -> h instanceof DGHandler).findAny().isPresent() :
+                "The feasibility reasoner is not compatible with dependency graph reasonning.";
+
         // record all n ary constraints (action instantiations and task supporters)
         Set<String> recordedTask = new HashSet<>();
         for(AbstractAction aa : planner.pb.abstractActions()) {
@@ -64,6 +68,8 @@ public class FeasibilityReasoner {
             gactions.put(ga.id, ga);
         }
 
+        // WARNING: the line below could have resulted in incompleteness: some rich temporal actions might be
+        // mistakenly declare as non reachable
         allActions = getAllActions(initialState);
 
         for(GAction ga : allActions) {

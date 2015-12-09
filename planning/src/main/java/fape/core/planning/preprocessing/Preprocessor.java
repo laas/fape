@@ -69,7 +69,8 @@ public class Preprocessor {
 
     public EffSet<GAction> getAllActions() {
         if(allActions == null) {
-            allActions = getFeasibilityReasoner().getAllActions(initialState);
+            allActions = new EffSet<GAction>(groundActionIntRepresentation());
+            allActions.addAll(getGroundProblem().allActions());
         }
         return allActions;
     }

@@ -10,6 +10,7 @@ import fape.util.EffSet;
 import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.IntRep;
 import planstack.anml.model.LVarRef;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.VarRef;
@@ -28,10 +29,45 @@ public class DGHandler implements fape.core.planning.search.Handler {
         DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), pl.preprocessor.store);
         st.addExtension(new DepGraphCore.StateExt(core));
 
+        // Record ground action ids as possible values for variables in the CSP
+        for(GAction ga : pl.preprocessor.getAllActions()) {
+            st.csp.bindings().addPossibleValue(ga.id);
+        }
+
+        // record all n ary constraints (action instantiations and task supporters)
+        Set<String> recordedTask = new HashSet<>();
+        for(AbstractAction aa : pl.pb.abstractActions()) {
+            st.csp.bindings().recordEmptyNAryConstraint(aa.name(), true, aa.allVars().length+1);
+            st.csp.bindings().addPossibleValue(aa.name());
+            if(!recordedTask.contains(aa.taskName())) {
+                st.csp.bindings().recordEmptyNAryConstraint(aa.taskName(), true, aa.args().size()+2);
+                recordedTask.add(aa.taskName());
+            }
+        }
+
+        for(GAction ga : pl.preprocessor.getAllActions()) {
+            // values for all variables of this action
+            List<String> values = new LinkedList<>();
+            for(LVarRef var : ga.variables)
+                values.add(ga.valueOf(var).instance());
+            // add possible tuple to instantiation constraints
+            st.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.name(), values, ga.id);
+
+            // values for arguments of this action
+            List<String> argValues = new LinkedList<>();
+            for(LVarRef var : ga.abs.args())
+                argValues.add(ga.valueOf(var).instance());
+            argValues.add(ga.abs.name());
+            // add possible tuple to supporter constraints
+            st.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.taskName(), argValues, ga.id);
+        }
+
+        // notify ourself of the presence of any actions and tasks in the plan
         for(Action a : st.getAllActions())
             actionInserted(a, st, pl);
         for(Task t : st.getOpenTasks())
             taskInserted(t, st, pl);
+
     }
 
     @Override
