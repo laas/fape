@@ -68,6 +68,8 @@ public class DGHandler implements fape.core.planning.search.Handler {
         for(Task t : st.getOpenTasks())
             taskInserted(t, st, pl);
 
+        // trigger propagation of constraint networks
+        st.isConsistent();
     }
 
     @Override

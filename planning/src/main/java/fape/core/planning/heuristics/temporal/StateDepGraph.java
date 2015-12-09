@@ -12,7 +12,7 @@ public class StateDepGraph implements DependencyGraph {
 
     static final int dbgLvl = 0;
 
-    public final DepGraphCore core;
+    public DepGraphCore core;
     public final FactAction facts;
     List<MinEdge> initMinEdges = new ArrayList<>();
     Map<TempFluent.DGFluent, List<MinEdge>> initFluents = new HashMap<>();
@@ -91,6 +91,17 @@ public class StateDepGraph implements DependencyGraph {
         }
         Propagator p = new BellmanFord(optimisticEST);
         earliestAppearances = p.getEarliestAppearances();
+
+        if(!ancestorGraph.isPresent()) {
+            List<RAct> feasibles = earliestAppearances.keySet().stream()
+                    .filter(n -> n instanceof RAct)
+                    .map(n -> (RAct) n)
+                    .collect(Collectors.toList());
+            DepGraphCore prevCore = core;
+            core = new DepGraphCore(feasibles, core.store);
+            if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
+                    +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
+        }
 
         if(dbgLvl >= 2) printActions();
 
