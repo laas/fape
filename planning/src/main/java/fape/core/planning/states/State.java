@@ -273,12 +273,7 @@ public class State implements Reporter {
     }
 
     public boolean containsTimelineWithID(int tlID) {
-        for (Timeline db : tdb.getTimelines()) {
-            if (db.mID == tlID) {
-                return true;
-            }
-        }
-        return false;
+        return tdb.containsTimelineWithID(tlID);
     }
 
     /**

@@ -91,6 +91,10 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         return timelines[tdbID];
     }
 
+    public boolean containsTimelineWithID(int tlID) {
+        return tlID < timelines.length && timelines[tlID] != null;
+    }
+
     public Timeline getTimelineContaining(LogStatement s) {
         for(Timeline tl : timelines) {
             if(tl != null && tl.contains(s))
