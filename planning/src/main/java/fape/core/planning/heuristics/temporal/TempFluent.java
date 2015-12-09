@@ -34,12 +34,11 @@ import java.util.stream.Collectors;
         public boolean isActionStart() { return funcName.startsWith("started-"); }
 
         public static DGFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, AnmlProblem pb, GStore store) {
-            InstanceRef[] argsAndValue = new InstanceRef[template.args.length+1];
-            for(int i=0 ; i<template.args.length ; i++) {
-                argsAndValue[i] = container.valueOf(template.args[i], pb);
+            InstanceRef[] argsAndValue = new InstanceRef[template.fluent.args().size()];
+            for(int i=0 ; i<template.fluent.args().size() ; i++) {
+                argsAndValue[i] = container.valueOf(template.fluent.args().get(i), pb);
             }
-            argsAndValue[argsAndValue.length-1] = container.valueOf(template.value, pb);
-            return store.getFluent(template.funcName, Arrays.asList(argsAndValue)); //new Fluent(template.funcName, argsAndValue);
+            return store.getFluent(template.fluent.funcName(), Arrays.asList(argsAndValue)); //new Fluent(template.funcName, argsAndValue);
         }
 
         public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
@@ -48,9 +47,8 @@ import java.util.stream.Collectors;
             return store.getFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
         }
         public static DGFluent from(GTaskCond task, AnmlProblem pb, GStore store) {
-            InstanceRef[] args = Arrays.copyOf(task.args, task.args.length+1);
-            args[args.length-1] = pb.instance("true"); //TODO: fix this hack
-            return store.getFluent("task-"+task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
+            InstanceRef[] args = Arrays.copyOf(task.args, task.args.length);
+            return store.getFluent("task--"+task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
         }
     }
 

@@ -11,6 +11,7 @@ import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.time.AbsTP;
+import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -19,8 +20,6 @@ import java.util.stream.Collectors;
 public class DeleteFreeActionsFactory {
 
     private static final boolean dbg = false;
-
-    public static LVarRef truth = new LVarRef("true");
 
     interface Time {
         static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
@@ -41,29 +40,55 @@ public class DeleteFreeActionsFactory {
         public final java.util.function.Function<Integer,Integer> trans;
     }
 
-    class TempFluentTemplate {
-        final String funcName;
-        final LVarRef[] args;
+    abstract class FluentTemplate {
+        public abstract String funcName();
+        public abstract List<LVarRef> args();
+    }
+
+    @Value class SVFluentTemplate extends FluentTemplate {
+        final AbstractParameterizedStateVariable sv;
         final LVarRef value;
-        final Time time;
-        public TempFluentTemplate(String funcName, LVarRef[] args, LVarRef value, int time) {
-            this.funcName = funcName; this.args = args;
-            this.value = value; this.time = Time.of(time);
+        public String funcName() { return sv.func().name(); }
+        public List<LVarRef> args() {
+            List<LVarRef> ret = new LinkedList<>(sv.jArgs());
+            ret.add(value);
+            return ret;
         }
-        public TempFluentTemplate(String funcName, LVarRef[] args, LVarRef value, Time time) {
-            this.funcName = funcName; this.args = args;
-            this.value = value; this.time = time;
+    }
+    @Value class DoneFluentTemplate extends FluentTemplate {
+        final RActTemplate act;
+        public String funcName() { return act.name(); }
+        public List<LVarRef> args() { return Arrays.asList(act.abs.allVars()); }// return Arrays.asList(act.args()); }
+    }
+    @Value class TaskFluentTemplate extends FluentTemplate {
+        final String prop;
+        final String taskName;
+        final List<LVarRef> args;
+        public String funcName() { return prop+"--"+taskName; }
+        public List<LVarRef> args() { return args; }
+    }
+
+
+    class TempFluentTemplate {
+        final FluentTemplate fluent;
+        final Time time;
+        public TempFluentTemplate(FluentTemplate fluent, int time) {
+            this.fluent = fluent;
+            this.time = Time.of(time);
+        }
+        public TempFluentTemplate(FluentTemplate fluent, Time time) {
+            this.fluent = fluent;
+            this.time = time;
         }
         public String toString() {
-            return time+": "+funcName+""+Arrays.toString(args)+"="+value;
+            return time+": "+fluent;
         }
-
-        public LVarRef[] args() { return args; }
     }
 
     public class RActTemplate {
         final AbstractAction abs;
         final AbsTP tp;
+
         public RActTemplate(AbstractAction abs, AbsTP mainTimepoint) {
             this.abs = abs;
             this.tp = mainTimepoint;
@@ -72,21 +97,21 @@ public class DeleteFreeActionsFactory {
         List<TempFluentTemplate> conditions = new LinkedList<>();
         List<TempFluentTemplate> effects = new LinkedList<>();
 
+//        public LVarRef[] args() { return abs.allVars(); }
         public LVarRef[] args() { return abs.args().toArray(new LVarRef[abs.args().size()]); }
 
-
         public void addCondition(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
-            addCondition(sv.func().name(), sv.jArgs().toArray(new LVarRef[sv.args().size()]), var, time);
+            addCondition(new SVFluentTemplate(sv, var), time);
         }
-        public void addCondition(String funcName, LVarRef[] params, LVarRef value, int time) {
-            conditions.add(new TempFluentTemplate(funcName, params, value, time));
+        public void addCondition(FluentTemplate ft, int time) {
+            conditions.add(new TempFluentTemplate(ft, time));
         }
 
         public void addEffect(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
-            addEffect(sv.func().name(), sv.jArgs().toArray(new LVarRef[sv.args().size()]), var, time);
+            addEffect(new SVFluentTemplate(sv, var), time);
         }
-        public void addEffect(String funcName, LVarRef[] params, LVarRef value, int time) {
-            effects.add(new TempFluentTemplate(funcName, params, value, time));
+        public void addEffect(FluentTemplate ft, int time) {
+            effects.add(new TempFluentTemplate(ft, time));
         }
 
         public String name() { return abs.name()+"--"+tp+Arrays.toString(args()); }
@@ -151,27 +176,27 @@ public class DeleteFreeActionsFactory {
             LVarRef[] taskArgs = task.jArgs().toArray(new LVarRef[task.jArgs().size()]);
             AbsTP start = anchorOf(task.start(), abs);
             int startDelay = -relativeTimeOf(task.start(), abs);
-            templates.get(start).addCondition("started-" + task.name(), taskArgs, truth, startDelay);
-            templates.get(start).addEffect("task-" + task.name(), taskArgs, truth, startDelay);
+            templates.get(start).addCondition(new TaskFluentTemplate("started", task.name(), task.jArgs()), startDelay);
+            templates.get(start).addEffect(new TaskFluentTemplate("task", task.name(), task.jArgs()), startDelay);
 
             AbsTP end = anchorOf(task.end(), abs);
             int endDelay = -relativeTimeOf(task.end(), abs);
-            templates.get(end).addCondition("ended-"+task.name(), taskArgs, truth, endDelay+1);
+            templates.get(end).addCondition(new TaskFluentTemplate("ended", task.name(), task.jArgs()), endDelay+1);
         }
 
         LVarRef[] actionArgs = abs.args().toArray(new LVarRef[abs.args().size()]);
         // add start of action fluent
         AbsTP startAnchor = anchorOf(abs.start(), abs);
         int startDelay = -relativeTimeOf(abs.start(), abs);
-        templates.get(startAnchor).addEffect("started-" + abs.taskName(), actionArgs, truth, startDelay);
+        templates.get(startAnchor).addEffect(new TaskFluentTemplate("started", abs.taskName(), abs.args()), startDelay);
 
         // add end of action fluent
         AbsTP endAnchor = anchorOf(abs.end(), abs);
         int endDelay = -relativeTimeOf(abs.end(), abs);
-        templates.get(endAnchor).addEffect("ended-"+abs.taskName(), actionArgs, truth, endDelay+1);
+        templates.get(endAnchor).addEffect(new TaskFluentTemplate("ended", abs.taskName(), abs.args()), endDelay+1);
 
         if(abs.motivated()) {
-            templates.get(startAnchor).addCondition("task-"+abs.taskName(), actionArgs, truth, startDelay);
+            templates.get(startAnchor).addCondition(new TaskFluentTemplate("task", abs.taskName(), abs.args()), startDelay);
         }
 
         List<AbstractParameterizedExactDelay> pmds = abs.jConstraints().stream()
@@ -192,13 +217,13 @@ public class DeleteFreeActionsFactory {
             for(TempFluentTemplate f : rightAct.conditions) {
                 assert f.time instanceof IntTime;
                 Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
-                TempFluentTemplate cond = new TempFluentTemplate(f.funcName, f.args, f.value, newTime);
+                TempFluentTemplate cond = new TempFluentTemplate(f.fluent, newTime);
                 leftAct.conditions.add(cond);
             }
             for(TempFluentTemplate f : rightAct.effects) {
                 assert f.time instanceof IntTime;
                 Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
-                TempFluentTemplate eff = new TempFluentTemplate(f.funcName, f.args, f.value, newTime);
+                TempFluentTemplate eff = new TempFluentTemplate(f.fluent, newTime);
                 leftAct.effects.add(eff);
             }
 
@@ -248,16 +273,12 @@ public class DeleteFreeActionsFactory {
         // add inter subactions conditions
         for(AbsTP left : templates.keySet()) {
             RActTemplate leftAct = templates.get(left);
-            leftAct.addEffect("done__" + leftAct.name(), leftAct.args(), truth, 0);
+            leftAct.addEffect(new DoneFluentTemplate(leftAct), 0);
             for(AbsTP right : templates.keySet()) {
                 if(left == right) continue;
                 RActTemplate rightAct = templates.get(right);
                 int maxDelay = fMaxDelay.apply(left, right);
-                leftAct.addCondition("done__"+rightAct.name(), rightAct.args(), truth, maxDelay);
-//                if(abs.name().equals("m-TruckTransport2")) {
-//                    System.out.println(left+"  "+right);
-//                    System.out.println("");
-//                }
+                leftAct.addCondition(new DoneFluentTemplate(rightAct), maxDelay);
             }
         }
 

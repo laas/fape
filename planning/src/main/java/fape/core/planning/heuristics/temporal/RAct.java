@@ -28,12 +28,21 @@ public class RAct extends DepGraphCore.ActionNode {
 
     @Override public String toString() {
         String s = "("+getID()+") "+act+"--"+tp.toString();
-//        s += "  conditions:\n";
-//        for(TempFluent tf : conditions) s += "    "+tf+"\n";
-//        s += "  effects:\n";
-//        for(TempFluent tf : effects) s += "    "+tf+"\n";
         return s;
     }
+
+    public String toStringDetailed() {
+        String s = "("+getID()+") "+act+"--"+tp.toString();
+        s += "\n  conditions:\n";
+        for(TempFluent tf : conditions)
+            s += "    "+tf+"\n";
+        s += "  effects:\n";
+        for(TempFluent tf : effects)
+            s += "    "+tf+"\n";
+        return s;
+    }
+
+
 
 
     public static RAct from(DeleteFreeActionsFactory.RActTemplate template, GAction base, APlanner pl) {
