@@ -2,7 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 
 import fape.core.planning.grounding.*;
-import fape.core.planning.heuristics.Preprocessor;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -20,25 +20,18 @@ import java.util.stream.Collectors;
 
 public class DGHandler implements fape.core.planning.search.Handler {
 
-    private void initState(State st, APlanner pl) {
-        if(!st.hasExtension(DepGraphCore.StateExt.class)) {
-            // init the core of the dependency graph
-            DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), pl.preprocessor.store);
-            st.addExtension(new DepGraphCore.StateExt(core));
+    @Override
+    public void stateBindedToPlanner(State st, APlanner pl) {
+        assert !st.hasExtension(DepGraphCore.StateExt.class);
 
-            for(Action a : st.getAllActions())
-                actionInserted(a, st, pl);
-            for(Task t : st.getOpenTasks())
-                taskInserted(t, st, pl);
-        }
-    }
+        // init the core of the dependency graph
+        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), pl.preprocessor.store);
+        st.addExtension(new DepGraphCore.StateExt(core));
 
-    private IRSet<GAction> allActions(State st, APlanner pl) {
-        if(st.getExtension(DepGraphCore.StateExt.class).currentGraph != null)
-            return st.getExtension(DepGraphCore.StateExt.class).currentGraph.addableActs;
-        else
-            return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), pl.preprocessor.getAllActions().toBitSet());
-
+        for(Action a : st.getAllActions())
+            actionInserted(a, st, pl);
+        for(Task t : st.getOpenTasks())
+            taskInserted(t, st, pl);
     }
 
     @Override
@@ -50,7 +43,6 @@ public class DGHandler implements fape.core.planning.search.Handler {
 
     @Override
     public void actionInserted(Action act, State st, APlanner pl) {
-        initState(st, pl);
         if(st.csp.bindings().isRecorded(act.instantiationVar()))
             return;
         assert !st.csp.bindings().isRecorded(act.instantiationVar()) : "The action already has a variable for its ground versions.";
@@ -63,7 +55,7 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         // Variable representing the ground versions of this action
-        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(allActions(st,pl).toBitSet()));
+        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(addableActions(st, pl).toBitSet()));
         values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
 
@@ -72,7 +64,6 @@ public class DGHandler implements fape.core.planning.search.Handler {
 
     @Override
     public void taskInserted(Task task, State st, APlanner planner) {
-        initState(st, planner);
         if(st.csp.bindings().isRecorded(task.methodSupportersVar()))
             return;
 
@@ -98,7 +89,6 @@ public class DGHandler implements fape.core.planning.search.Handler {
 
     private void propagateNetwork(State st, APlanner pl) {
         final IntRep<GAction> gactsRep = pl.preprocessor.store.getIntRep(GAction.class);
-        initState(st, pl);
 
         DepGraphCore.StateExt ext = st.getExtension(DepGraphCore.StateExt.class);
 
@@ -164,12 +154,14 @@ public class DGHandler implements fape.core.planning.search.Handler {
         for(Action a : st.getUnmotivatedActions())
             st.csp.bindings().restrictDomain(a.instantiationVar(), unattachedDomain);
 
+        // populate the addable actions information in the state. This info is used to filter out resolvers
         st.addableActions = new EffSet<GAction>(pl.preprocessor.groundActionIntRepresentation());
         st.addableActions.addAll(graph.addableActs);
         st.addableTemplates = new HashSet<>();
         for(GAction ga : graph.addableActs)
             st.addableTemplates.add(ga.abs);
 
+        // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
             boolean doable = false;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, pl)) {
@@ -191,5 +183,17 @@ public class DGHandler implements fape.core.planning.search.Handler {
         assert st.csp.bindings().isRecorded(lifted.instantiationVar());
         Domain dom = st.csp.bindings().rawDomain(lifted.instantiationVar());
         return new IRSet<GAction>(st.pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
+    }
+
+    /**
+     * Returns all addable actions: either the ones from the dependency graph if they were computed, or the ones
+     * from preprocessing (i.e. without reachability analysis)
+     */
+    private static IRSet<GAction> addableActions(State st, APlanner pl) {
+        if(st.getExtension(DepGraphCore.StateExt.class).currentGraph != null)
+            return st.getExtension(DepGraphCore.StateExt.class).currentGraph.addableActs;
+        else
+            return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), pl.preprocessor.getAllActions().toBitSet());
+
     }
 }

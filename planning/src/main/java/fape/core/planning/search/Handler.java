@@ -20,10 +20,21 @@ public interface Handler {
     }
 
     /**
+     * This method is invoked when a (initial) state is first attached to a planner.
+     * It is not called on any descendant of this state. Handlers should use this method
+     * to initialize their data structures and bootstrap the calculations.
+     *
+     * For instance, the state given here might already contain some actions that the handler
+     * might need to process. All actions later added to this state or its descendants will be
+     * notified incrementally through the `actionInserted` method.
+     */
+    default void stateBindedToPlanner(State st, APlanner pl) {}
+
+    /**
      * Informs the handler that the given state has reached a given point in its life.
      * The handler can start any computation he wants to do at that point.
      */
-    void apply(State st, StateLifeTime time, APlanner planner);
+    default void apply(State st, StateLifeTime time, APlanner planner) {}
 
     default void actionInserted(Action a, State st, APlanner planner) {}
     default void taskInserted(Task a, State st, APlanner planner) {}

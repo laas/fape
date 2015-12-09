@@ -1,10 +1,12 @@
 package fape.core.planning.planner;
 
+import fape.core.planning.preprocessing.PreprocessorHandler;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class PlanningOptions {
@@ -27,7 +29,9 @@ public class PlanningOptions {
             new UnboundVariableFinder()
     ));
 
-    public final List<Handler> handlers = new ArrayList<>();
+    public final List<Handler> handlers = new ArrayList<>(Collections.singletonList(
+            new PreprocessorHandler())
+    );
 
     /**
      * Used to build comparators for flaws. Default to a least commiting first.

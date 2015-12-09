@@ -1,7 +1,9 @@
-package fape.core.planning.heuristics;
+package fape.core.planning.preprocessing;
 
 import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
+import fape.core.planning.heuristics.DefaultIntRepresentation;
+import fape.core.planning.heuristics.IntRepresentation;
 import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.heuristics.temporal.GStore;

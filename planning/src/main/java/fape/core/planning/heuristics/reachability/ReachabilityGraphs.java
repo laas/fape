@@ -5,7 +5,7 @@ import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GTaskCond;
-import fape.core.planning.heuristics.Preprocessor;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.states.State;

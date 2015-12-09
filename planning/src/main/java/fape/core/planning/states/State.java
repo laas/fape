@@ -204,6 +204,8 @@ public class State implements Reporter {
     public void setPlanner(APlanner planner) {
         assert pl == null : "This state is already attached to a planner.";
         this.pl = planner;
+        for(Handler h : getHandlers())
+            h.stateBindedToPlanner(this, planner);
     }
 
     public void setDeadEnd() { isDeadEnd = true; }

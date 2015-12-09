@@ -1,6 +1,6 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.heuristics.Preprocessor;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
@@ -41,7 +41,7 @@ public abstract class APlanner {
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
         queue.add(initialState);
-        preprocessor = new Preprocessor(this, initialState);
+
         if(options.usePlanningGraphReachability) {
             initialState.pgr = preprocessor.getFeasibilityReasoner();
             initialState.reachabilityGraphs = new ReachabilityGraphs(this, initialState);
@@ -63,14 +63,14 @@ public abstract class APlanner {
 
         State initState = new State(pb, controllability);
         queue.add(initState);
+        initState.setPlanner(this);
 
-        this.preprocessor = new Preprocessor(this, initState);
         if(options.usePlanningGraphReachability)
             initState.reachabilityGraphs = new ReachabilityGraphs(this, initState);
     }
 
     public final PlanningOptions options;
-    public final Preprocessor preprocessor;
+    public Preprocessor preprocessor;
 
     @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
     public static APlanner currentPlanner = null;
