@@ -80,6 +80,7 @@ public class IRMap<K, V> implements Map<K,V> {
         if(!containsKey(o)) throw new NoSuchElementException();
         V val = (V) values[keyRep.asInt((K) o)];
         values[keyRep.asInt((K) o)] = null;
+        numElem--;
         return val;
     }
 
@@ -88,6 +89,7 @@ public class IRMap<K, V> implements Map<K,V> {
         if(!containsKey(k)) throw new NoSuchElementException();
         V val = (V) values[k];
         values[k] = null;
+        numElem--;
         return val;
     }
 

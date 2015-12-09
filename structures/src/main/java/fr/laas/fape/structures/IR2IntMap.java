@@ -126,6 +126,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         if (!containsKey(o)) return null; //throw new NoSuchElementException();
         Integer val = (Integer) values[keyRep.asInt((K) o)];
         values[keyRep.asInt((K) o)] = NIL;
+        numElem--;
         return val;
     }
 
@@ -134,6 +135,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         if (!containsKey(k)) throw new NoSuchElementException();
         int val = values[k];
         values[k] = NIL;
+        numElem--;
         return val;
     }
 
