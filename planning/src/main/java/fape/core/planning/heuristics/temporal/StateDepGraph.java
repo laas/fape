@@ -237,18 +237,21 @@ public class StateDepGraph implements DependencyGraph {
     public class Dijkstra implements Propagator {
         // contains all fluents that can be achieved be an action earlier or concurrently to it (i.e. with
         // an incoming null or negative edge)
-        IRSet<TempFluent.DGFluent> lateAchieved = new IRSet<>(core.store.getIntRep(TempFluent.DGFluent.class));
+        final IRSet<TempFluent.DGFluent> lateAchieved = new IRSet<>(core.store.getIntRep(TempFluent.DGFluent.class));
         IR2IntMap<Node> pendingForActivation = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
         final IR2IntMap<Node> optimisticValues;
 
         IR2IntMap<Node> labelsCost = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
+        IR2IntMap<Node> labelsPred = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
 
         PriorityQueue<Node> queue = new PriorityQueue<>((Node n1, Node n2) -> cost(n1) - cost(n2));
         List<MaxEdge> ignoredEdges = new ArrayList<>();
 
         private int cost(Node n) { return labelsCost.get(n); }
+        private Node pred(Node n) { return (Node) core.store.get(Node.class, labelsPred.get(n)); }
+        private void setPred(Node n, Node pred) { labelsPred.put(n, pred.getID()); }
         private boolean optimisticallyPossible(Node n) { return optimisticValues.containsKey(n); }
-        private void enqueue(Node n, int cost) {
+        private void enqueue(Node n, int cost, Node pred) {
             if(!optimisticValues.containsKey(n))
                 return; // ignore all non-possible node
 
@@ -256,10 +259,12 @@ public class StateDepGraph implements DependencyGraph {
                 if(cost < cost(n) && cost(n) > optimisticValues.get(n)) { // "cost" is an improvement and an improvement is possible
                     queue.remove(n);
                     labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
+                    setPred(n, pred);
                     queue.add(n);
                 }
             } else if(!labelsCost.containsKey(n)){
                 labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
+                setPred(n, pred);
                 queue.add(n);
             } else {
                 assert cost >= cost(n) || cost(n) == optimisticValues.get(n);
@@ -293,7 +298,7 @@ public class StateDepGraph implements DependencyGraph {
                     }
                     pendingForActivation.put(n, numReq);
                     if(numReq == 0) {
-                        enqueue(n, 0);
+                        enqueue(n, 0, n);
                     }
                 }
             }
@@ -301,11 +306,11 @@ public class StateDepGraph implements DependencyGraph {
             // main dijkstra loop
             while(!queue.isEmpty()) {
                 Node n = queue.poll();
-                System.out.println(String.format(" [%d] %s", cost(n), n));
+                System.out.println(String.format(" [%d] %s     <<--- %s", cost(n), n, pred(n)!=n ? pred(n) : " self"));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
                     for (MinEdge e : outEdges(a)) {
-                        enqueue(e.fluent, cost(a) + e.delay);
+                        enqueue(e.fluent, cost(a) + e.delay, a);
                     }
                 } else {
                     TempFluent.DGFluent f = (TempFluent.DGFluent) n;
@@ -316,7 +321,7 @@ public class StateDepGraph implements DependencyGraph {
                                 labelsCost.put(e.act, Math.max(cost(f) + e.delay, prevCost));
                                 pendingForActivation.put(e.act, pendingForActivation.get(e.act) - 1);
                                 if(pendingForActivation.get(e.act) == 0) {
-                                    enqueue(e.act, labelsCost.get(e.act));
+                                    enqueue(e.act, labelsCost.get(e.act), f);
                                 }
                             }
                         }
@@ -324,20 +329,71 @@ public class StateDepGraph implements DependencyGraph {
                 }
             }
 
+            // process ignored edges and enqueue modified nodes
             for(MaxEdge e : ignoredEdges) {
-                if(labelsCost.containsKey(e.act)) {
-                    if(!labelsCost.containsKey(e.fluent)) {
+                if(possible(e.act)) {
+                    if(!possible(e.fluent)) {
                         // the action is not possible
-                        labelsCost.remove(e.act);
+                        delete(e.act);
                         System.out.println(String.format(">del %s", e.act));
                     } else {
                         if(cost(e.fluent)+e.delay > cost(e.act)) {
-                            labelsCost.put(e.act, cost(e.fluent) + e.delay);
+                            delayEnqueue(e.act, cost(e.fluent) + e.delay, e.fluent);
                             System.out.println(String.format(">[%d] %s", cost(e.act), e.act));
                         }
                     }
                 }
             }
+        }
+
+        private boolean possible(Node n) { return labelsCost.containsKey(n); }
+
+        private void delete(Node n) {
+            if(!labelsCost.containsKey(n))
+                return;
+
+            labelsCost.remove(n);
+            labelsPred.remove(n);
+
+            if(n instanceof TempFluent.DGFluent) {
+                TempFluent.DGFluent f = (TempFluent.DGFluent) n;
+                for(MaxEdge e : outEdges(f)) {
+                    delete(e.act);
+                }
+            } else {
+                ActionNode a = (ActionNode) n;
+                for(MinEdge e : outEdges(a)) {
+                    if(pred(e.fluent) == a) {
+                        int bestCost = Integer.MAX_VALUE;
+                        Node bestPred = null;
+                        for(MinEdge mine : inEdges(e.fluent)) {
+                            if(cost(mine.act) +mine.delay < bestCost) {
+                                bestCost = cost(mine.act) + mine.delay;
+                                bestPred = mine.act;
+                            }
+                        }
+                        if(bestPred == null) {
+                            delete(e.fluent);
+                        } else {
+                            delayEnqueue(e.fluent, bestCost, bestPred);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void delayEnqueue(Node n, int newCost, Node newPred) {
+            assert possible(n);
+            assert cost(n) >= optimisticValues.get(n);
+
+            if(cost(n) < newCost) {
+                if(queue.contains(n))
+                    queue.remove(n);
+                labelsCost.put(n, newCost);
+                setPred(n, newPred);
+                queue.add(n);
+            }
+
         }
 
         @Override
