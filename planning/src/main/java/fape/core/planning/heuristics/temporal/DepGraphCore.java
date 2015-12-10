@@ -59,18 +59,18 @@ public class DepGraphCore implements DependencyGraph {
     }
 
 
-    @Override public Iterator<MaxEdge> inEdges(ActionNode n) { return actIn.get(n).iterator(); }
+    @Override public Iterator<MaxEdge> inEdgesIt(ActionNode n) { return actIn.get(n).iterator(); }
 
-    @Override public Iterator<MinEdge> outEdges(ActionNode n) { return actOut.get(n).iterator(); }
+    @Override public Iterator<MinEdge> outEdgesIt(ActionNode n) { return actOut.get(n).iterator(); }
 
-    @Override public Iterator<MinEdge> inEdges(DGFluent f) {
+    @Override public Iterator<MinEdge> inEdgesIt(DGFluent f) {
         if(fluentIn.containsKey(f))
             return fluentIn.get(f).iterator();
         else
             return Collections.emptyIterator();
     }
 
-    @Override public Iterator<MaxEdge> outEdges(DGFluent f) {
+    @Override public Iterator<MaxEdge> outEdgesIt(DGFluent f) {
         return fluentOut.containsKey(f) ? fluentOut.get(f).iterator() : Collections.emptyIterator();
     }
 

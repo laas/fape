@@ -47,33 +47,33 @@ public class StateDepGraph implements DependencyGraph {
     }
 
     @Override
-    public Iterator<MaxEdge> inEdges(ActionNode n) {
+    public Iterator<MaxEdge> inEdgesIt(ActionNode n) {
         if(n != facts)
-            return core.inEdges(n);
+            return core.inEdgesIt(n);
         else
             return Collections.emptyIterator(); // fact action has no incoming edges
     }
 
     @Override
-    public Iterator<MinEdge> outEdges(ActionNode n) {
+    public Iterator<MinEdge> outEdgesIt(ActionNode n) {
         if(n != facts)
-            return core.outEdges(n);
+            return core.outEdgesIt(n);
         else
             return initMinEdges.iterator();
 
     }
 
     @Override
-    public Iterator<MinEdge> inEdges(TempFluent.DGFluent f) {
+    public Iterator<MinEdge> inEdgesIt(TempFluent.DGFluent f) {
         if(initFluents.containsKey(f))
-            return new IteratorConcat<>(core.inEdges(f), initFluents.get(f).iterator());
+            return new IteratorConcat<>(core.inEdgesIt(f), initFluents.get(f).iterator());
         else
-            return core.inEdges(f);
+            return core.inEdgesIt(f);
     }
 
     @Override
-    public Iterator<MaxEdge> outEdges(TempFluent.DGFluent f) {
-        return core.outEdges(f); // no such edge can be added by a fact action
+    public Iterator<MaxEdge> outEdgesIt(TempFluent.DGFluent f) {
+        return core.outEdgesIt(f); // no such edge can be added by a fact action
     }
 
 
@@ -192,9 +192,7 @@ public class StateDepGraph implements DependencyGraph {
             assert eas.containsKey(f.getID()) : "Possible fluent with no earliest appearance time.";
 
             int min = Integer.MAX_VALUE;
-            Iterator<MinEdge> it = inEdges(f);
-            while(it.hasNext()) {
-                MinEdge e = it.next();
+            for(MinEdge e : inEdges(f)) {
                 if(possible(e.act) && ea(e.act) + e.delay < min) {
                     min = ea(e.act) + e.delay;
                 }
@@ -212,9 +210,7 @@ public class StateDepGraph implements DependencyGraph {
 
         private boolean updateAction(ActionNode a) {
             int max = Integer.MIN_VALUE;
-            Iterator<MaxEdge> it = inEdges(a);
-            while(it.hasNext()) {
-                MaxEdge e = it.next();
+            for(MaxEdge e : inEdges(a)) {
                 if(!possible(e.fluent))
                     max = Integer.MAX_VALUE;
                 else

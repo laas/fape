@@ -45,8 +45,13 @@ public interface DependencyGraph {
         public final int delay;
     }
 
-    Iterator<MaxEdge> inEdges(ActionNode n);
-    Iterator<MinEdge> outEdges(ActionNode n);
-    Iterator<MinEdge> inEdges(TempFluent.DGFluent f);
-    Iterator<MaxEdge> outEdges(TempFluent.DGFluent f);
+    Iterator<MaxEdge> inEdgesIt(ActionNode n);
+    Iterator<MinEdge> outEdgesIt(ActionNode n);
+    Iterator<MinEdge> inEdgesIt(TempFluent.DGFluent f);
+    Iterator<MaxEdge> outEdgesIt(TempFluent.DGFluent f);
+
+    default Iterable<MaxEdge> inEdges(ActionNode n) { return () -> inEdgesIt(n); }
+    default Iterable<MinEdge> outEdges(ActionNode n) { return () -> outEdgesIt(n); }
+    default Iterable<MinEdge> inEdges(TempFluent.DGFluent f) { return () -> inEdgesIt(f); }
+    default Iterable<MaxEdge> outEdges(TempFluent.DGFluent f) { return () -> outEdgesIt(f); }
 }
