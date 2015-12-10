@@ -79,6 +79,11 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return values[k];
     }
 
+    @Override
+    public Integer getOrDefault(Object o, Integer n) {
+        return containsKey(o) ? get(o) : n;
+    }
+
     /** Make sure the values table is big enough for a key with the given index */
     private void ensureSpace(int index) {
         if(index >= values.length) {

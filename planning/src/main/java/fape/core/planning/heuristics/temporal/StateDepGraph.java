@@ -89,6 +89,7 @@ public class StateDepGraph implements DependencyGraph {
             for(TempFluent.DGFluent f : initFluents.keySet())
                 optimisticEST.putIfAbsent(f, 0);
         }
+        new Dijkstra(optimisticEST);
         Propagator p = new BellmanFord(optimisticEST);
         earliestAppearances = p.getEarliestAppearances();
 
@@ -230,6 +231,97 @@ public class StateDepGraph implements DependencyGraph {
         @Override
         public IR2IntMap<Node> getEarliestAppearances() {
             return eas;
+        }
+    }
+
+    public class Dijkstra implements Propagator {
+        // contains all fluents that can be achieved be an action earlier or concurrently to it (i.e. with
+        // an incoming null or negative edge)
+        IRSet<TempFluent.DGFluent> lateAchieved = new IRSet<>(core.store.getIntRep(TempFluent.DGFluent.class));
+        IR2IntMap<Node> pendingForActivation = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
+        final IR2IntMap<Node> optimisticValues;
+
+        IR2IntMap<Node> labelsCost = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
+
+        PriorityQueue<Node> queue = new PriorityQueue<>((Node n1, Node n2) -> cost(n1) - cost(n2));
+
+        private int cost(Node n) { return labelsCost.get(n); }
+        private boolean optimisticallyPossible(Node n) { return optimisticValues.containsKey(n); }
+        private void enqueue(Node n, int cost) {
+            if(!optimisticValues.containsKey(n))
+                return; // ignore all non-possble node
+
+            if(queue.contains(n)) {
+                if(cost < cost(n) && cost(n) > optimisticValues.get(n)) { // "cost" is an improvement and an improvement is possible
+                    queue.remove(n);
+                    labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
+                    queue.add(n);
+                }
+            } else if(!labelsCost.containsKey(n)){
+                labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
+                queue.add(n);
+            } else {
+                assert cost >= cost(n) || cost(n) == optimisticValues.get(n);
+            }
+        }
+
+        public Dijkstra(IR2IntMap<Node> optimisticValues) {
+            System.out.println();
+            this.optimisticValues = optimisticValues.clone();
+            for(Node n : optimisticValues.keySet()) {
+                if(n instanceof TempFluent.DGFluent) {
+                    for(MinEdge e : inEdges((TempFluent.DGFluent) n)) {
+                        if(e.delay <= 0)
+                            lateAchieved.add((TempFluent.DGFluent) n);
+                    }
+                }
+            }
+            for(Node n : optimisticValues.keySet()) {
+                if(n instanceof TempFluent.DGFluent) {
+                    pendingForActivation.put(n, 1);
+                } else { // action node
+                    ActionNode a = (ActionNode) n;
+                    int numReq = 0;
+                    for(MaxEdge e : inEdges(a)) {
+                        if(e.delay <= 0 && !lateAchieved.contains(e.fluent))
+                            numReq++;
+                    }
+                    pendingForActivation.put(n, numReq);
+                    if(numReq == 0) {
+                        enqueue(n, 0);
+                    }
+                }
+            }
+
+            while(!queue.isEmpty()) {
+                Node n = queue.poll();
+                System.out.println(String.format("[%d] %s", cost(n), n));
+                if(n instanceof ActionNode) {
+                    ActionNode a = (ActionNode) n;
+                    for (MinEdge e : outEdges(a)) {
+                        enqueue(e.fluent, cost(a) + e.delay);
+                    }
+                } else {
+                    TempFluent.DGFluent f = (TempFluent.DGFluent) n;
+                    if(!lateAchieved.contains(f)) { // late achieved are ignored in the count of pending requirements
+                        for(MaxEdge e : outEdges(f)) {
+                            if(optimisticallyPossible(e.act) && e.delay >= 0) {
+                                int prevCost = labelsCost.getOrDefault(e.act, optimisticValues.get(n));
+                                labelsCost.put(e.act, Math.max(cost(f) + e.delay, prevCost));
+                                pendingForActivation.put(e.act, pendingForActivation.get(e.act) - 1);
+                                if(pendingForActivation.get(e.act) == 0) {
+                                    enqueue(e.act, labelsCost.get(e.act));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public IR2IntMap<Node> getEarliestAppearances() {
+            throw new UnsupportedOperationException("Not supported yet.");
         }
     }
 }
