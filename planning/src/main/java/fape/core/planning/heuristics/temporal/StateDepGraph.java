@@ -244,12 +244,13 @@ public class StateDepGraph implements DependencyGraph {
         IR2IntMap<Node> labelsCost = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
 
         PriorityQueue<Node> queue = new PriorityQueue<>((Node n1, Node n2) -> cost(n1) - cost(n2));
+        List<MaxEdge> ignoredEdges = new ArrayList<>();
 
         private int cost(Node n) { return labelsCost.get(n); }
         private boolean optimisticallyPossible(Node n) { return optimisticValues.containsKey(n); }
         private void enqueue(Node n, int cost) {
             if(!optimisticValues.containsKey(n))
-                return; // ignore all non-possble node
+                return; // ignore all non-possible node
 
             if(queue.contains(n)) {
                 if(cost < cost(n) && cost(n) > optimisticValues.get(n)) { // "cost" is an improvement and an improvement is possible
@@ -270,9 +271,11 @@ public class StateDepGraph implements DependencyGraph {
             this.optimisticValues = optimisticValues.clone();
             for(Node n : optimisticValues.keySet()) {
                 if(n instanceof TempFluent.DGFluent) {
-                    for(MinEdge e : inEdges((TempFluent.DGFluent) n)) {
-                        if(e.delay <= 0)
-                            lateAchieved.add((TempFluent.DGFluent) n);
+                    TempFluent.DGFluent f = (TempFluent.DGFluent) n;
+                    for(MinEdge e : inEdges(f)) {
+                        if(e.delay <= 0) {
+                            lateAchieved.add(f);
+                        }
                     }
                 }
             }
@@ -285,6 +288,8 @@ public class StateDepGraph implements DependencyGraph {
                     for(MaxEdge e : inEdges(a)) {
                         if(e.delay <= 0 && !lateAchieved.contains(e.fluent))
                             numReq++;
+                        else
+                            ignoredEdges.add(e);
                     }
                     pendingForActivation.put(n, numReq);
                     if(numReq == 0) {
@@ -293,9 +298,10 @@ public class StateDepGraph implements DependencyGraph {
                 }
             }
 
+            // main dijkstra loop
             while(!queue.isEmpty()) {
                 Node n = queue.poll();
-                System.out.println(String.format("[%d] %s", cost(n), n));
+                System.out.println(String.format(" [%d] %s", cost(n), n));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
                     for (MinEdge e : outEdges(a)) {
@@ -313,6 +319,21 @@ public class StateDepGraph implements DependencyGraph {
                                     enqueue(e.act, labelsCost.get(e.act));
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            for(MaxEdge e : ignoredEdges) {
+                if(labelsCost.containsKey(e.act)) {
+                    if(!labelsCost.containsKey(e.fluent)) {
+                        // the action is not possible
+                        labelsCost.remove(e.act);
+                        System.out.println(String.format(">del %s", e.act));
+                    } else {
+                        if(cost(e.fluent)+e.delay > cost(e.act)) {
+                            labelsCost.put(e.act, cost(e.fluent) + e.delay);
+                            System.out.println(String.format(">[%d] %s", cost(e.act), e.act));
                         }
                     }
                 }
