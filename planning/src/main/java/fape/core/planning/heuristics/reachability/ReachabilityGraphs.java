@@ -4,7 +4,7 @@ import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GTaskCond;
+import fape.core.planning.grounding.GTask;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
@@ -26,9 +26,9 @@ public class ReachabilityGraphs {
     final FeasibilityReasoner fr;
     final Preprocessor pp;
 
-    HLeveledReasoner<GAction,GTaskCond> derivGraph;
+    HLeveledReasoner<GAction,GTask> derivGraph;
     HLeveledReasoner<GAction,Fluent> causalGraph;
-    HLeveledReasoner<GAction,GTaskCond> decompGraph;
+    HLeveledReasoner<GAction,GTask> decompGraph;
 
     EffSet<GAction> addableActions = null;
     EffSet<GAction> inPlan = null;
@@ -152,7 +152,7 @@ public class ReachabilityGraphs {
         initOpenTasksActs();
         EffSet<GAction> attachable = openTasksActs.clone();
         // a dependent action
-        Set<GTaskCond> tasks = new HashSet<>();
+        Set<GTask> tasks = new HashSet<>();
         for(GAction ga : addableActions) {
             tasks.addAll(ga.subTasks);
         }
@@ -223,7 +223,7 @@ public class ReachabilityGraphs {
             return decompGraph.levelOfClause(ga);
         } else {
             int max = 0;
-            for(GTaskCond subtask : ga.subTasks) {
+            for(GTask subtask : ga.subTasks) {
                 int lvl = decompGraph.levelOfFact(subtask);
                 if(lvl == -1)
                     return -1;

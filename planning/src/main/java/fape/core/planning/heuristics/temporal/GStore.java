@@ -1,7 +1,7 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GTaskCond;
+import fape.core.planning.grounding.GTask;
 import fr.laas.fape.structures.IRStorage;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
@@ -24,7 +24,7 @@ public class GStore extends IRStorage {
         return (DependencyGraph.FactAction) this.get(DependencyGraph.FactAction.class, Collections.singletonList(facts));
     }
 
-    public GTaskCond getTask(String name, List<InstanceRef> args) {
-        return (GTaskCond) this.get(GTaskCond.class, Arrays.asList(name, args));
+    public GTask getTask(String name, List<InstanceRef> args) {
+        return (GTask) this.get(GTask.class, Arrays.asList(name, args));
     }
 }

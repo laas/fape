@@ -58,14 +58,14 @@ public class GAction implements Identifiable {
     public final int[] preconditions;
     public final int[] additions;
     public final AbstractAction abs;
-    public final GTaskCond task;
+    public final GTask task;
 
     public final List<Pair<LStatementRef, GLogStatement>> gStatements = new LinkedList<>();
 
     public final LVarRef[] variables;
     protected final InstanceRef[] values;
 
-    public final ArrayList<GTaskCond> subTasks;
+    public final ArrayList<GTask> subTasks;
 
     private static int nextID = 0;
     public final int id;
@@ -427,7 +427,7 @@ public class GAction implements Identifiable {
         return actions;
     }
 
-    private GTaskCond initTask(AnmlProblem pb, APlanner planner) {
+    private GTask initTask(AnmlProblem pb, APlanner planner) {
         List<InstanceRef> args = new LinkedList<>();
         for(LVarRef v : abs.args()) {
             args.add(valueOf(v, pb));
@@ -435,13 +435,13 @@ public class GAction implements Identifiable {
         return planner.preprocessor.store.getTask(abs.taskName(), args);
     }
 
-    public ArrayList<GTaskCond> getActionRefs() {
+    public ArrayList<GTask> getActionRefs() {
         return subTasks;
     }
 
-    public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb, APlanner planner) {
+    public ArrayList<GTask> initSubTasks(AnmlProblem pb, APlanner planner) {
         List<AbstractTask> refs = this.abs.jSubTasks();
-        ArrayList<GTaskCond> ret = new ArrayList<>();
+        ArrayList<GTask> ret = new ArrayList<>();
 
         for(AbstractTask ref : refs) {
             List<InstanceRef> args = new ArrayList<>();
@@ -483,7 +483,7 @@ public class GAction implements Identifiable {
             r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE, this), decomposable);
 
         // derivable_task(sub_task_i) :- derivable(a)
-        for(GTaskCond subTask : subTasks) {
+        for(GTask subTask : subTasks) {
             r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE_TASK, subTask), new Predicate(Predicate.PredicateName.DERIVABLE, this));
         }
         // derivable(a) :- derivable_task(task(a))

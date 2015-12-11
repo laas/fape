@@ -1,7 +1,7 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GTaskCond;
+import fape.core.planning.grounding.GTask;
 import fape.core.planning.grounding.GroundProblem;
 import fape.exceptions.FAPEException;
 import fr.laas.fape.structures.Ident;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
             args[args.length-1] = f.value;
             return store.getFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
         }
-        public static DGFluent from(GTaskCond task, AnmlProblem pb, GStore store) {
+        public static DGFluent from(GTask task, AnmlProblem pb, GStore store) {
             InstanceRef[] args = Arrays.copyOf(task.args, task.args.length);
             return store.getFluent("task--"+task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
         }

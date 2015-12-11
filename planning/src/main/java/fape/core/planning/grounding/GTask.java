@@ -7,13 +7,13 @@ import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Collection;
 
-@Ident(GTaskCond.class)
-public class GTaskCond extends AbsIdentifiable {
+@Ident(GTask.class)
+public class GTask extends AbsIdentifiable {
     public final String name;
     public final InstanceRef[] args;
 
     @ValueConstructor @Deprecated
-    public GTaskCond(String name, Collection<InstanceRef> args) {
+    public GTask(String name, Collection<InstanceRef> args) {
         this.name = name;
         this.args = new InstanceRef[args.size()];
         int i=0;

@@ -132,7 +132,7 @@ public class FeasibilityReasoner {
         if(print) System.out.println("\nInit: "+allowed);
 
 
-        HLeveledReasoner<GAction,GTaskCond> derivGraph = planner.preprocessor.getRestrictedDerivabilityReasoner(restrictedAllowed);
+        HLeveledReasoner<GAction,GTask> derivGraph = planner.preprocessor.getRestrictedDerivabilityReasoner(restrictedAllowed);
         for(Task t : st.getOpenTasks())
             for(GAction ga : getPossibleSupporters(t, st))
                 derivGraph.set(ga.task);
@@ -148,7 +148,7 @@ public class FeasibilityReasoner {
 
         if(print) System.out.println(restrictedAllowed);
 
-        HLeveledReasoner<GAction,GTaskCond> decompGraph = planner.preprocessor.getRestrictedDecomposabilityReasoner(restrictedAllowed);
+        HLeveledReasoner<GAction,GTask> decompGraph = planner.preprocessor.getRestrictedDecomposabilityReasoner(restrictedAllowed);
         for(Action a : st.getUnmotivatedActions())
             for(GAction ga : getGroundActions(a, st))
                 decompGraph.set(ga.task);
@@ -170,8 +170,8 @@ public class FeasibilityReasoner {
         return new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation(), st.csp.bindings().rawDomain(t.groundSupportersVar()).toBitSet());
     }
 
-    public Collection<GTaskCond> getGroundedTasks(Task liftedTask, State st) {
-        List<GTaskCond> tasks = new LinkedList<>();
+    public Collection<GTask> getGroundedTasks(Task liftedTask, State st) {
+        List<GTask> tasks = new LinkedList<>();
         LinkedList<List<InstanceRef>> varDomains = new LinkedList<>();
         for(VarRef v : liftedTask.args()) {
             varDomains.add(new LinkedList<InstanceRef>());
@@ -181,14 +181,14 @@ public class FeasibilityReasoner {
         }
         List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
         for(List<InstanceRef> instantiation : instantiations) {
-            GTaskCond task = st.pl.preprocessor.store.getTask(liftedTask.name(), instantiation);
+            GTask task = st.pl.preprocessor.store.getTask(liftedTask.name(), instantiation);
             tasks.add(task);
         }
         return tasks;
     }
 
-    public Iterable<GTaskCond> getDerivableTasks(State st) {
-        List<GTaskCond> derivableTasks = new LinkedList<>();
+    public Iterable<GTask> getDerivableTasks(State st) {
+        List<GTask> derivableTasks = new LinkedList<>();
         for(Task ac : st.getOpenTasks()) {
             derivableTasks.addAll(getGroundedTasks(ac, st));
         }
@@ -210,7 +210,7 @@ public class FeasibilityReasoner {
         for(GAction acc : acceptable)
             r.set(new Predicate(Predicate.PredicateName.ACCEPTABLE, acc));
 
-        for(GTaskCond tc : getDerivableTasks(st)) {
+        for(GTask tc : getDerivableTasks(st)) {
             Predicate p = new Predicate(Predicate.PredicateName.DERIVABLE_TASK, tc);
             if(r.hasTerm(p))
                 r.set(p);

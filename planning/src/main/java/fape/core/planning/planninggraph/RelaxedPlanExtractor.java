@@ -24,8 +24,8 @@ public class RelaxedPlanExtractor {
 
     Collection<GAction> alreadyUsed = new HashSet<>();
 
-    Set<GTaskCond> derivPending = new HashSet<>();
-    Set<GTaskCond> decompPending = new HashSet<>();
+    Set<GTask> derivPending = new HashSet<>();
+    Set<GTask> decompPending = new HashSet<>();
     Set<Fluent> causalPending = new HashSet<>();
 
     public RelaxedPlanExtractor(APlanner planner, State st) {

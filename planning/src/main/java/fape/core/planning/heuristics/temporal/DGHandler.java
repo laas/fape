@@ -172,7 +172,7 @@ public class DGHandler implements fape.core.planning.search.Handler {
             st.csp.bindings().restrictDomain(t.groundSupportersVar(), taskSupportersDom);
 
         // all task that can be added to the plan
-        Set<GTaskCond> addableTasks = new HashSet<>(); //FIXME: use specialized implementation
+        Set<GTask> addableTasks = new HashSet<>(); //FIXME: use specialized implementation
         for(GAction ga : graph.addableActs) {
             addableTasks.addAll(ga.subTasks);
         }

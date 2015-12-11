@@ -146,33 +146,33 @@ public class Preprocessor {
         return getRestrictedCausalReasoner(getAllPossibleActionFromState(st));
     }
 
-    HLeveledReasoner<GAction, GTaskCond> baseDecomposabilityReasoner = null;
+    HLeveledReasoner<GAction, GTask> baseDecomposabilityReasoner = null;
     /** initial "facts" are actions with no subtasks */
-    public HLeveledReasoner<GAction, GTaskCond> getRestrictedDecomposabilityReasoner(EffSet<GAction> allowedActions) {
+    public HLeveledReasoner<GAction, GTask> getRestrictedDecomposabilityReasoner(EffSet<GAction> allowedActions) {
         if(baseDecomposabilityReasoner == null) {
             baseDecomposabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
             for (GAction ga : this.getAllActions()) {
-                GTaskCond[] effect = new GTaskCond[1];
+                GTask[] effect = new GTask[1];
                 effect[0] = ga.task;
-                baseDecomposabilityReasoner.addClause(ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), effect, ga);
+                baseDecomposabilityReasoner.addClause(ga.subTasks.toArray(new GTask[ga.subTasks.size()]), effect, ga);
             }
         }
         return baseDecomposabilityReasoner.cloneWithRestriction(allowedActions);
     }
 
-    HLeveledReasoner<GAction, GTaskCond> baseDerivabilityReasoner = null;
+    HLeveledReasoner<GAction, GTask> baseDerivabilityReasoner = null;
 
     /** initial facts opened tasks and initial clauses are non-motivated actions*/
-    public HLeveledReasoner<GAction, GTaskCond> getRestrictedDerivabilityReasoner(EffSet<GAction> allowedActions) {
+    public HLeveledReasoner<GAction, GTask> getRestrictedDerivabilityReasoner(EffSet<GAction> allowedActions) {
         if(baseDerivabilityReasoner == null) {
             baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
             for (GAction ga : getAllActions()) {
                 if (ga.abs.motivated()) {
-                    GTaskCond[] condition = new GTaskCond[1];
+                    GTask[] condition = new GTask[1];
                     condition[0] = ga.task;
-                    baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
+                    baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);
                 } else {
-                    baseDerivabilityReasoner.addClause(new GTaskCond[0], ga.subTasks.toArray(new GTaskCond[ga.subTasks.size()]), ga);
+                    baseDerivabilityReasoner.addClause(new GTask[0], ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);
                 }
             }
         }
