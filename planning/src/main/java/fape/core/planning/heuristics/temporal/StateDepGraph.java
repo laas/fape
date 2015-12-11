@@ -88,10 +88,10 @@ public class StateDepGraph implements DependencyGraph {
             IR2IntMap<Node> easDij = dij.getEarliestAppearances();
             earliestAppearances = easDij;
 
-            for(Node n : easBF.keySet()) {
+            for(Node n : easBF.keys()) {
                 assert easDij.containsKey(n);
             }
-            for(Node n : easDij.keySet()) {
+            for(Node n : easDij.keys()) {
                 if(!easBF.containsKey(n))
                     dij.display(n);
                 assert easBF.containsKey(n);
@@ -108,12 +108,12 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         addableActs = new IRSet<GAction>(core.store.getIntRep(GAction.class));
-        for(Node n : earliestAppearances.keySet())
+        for(Node n : earliestAppearances.keys())
             if(n instanceof RAct)
                 addableActs.add(((RAct) n).getAct());
 
         if(dbgLvlDij >= 2 && ancestorGraph.isPresent()) {
-            for(Node n : earliestAppearances.keySet()) {
+            for(Node n : earliestAppearances.keys()) {
                 if(!(n instanceof FactAction))
                     assert ancestorGraph.get().earliestAppearances.containsKey(n);
             }
@@ -369,7 +369,7 @@ public class StateDepGraph implements DependencyGraph {
                     optimisticValues.putIfAbsent(f, 0);
             }
 
-            for(Node n : optimisticValues.keySet()) {
+            for(Node n : optimisticValues.keys()) {
                 if(n instanceof TempFluent.DGFluent) {
                     TempFluent.DGFluent f = (TempFluent.DGFluent) n;
                     for(MinEdge e : inEdges(f)) {
@@ -379,7 +379,7 @@ public class StateDepGraph implements DependencyGraph {
                     }
                 }
             }
-            for(Node n : optimisticValues.keySet()) {
+            for(Node n : optimisticValues.keys()) {
                 if(n instanceof TempFluent.DGFluent) {
                     pendingForActivation.put(n, 1);
                 } else { // action node
@@ -435,7 +435,7 @@ public class StateDepGraph implements DependencyGraph {
                     prevValue = val;
                 }
                 if(cut_threshold != Integer.MAX_VALUE) {
-                    for(Node n : labelsCost.keySet()) {
+                    for(Node n : labelsCost.keys()) {
                         if(possible(n) && cost(n) > cut_threshold) {
                             delete(n);
                         }
@@ -511,7 +511,7 @@ public class StateDepGraph implements DependencyGraph {
                 }
             }
             // clean up label costs
-            for(Node n : labelsCost.keySet())
+            for(Node n : labelsCost.keys())
                 if(!possible(n))
                     labelsCost.remove(n);
         }

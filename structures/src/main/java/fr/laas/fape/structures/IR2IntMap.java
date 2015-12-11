@@ -160,7 +160,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return new IR2IntMap<K>(this);
     }
 
-    @Override
+    @Override @Deprecated
     @SuppressWarnings("unchecked")
     public Set<K> keySet() {
         HashSet<K> keys = new HashSet<K>();
@@ -168,6 +168,21 @@ public class IR2IntMap<K> implements Map<K, Integer> {
             if (values[i] != NIL)
                 keys.add((K) keyRep.fromInt(i));
         return keys;
+    }
+
+    public Iterable<K> keys() {
+        return () -> { return new Iterator<K>() {
+            int cur = 0;
+            public boolean hasNext() {
+                while(cur < values.length && values[cur] == NIL) cur++;
+                return cur < values.length;
+            }
+
+            @Override
+            public K next() {
+                return keyRep.fromInt(cur++);
+            }
+        }; };
     }
 
     public PrimitiveIterator.OfInt keysIterator() {
