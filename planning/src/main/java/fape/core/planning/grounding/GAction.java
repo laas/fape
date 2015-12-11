@@ -3,7 +3,6 @@ package fape.core.planning.grounding;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
-import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
@@ -182,8 +181,8 @@ public class GAction implements Identifiable {
         pre.removeAll(add);
 
         this.id = nextID++;
-        this.subTasks = initSubTasks(gPb.liftedPb);
-        this.task = initTask(gPb.liftedPb);
+        this.subTasks = initSubTasks(gPb.liftedPb, planner);
+        this.task = initTask(gPb.liftedPb, planner);
         this.preconditions = new int[pre.size()];
         for(int i=0 ; i<pre.size() ; i++)
             this.preconditions[i] = pre.get(i).ID;
@@ -428,35 +427,31 @@ public class GAction implements Identifiable {
         return actions;
     }
 
-    private GTaskCond initTask(AnmlProblem pb) {
+    private GTaskCond initTask(AnmlProblem pb, APlanner planner) {
         List<InstanceRef> args = new LinkedList<>();
         for(LVarRef v : abs.args()) {
             args.add(valueOf(v, pb));
         }
-        return new GTaskCond(abs.taskName(), args);
+        return planner.preprocessor.store.getTask(abs.taskName(), args);
     }
 
     public ArrayList<GTaskCond> getActionRefs() {
         return subTasks;
     }
 
-    public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb) {
+    public ArrayList<GTaskCond> initSubTasks(AnmlProblem pb, APlanner planner) {
         List<AbstractTask> refs = this.abs.jSubTasks();
-        List<GTaskCond> ret = new LinkedList<>();
+        ArrayList<GTaskCond> ret = new ArrayList<>();
 
         for(AbstractTask ref : refs) {
-            List<InstanceRef> args = new LinkedList<>();
+            List<InstanceRef> args = new ArrayList<>();
             for(LVarRef v : ref.jArgs()) {
                 args.add(valueOf(v, pb));
             }
-            ret.add(new GTaskCond(ref.name(), args));
+            ret.add(planner.preprocessor.store.getTask(ref.name(), args));
         }
 
-        ArrayList<GTaskCond> subTasks = new ArrayList<>(ret.size());
-        for(int i=0 ; i<ret.size() ; i++)
-            subTasks.add(ret.get(i));
-
-        return subTasks;
+        return ret;
     }
 
     public void addClauses(HReasoner<Term> r) {

@@ -1,13 +1,18 @@
 package fape.core.planning.grounding;
 
+import fr.laas.fape.structures.AbsIdentifiable;
+import fr.laas.fape.structures.Ident;
+import fr.laas.fape.structures.ValueConstructor;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Collection;
 
-public class GTaskCond {
+@Ident(GTaskCond.class)
+public class GTaskCond extends AbsIdentifiable {
     public final String name;
     public final InstanceRef[] args;
 
+    @ValueConstructor @Deprecated
     public GTaskCond(String name, Collection<InstanceRef> args) {
         this.name = name;
         this.args = new InstanceRef[args.size()];
@@ -24,29 +29,5 @@ public class GTaskCond {
         for(InstanceRef arg : args)
             ret+= arg+",";
         return ret+")";
-    }
-
-    @Override
-    public int hashCode() {
-        int ret = name.hashCode();
-        for(int i=0 ; i<args.length ; i++) {
-            ret += 42^i * args[i].hashCode();
-        }
-        return ret;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if(o instanceof GTaskCond) {
-            GTaskCond gtc = (GTaskCond) o;
-            if(!name.equals(gtc.name))
-                return false;
-            for(int i=0 ; i<args.length ; i++)
-                if(args[i] != gtc.args[i])
-                    return false;
-            return true;
-        } else {
-            return false;
-        }
     }
 }

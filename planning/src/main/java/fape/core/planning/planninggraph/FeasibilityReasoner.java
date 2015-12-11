@@ -181,7 +181,7 @@ public class FeasibilityReasoner {
         }
         List<List<InstanceRef>> instantiations = PGUtils.allCombinations(varDomains);
         for(List<InstanceRef> instantiation : instantiations) {
-            GTaskCond task = new GTaskCond(liftedTask.name(), instantiation);
+            GTaskCond task = st.pl.preprocessor.store.getTask(liftedTask.name(), instantiation);
             tasks.add(task);
         }
         return tasks;
