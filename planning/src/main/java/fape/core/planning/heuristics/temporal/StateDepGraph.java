@@ -267,16 +267,20 @@ public class StateDepGraph implements DependencyGraph {
         PriorityQueue<Node> queue = new PriorityQueue<>((Node n1, Node n2) -> cost(n1) - cost(n2));
         List<MaxEdge> ignoredEdges = new ArrayList<>();
 
-        private int cost(Node n) { return labelsCost.get(n); }
+        private int cost(Node n) { return labelsCost.get(n.getID()); }
         private Node pred(Node n) { return (Node) core.store.get(Node.class, labelsPred.get(n)); }
         private void setPred(Node n, Node pred) { labelsPred.put(n, pred.getID()); }
         private boolean possible(Node n) { return labelsPred.containsKey(n); }
         private boolean optimisticallyPossible(Node n) { return optimisticValues.containsKey(n); }
+
+        IRSet<Node> queueContent = new IRSet<Node>(core.store.getIntRep(Node.class));
+
         private void enqueue(Node n, int cost, Node pred) {
             if(!optimisticValues.containsKey(n))
                 return; // ignore all non-possible node
 
-            if(queue.contains(n)) {
+            if(queueContent.contains(n)) {
+//                assert queue.contains(n); //  O(n) !!!!
                 if(cost < cost(n) && cost(n) > optimisticValues.get(n)) { // "cost" is an improvement and an improvement is possible
                     queue.remove(n);
                     labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
@@ -284,9 +288,11 @@ public class StateDepGraph implements DependencyGraph {
                     queue.add(n);
                 }
             } else if(!labelsPred.containsKey(n)) { // node has not been settled yet
+//                assert !queue.contains(n); //  O(n)
                 labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
                 setPred(n, pred);
                 queue.add(n);
+                queueContent.add(n);
             } else {
                 assert cost >= cost(n) || cost(n) == optimisticValues.get(n);
             }
@@ -374,6 +380,7 @@ public class StateDepGraph implements DependencyGraph {
         private void incrementalDijkstra() {
             while(!queue.isEmpty()) {
                 Node n = queue.poll();
+                queueContent.remove(n);
                 if(dbgLvlDij >2) System.out.println(String.format("+[%d] %s     <<--- %s", cost(n), n, pred(n)!=n ? pred(n) : " self"));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
@@ -409,6 +416,7 @@ public class StateDepGraph implements DependencyGraph {
             // main dijkstra loop
             while(!queue.isEmpty()) {
                 Node n = queue.poll();
+                queueContent.remove(n);
                 if(dbgLvlDij >2) System.out.println(String.format(" [%d] %s     <<--- %s", cost(n), n, pred(n)!=n ? pred(n) : " self"));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
@@ -458,6 +466,8 @@ public class StateDepGraph implements DependencyGraph {
             labelsCost.remove(n);
             labelsPred.remove(n);
             queue.remove(n);
+            if(queueContent.contains(n))
+                queueContent.remove(n);
 
             if(n instanceof TempFluent.DGFluent) {
                 TempFluent.DGFluent f = (TempFluent.DGFluent) n;
@@ -500,6 +510,7 @@ public class StateDepGraph implements DependencyGraph {
                 labelsCost.put(n, newCost);
                 setPred(n, newPred);
                 queue.add(n);
+                queueContent.add(n);
             }
 
         }
