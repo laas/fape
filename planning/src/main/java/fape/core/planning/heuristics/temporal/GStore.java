@@ -1,6 +1,8 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.grounding.GTask;
 import fr.laas.fape.structures.IRStorage;
 import planstack.anml.model.abs.time.AbsTP;
@@ -12,7 +14,7 @@ import java.util.List;
 
 public class GStore extends IRStorage {
 
-    public TempFluent.DGFluent getFluent(String funcName, List<InstanceRef> argsAndValues) {
+    public TempFluent.DGFluent getDependencyGraphFluent(String funcName, List<InstanceRef> argsAndValues) {
         return (TempFluent.DGFluent) this.get(TempFluent.DGFluent.class, Arrays.asList(funcName, argsAndValues));
     }
 
@@ -26,5 +28,13 @@ public class GStore extends IRStorage {
 
     public GTask getTask(String name, List<InstanceRef> args) {
         return (GTask) this.get(GTask.class, Arrays.asList(name, args));
+    }
+
+    public Fluent getFluent(GStateVariable sv, InstanceRef value) {
+        return (Fluent) this.get(Fluent.class, Arrays.asList(sv, value));
+    }
+
+    public Fluent getFluentByID(int fluentID) {
+        return (Fluent) this.get(Fluent.class, fluentID);
     }
 }

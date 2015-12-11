@@ -17,7 +17,6 @@ public class IRStorage {
         try {
             final Class identClazz = getIdentClass(clazz);
 
-//            System.out.println(identClazz);
             List<Object> paramsAndClass = new ArrayList<>(params);
             paramsAndClass.add(clazz);
 
@@ -25,7 +24,6 @@ public class IRStorage {
             instances.putIfAbsent(identClazz, new ArrayList<>());
 
             if (instancesByParams.get(identClazz).containsKey(paramsAndClass)) {
-//                System.out.println("    Found existing instance <------------------------------------------------------------");
                 return instancesByParams.get(identClazz).get(paramsAndClass);
             }
 
@@ -40,12 +38,10 @@ public class IRStorage {
                 }
                 if(c == null)
                     throw new RuntimeException("No constructor annotated with @ValueConstructor in class: "+clazz.getName());
-//                System.out.println(c);
                 Identifiable n = (Identifiable) c.newInstance(params.toArray());
                 n.setID(instances.get(identClazz).size());
                 instances.get(identClazz).add(n);
                 instancesByParams.get(identClazz).put(paramsAndClass, n);
-//                System.out.println("   Creating new instance: ["+n.getID()+"] "+n.toString());
                 return n;
             }
         } catch (Exception e) {
@@ -59,6 +55,10 @@ public class IRStorage {
         } catch (IndexOutOfBoundsException e) {
             throw new NoSuchElementException("No instance of class "+clazz.getName()+" with ID: "+id);
         }
+    }
+
+    public int getHigherID(Class clazz) {
+        return instances.get(getIdentClass(clazz)).size() -1;
     }
 
     public void record(Identifiable o) {

@@ -34,7 +34,7 @@ public class DTGImpl {
     private int edgeIndex(int edge) { return edge * EDGE_SIZE; }
     private int nodeIndex(int node) { return node * NODE_SIZE; }
     private int id(int fluent, int lvl) { return fluentByLvl[(fluent * numLevels) + lvl]; }
-    private int id(Fluent f, int lvl) { if(f != null) return id(f.ID, lvl); else return 0; }
+    private int id(Fluent f, int lvl) { if(f != null) return id(f.getID(), lvl); else return 0; }
     private boolean hasNode(int fluent, int lvl) { return (fluent*numLevels) < fluentByLvl.length && id(fluent, lvl) != -1; }
     private void setId(int id, int fluent, int lvl) {
         if(fluentByLvl.length <= fluent*numLevels) {
@@ -118,9 +118,9 @@ public class DTGImpl {
             assert lvl == 0 : "Null node can only exist at level 0.";
             return 0; // null fluent is always represented by node 0.
         }
-        assert !hasNode(f.ID, lvl) : "Node already recorded.";
+        assert !hasNode(f.getID(), lvl) : "Node already recorded.";
         int id = nextNodeID();
-        setNode(id, f.ID, lvl, start != null ? start.id() : -1, end != null ?end.id() : -1);
+        setNode(id, f.getID(), lvl, start != null ? start.id() : -1, end != null ?end.id() : -1);
         return id;
     }
 
@@ -173,7 +173,7 @@ public class DTGImpl {
 
     public boolean hasNode(Fluent f, int level) {
         if(f != null)
-            return hasNode(f.ID, level);
+            return hasNode(f.getID(), level);
         assert level == 0;
         return true;
     }
@@ -190,7 +190,7 @@ public class DTGImpl {
 
     public PrimitiveIterator.OfInt entryNodes(Fluent f) {
         assert f != null : "Cannot enter with null fluent";
-        return entryNodes(f.ID);
+        return entryNodes(f.getID());
     }
 
     public PrimitiveIterator.OfInt entryNodes(final int fluent) {

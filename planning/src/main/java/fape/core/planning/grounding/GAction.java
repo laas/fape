@@ -185,10 +185,10 @@ public class GAction implements Identifiable {
         this.task = initTask(gPb.liftedPb, planner);
         this.preconditions = new int[pre.size()];
         for(int i=0 ; i<pre.size() ; i++)
-            this.preconditions[i] = pre.get(i).ID;
+            this.preconditions[i] = pre.get(i).getID();
         this.additions = new int[add.size()];
         for(int i=0 ; i<add.size() ; i++)
-            this.additions[i] = add.get(i).ID;
+            this.additions[i] = add.get(i).getID();
 
     }
 

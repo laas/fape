@@ -33,11 +33,8 @@ public class Preprocessor {
     private EffSet<GAction> allActions;
     private Collection<RAct> relaxedActions;
     private GroundDTGs dtgs;
-    private Fluent[] fluents = new Fluent[1000];
     private GAction[] groundActions = new GAction[1000];
     HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
-    Map<GStateVariable, Map<InstanceRef, Fluent>> fluentsMap;
-    int nextFluentID = 0;
 
     Boolean isHierarchical = null;
 
@@ -180,35 +177,20 @@ public class Preprocessor {
     }
 
     public Fluent getFluent(GStateVariable sv, InstanceRef value) {
-        if(fluentsMap == null) {
-            fluentsMap = new HashMap<>();
-        }
-        if(!fluentsMap.containsKey(sv)) {
-            fluentsMap.put(sv, new HashMap<>());
-        }
-        if(!fluentsMap.get(sv).containsKey(value)) {
-            final Fluent f = new Fluent(sv, value, nextFluentID++);
-            fluentsMap.get(sv).put(value, f);
-            if(f.ID >= fluents.length)
-                fluents = Arrays.copyOf(fluents, fluents.length*2);
-            assert fluents[f.ID] == null : "Error recording to fluents with same ID.";
-            fluents[f.ID] = f;
-        }
-        return fluentsMap.get(sv).get(value);
+        return store.getFluent(sv, value);
     }
 
     public Fluent getFluent(int fluentID) {
-        assert fluentID < fluents.length && fluents[fluentID] != null : "No fluent with ID "+fluentID+" recorded.";
-        return fluents[fluentID];
+        return store.getFluentByID(fluentID);
     }
 
-    public int getApproximateNumFluents() { return fluents.length; }
+    public int getApproximateNumFluents() { return store.getHigherID(Fluent.class); }
 
     public IntRepresentation<Fluent> fluentIntRepresentation() {
         return new IntRepresentation<Fluent>() {
-            @Override public final int asInt(Fluent fluent) { return fluent.ID; }
+            @Override public final int asInt(Fluent fluent) { return fluent.getID(); }
             @Override public final Fluent fromInt(int id) { return getFluent(id); }
-            @Override public boolean hasRepresentation(Fluent fluent) { assert fluents[fluent.ID] == fluent; return true; }
+            @Override public boolean hasRepresentation(Fluent fluent) { return true; }
         };
     }
 

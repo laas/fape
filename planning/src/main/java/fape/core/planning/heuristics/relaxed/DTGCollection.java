@@ -68,7 +68,7 @@ public final class DTGCollection {
                 PrimitiveIterator.OfInt it = dtg.entryNodes(f);
                 while(it.hasNext()) {
                     int nodeID = it.next();
-                    assert(dtg.entryPoint(nodeID) && dtg.fluent(nodeID) == f.ID);
+                    assert(dtg.entryPoint(nodeID) && dtg.fluent(nodeID) == f.getID());
                     entryPoints.add(new OpenGoalTransitionFinder.DualNode(dtgID, nodeID));
                 }
             }
@@ -80,7 +80,7 @@ public final class DTGCollection {
         Set<Integer> fluentIDs = new HashSet<>();
         List<OpenGoalTransitionFinder.DualNode> entryPoints = new ArrayList<>();
         for(Fluent fluent : fluents)
-            fluentIDs.add(fluent.ID);
+            fluentIDs.add(fluent.getID());
         for(int dtgID : usableDTGs) {
             DTGImpl dtg = get(dtgID);
             for(int node=0 ; node < dtg.getNumNodes() ; node++) {

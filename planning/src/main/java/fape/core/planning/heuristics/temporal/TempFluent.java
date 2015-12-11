@@ -38,17 +38,17 @@ import java.util.stream.Collectors;
             for(int i=0 ; i<template.fluent.args().size() ; i++) {
                 argsAndValue[i] = container.valueOf(template.fluent.args().get(i), pb);
             }
-            return store.getFluent(template.fluent.funcName(), Arrays.asList(argsAndValue)); //new Fluent(template.funcName, argsAndValue);
+            return store.getDependencyGraphFluent(template.fluent.funcName(), Arrays.asList(argsAndValue)); //new Fluent(template.funcName, argsAndValue);
         }
 
         public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
             InstanceRef[] args = Arrays.copyOf(f.sv.params, f.sv.params.length+1);
             args[args.length-1] = f.value;
-            return store.getFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
+            return store.getDependencyGraphFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
         }
         public static DGFluent from(GTask task, AnmlProblem pb, GStore store) {
             InstanceRef[] args = Arrays.copyOf(task.args, task.args.length);
-            return store.getFluent("task--"+task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
+            return store.getDependencyGraphFluent("task--" + task.name, Arrays.asList(args)); //new Fluent("task-"+task.name, args);
         }
     }
 

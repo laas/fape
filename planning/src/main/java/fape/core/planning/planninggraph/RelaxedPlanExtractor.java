@@ -119,7 +119,7 @@ public class RelaxedPlanExtractor {
 
             for(Fluent f : ga.pre) {
                 assert st.reachabilityGraphs.causalLevelOfFluent(f) >= 0;
-                int base = achievableByLiftedAction(f.ID) ? 0 : costOfFluent(f);
+                int base = achievableByLiftedAction(f.getID()) ? 0 : costOfFluent(f);
                 sumPreconditionsCosts += base;
             }
 
