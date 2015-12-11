@@ -80,22 +80,26 @@ public class StateDepGraph implements DependencyGraph {
 
     public IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
 
-
         if(dbgLvlDij > 3) {
             Propagator p = new BellmanFord(ancestorGraph);
-            earliestAppearances = p.getEarliestAppearances();
+            IR2IntMap<Node> easBF = p.getEarliestAppearances();
 
             Dijkstra dij = new Dijkstra(ancestorGraph);
             IR2IntMap<Node> easDij = dij.getEarliestAppearances();
+            earliestAppearances = easDij;
 
-            for(Node n : earliestAppearances.keySet()) {
+            for(Node n : easBF.keySet()) {
                 assert easDij.containsKey(n);
             }
             for(Node n : easDij.keySet()) {
-                if(!earliestAppearances.containsKey(n))
+                if(!easBF.containsKey(n))
                     dij.display(n);
-                assert earliestAppearances.containsKey(n);
-                assert earliestAppearances.get(n).equals(easDij.get(n));
+                assert easBF.containsKey(n);
+                if(!easBF.get(n).equals(easDij.get(n))) {
+                    System.out.println(easBF.get(n) + "   " + easDij.get(n));
+                    this.displayRec(n,1,1);
+                }
+                assert easBF.get(n).equals(easDij.get(n));
             }
 
         } else {
@@ -107,6 +111,13 @@ public class StateDepGraph implements DependencyGraph {
         for(Node n : earliestAppearances.keySet())
             if(n instanceof RAct)
                 addableActs.add(((RAct) n).getAct());
+
+        if(dbgLvlDij >= 2 && ancestorGraph.isPresent()) {
+            for(Node n : earliestAppearances.keySet()) {
+                if(!(n instanceof FactAction))
+                    assert ancestorGraph.get().earliestAppearances.containsKey(n);
+            }
+        }
 
         if(!ancestorGraph.isPresent()) {
             List<RAct> feasibles = earliestAppearances.keySet().stream()
@@ -253,6 +264,30 @@ public class StateDepGraph implements DependencyGraph {
         }
     }
 
+    private void displayRec(Node n, int depth, int maxDepth) {
+        if(depth > maxDepth)
+            return;
+        String baseSpace = depth == 1 ? " " : (depth == 2 ? "  " : (depth==3 ? "    " : (depth==4 ? "     " :"  to deep")));
+        System.out.println();
+        System.out.print(baseSpace+(earliestAppearances.containsKey(n) ? "["+earliestAppearances.get(n)+"] " : "[--] "));
+        System.out.println(baseSpace+n);
+        if(n instanceof TempFluent.DGFluent) {
+            for(MinEdge e : inEdges((TempFluent.DGFluent) n)) {
+                System.out.println(baseSpace + "  " + earliestAppearances.containsKey(e.act) + " " + e +
+                        (earliestAppearances.containsKey(e.act) ? " src:["+earliestAppearances.get(e.act)+"] " : " src[--] "));
+                displayRec(e.act, depth+1, maxDepth);
+            }
+        } else {
+            for(MaxEdge e : inEdges((ActionNode) n)) {
+                System.out.println(baseSpace + "  " + earliestAppearances.containsKey(e.fluent) + "  " + e +
+                        (earliestAppearances.containsKey(e.fluent) ? " src:["+earliestAppearances.get(e.fluent)+"] " : " src[--] "));
+                displayRec(e.fluent, depth+1, maxDepth);
+            }
+        }
+    }
+
+    private IR2IntMap<Node> predecessors;
+
     public class Dijkstra implements Propagator {
         // contains all fluents that can be achieved be an action earlier or concurrently to it (i.e. with
         // an incoming null or negative edge)
@@ -265,6 +300,7 @@ public class StateDepGraph implements DependencyGraph {
 
         PriorityQueue<Node> queue = new PriorityQueue<>((Node n1, Node n2) -> cost(n1) - cost(n2));
         List<MaxEdge> ignoredEdges = new ArrayList<>();
+        boolean firstPropagationFinished = false;
 
         private int cost(Node n) { return labelsCost.get(n.getID()); }
         private Node pred(Node n) { return (Node) core.store.get(Node.class, labelsPred.get(n)); }
@@ -279,7 +315,7 @@ public class StateDepGraph implements DependencyGraph {
                 return; // ignore all non-possible node
 
             if(queueContent.contains(n)) {
-//                assert queue.contains(n); //  O(n) !!!!
+                if(dbgLvlDij >= 2) assert queue.contains(n); //  O(n) !!!!
                 if(cost < cost(n) && cost(n) > optimisticValues.get(n)) { // "cost" is an improvement and an improvement is possible
                     queue.remove(n);
                     labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
@@ -287,7 +323,7 @@ public class StateDepGraph implements DependencyGraph {
                     queue.add(n);
                 }
             } else if(!labelsPred.containsKey(n)) { // node has not been settled yet
-//                assert !queue.contains(n); //  O(n)
+                if(dbgLvlDij >= 2) assert !queue.contains(n); //  O(n) !!!!
                 labelsCost.put(n, Math.max(cost, optimisticValues.get(n)));
                 setPred(n, pred);
                 queue.add(n);
@@ -298,16 +334,40 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         public Dijkstra(Optional<StateDepGraph> ancestorGraph) {
-                if(ancestorGraph.isPresent()) {
-                    optimisticValues = ancestorGraph.get().earliestAppearances.clone();
-                    optimisticValues.remove(ancestorGraph.get().facts);
-                    optimisticValues.put(facts, 0);
-                } else {
-                    optimisticValues = core.getDefaultEarliestApprearances();
-                    optimisticValues.put(facts, 0);
-                    for(TempFluent.DGFluent f : initFluents.keySet())
-                        optimisticValues.putIfAbsent(f, 0);
+
+            if(ancestorGraph.isPresent()) {
+                optimisticValues = ancestorGraph.get().earliestAppearances.clone();
+                optimisticValues.remove(ancestorGraph.get().facts);
+                optimisticValues.put(facts, 0);
+                labelsCost = optimisticValues.clone();
+                labelsPred = ancestorGraph.get().predecessors.clone();
+                labelsPred.remove(ancestorGraph.get().facts);
+                setPred(facts, facts);
+
+                for(TempFluent tf : ancestorGraph.get().facts.getEffects()) {
+                    if(possible(tf.fluent) && pred(tf.fluent) == ancestorGraph.get().facts) {
+                        int bestCost = Integer.MAX_VALUE;
+                        Node bestPred = null;
+                        for(MinEdge e : inEdges(tf.fluent)) {
+                            if(possible(e.act) && cost(e.act) + e.delay < bestCost) {
+                                bestCost = cost(e.act) + e.delay;
+                                bestPred = e.act;
+                            }
+                        }
+                        if(bestPred == null) {
+                            delete(tf.fluent); // no achiever left
+                        } else {
+                            delayEnqueue(tf.fluent, bestCost, bestPred);
+                        }
+                    }
                 }
+                firstPropagationFinished = true; // go directly to incremental propagation
+            } else {
+                optimisticValues = core.getDefaultEarliestApprearances();
+                optimisticValues.put(facts, 0);
+                for(TempFluent.DGFluent f : initFluents.keySet())
+                    optimisticValues.putIfAbsent(f, 0);
+            }
 
             for(Node n : optimisticValues.keySet()) {
                 if(n instanceof TempFluent.DGFluent) {
@@ -337,8 +397,6 @@ public class StateDepGraph implements DependencyGraph {
                     }
                 }
             }
-
-            boolean firstPropagationFinished = false;
 
             while(!queue.isEmpty()) {
                 if (!firstPropagationFinished) {
@@ -384,16 +442,20 @@ public class StateDepGraph implements DependencyGraph {
                     }
                 }
             }
+
+            predecessors = labelsPred; // TODO: this is hacky
         }
 
         private void incrementalDijkstra() {
             while(!queue.isEmpty()) {
                 Node n = queue.poll();
                 queueContent.remove(n);
+                assert possible(n);
                 if(dbgLvlDij >2) System.out.println(String.format("+[%d] %s     <<--- %s", cost(n), n, pred(n)!=n ? pred(n) : " self"));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
                     for (MinEdge e : outEdges(a)) {
+                        assert possible(e.fluent);
                         if(pred(e.fluent) == a) {
                             int bestCost = Integer.MAX_VALUE;
                             Node bestPred = null;
@@ -412,7 +474,6 @@ public class StateDepGraph implements DependencyGraph {
                     if(!lateAchieved.contains(f)) { // late achieved are ignored in the count of pending requirements
                         for(MaxEdge e : outEdges(f)) {
                             if(optimisticallyPossible(e.act) && e.delay >= 0) {
-                                assert pendingForActivation.get(e.act) == 0;
                                 delayEnqueue(e.act, cost(e.fluent) + e.delay, e.fluent);
                             }
                         }
@@ -449,7 +510,7 @@ public class StateDepGraph implements DependencyGraph {
                     }
                 }
             }
-            // clean up label cost
+            // clean up label costs
             for(Node n : labelsCost.keySet())
                 if(!possible(n))
                     labelsCost.remove(n);
