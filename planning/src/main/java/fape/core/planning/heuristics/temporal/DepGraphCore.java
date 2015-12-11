@@ -18,6 +18,12 @@ public class DepGraphCore implements DependencyGraph {
     Map<DGFluent, List<MinEdge>> fluentIn = new HashMap<>();
 
     int dmax = Integer.MIN_VALUE;
+    /** All nodes with an incoming negative or null edge. This field is lazy */
+    private IRSet<DGFluent> nodesWithIncomingNegEdge;
+
+    /** All edges that should be ignored in the Dijkstra propagation.
+     *  If they are ignored the graph will not contain any negative cycle. //TODO: double check that */
+    private List<MaxEdge> toIgnoreInDijkstra;
 
     public DepGraphCore(Collection<RAct> actions, GStore store) { // List<TempFluent> facts, State st) {
         this.store = store;
@@ -72,6 +78,34 @@ public class DepGraphCore implements DependencyGraph {
 
     @Override public Iterator<MaxEdge> outEdgesIt(DGFluent f) {
         return fluentOut.containsKey(f) ? fluentOut.get(f).iterator() : Collections.emptyIterator();
+    }
+
+    protected IRSet<DGFluent> getFluentsWithIncomingNegEdge() {
+        if(nodesWithIncomingNegEdge == null) {
+            nodesWithIncomingNegEdge = new IRSet<DGFluent>(store.getIntRep(DGFluent.class));
+
+            for (DGFluent f : fluentIn.keySet()) {
+                for (MinEdge e : inEdges(f)) {
+                    if (e.delay <= 0) {
+                        nodesWithIncomingNegEdge.add(f);
+                    }
+                }
+            }
+        }
+        return nodesWithIncomingNegEdge;
+    }
+
+    protected List<MaxEdge> getEdgesToIgnoreInDijkstra() {
+        if(toIgnoreInDijkstra == null) {
+            toIgnoreInDijkstra = new ArrayList<>();
+            for(List<MaxEdge> maxEdges : actIn.values()) {
+                for(MaxEdge e : maxEdges) {
+                    if(e.delay < 0 || getFluentsWithIncomingNegEdge().contains(e.fluent))
+                        toIgnoreInDijkstra.add(e);
+                }
+            }
+        }
+        return toIgnoreInDijkstra;
     }
 
     /**
