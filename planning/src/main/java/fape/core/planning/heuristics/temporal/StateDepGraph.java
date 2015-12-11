@@ -79,23 +79,13 @@ public class StateDepGraph implements DependencyGraph {
 
 
     public IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
-        IR2IntMap<Node> optimisticEST;
-        if(ancestorGraph.isPresent()) {
-            optimisticEST = ancestorGraph.get().earliestAppearances.clone();
-            optimisticEST.remove(ancestorGraph.get().facts);
-            optimisticEST.put(facts, 0);
-        } else {
-            optimisticEST = core.getDefaultEarliestApprearances();
-            optimisticEST.put(facts, 0);
-            for(TempFluent.DGFluent f : initFluents.keySet())
-                optimisticEST.putIfAbsent(f, 0);
-        }
+
 
         if(dbgLvlDij > 3) {
-            Propagator p = new BellmanFord(optimisticEST);
+            Propagator p = new BellmanFord(ancestorGraph);
             earliestAppearances = p.getEarliestAppearances();
 
-            Dijkstra dij = new Dijkstra(optimisticEST);
+            Dijkstra dij = new Dijkstra(ancestorGraph);
             IR2IntMap<Node> easDij = dij.getEarliestAppearances();
 
             for(Node n : earliestAppearances.keySet()) {
@@ -109,7 +99,7 @@ public class StateDepGraph implements DependencyGraph {
             }
 
         } else {
-            Propagator p = new Dijkstra(optimisticEST);
+            Propagator p = new Dijkstra(ancestorGraph);
             earliestAppearances = p.getEarliestAppearances();
         }
 
@@ -152,12 +142,21 @@ public class StateDepGraph implements DependencyGraph {
         private void setImpossible(int nid) { possible.remove(nid); eas.remove(nid); }
         private void setImpossible(Node n) { setImpossible(n.getID()); }
 
-        public BellmanFord(IR2IntMap<Node> optimisticValues) {
+        public BellmanFord(Optional<StateDepGraph> ancestorGraph) {
+            if(ancestorGraph.isPresent()) {
+                eas = ancestorGraph.get().earliestAppearances.clone();
+                eas.remove(ancestorGraph.get().facts);
+                eas.put(facts, 0);
+            } else {
+                eas = core.getDefaultEarliestApprearances();
+                eas.put(facts, 0);
+                for(TempFluent.DGFluent f : initFluents.keySet())
+                    eas.putIfAbsent(f, 0);
+            }
             possible = new IRSet<Node>(core.store.getIntRep(Node.class));
-            eas = optimisticValues.clone();
-            earliestAppearances = eas;
+            earliestAppearances = this.eas;
 
-            PrimitiveIterator.OfInt it = optimisticValues.keysIterator();
+            PrimitiveIterator.OfInt it = eas.keysIterator();
             while(it.hasNext())
                 possible.add(it.nextInt());
 
@@ -175,7 +174,7 @@ public class StateDepGraph implements DependencyGraph {
                 if(dbgLvl >= 3) printActions();
 
                 // nix late nodes
-                List<Integer> easOrdered = new ArrayList<Integer>(eas.values());
+                List<Integer> easOrdered = new ArrayList<Integer>(this.eas.values());
                 Collections.sort(easOrdered);
                 int prevValue = 0; int cut_threshold = Integer.MAX_VALUE;
                 for(int val : easOrdered) {
@@ -298,8 +297,18 @@ public class StateDepGraph implements DependencyGraph {
             }
         }
 
-        public Dijkstra(IR2IntMap<Node> optimisticValues) {
-            this.optimisticValues = optimisticValues.clone();
+        public Dijkstra(Optional<StateDepGraph> ancestorGraph) {
+                if(ancestorGraph.isPresent()) {
+                    optimisticValues = ancestorGraph.get().earliestAppearances.clone();
+                    optimisticValues.remove(ancestorGraph.get().facts);
+                    optimisticValues.put(facts, 0);
+                } else {
+                    optimisticValues = core.getDefaultEarliestApprearances();
+                    optimisticValues.put(facts, 0);
+                    for(TempFluent.DGFluent f : initFluents.keySet())
+                        optimisticValues.putIfAbsent(f, 0);
+                }
+
             for(Node n : optimisticValues.keySet()) {
                 if(n instanceof TempFluent.DGFluent) {
                     TempFluent.DGFluent f = (TempFluent.DGFluent) n;
