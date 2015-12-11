@@ -301,7 +301,10 @@ public class StateDepGraph implements DependencyGraph {
 
         private int cost(Node n) { return labelsCost.get(n.getID()); }
         private Node pred(Node n) { return (Node) core.store.get(Node.class, labelsPred.get(n)); }
-        private void setPred(Node n, Node pred) { labelsPred.put(n, pred.getID()); }
+        private void setPred(Node n, Node pred) {
+            assert possible(pred) || pred == n;
+            labelsPred.put(n, pred.getID());
+        }
         private boolean possible(Node n) { return labelsPred.containsKey(n); }
         private boolean optimisticallyPossible(Node n) { return optimisticValues.containsKey(n); }
 
@@ -509,7 +512,7 @@ public class StateDepGraph implements DependencyGraph {
             System.out.println();
             System.out.print(possible(n) ? "["+cost(n)+"] " : "[--] ");
             System.out.print(n);
-            System.out.println("  pred: "+(possible(n) ? pred(n) : "none"));
+            System.out.println("  pred: "+(possible(n) ? pred(n) : "none")+"  predID: "+labelsPred.getOrDefault(n, -1));
             if(n instanceof TempFluent.DGFluent) {
                 for(MinEdge e : inEdges((TempFluent.DGFluent) n))
                     System.out.println("  "+possible(e.act)+" "+e);
@@ -539,7 +542,6 @@ public class StateDepGraph implements DependencyGraph {
             } else {
                 ActionNode a = (ActionNode) n;
                 for(MinEdge e : outEdges(a)) {
-                    assert !possible(e.fluent) || pred(e.fluent) == a || possible(pred(e.fluent));
                     if(possible(e.fluent) && pred(e.fluent) == a) {
                         int bestCost = Integer.MAX_VALUE;
                         Node bestPred = null;
