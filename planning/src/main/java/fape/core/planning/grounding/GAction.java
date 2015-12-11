@@ -157,7 +157,7 @@ public class GAction implements Identifiable {
                 AbstractTransition t = (AbstractTransition) as;
                 gStatements.add(new Pair<>(
                         t.id(),
-                        (GLogStatement) new GTransition(sv(t.sv(), pb), valueOf(t.from(), pb), valueOf(t.to(), pb))));
+                        (GLogStatement) new GTransition(sv(t.sv(), pb, planner), valueOf(t.from(), pb), valueOf(t.to(), pb))));
                 pre.add(fluent(t.sv(), t.from(), bindings, planner));
                 if(!fluent(t.sv(), t.from(), bindings, planner).equals(fluent(t.sv(), t.to(), bindings, planner))) {
                     add.add(fluent(t.sv(), t.to(), bindings, planner));
@@ -166,13 +166,13 @@ public class GAction implements Identifiable {
                 AbstractPersistence p = (AbstractPersistence) as;
                 gStatements.add(new Pair<>(
                         p.id(),
-                        (GLogStatement) new GPersistence(sv(p.sv(), pb), valueOf(p.value(), pb))));
+                        (GLogStatement) new GPersistence(sv(p.sv(), pb, planner), valueOf(p.value(), pb))));
                 pre.add(fluent(p.sv(), p.value(), bindings, planner));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
                 gStatements.add(new Pair<>(
                         a.id(),
-                        (GLogStatement) new GAssignement(sv(a.sv(), pb), valueOf(a.value(), pb))));
+                        (GLogStatement) new GAssignement(sv(a.sv(), pb, planner), valueOf(a.value(), pb))));
                 add.add(fluent(a.sv(), a.value(), bindings, planner));
             }
         }
@@ -230,11 +230,11 @@ public class GAction implements Identifiable {
         return (InstanceRef) pb.context().getDefinition(v);
     }
 
-    public GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb) {
+    public GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb, APlanner planner) {
         InstanceRef[] svParams = new InstanceRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), pb);
-        return new GStateVariable(sv.func(), svParams);
+        return planner.preprocessor.store.getGStateVariable(sv.func(), Arrays.asList(svParams));
     }
 
     public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Map<LVarRef, InstanceRef> vars, APlanner planner) {

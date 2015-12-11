@@ -198,6 +198,6 @@ public class Preprocessor {
         InstanceRef[] castParams = new InstanceRef[params.length];
         for (int i = 0; i < params.length; i++)
             castParams[i] = (InstanceRef) params[i];
-        return new GStateVariable(f, castParams);
+        return store.getGStateVariable(f, Arrays.asList(castParams));
     }
 }

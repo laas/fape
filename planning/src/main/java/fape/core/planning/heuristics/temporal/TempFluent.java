@@ -11,6 +11,7 @@ import lombok.Value;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.concrete.InstanceRef;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,9 +43,9 @@ import java.util.stream.Collectors;
         }
 
         public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
-            InstanceRef[] args = Arrays.copyOf(f.sv.params, f.sv.params.length+1);
-            args[args.length-1] = f.value;
-            return store.getDependencyGraphFluent(f.sv.f.name(), Arrays.asList(args)); //new Fluent(f.sv.f.name(), Arrays.asList(args));
+            List<InstanceRef> args = new ArrayList<>(f.sv.params);
+            args.add(f.value);
+            return store.getDependencyGraphFluent(f.sv.f.name(), args); //new Fluent(f.sv.f.name(), Arrays.asList(args));
         }
         public static DGFluent from(GTask task, AnmlProblem pb, GStore store) {
             InstanceRef[] args = Arrays.copyOf(task.args, task.args.length);

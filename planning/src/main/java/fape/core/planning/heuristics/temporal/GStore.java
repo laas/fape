@@ -5,8 +5,10 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.grounding.GTask;
 import fr.laas.fape.structures.IRStorage;
+import planstack.anml.model.Function;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.parser.Instance;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,5 +38,9 @@ public class GStore extends IRStorage {
 
     public Fluent getFluentByID(int fluentID) {
         return (Fluent) this.get(Fluent.class, fluentID);
+    }
+
+    public GStateVariable getGStateVariable(Function f, List<InstanceRef> vars) {
+        return (GStateVariable) this.get(GStateVariable.class, Arrays.asList(f, vars));
     }
 }
