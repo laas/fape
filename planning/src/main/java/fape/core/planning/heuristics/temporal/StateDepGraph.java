@@ -468,7 +468,7 @@ public class StateDepGraph implements DependencyGraph {
                 } else {
                     TempFluent.DGFluent f = (TempFluent.DGFluent) n;
                     for(MaxEdge e : outEdges(f)) {
-                        if(optimisticallyPossible(e.act) && !shouldIgnore(e)) {
+                        if(possible(e.act) && !shouldIgnore(e)) {
                             delayEnqueue(e.act, cost(e.fluent) + e.delay, e.fluent);
                         }
                     }
