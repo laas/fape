@@ -8,17 +8,12 @@ import fr.laas.fape.structures.IRStorage;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.parser.Instance;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class GStore extends IRStorage {
-
-    public TempFluent.DGFluent getDependencyGraphFluent(String funcName, List<InstanceRef> argsAndValues) {
-        return (TempFluent.DGFluent) this.get(TempFluent.DGFluent.class, Arrays.asList(funcName, argsAndValues));
-    }
 
     public RAct getRAct(GAction act, AbsTP tp, List<TempFluent> conditions, List<TempFluent> effects) {
         return (RAct) this.get(RAct.class, Arrays.asList(act, tp, conditions, effects));

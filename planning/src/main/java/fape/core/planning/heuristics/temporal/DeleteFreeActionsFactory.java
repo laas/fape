@@ -40,32 +40,19 @@ public class DeleteFreeActionsFactory {
         public final java.util.function.Function<Integer,Integer> trans;
     }
 
-    abstract class FluentTemplate {
-        public abstract String funcName();
-        public abstract List<LVarRef> args();
-    }
+    interface FluentTemplate {}
 
-    @Value class SVFluentTemplate extends FluentTemplate {
-        final AbstractParameterizedStateVariable sv;
-        final LVarRef value;
-        public String funcName() { return sv.func().name(); }
-        public List<LVarRef> args() {
-            List<LVarRef> ret = new LinkedList<>(sv.jArgs());
-            ret.add(value);
-            return ret;
-        }
+    @Value class SVFluentTemplate implements FluentTemplate {
+        public final AbstractParameterizedStateVariable sv;
+        public final LVarRef value;
     }
-    @Value class DoneFluentTemplate extends FluentTemplate {
-        final RActTemplate act;
-        public String funcName() { return act.name(); }
-        public List<LVarRef> args() { return Arrays.asList(act.abs.allVars()); }// return Arrays.asList(act.args()); }
+    @Value class DoneFluentTemplate implements FluentTemplate {
+        public final RActTemplate act;
     }
-    @Value class TaskFluentTemplate extends FluentTemplate {
-        final String prop;
-        final String taskName;
-        final List<LVarRef> args;
-        public String funcName() { return prop+"--"+taskName; }
-        public List<LVarRef> args() { return args; }
+    @Value class TaskFluentTemplate implements FluentTemplate {
+        public final String prop;
+        public final String taskName;
+        public final List<LVarRef> args;
     }
 
 
