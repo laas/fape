@@ -263,7 +263,6 @@ public class Timeline {
         throw new FAPEException("Error: no change statements encountered.");
     }
 
-    @Deprecated
     public TPRef getConsumeTimePoint() {
         assert chain.length > 0 : "Database is empty.";
         assert chain[0].size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
