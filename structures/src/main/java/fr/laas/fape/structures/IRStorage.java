@@ -58,7 +58,7 @@ public class IRStorage {
     }
 
     public int getHigherID(Class clazz) {
-        return instances.get(getIdentClass(clazz)).size() -1;
+        return instances.get(getIdentClass(clazz)).size();
     }
 
     public void record(Identifiable o) {
