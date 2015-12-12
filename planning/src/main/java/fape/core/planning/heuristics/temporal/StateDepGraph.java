@@ -1,5 +1,6 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.IR2IntMap;
@@ -21,6 +22,7 @@ public class StateDepGraph implements DependencyGraph {
 
     IR2IntMap<Node> earliestAppearances = null;
     IRSet<GAction> addableActs = null;
+    IR2IntMap<Fluent> fluentsEAs = null;
 
     public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts) {
         this.core = core;
@@ -33,6 +35,7 @@ public class StateDepGraph implements DependencyGraph {
             initMinEdges.add(e);
             initFluents.putIfAbsent(tf.fluent, new ArrayList<>());
             initFluents.get(tf.fluent).add(e);
+            dmax = Math.max(dmax, e.delay);
         }
     }
 
@@ -108,9 +111,14 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         addableActs = new IRSet<GAction>(core.store.getIntRep(GAction.class));
-        for(Node n : earliestAppearances.keys())
-            if(n instanceof RAct)
+        fluentsEAs = new IR2IntMap<>(core.store.getIntRep(Fluent.class));
+        for(Node n : earliestAppearances.keys()) {
+            if (n instanceof RAct) {
                 addableActs.add(((RAct) n).getAct());
+            } else if(n instanceof TempFluent.SVFluent) {
+                fluentsEAs.put(((TempFluent.SVFluent) n).fluent, earliestAppearances.get(n));
+            }
+        }
 
         if(dbgLvlDij >= 2 && ancestorGraph.isPresent()) {
             for(Node n : earliestAppearances.keys()) {
@@ -427,11 +435,13 @@ public class StateDepGraph implements DependencyGraph {
                     prevValue = val;
                 }
                 if(cut_threshold != Integer.MAX_VALUE) {
+                    if(dbgLvlDij > 2) System.out.println("Start cutting from: "+cut_threshold+", (dmax = "+dmax+")");
                     for(Node n : labelsCost.keys()) {
                         if(possible(n) && cost(n) > cut_threshold) {
                             delete(n);
                         }
                     }
+                    if(dbgLvlDij > 2) System.out.println("End cutting from");
                 }
             }
 
