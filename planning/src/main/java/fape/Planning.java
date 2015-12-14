@@ -66,7 +66,7 @@ public class Planning {
                                         "factor and search in depth first (reducing memory consumption)."),
                         new FlaggedOption("fast-forward")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setShortFlag('f')
                                 .setLongFlag("fast-forward")
                                 .setDefault("true")
                                 .setHelp("If true, all trivial flaws (with one resolver) will be solved before inserting a state into the queue." +
@@ -74,16 +74,16 @@ public class Planning {
                                         "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
                                         "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
-                        new FlaggedOption("a-epsilon")
-                                .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                        new QualifiedSwitch("a-epsilon")
+                                .setStringParser(JSAP.FLOAT_PARSER)
+                                .setShortFlag('e')
                                 .setLongFlag("ae")
-                                .setDefault("true")
+                                .setDefault("0.3")
                                 .setHelp("The planner will use an A-Epsilon search with epsilon = 0.3. The epsilon can not be " +
                                         "parameterized through command line yet."),
                         new FlaggedOption("reachability")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setShortFlag('r')
                                 .setLongFlag("reachability")
                                 .setDefault("true")
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
@@ -91,7 +91,7 @@ public class Planning {
                                         "hierarchical properties of a partial plan."),
                         new FlaggedOption("dependency-graph")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setShortFlag('g')
                                 .setLongFlag("dep-graph")
                                 .setDefault("false")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
@@ -112,7 +112,7 @@ public class Planning {
                                         " after warming up the JVM."),
                         new FlaggedOption("strategies")
                                 .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag(JSAP.NO_SHORTFLAG)
+                                .setShortFlag('s')
                                 .setLongFlag("strats")
                                 .setDefault("%")
                                 .setHelp("This is used to define search strategies. A search strategy consists of "
@@ -241,6 +241,8 @@ public class Planning {
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
                 options.useAEpsilon = config.getBoolean("a-epsilon");
+                if(options.useAEpsilon)
+                    options.epsilon = config.getFloat("a-epsilon");
                 options.usePlanningGraphReachability = config.getBoolean("reachability");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");

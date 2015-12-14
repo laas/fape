@@ -72,4 +72,11 @@ public class Configuration {
         else
             return defaultConf.getInt(id);
     }
+
+    public float getFloat(String id) {
+        if(userDefined.userSpecified(id))
+            return userDefined.getFloat(id);
+        else
+            return defaultConf.getFloat(id);
+    }
 }

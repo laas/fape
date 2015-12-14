@@ -450,11 +450,6 @@ public abstract class APlanner {
         return resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.isConsistent();
     }
 
-    /**
-     * Main parameter of the greediness of A-Epsilon. TODO: this should be a command line parameter.
-     */
-    protected final float epsilon = 0.3f;
-
     protected State aEpsilonSearch(final long deadLine, final int maxDepth, final boolean incrementalDeepening) {
         assert !incrementalDeepening : "Incremental Deepening is not supported in A-Epsilon search.";
 
@@ -466,7 +461,7 @@ public abstract class APlanner {
             this.planState = EPlanState.INFEASIBLE;
             return null;
         }
-        float fThreshold = (1f + epsilon) * f(queue.peek());
+        float fThreshold = (1f + options.epsilon) * f(queue.peek());
 
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
@@ -525,7 +520,7 @@ public abstract class APlanner {
             // update the threshold, since our heuristic is not admissible, we do not take
             // the max of fthreshold and (1+e)*f(best in open)
             if(!queue.isEmpty())
-                fThreshold = (1f + epsilon) * f(queue.peek());
+                fThreshold = (1f + options.epsilon) * f(queue.peek());
         }
     }
 

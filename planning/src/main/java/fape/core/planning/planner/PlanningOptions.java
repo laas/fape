@@ -67,6 +67,7 @@ public class PlanningOptions {
      * If true, the planner will use A-Epsilon for search
      */
     public boolean useAEpsilon = false;
+    public float epsilon = 0.3f;
 
     /** If set to true, the planner will use planning graphs to assess the reachibility of goals. */
     public boolean usePlanningGraphReachability = false;
