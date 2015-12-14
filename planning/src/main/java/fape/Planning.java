@@ -96,6 +96,12 @@ public class Planning {
                                 .setDefault("false")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
                                         "and compute admissible temporal heuristics."),
+                        new FlaggedOption("multi-supports")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setShortFlag('m')
+                                .setLongFlag("multi-supports")
+                                .setDefault("false")
+                                .setHelp("[experimental] Allow an action to support mutliple tasks"),
                         new FlaggedOption("repetitions")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('n')
@@ -237,6 +243,7 @@ public class Planning {
                 options.useAEpsilon = config.getBoolean("a-epsilon");
                 options.usePlanningGraphReachability = config.getBoolean("reachability");
                 options.displaySearch = config.getBoolean("display-search");
+                options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
 
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());

@@ -54,6 +54,8 @@ public class PlanningOptions {
      */
     public boolean chooseFlawManually = false;
 
+    public boolean actionsSupportMultipleTasks = false;
+
     /**
      * If set to true, FAPE will check whether an open goal resolver will result in an unsolvable threat.
      * In this case, the resolver will not be included (this is beneficial in a least commitment strategy

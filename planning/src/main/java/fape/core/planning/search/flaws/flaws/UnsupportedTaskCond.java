@@ -39,7 +39,8 @@ public class UnsupportedTaskCond extends Flaw {
 
         if(!planner.isTopDownOnly())
             for (Action act : st.getAllActions()) {
-                if (!st.taskNet.isSupporting(act) && st.canSupport(act, task))
+                if ((planner.options.actionsSupportMultipleTasks || !st.taskNet.isSupporting(act))
+                        && st.canSupport(act, task))
                     resolvers.add(new ExistingTaskSupporter(task, act));
             }
 
