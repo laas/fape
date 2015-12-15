@@ -71,7 +71,10 @@ public class PlanningOptions {
 
     /** If set to true, the planner will use planning graphs to assess the reachibility of goals. */
     public boolean usePlanningGraphReachability = false;
+    /** Which type of dependency graph to build */
+    public String depGraphStyle = "base";
 
     public boolean displaySearch = true;
+
 
 }

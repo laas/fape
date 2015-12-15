@@ -89,11 +89,11 @@ public class Planning {
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
                                         "consists in an analysis on a ground version of the problem, checking both causal and" +
                                         "hierarchical properties of a partial plan."),
-                        new FlaggedOption("dependency-graph")
-                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                        new QualifiedSwitch("dependency-graph")
+                                .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
                                 .setLongFlag("dep-graph")
-                                .setDefault("false")
+                                .setDefault("base")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
                                         "and compute admissible temporal heuristics."),
                         new FlaggedOption("multi-supports")
@@ -250,8 +250,10 @@ public class Planning {
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
 
-                if(config.getBoolean("dependency-graph"))
+                if(config.getBoolean("dependency-graph")) {
                     options.handlers.add(new DGHandler());
+                    options.depGraphStyle = config.getString("dependency-graph");
+                }
 
                 final AnmlProblem pb = new AnmlProblem();
                 try {

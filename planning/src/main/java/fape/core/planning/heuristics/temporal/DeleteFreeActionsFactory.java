@@ -11,6 +11,7 @@ import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.time.AbsTP;
+import planstack.anml.model.abs.time.StandaloneTP;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
@@ -19,26 +20,45 @@ import java.util.stream.Collectors;
 
 public class DeleteFreeActionsFactory {
 
-    private static final boolean dbg = true;
+    private static final boolean dbg = false;
 
-    interface Time {
+    interface Time extends Comparable<Time> {
         static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
             return new ParameterizedTime(sv.func(), sv.jArgs(), trans);
         }
         static IntTime of(int value) {
             return new IntTime(value);
         }
+
+        @Override
+        default int compareTo(Time t) {
+            if(this instanceof ParameterizedTime && t instanceof ParameterizedTime)
+                return 0;
+            else if(this instanceof ParameterizedTime)
+                return 1;
+            else if(t instanceof ParameterizedTime)
+                return -1;
+            else
+                return ((IntTime) this).value - ((IntTime) t).value;
+        }
+        Time delay(int d);
     }
 
     @Value static class IntTime implements Time {
         public final int value;
         @Override public String toString() { return ""+value; }
+
+        @Override
+        public Time delay(int d) { return new IntTime(value+d); }
     }
 
     @Value static class ParameterizedTime implements Time {
         public final Function f;
         public final List<LVarRef> args;
         public final java.util.function.Function<Integer,Integer> trans;
+
+        @Override
+        public Time delay(int d) { throw new UnsupportedOperationException("Not supported yet."); }
     }
 
     interface FluentTemplate {}
@@ -95,14 +115,23 @@ public class DeleteFreeActionsFactory {
             addCondition(new SVFluentTemplate(sv, var), time);
         }
         public void addCondition(FluentTemplate ft, int time) {
-            conditions.add(new TempFluentTemplate(ft, time));
+            addCondition(new TempFluentTemplate(ft, time));
+
+        }
+        public void addCondition(TempFluentTemplate ft) {
+            conditions.add(ft);
+            Collections.sort(conditions, (p1, p2) -> p1.time.compareTo(p2.time));
         }
 
         public void addEffect(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
             addEffect(new SVFluentTemplate(sv, var), time);
         }
         public void addEffect(FluentTemplate ft, int time) {
-            effects.add(new TempFluentTemplate(ft, time));
+            addEffect(new TempFluentTemplate(ft, time));
+        }
+        public void addEffect(TempFluentTemplate ft) {
+            effects.add(ft);
+            Collections.sort(effects, (p1, p2) -> p1.time.compareTo(p2.time));
         }
 
         public String name() { return abs.name()+"--"+tp+Arrays.toString(args()); }
@@ -275,11 +304,25 @@ public class DeleteFreeActionsFactory {
                 leftAct.addCondition(new DoneFluentTemplate(rightAct), maxDelay);
             }
         }
+        List<RActTemplate> rActTemplates;
+        switch (pl.options.depGraphStyle) {
+            case "popf":
+                rActTemplates = (new PopfPostProcessor()).postProcess(templates.values());
+                break;
+            case "poseff":
+                rActTemplates = (new PositiveEffectsPostProcessor()).postProcess(templates.values());
+                break;
+            case "base":
+                rActTemplates = new ArrayList<>(templates.values());
+                break;
+            default:
+                throw new FAPEException("Invalid dependency graph style: "+pl.options.depGraphStyle);
+        }
 
 
         if(dbg) {
             System.out.println("\n-----------------\n");
-            for (RActTemplate at : templates.values()) {
+            for (RActTemplate at : rActTemplates) {
                 System.out.println(at.toStringDetailed());
             }
         }
@@ -287,12 +330,88 @@ public class DeleteFreeActionsFactory {
         List<RAct> relaxedGround = new LinkedList<>();
 
         for(GAction ground : grounds) {
-            for(RActTemplate template : templates.values()) {
+            for(RActTemplate template : rActTemplates) {
                 RAct a = RAct.from(template, ground, pl);
                 relaxedGround.add(a);
 //                System.out.println(a);
             }
         }
         return relaxedGround;
+    }
+
+    interface PostProcessor {
+        List<RActTemplate> postProcess(Collection<RActTemplate> templates);
+    }
+
+    class PopfPostProcessor implements PostProcessor {
+
+        @Override
+        public List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
+            List<RActTemplate> res = new ArrayList<>();
+//            for(RActTemplate template : templates) {
+//                for(TempFluentTemplate tft : new ArrayList<>(template.effects)) {
+//                    if(tft.fluent instanceof TaskFluentTemplate)
+//                        template.effects.remove(tft);
+//                }
+//            }
+            for(RActTemplate template : templates) {
+                int currEffect = 0;
+                int currCond = 0;
+                while(currCond < template.conditions.size() && currEffect < template.effects.size()) {
+                    int shift = ((IntTime) template.effects.get(currEffect).time).getValue() -1;
+                    RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString()+"+"+shift));
+                    while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
+                        TempFluentTemplate condition = template.conditions.get(currCond++);
+                        act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                    }
+                    while(currEffect < template.effects.size() &&
+                            (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
+                        TempFluentTemplate eff = template.effects.get(currEffect++);
+                        act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
+                    }
+                    currCond = 0;
+
+                    res.add(act);
+                }
+            }
+            return res;
+        }
+    }
+
+    class PositiveEffectsPostProcessor implements PostProcessor {
+
+        @Override
+        public List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
+            List<RActTemplate> res = new ArrayList<>();
+//            for(RActTemplate template : templates) {
+//                for(TempFluentTemplate tft : new ArrayList<>(template.effects)) {
+//                    if(tft.fluent instanceof TaskFluentTemplate)
+//                        template.effects.remove(tft);
+//                }
+//            }
+            for(RActTemplate template : templates) {
+                int currEffect = 0;
+                int currCond = 0;
+                while(currCond < template.conditions.size() && currEffect < template.effects.size()) {
+                    int shift = ((IntTime) template.effects.get(currEffect).time).getValue() -1;
+                    RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString()+"+"+shift));
+                    while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
+                        currCond++;
+                    }
+                    while(currEffect < template.effects.size() &&
+                            (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
+                        TempFluentTemplate eff = template.effects.get(currEffect++);
+                        act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
+                    }
+                    for(TempFluentTemplate condition : template.conditions) {
+                        act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                    }
+                    currCond = 0;
+
+                    res.add(act);
+                }
+            }
+            return res;
+        }
     }
 }
