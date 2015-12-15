@@ -226,8 +226,8 @@ class AnmlProblem extends TemporalInterval {
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
       absConstraints ++= AbstractTemporalConstraint(constraint)
     })
-    chronicle.addAll(absStatements, context, this, refCounter)
-    chronicle.addAll(absConstraints, context, this)
+    chronicle.addAllStatements(absStatements, context, this, refCounter)
+    chronicle.addAllConstraints(absConstraints, context, this, refCounter)
 
     chronicle.initTemporalObjects()
     chronicles += chronicle
@@ -291,8 +291,8 @@ class AnmlProblem extends TemporalInterval {
         throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
           "change the problem definition: "+block)
     }
-    chron.addAll(statements, localContext, this, refCounter)
-    chron.addAll(constraints, localContext, this)
+    chron.addAllStatements(statements, localContext, this, refCounter)
+    chron.addAllConstraints(constraints, localContext, this, refCounter)
 
 
     chron

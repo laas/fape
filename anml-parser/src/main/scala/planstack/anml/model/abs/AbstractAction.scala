@@ -177,9 +177,10 @@ object AbstractAction {
       // minimize all temporal constraints and split timepoints between flexible and rigid (a rigid timepoint a a fixed delay wrt to a flexible)
       val simpleTempConst = allConstraints.filter(s => s.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay])
       val otherConsts = allConstraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])
-      val timepoints = action.statements
-        .flatMap(s => List(s.start, s.end)) ++
-        List(ContainerStart, ContainerEnd)
+      val timepoints = (action.statements.flatMap(s => List(s.start, s.end)) ++
+        List(ContainerStart, ContainerEnd) ++
+        allConstraints.filter(s => s.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]).flatMap(c => List(c.from, c.to))).toSet.toList
+
 
       // find all contingent timepoints
       val contingents = allConstraints.collect {

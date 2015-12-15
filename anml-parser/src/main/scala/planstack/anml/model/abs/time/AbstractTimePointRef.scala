@@ -13,7 +13,7 @@ case object ContainerEnd extends AbsTP
 case class IntervalStart(id :LocalRef) extends AbsTP
 case class IntervalEnd(id :LocalRef) extends AbsTP
 case class StandaloneTP(id: String) extends AbsTP {
-  require(id != "start" && id != "end" && !id.contains("(") && !id.contains(")"))
+//  require(id != "start" && id != "end" && !id.contains("(") && !id.contains(")"), "Invalid standalone tp: "+id)
 }
 
 

@@ -69,7 +69,7 @@ trait Chronicle {
 
   protected def temporalConstraints : java.util.List[TemporalConstraint]
 
-  def addAll(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
+  def addAllStatements(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
     for(absStatement <- absStatements) {
       absStatement match {
         case s: AbstractLogStatement =>
@@ -94,14 +94,14 @@ trait Chronicle {
     }
   }
 
-  def addAll(absConstraints : Seq[AbstractConstraint], context:Context, pb:AnmlProblem): Unit = {
+  def addAllConstraints(absConstraints : Seq[AbstractConstraint], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
     for(absConstraint <- absConstraints) {
       absConstraint match {
         case s:AbstractTemporalConstraint =>
-          temporalConstraints += s.bind(context, pb)
+          temporalConstraints += s.bind(context, pb, refCounter)
 
         case s:AbstractBindingConstraint =>
-          bindingConstraints += s.bind(context, pb)
+          bindingConstraints += s.bind(context, pb, refCounter)
 
         case _ => throw new ANMLException("unsupported yet:" + absConstraint)
       }

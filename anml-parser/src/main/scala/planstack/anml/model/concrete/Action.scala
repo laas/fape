@@ -227,10 +227,12 @@ object Action {
       .map(tc => tc.dst)
       .toSet
 
-    act.addAll(abs.statements, context, pb, refCounter)
-    act.addAll(abs.constraints, context, pb)
+    act.addAllStatements(abs.statements, context, pb, refCounter)
+    act.addAllConstraints(abs.constraints, context, pb, refCounter)
+
     act.flexibleTimepoints = abs.flexibleTimepoints
-      .map(tp => TimepointRef(pb, context, tp))
+      .map(tp => TimepointRef(pb, context, tp, refCounter))
+    assert(act.flexibleTimepoints.asScala.toSet.size == act.flexibleTimepoints.size)
 
     act.flexibleTimepoints.foreach(tp =>
       if(tp == act.start) tp.setDispatchable()
@@ -239,7 +241,7 @@ object Action {
     )
 
     act.anchoredTimepoints = abs.anchoredTimepoints
-      .map(at => new AnchoredTimepoint(TimepointRef(pb, context, at.timepoint), TimepointRef(pb, context, at.anchor), at.delay))
+      .map(at => new AnchoredTimepoint(TimepointRef(pb, context, at.timepoint, refCounter), TimepointRef(pb, context, at.anchor, refCounter), at.delay))
 
     act.anchoredTimepoints.foreach(at => at.timepoint.setVirtual())
 

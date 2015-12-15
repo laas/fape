@@ -7,21 +7,24 @@ import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser
 
 abstract class AbstractConstraint {
-  def bind(context: Context, pb :AnmlProblem) : Constraint
+  def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : Constraint
 }
 
 abstract class AbstractTemporalConstraint extends AbstractConstraint {
 
-  override final def bind(context: Context, pb :AnmlProblem) : TemporalConstraint = this match {
+  override final def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : TemporalConstraint = this match {
     case AbstractMinDelay(from, to, minDelay) =>
-      new MinDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), minDelay)
+      new MinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay)
     case AbstractParameterizedMinDelay(from, to, minDelay, trans) =>
-      new ParameterizedMinDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), minDelay.bind(context), trans)
+      new ParameterizedMinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay.bind(context), trans)
     case AbstractParameterizedExactDelay(from, to, delay, trans) =>
-      new ParameterizedExactDelayConstraint(TimepointRef(pb, context, from), TimepointRef(pb, context, to), delay.bind(context), trans)
+      new ParameterizedExactDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), delay.bind(context), trans)
     case AbstractContingentConstraint(from, to, min, max) =>
-      new ContingentConstraint(TimepointRef(pb,context,from), TimepointRef(pb,context,to), min, max)
+      new ContingentConstraint(TimepointRef(pb,context,from, refCounter), TimepointRef(pb,context,to, refCounter), min, max)
   }
+
+  def from : AbsTP
+  def to : AbsTP
 }
 
 case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:Integer)
@@ -86,7 +89,9 @@ object AbstractTemporalConstraint {
 abstract class AbstractBindingConstraint
   extends AbstractConstraint
 {
-  override def bind(context: Context, pb: AnmlProblem): BindingConstraint
+  override def bind(context: Context, pb: AnmlProblem, refCounter: RefCounter): BindingConstraint = bind(context, pb)
+
+  def bind(context: Context, pb: AnmlProblem) : BindingConstraint
 }
 
 class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
