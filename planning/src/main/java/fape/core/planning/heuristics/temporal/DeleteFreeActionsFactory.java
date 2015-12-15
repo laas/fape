@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class DeleteFreeActionsFactory {
 
-    private static final boolean dbg = false;
+    private static final boolean dbg = true;
 
     interface Time {
         static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
@@ -32,6 +32,7 @@ public class DeleteFreeActionsFactory {
 
     @Value static class IntTime implements Time {
         public final int value;
+        @Override public String toString() { return ""+value; }
     }
 
     @Value static class ParameterizedTime implements Time {
@@ -45,14 +46,17 @@ public class DeleteFreeActionsFactory {
     @Value class SVFluentTemplate implements FluentTemplate {
         public final AbstractParameterizedStateVariable sv;
         public final LVarRef value;
+        @Override public String toString() { return sv+"="+value; }
     }
     @Value class DoneFluentTemplate implements FluentTemplate {
         public final RActTemplate act;
+        @Override public String toString() { return "startable-act: "+act; }
     }
     @Value class TaskFluentTemplate implements FluentTemplate {
         public final String prop;
         public final String taskName;
         public final List<LVarRef> args;
+        @Override public String toString() { return prop+"( "+taskName+args+" )"; }
     }
 
 
@@ -103,7 +107,12 @@ public class DeleteFreeActionsFactory {
 
         public String name() { return abs.name()+"--"+tp+Arrays.toString(args()); }
 
+        @Override
         public String toString() {
+            return abs.name()+"--"+tp.toString()+Arrays.toString(args());
+        }
+
+        public String toStringDetailed() {
             String s = name() +"\n";
             s += "  conditions:\n";
             for(TempFluentTemplate c : conditions)
@@ -160,7 +169,6 @@ public class DeleteFreeActionsFactory {
 
         // add subtasks statements
         for(AbstractTask task : abs.jSubTasks()) {
-            LVarRef[] taskArgs = task.jArgs().toArray(new LVarRef[task.jArgs().size()]);
             AbsTP start = anchorOf(task.start(), abs);
             int startDelay = -relativeTimeOf(task.start(), abs);
             templates.get(start).addCondition(new TaskFluentTemplate("started", task.name(), task.jArgs()), startDelay);
@@ -171,7 +179,6 @@ public class DeleteFreeActionsFactory {
             templates.get(end).addCondition(new TaskFluentTemplate("ended", task.name(), task.jArgs()), endDelay+1);
         }
 
-        LVarRef[] actionArgs = abs.args().toArray(new LVarRef[abs.args().size()]);
         // add start of action fluent
         AbsTP startAnchor = anchorOf(abs.start(), abs);
         int startDelay = -relativeTimeOf(abs.start(), abs);
@@ -273,7 +280,7 @@ public class DeleteFreeActionsFactory {
         if(dbg) {
             System.out.println("\n-----------------\n");
             for (RActTemplate at : templates.values()) {
-                System.out.println(at);
+                System.out.println(at.toStringDetailed());
             }
         }
 
