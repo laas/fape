@@ -2,7 +2,7 @@ package fr.laas.fape.structures;
 
 import java.util.*;
 
-public class IRSet<T> implements Set<T> {
+public class IRSet<T extends Identifiable> implements Set<T> {
     private final IntRep<T> intRep;
     private final BitSet bitset;
 
@@ -26,7 +26,7 @@ public class IRSet<T> implements Set<T> {
 
     @Override @SuppressWarnings("unchecked")
     public boolean contains(Object o) {
-        return contains(intRep.asInt((T) o));
+        return contains(((Identifiable) o).getID());
     }
 
     public final boolean contains(int id) {
@@ -78,7 +78,7 @@ public class IRSet<T> implements Set<T> {
 
     @Override
     public final boolean add(T t) {
-        return add(intRep.asInt(t));
+        return add(t.getID());
     }
 
     public final boolean add(int tID) {
@@ -92,7 +92,7 @@ public class IRSet<T> implements Set<T> {
 
     @Override @SuppressWarnings("unchecked")
     public boolean remove(Object o) {
-        final int tID = intRep.asInt((T) o);
+        final int tID = ((T) o).getID();
         return remove(tID);
     }
 
