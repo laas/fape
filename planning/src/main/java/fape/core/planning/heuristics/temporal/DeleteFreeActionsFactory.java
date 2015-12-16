@@ -331,9 +331,10 @@ public class DeleteFreeActionsFactory {
         for(GAction ground : grounds) {
             for(RActTemplate template : rActTemplates) {
                 relaxedGround.addAll(pp.instantiations(template, ground, pl));
-//                System.out.println(a.toStringDetailed());
             }
         }
+//        for(RAct a : relaxedGround)
+//            System.out.println(a.toStringDetailed());
         return relaxedGround;
     }
 
@@ -391,6 +392,51 @@ public class DeleteFreeActionsFactory {
 
                         res.add(act);
                     }
+                }
+                return res;
+            }
+        }
+
+        @Override
+        public List<RAct> instantiations(RActTemplate template, GAction groundAct, APlanner pl) {
+            if(!hasParametrizedTemporalConstraint) {
+                // work was already done by postProcess(.)
+                return PostProcessor.super.instantiations(template, groundAct, pl);
+            } else {
+                List<RAct> res = new LinkedList<>();
+
+                List<TempFluent> conditions = template.conditions.stream()
+                        .map(c -> TempFluent.from(c, groundAct, pl.preprocessor.getGroundProblem(), pl.preprocessor.store))
+                        .collect(Collectors.toList());
+                List<TempFluent> effects = template.effects.stream()
+                        .map(c -> TempFluent.from(c, groundAct, pl.preprocessor.getGroundProblem(), pl.preprocessor.store))
+                        .collect(Collectors.toList());
+
+                int currEffect = 0;
+                int currCond = 0;
+                while (currCond < conditions.size() && currEffect < effects.size()) {
+                    int shift = effects.get(currEffect).getTime() -1;
+                    List<TempFluent> myConditions = new ArrayList<>();
+                    List<TempFluent> myEffects = new ArrayList<>();
+                    AbsTP myTP = new StandaloneTP(template.tp.toString() + "+" + shift);
+
+                    while (currCond < conditions.size() && conditions.get(currCond).time < effects.get(currEffect).time) {
+                        TempFluent condition = conditions.get(currCond++);
+                        myConditions.add(new TempFluent(condition.time - shift, condition.fluent));
+                    }
+                    while (currEffect < effects.size() &&
+                            (currCond >= conditions.size() || conditions.get(currCond).time >= effects.get(currEffect).time)) {
+                        TempFluent eff = effects.get(currEffect++);
+                        myEffects.add(new TempFluent(eff.time - shift, eff.fluent));
+                    }
+                    if(includeLateConditions) {
+                        for (; currCond < conditions.size() ; currCond++) {
+                            TempFluent condition = conditions.get(currCond);
+                            myConditions.add(new TempFluent(condition.time -shift, condition.fluent));
+                        }
+                    }
+                    currCond = 0;
+                    res.add(pl.preprocessor.store.getRAct(groundAct, myTP, myConditions, myEffects));
                 }
                 return res;
             }
