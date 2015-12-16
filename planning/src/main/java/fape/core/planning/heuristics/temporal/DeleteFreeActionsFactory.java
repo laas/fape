@@ -1,7 +1,6 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
 import fape.exceptions.FAPEException;
 import lombok.Value;
@@ -12,7 +11,6 @@ import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.abs.time.StandaloneTP;
-import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -304,20 +302,21 @@ public class DeleteFreeActionsFactory {
                 leftAct.addCondition(new DoneFluentTemplate(rightAct), maxDelay);
             }
         }
-        List<RActTemplate> rActTemplates;
+        PostProcessor pp;
         switch (pl.options.depGraphStyle) {
             case "popf":
-                rActTemplates = (new PopfPostProcessor()).postProcess(templates.values());
+                pp = new PopfPostProcessor(abs, false);
                 break;
             case "poseff":
-                rActTemplates = (new PositiveEffectsPostProcessor()).postProcess(templates.values());
+                pp = new PopfPostProcessor(abs, true);
                 break;
             case "base":
-                rActTemplates = new ArrayList<>(templates.values());
+                pp = new BasePostProcessor();
                 break;
             default:
                 throw new FAPEException("Invalid dependency graph style: "+pl.options.depGraphStyle);
         }
+        List<RActTemplate> rActTemplates = pp.postProcess(templates.values());
 
 
         if(dbg) {
@@ -331,87 +330,70 @@ public class DeleteFreeActionsFactory {
 
         for(GAction ground : grounds) {
             for(RActTemplate template : rActTemplates) {
-                RAct a = RAct.from(template, ground, pl);
-                relaxedGround.add(a);
-//                System.out.println(a);
+                relaxedGround.addAll(pp.instantiations(template, ground, pl));
+//                System.out.println(a.toStringDetailed());
             }
         }
         return relaxedGround;
     }
 
     interface PostProcessor {
-        List<RActTemplate> postProcess(Collection<RActTemplate> templates);
-    }
-
-    class PopfPostProcessor implements PostProcessor {
-
-        @Override
-        public List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
-            List<RActTemplate> res = new ArrayList<>();
-//            for(RActTemplate template : templates) {
-//                for(TempFluentTemplate tft : new ArrayList<>(template.effects)) {
-//                    if(tft.fluent instanceof TaskFluentTemplate)
-//                        template.effects.remove(tft);
-//                }
-//            }
-            for(RActTemplate template : templates) {
-                int currEffect = 0;
-                int currCond = 0;
-                while(currCond < template.conditions.size() && currEffect < template.effects.size()) {
-                    int shift = ((IntTime) template.effects.get(currEffect).time).getValue() -1;
-                    RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString()+"+"+shift));
-                    while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
-                        TempFluentTemplate condition = template.conditions.get(currCond++);
-                        act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
-                    }
-                    while(currEffect < template.effects.size() &&
-                            (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
-                        TempFluentTemplate eff = template.effects.get(currEffect++);
-                        act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
-                    }
-                    currCond = 0;
-
-                    res.add(act);
-                }
-            }
-            return res;
+        default List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
+            return new ArrayList<>(templates);
+        }
+        default List<RAct> instantiations(RActTemplate template, GAction groundAct, APlanner pl) {
+            return Collections.singletonList(RAct.from(template, groundAct, pl));
         }
     }
+    class BasePostProcessor implements PostProcessor {}
 
-    class PositiveEffectsPostProcessor implements PostProcessor {
+    class PopfPostProcessor implements PostProcessor {
+        final boolean hasParametrizedTemporalConstraint;
+        final boolean includeLateConditions;
+
+        PopfPostProcessor(AbstractAction abs, boolean includeLateConditions) {
+            this.includeLateConditions = includeLateConditions;
+            hasParametrizedTemporalConstraint =
+                    abs.jConstraints().stream()
+                            .filter(c -> c instanceof AbstractTemporalConstraint && ((AbstractTemporalConstraint) c).isParameterized())
+                            .count() > 0;
+        }
 
         @Override
         public List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
-            List<RActTemplate> res = new ArrayList<>();
-//            for(RActTemplate template : templates) {
-//                for(TempFluentTemplate tft : new ArrayList<>(template.effects)) {
-//                    if(tft.fluent instanceof TaskFluentTemplate)
-//                        template.effects.remove(tft);
-//                }
-//            }
-            for(RActTemplate template : templates) {
-                int currEffect = 0;
-                int currCond = 0;
-                while(currCond < template.conditions.size() && currEffect < template.effects.size()) {
-                    int shift = ((IntTime) template.effects.get(currEffect).time).getValue() -1;
-                    RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString()+"+"+shift));
-                    while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
-                        currCond++;
-                    }
-                    while(currEffect < template.effects.size() &&
-                            (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
-                        TempFluentTemplate eff = template.effects.get(currEffect++);
-                        act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
-                    }
-                    for(TempFluentTemplate condition : template.conditions) {
-                        act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
-                    }
-                    currCond = 0;
+            if (hasParametrizedTemporalConstraint) {
+                // we have to wait until grounding to get the real values of parameterized constraints
+                return new ArrayList<>(templates);
+            } else {
+                List<RActTemplate> res = new ArrayList<>();
+                for (RActTemplate template : templates) {
+                    int currEffect = 0;
+                    int currCond = 0;
+                    while (currCond < template.conditions.size() && currEffect < template.effects.size()) {
+                        int shift = ((IntTime) template.effects.get(currEffect).time).getValue() - 1;
+                        RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString() + "+" + shift));
+                        while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
+                            TempFluentTemplate condition = template.conditions.get(currCond++);
+                            act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                        }
+                        while (currEffect < template.effects.size() &&
+                                (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
+                            TempFluentTemplate eff = template.effects.get(currEffect++);
+                            act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
+                        }
+                        if(includeLateConditions) {
+                            for (; currCond < template.conditions.size() ; currCond++) {
+                                TempFluentTemplate condition = template.conditions.get(currCond);
+                                act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                            }
+                        }
+                        currCond = 0;
 
-                    res.add(act);
+                        res.add(act);
+                    }
                 }
+                return res;
             }
-            return res;
         }
     }
 }
