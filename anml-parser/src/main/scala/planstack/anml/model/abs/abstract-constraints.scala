@@ -25,30 +25,35 @@ abstract class AbstractTemporalConstraint extends AbstractConstraint {
 
   def from : AbsTP
   def to : AbsTP
+  def isParameterized : Boolean
 }
 
 case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:Integer)
   extends AbstractTemporalConstraint
 {
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
+  override def isParameterized = false
 }
 
 case class AbstractParameterizedMinDelay(from :AbsTP, to :AbsTP, minDelay :AbstractParameterizedStateVariable, trans: (Int => Int))
   extends AbstractTemporalConstraint
 {
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
+  override def isParameterized = true
 }
 
 case class AbstractParameterizedExactDelay(from :AbsTP, to :AbsTP, delay :AbstractParameterizedStateVariable, trans: (Int => Int))
   extends AbstractTemporalConstraint
 {
   override def toString = "%s + %s = %s".format(from, delay, to)
+  override def isParameterized = true
 }
 
 case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :Int, max:Int)
   extends AbstractTemporalConstraint
 {
   override def toString = s"$from == [$min, $max] ==> $to"
+  override def isParameterized = true
 }
 
 case class AbstractParameterizedContingentConstraint(from :AbsTP,
@@ -60,6 +65,7 @@ case class AbstractParameterizedContingentConstraint(from :AbsTP,
   extends AbstractTemporalConstraint
 {
   override def toString = s"$from == [f1($min), f2($max)] ==> $to"
+  override def isParameterized = true
 }
 
 object AbstractMaxDelay {

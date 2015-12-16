@@ -104,7 +104,7 @@ object StatementsFactory {
               // those are binding constraints (on constant functions)
               e2 match {
                 case e2: NumExpr => {
-                  assert(sv.func.valueType == "integer")
+                  assert(sv.func.valueType == "integer", "Function "+sv.func+" does not have the type integer.")
                   assert(op.op == ":=")
                   val value = e2.asInstanceOf[NumExpr].value.toInt
                   (None, List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id))))
