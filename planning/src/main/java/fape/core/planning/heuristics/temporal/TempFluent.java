@@ -59,6 +59,9 @@ import java.util.stream.Collectors;
         public final Fluent fluent;
         @ValueConstructor @Deprecated
         public SVFluent(Fluent f) { this.fluent = f; }
+
+        @Override
+        public String toString() { return fluent.toString(); }
     }
     @Ident(DependencyGraph.Node.class) public static class TaskPropFluent extends DGFluent {
         public final String proposition;
@@ -69,6 +72,8 @@ import java.util.stream.Collectors;
 
     public final int time;
     public final DGFluent fluent;
+
+    @Override public String toString() { return time+": "+fluent; }
 
     public static TempFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, GroundProblem pb, GStore store) {
         int time;
