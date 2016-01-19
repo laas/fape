@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.planner.APlanner;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IR2IntMap;
@@ -17,6 +18,9 @@ public class StateDepGraph implements DependencyGraph {
 
     /** Edges and nodes common to all graphs **/
     public DepGraphCore core;
+
+    /** Planner by which this graph is used */
+    public final APlanner planner;
 
     /** Timed initial litterals **/
     public final FactAction facts;
@@ -42,8 +46,9 @@ public class StateDepGraph implements DependencyGraph {
      * It is currently only used and set by the dijkstra propagator. **/
     private IR2IntMap<Node> predecessors = null;
 
-    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts) {
+    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, APlanner planner) {
         this.core = core;
+        this.planner = planner;
 
         this.facts = core.store.getFactAction(initFacts);
         dmax = core.dmax;
@@ -340,6 +345,9 @@ public class StateDepGraph implements DependencyGraph {
      */
     public class Dijkstra implements Propagator {
 
+        final int MAX_ITERATION = planner.options.depGraphMaxIters;
+        int currentIteration = 0;
+
         IR2IntMap<Node> pendingForActivation;
         final IR2IntMap<Node> optimisticValues;
 
@@ -437,7 +445,7 @@ public class StateDepGraph implements DependencyGraph {
                 }
             }
 
-            while(!q.isEmpty()) {
+            while(!q.isEmpty() && (currentIteration++ < MAX_ITERATION)) {
                 // run a dijkstra algorithm to extract everything from the queue
                 // this run is limited to positive edges.
                 if (!firstPropagationFinished) {

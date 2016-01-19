@@ -73,6 +73,7 @@ public class PlanningOptions {
     public boolean usePlanningGraphReachability = false;
     /** Which type of dependency graph to build */
     public String depGraphStyle = "base";
+    public int depGraphMaxIters = Integer.MAX_VALUE;
 
     public boolean displaySearch = true;
 

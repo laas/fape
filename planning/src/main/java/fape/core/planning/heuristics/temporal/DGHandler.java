@@ -153,7 +153,7 @@ public class DGHandler implements fape.core.planning.search.Handler {
         allFacts.addAll(tasks);
 
         // create new graph from the core graph (actions) and the facts
-        StateDepGraph graph = new StateDepGraph(ext.core, allFacts);
+        StateDepGraph graph = new StateDepGraph(ext.core, allFacts, pl);
         ext.currentGraph = graph;
         graph.propagate(ext.prevGraph);
 

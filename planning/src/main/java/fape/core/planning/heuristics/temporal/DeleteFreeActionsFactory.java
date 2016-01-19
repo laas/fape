@@ -307,7 +307,7 @@ public class DeleteFreeActionsFactory {
             case "popf":
                 pp = new PopfPostProcessor(abs, false);
                 break;
-            case "poseff":
+            case "full":
                 pp = new PopfPostProcessor(abs, true);
                 break;
             case "base":

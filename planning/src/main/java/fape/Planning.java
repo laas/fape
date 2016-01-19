@@ -95,7 +95,9 @@ public class Planning {
                                 .setLongFlag("dep-graph")
                                 .setDefault("none")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
-                                        "and compute admissible temporal heuristics."),
+                                "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
+                                " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
+                                " (same as full but the number of iterations is limited to XX)"),
                         new FlaggedOption("multi-supports")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag('m')
@@ -252,7 +254,22 @@ public class Planning {
 
                 if(config.getBoolean("dependency-graph") && !config.getString("dependency-graph").equals("none")) {
                     options.handlers.add(new DGHandler());
-                    options.depGraphStyle = config.getString("dependency-graph");
+                    String degGraphOption = config.getString("dependency-graph");
+                    switch (degGraphOption) {
+                        case "full":
+                            options.depGraphStyle = "full";
+                            break;
+                        case "popf":
+                            options.depGraphStyle = "popf";
+                            break;
+                        case "base":
+                            options.depGraphStyle = "base";
+                            break;
+                        default:
+                            assert degGraphOption.startsWith("maxiter") : "Invalid parameter for the dependency graph option.";
+                            options.depGraphStyle = "full";
+                            options.depGraphMaxIters = Integer.parseInt(degGraphOption.replaceFirst("maxiter", ""));
+                    }
                 }
 
                 final AnmlProblem pb = new AnmlProblem();
