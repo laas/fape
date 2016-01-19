@@ -1,0 +1,165 @@
+// -*-c++-*-
+
+/** Possible locations for objects */
+type Location;
+
+/** Possible locations for robots */
+type NavLocation < Location;
+
+/** Robot type with a location */
+type Robot < Location with {
+    variable NavLocation location;
+};
+
+/** Item whose location can be either robots or NavLocations */
+type Item with {
+    variable Location location;
+};
+
+/* Depicts if a robot can move from a to b */
+constant boolean navigable(NavLocation a, NavLocation b);
+
+/* Depicts if two robot can pass themselves objects from a to b */
+constant boolean passable(NavLocation a, NavLocation b);
+
+action Move(Robot r, NavLocation a, NavLocation b) {
+  duration :in [15,20];
+
+    navigable(a, b) == true;
+    [all] r.location == a :-> b;
+};
+
+action Handover(Robot r1, Robot r2, Item i, NavLocation a, NavLocation b) {
+        motivated;
+      duration := 5;
+    r1 != r2;
+
+    passable(a, b) == true;
+    [all] {
+        r1.location == a;
+        r2.location == b;
+        i.location == r1 :-> r2;
+    };
+};
+
+action Pick(Robot r1, Item i, NavLocation a) {
+        motivated;
+      duration := 5;
+
+    [all] {
+        r1.location == a;
+        i.location == a :-> r1;
+    };
+};
+
+action trans(Item i, NavLocation to) {
+  motivated;
+  :decomposition {
+    [all] i.location == to;
+  };
+  :decomposition {
+    constant Robot r1;
+    constant Robot r2;
+    constant NavLocation from;
+    [all] Transport(r1, r2, from, to, i);
+  };
+};
+
+action Transport(Robot r1, Robot r2, NavLocation from, NavLocation to, Item i) {
+    motivated;
+    [all] contains {
+      pick : Pick(r1, i, from);
+      drop : Drop(r2, i, to);
+    };
+    end(pick) < start(drop);
+
+    :decomposition {
+        r1 == r2;
+    };
+    :decomposition {
+      ex : Exchange(r1, r2, i);
+        end(pick) < start(ex);
+        end(ex) < start(drop);
+    };
+};
+
+action Exchange(Robot r1, Robot r2, Item i) {
+  motivated;
+    // note: this gets huge when grounding ...
+    constant Robot r;
+    constant NavLocation l1;
+    constant NavLocation l2;
+    passable(l1,l2);
+    r != r2;
+      
+    [all] contains {
+      h1 : Handover(r, r2, i, l1, l2);
+    };
+    :decomposition {
+        r == r1;
+    };
+    :decomposition {
+      r != r1;
+      [start,start(h1)] contains ex : Exchange(r1, r, i);
+    };
+};
+
+action Drop(Robot r1, Item i, NavLocation a) {
+        motivated;
+      duration := 5;
+
+    [all] {
+        r1.location == a;
+        i.location == r1 :-> a;
+    };
+};
+     
+instance Item I;
+instance Robot Ra, Rb, Rc, Rd;
+
+/** Locations: robots can navigate between locations with the same letter */
+instance NavLocation A0, A1, A2, 
+    B0, B1, B2,
+    C0, C1, C2,
+    D0, D1, D2;
+
+/** Description of the environment */
+/** places where exchange between robots is possible */
+passable(A0, B0) := true;
+passable(B0, A0) := true;
+passable(B0, B1) := true;
+passable(B1, B0) := true;
+passable(A1, C1) := true;
+passable(C1, A1) := true;
+passable(C2, D2) := true;
+passable(D2, C2) := true;
+passable(B1, D1) := true;
+passable(D1, B1) := true;
+
+/** places where navigation is posible */
+navigable(A1,A2) := true;
+navigable(A2,A1) := true;
+navigable(A2,A0) := true;
+navigable(A0,A2) := true;
+navigable(C1,C2) := true;
+navigable(C2,C1) := true;
+navigable(C0,C2) := true;
+navigable(C2,C0) := true;
+navigable(B0,B2) := true;
+navigable(B2,B0) := true;
+navigable(B2,B1) := true;
+navigable(B1,B2) := true;
+navigable(D2,D0) := true;
+navigable(D0,D2) := true;
+navigable(D0,D1) := true;
+navigable(D1,D0) := true;
+
+
+/** initial locations of robots and items */
+[start] {
+  Ra.location := A0;
+  Rb.location := B0;
+  Rc.location := C0;
+  Rd.location := D0;
+  I.location := A0;
+};
