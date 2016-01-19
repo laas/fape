@@ -498,13 +498,17 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         private void incrementalDijkstra() {
+            IRSet<Node> settled = new IRSet<Node>(core.store.getIntRep(Node.class));
             while(!q.isEmpty()) {
                 Node n = q.poll();
+                settled.add(n);
                 assert possible(n);
                 if(dbgLvlDij >2) System.out.println(String.format("+[%d] %s     <<--- %s", cost(n), n, pred(n)!=n ? pred(n) : " self"));
                 if(n instanceof ActionNode) {
                     ActionNode a = (ActionNode) n;
                     for (MinEdge e : outEdges(a)) {
+                        if(settled.contains(e.fluent))
+                            break;
                         if(!possible(e.fluent)) {
                             display(e.fluent);
                             display(e.act);
@@ -526,7 +530,7 @@ public class StateDepGraph implements DependencyGraph {
                 } else {
                     TempFluent.DGFluent f = (TempFluent.DGFluent) n;
                     for(MaxEdge e : outEdges(f)) {
-                        if(possible(e.act) && !shouldIgnore(e)) {
+                        if(possible(e.act) && !shouldIgnore(e) && !settled.contains(e.act)) {
                             delayEnqueue(e.act, cost(e.fluent) + e.delay, e.fluent);
                         }
                     }
