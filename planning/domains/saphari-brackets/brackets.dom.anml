@@ -42,7 +42,7 @@ action TransportTo(Robot r, Element i, SurfLocation s) {
 
 action GoTo(Agent a, SurfLocation to) {
        duration :in [8, 10];
-       [all] a.at := to;
+       [end] a.at := to;
 };
 
 action HandOver(Robot r, Human h, Element e, SurfLocation l) {
@@ -150,8 +150,8 @@ action Point(Robot r, Surface s) {
        s.attachedTo == loc;
        [all] r.at == loc;
        [all] r.holds == false;
-       [start] s.highlighted == false :-> true;
-       [end] s.highlighted == true :-> false;
+       [start,start+1] s.highlighted == false :-> true;
+       [end-1,end] s.highlighted == true :-> false;
 };
 
 

@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
         public final GTask task;
         @ValueConstructor @Deprecated
         public TaskPropFluent(String prop, GTask task) { this.proposition = prop; this.task = task; }
+        public String toString() { return proposition+"("+task+")"; }
     }
 
     public final int time;

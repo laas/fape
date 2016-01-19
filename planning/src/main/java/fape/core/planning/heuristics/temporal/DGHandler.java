@@ -201,10 +201,11 @@ public class DGHandler implements fape.core.planning.search.Handler {
 
         // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
+            int latest = st.getLatestStartTime(og.getConsumeTimePoint());
             boolean doable = false;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, pl)) {
                 TempFluent.DGFluent dgf = TempFluent.DGFluent.from(f, graph.core.store);
-                if(graph.earliestAppearances.containsKey(dgf)) {
+                if(graph.earliestAppearances.containsKey(dgf) && graph.earliestAppearances.get(dgf) <= latest) {
                     doable = true;
                     break;
                 }
