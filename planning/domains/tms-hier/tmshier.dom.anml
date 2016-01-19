@@ -24,7 +24,7 @@ action fire(Kiln k){
     motivated;
 	duration := fireTime(k);
     [all] energy == true;
-    [start,start+1] k.ready := true ;
+    [start+1] k.ready := true ;
     [start+1,end-1] k.ready == true; 
     [end-1,end] k.ready == true :-> false;
 };
@@ -34,7 +34,7 @@ action bake(Kiln k, Piece p){
 	duration := bakeTime(p);
 	[all] k.ready == true;
 	[all] k.empty == true :-> true;
-	[end] {
+	[end-1,end] {
        	 p.baked == false :-> true;
 	};
 };
@@ -42,7 +42,7 @@ action bake(Kiln k, Piece p){
 action treat(Piece p){
 	motivated;
 	duration := treatTime(p);
-	[end] p.treated == false :-> true;
+	[end-1,end] p.treated == false :-> true;
 };
 
 action makeStructure(Piece p1, Piece p2){
@@ -70,7 +70,7 @@ action bakeStructure(Piece p1, Piece p2, Kiln k){
 	end < end(f);
 	[all] k.ready == true;
 	[all] k.empty == true :-> true;
-        [end] bakedStructure(p1,p2) == false :-> true;
+        [end-1,end] bakedStructure(p1,p2) == false :-> true;
 };
 
 action bakeStructureH(Piece p1, Piece p2, Kiln k){
