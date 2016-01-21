@@ -359,6 +359,7 @@ instrument32.on_board := satellite4;
 [start] satellite4.powered := satellite4;
 [start] satellite4.pointing := Planet26;
 
+turn_to(satellite1, Planet36);
 [end] satellite1.pointing == Planet36;
 [all] contains take_image(Phenomenon18,thermograph12);
 [all] contains take_image(Phenomenon18,image8);

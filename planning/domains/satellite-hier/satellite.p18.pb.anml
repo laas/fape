@@ -440,8 +440,11 @@ instrument40.on_board := satellite6;
 [start] satellite6.powered := satellite6;
 [start] satellite6.pointing := Star18;
 
+turn_to(satellite1, Star30);
 [end] satellite1.pointing == Star30;
+turn_to(satellite5, Phenomenon40);
 [end] satellite5.pointing == Phenomenon40;
+turn_to(satellite6, GroundStation9);
 [end] satellite6.pointing == GroundStation9;
 [all] contains take_image(Star22,infrared3);
 [all] contains take_image(Star22,thermograph10);

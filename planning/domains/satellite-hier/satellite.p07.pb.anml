@@ -322,6 +322,7 @@ instrument32.on_board := satellite4;
 [start] satellite4.powered := satellite4;
 [start] satellite4.pointing := GroundStation14;
 
+turn_to(satellite0, Star10);
 [end] satellite0.pointing == Star10;
 [all] contains take_image(Planet16,thermograph6);
 [all] contains take_image(Planet16,spectrograph2);

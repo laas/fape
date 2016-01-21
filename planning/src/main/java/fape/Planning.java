@@ -242,9 +242,10 @@ public class Planning {
 
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
-                options.useAEpsilon = config.getBoolean("a-epsilon");
-                if(options.useAEpsilon)
+                options.useAEpsilon = config.getBoolean("a-epsilon") && config.getFloat("a-epsilon") > 0;
+                if(options.useAEpsilon) {
                     options.epsilon = config.getFloat("a-epsilon");
+                }
                 options.usePlanningGraphReachability = config.getBoolean("reachability");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");

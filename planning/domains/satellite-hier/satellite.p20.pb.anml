@@ -887,8 +887,11 @@ instrument82.on_board := satellite6;
 [start] satellite6.powered := satellite6;
 [start] satellite6.pointing := Star55;
 
+turn_to(satellite1, Star2);
 [end] satellite1.pointing == Star2;
+turn_to(satellite3, Star37);
 [end] satellite3.pointing == Star37;
+turn_to(satellite6, GroundStation11);
 [end] satellite6.pointing == GroundStation11;
 [all] contains take_image(Phenomenon24,spectrograph13);
 [all] contains take_image(Planet25,thermograph6);

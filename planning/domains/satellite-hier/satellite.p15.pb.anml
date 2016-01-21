@@ -316,8 +316,11 @@ instrument28.on_board := satellite6;
 [start] satellite6.powered := satellite6;
 [start] satellite6.pointing := GroundStation14;
 
+turn_to(satellite0, GroundStation10);
 [end] satellite0.pointing == GroundStation10;
+turn_to(satellite1, Star25);
 [end] satellite1.pointing == Star25;
+turn_to(satellite3, Planet27);
 [end] satellite3.pointing == Planet27;
 [all] contains take_image(Phenomenon19,spectrograph1);
 [all] contains take_image(Phenomenon19,image0);

@@ -515,6 +515,7 @@ instrument49.on_board := satellite4;
 [start] satellite4.powered := satellite4;
 [start] satellite4.pointing := Planet36;
 
+turn_to(satellite1, Star47);
 [end] satellite1.pointing == Star47;
 [all] contains take_image(Phenomenon19,spectrograph2);
 [all] contains take_image(Phenomenon19,image11);

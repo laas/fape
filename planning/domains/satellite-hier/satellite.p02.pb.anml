@@ -130,7 +130,9 @@ instrument11.on_board := satellite4;
 [start] satellite4.powered := satellite4;
 [start] satellite4.pointing := Phenomenon29;
 
+turn_to(satellite3, Star6);
 [end] satellite3.pointing == Star6;
+turn_to(satellite4, Phenomenon18);
 [end] satellite4.pointing == Phenomenon18;
 [all] contains take_image(Phenomenon11,spectrograph1);
 [all] contains take_image(Phenomenon12,infrared3);

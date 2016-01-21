@@ -500,7 +500,9 @@ instrument45.on_board := satellite6;
 [start] satellite6.powered := satellite6;
 [start] satellite6.pointing := GroundStation18;
 
+turn_to(satellite0, Phenomenon22);
 [end] satellite0.pointing == Phenomenon22;
+turn_to(satellite4, GroundStation7);
 [end] satellite4.pointing == GroundStation7;
 [all] contains take_image(Planet21,thermograph5);
 [all] contains take_image(Planet21,spectrograph1);

@@ -145,7 +145,9 @@ instrument12.on_board := satellite4;
 [start] satellite4.powered := satellite4;
 [start] satellite4.pointing := GroundStation8;
 
+turn_to(satellite3, Planet30);
 [end] satellite3.pointing == Planet30;
+turn_to(satellite4, Planet30);
 [end] satellite4.pointing == Planet30;
 [all] contains take_image(Star14,image4);
 [all] contains take_image(Star16,thermograph5);
