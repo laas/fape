@@ -305,7 +305,7 @@ public class GAction implements Identifiable {
                         statementVars[i] = locVar;
                         numVariables++;
                     } else {
-                        assert pb.instances().containsInstance(locVar.id());
+                        assert pb.instances().containsInstance(locVar.id()) : "Could not find the definition of variable '"+locVar+ "' in action "+aa.name();
                         statementConstants[i] = pb.instance(locVar.id());
                     }
                 }
