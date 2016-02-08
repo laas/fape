@@ -357,6 +357,8 @@ object NeededObsBenchmarking extends App {
   /** Drop in replacement for getMinimalObservationSet that will display some runtime information
     * on each invocation. */
   def instrumentedGetMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
+    val numContingents = edges.count(e => e.isInstanceOf[Upper])
+
     PartialObservability.instrument = true
     PartialObservability.useLabelsForFocus = true
     val ret = getMinimalObservationSets(edges, observed)
@@ -373,16 +375,17 @@ object NeededObsBenchmarking extends App {
     PartialObservability.useLabelsForFocus = true
     PartialObservability.instrument = false
     if(smartIter != 1 && dumbIter != 1)
-      println(s"allsols ($smartIter, $dumbIter)")
+      println(s"allsols ($smartIter, $dumbIter, $numContingents)")
     PartialObservability.debug = false
 
-
+    val t1 = System.nanoTime()
     PartialObservability.allSolutions = false
     PartialObservability.instrument = true
     PartialObservability.useLabelsForFocus = true
     getMinimalObservationSets(edges, observed)
     val smartIterOne = PartialObservability.numIterations
     PartialObservability.useLabelsForFocus = false
+    val t2 = System.nanoTime()
 
     val dumbIterOne = try {
       getMinimalObservationSets(edges, observed)
@@ -393,8 +396,9 @@ object NeededObsBenchmarking extends App {
     PartialObservability.useLabelsForFocus = true
     PartialObservability.instrument = false
     PartialObservability.allSolutions = true
+    val t3 = System.nanoTime()
     if(smartIterOne != 1 && dumbIterOne != 1)
-      println(s"onesol ($smartIterOne, $dumbIterOne)")
+      println(s"onesol, $smartIterOne, $dumbIterOne, $numContingents, ${(t2-t1)/1000000f}, ${(t3-t2)/1000000f}")
 
     ret
   }
