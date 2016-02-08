@@ -233,7 +233,6 @@ public class Planning {
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
-                final boolean neededObs = config.getBoolean("needed-observations");
                 long planningStart = 0;
 
                 System.gc(); // clean up previous runs to avoid impact on performance measure
