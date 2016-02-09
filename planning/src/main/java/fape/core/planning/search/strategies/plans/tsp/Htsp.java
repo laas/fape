@@ -7,17 +7,13 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.State;
-import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
-import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
-import planstack.constraints.bindings.Domain;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -91,7 +87,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
 
                         goals[i] = new GoalNetwork.DisjunctiveGoal(fluents.stream()
-                                .map(f -> new GAction.GAssignement(f.sv, f.value))
+                                .map(f -> new GAction.GAssignment(f.sv, f.value))
                                 .collect(Collectors.toSet()));
 
                     } else { // statement was added as part of an action or a decomposition

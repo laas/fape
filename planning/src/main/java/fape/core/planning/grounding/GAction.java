@@ -40,9 +40,9 @@ public class GAction implements Identifiable {
 
         @Override public String toString() { return sv+":"+from+"->"+to; }
     }
-    public static final class GAssignement extends GLogStatement {
+    public static final class GAssignment extends GLogStatement {
         public final InstanceRef to;
-        public GAssignement(GStateVariable sv, InstanceRef to) {
+        public GAssignment(GStateVariable sv, InstanceRef to) {
             super(sv);
             this.to = to;
         }
@@ -176,7 +176,7 @@ public class GAction implements Identifiable {
                 AbstractAssignment a = (AbstractAssignment) as;
                 gStatements.add(new Pair<>(
                         a.id(),
-                        (GLogStatement) new GAssignement(sv(a.sv(), pb, planner), valueOf(a.value(), pb))));
+                        (GLogStatement) new GAssignment(sv(a.sv(), pb, planner), valueOf(a.value(), pb))));
                 add.add(fluent(a.sv(), a.value(), bindings, planner));
             }
         }
