@@ -23,13 +23,13 @@ import java.util.*;
 @Ident(GAction.class)
 public class GAction implements Identifiable {
 
-    public abstract class GLogStatement {
+    public static abstract class GLogStatement {
         public final GStateVariable sv;
         public GLogStatement(GStateVariable sv) {
             this.sv = sv;
         }
     }
-    public class GTransition extends GLogStatement {
+    public static class GTransition extends GLogStatement {
         public final InstanceRef from ;
         public final InstanceRef to;
         public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to) {
@@ -38,14 +38,14 @@ public class GAction implements Identifiable {
             this.to = to;
         }
     }
-    public final class GAssignement extends GLogStatement {
+    public static final class GAssignement extends GLogStatement {
         public final InstanceRef to;
         public GAssignement(GStateVariable sv, InstanceRef to) {
             super(sv);
             this.to = to;
         }
     }
-    public final class GPersistence extends GLogStatement {
+    public static final class GPersistence extends GLogStatement {
         public final InstanceRef value;
         public GPersistence(GStateVariable sv, InstanceRef value) {
             super(sv);
