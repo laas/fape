@@ -70,7 +70,7 @@ public class ReachabilityGraphs {
         unsupporting = new EffSet<GAction>(pp.groundActionIntRepresentation());
         for(Action a : st.getAllActions())
             if(!st.taskNet.isSupporting(a))
-                unsupporting.addAll(fr.getGroundActions(a, st));
+                unsupporting.addAll(st.getGroundActions(a));
     }
 
     private void initOpenTasksActs() {
@@ -170,7 +170,7 @@ public class ReachabilityGraphs {
     private boolean hasNonAttachableAction() { // TODO: this should just restrict the domain
         for(Action a : st.getUnmotivatedActions()) {
             boolean motivable = false;
-            for(GAction ga : fr.getGroundActions(a, st)) {
+            for(GAction ga : st.getGroundActions(a)) {
                 if(derivGraph.levelOfFact(ga.task) >= 0) {
                     motivable = true;
                     break;

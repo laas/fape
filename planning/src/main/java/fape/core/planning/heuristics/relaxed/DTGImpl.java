@@ -265,7 +265,7 @@ public class DTGImpl {
                     }
                 }
             } else { // statement was added as part of an action or a decomposition
-                Collection<GAction> acts = reas.getGroundActions(containingAction, st);
+                Collection<GAction> acts = st.getGroundActions(containingAction);
 
                 // local reference of the statement, used to extract the corresponding ground statement from the GAction
                 assert containingAction.context().contains(s);

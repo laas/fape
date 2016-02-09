@@ -150,7 +150,7 @@ public class FeasibilityReasoner {
 
         HLeveledReasoner<GAction,GTask> decompGraph = planner.preprocessor.getRestrictedDecomposabilityReasoner(restrictedAllowed);
         for(Action a : st.getUnmotivatedActions())
-            for(GAction ga : getGroundActions(a, st))
+            for(GAction ga : st.getGroundActions(a))
                 decompGraph.set(ga.task);
         decompGraph.infer();
         restrictedAllowed = decompGraph.validClauses();
@@ -217,7 +217,7 @@ public class FeasibilityReasoner {
         }
 
         for(Action a : st.getAllActions()) {
-            for(GAction ga : getGroundActions(a, st)) {
+            for(GAction ga : st.getGroundActions(a)) {
                 r.set(new Predicate(Predicate.PredicateName.IN_PLAN, ga));
             }
         }
@@ -246,7 +246,7 @@ public class FeasibilityReasoner {
 
         for(Action a : st.getUnmotivatedActions()) {
             boolean derivable = false;
-            for(GAction ga : getGroundActions(a, st)) {
+            for(GAction ga : st.getGroundActions(a)) {
                 if (acts.contains(ga)) {
                     derivable = true;
                     break;
@@ -260,7 +260,7 @@ public class FeasibilityReasoner {
 
         for(Action a : st.getAllActions()) {
             boolean feasibleAct = false;
-            for(GAction ga : getGroundActions(a, st)) {
+            for(GAction ga : st.getGroundActions(a)) {
                 if(st.reasoner.isTrue(new Predicate(Predicate.PredicateName.POSSIBLE_IN_PLAN, ga))) {
                     feasibleAct = true;
                     break;
@@ -293,13 +293,6 @@ public class FeasibilityReasoner {
             addableActions.add(ga.abs);
 
         return true;
-    }
-
-    @Deprecated
-    public EffSet<GAction> getGroundActions(Action liftedAction, State st) {
-        assert st.csp.bindings().isRecorded(liftedAction.instantiationVar());
-        Domain dom = st.csp.bindings().rawDomain(liftedAction.instantiationVar());
-        return new EffSet<GAction>(planner.preprocessor.groundActionIntRepresentation(), dom.toBitSet());
     }
 
     /** This will associate with an action a variable in the CSP representing its

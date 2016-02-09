@@ -34,7 +34,7 @@ public class RelaxedPlanExtractor {
         this.dtgs = new DTGCollection(planner, st, displayResolution());
         inPlanActions = new HashSet<>();
         for(Action a : st.getAllActions()) {
-            for(GAction ga : planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st))
+            for(GAction ga : st.getGroundActions(a))
                 inPlanActions.add(ga);
         }
     }
@@ -152,7 +152,7 @@ public class RelaxedPlanExtractor {
         Map<Action, Set<GAction>> instantiations = new HashMap<>();
 
         for (Action a : st.getAllActions()) {
-            instantiations.put(a, planner.preprocessor.getFeasibilityReasoner().getGroundActions(a, st));
+            instantiations.put(a, st.getGroundActions(a));
         }
         return instantiations;
     }
