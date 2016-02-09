@@ -161,7 +161,7 @@ public class DGHandler implements fape.core.planning.search.Handler {
         IRSet<GAction> unsupporting = new IRSet<GAction>(gactsRep);
         for(Action a : st.getAllActions())
             if(!st.taskNet.isSupporting(a))
-                unsupporting.addAll(getGroundActions(a, st));
+                unsupporting.addAll(st.getGroundActions(a));
 
         // for all open tasks, restrict their set of possible supporters to
         // all (i) all non-supporting action in the plan; and (ii) all action that are addable
@@ -215,13 +215,6 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         st.isConsistent();
-    }
-
-    /** Returns a set of all ground actions this lifted action might be instantiated to */
-    private static IRSet<GAction> getGroundActions(Action lifted, State st) {
-        assert st.csp.bindings().isRecorded(lifted.instantiationVar());
-        Domain dom = st.csp.bindings().rawDomain(lifted.instantiationVar());
-        return new IRSet<GAction>(st.pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
     }
 
     /**

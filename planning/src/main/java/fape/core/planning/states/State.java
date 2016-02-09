@@ -28,12 +28,14 @@ import fape.exceptions.FAPEException;
 import fape.util.EffSet;
 import fape.util.Pair;
 import fape.util.Reporter;
+import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
 import planstack.constraints.MetaCSP;
+import planstack.constraints.bindings.Domain;
 import planstack.constraints.stnu.Controllability;
 import planstack.structures.IList;
 import scala.Option;
@@ -1063,6 +1065,13 @@ public class State implements Reporter {
     /********* Wrapper around the task network **********/
 
     public Action getAction(ActRef actionID) { return getAction(actionID.id()); }
+
+    /** Returns a set of all ground actions this lifted action might be instantiated to */
+    public IRSet<GAction> getGroundActions(Action lifted) {
+        assert csp.bindings().isRecorded(lifted.instantiationVar());
+        Domain dom = csp.bindings().rawDomain(lifted.instantiationVar());
+        return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
+    }
 
     public List<Action> getAllActions() { return actions; }
 
