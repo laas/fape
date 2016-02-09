@@ -6,6 +6,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
+import fape.core.planning.search.strategies.plans.tsp.HTSPHandler;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;
@@ -35,6 +36,7 @@ public class Planning {
                         new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "FAPE will build a dispatchable Plan. "+
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
+                        new Switch("salesman", 's', "salesman", "[experimental] activates TSP heuristic"),
                         new FlaggedOption("plannerID")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('p')
@@ -114,7 +116,6 @@ public class Planning {
                                         " after warming up the JVM."),
                         new FlaggedOption("strategies")
                                 .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag('s')
                                 .setLongFlag("strats")
                                 .setDefault("%")
                                 .setHelp("This is used to define search strategies. A search strategy consists of "
@@ -251,6 +252,9 @@ public class Planning {
 
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
+
+                if(config.getBoolean("salesman"))
+                    options.handlers.add(new HTSPHandler());
 
                 if(config.getBoolean("dependency-graph") && !config.getString("dependency-graph").equals("none")) {
                     options.handlers.add(new DGHandler());

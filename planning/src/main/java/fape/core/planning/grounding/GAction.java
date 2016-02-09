@@ -37,6 +37,8 @@ public class GAction implements Identifiable {
             this.from = from;
             this.to = to;
         }
+
+        @Override public String toString() { return sv+":"+from+"->"+to; }
     }
     public static final class GAssignement extends GLogStatement {
         public final InstanceRef to;
@@ -44,6 +46,7 @@ public class GAction implements Identifiable {
             super(sv);
             this.to = to;
         }
+        @Override public String toString() { return sv+":="+to; }
     }
     public static final class GPersistence extends GLogStatement {
         public final InstanceRef value;
@@ -51,6 +54,7 @@ public class GAction implements Identifiable {
             super(sv);
             this.value = value;
         }
+        @Override public String toString() { return sv+"=="+value; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
