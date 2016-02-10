@@ -11,6 +11,7 @@ import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
+import fape.core.planning.search.strategies.plans.tsp.DTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
 import planstack.anml.model.Function;
@@ -32,7 +33,8 @@ public class Preprocessor {
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
     private Collection<RAct> relaxedActions;
-    private GroundDTGs dtgs;
+    private GroundDTGs oldDTGs;
+    private Map<GStateVariable, DTG> dtgs;
     private GAction[] groundActions = new GAction[1000];
     HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
 
@@ -99,11 +101,47 @@ public class Preprocessor {
         };
     }
 
-    public DTGImpl getDTG(GStateVariable groundStateVariable) {
-        if(dtgs == null) {
-            dtgs = new GroundDTGs(getAllActions(), planner.pb, planner);
+
+
+    public DTGImpl getOldDTG(GStateVariable groundStateVariable) {
+        if(oldDTGs == null) {
+            oldDTGs = new GroundDTGs(getAllActions(), planner.pb, planner);
         }
-        return dtgs.getDTGOf(groundStateVariable);
+        return oldDTGs.getDTGOf(groundStateVariable);
+    }
+
+    /** Generates a DTG for the given state variables that contains all node bu no edges */
+    private DTG initDTGForStateVariable(GStateVariable missingSV) {
+        Collection<InstanceRef> dom = planner.pb.instances().instancesOfType(missingSV.f.valueType()).stream()
+                .map(str -> planner.pb.instance(str))
+                .collect(Collectors.toList());
+        return new DTG(missingSV, dom);
+    }
+
+    public DTG getDTG(GStateVariable gStateVariable) {
+        if (dtgs == null) {
+            dtgs = new HashMap<>();
+
+            // Create all DTG and populate their edges with the
+            // transitions and assignment in the actions.
+            for(GAction ga : getAllActions()) {
+                for(GAction.GLogStatement s : ga.gStatements.stream().map(p -> p.value2).collect(Collectors.toList())) {
+                    if(!dtgs.containsKey(s.sv)) {
+                        dtgs.put(s.sv, initDTGForStateVariable(s.sv));
+                    }
+                    if(s instanceof GAction.GAssignment)
+                        dtgs.get(s.sv).extendWith((GAction.GAssignment) s, ga);
+                    else if(s instanceof GAction.GTransition)
+                        dtgs.get(s.sv).extendWith((GAction.GTransition) s, ga);
+                }
+            }
+        }
+
+        if(!dtgs.containsKey(gStateVariable))
+            // State variable probably does not appear in any action, just give it an empty DTG
+            dtgs.put(gStateVariable, initDTGForStateVariable(gStateVariable));
+
+        return dtgs.get(gStateVariable);
     }
 
     public boolean isHierarchical() {
@@ -139,7 +177,6 @@ public class Preprocessor {
     }
 
     public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
-
         return getRestrictedCausalReasoner(getAllPossibleActionFromState(st));
     }
 

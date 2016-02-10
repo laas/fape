@@ -3,22 +3,35 @@ package fape.core.planning.search.strategies.plans.tsp;
 import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
+import fape.util.Pair;
+import fr.laas.fape.structures.DijkstraQueue;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
+import sun.security.jgss.GSSToken;
+
+import static fape.core.planning.grounding.GAction.*;
+import static fape.core.planning.search.strategies.plans.tsp.GoalNetwork.DisjunctiveGoal;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
+
+    private static void log(String s) { System.out.println(s); }
+
     @Override
     public String shortName() {
         return "tsp";
@@ -26,27 +39,104 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
     @Override
     public String reportOnState(State st) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return " ";
     }
 
     @Override
     public int compare(State state, State t1) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return 0;
     }
 
     @Override
-    public float g(State st) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
+    public float g(State st) { return 0; }
 
     @Override
-    public float h(State st) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public float h(State st) { return hc(st); }
+
+    private Pair<GLogStatement, DisjunctiveGoal> best(Collection<Pair<GLogStatement, DisjunctiveGoal>> candidates) {
+        if (candidates.stream().anyMatch(x -> x.value1 instanceof GPersistence))
+            return candidates.stream().filter(x -> x.value1 instanceof GPersistence).findFirst().get();
+
+        if (candidates.stream().anyMatch(x -> x.value1 instanceof GTransition))
+            return candidates.stream().filter(x -> x.value1 instanceof GTransition).findFirst().get();
+
+        return candidates.stream().findFirst().get();
     }
 
     @Override
     public float hc(State st) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        Preprocessor pp = st.pl.preprocessor;
+        GoalNetwork gn = goalNetwork(st);
+        PartialState ps = new PartialState();
+
+        while(!gn.isEmpty()) {
+            List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
+            log("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
+
+            if(!sat.isEmpty()) {
+                Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
+                ps.progress(p.value1);
+                gn.setAchieved(p.value2, p.value1);
+            } else { // expand with dijkstra
+                // defines a set of target fluents; We can stop whn one of those is reached
+                Set<Fluent> targets = gn.getActiveGoals().stream()
+                        .flatMap(g -> g.getGoals().stream())
+                        .map(s -> {
+                            if(s instanceof GPersistence)
+                                return pp.getFluent(s.sv, ((GPersistence)s).value);
+                            else
+                                return pp.getFluent(s.sv, ((GTransition)s).from);
+                        }).collect(Collectors.toSet());
+
+                DijkstraQueue<Fluent> q = new DijkstraQueue<>(pp.store.getIntRep(Fluent.class));
+
+                for(GStateVariable sv : pp.store.getInstances(GStateVariable.class)) {
+                    int baseTime = -1;
+                    if(ps.labels.containsKey(sv)) {
+                        PartialState.Label l = ps.labels.get(sv);
+                        q.insert(pp.getFluent(sv, l.getVal()), l.getUntil());
+                        baseTime = l.getUntil();
+                    }
+
+                    for(GAssignment ass : pp.getDTG(sv).unconditionalTransitions) {
+                        Fluent f = pp.getFluent(sv, ass.to);
+                        if(!q.contains(f))
+                            q.insert(f, baseTime+1);
+                    }
+                }
+                log("  Targets: "+targets);
+                Fluent sol = null;
+                while(!q.isEmpty() && sol == null) {
+                    Fluent cur = q.poll();
+                    log("  dij current: "+cur+"  "+q.getCost(cur));
+                    if(targets.contains(cur)) {
+                        sol = cur;
+                    } else {
+                        DTG dtg = pp.getDTG(cur.sv);
+                        for(GTransition trans : dtg.outGoingTransitions.get(cur.value)) {
+                            assert cur == pp.getFluent(trans.sv, trans.from);
+                            Fluent succ = pp.getFluent(trans.sv, trans.to);
+                            if(!q.hasCost(succ)) { // never inserted
+                                q.insert(succ, q.getCost(cur)+1);
+                            } else if(q.getCost(succ) > q.getCost(cur)+1) {
+                                q.update(succ, q.getCost(cur)+1);
+                            }
+                        }
+                    }
+                }
+                if(sol != null) {
+                    ps.labels.put(sol.sv, new PartialState.Label(sol.value, q.getCost(sol), q.getCost(sol)));
+                    log("Dij choice: "+sol);
+                } else {
+                    log("DEAD-END!!!!");
+                    break;
+                }
+            }
+
+
+        }
+
+        return 0;
     }
 
 

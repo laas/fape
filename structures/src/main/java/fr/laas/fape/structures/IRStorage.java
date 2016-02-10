@@ -2,6 +2,7 @@ package fr.laas.fape.structures;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class IRStorage {
 
@@ -86,5 +87,17 @@ public class IRStorage {
             @Override
             public boolean hasRepresentation(T t) { return true; }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> List<T> getInstances(Class<T> clazz) {
+        final Class identClazz = getIdentClass(clazz);
+        instancesByParams.putIfAbsent(identClazz, new HashMap<>());
+        instances.putIfAbsent(identClazz, new ArrayList<>());
+
+        return instances.get(identClazz).stream()
+                .filter(o -> clazz.isInstance(o))
+                .map(o -> (T) o)
+                .collect(Collectors.toList());
     }
 }
