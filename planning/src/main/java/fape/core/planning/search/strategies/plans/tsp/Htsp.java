@@ -4,6 +4,7 @@ import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
+import fape.core.planning.heuristics.temporal.DependencyGraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.strategies.plans.Heuristic;
@@ -23,9 +24,7 @@ import sun.security.jgss.GSSToken;
 import static fape.core.planning.grounding.GAction.*;
 import static fape.core.planning.search.strategies.plans.tsp.GoalNetwork.DisjunctiveGoal;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
@@ -68,6 +67,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         Preprocessor pp = st.pl.preprocessor;
         GoalNetwork gn = goalNetwork(st);
         PartialState ps = new PartialState();
+        Map<GStateVariable, String> res = new HashMap<>();
 
         while(!gn.isEmpty()) {
             List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
@@ -77,6 +77,8 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                 Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
                 ps.progress(p.value1);
                 gn.setAchieved(p.value2, p.value1);
+                String base = res.getOrDefault(p.value1.sv, p.value1.sv.toString());
+                res.put(p.value1.sv, base +"   "+ p.value1);
             } else { // expand with dijkstra
                 // defines a set of target fluents; We can stop whn one of those is reached
                 Set<Fluent> targets = gn.getActiveGoals().stream()
@@ -89,6 +91,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         }).collect(Collectors.toSet());
 
                 DijkstraQueue<Fluent> q = new DijkstraQueue<>(pp.store.getIntRep(Fluent.class));
+                Map<Fluent, GLogStatement> predecessors = new HashMap<>();
 
                 for(GStateVariable sv : pp.store.getInstances(GStateVariable.class)) {
                     int baseTime = -1;
@@ -100,8 +103,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
                     for(GAssignment ass : pp.getDTG(sv).unconditionalTransitions) {
                         Fluent f = pp.getFluent(sv, ass.to);
-                        if(!q.contains(f))
-                            q.insert(f, baseTime+1);
+                        if(!q.contains(f)) {
+                            q.insert(f, baseTime + 1);
+                            predecessors.put(f, ass);
+                        }
                     }
                 }
                 log("  Targets: "+targets);
@@ -118,14 +123,31 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                             Fluent succ = pp.getFluent(trans.sv, trans.to);
                             if(!q.hasCost(succ)) { // never inserted
                                 q.insert(succ, q.getCost(cur)+1);
+                                predecessors.put(succ, trans);
                             } else if(q.getCost(succ) > q.getCost(cur)+1) {
                                 q.update(succ, q.getCost(cur)+1);
+                                predecessors.put(succ, trans);
                             }
                         }
                     }
                 }
                 if(sol != null) {
                     ps.labels.put(sol.sv, new PartialState.Label(sol.value, q.getCost(sol), q.getCost(sol)));
+                    Fluent cur = sol;
+                    LinkedList<GLogStatement> preds = new LinkedList<>();
+                    while (cur != null) { // extract predecessor list
+                        if(!predecessors.containsKey(cur))
+                            cur = null;
+                        else {
+                            preds.addFirst(predecessors.get(cur));
+                            if(predecessors.get(cur) instanceof GTransition)
+                                cur = pp.getFluent(cur.sv, ((GTransition) predecessors.get(cur)).from);
+                            else
+                                cur = null;
+                        }
+                    }
+                    String base = res.getOrDefault(sol.sv, sol.sv+" ");
+                    res.put(sol.sv, base + "  "+preds+"  ");
                     log("Dij choice: "+sol);
                 } else {
                     log("DEAD-END!!!!");
@@ -135,6 +157,8 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
 
         }
+        for(GStateVariable sv : res.keySet())
+            log(sv+ res.get(sv).replaceAll("at\\[r1\\]",""));
 
         return 0;
     }

@@ -3,6 +3,9 @@ package fape.core.planning.search.strategies.plans.tsp;
 import fape.core.planning.grounding.GAction;
 import fape.util.Pair;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import planstack.anml.model.concrete.InstanceRef;
 
 import static fape.util.Pair.*;
@@ -31,7 +34,8 @@ public class GoalNetwork {
 //        final int duration;
 //    }
 
-    @Data public static class DisjunctiveGoal {
+    @RequiredArgsConstructor @Getter @ToString
+    public static class DisjunctiveGoal {
         final Set<GAction.GLogStatement> goals;
     }
 
