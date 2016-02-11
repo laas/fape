@@ -95,18 +95,9 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         // Variable representing the ground versions of this action
-        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(addableActions(st, pl).toBitSet()));
+        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(st.addableActions.toBitSet()));
         values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
-
-//        System.out.println(st.domainSizeOf(act.instantiationVar()));
-//        st.isConsistent();
-//        System.out.println(st.domainSizeOf(act.instantiationVar()));
-//
-//        System.out.println(st.domainOf(act.args().get(0)));
-//        System.out.println(st.domainOf(act.args().get(1)));
-//        System.out.println(st.domainOf(act.args().get(2)));
-//        Collection<GAction> gas = st.getGroundActions(act);
 
         assert st.csp.bindings().isRecorded(act.instantiationVar());
     }
@@ -226,17 +217,5 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         st.isConsistent();
-    }
-
-    /**
-     * Returns all addable actions: either the ones from the dependency graph if they were computed, or the ones
-     * from preprocessing (i.e. without reachability analysis)
-     */
-    private static IRSet<GAction> addableActions(State st, APlanner pl) {
-        if(st.getExtension(DepGraphCore.StateExt.class).currentGraph != null)
-            return st.getExtension(DepGraphCore.StateExt.class).currentGraph.addableActs;
-        else
-            return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), pl.preprocessor.getAllActions().toBitSet());
-
     }
 }
