@@ -28,9 +28,11 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    private static void log(String s) {
-        if(true) System.out.println(s);
-    }
+    private static int dbgLvl = 1;
+    private static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
+    private static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
+    private static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
+    private static void log4(String s) { if(dbgLvl>=4) System.out.println(s); }
 
     @Override
     public String shortName() {
@@ -72,7 +74,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
         while(!gn.isEmpty()) {
             List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
-            log("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
+            log2("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
 
             if(!sat.isEmpty()) {
                 Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
@@ -110,11 +112,11 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         }
                     }
                 }
-                log("  Targets: "+targets);
+                log2("  Targets: "+targets);
                 Fluent sol = null;
                 while(!q.isEmpty() && sol == null) {
                     Fluent cur = q.poll();
-                    log("  dij current: "+cur+"  "+q.getCost(cur));
+                    log3("  dij current: "+cur+"  "+q.getCost(cur));
                     if(targets.contains(cur)) {
                         sol = cur;
                     } else {
@@ -149,9 +151,9 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                     }
                     String base = res.getOrDefault(sol.sv, sol.sv+" ");
                     res.put(sol.sv, base + "  "+preds+"  ");
-                    log("Dij choice: "+sol);
+                    log2("Dij choice: "+sol);
                 } else {
-                    log("DEAD-END!!!!");
+                    log2("DEAD-END!!!!");
                     break;
                 }
             }
@@ -159,7 +161,9 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
         }
         for(GStateVariable sv : res.keySet())
-            log(sv+ res.get(sv).replaceAll("\\Q"+sv+"\\E",""));
+            log1(sv+ res.get(sv).replaceAll("\\Q"+sv+"\\E",""));
+
+        log1("");
 
         return 0;
     }
