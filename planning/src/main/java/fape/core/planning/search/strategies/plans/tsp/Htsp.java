@@ -159,7 +159,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
         }
         for(GStateVariable sv : res.keySet())
-            log(sv+ res.get(sv).replaceAll("at\\(r1\\)",""));
+            log(sv+ res.get(sv).replaceAll("\\Q"+sv+"\\E",""));
 
         return 0;
     }
@@ -169,8 +169,6 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         APlanner planner = st.pl;
 
         GoalNetwork gn = new GoalNetwork();
-
-        //TODO: (1) add temporal constraints
 
         for (Timeline tl : st.getTimelines()) {
             // ordered goals that will be extracted from this timeline
