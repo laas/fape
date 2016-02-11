@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    private static int dbgLvl = 1;
+    private static int dbgLvl = 4;
     private static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
     private static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
     private static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
@@ -104,7 +104,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         baseTime = l.getUntil();
                     }
 
-                    for(GAssignment ass : pp.getDTG(sv).unconditionalTransitions) {
+                    for(GAssignment ass : pp.getDTG(sv).getAssignments(st.addableActions)) {
                         Fluent f = pp.getFluent(sv, ass.to);
                         if(!q.contains(f)) {
                             q.insert(f, baseTime + 1);
@@ -121,7 +121,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         sol = cur;
                     } else {
                         DTG dtg = pp.getDTG(cur.sv);
-                        for(GTransition trans : dtg.outGoingTransitions.get(cur.value)) {
+                        for(GTransition trans : dtg.outTransitions(cur.value, st.addableActions)) {
                             assert cur == pp.getFluent(trans.sv, trans.from);
                             Fluent succ = pp.getFluent(trans.sv, trans.to);
                             if(!q.hasCost(succ)) { // never inserted
