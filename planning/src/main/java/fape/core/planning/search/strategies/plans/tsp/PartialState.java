@@ -23,19 +23,19 @@ public class PartialState {
         Label prev = labels.getOrDefault(statement.sv, new Label(null, -1, -1));
         Label next;
         if(statement instanceof GAssignment) {
-            next = new Label(((GAssignment) statement).to, prev.until+1, prev.until+1);
+            next = new Label(((GAssignment) statement).to, prev.until+statement.minDuration, prev.until+statement.minDuration);
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
         } else if(statement instanceof GPersistence) {
             assert prev.getVal() == ((GPersistence) statement).value;
             int start = Math.max(g.earliest, prev.getSince());
-            int end = Math.max(start+1, prev.until);
+            int end = Math.max(start+statement.minDuration, prev.until);
             g.setEarliest(start);
             next = new Label(prev.val, prev.since, end);
         } else {
             assert statement instanceof GTransition;
             assert ((GTransition) statement).from == prev.getVal();
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
-            next = new Label(((GTransition) statement).to, prev.until+1, prev.until+1);
+            next = new Label(((GTransition) statement).to, prev.until+statement.minDuration, prev.until+statement.minDuration);
         }
 
         labels.put(statement.sv, next);

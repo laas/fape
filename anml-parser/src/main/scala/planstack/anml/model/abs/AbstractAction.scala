@@ -25,6 +25,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[LVarRef], val context:PartialContext)  {
 
+  /** "timepoint" is rigidly fixed to "anchor": timepoint +delay = anchor */
   case class AnchoredTimepoint(timepoint: AbsTP, anchor :AbsTP, delay :Int)
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
@@ -62,6 +63,37 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   def allVars : Array[LVarRef] = {
     assert(_allVars.length == context.variables.keys.size)
     return _allVars
+  }
+
+
+  def minDelay(from:AbsTP, to: AbsTP) = {
+    val (anchor1,d1) = anchoredTimepoints.find(at => at.timepoint == from).map(at => (at.anchor, at.delay)).getOrElse((from,0))
+    val (anchor2,d2) = anchoredTimepoints.find(at => at.timepoint == to).map(at => (at.anchor, at.delay)).getOrElse((to,0))
+
+    if(anchor1 == anchor2) // just delays to the anchor
+      d1 -d2
+    else // delay to anchors + max of all min delay constraints
+      d1 - d2 + constraints
+        .filter(_.isInstanceOf[AbstractMinDelay])
+        .map(_.asInstanceOf[AbstractMinDelay])
+        .filter(c => c.from == anchor1 && c.to == anchor2)
+        .map(_.minDelay.toInt)
+        .foldLeft(-999999)(_ max _)
+  }
+
+  def maxDelay(from:AbsTP, to: AbsTP) = {
+    val (anchor1,d1) = anchoredTimepoints.find(at => at.timepoint == from).map(at => (at.anchor, at.delay)).getOrElse((from,0))
+    val (anchor2,d2) = anchoredTimepoints.find(at => at.timepoint == to).map(at => (at.anchor, at.delay)).getOrElse((to,0))
+
+    if(anchor1 == anchor2)
+      d1-d2
+    else // delays to anchors + min of all max delay constraints
+      d1 - d2 + constraints
+        .filter(_.isInstanceOf[AbstractMinDelay])
+        .map(_.asInstanceOf[AbstractMinDelay])
+        .filter(c => c.from == anchor2 && c.to == anchor1)
+        .map(- _.minDelay.toInt)
+        .foldLeft(999999)(_ min _)
   }
 
   override def toString = name

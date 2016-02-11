@@ -252,25 +252,6 @@ public class DeleteFreeActionsFactory {
             templates.remove(rightAnchor);
         }
 
-        BiFunction<AbsTP, AbsTP, Integer> fMinDelay = (x, y) -> {
-            return abs.jConstraints().stream()
-                    .filter(c -> c instanceof AbstractMinDelay)
-                    .map(c -> (AbstractMinDelay) c)
-                    .filter(c -> c.from().equals(x) && c.to().equals(y))
-                    .map(c -> c.minDelay())
-                    .max(Integer::compare)
-                    .orElse(-9999999);
-        };
-        BiFunction<AbsTP, AbsTP, Integer> fMaxDelay = (x, y) -> {
-            return abs.jConstraints().stream()
-                    .filter(c -> c instanceof AbstractMinDelay)
-                    .map(c -> (AbstractMinDelay) c)
-                    .filter(c -> c.from().equals(y) && c.to().equals(x))
-                    .map(c -> -c.minDelay())
-                    .min(Integer::compare)
-                    .orElse(9999999);
-        };
-
         // merge all subactions with no conditions into others
         /*
         for(AbsTP left : new HashSet<AbsTP>(templates.keySet())) {
@@ -298,7 +279,7 @@ public class DeleteFreeActionsFactory {
             for(AbsTP right : templates.keySet()) {
                 if(left == right) continue;
                 RActTemplate rightAct = templates.get(right);
-                int maxDelay = fMaxDelay.apply(left, right);
+                int maxDelay = abs.maxDelay(left, right);
                 leftAct.addCondition(new DoneFluentTemplate(rightAct), maxDelay);
             }
         }

@@ -107,7 +107,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                     for(GAssignment ass : pp.getDTG(sv).getAssignments(st.addableActions)) {
                         Fluent f = pp.getFluent(sv, ass.to);
                         if(!q.contains(f)) {
-                            q.insert(f, baseTime + 1);
+                            q.insert(f, baseTime + ass.minDuration);
                             predecessors.put(f, ass);
                         }
                     }
@@ -125,10 +125,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                             assert cur == pp.getFluent(trans.sv, trans.from);
                             Fluent succ = pp.getFluent(trans.sv, trans.to);
                             if(!q.hasCost(succ)) { // never inserted
-                                q.insert(succ, q.getCost(cur)+1);
+                                q.insert(succ, q.getCost(cur)+trans.minDuration);
                                 predecessors.put(succ, trans);
-                            } else if(q.getCost(succ) > q.getCost(cur)+1) {
-                                q.update(succ, q.getCost(cur)+1);
+                            } else if(q.getCost(succ) > q.getCost(cur)+trans.minDuration) {
+                                q.update(succ, q.getCost(cur)+trans.minDuration);
                                 predecessors.put(succ, trans);
                             }
                         }
@@ -160,6 +160,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
 
         }
+        log1("State: "+st.mID);
         for(GStateVariable sv : res.keySet())
             log1(sv+ res.get(sv).replaceAll("\\Q"+sv+"\\E",""));
 
@@ -186,7 +187,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
 
                 Set<GLogStatement> persistences = fluents.stream()
-                        .map(f -> new GAction.GPersistence(f.sv, f.value))
+                        .map(f -> new GAction.GPersistence(f.sv, f.value, st.csp.stn().getMinDelay(s.start(),s.end())))
                         .collect(Collectors.toSet());
                 goals[0] = new GoalNetwork.DisjunctiveGoal(persistences, s.start(), s.end());
 
@@ -205,7 +206,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
 
                         Set<GLogStatement> assignments = fluents.stream()
-                                .map(f -> new GAction.GAssignment(f.sv, f.value))
+                                .map(f -> new GAction.GAssignment(f.sv, f.value, st.csp.stn().getMinDelay(s.start(), s.end())))
                                 .collect(Collectors.toSet());
                         goals[i] = new GoalNetwork.DisjunctiveGoal(assignments, s.start(), s.end());
 
