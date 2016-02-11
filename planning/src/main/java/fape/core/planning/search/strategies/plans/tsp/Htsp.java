@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    private static int dbgLvl = 4;
+    private static int dbgLvl = 1;
     private static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
     private static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
     private static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
@@ -78,10 +78,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
             if(!sat.isEmpty()) {
                 Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
-                ps.progress(p.value1);
+                ps.progress(p.value1, p.value2);
                 gn.setAchieved(p.value2, p.value1);
                 String base = res.getOrDefault(p.value1.sv, p.value1.sv.toString());
-                res.put(p.value1.sv, base +"   "+ p.value1);
+                res.put(p.value1.sv, base +"   "+p.value2.earliest+ p.value1);
             } else { // expand with dijkstra
                 // defines a set of target fluents; We can stop whn one of those is reached
                 Set<Fluent> targets = gn.getActiveGoals().stream()
@@ -227,6 +227,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
             Iterable<DisjunctiveGoal> previousGoals = gn.getAllGoals();
 
             for(int i=0 ; i<goals.length ; i++) {
+                goals[i].setEarliest(st.getEarliestStartTime(goals[i].getStart()));
                 if(i>0)
                     gn.addGoal(goals[i], goals[i-1]);
                 else

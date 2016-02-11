@@ -2,10 +2,7 @@ package fape.core.planning.search.strategies.plans.tsp;
 
 import fape.core.planning.grounding.GAction;
 import fape.util.Pair;
-import lombok.Data;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.TPRef;
 
@@ -18,28 +15,16 @@ public class GoalNetwork {
 
     public static void log(String s) { if(false) System.out.println(s); }
 
-//    public interface Statement {
-//
-//    }
-//    @Value public static class Condition implements Statement {
-//        final Fluent f;
-//        final int duration;
-//    }
-//    @Value public static class Transition implements Statement {
-//        final Fluent from;
-//        final Fluent to;
-//        final int duration;
-//    }
-//    @Value public static class Assignement implements Statement {
-//        final Fluent to;
-//        final int duration;
-//    }
-
     @RequiredArgsConstructor @Getter @ToString
     public static class DisjunctiveGoal {
         final Set<GAction.GLogStatement> goals;
         final TPRef start;
         final TPRef end;
+        int earliest = -1;
+        public void setEarliest(int time) {
+            assert time >= earliest;
+            earliest = time;
+        }
     }
 
     Map<DisjunctiveGoal, Set<DisjunctiveGoal>> inPrecLinks = new HashMap<>();
@@ -60,6 +45,12 @@ public class GoalNetwork {
         assert !inPrecLinks.get(g2).contains(g1);
         outPrecLinks.get(g1).add(g2);
         inPrecLinks.get(g2).add(g1);
+        enforceDelay(g1,g2);
+    }
+
+    private void enforceDelay(DisjunctiveGoal pred, DisjunctiveGoal succ) {
+        if(pred.getEarliest() +1 > succ.getEarliest())
+            succ.setEarliest(pred.getEarliest()+1);
     }
 
     public Iterable<DisjunctiveGoal> getAllGoals() {
@@ -77,11 +68,11 @@ public class GoalNetwork {
         assert inPrecLinks.get(g).isEmpty();
         for(DisjunctiveGoal descendant : outPrecLinks.get(g)) {
             inPrecLinks.get(descendant).remove(g);
+            enforceDelay(g, descendant);
         }
         inPrecLinks.remove(g);
         outPrecLinks.remove(g);
         timelineFollower.remove(g);
-        // TODO propagate times
     }
 
     public List<Pair<GAction.GLogStatement, DisjunctiveGoal>> satisfiable(PartialState ps) {
