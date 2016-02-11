@@ -19,7 +19,6 @@ import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
-import sun.security.jgss.GSSToken;
 
 import static fape.core.planning.grounding.GAction.*;
 import static fape.core.planning.search.strategies.plans.tsp.GoalNetwork.DisjunctiveGoal;
@@ -29,7 +28,9 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    private static void log(String s) { System.out.println(s); }
+    private static void log(String s) {
+        if(true) System.out.println(s);
+    }
 
     @Override
     public String shortName() {
@@ -158,7 +159,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
         }
         for(GStateVariable sv : res.keySet())
-            log(sv+ res.get(sv).replaceAll("at\\[r1\\]",""));
+            log(sv+ res.get(sv).replaceAll("at\\(r1\\)",""));
 
         return 0;
     }
@@ -182,9 +183,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                 assert s instanceof Persistence;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
 
-                goals[0] = new GoalNetwork.DisjunctiveGoal(fluents.stream()
+                Set<GLogStatement> persistences = fluents.stream()
                         .map(f -> new GAction.GPersistence(f.sv, f.value))
-                        .collect(Collectors.toSet()));
+                        .collect(Collectors.toSet());
+                goals[0] = new GoalNetwork.DisjunctiveGoal(persistences, s.start(), s.end());
 
             } else {
                 goals = new GoalNetwork.DisjunctiveGoal[tl.numChanges()];
@@ -200,9 +202,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         assert i == 0;
                         Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
 
-                        goals[i] = new GoalNetwork.DisjunctiveGoal(fluents.stream()
+                        Set<GLogStatement> assignments = fluents.stream()
                                 .map(f -> new GAction.GAssignment(f.sv, f.value))
-                                .collect(Collectors.toSet()));
+                                .collect(Collectors.toSet());
+                        goals[i] = new GoalNetwork.DisjunctiveGoal(assignments, s.start(), s.end());
 
                     } else { // statement was added as part of an action or a decomposition
                         Collection<GAction> acts = st.getGroundActions(containingAction);
@@ -211,18 +214,29 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                         assert containingAction.context().contains(s);
                         LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
 
-                        goals[i] = new GoalNetwork.DisjunctiveGoal(acts.stream()
+                        Set<GLogStatement> statements = acts.stream()
                                 .map(ga -> ga.statementWithRef(statementRef))
-                                .collect(Collectors.toSet()));
+                                .collect(Collectors.toSet());
+                        goals[i] = new GoalNetwork.DisjunctiveGoal(statements, s.start(), s.end());
                     }
                 }
             }
+
+            Iterable<DisjunctiveGoal> previousGoals = gn.getAllGoals();
 
             for(int i=0 ; i<goals.length ; i++) {
                 if(i>0)
                     gn.addGoal(goals[i], goals[i-1]);
                 else
                     gn.addGoal(goals[i], null);
+
+                DisjunctiveGoal cur = goals[i];
+                for(DisjunctiveGoal old : previousGoals) {
+                    if(!st.canBeBefore(cur.start, old.end))
+                        gn.addPrecedence(old, cur);
+                    else if(!st.canBeBefore(old.start, cur.end))
+                        gn.addPrecedence(cur, old);
+                }
             }
         }
         return gn;

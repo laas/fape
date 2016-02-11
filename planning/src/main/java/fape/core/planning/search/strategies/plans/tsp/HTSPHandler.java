@@ -17,10 +17,6 @@ public class HTSPHandler implements Handler {
 
     @Override
     public void apply(State st, StateLifeTime time, APlanner planner) {
-        GoalNetwork gn = Htsp.goalNetwork(st);
-        System.out.println(gn);
-
-        planner.preprocessor.getOldDTG(gn.getActiveGoals().iterator().next().goals.iterator().next().sv);
         Htsp salesman = new Htsp();
         salesman.hc(st);
     }

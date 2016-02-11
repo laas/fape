@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.model.concrete.TPRef;
 
 import static fape.util.Pair.*;
 
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class GoalNetwork {
 
-    public static void log(String s) { System.out.println(s); }
+    public static void log(String s) { if(false) System.out.println(s); }
 
 //    public interface Statement {
 //
@@ -37,6 +38,8 @@ public class GoalNetwork {
     @RequiredArgsConstructor @Getter @ToString
     public static class DisjunctiveGoal {
         final Set<GAction.GLogStatement> goals;
+        final TPRef start;
+        final TPRef end;
     }
 
     Map<DisjunctiveGoal, Set<DisjunctiveGoal>> inPrecLinks = new HashMap<>();
@@ -57,6 +60,10 @@ public class GoalNetwork {
         assert !inPrecLinks.get(g2).contains(g1);
         outPrecLinks.get(g1).add(g2);
         inPrecLinks.get(g2).add(g1);
+    }
+
+    public Iterable<DisjunctiveGoal> getAllGoals() {
+        return new HashSet<>(inPrecLinks.keySet());
     }
 
     public Collection<DisjunctiveGoal> getActiveGoals() {
