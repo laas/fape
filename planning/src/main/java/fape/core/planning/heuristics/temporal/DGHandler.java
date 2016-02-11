@@ -99,6 +99,15 @@ public class DGHandler implements fape.core.planning.search.Handler {
         values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
 
+//        System.out.println(st.domainSizeOf(act.instantiationVar()));
+//        st.isConsistent();
+//        System.out.println(st.domainSizeOf(act.instantiationVar()));
+//
+//        System.out.println(st.domainOf(act.args().get(0)));
+//        System.out.println(st.domainOf(act.args().get(1)));
+//        System.out.println(st.domainOf(act.args().get(2)));
+//        Collection<GAction> gas = st.getGroundActions(act);
+
         assert st.csp.bindings().isRecorded(act.instantiationVar());
     }
 
