@@ -67,7 +67,6 @@ public class GAction implements Identifiable {
 
     public final ArrayList<GTask> subTasks;
 
-    private static int nextID = 0;
     public final int id;
 
     public GroundProblem.Invariant invariantOf(AbstractParameterizedStateVariable sv, GroundProblem gPb) {
@@ -180,7 +179,7 @@ public class GAction implements Identifiable {
         // with temporal actions, a lot of actions can be self suportive
         pre.removeAll(add);
 
-        this.id = nextID++;
+        this.id = planner.preprocessor.nextGActionID++;
         this.subTasks = initSubTasks(gPb.liftedPb, planner);
         this.task = initTask(gPb.liftedPb, planner);
         this.preconditions = new int[pre.size()];

@@ -96,7 +96,8 @@ public class Planning {
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
                                 "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
                                 " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
-                                " (same as full but the number of iterations is limited to XX)"),
+                                " (same as full but the number of iterations is limited to XX). This option is currently not " +
+                                "compatible with the 'reachability' option and the 'rplan' plan selector."),
                         new FlaggedOption("multi-supports")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag('m')

@@ -26,6 +26,8 @@ public class Preprocessor {
     final APlanner planner;
     final State initialState;
 
+    public int nextGActionID = 0;
+
     public final GStore store = new GStore();
 
     private FeasibilityReasoner fr;
