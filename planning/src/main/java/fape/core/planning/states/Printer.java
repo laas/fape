@@ -85,12 +85,7 @@ public class Printer {
             return "null";
 
         String ret = act.name()+"(";
-        ret += String.join(", ", act.args().stream().map(v -> {
-            if(st.domainSizeOf(v) == 1)
-                return st.domainOf(v).get(0);
-            else
-                return variable(st, v);
-        }).collect(Collectors.toList()));
+        ret += String.join(", ", act.args().stream().map(v -> variable(st, v)).collect(Collectors.toList()));
 
         ret += ") (id:"+act.id()+")";
         return ret;
@@ -169,7 +164,10 @@ public class Printer {
     }
 
     public static String variable(State st, VarRef var) {
-        return st.csp.bindings().domainAsString(var);
+        if(st.domainSizeOf(var) == 1)
+            return st.domainOf(var).get(0);
+        else
+            return st.csp.bindings().domainAsString(var);
     }
 
     public static String bindedVariable(State st, VarRef var) {
@@ -250,9 +248,9 @@ public class Printer {
                         }
                         Action act = st.getActionContaining(s);
                         if(act != null)
-                            line.add("    From: "+action(st, act));
+                            line.add("  From : "+action(st, act));
                         else
-                            line.add(" ");
+                            line.add("  From problem definition");
 
                         table.add(line);
                     }
