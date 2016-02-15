@@ -73,7 +73,7 @@ object StatementsFactory {
           // it should be an action, but we can't check since this action might not have been parsed yet
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
           val e = normalizeExpr(s.term, context, pb)
-          val task = new AbstractTask(s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
+          val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
           (Some(task), List(AbstractMinDelay(task.start, task.end, 1)))
         }
       }

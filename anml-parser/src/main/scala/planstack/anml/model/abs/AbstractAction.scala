@@ -18,12 +18,12 @@ import scala.collection.mutable.ArrayBuffer
   * Hence all components of an action refer either to local references (such as an argument of the action) or problem
   * instances (defined in the ANML problem).
   *
-  * @param taskName Name of the task this action supports
-  * @param decID index of the decomposition this action was issued from. If decID == 0, then there was no decompositions.
+  * @param baseName Name of the task this action supports
+  * @param decID index (starting at 1) of the decomposition this action was issued from. If decID == 0, then there was no decompositions.
   * @param mArgs
   * @param context
   */
-class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[LVarRef], val context:PartialContext)  {
+class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[LVarRef], val context:PartialContext)  {
 
   case class AnchoredTimepoint(timepoint: AbsTP, anchor :AbsTP, delay :Int)
 
@@ -31,8 +31,11 @@ class AbstractAction(val taskName:String, val decID:Int, private val mArgs:List[
   protected var motivated = false
 
   val name =
-    if(decID == 0) "a-"+taskName
-    else "m-"+taskName+decID
+    if(decID == 0) baseName
+    else "m"+decID+"-"+baseName
+
+  /** task that this action fulfills */
+  val taskName = "t-"+baseName
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
   def mustBeMotivated = motivated
@@ -104,7 +107,7 @@ object AbstractAction {
     * @return
     */
   def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractAction] = {
-    val taskName = act.name
+    val baseName = act.name
     val args = act.args.map(a => new LVarRef(a.name))
 
     val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
@@ -117,7 +120,7 @@ object AbstractAction {
 
     val acts = for((decID, additionalStatements) <- decIdsAndStatements) yield {
 
-      val action = new AbstractAction(taskName, decID, act.args.map(a => new LVarRef(a.name)), new PartialContext(Some(pb.context)))
+      val action = new AbstractAction(baseName, decID, act.args.map(a => new LVarRef(a.name)), new PartialContext(Some(pb.context)))
 
       act.args foreach(arg => {
         action.context.addUndefinedVar(new LVarRef(arg.name), arg.tipe)
