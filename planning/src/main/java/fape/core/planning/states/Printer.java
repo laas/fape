@@ -98,10 +98,12 @@ public class Printer {
 
     public static String tableAsString(List<List<String>> table, int separation) {
         List<Integer> maxSizes = new ArrayList<>();
-        for(int i=0 ; i< table.get(0).size() ; i++) {
+        int longestLine = table.stream().map(l -> l.size()).max(Integer::compare).get();
+        for(int i=0 ; i< longestLine ; i++) {
             int maxSize = 0;
             for(List<String> line : table)
-                maxSize = Math.max(maxSize, line.get(i).length());
+                if(i < line.size())
+                    maxSize = Math.max(maxSize, line.get(i).length());
             maxSizes.add(maxSize);
         }
         StringBuilder sb = new StringBuilder();
@@ -221,46 +223,45 @@ public class Printer {
                 }
             });
         }
-        StringBuilder sb = new StringBuilder();
+        List<List<String>> table = new LinkedList<>();
+//        StringBuilder sb = new StringBuilder();
         for(Map.Entry<String,List<Timeline>> entry : groupedDBs.entrySet()) {
-            int offset = entry.getKey().length();
-            sb.append(entry.getKey());
             boolean first = true;
             for(Timeline db : entry.getValue()) {
                 boolean newDb = true;
                 for(ChainComponent cc : db.chain) {
                     for (LogStatement s : cc.statements) {
-                        if(!first)
-                            for(int i=0;i<offset;i++) sb.append(" ");
+                        List<String> line = new LinkedList<>();
+                        if(first)
+                            line.add(entry.getKey());
+                        else
+                            line.add("");
                         first = false;
-                        if(newDb) sb.append(" | ");
-                        else sb.append("   ");
+                        if(newDb) line.add("|");
+                        else line.add("");
                         newDb = false;
-                        sb.append("[");
-                        sb.append(st.getEarliestStartTime(s.start()));
-                        sb.append(",");
-                        sb.append(st.getEarliestStartTime(s.end()));
-                        sb.append("] ");
+                        line.add("["+st.getEarliestStartTime(s.start())+","+st.getEarliestStartTime(s.end())+"]");
                         if(s instanceof Persistence) {
-                            sb.append(" == " + variable(st, s.endValue()));
+                            line.add("== " + variable(st, s.endValue()));
                         } else if(s instanceof Assignment) {
-                            sb.append(" := " + variable(st, s.endValue()));
+                            line.add(":= " + variable(st, s.endValue()));
                         } else if(s instanceof Transition) {
-                            sb.append(" == " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
+                            line.add("== " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
                         }
                         Action act = st.getActionContaining(s);
-                        if(act != null) {
-                            sb.append("    From: ");
-                            sb.append(action(st, act));
-                        }
-                        sb.append("\n");
+                        if(act != null)
+                            line.add("    From: "+action(st, act));
+                        else
+                            line.add(" ");
+
+                        table.add(line);
                     }
                 }
+                table.add(Collections.emptyList());
             }
-            sb.append("\n");
         }
 
-        return sb.toString();
+        return tableAsString(table,1);
     }
 
     public static String temporalDatabase(State st, Timeline db) {
