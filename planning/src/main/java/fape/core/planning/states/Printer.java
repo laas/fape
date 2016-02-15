@@ -85,23 +85,15 @@ public class Printer {
             return "null";
 
         String ret = act.name()+"(";
-        for(VarRef arg : act.args()) {
-            ret += variable(st, arg);
-        }
-        ret += "):"+act.id();
-        return ret;
-    }
+        ret += String.join(", ", act.args().stream().map(v -> {
+            if(st.domainSizeOf(v) == 1)
+                return st.domainOf(v).get(0);
+            else
+                return variable(st, v);
+        }).collect(Collectors.toList()));
 
-    public static String groundedAction(State st, Action act) {
-        String ret = act.name()+"(";
-        for(int i=0 ; i<act.args().size() ; i++) {
-            VarRef arg = act.args().get(i);
-            assert st.domainSizeOf(arg) == 1 : "Action "+action(st, act)+ "is not grounded.";
-            ret += st.domainOf(arg).get(0);
-            if(i < act.args().size()-1)
-                ret += ",";
-        }
-        return ret + ")";
+        ret += ") (id:"+act.id()+")";
+        return ret;
     }
 
     public static String tableAsString(List<List<String>> table, int separation) {
