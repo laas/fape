@@ -49,7 +49,13 @@ object StatementsFactory {
     val (optStatement, constraints) = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
 
     annotatedStatement.annotation match {
-      case None => (optStatement, constraints)
+      case None =>
+        optStatement match {
+          case Some(ls :AbstractLogStatement) if !ls.sv.func.isConstant =>
+            println("Warning: log statement with no temporal annotation: "+ls)
+          case _ =>
+        }
+        (optStatement, constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
         assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task.")
