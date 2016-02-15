@@ -1,0 +1,40 @@
+
+type locatable;
+type bomb < locatable;
+type agent < locatable;
+type location;
+
+function location loc(locatable x);
+predicate available(agent a);
+predicate is_accessible(bomb x);
+predicate defused(bomb x);
+predicate defusing(bomb x);
+
+constant integer lifting_dur(agent a);
+
+action lift(agent a, bomb o) {
+  constant location l;
+  duration := lifting_dur(a);
+  [all] loc(a) == l;
+  [all] loc(o) == l;
+  [all] available(a) == true :-> true;
+  [start+1] defusing(o) == true;
+  [start,start+1] is_accessible(o) == false :-> true;
+  [end-1,end] is_accessible(o) == true :-> false;
+  [end-1] defused(o) == true;
+};
+
+action defuse_bomb(agent a, bomb b) {
+  duration := 10;
+  constant location l;
+  [start] defusing(b) := true;
+  [all] loc(a) == l;
+  [all] loc(b) == l;
+  [all] available(a) == true :-> true;
+  [all] is_accessible(b) == true;
+  [end] defused(b) := true;
+  [end] defusing(b) := false;
+};
+
+
+
