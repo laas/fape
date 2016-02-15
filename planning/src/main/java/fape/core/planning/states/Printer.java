@@ -15,6 +15,7 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Contains functions to produce human-readable string from planning objects.
@@ -103,46 +104,63 @@ public class Printer {
         return ret + ")";
     }
 
-    public static String actionsInState(final State st) {
+    public static String tableAsString(List<List<String>> table, int separation) {
+        List<Integer> maxSizes = new ArrayList<>();
+        for(int i=0 ; i< table.get(0).size() ; i++) {
+            int maxSize = 0;
+            for(List<String> line : table)
+                maxSize = Math.max(maxSize, line.get(i).length());
+            maxSizes.add(maxSize);
+        }
         StringBuilder sb = new StringBuilder();
-        List<Action> acts = new LinkedList<>(st.getAllActions());
-        Collections.sort(acts, new Comparator<Action>() {
-            @Override
-            public int compare(Action a1, Action a2) {
-                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+        for(List<String> line : table) {
+            for(int i=0; i<line.size() ; i++) {
+                sb.append(line.get(i));
+                for(int j= maxSizes.get(i)-line.get(i).length() +separation ; j>0 ; j--)
+                    sb.append(" ");
             }
-        });
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    public static String actionsInState(final State st) {
+        List<Action> acts = new LinkedList<>(st.getAllActions());
+        Collections.sort(acts, (Action a1, Action a2) ->
+                st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+
+        List<List<String>> table = new LinkedList<>();
 
         for(Action a : acts) {
-            int start = (int) st.getEarliestStartTime(a.start());
-            int earliestEnd = (int) st.getEarliestStartTime(a.end());
+            int start = st.getEarliestStartTime(a.start());
+            int earliestEnd = st.getEarliestStartTime(a.end());
             String name = Printer.action(st, a);
             switch (a.status()) {
                 case EXECUTED:
-                    sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
+                    table.add(Arrays.asList(start+":", name, "started: "+start, "ended: "+earliestEnd+" [EXECUTED]"));
                     break;
                 case EXECUTING:
                     if(st.getDurationBounds(a).nonEmpty()) {
                         int min = st.getDurationBounds(a).get()._1();
                         int max = st.getDurationBounds(a).get()._2();
-                        sb.append(String.format("%s \t\tstarted: %s\tduration in [%s, %s]  [EXECUTING]\n", name, start, min, max));
+                        table.add(Arrays.asList(start+":", name, "started: "+start, "duration in ["+min+","+max+"] [EXECUTING]"));
                     } else {
-                        sb.append(String.format("%s \t\tstarted: %s\tmin-duration: %s  [EXECUTING]\n", name, start, earliestEnd-start));
+                        table.add(Arrays.asList(start+":", name, "started: "+start, "min-duration: "+(earliestEnd-start)+" [EXECUTING]"));
                     }
                     break;
                 case PENDING:
                     if(st.getDurationBounds(a).nonEmpty()) {
                         int min = st.getDurationBounds(a).get()._1();
                         int max = st.getDurationBounds(a).get()._2();
-                        sb.append(String.format("%s \t\tearliest-start: %s\tduration in [%s, %s]\n", name, start, min, max));
+                        table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "duration in ["+min+","+max+"]"));
                     } else {
-                        sb.append(String.format("%s \t\tearliest-start: %s\tmin-duration: %s\n", name, start, earliestEnd-start));
+                        table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "min-duration: "+(earliestEnd-start)));
                     }
                     break;
                 case FAILED:
             }
         }
-        return sb.toString();
+        return tableAsString(table, 3);
     }
 
     public static String taskCondition(State st, Task task) {
