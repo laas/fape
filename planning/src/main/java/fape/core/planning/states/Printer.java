@@ -248,9 +248,9 @@ public class Printer {
                         }
                         Action act = st.getActionContaining(s);
                         if(act != null)
-                            line.add("  From : "+action(st, act));
+                            line.add("  From: "+action(st, act));
                         else
-                            line.add("  From problem definition");
+                            line.add("  From: problem definition");
 
                         table.add(line);
                     }
