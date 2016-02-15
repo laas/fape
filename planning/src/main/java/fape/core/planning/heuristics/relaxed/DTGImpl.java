@@ -249,7 +249,7 @@ public class DTGImpl {
             TPRef end = i+1 < tl.numChanges() ? tl.getChangeNumber(i+1).getConsumeTimePoint() : null;
 
             if(containingAction == null) { // statement was not added as part of an action
-                assert s instanceof Assignment;
+                assert s instanceof Assignment : "rplan does not currently support transitions in the problem definition.";
                 assert s.endValue() instanceof InstanceRef;
                 assert i == 0;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner); //todo why false

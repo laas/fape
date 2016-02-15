@@ -8,7 +8,9 @@ predicate at();
 t  :in start + [7,10];
 t2 :in t     + [20,30];
 
-//start < t-10;
+[tt] at == true;
+tt -2 >= t+5;
+
 
 
 

@@ -86,7 +86,9 @@ public class AbstractionHierarchy {
      * 0 is the top level.
      */
     public int getLevel(Function func) {
-        assert fluentsGroup.containsKey(func) : "No recorded level for: "+func;
+        if(fluentsGroup.isEmpty())
+            return 0; // there seem to be no action model
+        assert fluentsGroup.containsKey(func) : "State variable \""+func+"\" does not appear in the abstraction hierarchy";
         return fluentsGroup.get(func);
     }
 

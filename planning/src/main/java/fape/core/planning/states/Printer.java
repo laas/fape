@@ -92,6 +92,8 @@ public class Printer {
     }
 
     public static String tableAsString(List<List<String>> table, int separation) {
+        if(table.isEmpty())
+            return "";
         List<Integer> maxSizes = new ArrayList<>();
         int longestLine = table.stream().map(l -> l.size()).max(Integer::compare).get();
         for(int i=0 ; i< longestLine ; i++) {
