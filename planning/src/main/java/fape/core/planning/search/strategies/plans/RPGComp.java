@@ -1,11 +1,8 @@
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.RelaxedPlanExtractor;
-import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.states.State;
-import fape.core.planning.timelines.Timeline;
 
 import java.util.HashMap;
 
@@ -54,7 +51,7 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
     public int numAdditionalSteps(State st) {
         RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
-        return rpe.myPerfectHeuristic();
+        return rpe.computeH();
     }
 
     @Override

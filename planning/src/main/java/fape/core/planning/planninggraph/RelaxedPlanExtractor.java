@@ -384,7 +384,7 @@ public class RelaxedPlanExtractor {
     Set<Action> instantiated = new HashSet<>();
     ActionUsageTracker counter = null;
 
-    public int myPerfectHeuristic() {
+    public int computeH() {
         planner.preprocessor.getFeasibilityReasoner().getAddableActions(st, planner.preprocessor.getAllActions());
 
 

@@ -15,6 +15,7 @@ import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,17 +33,16 @@ public class Planning {
                                 + "Mainly consists in time consuming checks."),
                         new Switch("actions-chart", JSAP.NO_SHORTFLAG, "gui", "Planner will show the actions on a time chart."),
                         new Switch("display-search", JSAP.NO_SHORTFLAG, "display-search", "Search will be displayed online."),
-                        new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "FAPE will build a dispatchable Plan. "+
+                        new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "[experimental] FAPE will build a dispatchable Plan. "+
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
                         new FlaggedOption("plannerID")
                                 .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag('p')
                                 .setLongFlag("planner")
                                 .setDefault("fape")
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + "  - topdown: Traditional top-down HTN planning.\n"
-                                        + "  - fape: Cool planning \\o/.\n"),
+                                        + "  - topdown: Traditional top-down HTN planning (lacks completeness for ANML).\n"
+                                        + "  - fape: Complete planner that allows going either down or up in action hierarchies.\n"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -66,7 +66,6 @@ public class Planning {
                                         "factor and search in depth first (reducing memory consumption)."),
                         new FlaggedOption("fast-forward")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag('f')
                                 .setLongFlag("fast-forward")
                                 .setDefault("true")
                                 .setHelp("If true, all trivial flaws (with one resolver) will be solved before inserting a state into the queue." +
@@ -74,18 +73,18 @@ public class Planning {
                                         "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
                                         "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
-                        new QualifiedSwitch("a-epsilon")
+                        new FlaggedOption("a-epsilon")
                                 .setStringParser(JSAP.FLOAT_PARSER)
                                 .setShortFlag('e')
                                 .setLongFlag("ae")
                                 .setDefault("0.3")
-                                .setHelp("The planner will use an A-Epsilon search with epsilon = 0.3. The epsilon can not be " +
-                                        "parameterized through command line yet."),
+                                .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
+                                "If set to 0, search is a standard A*."),
                         new FlaggedOption("reachability")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag('r')
                                 .setLongFlag("reachability")
-                                .setDefault("false")
+                                .setDefault("true")
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
                                         "consists in an analysis on a ground version of the problem, checking both causal and" +
                                         "hierarchical properties of a partial plan."),
@@ -93,7 +92,7 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
                                 .setLongFlag("dep-graph")
-                                .setDefault("full")
+                                .setDefault("none")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
                                 "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
                                 " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
@@ -112,23 +111,45 @@ public class Planning {
                                 .setHelp("Number of times to repeat all planning activities. This might be used to (i) " +
                                         "check that FAPE indeed get the same plan/search space (ii) get realistic runtime" +
                                         " after warming up the JVM."),
-                        new FlaggedOption("strategies")
+                        new FlaggedOption("plan-selection")
                                 .setStringParser(JSAP.STRING_PARSER)
-                                .setShortFlag('s')
-                                .setLongFlag("strats")
-                                .setDefault("%")
-                                .setHelp("This is used to define search strategies. A search strategy consists of "
-                                        + "one or more flaw selection strategy and one or more state selection strategy. "
-                                        + "Ex: the argument 'lcf:lfr%dfs' would give for flaws: lcf (LeastCommitingFirst), using "
-                                        + "lfr (LeastFlawRatio) to handle ties. States would be selected using dfs (DepthFirstSearch). "
-                                        + "For more information on search strategies, look at the fape.core.planning.search.strategies "
-                                        + "package."),
+                                .setShortFlag('p')
+                                .setLongFlag("plan-selection")
+                                .setList(true)
+                                .setListSeparator(',')
+                                .setDefault("rplan,soca")
+                                .setHelp("A comma separated list of plan selectors, ordered by priority." +
+                                "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
+                                "with the highest priority is expanded next. The main options are: \n" +
+                                " - \"rplan\": evaluates the remaining search effort by building a relaxed plan\n" +
+                                " - \"soca\" that simply compare the number of flaws and actions is the partial plans\n" +
+                                " - \"dfs\": Deepest partial plan extracted first.\n" +
+                                " - \"bfs\": Shallowest partial plan extracted first.\n" +
+                                "If more than one selector is given, the " +
+                                "second is used to break ties  of the first one, the third to break ties of both " +
+                                "the first and second, etc. Plan selectors can be found in the package " +
+                                "\"fape.core.planning.search.strategies.plans\".\n"),
+                        new FlaggedOption("flaw-selection")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('f')
+                                .setLongFlag("flaw-selection")
+                                .setList(true)
+                                .setListSeparator(',')
+                                .setDefault("hf,ogf,abs,lcf,eogf")
+                                .setHelp("Ordered list of flaw selectors. Each flaw selector assigns a priority to each " +
+                                "flaw. The first selector has the highest weight, the last has the least weight." +
+                                "The flaw with highest priority is selected to be solved. A (non-exaustive) of flaw selectors:\n" +
+                                "- 'hf': Hierarchical flaws first.\n" +
+                                "- 'ogf': Open goal flaws first.\n" +
+                                "- 'abs': Gives higher priority to flaws high in the abstraction hierarchy of the problem.\n" +
+                                "- 'lcf': Least Commiting First, select the flaw with the least number of resolvers\n" +
+                                "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n"),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')
                                 .setLongFlag("output")
                                 .setDefault("stdout")
-                                .setHelp("File to which the CSV formatted output will be written"),
+                                .setHelp("File to which the CSV formatted output will be written."),
                         new FlaggedOption("needed-observations")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -143,10 +164,10 @@ public class Planning {
                                 .setRequired(isAnmlFileRequired)
                                 .setGreedy(true)
                                 .setHelp("ANML problem files on which to run the planners. If it is set "
-                                        + "to a directory, all files ending with .anml will be considered. "
-                                        + "If a file of the form xxxxx.yy.pb.anml is given, the file xxxxx.dom.anml will be loaded first."
-                                        + "If a file xxxxx.conf is present, it will be used to provide default options of the planner.\n")
-
+                                + "to a directory, all files ending with .anml will be considered. "
+                                + "If a file of the form xxxxx.yy.pb.anml is given, the file xxxxx.dom.anml " +
+                                "will be loaded first. If a file xxxxx.conf is present, it will be used to provide " +
+                                "default options of the planner.\n")
                 }
         );
     }
@@ -212,22 +233,9 @@ public class Planning {
                 // read default conf from file and add command line options on top
                 Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
 
-                // creates all planners that will be tested for this problem
-                String strategy = config.getString("strategies");
-                assert strategy.contains("%") : "Strategy \"" + strategy + "\" is not well formed see help.";
-                String rawFlawStrat = strategy.substring(0, strategy.indexOf('%'));
-                String rawPlanStrat = strategy.substring(strategy.indexOf('%') + 1);
-                String[] planStrat;
-                if (rawPlanStrat.isEmpty())
-                    planStrat = PlannerFactory.defaultPlanSelStrategies;
-                else
-                    planStrat = rawPlanStrat.split(":");
-                String[] flawStrat;
-                if (rawFlawStrat.isEmpty())
-                    flawStrat = PlannerFactory.defaultFlawSelStrategies;
-                else
-                    flawStrat = rawFlawStrat.split(":");
-
+                // creates the planner that will be tested for this problem
+                String[] planStrat = config.getStringArray("plan-selection");
+                String[] flawStrat = config.getStringArray("flaw-selection");
                 String plannerID = config.getString("plannerID");
 
                 final int maxtime = config.getInt("max-time");
@@ -241,11 +249,11 @@ public class Planning {
 
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
-                options.useAEpsilon = config.getBoolean("a-epsilon") && config.getFloat("a-epsilon") > 0;
+                options.useAEpsilon = config.getFloat("a-epsilon") > 0;
                 if(options.useAEpsilon) {
                     options.epsilon = config.getFloat("a-epsilon");
                 }
-                options.usePlanningGraphReachability = config.getBoolean("reachability");
+                options.usePlanningGraphReachability = config.getBoolean("reachability") || Arrays.asList(planStrat).contains("rplan");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
 
@@ -321,7 +329,7 @@ public class Planning {
 
                 final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
-                final String aeStr = config.getBoolean("a-epsilon") ? "ae" : "no-ae";
+                final String aeStr = config.getFloat("a-epsilon") > 0 ? "ae" : "no-ae";
 
                 writer.write(
                         i + ", "
