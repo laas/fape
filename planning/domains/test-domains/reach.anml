@@ -1,0 +1,47 @@
+type rover with {
+  variable loc at;
+};
+
+type loc;
+
+constant boolean connected(loc l1, loc l2);
+
+action go(rover r,loc l) {
+  motivated;
+  :decomposition {
+    [all] r.at == l;
+  };
+  :decomposition {
+    constant loc l1;
+    [start+1,end] contains g:go(r,l1);
+    [end(g),end] contains m: move(r, l1,l);
+  };
+};
+
+
+action move(rover r, loc l1, loc l2) {
+  motivated;
+  duration := 10;
+  [all] r.at == l1 :-> l2;
+  connected(l1,l2);
+};
+
+
+instance rover r1, r2;
+instance loc d0,d1,d2,d3,d4;
+[start] {
+  r1.at := d2;
+  r2.at := d3;
+};
+
+connected(d0,d1) := true;
+connected(d1,d0) := true;
+connected(d2,d1) := true;
+connected(d1,d2) := true;
+connected(d3,d4) := true;
+connected(d4,d3) := true;
+
+
+constant rover r;
+[all] contains go(r, d1);
+

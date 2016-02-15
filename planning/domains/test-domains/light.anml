@@ -1,0 +1,31 @@
+
+predicate have_light();
+predicate fixed_fuse();
+predicate hasPetzl();
+
+type T;
+instance T t;
+
+action LightMatch() {
+  duration := 10;
+  [start+1] have_light := true;
+  [end-1] fixed_fuse == true;
+  [end] have_light := false;
+};
+
+action LightPetzl() {
+  duration := 100;
+  [all] hasPetzl == true;
+  [start+1] have_light := true;
+  [end-1] fixed_fuse == true;
+  [end] have_light := false;
+};
+
+action FixFuse() {
+  duration := 30;
+  [all] have_light == true;
+  [end] fixed_fuse := true;
+};
+
+[end] fixed_fuse == true;
+[start+100] hasPetzl := true;
