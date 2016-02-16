@@ -6,7 +6,6 @@ import fr.laas.fape.structures.ValueConstructor;
 import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Ident(GStateVariable.class)

@@ -574,7 +574,7 @@ public class State implements Reporter {
     private void apply(Chronicle mod, TemporalConstraint tc) {
 
         if(tc instanceof MinDelayConstraint) {
-            csp.stn().enforceMinDelay(((MinDelayConstraint) tc).src(), ((MinDelayConstraint) tc).dst(), ((MinDelayConstraint) tc).minDelay());
+            csp.stn().enforceMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay());
         } else if(tc instanceof ParameterizedMinDelayConstraint) {
             ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
             assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
@@ -1082,7 +1082,7 @@ public class State implements Reporter {
 
     public List<Task> getOpenTasks() { return taskNet.getOpenTasks(); }
 
-    public List<Action> getUnmotivatedActions() { return taskNet.getNonSupportedMotivatedActions(); };
+    public List<Action> getUnmotivatedActions() { return taskNet.getNonSupportedMotivatedActions(); }
 
     /**
      *  Unifies the time points of the action condition and those of the action, and add

@@ -90,7 +90,8 @@ public class SearchView {
             public void itemEntered(VisualItem item, MouseEvent e) {
                 StringBuilder sb = new StringBuilder();
                 if(item.canGetString(NODE_STATUS)) {
-                    sb.append("Status: "); sb.append(item.getString(NODE_STATUS));; sb.append("\n");
+                    sb.append("Status: "); sb.append(item.getString(NODE_STATUS));
+                    sb.append("\n");
                     sb.append(item.getString(HEURISTIC_VALUES)); sb.append("\n");
                     sb.append("Last resolver: "); sb.append(item.getString(LAST_APPLIED_RESOLVER)); sb.append("\n");
                     sb.append("Selected flaw: "); sb.append(item.getString(SELECTED_FLAW)); sb.append("\n");

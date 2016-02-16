@@ -6,8 +6,8 @@ import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.core.impl.matrix.FullIntIntDigraph
-import planstack.structures.IList
 import planstack.structures.Converters._
+import planstack.structures.IList
 
 class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
               var requirements : FullIntIntDigraph,

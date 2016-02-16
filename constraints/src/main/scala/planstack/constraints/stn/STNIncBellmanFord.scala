@@ -2,7 +2,6 @@ package planstack.constraints.stn
 
 import planstack.constraints.stn.StnPredef._
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
-import planstack.structures.IList
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

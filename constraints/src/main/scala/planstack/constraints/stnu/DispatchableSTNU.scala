@@ -1,10 +1,10 @@
 package planstack.constraints.stnu
 
 import planstack.graph.core.SimpleLabeledDigraph
+import planstack.structures.Converters._
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
-import planstack.structures.Converters._
 
 trait DispatchableSTNU[ID] extends ISTNU[ID] {
 

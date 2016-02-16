@@ -5,8 +5,8 @@ import java.util
 import planstack.anml.model.concrete.VarRef
 import planstack.constraints.bindings.BindingConstraintNetwork.ExtID
 
-import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 

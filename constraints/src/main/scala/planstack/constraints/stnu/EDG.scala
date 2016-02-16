@@ -2,12 +2,10 @@ package planstack.constraints.stnu
 
 import planstack.constraints.stn.Weight
 import planstack.graph.GraphFactory
-import planstack.graph.core.{SimpleLabeledDigraph, LabeledEdge}
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.core.impl.matrix.{FullIntIntDigraph, SimpleLabeledDirectedIIMatrix}
+import planstack.graph.core.{LabeledEdge, SimpleLabeledDigraph}
 import planstack.graph.printers.NodeEdgePrinter
-
-import scala.collection.parallel.mutable
 
 /** Objects implementing this interface can be passed to an EDG instance
   * to react to events occurring in an EDG such as edge addition, negative cycle ...

@@ -1,9 +1,9 @@
 package planstack.constraints
 
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.{TPRef, VarRef}
 import planstack.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
-import planstack.constraints.stnu.{STNUManager, PseudoSTNUManager, MinimalSTNUManager, GenSTNUManager}
+import planstack.constraints.stnu.{GenSTNUManager, MinimalSTNUManager}
+
 import scala.collection.JavaConverters._
 
 abstract class PendingConstraint[VarRef, TPRef, ID](val from:TPRef, val to:TPRef, val optID:Option[ID]) {

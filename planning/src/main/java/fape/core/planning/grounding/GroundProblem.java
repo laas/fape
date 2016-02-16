@@ -1,13 +1,9 @@
 package fape.core.planning.grounding;
 
-import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
-import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
-import fape.exceptions.FAPEException;
 import fape.util.EffSet;
 import lombok.Value;
 import planstack.anml.model.AnmlProblem;

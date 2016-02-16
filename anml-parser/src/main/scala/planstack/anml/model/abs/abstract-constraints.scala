@@ -1,7 +1,7 @@
 package planstack.anml.model.abs
 
 import planstack.anml.model._
-import planstack.anml.model.abs.time.{IntervalEnd, ContainerEnd, AbsTP}
+import planstack.anml.model.abs.time.AbsTP
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser

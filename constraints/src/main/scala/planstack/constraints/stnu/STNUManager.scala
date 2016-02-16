@@ -1,14 +1,9 @@
 package planstack.constraints.stnu
 
-import net.openhft.koloboke.collect.map.hash.{HashIntIntMap, HashIntObjMap}
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.Kolokobe
-import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
-import planstack.structures.IList
-import planstack.structures.Converters._
+
 import scala.language.implicitConversions
 
 class STNUManager[ID](val stnu : ISTNU[ID],

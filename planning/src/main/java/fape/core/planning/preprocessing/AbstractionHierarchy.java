@@ -1,6 +1,5 @@
 package fape.core.planning.preprocessing;
 
-import fape.core.planning.planner.APlanner;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;

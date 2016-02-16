@@ -38,11 +38,7 @@ public class ChainComponent {
         mID = nextID++;
         statements = new LogStatement[1];
         statements[0] = s;
-        if (s instanceof Persistence) {
-            change = false;
-        } else {
-            change = true;
-        }
+        change = !(s instanceof Persistence);
     }
 
     /** Creates a new chain component with the given statements and mID */
@@ -50,11 +46,7 @@ public class ChainComponent {
         this.mID = mID;
         assert statements.length > 0;
         this.statements = statements;
-        if(this.statements[0] instanceof Persistence) {
-            change = false;
-        } else {
-            change = true;
-        }
+        change = !(this.statements[0] instanceof Persistence);
     }
 
     /** @return Number of statements in this ChainComponent. */

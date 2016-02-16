@@ -1,25 +1,18 @@
 package fape.drawing.gui
 
-import java.awt.{Dimension, BorderLayout}
+import java.awt.{BorderLayout, Dimension}
 
 import fape.drawing.TimedCanvas
 
 //import java.awt._
 import java.awt.event._
-;
-import java.awt.geom._
-import java.io.StringReader;
-
+import java.io.StringReader
 import javax.swing._
-import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
 
+import org.apache.batik.dom.svg.SAXSVGDocumentFactory
 import org.apache.batik.swing._
 //import org.apache.batik.svggen._
-import org.apache.batik.dom.svg.SVGDOMImplementation;
-import org.apache.batik.util.XMLResourceDescriptor;
-
-import org.w3c.dom._
-import org.w3c.dom.svg._
+import org.apache.batik.util.XMLResourceDescriptor
 
 class ChartWindow(title: String) {
 

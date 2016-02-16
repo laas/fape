@@ -53,4 +53,4 @@ public class AbsHierarchyComp implements FlawComparator {
     public String shortName() {
         return "abs";
     }
-};
+}

@@ -2,8 +2,8 @@ package planstack.anml.model.abs.statements
 
 import planstack.anml.ANMLException
 import planstack.anml.model._
-import planstack.anml.model.abs.time.{IntervalEnd, IntervalStart, AbsTP, AbstractTemporalAnnotation}
-import planstack.anml.model.abs.{AbstractExactDelay, AbstractMaxDelay, AbstractMinDelay}
+import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation, IntervalEnd, IntervalStart}
+import planstack.anml.model.abs.{AbstractExactDelay, AbstractMinDelay}
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.concrete.{Chronicle, RefCounter}
 

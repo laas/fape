@@ -3,8 +3,6 @@ package planstack.constraints.bindings
 
 import org.scalatest.FunSuite
 
-import scala.collection.JavaConversions._
-
 class BindingsSuite extends FunSuite {
 
   /*

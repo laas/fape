@@ -1,6 +1,6 @@
 package fr.laas.fape.structures;
 
-import java.util.* ;
+import java.util.Arrays;
 
 public class DijkstraQueue<E extends Identifiable> {
 
