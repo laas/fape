@@ -1,5 +1,5 @@
 name := "svg-plot"
 
 libraryDependencies ++= Seq(
-  "batik" % "batik-swing" % "1.6-1"
+  "org.apache.xmlgraphics" % "batik-swing" % "1.8"
 )
