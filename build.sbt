@@ -14,7 +14,14 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.6",
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-  resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/"
+  resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/",
+  test in assembly := {},
+  assemblyMergeStrategy in assembly := {
+    case PathList("org", "w3c", xs @ _*)         => MergeStrategy.first
+    case x =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  }
 )
 
 lazy val fapePlanning = Project("planning", file("planning"))
@@ -42,7 +49,6 @@ lazy val svgPlot = Project("svg-plot", file("svg-plot"))
 
 lazy val structures = Project("structures", file("structures"))
      .settings(commonSettings: _*)
-
 
 packSettings
 
