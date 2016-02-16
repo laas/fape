@@ -22,7 +22,7 @@ This document will give a brief introduction to FAPE.
 Its objective is merely to give pointers and some keys on what is currently supported in FAPE and give a rough idea of how things work internally.
 
 Until a more detailed and formal description of the planner is written, we hope it will allow you to start using FAPE without to much pain.
-We are aware that this document stays very high level and that it won't answer all question that might arise when using (or worse, contributing to) FAPE. Please ask any question you have, I will be glad to answer it.
+We are aware that this document stays very high level and that it won't answer all question that might arise when using (or contributing to) FAPE. Please ask any question you have, I will be glad to answer it.
 
 
 
@@ -77,7 +77,7 @@ Several other syntaxes can be used to define functions:
     function boolean connected(Locatin a, Location b);
 
 ANML further allows to define functions whose value is constant over time. We
-could rewrite the `connected` function above to enforce that the value doesn't
+could rewrite the `connected` function above to make sure its value doesn't
 change over time: 
 
     // a constant is a function whose value doesn't change over time
@@ -238,10 +238,10 @@ The following example shows subtasks in decompositions. Those are described in t
         };
 
 
-## Action conditions
+## Tasks
 
 The last example showed a usage of actions as condition appearing in the decomposition of another one.
-This condition is satisfied if there is an action with the same name and parameters satisfying all temporal constraints on the action condition time points.
+This condition, called task, is satisfied if there is an action with the same name and parameters satisfying all temporal constraints on the action condition time points.
 
     [10,90] Go(PR2, Kitchen, Bedroom);
 
@@ -280,7 +280,7 @@ The interval must be given a local ID:
     
     // specifies that the second statement must start at least 10 times units
     // after the end of the first one
-    end(idA) < start(idB) -10;
+    end(idA) +10 < start(idB);
     
     // specifies that the second statement must end exactly 60 time units before
     // the end of the containing interval (i.e. the action if the statement is defined
@@ -288,7 +288,7 @@ The interval must be given a local ID:
     end(idB) = end -60;
 
 
-It is also possible to give temporal constraints between actions conditions. The `ordered` and `unordered` keywords are not supported but can be replaced by temporal constraints as in the following example.
+It is also possible to put temporal constraints between actions conditions. The `ordered` and `unordered` keywords are not supported but can be replaced by temporal constraints as in the following example.
 
     action PickAndPlace(Robot r, Item i) {
       pickID : Pick(r, i);
@@ -331,37 +331,71 @@ A binding constraint manager is used to enforce the equality and difference cons
 To put things short: without task conditions, FAPE is a lifted temporal planner, searching in plan-space.
 
 
-## Subtasks
+## Hierarchies
 
-ANML allows to define subtasks. The following will be true iff there is an action Pick parameterized with bob, red_cup and kitchen in the given interval.
+In addition to generative planning problems, ANML allows the
+definition of hierachical problems.  THis is done through the
+definition of of task that should be fulfilled. Such task can appear
 
-    [all] contains Pick(Bob, red_cup, kitchen);
+ - in the problem statement. In which case they are goal tasks
+   (usually refered as the initial task network in the HTN literature)
+ - in actions. In which case they are subtasks of this actions.
 
-FAPE currently has two ways of dealing with such task conditions: one inheriting from the HTN way and one where those are treated as real conditions (similar to open goals).
+Any task appearing in the plan (either as part of the problem
+definition or inserted with an action) must be refined. We say that a
+task `[t1,t2] name(a1...an)` is refined if there is an action
+`name(a1,...an)` that starts at `t1` and ends at `t2`.
 
-### The HTN Way
+The open goal and threats flaws from plan-space planning are completed
+by an *unrefined task* flaw associated to each task that has not been
+refined yet.
 
-The HTN way is to insert an action with the given parameters in the partial-plan whenever a task condition appears.
-Like in HTN, one needs to provide a root action from which the others would be derived.
+A (very) simplified view of FAPE's search procedure is:
 
-In addition to that, actions might be inserted as standalone resolvers (e.g. to solve an open goal flaw). Hence actions in the plan are not necessarily in the tree derived from the root action.
-To avoid that, the `motivated` keyword for an action enforces that an action must appear as a task condition of a higher-level action (i.e. it can not be inserted as a standalone resolver).^[The motivated keyword does *not* imply any temporal constraints.]
+ 1) refine all tasks. Starting from the initial task network insert
+ all actions necessary for all tasks to be refined. If any subtasks
+ are inserted during this process, recursively refine those as well.
+ 2) Make sure the plan is consistent by handling all open goals and
+ threats. This implies enforcing causal constraints (all actions'
+ conditions must be supported) and temporal consistency (their should
+ not be two concurrent and conflicting activities). Enforcing causal
+ constraints generally requires the introduction of new actions in the
+ partial plan.
 
-Making all actions motivated and giving a root action will result in a HTN-like search, expending a search tree from the root action.
 
-This setting is the default. It corresponds to the option `-p htn`
+Actions might be inserted as standalone resolvers (e.g. to solve an
+open goal flaw).  This differs from the HTN way where any action in
+the plan is derived from the initial task network.  To mimic this
+specificity, ANML provides the ANML keyword: a `motivated` action
+needs to refine a task (i.e. it must be part of some hierarchy).  In
+practice, it means that only non-motivated actions can be inserted
+outside of the action hierarchy.  Making all actions motivated and
+giving a root action will result in a HTN-like search, expending a
+search tree from the initial task network only.
 
 
-Unless really sure of what you do, you should avoid having both motivated actions and goals expressed as statements over state variable.
+Unless really sure of what you do, you should avoid having both
+motivated actions and goals expressed as statements over state
+variable.  The intended way of using FAPE in this setting is:
 
-The intended way of using FAPE in this setting is:
-
- - with one or more root actions
- - motivated actions should be derivable from those root action and will be the skeleton of the plan.
+ - with one or more goal tasks, forming the initial task network
+ - motivated actions should be derivable from those goal tasks and will be the skeleton of the plan.
  - non-motivated action are used to handle corner-cases that were not described in the task network.
 
-The following example shows a very simple hierarchical domain where the skeleton of the plan will derived from Transport. Note that Pick and Drop are motivated and hence can not appear outside of Transport.
-However the Move action will be freely inserted in the plan to tackle open-goals flaws on the location of the robot.
+The following example shows a very simple hierarchical domain where
+the skeleton of the plan will derive from Transport. Note that Pick
+and Drop are motivated and hence can not appear outside of Transport.
+However the Move action will be freely inserted in the plan to tackle
+open-goals flaws on the location of the robot.
+
+A typical planning process for this problem would be the following:
+
+1) Refine the `Transport` goal task by inserting a `Transport` action.
+2) Refine the `Pick` and `Drop` subtasks of the Transport action by
+inserting the actions `Pick(PR2,coffee_cup,Kitchen)` and `Drop(PR2,coffee_cup,Bedroom)`
+3) Insert a `Move(PR2, Bedroom, Kitchen)` action to support the condition of `Pick` that PR2 is in the Kitchen.
+4) Insert a `Move(PR2,Kitchen,Bedroom)` action to support the condition of `Drop` that PR2 is in the Bedromm.
+
 
     type Location;
     type NavLocation < Location;
@@ -373,84 +407,43 @@ However the Move action will be freely inserted in the plan to tackle open-goals
     };
 
     action Transport(Robot r, Item i, NavLocation a, NavLocation b) {
-      [all] contains {
-        pick : Pick(r, i, a);
-        drop : Drop(r, i, b);
-      };
-      end(pick) < start(drop);
+      motivated;
+      [start,t1] Pick(r, i, a); // first subtask
+      [t2,end] Drop(r, i, b);   // second subtask
+      t1 < t2+0;  // drop comes after pick
     };
 
     action Drop(Robot r, Item i, NavLocation l) {
       motivated;
+      duration := 5;
       [all] r.at == l;
       [all] i.at == r :-> l;
     };
 
     action Pick(Robot r, Item i, NavLocation l) {
       motivated;
+      duration := 5;
       [all] r.at == l;
       [all] i.at == l :-> r;
     };
 
     action Move(Robot r, NavLocation from, NavLocation to) {
+      duration := 5;
       [all] r.at == from :-> to;
     };
 
     // instances and initial value ....
-
-    // goal
+    instance Robot PR2;
+    instance Item coffee_cup;
+    instance NavLocation Kitchen, Bedroom;
+    [start] PR2.at := Bedroom;
+    [start] coffee_cup.at := Kitchen;
+    
+    // goal task
     Transport(PR2, coffee_cup, Kitchen, Bedroom);
 
-However, replacing the `Transport` goal by `[end] coffee_up.at == Bedroom` would fail because
+Replacing the `Transport` goal by `[end] coffee_up.at == Bedroom` would fail because
 the only resolver would be to insert a Drop action but since Drop is motivated it can not be inserted in the plan (it has to be derived from an action already present in the plan).
-
-
-### Task conditions
-
-The other way supported in FAPE is to consider a subtask statement as a task condition.
-
-It is considered true if there is an action whose time-points and parameters can be unified with those of the task condition.
-
-Hence an opened task condition is a flaw which can be solved by adding a support link between this task condition and an action (which is either added or already in the plan).
-Also, a unique action might support several task conditions.
-
-    predicate hasCar();
-    [start] hasCar := false;
-    
-    action RentCar() {
-      get : GetCar();
-      ret : ReturnCar();
-      end(get) < start(ret);
-    };
-
-    action GetCar() {
-      motivated;
-      hasCar == false :-> true;
-    };
-
-    action ReturnCar() {
-      motivated;
-      hasCar == true :-> false;
-    };
-
-
-Lets assume we have the above ANML domain and an empty partial-plan with an open-goal `hasCar == true`.
-
- - The only resolver for this flaw is to insert an action `GetCar()` supporting the condition.
- - However `GetCar` is marked as `motivated`: it must be a subtask of some other task.
-   This is a flaw for which the only resolver is to:
-     - add an action `RentCar()`
-     - Add a support link stating that the `GetCar` condition in `RentCar()` is supported
-       by our instance of `GetCar()`
- - Our instance of `RentCar` still has another unsupported task condition: `ReturnCar`.
-   Since there is no instance of a `ReturnCar` action in the plan, the only resolver for this
-   flaw is to add an instance of `ReturnCar()` and set it as supporting the task condition.
-   If an instance of `ReturnCar` was already in the partial-plan, an alternative resolver
-   would have been to set this instance as supporting the task condition.
-
-The behaviour is enabled with option `-p taskcond`.
-
-Its is the richer way of combining hierarchies with traditional goals. However it still lacks good formalization and adapted search strategies.
 
 
 ## Goals
@@ -469,8 +462,9 @@ plan consistency.
     [30,50] contains location(coffee_cup) == dining_table;
 
 
-Similarly, subtasks in the domain definition will result (depending on the option -p) in
-the addition of an action (that must be decomposed and/or have some conditions) or in the addition of an opened task conditions.
+Similarly, subtasks in the domain definition will result in the
+addition of unrefined tasks.  Those unrefined tasks will in turn
+trigger the insertion of additional actions.
 
     // example of objective tasks
     
@@ -486,9 +480,7 @@ the addition of an action (that must be decomposed and/or have some conditions) 
 
 
 
-## Search and scalability
-
-### Search: algorithm and strategies
+## Search: algorithm and strategies
 
 FAPE uses the PSP (Plan Space Planning) algorithm for search:
 
@@ -518,28 +510,7 @@ The two decisions to be made in this algorithm are:
  - which partial plan (or which resolver) to consider for the next iteration.
 
 Those are respectively call *flaw selection strategy* and *plan selection strategy*.
-The ones used in FAPE come from the venerable heuristics for lifted plan-space planning.
-
-The default *flaw selection strategy* is a least committing first: the chosen flaw is the one with least number of resolvers.
-
-The default *plan selection strategy* considers the number of flaws and the number of actions in the plan (lower is better). This results in a best first search in the space of partial plans.
-
-Other strategies are implemented in the package `core.planning.search.strategies`. Those can be tested through the `--strats` option.
-
-### Scalability
-
-You may have noticed that the above strategies are not informed: they only look at the current partial plan without making a guess at the distance towards the goal (the number flaws is only a very weak information since much more will arise). As a consequence, the scalability of FAPE is very limited in the number of actions.
-
-Some domain independent heuristics are considered for the future.
-Meanwhile you can:
-
- - carefully design a hierarchical domain to guide the search
- - write a domain-dependant heuristic
-
-
-
-**Efficiency:** Note that the JVM (and especially scala bytecode) can be very slow to warm up. If It seems like the planner takes an incredibly large time to process few states, try to warm it up first (the option `-n` allows to set a number of repetitions for the run).
-
+The different options for those strategies are describe in the command-line help.
 
 ## Temporal uncertainty handling
 
