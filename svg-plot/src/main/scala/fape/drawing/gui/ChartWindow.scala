@@ -3,13 +3,15 @@ package fape.drawing.gui
 import java.awt.{BorderLayout, Dimension}
 
 import fape.drawing.TimedCanvas
-import org.apache.batik.anim.dom.SAXSVGDocumentFactory
 
+//import java.awt._
 import java.awt.event._
 import java.io.StringReader
 import javax.swing._
 
+import org.apache.batik.dom.svg.SAXSVGDocumentFactory
 import org.apache.batik.swing._
+//import org.apache.batik.svggen._
 import org.apache.batik.util.XMLResourceDescriptor
 
 class ChartWindow(title: String) {
