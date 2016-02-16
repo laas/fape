@@ -293,7 +293,6 @@ public class Planning {
                 }
                 final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
                 final APlanner planner = PlannerFactory.getPlannerFromInitialState(plannerID, iniState, options);
-                APlanner.currentPlanner = planner; // this is ugly and comes from a hack from filip
 
                 boolean failure;
                 State sol;

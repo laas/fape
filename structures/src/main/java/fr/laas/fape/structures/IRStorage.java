@@ -3,6 +3,7 @@ package fr.laas.fape.structures;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class IRStorage {
 
     Map<Class, Map<List<Object>, Identifiable>> instancesByParams = new HashMap<>();

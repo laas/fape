@@ -2,6 +2,7 @@ package fape.core.inference;
 
 import java.util.*;
 
+@SuppressWarnings({"unchecked","rawtypes"})
 public class LeveledReasoner {
 
     public static int defSize = 10;
@@ -215,7 +216,7 @@ public class LeveledReasoner {
             int bestClause = -1;
             int bestLevel = Integer.MAX_VALUE;
             for(Enabler e : enablers[next]) {
-                if(clauses.contains(Integer.valueOf(e.clause))) {
+                if(clauses.contains(e.clause)) {
                     bestClause = e.clause;
                     break;
                 } else {

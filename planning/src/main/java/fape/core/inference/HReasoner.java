@@ -59,11 +59,7 @@ public class HReasoner<T> {
         return termIntRep.hasRepresentation(term) && varsIds[termIntRep.asInt(term)] != -1;
     }
 
-    public void addHornClause(T left, Collection<T> right) {
-        assert !locked;
-        addHornClause(left, (T[]) right.toArray());
-    }
-
+    @SafeVarargs
     public final void addHornClause(final T left, final T... right) {
         assert !locked;
         addVarIfAbsent(left);

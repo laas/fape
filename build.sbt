@@ -1,5 +1,11 @@
 name := "fape"
 
+initialize := {
+  val _ = initialize.value
+  if (sys.props("java.specification.version") != "1.8")
+    sys.error("Java 8 is required for this project.")
+}
+
 lazy val commonSettings = Seq(
   organization := "fr.laas.fape",
   version := "12-SNAPSHOT",
@@ -7,6 +13,7 @@ lazy val commonSettings = Seq(
   exportJars := true, // insert other project dependencies in oneJar
   scalaVersion := "2.11.6",
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
   resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/"
 )
 

@@ -294,6 +294,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public IList<Tuple5<Object, Object, Object, ElemStatus, Option<ID>>> constraints() {
         IList<Tuple5<Object, Object, Object, ElemStatus, Option<ID>>> list = new IList<>();
         for(Tuple4<Integer,Integer,Integer,ID> cons : allConstraints) {

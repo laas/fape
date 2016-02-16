@@ -215,16 +215,11 @@ public class Printer {
             groupedDBs.get(stateVariable(st, tdb.stateVariable)).add(tdb);
         }
         for(List<Timeline> dbs : groupedDBs.values()) {
-            Collections.sort(dbs, new Comparator<Timeline>() {
-                @Override
-                public int compare(Timeline db1, Timeline db2) {
-                    return (int) st.getEarliestStartTime(db1.getConsumeTimePoint())
-                            - (int) st.getEarliestStartTime(db2.getConsumeTimePoint());
-                }
-            });
+            Collections.sort(dbs, (Timeline db1, Timeline db2) ->
+                    st.getEarliestStartTime(db1.getConsumeTimePoint()) - st.getEarliestStartTime(db2.getConsumeTimePoint()));
         }
         List<List<String>> table = new LinkedList<>();
-//        StringBuilder sb = new StringBuilder();
+
         for(Map.Entry<String,List<Timeline>> entry : groupedDBs.entrySet()) {
             boolean first = true;
             for(Timeline db : entry.getValue()) {

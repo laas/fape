@@ -96,7 +96,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
 
     @Override
     public Integer put(K k, Integer v) {
-        if (v == null || NIL == ((int) v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
+        if (v == null || NIL == (v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
         if (!containsKey(k)) {
             ensureSpace(keyRep.asInt(k));
             numElem += 1;
@@ -160,18 +160,18 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return new IR2IntMap<K>(this);
     }
 
-    @Override @Deprecated
+    @Override @Deprecated // this might be very slow
     @SuppressWarnings("unchecked")
     public Set<K> keySet() {
-        HashSet<K> keys = new HashSet<K>();
+        HashSet<K> keys = new HashSet<>();
         for (int i = 0; i < values.length; i++)
             if (values[i] != NIL)
-                keys.add((K) keyRep.fromInt(i));
+                keys.add(keyRep.fromInt(i));
         return keys;
     }
 
     public Iterable<K> keys() {
-        return () -> { return new Iterator<K>() {
+        return () -> new Iterator<K>() {
             int cur = 0;
             public boolean hasNext() {
                 while(cur < values.length && values[cur] == NIL) cur++;
@@ -182,7 +182,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
             public K next() {
                 return keyRep.fromInt(cur++);
             }
-        }; };
+        };
     }
 
     public PrimitiveIterator.OfInt keysIterator() {

@@ -30,7 +30,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
     public TimelinesManager(TimelinesManager toCopy, State containingState) {
         listener = containingState;
         this.consumers = new LinkedList<>(toCopy.consumers);
-        this.timelines = (Timeline[]) Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
+        this.timelines = Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
         this.nextTimelineID = toCopy.nextTimelineID;
 
         if(APlanner.debugging) {

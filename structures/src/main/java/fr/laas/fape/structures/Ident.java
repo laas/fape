@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@SuppressWarnings("rawtypes")
 public @interface Ident {
     Class value();
 }

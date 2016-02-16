@@ -71,6 +71,7 @@ public class ExtensionConstraint {
      * @param domains Initial domains of the variables.
      * @return Domains restricted do values that can fulfill at least one complete binding.
      */
+    @SuppressWarnings({"unchecked","rawtypes"})
     public Set<Integer>[] restrictedDomains(Set<Integer>[] domains) {
         assert domains.length == numVars();
 
