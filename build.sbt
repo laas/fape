@@ -44,9 +44,6 @@ lazy val structures = Project("structures", file("structures"))
      .settings(commonSettings: _*)
 
 
-libraryDependencies ++= Seq(
-  "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7" % "runtime")
-
 packSettings
 
 packMain := Map(
