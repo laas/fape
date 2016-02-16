@@ -8,7 +8,7 @@ initialize := {
 
 lazy val commonSettings = Seq(
   organization := "fr.laas.fape",
-  version := "12-SNAPSHOT",
+  version := "12",
   crossPaths := true,
   exportJars := true, // insert other project dependencies in oneJar
   scalaVersion := "2.11.6",
