@@ -11,16 +11,17 @@ import java.util.stream.Collectors;
 
 public class CausalGraph {
 
-    Map<GStateVariable, Set<GStateVariable>> outEdges = new HashMap<>();
-    Map<GStateVariable, Set<GStateVariable>> inEdges = new HashMap<>();
+    Map<GStateVariable, Map<GStateVariable, Integer>> outEdges = new HashMap<>();
+    Map<GStateVariable, Map<GStateVariable, Integer>> inEdges = new HashMap<>();
 
     public void addEdge(GStateVariable from, GStateVariable to) {
-        outEdges.putIfAbsent(from, new HashSet<>());
-        inEdges.putIfAbsent(from, new HashSet<>());
-        outEdges.putIfAbsent(to, new HashSet<>());
-        inEdges.putIfAbsent(to, new HashSet<>());
-        outEdges.get(from).add(to);
-        inEdges.get(to).add(from);
+        outEdges.putIfAbsent(from, new HashMap<>());
+        inEdges.putIfAbsent(from, new HashMap<>());
+        outEdges.putIfAbsent(to, new HashMap<>());
+        inEdges.putIfAbsent(to, new HashMap<>());
+
+        outEdges.get(from).put(to, outEdges.get(from).getOrDefault(to, 0));
+        inEdges.get(to).put(from, inEdges.get(to).getOrDefault(from, 0));
     }
 
     private static class SCCStruct {
@@ -37,7 +38,7 @@ public class CausalGraph {
         data.preorders.put(v, data.c++);
         data.s.push(v);
         data.p.push(v);
-        for(GStateVariable w : outEdges.get(v)) {
+        for(GStateVariable w : outEdges.get(v).keySet()) {
             if(!data.preorders.containsKey(w)) {
                 recSCC(w, data);
             } else if(!data.compponentIDs.containsKey(w)) {
@@ -68,6 +69,27 @@ public class CausalGraph {
         }
 
         return data.componentsList;
+    }
+
+    public void makeAcyclic() {
+        for(Set<GStateVariable> scc : getStronglyConnectedComponents()) {
+            while (scc.size() > 1) {
+                int minInWeight = Integer.MAX_VALUE;
+                GStateVariable toRemove = null;
+                for (GStateVariable sv : scc) {
+                    int weight = inEdges.get(sv).values().stream().mapToInt(Integer::intValue).sum(); // TODO: this might be limited to edges strictly in the SCC
+                    if(weight < minInWeight) {
+                        minInWeight = weight;
+                        toRemove = sv;
+                    }
+                }
+                scc.remove(toRemove);
+                for(GStateVariable remaining : scc) {
+                    inEdges.get(toRemove).remove(remaining);
+                    outEdges.get(remaining).remove(toRemove);
+                }
+            }
+        }
     }
 
     public static CausalGraph getCausalGraph(APlanner planner) {
