@@ -1,9 +1,12 @@
 # FAPE: Flexible Planning and Acting Environment
 
 
-## Building FAPE
+## FAPE from source
 
-Build process requires SBT. Instructions for installing SBT can be found [here](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html).
+Build process requires SBT and Java 8. Instructions for installing SBT can be found [here](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html). FAPE is
+developed and tested on Linux but htere should be no problems in getting it ro run 
+
+When you have SBT, simply run the following command in the project directory.
 
     # Build the project with SBT
     sbt compile
@@ -14,7 +17,6 @@ Build process requires SBT. Instructions for installing SBT can be found [here](
 You can generate a script to run the FAPE planner with `sbt pack`.
 This will produce an executable at `target/pack/bin/fape`.
 To see options, run `fape --help`.
-
 
 
 ### IDE support
@@ -32,14 +34,26 @@ in IntelliJ:
     Preferences -> Build, Execution, Deployment -> Compiler ->
      Annotation Processors -> Enable annotation processing
 
+
 ## Run
 
 Once you have compiled FAPE (using sbt pack), you can run it with
 
     path/to/fape path/to/anml/problem/file
-    # e.g. target/pack/bin/fape domains/logistics-hier/logistics.x04-1.pb.anml
+    # e.g. target/pack/bin/fape planning/domains/logistics-hier/logistics.x04-1.pb.anml
 
-For more options, run `fape --help`
+For more options, run `fape --help`.
+Example ANML planning problems are available in `planning/domains`.
 
+
+
+## Precompiled version
+
+You can download a precompiled version of fape at:
+https://homepages.laas.fr/abitmonn/fape/fape-12.jar
+
+All dependencies are included in this jar and you can run it with:
+
+    java -ea -jar fape-12.jar [options] path/to/problem.anml
 
 

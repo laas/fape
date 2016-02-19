@@ -109,7 +109,7 @@ public class IRMap<K, V> implements Map<K,V> {
         HashSet<K> keys = new HashSet<K>();
         for(int i=0 ; i<values.length ; i++)
             if(values[i] != null)
-                keys.add((K) keyRep.fromInt(i));
+                keys.add(keyRep.fromInt(i));
         return keys;
     }
 

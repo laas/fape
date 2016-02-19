@@ -1,9 +1,9 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
@@ -71,9 +71,6 @@ public abstract class APlanner {
 
     public final PlanningOptions options;
     public Preprocessor preprocessor;
-
-    @Deprecated //might not work in a general scheme were multiple planner instances are instantiated
-    public static APlanner currentPlanner = null;
 
     public static boolean debugging = false;
     public final static boolean actionResolvers = true; // do we add actions to resolve flaws?

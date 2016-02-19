@@ -1,9 +1,5 @@
 package planstack
 
-import planstack.anml.model.abs.time.AbsTP
-
-import scala.reflect.ClassTag
-
 
 class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 

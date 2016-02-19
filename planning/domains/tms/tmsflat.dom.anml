@@ -22,19 +22,19 @@ constant integer treatTime(Piece p);
 
 action fire(Kiln k){
 	duration := fireTime(k);
-    [all] energy == true;
-    [start] k.ready := true ;
-    [start+1,end-1] k.ready == true; 
-	[end] k.ready == true :-> false;
+  	[all] energy == true;
+    	[start] k.ready := true ;
+    	[start+1,end-1] k.ready == true; 
+	[end-1,end] k.ready == true :-> false;
 };
 
 action bake(Kiln k, Piece p){
 	duration := bakeTime(p);
 	[all] k.ready == true;
 	[all] k.empty == true :-> true;
-    [start] p.baking := true ;
+  	[start] p.baking := true ;
 	[start+1,end-1] p.baking == true;
-	[end] {
+	[end-1,end] {
        	 p.baking == true :-> false ;
        	 p.baked == false :-> true ;
 	};
@@ -43,7 +43,7 @@ action bake(Kiln k, Piece p){
 action treat(Piece p){
 	duration := treatTime(p);
 	[all] p.baking == true;
-	[end] p.treated == false :-> true;
+	[end-1,end] p.treated == false :-> true;
 };
 
 action makeStructure(Piece p1, Piece p2){
@@ -55,7 +55,7 @@ action makeStructure(Piece p1, Piece p2){
 		p1.treated == true;
 		p2.treated == true;
 	};
-	[end] structured(p1, p2) == false :-> true;
+	[end-1,end] structured(p1, p2) == false :-> true;
 };
 
 action bakeStructure(Piece p1, Piece p2, Kiln k){
@@ -64,5 +64,5 @@ action bakeStructure(Piece p1, Piece p2, Kiln k){
 	[all] k.ready == true;
 	[all] structured(p1, p2) == true;
 	[all] k.empty == true :-> true;
-	[end] bakedStructure(p1,p2) == false :-> true;
+	[end-1,end] bakedStructure(p1,p2) == false :-> true;
 };

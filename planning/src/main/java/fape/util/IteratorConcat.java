@@ -7,7 +7,8 @@ public class IteratorConcat<T> implements Iterator<T> {
     final Iterator<T>[] iterators;
     int cur = 0;
 
-    @SafeVarargs public IteratorConcat(Iterator<T>... iterators) {
+    @SafeVarargs
+    public IteratorConcat(Iterator<T>... iterators) {
         this.iterators = iterators;
         // place cur on the first non empty iterator
         while(cur < iterators.length && !iterators[cur].hasNext()) {

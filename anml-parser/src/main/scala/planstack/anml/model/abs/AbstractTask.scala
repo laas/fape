@@ -15,6 +15,7 @@ import scala.collection.JavaConverters._
 class AbstractTask(val name:String, val args:List[LVarRef], val localId:LActRef) extends AbstractStatement(localId) {
   require(localId nonEmpty)
   require(name nonEmpty, s"Emptyname: args: ${args.mkString(", ")}  localid: $localId")
+  require(name.startsWith("t-"))
 
   def jArgs : java.util.List[LVarRef] = args.asJava
 

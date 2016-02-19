@@ -49,8 +49,8 @@ action makeStructure(Piece p1, Piece p2){
 	motivated;
 	p1!=p2;
 
-	bakeAndTreatPiece(p1);
-	bakeAndTreatPiece(p2);
+	[all] contains bakeAndTreatPiece(p1);
+	[all] contains bakeAndTreatPiece(p2);
 };
 
 action bakeAndTreatPiece(Piece p) {
@@ -65,9 +65,9 @@ action bakeStructure(Piece p1, Piece p2, Kiln k){
 	motivated;
 	p1!=p2;
 	duration := 18;
-	f : fire(k);
-	start(f) < start;
-	end < end(f);
+	[t1,t2]  fire(k);
+	t1 < start;
+	end < t2;
 	[all] k.ready == true;
 	[all] k.empty == true :-> true;
         [end-1,end] bakedStructure(p1,p2) == false :-> true;

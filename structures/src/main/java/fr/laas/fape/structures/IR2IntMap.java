@@ -70,7 +70,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
     public Integer get(Object o) {
         if (!(o instanceof Identifiable)) throw new InvalidParameterException("Parameter is not identifiable: " + o);
         if (!containsKey(o)) throw new NoSuchElementException();
-        return (Integer) values[keyRep.asInt((K) o)];
+        return values[keyRep.asInt((K) o)];
     }
 
     @SuppressWarnings("unchecked")
@@ -96,7 +96,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
 
     @Override
     public Integer put(K k, Integer v) {
-        if (v == null || NIL == ((int) v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
+        if (v == null || NIL == (v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
         if (!containsKey(k)) {
             ensureSpace(keyRep.asInt(k));
             numElem += 1;
@@ -117,7 +117,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
     }
 
     @Override public Integer putIfAbsent(K k, Integer v) {
-        if (v == null || NIL == ((int) v)) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
+        if (v == null || NIL == v) throw new InvalidParameterException("This map uses "+NIL+" to represent the absence of value");
         if(!containsKey(k))
             return put(k, v);
         else
@@ -129,7 +129,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
     public Integer remove(Object o) {
         if (!(o instanceof Identifiable)) throw new InvalidParameterException("Parameter is not identifiable: " + o);
         if (!containsKey(o)) return null; //throw new NoSuchElementException();
-        Integer val = (Integer) values[keyRep.asInt((K) o)];
+        Integer val = values[keyRep.asInt((K) o)];
         values[keyRep.asInt((K) o)] = NIL;
         numElem--;
         return val;
@@ -160,18 +160,18 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return new IR2IntMap<K>(this);
     }
 
-    @Override @Deprecated
+    @Override @Deprecated // this might be very slow
     @SuppressWarnings("unchecked")
     public Set<K> keySet() {
-        HashSet<K> keys = new HashSet<K>();
+        HashSet<K> keys = new HashSet<>();
         for (int i = 0; i < values.length; i++)
             if (values[i] != NIL)
-                keys.add((K) keyRep.fromInt(i));
+                keys.add(keyRep.fromInt(i));
         return keys;
     }
 
     public Iterable<K> keys() {
-        return () -> { return new Iterator<K>() {
+        return () -> new Iterator<K>() {
             int cur = 0;
             public boolean hasNext() {
                 while(cur < values.length && values[cur] == NIL) cur++;
@@ -182,7 +182,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
             public K next() {
                 return keyRep.fromInt(cur++);
             }
-        }; };
+        };
     }
 
     public PrimitiveIterator.OfInt keysIterator() {
@@ -208,7 +208,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         List<Integer> vals = new ArrayList<>();
         for (int val : values)
             if (val != NIL)
-                vals.add((Integer) val);
+                vals.add(val);
         return vals;
     }
 

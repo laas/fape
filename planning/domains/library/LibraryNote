@@ -1,8 +1,0 @@
-With hierarchic method there are two versions, endeed in the fisrt on we put the books on a new shelf which need to be empty  
-
-21/04/2015
-	0, taskcond, 5.161, 4.0, ./libraryflat.p3_3.pb.anml, 1569, 1838, 0, 114, hf:ogf:abs:lcf:eogf, soca
-	0, taskcond, TIMEOUT, 60.002, ./libraryhier.p1_3newShelf.pb.anml, 21961, 29099, 0, -, hf:ogf:abs:lcf:eogf, soca
-	0, taskcond, 1.059, 0.986, ./libraryhier.p1_3sort.pb.anml, 958, 1371, 0, 66, hf:ogf:abs:lcf:eogf, soca
-
-

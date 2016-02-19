@@ -1,0 +1,16 @@
+
+
+predicate at();
+
+[t] at := true;
+[t2-1,t2] at == true :-> false;
+
+t  :in start + [7,10];
+t2 :in t     + [20,30];
+
+[tt] at == true;
+tt -2 >= t+5;
+
+
+
+

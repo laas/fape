@@ -1,8 +1,6 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
-import planstack.constraints.{IRef, Ref}
-import planstack.constraints.stn.Predef._
 
 class VirtualTPSuite extends FunSuite {
 /*

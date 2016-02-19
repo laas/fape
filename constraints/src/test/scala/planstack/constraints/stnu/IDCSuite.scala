@@ -1,7 +1,6 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
-
 import planstack.constraints.stn.Predef._
 
 class IDCSuite extends FunSuite {

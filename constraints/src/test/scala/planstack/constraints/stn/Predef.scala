@@ -1,6 +1,5 @@
 package planstack.constraints.stn
 
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.TPRef
 import planstack.constraints.stnu._
 

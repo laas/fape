@@ -77,7 +77,6 @@ public class GAction implements Identifiable {
 
     public final ArrayList<GTask> subTasks;
 
-    private static int nextID = 0;
     public final int id;
 
     public GroundProblem.Invariant invariantOf(AbstractParameterizedStateVariable sv, GroundProblem gPb) {
@@ -115,7 +114,7 @@ public class GAction implements Identifiable {
     @Override
     public boolean equals(Object o) {
         if(o instanceof GAction) return o == this;
-        else if(o instanceof Integer) return this.id == (int) ((Integer) o);
+        else if(o instanceof Integer) return this.id == (Integer) o;
         else return false;
     }
 
@@ -191,7 +190,7 @@ public class GAction implements Identifiable {
         // with temporal actions, a lot of actions can be self suportive
         pre.removeAll(add);
 
-        this.id = nextID++;
+        this.id = planner.preprocessor.nextGActionID++;
         this.subTasks = initSubTasks(gPb.liftedPb, planner);
         this.task = initTask(gPb.liftedPb, planner);
         this.preconditions = new int[pre.size()];
@@ -474,7 +473,7 @@ public class GAction implements Identifiable {
         Term[] preTerms = new Term[pre.size()+1];
         preTerms[0] = new Predicate(Predicate.PredicateName.ACCEPTABLE, this);
         for(int i=0 ; i<pre.size() ; i++)
-            preTerms[i+1] = (Term) pre.get(i);
+            preTerms[i+1] = pre.get(i);
         // supported(a) :- acceptable(a), precond1, precond2, ...
         r.addHornClause(sup, preTerms);
         for(Fluent f : add)

@@ -2,10 +2,8 @@ package planstack.constraints.bindings
 
 import java.util
 
-import scala.collection
-import scala.collection.{BitSetLike, JavaConversions}
+import scala.collection.JavaConversions
 import scala.collection.JavaConverters._
-import scala.collection.immutable.BitSet
 
 
 

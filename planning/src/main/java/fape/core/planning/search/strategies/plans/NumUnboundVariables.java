@@ -37,11 +37,6 @@ public class NumUnboundVariables implements PartialPlanComparator  {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return false;
-    }
-
-    @Override
     public String shortName() {
         return "unbound";
     }

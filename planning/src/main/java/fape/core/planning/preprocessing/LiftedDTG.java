@@ -122,7 +122,7 @@ public class LiftedDTG implements ActionSupporterFinder{
     public Set<FluentType> getEffects(AbstractAction a) {
         Set<FluentType> allEffects = new HashSet<>();
         for(AbstractLogStatement s : a.jLogStatements()) {
-            allEffects.addAll(getEffects(a, (AbstractLogStatement) s));
+            allEffects.addAll(getEffects(a, s));
         }
         return allEffects;
     }

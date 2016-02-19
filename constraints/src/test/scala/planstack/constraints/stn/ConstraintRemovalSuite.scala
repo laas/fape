@@ -1,8 +1,6 @@
 package planstack.constraints.stn
 
 import org.scalatest.FunSuite
-import planstack.constraints.{Ref, MetaCSP}
-import planstack.constraints.stnu.FullSTN
 
 import scala.collection.JavaConversions._
 

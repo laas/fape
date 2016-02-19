@@ -4,8 +4,8 @@ import planstack.constraints.stnu.ElemStatus
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 import planstack.graph.printers.GraphDotPrinter
-import planstack.structures.IList
 import planstack.structures.Converters._
+import planstack.structures.IList
 
 
 /**

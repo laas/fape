@@ -2,10 +2,9 @@ package fape.acting.drawing
 
 import java.io.FileWriter
 
-import fape.drawing.{TimedCanvas, RectElem, TextLabel, ChartLine}
+import fape.drawing.{ChartLine, RectElem, TextLabel, TimedCanvas}
 
-import scala.xml.{NodeSeq, Node, Attribute}
-import scala.collection.JavaConverters._
+import scala.xml.{Attribute, Node, NodeSeq}
 
 abstract class Action(name: String, start: Int, minDur: Int, uncertainDur: Int, failedDur: Int, successDur: Int) {
 

@@ -79,4 +79,11 @@ public class Configuration {
         else
             return defaultConf.getFloat(id);
     }
+
+    public String[] getStringArray(String id) {
+        if(userDefined.userSpecified(id))
+            return userDefined.getStringArray(id);
+        else
+            return defaultConf.getStringArray(id);
+    }
 }

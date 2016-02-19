@@ -1,9 +1,9 @@
 package fape.drawing
 
 
-import scala.xml.{NodeSeq, Attribute}
-import ImplicitConversions._
 import scala.collection.JavaConverters._
+import ImplicitConversions._
+import scala.xml.NodeSeq
 
 object ImplicitConversions {
   implicit def ts(i:Int) : String = i.toString

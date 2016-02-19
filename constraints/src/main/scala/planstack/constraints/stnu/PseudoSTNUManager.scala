@@ -1,10 +1,10 @@
 package planstack.constraints.stnu
 
 import planstack.anml.model.concrete.TPRef
+import planstack.constraints.stnu.Controllability._
+import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
-import Controllability._
-import ElemStatus._
 
 protected class TConstraint[ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 

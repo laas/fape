@@ -15,6 +15,7 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Contains functions to produce human-readable string from planning objects.
@@ -84,65 +85,73 @@ public class Printer {
             return "null";
 
         String ret = act.name()+"(";
-        for(VarRef arg : act.args()) {
-            ret += variable(st, arg);
-        }
-        ret += "):"+act.id();
+        ret += String.join(", ", act.args().stream().map(v -> variable(st, v)).collect(Collectors.toList()));
+
+        ret += ") (id:"+act.id()+")";
         return ret;
     }
 
-    public static String groundedAction(State st, Action act) {
-        String ret = act.name()+"(";
-        for(int i=0 ; i<act.args().size() ; i++) {
-            VarRef arg = act.args().get(i);
-            assert st.domainSizeOf(arg) == 1 : "Action "+action(st, act)+ "is not grounded.";
-            ret += st.domainOf(arg).get(0);
-            if(i < act.args().size()-1)
-                ret += ",";
+    public static String tableAsString(List<List<String>> table, int separation) {
+        if(table.isEmpty())
+            return "";
+        List<Integer> maxSizes = new ArrayList<>();
+        int longestLine = table.stream().map(l -> l.size()).max(Integer::compare).get();
+        for(int i=0 ; i< longestLine ; i++) {
+            int maxSize = 0;
+            for(List<String> line : table)
+                if(i < line.size())
+                    maxSize = Math.max(maxSize, line.get(i).length());
+            maxSizes.add(maxSize);
         }
-        return ret + ")";
+        StringBuilder sb = new StringBuilder();
+        for(List<String> line : table) {
+            for(int i=0; i<line.size() ; i++) {
+                sb.append(line.get(i));
+                for(int j= maxSizes.get(i)-line.get(i).length() +separation ; j>0 ; j--)
+                    sb.append(" ");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     public static String actionsInState(final State st) {
-        StringBuilder sb = new StringBuilder();
         List<Action> acts = new LinkedList<>(st.getAllActions());
-        Collections.sort(acts, new Comparator<Action>() {
-            @Override
-            public int compare(Action a1, Action a2) {
-                return (int) (st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
-            }
-        });
+        Collections.sort(acts, (Action a1, Action a2) ->
+                st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+
+        List<List<String>> table = new LinkedList<>();
 
         for(Action a : acts) {
-            int start = (int) st.getEarliestStartTime(a.start());
-            int earliestEnd = (int) st.getEarliestStartTime(a.end());
+            int start = st.getEarliestStartTime(a.start());
+            int earliestEnd = st.getEarliestStartTime(a.end());
             String name = Printer.action(st, a);
             switch (a.status()) {
                 case EXECUTED:
-                    sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
+                    table.add(Arrays.asList(start+":", name, "started: "+start, "ended: "+earliestEnd+" [EXECUTED]"));
                     break;
                 case EXECUTING:
                     if(st.getDurationBounds(a).nonEmpty()) {
                         int min = st.getDurationBounds(a).get()._1();
                         int max = st.getDurationBounds(a).get()._2();
-                        sb.append(String.format("%s \t\tstarted: %s\tduration in [%s, %s]  [EXECUTING]\n", name, start, min, max));
+                        table.add(Arrays.asList(start+":", name, "started: "+start, "duration in ["+min+","+max+"] [EXECUTING]"));
                     } else {
-                        sb.append(String.format("%s \t\tstarted: %s\tmin-duration: %s  [EXECUTING]\n", name, start, earliestEnd-start));
+                        table.add(Arrays.asList(start+":", name, "started: "+start, "min-duration: "+(earliestEnd-start)+" [EXECUTING]"));
                     }
                     break;
                 case PENDING:
                     if(st.getDurationBounds(a).nonEmpty()) {
                         int min = st.getDurationBounds(a).get()._1();
                         int max = st.getDurationBounds(a).get()._2();
-                        sb.append(String.format("%s \t\tearliest-start: %s\tduration in [%s, %s]\n", name, start, min, max));
+                        table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "duration in ["+min+","+max+"]"));
                     } else {
-                        sb.append(String.format("%s \t\tearliest-start: %s\tmin-duration: %s\n", name, start, earliestEnd-start));
+                        table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "min-duration: "+(earliestEnd-start)));
                     }
                     break;
                 case FAILED:
             }
         }
-        return sb.toString();
+        return tableAsString(table, 3);
     }
 
     public static String taskCondition(State st, Task task) {
@@ -157,7 +166,10 @@ public class Printer {
     }
 
     public static String variable(State st, VarRef var) {
-        return st.csp.bindings().domainAsString(var);
+        if(st.domainSizeOf(var) == 1)
+            return st.domainOf(var).get(0);
+        else
+            return st.csp.bindings().domainAsString(var);
     }
 
     public static String bindedVariable(State st, VarRef var) {
@@ -203,54 +215,48 @@ public class Printer {
             groupedDBs.get(stateVariable(st, tdb.stateVariable)).add(tdb);
         }
         for(List<Timeline> dbs : groupedDBs.values()) {
-            Collections.sort(dbs, new Comparator<Timeline>() {
-                @Override
-                public int compare(Timeline db1, Timeline db2) {
-                    return (int) st.getEarliestStartTime(db1.getConsumeTimePoint())
-                            - (int) st.getEarliestStartTime(db2.getConsumeTimePoint());
-                }
-            });
+            Collections.sort(dbs, (Timeline db1, Timeline db2) ->
+                    st.getEarliestStartTime(db1.getConsumeTimePoint()) - st.getEarliestStartTime(db2.getConsumeTimePoint()));
         }
-        StringBuilder sb = new StringBuilder();
+        List<List<String>> table = new LinkedList<>();
+
         for(Map.Entry<String,List<Timeline>> entry : groupedDBs.entrySet()) {
-            int offset = entry.getKey().length();
-            sb.append(entry.getKey());
             boolean first = true;
             for(Timeline db : entry.getValue()) {
                 boolean newDb = true;
                 for(ChainComponent cc : db.chain) {
                     for (LogStatement s : cc.statements) {
-                        if(!first)
-                            for(int i=0;i<offset;i++) sb.append(" ");
+                        List<String> line = new LinkedList<>();
+                        if(first)
+                            line.add(entry.getKey());
+                        else
+                            line.add("");
                         first = false;
-                        if(newDb) sb.append(" | ");
-                        else sb.append("   ");
+                        if(newDb) line.add("|");
+                        else line.add("");
                         newDb = false;
-                        sb.append("[");
-                        sb.append(st.getEarliestStartTime(s.start()));
-                        sb.append(",");
-                        sb.append(st.getEarliestStartTime(s.end()));
-                        sb.append("] ");
+                        line.add("["+st.getEarliestStartTime(s.start())+","+st.getEarliestStartTime(s.end())+"]");
                         if(s instanceof Persistence) {
-                            sb.append(" == " + variable(st, s.endValue()));
+                            line.add("== " + variable(st, s.endValue()));
                         } else if(s instanceof Assignment) {
-                            sb.append(" := " + variable(st, s.endValue()));
+                            line.add(":= " + variable(st, s.endValue()));
                         } else if(s instanceof Transition) {
-                            sb.append(" == " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
+                            line.add("== " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
                         }
                         Action act = st.getActionContaining(s);
-                        if(act != null) {
-                            sb.append("    From: ");
-                            sb.append(action(st, act));
-                        }
-                        sb.append("\n");
+                        if(act != null)
+                            line.add("  From: "+action(st, act));
+                        else
+                            line.add("  From: problem definition");
+
+                        table.add(line);
                     }
                 }
+                table.add(Collections.emptyList());
             }
-            sb.append("\n");
         }
 
-        return sb.toString();
+        return tableAsString(table,1);
     }
 
     public static String temporalDatabase(State st, Timeline db) {

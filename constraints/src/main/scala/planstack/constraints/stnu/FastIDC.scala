@@ -1,14 +1,13 @@
 package planstack.constraints.stnu
 
 import planstack.constraints.stn.LabeledEdgeWithID
+import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.structures.Converters._
 import planstack.structures.IList
 
 import scala.collection.mutable.ListBuffer
-
-import planstack.structures.Converters._
-import Controllability._
 
 class FastIDC[ID](protected[stnu] var edg : EDG[ID],
                   protected[stnu] val todo : ListBuffer[Edge[ID]],

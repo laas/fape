@@ -44,6 +44,7 @@ import java.awt.geom.Point2D;
  * @author <a href="http://jheer.org">jeffrey heer</a>
  */
 public class TreeView extends Display {
+    private static final long serialVersionUID = 2664235176541354654L;
 
     public static final String TREE_CHI = "/mnt/data/root-links/PreciseHome/chi-ontology.xml.gz";
 
@@ -240,113 +241,9 @@ public class TreeView extends Display {
         stl.setOrientation(orientation);
     }
 
-    public int getOrientation() {
-        return m_orientation;
-    }
-
-    // ------------------------------------------------------------------------
-/*
-    public static void main(String argv[]) {
-        String infile = TREE_CHI;
-        String label = "name";
-        if ( argv.length > 1 ) {
-            infile = argv[0];
-            label = argv[1];
-        }
-        JComponent treeview = demo(infile, label);
-
-        JFrame frame = new JFrame("p r e f u s e  |  t r e e v i e w");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setContentPane(treeview);
-        frame.pack();
-        frame.setVisible(true);
-    }
-
-    public static JComponent demo() {
-        return demo(TREE_CHI, "name");
-    }
-
-    public static JComponent demo(String datafile, final String label) {
-        final String desc = "description";
-        Color BACKGROUND = Color.WHITE;
-        Color FOREGROUND = Color.BLACK;
-
-        Tree t = null;
-        try {
-            t = (Tree)new TreeMLReader().readGraph(datafile);
-        } catch ( Exception e ) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        Table nodeData = new Table();
-        Table edgeData = new Table(0,1);
-        nodeData.addColumn("flag", boolean.class);
-        nodeData.addColumn("name", String.class);
-        nodeData.addColumn("description", String.class);
-        edgeData.addColumn(Tree.DEFAULT_SOURCE_KEY, int.class);
-        edgeData.addColumn(Tree.DEFAULT_TARGET_KEY, int.class);
-        edgeData.addColumn("LABEL", String.class);
-
-        t = new Tree(nodeData, edgeData);
-        Node n1 = t.addRoot();
-        n1.setString("name", "[1]");
-        n1.setString("description", "azedqsd qsd qsd qs d qsd qsd qs dqs d ");
-        Node n2 = t.addChild(n1);
-        n2.setString("name", "[2]");
-        Node n3 = t.addChild(n1);
-        n3.setString("name", "[3]");
-        // create a new treemap
-        final TreeView tview = new TreeView(t, label);
-        tview.setBackground(BACKGROUND);
-        tview.setForeground(FOREGROUND);
-
-        // create a search panel for the tree map
-//        JSearchPanel search = new JSearchPanel(tview.getVisualization(),
-//                treeNodes, Visualization.SEARCH_ITEMS, LABEL, true, true);
-//        search.setShowResultCount(true);
-//        search.setBorder(BorderFactory.createEmptyBorder(5,5,4,0));
-//        search.setFont(FontLib.getFont("Tahoma", Font.PLAIN, 11));
-//        search.setBackground(BACKGROUND);
-//        search.setForeground(FOREGROUND);
-
-        final JFastLabel title = new JFastLabel("                 ");
-        title.setPreferredSize(new Dimension(350, 20));
-        title.setVerticalAlignment(SwingConstants.BOTTOM);
-        title.setBorder(BorderFactory.createEmptyBorder(3,0,0,0));
-        title.setFont(FontLib.getFont("Tahoma", Font.PLAIN, 16));
-        title.setBackground(BACKGROUND);
-        title.setForeground(FOREGROUND);
-
-        tview.addControlListener(new ControlAdapter() {
-            public void itemEntered(VisualItem item, MouseEvent e) {
-                if ( item.canGetString(desc) )
-                    title.setText(item.getString(desc));
-            }
-            public void itemExited(VisualItem item, MouseEvent e) {
-                title.setText(null);
-            }
-        });
-
-        Box box = new Box(BoxLayout.X_AXIS);
-        box.add(Box.createHorizontalStrut(10));
-        box.add(title);
-        box.add(Box.createHorizontalGlue());
-//        box.add(search);
-        box.add(Box.createHorizontalStrut(3));
-        box.setBackground(BACKGROUND);
-
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BACKGROUND);
-        panel.setForeground(FOREGROUND);
-        panel.add(tview, BorderLayout.CENTER);
-        panel.add(box, BorderLayout.SOUTH);
-        return panel;
-    }
-*/
-    // ------------------------------------------------------------------------
 
     public class OrientAction extends AbstractAction {
+        private static final long serialVersionUID = 4657965221542315L;
         private int orientation;
 
         public OrientAction(int orientation) {

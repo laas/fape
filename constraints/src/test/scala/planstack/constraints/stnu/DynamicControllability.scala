@@ -1,8 +1,6 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
-import planstack.graph.core.LabeledEdge
-import planstack.graph.printers.NodeEdgePrinter
 import planstack.constraints.stn.Predef._
 
 

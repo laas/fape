@@ -1,13 +1,27 @@
 name := "fape"
 
+initialize := {
+  val _ = initialize.value
+  if (sys.props("java.specification.version") != "1.8")
+    sys.error("Java 8 is required for this project.")
+}
+
 lazy val commonSettings = Seq(
   organization := "fr.laas.fape",
-  version := "12-SNAPSHOT",
+  version := "12",
   crossPaths := true,
   exportJars := true, // insert other project dependencies in oneJar
   scalaVersion := "2.11.6",
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
-  resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/"
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
+  resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/",
+  test in assembly := {},
+  assemblyMergeStrategy in assembly := {
+    case PathList("org", "w3c", xs @ _*)         => MergeStrategy.first
+    case x =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  }
 )
 
 lazy val fapePlanning = Project("planning", file("planning"))
@@ -35,10 +49,6 @@ lazy val svgPlot = Project("svg-plot", file("svg-plot"))
 
 lazy val structures = Project("structures", file("structures"))
      .settings(commonSettings: _*)
-
-
-libraryDependencies ++= Seq(
-  "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7" % "runtime")
 
 packSettings
 

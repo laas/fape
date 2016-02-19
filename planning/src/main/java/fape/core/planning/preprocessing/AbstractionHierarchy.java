@@ -1,6 +1,5 @@
 package fape.core.planning.preprocessing;
 
-import fape.core.planning.planner.APlanner;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -86,7 +85,9 @@ public class AbstractionHierarchy {
      * 0 is the top level.
      */
     public int getLevel(Function func) {
-        assert fluentsGroup.containsKey(func) : "No recorded level for: "+func;
+        if(fluentsGroup.isEmpty())
+            return 0; // there seem to be no action model
+        assert fluentsGroup.containsKey(func) : "State variable \""+func+"\" does not appear in the abstraction hierarchy";
         return fluentsGroup.get(func);
     }
 

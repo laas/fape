@@ -49,7 +49,13 @@ object StatementsFactory {
     val (optStatement, constraints) = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
 
     annotatedStatement.annotation match {
-      case None => (optStatement, constraints)
+      case None =>
+        optStatement match {
+          case Some(ls :AbstractLogStatement) if !ls.sv.func.isConstant =>
+            println("Warning: log statement with no temporal annotation: "+ls)
+          case _ =>
+        }
+        (optStatement, constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
         assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task.")
@@ -73,7 +79,7 @@ object StatementsFactory {
           // it should be an action, but we can't check since this action might not have been parsed yet
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
           val e = normalizeExpr(s.term, context, pb)
-          val task = new AbstractTask(s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
+          val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
           (Some(task), List(AbstractMinDelay(task.start, task.end, 1)))
         }
       }

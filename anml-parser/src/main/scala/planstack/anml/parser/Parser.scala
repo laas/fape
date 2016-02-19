@@ -209,9 +209,12 @@ object AnmlParser extends JavaTokenParsers {
     * `start(xx) < end + x`, `start = end -5`, ...
     */
   lazy val tempConstraint : Parser[TemporalConstraint] =
-    timepointRef~("<"|"=")~timepointRef~opt(constantAddition)<~";" ^^ {
-      case tp1~op~tp2~None => ReqTemporalConstraint(tp1, op, tp2, 0)
-      case tp1~op~tp2~Some(delta) => ReqTemporalConstraint(tp1, op, tp2, delta)
+    timepointRef~opt(constantAddition)~("="|"<="|">="|"<"|">")~timepointRef~opt(constantAddition)<~";" ^^ {
+      case tp1~d1~"<"~tp2~d2 => ReqTemporalConstraint(tp1, "<", tp2, d2.getOrElse(0)-d1.getOrElse(0))
+      case tp1~d1~"="~tp2~d2 => ReqTemporalConstraint(tp1, "=", tp2, d2.getOrElse(0)-d1.getOrElse(0))
+      case tp1~d1~"<="~tp2~d2 => ReqTemporalConstraint(tp1, "<", tp2, d2.getOrElse(0)-d1.getOrElse(0)+1)
+      case tp1~d1~">"~tp2~d2 => ReqTemporalConstraint(tp2, "<", tp1, d1.getOrElse(0)-d2.getOrElse(0))
+      case tp1~d1~">="~tp2~d2 => ReqTemporalConstraint(tp2, "<", tp1, d1.getOrElse(0)-d2.getOrElse(0)+1)
     } |
       timepointRef~":in"~timepointRef~"+"~"["~decimalNumber~","~decimalNumber~"]"<~";" ^^ {
         case dst~":in"~src~"+"~"["~min~","~max~"]" => ContingentConstraint(src,dst,min.toInt,max.toInt)

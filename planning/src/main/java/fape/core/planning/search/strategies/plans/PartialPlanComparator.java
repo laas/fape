@@ -6,8 +6,8 @@ import java.util.Comparator;
 
 public interface PartialPlanComparator extends Comparator<State> {
 
-    public abstract String shortName();
+    String shortName();
 
     /** Gives a human readable string of the metrics used to evaluate a state, and their values. */
-    public abstract String reportOnState(State st);
+    String reportOnState(State st);
 }

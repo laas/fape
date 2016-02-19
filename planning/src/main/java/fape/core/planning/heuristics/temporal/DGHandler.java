@@ -2,8 +2,8 @@ package fape.core.planning.heuristics.temporal;
 
 
 import fape.core.planning.grounding.*;
-import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;

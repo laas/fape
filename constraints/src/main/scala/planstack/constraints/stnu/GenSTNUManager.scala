@@ -1,19 +1,11 @@
 package planstack.constraints.stnu
 
-import java.util
-
-import net.openhft.koloboke.collect.map.hash.{HashIntObjMap, HashIntIntMap, HashIntIntMaps, HashIntObjMaps}
-import net.openhft.koloboke.collect.map.{IntIntMap, IntObjMap}
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.stn.{ISTN, GenSTNManager}
-import ElemStatus._
-
+import planstack.constraints.stn.{GenSTNManager, ISTN}
 import planstack.constraints.stnu.Controllability._
-import planstack.structures.IList
+import planstack.constraints.stnu.ElemStatus._
 import planstack.structures.Converters._
-
-import scala.collection.JavaConversions
+import planstack.structures.IList
 
 case class Constraint[ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option[ID]) {
   override def toString =

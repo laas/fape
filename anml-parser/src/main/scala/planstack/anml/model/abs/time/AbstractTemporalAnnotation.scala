@@ -1,6 +1,5 @@
 package planstack.anml.model.abs.time
 
-import planstack.anml.model.LocalRef
 import planstack.anml.parser
 
 

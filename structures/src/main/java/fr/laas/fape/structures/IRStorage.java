@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class IRStorage {
 
     Map<Class, Map<List<Object>, Identifiable>> instancesByParams = new HashMap<>();

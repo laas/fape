@@ -38,11 +38,6 @@ public class SOCA implements PartialPlanComparator, Heuristic {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return false;
-    }
-
-    @Override
     public String shortName() {
         return "soca";
     }

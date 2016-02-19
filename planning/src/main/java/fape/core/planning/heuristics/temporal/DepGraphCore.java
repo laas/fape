@@ -1,11 +1,11 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.core.planning.heuristics.temporal.TempFluent.DGFluent;
 import fape.core.planning.states.StateExtension;
-import fr.laas.fape.structures.*;
+import fr.laas.fape.structures.IR2IntMap;
+import fr.laas.fape.structures.IRSet;
 
 import java.util.*;
-
-import fape.core.planning.heuristics.temporal.TempFluent.DGFluent;
 
 public class DepGraphCore implements DependencyGraph {
 

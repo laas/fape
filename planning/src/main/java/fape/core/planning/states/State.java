@@ -217,7 +217,7 @@ public class State implements Reporter {
     }
 
     private List<Handler> getHandlers() {
-        return pl != null ? pl.getHandlers() : Collections.EMPTY_LIST;
+        return pl != null ? pl.getHandlers() : Collections.emptyList();
     }
 
     /**
@@ -244,6 +244,7 @@ public class State implements Reporter {
         extensions.add(ext);
     }
     public Stream<StateExtension> extensions() { return extensions.stream(); }
+    @SuppressWarnings("rawtypes")
     public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
 
 
@@ -573,7 +574,7 @@ public class State implements Reporter {
     private void apply(Chronicle mod, TemporalConstraint tc) {
 
         if(tc instanceof MinDelayConstraint) {
-            csp.stn().enforceMinDelay(((MinDelayConstraint) tc).src(), ((MinDelayConstraint) tc).dst(), ((MinDelayConstraint) tc).minDelay());
+            csp.stn().enforceMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay());
         } else if(tc instanceof ParameterizedMinDelayConstraint) {
             ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
             assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
@@ -882,21 +883,20 @@ public class State implements Reporter {
         Collections.sort(acts, new Comparator<Action>() {
             @Override
             public int compare(Action a1, Action a2) {
-                return (int) (getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
+                return (getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
             }
         });
         List<ChartLine> lines = new LinkedList<>();
 
         for (Action a : acts) {
-            int start = (int) getEarliestStartTime(a.start());
-            int earliestEnd = (int) getEarliestStartTime(a.end());
+            int start = getEarliestStartTime(a.start());
+            int earliestEnd = getEarliestStartTime(a.end());
             String name = Printer.action(this, a);
             TextLabel label = new TextLabel(name, "action-name");
 
             switch (a.status()) {
                 case EXECUTED:
                     lines.add(new ChartLine(label, new RectElem(start, earliestEnd - start, "successful")));
-//                    sb.append(String.format("%s started:%s ended:%s  [EXECUTED]\n", name, start, earliestEnd));
                     break;
                 case EXECUTING:
                 case PENDING:
@@ -906,10 +906,8 @@ public class State implements Reporter {
                         lines.add(new ChartLine(label,
                                 new RectElem(start, min, "pending"),
                                 new RectElem(start + min + 0.1f, max - min, "uncertain")));
-//                        sb.append(String.format("%s \t\tstarted: %s\tduration in [%s, %s]  [EXECUTING]\n", name, start, min, max));
                     } else {
                         lines.add(new ChartLine(label, new RectElem(start, earliestEnd - start, "pending")));
-//                        sb.append(String.format("%s \t\tstarted: %s\tmin-duration: %s  [EXECUTING]\n", name, start, earliestEnd-start));
                     }
                     break;
                 case FAILED:
@@ -1084,7 +1082,7 @@ public class State implements Reporter {
 
     public List<Task> getOpenTasks() { return taskNet.getOpenTasks(); }
 
-    public List<Action> getUnmotivatedActions() { return taskNet.getNonSupportedMotivatedActions(); };
+    public List<Action> getUnmotivatedActions() { return taskNet.getNonSupportedMotivatedActions(); }
 
     /**
      *  Unifies the time points of the action condition and those of the action, and add
@@ -1190,7 +1188,7 @@ public class State implements Reporter {
     public void setActionExecuting(ActRef actRef, int startTime) {
         Action a = getAction(actRef);
         csp.stn().removeConstraintsWithID(a.start());
-        enforceConstraint(pb.start(), a.start(), (int) startTime, (int) startTime);
+        enforceConstraint(pb.start(), a.start(), startTime, startTime);
         a.setStatus(ActionStatus.EXECUTING);
     }
 

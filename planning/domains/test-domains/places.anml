@@ -1,0 +1,42 @@
+
+
+type loc;
+type boat;
+
+function loc_state state(loc l);
+function loc at(boat b);
+
+
+type loc_state;
+instance loc_state free, dirty, clean, occupied;
+
+instance loc l1, l2;
+instance boat b1, b2;
+
+action go(boat b, loc l1, loc l2) {
+  duration := 10;
+  [start,start+1] state(l1) == occupied :-> dirty;
+  
+  [end-1,end] {
+    state(l2) == clean :-> occupied;
+  };
+  [all] at(b) == l1 :-> l2;
+};
+
+action clean(loc l) {
+  duration := 10;
+  [all] state(l) == dirty :-> clean;
+};
+
+[start] {
+  state(l1) := occupied;
+  state(l2) := occupied;
+  at(b1) := l1;
+  at(b2) := l2;
+};
+
+
+[100] at(b1) == l2;
+
+[1000] state(l2) := dirty;
+

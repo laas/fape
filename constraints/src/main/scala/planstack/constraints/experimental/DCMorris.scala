@@ -2,20 +2,16 @@ package planstack.constraints.experimental
 
 import java.util.Optional
 import java.util.concurrent.TimeoutException
+import java.{util => ju}
 
 import planstack.anml.model.concrete.{GlobalRef, TPRef}
 import planstack.constraints.experimental.DCMorris._
-import planstack.constraints.stnu.{ElemStatus, Constraint, PseudoSTNUManager}
+import planstack.constraints.stnu.{Constraint, ElemStatus}
 
-import scala.collection.immutable.Set
-import scala.collection.mutable.{HashMap => MMap}
-import scala.collection.mutable.{ArrayBuffer => Buff}
-import scala.collection.mutable.{PriorityQueue => Queue}
-import scala.collection.mutable.{Set => MSet}
-import scala.language.implicitConversions
-
-import java.{util => ju}
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Set
+import scala.collection.mutable.{ArrayBuffer => Buff, HashMap => MMap, PriorityQueue => Queue, Set => MSet}
+import scala.language.implicitConversions
 
 object DCMorris {
   type Node = Int

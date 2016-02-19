@@ -12,5 +12,5 @@ public interface FlawComparator extends Comparator<Flaw> {
     /**
      * @return A short (maw 15 chars) and human understandable name for the strategy.
      */
-    public abstract String shortName();
+    String shortName();
 }

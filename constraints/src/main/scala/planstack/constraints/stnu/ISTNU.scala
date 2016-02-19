@@ -1,7 +1,6 @@
 package planstack.constraints.stnu
 
 import planstack.constraints.stn.ISTN
-import planstack.constraints.stnu.Controllability._
 
 trait ISTNU[ID] extends ISTN[ID] {
 

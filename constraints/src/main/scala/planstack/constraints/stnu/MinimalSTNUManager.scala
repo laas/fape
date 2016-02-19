@@ -1,16 +1,11 @@
 package planstack.constraints.stnu
 
-import net.openhft.koloboke.collect.map.hash._
-import net.openhft.koloboke.collect.map.{IntIntMap, IntObjMap}
-import planstack.UniquelyIdentified
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.Kolokobe
-import planstack.constraints.stn.{STNIncBellmanFord, ISTN}
+import planstack.constraints.stn.{ISTN, STNIncBellmanFord}
 import planstack.constraints.stnu.ElemStatus._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
-import planstack.structures.IList
-import planstack.structures.Converters._
+
 import scala.language.implicitConversions
 
 class MinimalSTNUManager[ID](val stn:ISTN[ID],

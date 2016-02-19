@@ -1,6 +1,6 @@
 package planstack.graph.core
 
-import planstack.graph.printers.{NodeEdgePrinterInterface, GraphDotPrinter, NodeEdgePrinter}
+import planstack.graph.printers.{GraphDotPrinter, NodeEdgePrinterInterface}
 
 import scala.collection.JavaConversions._
 

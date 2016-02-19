@@ -7,12 +7,10 @@ libraryDependencies ++= Seq(
   "org.projectlombok" % "lombok" % "1.16.6"
 )
 
-mainClass := Some("fape.Planning")
 
-com.github.retronym.SbtOneJar.oneJarSettings
+mainClass := Some("fape.Planning")
 
 exportJars := true
 
-mainClass in oneJar := Some("fape.Planning")
 
 

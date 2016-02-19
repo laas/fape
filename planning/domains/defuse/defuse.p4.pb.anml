@@ -1,0 +1,23 @@
+
+instance agent a1,a2,a3;
+instance bomb b1;
+instance location l1;
+
+lifting_dur(a1) := 3;
+lifting_dur(a2) := 3;
+lifting_dur(a3) := 50;
+
+[start] {
+	available(a1) := true;
+	available(a2) := true;
+//	available(a3) := true;
+	loc(a1) := l1;
+	loc(a2) := l1;
+	loc(a3) := l1;
+	loc(b1) := l1;
+	is_accessible(b1) := false;
+};
+
+[300] available(a3) := true;
+
+[500] defused(b1) == true;
