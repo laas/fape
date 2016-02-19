@@ -21,4 +21,11 @@ public class HTSPHandler implements Handler {
         salesman.hc(st);
     }
 
+    @Override
+    public void stateBindedToPlanner(State st, APlanner pl) {
+        CausalGraph cg = CausalGraph.getCausalGraph(pl);
+        cg.getStronglyConnectedComponents();
+        System.out.println(cg);
+    }
+
 }

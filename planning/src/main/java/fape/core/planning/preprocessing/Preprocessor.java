@@ -70,7 +70,7 @@ public class Preprocessor {
 
     public EffSet<GAction> getAllActions() {
         if(allActions == null) {
-            allActions = new EffSet<GAction>(groundActionIntRepresentation());
+            allActions = new EffSet<>(groundActionIntRepresentation());
             allActions.addAll(getGroundProblem().allActions());
         }
         return allActions;
