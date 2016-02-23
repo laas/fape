@@ -4,7 +4,6 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.util.Counter;
-import sun.java2d.xr.MutableInteger;
 
 import static fape.core.planning.grounding.GAction.*;
 
