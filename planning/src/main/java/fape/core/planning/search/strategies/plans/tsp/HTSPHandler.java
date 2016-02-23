@@ -24,6 +24,7 @@ public class HTSPHandler implements Handler {
         cg.makeAcyclic();
         List<Set<GStateVariable>> comps2 = cg.getStronglyConnectedComponents();
         System.out.println(cg);
+        cg.getTopologicalLevels();
     }
 
 }

@@ -3,6 +3,8 @@ package fape.core.planning.search.strategies.plans.tsp;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
+import fape.util.Counter;
+import sun.java2d.xr.MutableInteger;
 
 import static fape.core.planning.grounding.GAction.*;
 
@@ -13,6 +15,10 @@ public class CausalGraph {
 
     Map<GStateVariable, Map<GStateVariable, Integer>> outEdges = new HashMap<>();
     Map<GStateVariable, Map<GStateVariable, Integer>> inEdges = new HashMap<>();
+
+    public Iterable<GStateVariable> getStateVariables() {
+        return inEdges.keySet();
+    }
 
     public void addEdge(GStateVariable from, GStateVariable to) {
         outEdges.putIfAbsent(from, new HashMap<>());
@@ -92,6 +98,40 @@ public class CausalGraph {
         }
     }
 
+    public Map<GStateVariable, Integer> getTopologicalLevels() {
+        HashMap<GStateVariable,Counter> numInEdges = new HashMap<>();
+        HashMap<GStateVariable,Integer> topoLevel = new HashMap<>();
+        Stack<GStateVariable> nextLevel = new Stack<>();
+        int levelCounter = 0;
+
+        for(GStateVariable sv : getStateVariables()) {
+            numInEdges.put(sv, new Counter(inEdges.get(sv).size()));
+            if(numInEdges.get(sv).getValue() == 0)
+                nextLevel.add(sv);
+        }
+
+        Stack<GStateVariable> currentLevel = nextLevel;
+        nextLevel = new Stack<>();
+        while(!currentLevel.isEmpty()) {
+            GStateVariable sv = currentLevel.pop();
+            topoLevel.put(sv, levelCounter);
+
+            for(GStateVariable child : outEdges.get(sv).keySet()) {
+                numInEdges.get(child).decrement();
+                if(numInEdges.get(child).getValue() == 0)
+                    nextLevel.push(child);
+            }
+
+            if(currentLevel.isEmpty()) {
+                currentLevel = nextLevel;
+                nextLevel = new Stack<>();
+                levelCounter++;
+            }
+        }
+        assert numInEdges.values().stream().allMatch(x -> x.getValue() == 0);
+        return topoLevel;
+    }
+
     public static CausalGraph getCausalGraph(APlanner planner) {
         CausalGraph cg = new CausalGraph();
         for(GAction ga : planner.preprocessor.getAllActions()) {
@@ -107,4 +147,6 @@ public class CausalGraph {
         }
         return cg;
     }
+
+
 }
