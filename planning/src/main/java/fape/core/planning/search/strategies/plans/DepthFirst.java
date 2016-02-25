@@ -5,7 +5,7 @@ import fape.core.planning.states.State;
 /**
  * Depth first search strategy: the deepest plan is always selected first.
  */
-public class DepthFirst implements PartialPlanComparator {
+public class DepthFirst extends PartialPlanComparator {
     @Override
     public String shortName() {
         return "dfs";
@@ -17,7 +17,17 @@ public class DepthFirst implements PartialPlanComparator {
     }
 
     @Override
-    public int compare(State state, State state2) {
-        return state2.depth - state.depth;
+    public float g(State st) {
+        return 10000f - st.depth;
+    }
+
+    @Override
+    public float h(State st) {
+        return 0f;
+    }
+
+    @Override
+    public float hc(State st) {
+        return 0;
     }
 }

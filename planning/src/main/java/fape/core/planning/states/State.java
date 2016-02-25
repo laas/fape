@@ -11,10 +11,12 @@ import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
+import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
+import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
@@ -49,12 +51,8 @@ public class State implements Reporter {
 
     public float h = -1, g = -1, f=-1;
 
-    private static int idCounter = 0;
-
-    /**
-     * Unique identifier of the database.
-     */
-    public final int mID = idCounter++;
+    public static int idCounter = 0;
+    public final int mID;
 
     /**
      * Depth of the state in the search tree
@@ -112,6 +110,8 @@ public class State implements Reporter {
 
     final List<StateExtension> extensions;
 
+    public List<Flaw> flaws = null;
+
     class PotentialThreat {
         private final int id1, id2;
         public PotentialThreat(Timeline tl1, Timeline tl2) {
@@ -153,6 +153,7 @@ public class State implements Reporter {
      * constructed from from the existing states
      */
     public State(AnmlProblem pb, Controllability controllability) {
+        this.mID = idCounter++;
         this.pb = pb;
         this.controllability = controllability;
         this.refCounter = new RefCounter(pb.refCounter());
@@ -180,7 +181,8 @@ public class State implements Reporter {
      *
      * @param st State to copy
      */
-    public State(State st) {
+    public State(State st, int id) {
+        this.mID = id;
         pb = st.pb;
         pl = st.pl;
         this.controllability = st.controllability;
@@ -212,8 +214,8 @@ public class State implements Reporter {
 
     public void setDeadEnd() { isDeadEnd = true; }
 
-    public State cc() {
-        return new State(this);
+    public State cc(int newID) {
+        return new State(this, newID);
     }
 
     private List<Handler> getHandlers() {
@@ -876,6 +878,22 @@ public class State implements Reporter {
         // this check is quite expensive
 //        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
         return verifiedThreats;
+    }
+
+    /**
+     * Returns a sorted list of flaws in this state.
+     * Flaws are identified using the provided finders and sorted with the provided comparator.
+     */
+    public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
+        if(flaws == null) {
+            flaws = new LinkedList<>();
+
+            for (FlawFinder fd : finders)
+                flaws.addAll(fd.getFlaws(this, pl));
+
+            Collections.sort(flaws, comparator);
+        }
+        return flaws;
     }
 
     public TimedCanvas getCanvasOfActions() {

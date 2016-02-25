@@ -4,7 +4,7 @@ import fape.core.planning.states.State;
 
 import java.util.HashMap;
 
-public class OpenGoals implements PartialPlanComparator {
+public class OpenGoals extends PartialPlanComparator {
 
     HashMap<Integer, Integer> numOpenGoals = new HashMap<>();
 
@@ -25,7 +25,17 @@ public class OpenGoals implements PartialPlanComparator {
     }
 
     @Override
-    public int compare(State state, State t1) {
-        return numOpenGoals(t1) - numOpenGoals(state);
+    public float g(State st) {
+        return 0;
+    }
+
+    @Override
+    public float h(State st) {
+        return numOpenGoals(st);
+    }
+
+    @Override
+    public float hc(State st) {
+        return numOpenGoals(st);
     }
 }

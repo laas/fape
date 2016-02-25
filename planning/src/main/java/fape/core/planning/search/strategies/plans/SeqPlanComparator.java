@@ -1,6 +1,7 @@
 package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
+import fape.core.planning.states.StateWrapper;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -11,18 +12,15 @@ import java.util.List;
  * The basic algorithm for comparing two partial plans is to apply the comparators in sequence until it results in an ordering
  * between the two plans. If no comparator is found, the plans are left unordered.
  */
-public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
+public class SeqPlanComparator extends PartialPlanComparator {
 
     final List<PartialPlanComparator> comparators;
-    final Heuristic heuristic;
 
     public SeqPlanComparator(List<PartialPlanComparator> comparators) {
-        this.comparators = new LinkedList<>(comparators);
-        if(comparators.get(0) instanceof Heuristic)
-            heuristic = (Heuristic) comparators.get(0);
-        else
-            heuristic = null;
+        for(int i=0 ; i<comparators.size() ; i++)
+            assert i == comparators.get(i).id : "Comparators are not given the right index.";
 
+        this.comparators = new LinkedList<>(comparators);
     }
 
     @Override
@@ -45,7 +43,7 @@ public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
     }
 
     @Override
-    public int compare(State state, State state2) {
+    public int compare(StateWrapper state, StateWrapper state2) {
         for(PartialPlanComparator comp : comparators) {
             int res = comp.compare(state, state2);
             if(res != 0) {
@@ -53,30 +51,23 @@ public class SeqPlanComparator implements PartialPlanComparator, Heuristic {
             }
         }
 
-        // no ranking done, use mID to make deterministic
-        // this gives a depth first flavour by giving higher priory to states with
-        return state2.mID - state.mID;
-    }
-
-    public boolean definesHeuristicsValues() {
-        return heuristic != null;
+        // no ranking done, use mID to make it deterministic
+        // this gives a depth first with higher pirority tho the latest states
+        return state2.getID() - state.getID();
     }
 
     @Override
     public float g(State st) {
-        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
-        return heuristic.g(st);
+        return comparators.get(0).g(st);
     }
 
     @Override
     public float h(State st) {
-        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
-        return heuristic.h(st);
+        return comparators.get(0).h(st);
     }
 
     @Override
     public float hc(State st) {
-        assert heuristic != null : "Error: the first plan comparator does not implement heuristic.";
-        return heuristic.hc(st);
+        return comparators.get(0).hc(st);
     }
 }
