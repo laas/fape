@@ -12,8 +12,6 @@ public class HTSPHandler implements Handler {
 
     @Override
     public void apply(State st, StateLifeTime time, APlanner planner) {
-        Htsp salesman = new Htsp();
-        salesman.hc(st);
     }
 
     @Override

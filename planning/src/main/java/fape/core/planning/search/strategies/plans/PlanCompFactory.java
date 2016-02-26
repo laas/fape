@@ -41,10 +41,13 @@ public class PlanCompFactory {
                     compList.add(new RPGComp(planner));
                     break;
                 case "tsp":
-                    compList.add(new Htsp());
+                    compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf("dtg")));
                     break;
                 default:
-                    throw new FAPEException("Unrecognized plan comparator option: " + compID);
+                    if(compID.startsWith("tsp-"))
+                        compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf(compID.replace("tsp-",""))));
+                    else
+                        throw new FAPEException("Unrecognized plan comparator option: " + compID);
             }
         }
         return new SeqPlanComparator(compList);

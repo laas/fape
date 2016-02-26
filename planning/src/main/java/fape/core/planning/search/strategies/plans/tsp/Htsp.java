@@ -10,6 +10,7 @@ import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
+import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.concrete.Action;
@@ -26,11 +27,22 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
+    public enum DistanceEvaluationMethod {dtg, cea}
+
     private static int dbgLvl = 0;
     static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
     static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
     static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
     static void log4(String s) { if(dbgLvl>=4) System.out.println(s); }
+
+    final TSPRoutePlanner routePlanner;
+
+    public Htsp(DistanceEvaluationMethod method) {
+        if(method == DistanceEvaluationMethod.dtg)
+            routePlanner = new DTGRoutePlanner();
+        else
+            throw new FAPEException("Unsupported distance evaluation method for Htsp: "+method);
+    }
 
 
     public Map<Integer,Integer> makespans = new HashMap<>();
@@ -100,7 +112,6 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                                 return pp.getFluent(s.sv, ((GTransition)s).from);
                         }).collect(Collectors.toSet());
 
-                TSPRoutePlanner routePlanner = new DTGRoutePlanner();
                 TSPRoutePlanner.Result plan = routePlanner.getPlan(targets, ps, st);
                 if(plan != null) {
                     additionalCost += plan.getCost();
@@ -111,8 +122,6 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                     break;
                 }
             }
-
-
         }
         int makespan = ps.labels.values().stream().map(list -> list.getLast()).map(lbl -> lbl.getUntil()).max(Integer::compare).get();
         log1("State: "+st.mID+"  cost: "+additionalCost);
