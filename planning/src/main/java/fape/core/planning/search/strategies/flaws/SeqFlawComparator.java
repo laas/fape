@@ -3,6 +3,7 @@ package fape.core.planning.search.strategies.flaws;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -48,8 +49,9 @@ public class SeqFlawComparator implements FlawComparator {
                 return res;
             }
         }
+        throw new FAPEException("Unable to order those flaws");
         // no resolver could rank those flaws.
-        return 0;
+//        return 0;
     }
 
     @Override

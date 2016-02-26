@@ -1,5 +1,7 @@
 package fape.core.planning.states;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -8,17 +10,32 @@ public class StateWrapper {
 
     public StateWrapper(StateWrapper parent) {
         this.parent = parent;
+        this.stronglyReferencedState = null;
         this.mID = State.idCounter++;
     }
     public StateWrapper(State initialState) {
         this.parent = null;
-        this.state = initialState;
+        this.stronglyReferencedState = initialState;
         this.mID = initialState.mID;
     }
 
     final int mID;
 
+
+
+    private final State stronglyReferencedState;
+    private Reference<State> state = null;
+    private final StateWrapper parent;
+
+    /** Operations to apply to the parent's state to get a complete state. */
     List<Consumer<State>> operations = new ArrayList<>();
+
+    /**
+     * Index of the the next operation to apply to state (all operations below this
+     * index were already applied
+     */
+    int nextOperation = 0;
+
     List<Float> hs = new ArrayList<>();
     List<Float> gs = new ArrayList<>();
     List<Float> hcs = new ArrayList<>();
@@ -45,17 +62,27 @@ public class StateWrapper {
         hcs.set(heuristicID, value);
     }
 
-    int nextOperation = 0;
-    private State state = null;
-    private final StateWrapper parent;
+    private State getBaseState() {
+        if(stronglyReferencedState != null) {
+            assert state == null;
+            return stronglyReferencedState;
+        } else if(state != null && state.get() != null) {
+            return state.get();
+        } else {
+            assert parent != null;
+            State st = parent.getState().cc(mID);
+            nextOperation = 0;
+            state = new SoftReference<>(st);
+            return st;
+        }
+    }
 
     public State getState() {
+        State s = getBaseState();
         while(nextOperation < operations.size()) {
-            if(state == null)
-                state = parent.getState().cc(mID);
-            operations.get(nextOperation++).accept(state);
+            operations.get(nextOperation++).accept(s);
         }
-        return state;
+        return s;
     }
 
     public void addOperation(Consumer<State> operation) {
@@ -63,8 +90,8 @@ public class StateWrapper {
     }
 
     public int getID() {
-        if(state != null)
-            assert state.mID == this.mID;
+        if(state != null && state.get() != null)
+            assert state.get().mID == this.mID;
         return this.mID;
     }
 }

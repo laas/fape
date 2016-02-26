@@ -330,8 +330,8 @@ public abstract class APlanner {
             StateWrapper next = new StateWrapper(st);
             final int currentResolver = resolverID;
             next.addOperation(s -> {
-                Resolver res = getFlaws(st).get(0)
-                        .getResolvers(st.getState(), this)
+                List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
+                Resolver res = fs.get(0).getResolvers(s, this)
                         .get(currentResolver);
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
