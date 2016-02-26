@@ -84,7 +84,7 @@ public class GoalNetwork {
                 } else if(ps.labels.containsKey(gls.sv)) {
                     InstanceRef condVal = gls instanceof GAction.GPersistence ?
                             ((GAction.GPersistence) gls).value : ((GAction.GTransition) gls).from;
-                    if(ps.labels.get(gls.sv).getVal().equals(condVal))
+                    if(ps.latestLabel(gls.sv).getVal().equals(condVal))
                         res.add(pair(gls, dg));
                 }
             }

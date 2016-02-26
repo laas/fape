@@ -4,7 +4,6 @@ import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.heuristics.temporal.DependencyGraph;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.strategies.plans.Heuristic;
@@ -12,7 +11,6 @@ import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.Pair;
-import fr.laas.fape.structures.DijkstraQueue;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
@@ -28,11 +26,16 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    private static int dbgLvl = 1;
-    private static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
-    private static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
-    private static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
-    private static void log4(String s) { if(dbgLvl>=4) System.out.println(s); }
+    private static int dbgLvl = 0;
+    static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
+    static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
+    static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
+    static void log4(String s) { if(dbgLvl>=4) System.out.println(s); }
+
+
+    public Map<Integer,Integer> makespans = new HashMap<>();
+    public Map<Integer,Integer> additionalCosts = new HashMap<>();
+    public Map<Integer,Integer> existingCosts = new HashMap<>();
 
     @Override
     public String shortName() {
@@ -41,16 +44,15 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
     @Override
     public String reportOnState(State st) {
-        return " ";
+        return "g: "+g(st)+"hc: "+hc(st)+"  makespan: "+makespans.get(st.mID);
+    }
+    @Override
+    public int compare(State s1, State s2) {
+        return (int) (f(s1) - f(s2));
     }
 
     @Override
-    public int compare(State state, State t1) {
-        return 0;
-    }
-
-    @Override
-    public float g(State st) { return 0; }
+    public float g(State st) { hc(st); return existingCosts.get(st.mID); }
 
     @Override
     public float h(State st) { return hc(st); }
@@ -67,10 +69,15 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
     @Override
     public float hc(State st) {
+        if(additionalCosts.containsKey(st.mID))
+            return additionalCosts.get(st.mID);
+
         Preprocessor pp = st.pl.preprocessor;
         GoalNetwork gn = goalNetwork(st);
         PartialState ps = new PartialState();
-        Map<GStateVariable, String> res = new HashMap<>();
+
+        int additionalCost = 0;
+        int existingCost = 0;
 
         while(!gn.isEmpty()) {
             List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
@@ -79,9 +86,9 @@ public class Htsp implements PartialPlanComparator, Heuristic {
             if(!sat.isEmpty()) {
                 Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
                 ps.progress(p.value1, p.value2);
+                if(!(p.value1 instanceof GPersistence))
+                    existingCost++;
                 gn.setAchieved(p.value2, p.value1);
-                String base = res.getOrDefault(p.value1.sv, p.value1.sv.toString());
-                res.put(p.value1.sv, base +"   "+p.value2.earliest+ p.value1);
             } else { // expand with dijkstra
                 // defines a set of target fluents; We can stop whn one of those is reached
                 Set<Fluent> targets = gn.getActiveGoals().stream()
@@ -93,80 +100,38 @@ public class Htsp implements PartialPlanComparator, Heuristic {
                                 return pp.getFluent(s.sv, ((GTransition)s).from);
                         }).collect(Collectors.toSet());
 
-                DijkstraQueue<Fluent> q = new DijkstraQueue<>(pp.store.getIntRep(Fluent.class));
-                Map<Fluent, GLogStatement> predecessors = new HashMap<>();
-
-                for(GStateVariable sv : pp.store.getInstances(GStateVariable.class)) {
-                    int baseTime = -1;
-                    if(ps.labels.containsKey(sv)) {
-                        PartialState.Label l = ps.labels.get(sv);
-                        q.insert(pp.getFluent(sv, l.getVal()), l.getUntil());
-                        baseTime = l.getUntil();
-                    }
-
-                    for(GAssignment ass : pp.getDTG(sv).getAssignments(st.addableActions)) {
-                        Fluent f = pp.getFluent(sv, ass.to);
-                        if(!q.contains(f)) {
-                            q.insert(f, baseTime + ass.minDuration);
-                            predecessors.put(f, ass);
-                        }
-                    }
-                }
-                log2("  Targets: "+targets);
-                Fluent sol = null;
-                while(!q.isEmpty() && sol == null) {
-                    Fluent cur = q.poll();
-                    log3("  dij current: "+cur+"  "+q.getCost(cur));
-                    if(targets.contains(cur)) {
-                        sol = cur;
-                    } else {
-                        DTG dtg = pp.getDTG(cur.sv);
-                        for(GTransition trans : dtg.outTransitions(cur.value, st.addableActions)) {
-                            assert cur == pp.getFluent(trans.sv, trans.from);
-                            Fluent succ = pp.getFluent(trans.sv, trans.to);
-                            if(!q.hasCost(succ)) { // never inserted
-                                q.insert(succ, q.getCost(cur)+trans.minDuration);
-                                predecessors.put(succ, trans);
-                            } else if(q.getCost(succ) > q.getCost(cur)+trans.minDuration) {
-                                q.update(succ, q.getCost(cur)+trans.minDuration);
-                                predecessors.put(succ, trans);
-                            }
-                        }
-                    }
-                }
-                if(sol != null) {
-                    ps.labels.put(sol.sv, new PartialState.Label(sol.value, q.getCost(sol), q.getCost(sol)));
-                    Fluent cur = sol;
-                    LinkedList<GLogStatement> preds = new LinkedList<>();
-                    while (cur != null) { // extract predecessor list
-                        if(!predecessors.containsKey(cur))
-                            cur = null;
-                        else {
-                            preds.addFirst(predecessors.get(cur));
-                            if(predecessors.get(cur) instanceof GTransition)
-                                cur = pp.getFluent(cur.sv, ((GTransition) predecessors.get(cur)).from);
-                            else
-                                cur = null;
-                        }
-                    }
-                    String base = res.getOrDefault(sol.sv, sol.sv+" ");
-                    res.put(sol.sv, base + "  "+preds+"  ");
-                    log2("Dij choice: "+sol);
+                TSPRoutePlanner routePlanner = new DTGRoutePlanner();
+                TSPRoutePlanner.Result plan = routePlanner.getPlan(targets, ps, st);
+                if(plan != null) {
+                    additionalCost += plan.getCost();
+                    plan.getTransformation().accept(ps);
                 } else {
-                    log2("DEAD-END!!!!");
+                    // was not able to find a plan, put a very high cost
+                    additionalCost = 99999;
                     break;
                 }
             }
 
 
         }
-        log1("State: "+st.mID);
-        for(GStateVariable sv : res.keySet())
-            log1(sv+ res.get(sv).replaceAll("\\Q"+sv+"\\E",""));
+        int makespan = ps.labels.values().stream().map(list -> list.getLast()).map(lbl -> lbl.getUntil()).max(Integer::compare).get();
+        log1("State: "+st.mID+"  cost: "+additionalCost);
+        log1(" makespan: "+makespan);
+        for(GStateVariable sv : ps.labels.keySet()) {
+            String res = "  "+sv.toString()+" ";
+            for(PartialState.Label lbl : ps.labels.get(sv))
+                if(lbl.getVal() != null)
+                    res += String.format("  [%d,%d] %s", lbl.getSince(), lbl.getUntil(), lbl.getVal());
+            log1(res);
+        }
+
+        additionalCosts.put(st.mID, additionalCost);
+        existingCosts.put(st.mID, existingCost);
+        makespans.put(st.mID, makespan);
 
         log1("");
 
-        return 0;
+        return additionalCost;
     }
 
 

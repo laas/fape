@@ -2,42 +2,64 @@ package fape.core.planning.search.strategies.plans.tsp;
 
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Value;
 import planstack.anml.model.concrete.InstanceRef;
+import sun.security.jgss.GSSToken;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+
 import static fape.core.planning.grounding.GAction.*;
 
 public class PartialState {
 
-    @Value public static class Label {
-        public final InstanceRef val;
-        public final int since;
-        public final int until;
+    @Data @AllArgsConstructor
+    public static class Label {
+        public InstanceRef val;
+        public int since;
+        public int until;
     }
 
-    Map<GStateVariable, Label> labels = new HashMap<>();
+    Map<GStateVariable, LinkedList<Label>> labels = new HashMap<>();
+
+    public Label latestLabel(GStateVariable sv) {
+        return labels.get(sv).getLast();
+    }
 
     public void progress(GAction.GLogStatement statement, GoalNetwork.DisjunctiveGoal g) {
-        Label prev = labels.getOrDefault(statement.sv, new Label(null, -1, -1));
-        Label next;
+        labels.putIfAbsent(statement.sv, new LinkedList<>(Collections.singletonList(new Label(null, -1, -1))));
+        Label prev = labels.get(statement.sv).getLast();
         if(statement instanceof GAssignment) {
-            next = new Label(((GAssignment) statement).to, prev.until+statement.minDuration, prev.until+statement.minDuration);
+            setValue(statement.sv, ((GAssignment) statement).to, prev.until+statement.minDuration, 0);
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
         } else if(statement instanceof GPersistence) {
             assert prev.getVal() == ((GPersistence) statement).value;
             int start = Math.max(g.earliest, prev.getSince());
-            int end = Math.max(start+statement.minDuration, prev.until);
+            setValue(statement.sv, ((GPersistence) statement).value, start, statement.minDuration);
             g.setEarliest(start);
-            next = new Label(prev.val, prev.since, end);
         } else {
             assert statement instanceof GTransition;
             assert ((GTransition) statement).from == prev.getVal();
+            int start = Math.max(prev.until,g.getEarliest());
+            setValue(statement.sv, ((GTransition) statement).to, start +statement.minDuration, 0);
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
-            next = new Label(((GTransition) statement).to, prev.until+statement.minDuration, prev.until+statement.minDuration);
         }
+    }
 
-        labels.put(statement.sv, next);
+    public void setValue(GStateVariable sv, InstanceRef value, int earliest, int duration) {
+        assert value != null;
+        labels.putIfAbsent(sv, new LinkedList<>(Collections.singletonList(new Label(null, -1, -1))));
+        Label prev = labels.get(sv).getLast();
+        if(prev.getVal() != null && prev.getVal().equals(value)) {
+            int endsAtLeast = Math.max(earliest, prev.getSince()) + duration;
+            if(endsAtLeast > prev.getUntil())
+                prev.until = endsAtLeast;
+        } else {
+            // value change, append a new label
+            int earliestStart = Math.max(earliest, prev.getUntil()+1);
+            labels.get(sv).add(new Label(value, earliestStart, earliestStart+duration));
+        }
     }
 }

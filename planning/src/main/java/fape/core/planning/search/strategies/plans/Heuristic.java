@@ -12,4 +12,8 @@ public interface Heuristic {
 
     /** Estimation of the distance to go (in terms of search) */
     float hc(State st);
+
+    default float f(State st) {
+        return g(st) + h(st);
+    }
 }
