@@ -86,7 +86,7 @@ public class Planning {
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag('r')
                                 .setLongFlag("reachability")
-                                .setDefault("true")
+                                .setDefault("false")
                                 .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
                                         "consists in an analysis on a ground version of the problem, checking both causal and" +
                                         "hierarchical properties of a partial plan."),
@@ -94,7 +94,7 @@ public class Planning {
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
                                 .setLongFlag("dep-graph")
-                                .setDefault("none")
+                                .setDefault("full")
                                 .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
                                 "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
                                 " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
@@ -120,7 +120,7 @@ public class Planning {
                                 .setLongFlag("plan-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("rplan,soca")
+                                .setDefault("tsp,soca")
                                 .setHelp("A comma separated list of plan selectors, ordered by priority." +
                                 "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
                                 "with the highest priority is expanded next. The main options are: \n" +
