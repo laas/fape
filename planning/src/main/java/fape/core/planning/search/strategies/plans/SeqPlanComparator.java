@@ -17,9 +17,10 @@ public class SeqPlanComparator extends PartialPlanComparator {
     final List<PartialPlanComparator> comparators;
 
     public SeqPlanComparator(List<PartialPlanComparator> comparators) {
-        for(int i=0 ; i<comparators.size() ; i++)
-            assert i == comparators.get(i).id : "Comparators are not given the right index.";
-
+        for(int i=0 ; i<comparators.size() ; i++) {
+            assert comparators.get(i).id == -1 || i == comparators.get(i).id : "Comparators are not given the right index.";
+            comparators.get(i).id = i;
+        }
         this.comparators = new LinkedList<>(comparators);
     }
 
@@ -52,7 +53,7 @@ public class SeqPlanComparator extends PartialPlanComparator {
         }
 
         // no ranking done, use mID to make it deterministic
-        // this gives a depth first with higher pirority tho the latest states
+        // this gives a depth first with higher priority to the latest states
         return state2.getID() - state.getID();
     }
 
@@ -69,5 +70,19 @@ public class SeqPlanComparator extends PartialPlanComparator {
     @Override
     public float hc(State st) {
         return comparators.get(0).hc(st);
+    }
+    @Override
+    public float h(StateWrapper sw) {
+        return comparators.get(0).h(sw);
+    }
+
+    @Override
+    public float g(StateWrapper sw) {
+        return comparators.get(0).g(sw);
+    }
+
+    @Override
+    public float hc(StateWrapper sw) {
+        return comparators.get(0).hc(sw);
     }
 }

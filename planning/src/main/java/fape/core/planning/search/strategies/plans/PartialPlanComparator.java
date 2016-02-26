@@ -7,29 +7,29 @@ import java.util.Comparator;
 
 public abstract class PartialPlanComparator implements Comparator<StateWrapper>, Heuristic {
 
-    int id;
+    int id = -1;
 
     abstract String shortName();
 
     /** Gives a human readable string of the metrics used to evaluate a state, and their values. */
     abstract String reportOnState(State st);
 
-    final public float h(StateWrapper sw) {
+    public float h(StateWrapper sw) {
         if(!sw.isRecordedH(id))
             sw.setH(id, h(sw.getState()));
         return sw.getH(id);
     }
-    final public float g(StateWrapper sw) {
+    public float g(StateWrapper sw) {
         if(!sw.isRecordedG(id))
             sw.setG(id, g(sw.getState()));
         return sw.getG(id);
     }
-    final public float hc(StateWrapper sw) {
+    public float hc(StateWrapper sw) {
         if(!sw.isRecordedHC(id))
             sw.setHC(id, hc(sw.getState()));
         return sw.getHC(id);
     }
-    final public float f(StateWrapper sw) {
+    public float f(StateWrapper sw) {
         return g(sw) + h(sw);
     }
 
