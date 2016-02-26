@@ -409,7 +409,7 @@ public abstract class APlanner {
         if(resolvers.size() == 1) {
             st.addOperation(s -> {
                 Resolver res = s.getFlaws(options.flawFinders, flawComparator(s)).get(0).getResolvers(s, this).get(0);
-                if(!res.apply(s, this))
+                if(!applyResolver(s, res))
                     s.setDeadEnd();
             });
             TinyLogger.LogInfo(st.getState(), "     [%s] ff: Adding %s", st.getID(), resolvers.get(0));
