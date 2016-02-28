@@ -49,9 +49,8 @@ public class SeqFlawComparator implements FlawComparator {
                 return res;
             }
         }
-        throw new FAPEException("Unable to order those flaws");
-        // no resolver could rank those flaws.
-//        return 0;
+        // Flaws must be totally ordered to make sure we can rebuild a State.
+        throw new FAPEException("Unable to totally order those flaws: "+f1+" "+f2);
     }
 
     @Override

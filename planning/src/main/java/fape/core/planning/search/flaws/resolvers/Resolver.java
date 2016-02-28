@@ -40,7 +40,9 @@ public abstract class Resolver implements Comparable<Resolver> {
             return -cmp;
         } else {
             assert this.getClass() == o.getClass();
-            return -this.compareWithSameClass(o);
+            int result = this.compareWithSameClass(o);
+            assert result != 0 : "There must be a total and deterministic order between the resolvers.";
+            return -result;
         }
     }
 }
