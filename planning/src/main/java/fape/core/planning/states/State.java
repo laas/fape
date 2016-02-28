@@ -16,7 +16,6 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
-import fape.core.planning.search.strategies.flaws.FlawComparator;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
@@ -48,8 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class State implements Reporter {
-
-    public float h = -1, g = -1, f=-1;
 
     public static int idCounter = 0;
     public final int mID;
