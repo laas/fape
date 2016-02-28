@@ -85,7 +85,7 @@ public class State implements Reporter {
 
     public final AnmlProblem pb;
 
-    /** Current planner instane handling this state */
+    /** Current planner instance handling this state */
     public APlanner pl;
 
     public final Controllability controllability;

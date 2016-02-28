@@ -5,7 +5,7 @@ import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
-import fape.core.planning.states.StateWrapper;
+import fape.core.planning.states.SearchNode;
 import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;
 import fr.laas.fape.structures.IRSet;
@@ -74,8 +74,8 @@ public class DGHandler implements fape.core.planning.search.Handler {
     }
 
     @Override
-    public void apply(StateWrapper stateWrapper, StateLifeTime time, APlanner planner) {
-        stateWrapper.addOperation(st -> {
+    public void apply(SearchNode searchNode, StateLifeTime time, APlanner planner) {
+        searchNode.addOperation(st -> {
             if (time == StateLifeTime.SELECTION) {
                 propagateNetwork(st, planner);
             }

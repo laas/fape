@@ -6,26 +6,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class StateWrapper {
+/**
+ * Node of the search tree.
+ *
+ * A node is a description to build a State :
+ *  - a link to the preceding node in the search tree from which a base state can be obtained
+ *  - a list of operation to apply to the base state.
+ *
+ * The State object is cached using soft references. If the JVM runs out of memory, cached states
+ * are reclaimed by the garbage collector. The least recently used state is typically reclaimed first.
+ *
+ * The search node also provides a caching mechanism for heuristic values
+ * (to avoid rebuilding a complete state to extract the heuristic value).
+ */
+public class SearchNode {
 
-    public StateWrapper(StateWrapper parent) {
+    public SearchNode(SearchNode parent) {
         this.parent = parent;
         this.stronglyReferencedState = null;
         this.mID = State.idCounter++;
     }
-    public StateWrapper(State initialState) {
+    public SearchNode(State initialState) {
         this.parent = null;
         this.stronglyReferencedState = initialState;
         this.mID = initialState.mID;
     }
 
+    /** Identifier of the contained state. */
     final int mID;
 
-
-
+    /** A strong reference to a state that we cannot afford to forget about.
+     * This is used at least for the root of the search tree */
     private final State stronglyReferencedState;
-    private Reference<State> state = null;
-    private final StateWrapper parent;
+
+    /** Typically a soft reference to a state. */
+    private Reference<State> forgettableState = null;
+
+    /** Predecessor in hte search tree */
+    private final SearchNode parent;
 
     /** Operations to apply to the parent's state to get a complete state. */
     List<Consumer<State>> operations = new ArrayList<>();
@@ -36,6 +54,7 @@ public class StateWrapper {
      */
     int nextOperation = 0;
 
+    /** List of 'h', 'g', 'hc' heuristic values */
     List<Float> hs = new ArrayList<>();
     List<Float> gs = new ArrayList<>();
     List<Float> hcs = new ArrayList<>();
@@ -62,17 +81,20 @@ public class StateWrapper {
         hcs.set(heuristicID, value);
     }
 
+    /**
+     * Returns the base state from which the complete state can be built.
+     */
     private State getBaseState() {
         if(stronglyReferencedState != null) {
-            assert state == null;
+            assert forgettableState == null;
             return stronglyReferencedState;
-        } else if(state != null && state.get() != null) {
-            return state.get();
+        } else if(forgettableState != null && forgettableState.get() != null) {
+            return forgettableState.get();
         } else {
             assert parent != null;
             State st = parent.getState().cc(mID);
             nextOperation = 0;
-            state = new SoftReference<>(st);
+            forgettableState = new SoftReference<>(st);
             return st;
         }
     }
@@ -85,13 +107,16 @@ public class StateWrapper {
         return s;
     }
 
+    /**
+     * Appends a new operation necessary to build the complete state.
+     */
     public void addOperation(Consumer<State> operation) {
         operations.add(operation);
     }
 
     public int getID() {
-        if(state != null && state.get() != null)
-            assert state.get().mID == this.mID;
+//        if(forgettableState != null && forgettableState.get() != null)
+//            assert forgettableState.get().mID == this.mID; // this can cause a failure if the GC is invoked between those two lines
         return this.mID;
     }
 }

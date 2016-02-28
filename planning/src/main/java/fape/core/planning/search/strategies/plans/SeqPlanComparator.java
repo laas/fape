@@ -1,7 +1,7 @@
 package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.states.State;
-import fape.core.planning.states.StateWrapper;
+import fape.core.planning.states.SearchNode;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class SeqPlanComparator extends PartialPlanComparator {
     }
 
     @Override
-    public int compare(StateWrapper state, StateWrapper state2) {
+    public int compare(SearchNode state, SearchNode state2) {
         for(PartialPlanComparator comp : comparators) {
             int res = comp.compare(state, state2);
             if(res != 0) {
@@ -72,17 +72,17 @@ public class SeqPlanComparator extends PartialPlanComparator {
         return comparators.get(0).hc(st);
     }
     @Override
-    public float h(StateWrapper sw) {
+    public float h(SearchNode sw) {
         return comparators.get(0).h(sw);
     }
 
     @Override
-    public float g(StateWrapper sw) {
+    public float g(SearchNode sw) {
         return comparators.get(0).g(sw);
     }
 
     @Override
-    public float hc(StateWrapper sw) {
+    public float hc(SearchNode sw) {
         return comparators.get(0).hc(sw);
     }
 }

@@ -5,7 +5,6 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
-import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
@@ -13,7 +12,7 @@ import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.states.StateWrapper;
+import fape.core.planning.states.SearchNode;
 import fape.drawing.gui.ChartWindow;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
@@ -41,7 +40,7 @@ public abstract class APlanner {
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new StateWrapper(initialState));
+        queue.add(new SearchNode(initialState));
 
         if(options.usePlanningGraphReachability) {
             initialState.pgr = preprocessor.getFeasibilityReasoner();
@@ -63,7 +62,7 @@ public abstract class APlanner {
         this.queue = new PriorityQueue<>(100, this.stateComparator());
 
         State initState = new State(pb, controllability);
-        queue.add(new StateWrapper(initState));
+        queue.add(new SearchNode(initState));
         initState.setPlanner(this);
 
         if(options.usePlanningGraphReachability)
@@ -96,7 +95,7 @@ public abstract class APlanner {
 
     public abstract ActionSupporterFinder getActionSupporterFinder();
 
-    protected final PriorityQueue<StateWrapper> queue;
+    protected final PriorityQueue<SearchNode> queue;
 
     /**
      * This method is invoked whenever a causal link is added and offers a way
@@ -125,7 +124,7 @@ public abstract class APlanner {
 
     public List<Handler> getHandlers() { return options.handlers; }
 
-    public List<Flaw> getFlaws(StateWrapper st) {
+    public List<Flaw> getFlaws(SearchNode st) {
         return st.getState().getFlaws(options.flawFinders, flawComparator(st.getState()));
     }
 
@@ -161,7 +160,7 @@ public abstract class APlanner {
 
     public State bestFirstSearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
 
-        List<StateWrapper> toRestore = new LinkedList<>(queue);
+        List<SearchNode> toRestore = new LinkedList<>(queue);
 
         int currentMaxDepth;
         if(incrementalDeepening)
@@ -230,7 +229,7 @@ public abstract class APlanner {
             }
 
             //get the best state and continue the search
-            StateWrapper st = queue.remove();
+            SearchNode st = queue.remove();
 
             // let all handlers know that this state was selected for expansion
             for(Handler h : options.handlers)
@@ -253,8 +252,8 @@ public abstract class APlanner {
                 TinyLogger.LogInfo(st.getState());
                 return st.getState();
             } else if(st.getState().depth < maxDepth) {
-                List<StateWrapper> children = expand(st, flaws);
-                for(StateWrapper child : children) {
+                List<SearchNode> children = expand(st, flaws);
+                for(SearchNode child : children) {
                     queue.add(child);
                 }
             }
@@ -267,7 +266,7 @@ public abstract class APlanner {
      * @param flaws List of flaws in the partial plan. Those are asked to avoid duplication of work.
      * @return      All consistent children as a result of the expansion.
      */
-    public List<StateWrapper> expand(StateWrapper st, List<Flaw> flaws) {
+    public List<SearchNode> expand(SearchNode st, List<Flaw> flaws) {
         for(Flaw f : flaws)
             f.getNumResolvers(st.getState(), this);
 
@@ -322,12 +321,12 @@ public abstract class APlanner {
 
         TinyLogger.LogInfo(st.getState(), " Flaw: %s", f);
 
-        List<StateWrapper> children = new LinkedList<>();
+        List<SearchNode> children = new LinkedList<>();
 
         // compute all valid children
 //        for (Resolver res : resolvers) {
         for(int resolverID=0 ; resolverID < resolvers.size() ; resolverID++) {
-            StateWrapper next = new StateWrapper(st);
+            SearchNode next = new SearchNode(st);
             final int currentResolver = resolverID;
             next.addOperation(s -> {
                 List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
@@ -387,7 +386,7 @@ public abstract class APlanner {
      * This function looks at flaws and resolvers in the state and fixes flaws with a single resolver.
      * It does that at most "maxForwardState"
      */
-    public boolean fastForward(StateWrapper st, int maxForwardStates) {
+    public boolean fastForward(SearchNode st, int maxForwardStates) {
         List<Flaw> flaws = getFlaws(st);
 
         if(maxForwardStates == 0)
@@ -443,7 +442,7 @@ public abstract class APlanner {
         assert !incrementalDeepening : "Incremental Deepening is not supported in A-Epsilon search.";
 
         // stores the admissible children of the last expanded node.
-        PriorityQueue<StateWrapper> AX = new PriorityQueue<StateWrapper>(10, stateComparator());
+        PriorityQueue<SearchNode> AX = new PriorityQueue<SearchNode>(10, stateComparator());
 
 
         if (queue.isEmpty()) {
@@ -464,7 +463,7 @@ public abstract class APlanner {
                 return null;
             }
 
-            StateWrapper current;
+            SearchNode current;
             if(AX.isEmpty()) {
                 // get best in open
                 current = queue.poll();
@@ -496,9 +495,9 @@ public abstract class APlanner {
                 return current.getState();
             } else if(current.getState().depth < maxDepth) {
                 // expand the state
-                List<StateWrapper> children = expand(current, flaws);
+                List<SearchNode> children = expand(current, flaws);
                 AX.clear();
-                for(StateWrapper child : children) {
+                for(SearchNode child : children) {
                     queue.add(child);
                     // add admissible children to AX for next iteration
                     if(f(child) < fThreshold) {
@@ -513,9 +512,9 @@ public abstract class APlanner {
         }
     }
 
-    public float h(StateWrapper st){ return stateComparator().h(st); }
-    public float g(StateWrapper st){ return stateComparator().g(st); }
-    public float f(StateWrapper st) { return g(st) + h(st); }
+    public float h(SearchNode st){ return stateComparator().h(st); }
+    public float g(SearchNode st){ return stateComparator().g(st); }
+    public float f(SearchNode st) { return g(st) + h(st); }
 
     private ChartWindow chartWindow = null;
     public void drawState(State st) {

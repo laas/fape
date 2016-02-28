@@ -2,7 +2,7 @@ package fape.core.planning.search;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
-import fape.core.planning.states.StateWrapper;
+import fape.core.planning.states.SearchNode;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
 
@@ -35,7 +35,7 @@ public interface Handler {
      * Informs the handler that the given state has reached a given point in its life.
      * The handler can start any computation he wants to do at that point.
      */
-    default void apply(StateWrapper st, StateLifeTime time, APlanner planner) {}
+    default void apply(SearchNode st, StateLifeTime time, APlanner planner) {}
 
     default void actionInserted(Action a, State st, APlanner planner) {}
     default void taskInserted(Task a, State st, APlanner planner) {}
