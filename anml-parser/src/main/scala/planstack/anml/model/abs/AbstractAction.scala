@@ -1,8 +1,10 @@
 package planstack.anml.model.abs
 
+import java.util
+
 import planstack.FullSTN
 import planstack.anml.model._
-import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
+import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time._
 import planstack.anml.model.concrete.RefCounter
 import planstack.anml.{ANMLException, parser}
@@ -49,6 +51,7 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
 
   var flexibleTimepoints : IList[AbsTP] = null
   var anchoredTimepoints : IList[AnchoredTimepoint] = null
+  var stn : FullSTN[AbsTP] = null
 
   def start = ContainerStart
   def end = ContainerEnd
@@ -61,10 +64,37 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
   def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
 
+  def getLogStatement(ref: LStatementRef) = statements.find(s => s.id == ref).getOrElse({ throw new ANMLException("No statement with this ref.") })
+
   lazy private val _allVars : Array[LVarRef] = context.variables.keys.toArray
   def allVars : Array[LVarRef] = {
     assert(_allVars.length == context.variables.keys.size)
     return _allVars
+  }
+
+  /** For every fluent 'p' achieved by this action, gives a list of fluent that are achieved at the same time */
+  lazy val concurrentChanges : util.Map[AbstractFluent, util.List[AbstractFluent]] = {
+    val map = new util.HashMap[AbstractFluent, util.List[AbstractFluent]]()
+    for(s <- jLogStatements if !s.isInstanceOf[AbstractPersistence]) {
+      val endValue = s match {
+        case t:AbstractTransition => t.effectValue
+        case a: AbstractAssignment => a.effectValue
+      }
+      val list = new util.LinkedList[AbstractFluent]()
+
+      for(s2 <- jLogStatements if s != s2) s2 match {
+        case t: AbstractTransition =>
+          if(stn.concurrent(s.end, s2.end))
+            list.add(AbstractFluent(t.sv, t.effectValue))
+        case a: AbstractAssignment =>
+          if(stn.concurrent(a.end, s.end))
+            list.add(AbstractFluent(a.sv, a.effectValue))
+        case p: AbstractPersistence =>
+      }
+
+      map.put(AbstractFluent(s.sv, endValue), list)
+    }
+    map
   }
 
   override def toString = name
@@ -198,6 +228,7 @@ object AbstractAction {
       val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
       action.flexibleTimepoints = new IList(flexs)
       action.anchoredTimepoints = new IList(anchored.map(a => action.AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))
+      action.stn = stn
 
       // add all minimized temporal statements
       action.constraints ++= constraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, -stnCst.label))
