@@ -157,6 +157,12 @@ public class DGHandler implements fape.core.planning.search.Handler {
         ext.currentGraph = graph;
         graph.propagate(ext.prevGraph);
 
+        if(pp.allFluents == null) {
+            pp.allFluents = new IRSet<>(pp.store.getIntRep(Fluent.class));
+            for(Fluent f : graph.fluentsEAs.keys())
+                pp.allFluents.add(f);
+        }
+
         // unsupporting actions // TODO: shouldn't those be in the graph as well
         IRSet<GAction> unsupporting = new IRSet<GAction>(gactsRep);
         for(Action a : st.getAllActions())
@@ -198,6 +204,8 @@ public class DGHandler implements fape.core.planning.search.Handler {
         st.addableTemplates = new HashSet<>();
         for(GAction ga : graph.addableActs)
             st.addableTemplates.add(ga.abs);
+
+
 
         // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
