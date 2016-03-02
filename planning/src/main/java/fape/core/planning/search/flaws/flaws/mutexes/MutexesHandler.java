@@ -2,10 +2,7 @@ package fape.core.planning.search.flaws.flaws.mutexes;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.grounding.GroundProblem;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.AbstractionHierarchy;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
@@ -13,7 +10,6 @@ import fape.core.planning.states.StateExtension;
 import fape.util.Pair;
 import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.IntRep;
-import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
 
@@ -22,22 +18,36 @@ import java.util.stream.Collectors;
 
 public class MutexesHandler implements Handler {
 
+    static boolean debug = false;
+
     APlanner planner = null;
 
     class Ext implements StateExtension {
 
-        public Ext(Ext toCopy) {
+        public IRSet<Fluent> getMutexesOf(Fluent f) {
+            if(!mutexes.containsKey(f))
+                mutexes.put(f, new IRSet<>(planner.preprocessor.store.getIntRep(Fluent.class)));
+            return mutexes.get(f);
+        }
 
+        /** Returns true if we identified mutexes outside the ones between fluents on the same variable */
+        public boolean hasUsefulMutexes() {
+            return hasUsefulMutexes;
         }
 
         @Override
         public StateExtension clone() {
-            return new Ext(this);
+            return this;
         }
     }
 
-    Map<Fluent, Set<Fluent>> mutexes = new HashMap<>();
+    Map<Fluent, IRSet<Fluent>> mutexes = new HashMap<>();
     HashMap<GAction, Set<Fluent>> eDeletesLists = new HashMap<>();
+    boolean hasUsefulMutexes = false;
+
+    public void stateBindedToPlanner(State st, APlanner pl) {
+        pl.options.flawFinders.add(new MutexThreatsFinder());
+    }
 
     private boolean areMutex(Fluent p, Fluent q) {
         if(p.sv == q.sv)
@@ -78,7 +88,7 @@ public class MutexesHandler implements Handler {
         IntRep<Fluent> fluentRep = pp.store.getIntRep(Fluent.class);
 
         for(Fluent p : pp.getAllFluents()) {
-            Set<Fluent> incompatible = new IRSet<Fluent>(fluentRep);
+            IRSet<Fluent> incompatible = new IRSet<Fluent>(fluentRep);
             for(InstanceRef i : st.pb.instances().instancesOfType(p.sv.f.valueType()).stream().map(str -> st.pb.instance(str)).collect(Collectors.toList())) {
                 Fluent f = pp.getFluent(p.sv, i);
                 if(!i.equals(p.value) && pp.getAllFluents().contains(f))
@@ -103,7 +113,8 @@ public class MutexesHandler implements Handler {
                 List<Fluent> qs = e.getValue();
                 IRSet<Fluent> localMutexes = new IRSet<>(fluentRep);
                 for(Fluent q : qs) {
-                    localMutexes.addAll(mutexes.get(q));
+                    if(mutexes.containsKey(q))
+                        localMutexes.addAll(mutexes.get(q));
                     simultaneousProductions.add(new Pair<>(p,q));
                 }
                 candidateMutexDisjuncts.putIfAbsent(p, new ArrayList<>());
@@ -157,6 +168,8 @@ public class MutexesHandler implements Handler {
                             if(q != q2) {
                                 mutexes.get(q2).add(q);
                                 mutexes.get(q).add(q2);
+                                if(q.sv != q2.sv)
+                                    hasUsefulMutexes = true;
                             }
                         }
                     }
@@ -164,10 +177,25 @@ public class MutexesHandler implements Handler {
             }
         }
 
+        if(debug) {
+            System.out.println("Mutexes (except between different values of same SV:");
+            for(Fluent p : mutexes.keySet()) {
+                boolean firstPrinted = false;
+                for(Fluent q : mutexes.get(p)) {
+                    if(p.sv != q.sv) {
+                        if(!firstPrinted)
+                            System.out.println("  "+p);
+                        firstPrinted = true;
+                        System.out.println("    "+q);
+                    }
+                }
+            }
+
+        }
+
         for(Fluent p : pp.getGroundProblem().allFluents(st)) {
             for(Fluent q : pp.getGroundProblem().allFluents(st)) {
                 assert !mutexes.get(p).contains(q);
-                mutexes.get(p).remove(q);
             }
         }
     }
@@ -179,7 +207,7 @@ public class MutexesHandler implements Handler {
             if(!st.hasExtension(Ext.class)) {
                 getMutexes(st);
 
-                Ext ext = new Ext(null); //TODO
+                Ext ext = new Ext();
                 st.addExtension(ext);
             }
         }
