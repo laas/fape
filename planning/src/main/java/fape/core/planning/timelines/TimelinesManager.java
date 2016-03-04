@@ -10,6 +10,7 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -65,7 +66,11 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         return tl;
     }
 
-
+    public Collection<FluentHolding> getAllCausalLinks() {
+        return StreamSupport.stream(getTimelines().spliterator(), false)
+                .flatMap(tl -> tl.getCausalLinks().stream())
+                .collect(Collectors.toList());
+    }
 
     public void addTimeline(Timeline tl) {
         assert !hasTimeline(tl);

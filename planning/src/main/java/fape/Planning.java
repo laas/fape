@@ -7,6 +7,7 @@ import fape.core.planning.planner.PlannerFactory;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
 import fape.core.planning.search.strategies.plans.tsp.HTSPHandler;
+import fape.core.planning.search.flaws.flaws.mutexes.MutexesHandler;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.util.Configuration;
@@ -38,6 +39,7 @@ public class Planning {
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
                         new Switch("salesman", 's', "salesman", "[experimental] activates TSP heuristic"),
+                        new Switch("mutex", 'm', "mutex", "[experimental] Use mutex for temporal reasoning as in CPT."),
                         new FlaggedOption("plannerID")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setLongFlag("planner")
@@ -102,7 +104,7 @@ public class Planning {
                                 "compatible with the 'reachability' option and the 'rplan' plan selector."),
                         new FlaggedOption("multi-supports")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag('m')
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("multi-supports")
                                 .setDefault("false")
                                 .setHelp("[experimental] Allow an action to support mutliple tasks"),
@@ -174,7 +176,6 @@ public class Planning {
                 }
         );
     }
-
     public static String getAssociatedConfigFile(String anmlFile) {
         assert anmlFile.endsWith(".anml") : anmlFile+" is not a valid problem file.";
         File f = new File(anmlFile);
@@ -284,6 +285,9 @@ public class Planning {
                             options.depGraphStyle = "full";
                             options.depGraphMaxIters = Integer.parseInt(degGraphOption.replaceFirst("maxiter", ""));
                     }
+                }
+                if(config.getBoolean("mutex")) {
+                    options.handlers.add(new MutexesHandler());
                 }
 
                 final AnmlProblem pb = new AnmlProblem();

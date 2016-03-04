@@ -28,6 +28,13 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     dist(src)(dst) = t
   }
 
+  def concurrent(tp1: AbsTP, tp2: AbsTP) = dist(tp1)(tp2) == 0 && dist(tp2)(tp1) == 0
+
+  def beforeOrConcurrent(first: AbsTP, second: AbsTP) = dist(second)(first) <= 0
+  def strictlyBefore(first: AbsTP, second: AbsTP) = dist(second)(first) < 0
+  def between(tp: AbsTP, min:AbsTP, max:AbsTP) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
+  def strictlyBetween(tp: AbsTP, min:AbsTP, max:AbsTP) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
+
 
   def floydWarshall(): Unit = {
     for(k <- 0 until size) {
@@ -89,6 +96,4 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 
     (flexibleTps, delays, rigids)
   }
-
-
 }

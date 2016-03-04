@@ -70,14 +70,13 @@ public class IRSet<T extends Identifiable> implements Set<T> {
     public Object[] toArray() {
         Object[] arr = new Object[size()];
         int i = 0;
-        for(T o : this) {
+        for(T o : this)
             arr[i++] = o;
-        }
         return arr;
     }
     @Override
     public <T1> T1[] toArray(T1[] t1s) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        throw new UnsupportedOperationException("");
     }
 
     @Override

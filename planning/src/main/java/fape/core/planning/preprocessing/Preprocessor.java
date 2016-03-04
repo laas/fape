@@ -14,6 +14,7 @@ import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.search.strategies.plans.tsp.DTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
+import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.InstanceRef;
@@ -34,6 +35,7 @@ public class Preprocessor {
     private FeasibilityReasoner fr;
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
+    public IRSet<Fluent> allFluents;
     private Collection<RAct> relaxedActions;
     private GroundDTGs oldDTGs;
     private Map<GStateVariable, DTG> dtgs;
@@ -74,6 +76,11 @@ public class Preprocessor {
             allActions.addAll(getGroundProblem().allActions());
         }
         return allActions;
+    }
+
+    public IRSet<Fluent> getAllFluents() {
+        assert allFluents != null : "Possible fluents have not been initialized yet;";
+        return allFluents;
     }
 
     public GAction getGroundAction(int groundActionID) {

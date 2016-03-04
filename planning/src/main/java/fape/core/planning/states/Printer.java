@@ -1,8 +1,10 @@
 package fape.core.planning.states;
 
 import fape.core.planning.search.flaws.flaws.*;
+import fape.core.planning.search.flaws.flaws.mutexes.MutexThreat;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
+import fape.core.planning.timelines.FluentHolding;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
@@ -39,6 +41,9 @@ public class Printer {
             return temporalDatabase(st, (Timeline) o);
         else if(o instanceof Reporter)
             return ((Reporter) o).report();
+        else if(o instanceof FluentHolding)
+            return fluent(st, ((FluentHolding) o).getSv(), ((FluentHolding) o).getValue());
+
         // Flaws
         else if(o instanceof Threat)
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
@@ -50,6 +55,9 @@ public class Printer {
             return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
             return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
+        else if(o instanceof MutexThreat)
+            return "MutexThreat: "+fluent(st, ((MutexThreat) o).getCl1().getSv(), ((MutexThreat) o).getCl1().getValue())+" <-> "+
+                    fluent(st, ((MutexThreat) o).getCl2().getSv(), ((MutexThreat) o).getCl2().getValue());
 
         // Resolvers
         else if(o instanceof TemporalSeparation)
@@ -196,6 +204,10 @@ public class Printer {
             ret += variable(st, arg);
         }
         return ret + ")";
+    }
+
+    public static String fluent(State st, ParameterizedStateVariable sv, VarRef value) {
+        return stateVariable(st, sv)+"="+variable(st, value);
     }
 
     public static String groundStateVariable(State st, ParameterizedStateVariable sv) {

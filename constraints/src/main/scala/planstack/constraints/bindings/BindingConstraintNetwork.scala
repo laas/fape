@@ -86,7 +86,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   protected[bindings] def allVars = variables
 
-  private def domID(v: VarRef) : DomID = domIds(v.id)
+  def domID(v: VarRef) : DomID = domIds(v.id)
 
   private def allDomIds = vars.indices.filterNot(unusedDomainIds.contains)
 

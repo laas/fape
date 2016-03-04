@@ -1,6 +1,8 @@
 package fape.util;
 
-public class Pair<T, V> {
+import lombok.Data;
+
+@Data public class Pair<T, V> {
 
     public T value1;
     public V value2;

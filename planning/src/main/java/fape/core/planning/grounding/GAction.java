@@ -21,6 +21,7 @@ import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Ident(GAction.class)
 public class GAction implements Identifiable {
@@ -34,6 +35,7 @@ public class GAction implements Identifiable {
             this.minDuration = minDuration;
             assert minDuration >= 0;
         }
+        abstract public boolean isChange();
     }
     public static class GTransition extends GLogStatement {
         public final InstanceRef from ;
@@ -43,8 +45,8 @@ public class GAction implements Identifiable {
             this.from = from;
             this.to = to;
         }
-
-        @Override public String toString() { return sv+":"+from+"->"+to; }
+        @Override public final boolean isChange() { return true; }
+        @Override public String toString() { return sv.toString()+"="+from+"->"+to; }
     }
     public static final class GAssignment extends GLogStatement {
         public final InstanceRef to;
@@ -52,7 +54,8 @@ public class GAction implements Identifiable {
             super(sv,minDuration);
             this.to = to;
         }
-        @Override public String toString() { return sv+":="+to; }
+        @Override public final boolean isChange() { return true; }
+        @Override public String toString() { return sv.toString()+"=:="+to; }
     }
     public static final class GPersistence extends GLogStatement {
         public final InstanceRef value;
@@ -60,7 +63,8 @@ public class GAction implements Identifiable {
             super(sv, minDuration);
             this.value = value;
         }
-        @Override public String toString() { return sv+"=="+value; }
+        @Override public final boolean isChange() { return false; }
+        @Override public String toString() { return sv.toString()+"=="+value; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
@@ -96,6 +100,9 @@ public class GAction implements Identifiable {
                 return p.value2;
         }
         throw new FAPEException("Unable to find statement with ref: "+ref);
+    }
+    public Iterable<GLogStatement> getStatements() {
+        return gStatements.stream().map(p -> p.value2).collect(Collectors.toList());
     }
 
     @Override
@@ -164,10 +171,11 @@ public class GAction implements Identifiable {
                         valueOf(t.from(), pb), valueOf(t.to(), pb),
                         minDuration(t.start(), t.end()));
                 gStatements.add(new Pair<>(t.id(), gls));
-                pre.add(fluent(t.sv(), t.from(), bindings, planner));
-                if(!fluent(t.sv(), t.from(), bindings, planner).equals(fluent(t.sv(), t.to(), bindings, planner))) {
-                    add.add(fluent(t.sv(), t.to(), bindings, planner));
+                pre.add(fluent(t.sv(), t.from(), planner));
+                if(!fluent(t.sv(), t.from(), planner).equals(fluent(t.sv(), t.to(), planner))) {
+                    add.add(fluent(t.sv(), t.to(), planner));
                 }
+
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
                 GLogStatement gls = new GPersistence(
@@ -175,7 +183,7 @@ public class GAction implements Identifiable {
                         valueOf(p.value(), pb),
                         minDuration(p.start(), p.end()));
                 gStatements.add(new Pair<>(p.id(), gls));
-                pre.add(fluent(p.sv(), p.value(), bindings, planner));
+                pre.add(fluent(p.sv(), p.value(), planner));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
                 GLogStatement gls = new GAssignment(
@@ -183,7 +191,27 @@ public class GAction implements Identifiable {
                         valueOf(a.value(), pb),
                         minDuration(a.start(), a.end()));
                 gStatements.add(new Pair<>(a.id(), gls));
-                add.add(fluent(a.sv(), a.value(), bindings, planner));
+                add.add(fluent(a.sv(), a.value(), planner));
+            }
+        }
+
+        for(Pair<LStatementRef,GLogStatement> p : gStatements) {
+            GStateVariable sv = p.value2.sv;
+            if(p.value2.isChange()) {
+                AbsTP start = abs.getLogStatement(p.value1).start();
+                AbsTP end = abs.getLogStatement(p.value1).end();
+                for(Pair<LStatementRef,GLogStatement> p2 : gStatements) {
+                    if(p == p2)
+                        continue;
+                    if(sv != p2.value2.sv)
+                        continue;
+                    AbsTP start2 = abs.getLogStatement(p2.value1).start();
+                    AbsTP end2 = abs.getLogStatement(p2.value1).end();
+                    if(abs.stn().strictlyBetween(start2, start, end) ||
+                            abs.stn().strictlyBetween(end2, start, end) ||
+                            (abs.stn().beforeOrConcurrent(start2, start) && abs.stn().beforeOrConcurrent(end, end2)))
+                        throw new NotValidGroundAction("Two conflicting statements on the same state variable.");
+                }
             }
         }
 
@@ -251,12 +279,24 @@ public class GAction implements Identifiable {
         return planner.preprocessor.store.getGStateVariable(sv.func(), Arrays.asList(svParams));
     }
 
-    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Map<LVarRef, InstanceRef> vars, APlanner planner) {
+    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, APlanner planner) {
         VarRef[] svParams = new VarRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), planner.pb);
         GStateVariable gsv = planner.preprocessor.getStateVariable(sv.func(), svParams);
         return planner.preprocessor.getFluent(gsv, valueOf(value, planner.pb));
+    }
+
+    public Map<Fluent, List<Fluent>> concurrentValuesOnAchievements(APlanner planner) {
+        Map<Fluent, List<Fluent>> m = new HashMap<>();
+        for(AbstractFluent af : abs.concurrentChanges().keySet()) {
+            Fluent f = fluent(af.sv(), af.value(), planner);
+            List<Fluent> conc = abs.concurrentChanges().get(af).stream()
+                    .map(abs -> fluent(abs.sv(), abs.value(), planner))
+                    .collect(Collectors.toList());
+            m.put(f, conc);
+        }
+        return m;
     }
 
     /**
@@ -449,7 +489,7 @@ public class GAction implements Identifiable {
         return planner.preprocessor.store.getTask(abs.taskName(), args);
     }
 
-    public ArrayList<GTask> getActionRefs() {
+    public ArrayList<GTask> getSubtasks() {
         return subTasks;
     }
 
@@ -485,10 +525,10 @@ public class GAction implements Identifiable {
 
         // decomposable(a) :- supported(a), feasible(subtask1), feasible(subtask2), ...
         Predicate decomposable = new Predicate(Predicate.PredicateName.DECOMPOSABLE, this);
-        Term[] subtasks = new Term[getActionRefs().size()+1];
+        Term[] subtasks = new Term[getSubtasks().size()+1];
         subtasks[0] = sup;
         for(int i=1 ; i<subtasks.length ; i++) {
-            subtasks[i] = new Predicate(Predicate.PredicateName.FEASIBLE, getActionRefs().get(i-1));
+            subtasks[i] = new Predicate(Predicate.PredicateName.FEASIBLE, getSubtasks().get(i-1));
         }
         r.addHornClause(decomposable, subtasks);
 
