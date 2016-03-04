@@ -14,7 +14,7 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
   val tps : Seq[AbsTP] = timepointList
   val size = tps.length
 
-  val inf = 9999999
+  val inf = (Int.MaxValue /2)-1 // set to avoid overflow on addition of int values
 
   val dist :Array[Array[Int]] = (for (i <- 0 until size) yield Array.fill(size)(inf)).toArray[Array[Int]]
 
@@ -25,11 +25,14 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     addEdge(to, from, -minDelay)
 
   def addEdge(src:AbsTP, dst :AbsTP, t:Int): Unit = {
-    dist(src)(dst) = t
+    if(dist(src)(dst) > t)
+      dist(src)(dst) = t // tighten constraint
   }
 
   def concurrent(tp1: AbsTP, tp2: AbsTP) = dist(tp1)(tp2) == 0 && dist(tp2)(tp1) == 0
 
+  def minDelay(from: AbsTP, to:AbsTP) = -dist(to)(from)
+  def maxDelay(from: AbsTP, to: AbsTP) = dist(from)(to)
   def beforeOrConcurrent(first: AbsTP, second: AbsTP) = dist(second)(first) <= 0
   def strictlyBefore(first: AbsTP, second: AbsTP) = dist(second)(first) < 0
   def between(tp: AbsTP, min:AbsTP, max:AbsTP) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
@@ -43,7 +46,7 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
           if(dist(i)(k) < inf && dist(k)(j) < inf) {
             if(dist(i)(j) > dist(i)(k) + dist(k)(j)) {
               dist(i)(j) = dist(i)(k) + dist(k)(j)
-              assert(dist(i)(j) +dist(j)(i) >= 0, "Error: temporal inconsistency in the definition of this action")
+              assert(dist(j)(i) >= inf || dist(i)(j) +dist(j)(i) >= 0, "Error: temporal inconsistency in the definition of this action")
             }
           }
         }
@@ -68,7 +71,6 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
       case _ =>
         assert(pending.isEmpty)
         result
-
     }
   }
 

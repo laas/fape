@@ -73,37 +73,9 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
     return _allVars
   }
 
-  @Deprecated // should use the STN
-  def minDelay(from:AbsTP, to: AbsTP) = {
-    val (anchor1,d1) = anchoredTimepoints.find(at => at.timepoint == from).map(at => (at.anchor, at.delay)).getOrElse((from,0))
-    val (anchor2,d2) = anchoredTimepoints.find(at => at.timepoint == to).map(at => (at.anchor, at.delay)).getOrElse((to,0))
+  def minDelay(from: AbsTP, to: AbsTP) = stn.minDelay(from,to)
 
-    if(anchor1 == anchor2) // just delays to the anchor
-      d1 -d2
-    else // delay to anchors + max of all min delay constraints
-      d1 - d2 + constraints
-        .filter(_.isInstanceOf[AbstractMinDelay])
-        .map(_.asInstanceOf[AbstractMinDelay])
-        .filter(c => c.from == anchor1 && c.to == anchor2)
-        .map(_.minDelay.toInt)
-        .foldLeft(-999999)(_ max _)
-  }
-
-  @Deprecated //Should use the STN
-  def maxDelay(from:AbsTP, to: AbsTP) = {
-    val (anchor1, d1) = anchoredTimepoints.find(at => at.timepoint == from).map(at => (at.anchor, at.delay)).getOrElse((from, 0))
-    val (anchor2, d2) = anchoredTimepoints.find(at => at.timepoint == to).map(at => (at.anchor, at.delay)).getOrElse((to, 0))
-
-    if (anchor1 == anchor2)
-      d1 - d2
-    else // delays to anchors + min of all max delay constraints
-      d1 - d2 + constraints
-        .filter(_.isInstanceOf[AbstractMinDelay])
-        .map(_.asInstanceOf[AbstractMinDelay])
-        .filter(c => c.from == anchor2 && c.to == anchor1)
-        .map(-_.minDelay.toInt)
-        .foldLeft(999999)(_ min _)
-  }
+  def maxDelay(from: AbsTP, to: AbsTP) = stn.maxDelay(from, to)
 
   /** For every fluent 'p' achieved by this action, gives a list of fluent that are achieved at the same time */
   lazy val concurrentChanges : util.Map[AbstractFluent, util.List[AbstractFluent]] = {
