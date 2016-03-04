@@ -91,26 +91,24 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         int additionalCost = 0;
         int existingCost = 0;
 
+        // reduce the goal network until it is empty
         while(!gn.isEmpty()) {
             List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
             log2("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
 
             if(!sat.isEmpty()) {
+                // at least one goal is achievable right away. Greedily select the best one and achieve it.
                 Pair<GLogStatement, DisjunctiveGoal> p = best(sat);
                 ps.progress(p.value1, p.value2);
-                if(!(p.value1 instanceof GPersistence))
+                if(p.value1.isChange())
                     existingCost++;
                 gn.setAchieved(p.value2, p.value1);
             } else { // expand with dijkstra
-                // defines a set of target fluents; We can stop whn one of those is reached
+                // defines a set of target fluents; We can stop when one of those is reached
                 Set<Fluent> targets = gn.getActiveGoals().stream()
                         .flatMap(g -> g.getGoals().stream())
-                        .map(s -> {
-                            if(s instanceof GPersistence)
-                                return pp.getFluent(s.sv, ((GPersistence)s).value);
-                            else
-                                return pp.getFluent(s.sv, ((GTransition)s).from);
-                        }).collect(Collectors.toSet());
+                        .map(s -> pp.getFluent(s.sv, s.startValue()))
+                        .collect(Collectors.toSet());
 
                 TSPRoutePlanner.Result plan = routePlanner.getPlan(targets, ps, st);
                 if(plan != null) {

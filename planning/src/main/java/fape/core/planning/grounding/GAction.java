@@ -36,6 +36,8 @@ public class GAction implements Identifiable {
             assert minDuration >= 0;
         }
         abstract public boolean isChange();
+        abstract public InstanceRef endValue();
+        abstract public InstanceRef startValue();
     }
     public static class GTransition extends GLogStatement {
         public final InstanceRef from ;
@@ -47,6 +49,8 @@ public class GAction implements Identifiable {
         }
         @Override public final boolean isChange() { return true; }
         @Override public String toString() { return sv.toString()+"="+from+"->"+to; }
+        @Override public InstanceRef startValue() { return from; }
+        @Override public InstanceRef endValue() { return to; }
     }
     public static final class GAssignment extends GLogStatement {
         public final InstanceRef to;
@@ -56,6 +60,8 @@ public class GAction implements Identifiable {
         }
         @Override public final boolean isChange() { return true; }
         @Override public String toString() { return sv.toString()+"=:="+to; }
+        @Override public InstanceRef startValue() { throw new FAPEException("Assignments define no start value."); }
+        @Override public InstanceRef endValue() { return to; }
     }
     public static final class GPersistence extends GLogStatement {
         public final InstanceRef value;
@@ -65,6 +71,8 @@ public class GAction implements Identifiable {
         }
         @Override public final boolean isChange() { return false; }
         @Override public String toString() { return sv.toString()+"=="+value; }
+        @Override public InstanceRef startValue() { return value; }
+        @Override public InstanceRef endValue() { return value; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
