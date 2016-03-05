@@ -12,8 +12,10 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.search.strategies.plans.tsp.DTG;
+import fape.core.planning.search.strategies.plans.tsp.TemporalDTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
+import fr.laas.fape.structures.IRMap;
 import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
@@ -35,12 +37,15 @@ public class Preprocessor {
     private FeasibilityReasoner fr;
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
-    public IRSet<Fluent> allFluents;
+    private IRSet<Fluent> allFluents;
+    private IRSet<GStateVariable> allStateVariables;
     private Collection<RAct> relaxedActions;
-    private GroundDTGs oldDTGs;
+    private GroundDTGs oldDTGs; //TODO cleanup
     private Map<GStateVariable, DTG> dtgs;
+    private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
     HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
+    private Map<GStateVariable, Set<GAction>> actionUsingStateVariable;
 
     Boolean isHierarchical = null;
 
@@ -78,9 +83,25 @@ public class Preprocessor {
         return allActions;
     }
 
+    public boolean fluentsInitialized() { return allFluents != null; }
+
+    public void setPossibleFluents(IRSet<Fluent> fluents) {
+        assert !fluentsInitialized() : "Possible fluents were already set.";
+        allFluents = fluents;
+        allStateVariables = new IRSet<>(store.getIntRep(GStateVariable.class));
+        for(Fluent f : fluents) {
+            allStateVariables.add(f.sv);
+        }
+    }
+
     public IRSet<Fluent> getAllFluents() {
-        assert allFluents != null : "Possible fluents have not been initialized yet;";
+        assert fluentsInitialized() : "Possible fluents have not been initialized yet;";
         return allFluents;
+    }
+
+    public IRSet<GStateVariable> getAllStateVariables() {
+        assert allStateVariables != null : "State variable were nt initialized.";
+        return allStateVariables;
     }
 
     public GAction getGroundAction(int groundActionID) {
@@ -110,7 +131,21 @@ public class Preprocessor {
         };
     }
 
-
+    public Set<GAction> getActionsInvolving(GStateVariable sv) {
+        if(actionUsingStateVariable == null) {
+            actionUsingStateVariable = new HashMap<>();
+            for(GAction ga : getAllActions()) {
+                for(GAction.GLogStatement statement : ga.getStatements()) {
+                    actionUsingStateVariable.putIfAbsent(statement.getStateVariable(), new HashSet<>());
+                    actionUsingStateVariable.get(statement.getStateVariable()).add(ga);
+                }
+            }
+        }
+        if(!actionUsingStateVariable.containsKey(sv))
+            return Collections.emptySet();
+        else
+            return actionUsingStateVariable.get(sv);
+    }
 
     public DTGImpl getOldDTG(GStateVariable groundStateVariable) {
         if(oldDTGs == null) {
@@ -151,6 +186,19 @@ public class Preprocessor {
             dtgs.put(gStateVariable, initDTGForStateVariable(gStateVariable));
 
         return dtgs.get(gStateVariable);
+    }
+
+    public TemporalDTG getTemporalDTG(GStateVariable sv) {
+        if(!temporalDTGs.containsKey(sv)) {
+            Collection<InstanceRef> dom = planner.pb.instances().instancesOfType(sv.f.valueType()).stream()
+                .map(str -> planner.pb.instance(str))
+                .collect(Collectors.toList());
+            TemporalDTG dtg = new TemporalDTG(sv, dom, planner);
+            for(GAction ga : getActionsInvolving(sv))
+                dtg.extendWith(ga);
+            temporalDTGs.put(sv, dtg);
+        }
+        return temporalDTGs.get(sv);
     }
 
     public boolean isHierarchical() {

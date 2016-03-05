@@ -108,7 +108,7 @@ public class MutexesHandler implements Handler {
                     simultaneousProductions.add(new Pair<>(p,q));
 
         for(GAction ga : pp.getAllActions()) {
-            for(Map.Entry<Fluent,List<Fluent>> e : ga.concurrentValuesOnAchievements(planner).entrySet()) {
+            for(Map.Entry<Fluent,List<Fluent>> e : ga.concurrentChanges(planner).entrySet()) {
                 Fluent p = e.getKey();
                 List<Fluent> qs = e.getValue();
                 IRSet<Fluent> localMutexes = new IRSet<>(fluentRep);

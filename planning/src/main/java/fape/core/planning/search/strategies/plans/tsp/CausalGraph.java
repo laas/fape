@@ -135,7 +135,7 @@ public class CausalGraph {
         CausalGraph cg = new CausalGraph();
         for(GAction ga : planner.preprocessor.getAllActions()) {
             for(GLogStatement s1 : ga.gStatements.stream().map(p -> p.value2).collect(Collectors.toList())) {
-                if(s1 instanceof GPersistence)
+                if(!s1.isChange())
                     continue;
                 for(GLogStatement s2 : ga.gStatements.stream().map(p -> p.value2).collect(Collectors.toList())) {
                     if(s1.sv.equals(s2.sv))

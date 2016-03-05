@@ -159,10 +159,11 @@ public class DGHandler implements fape.core.planning.search.Handler {
         ext.currentGraph = graph;
         graph.propagate(ext.prevGraph);
 
-        if(pp.allFluents == null) {
-            pp.allFluents = new IRSet<>(pp.store.getIntRep(Fluent.class));
+        if(!pp.fluentsInitialized()) {
+            IRSet<Fluent> fluents = new IRSet<>(pp.store.getIntRep(Fluent.class));
             for(Fluent f : graph.fluentsEAs.keys())
-                pp.allFluents.add(f);
+                fluents.add(f);
+            pp.setPossibleFluents(fluents);
         }
 
         // unsupporting actions // TODO: shouldn't those be in the graph as well

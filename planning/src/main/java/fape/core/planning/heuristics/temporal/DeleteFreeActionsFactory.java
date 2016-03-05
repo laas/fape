@@ -13,7 +13,6 @@ import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.abs.time.StandaloneTP;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class DeleteFreeActionsFactory {
@@ -187,7 +186,7 @@ public class DeleteFreeActionsFactory {
                 int delay = -relativeTimeOf(s.start(), abs);
                 templates.get(main).addCondition(s.sv(), s.conditionValue(), delay);
             }
-            if(s.hasEffectAfterEnd()) {
+            if(s.hasEffectAtEnd()) {
                 AbsTP main = anchorOf(s.end(), abs);
                 int delay = -relativeTimeOf(s.end(), abs);
                 templates.get(main).addEffect(s.sv(), s.effectValue(), delay);

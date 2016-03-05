@@ -57,13 +57,17 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   def start = ContainerStart
   def end = ContainerEnd
 
+  def subTasks = statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask])
+  def logStatements = statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement])
+  def resStatements = statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement])
+
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jStatements = seqAsJavaList(statements)
   def jConstraints = seqAsJavaList(constraints)
 
-  def jSubTasks = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask]))
-  def jLogStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement]))
-  def jResStatements = seqAsJavaList(statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement]))
+  def jSubTasks = seqAsJavaList(subTasks)
+  def jLogStatements = seqAsJavaList(logStatements)
+  def jResStatements = seqAsJavaList(resStatements)
 
   def getLogStatement(ref: LStatementRef) = statements.find(s => s.id == ref).getOrElse({ throw new ANMLException("No statement with this ref.") })
 
@@ -76,6 +80,46 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   def minDelay(from: AbsTP, to: AbsTP) = stn.minDelay(from,to)
 
   def maxDelay(from: AbsTP, to: AbsTP) = stn.maxDelay(from, to)
+
+  private val achievementsAt = new util.HashMap[AbsTP, util.List[(AbstractFluent, AbstractLogStatement)]]()
+  private val conditionsAt = new util.HashMap[AbsTP, util.List[(AbstractFluent, AbstractLogStatement)]]()
+  private val changesFrom = new util.HashMap[AbsTP, util.List[AbstractLogStatement]]()
+
+  def getAchievementsAt(tp: AbsTP) = {
+    if(!achievementsAt.containsKey(tp)) {
+      val list : util.List[(AbstractFluent, AbstractLogStatement)] =
+        logStatements
+          .filter(s => s.hasEffectAtEnd)
+          .filter(s => stn.concurrent(tp, s.end))
+          .map(s => (AbstractFluent(s.sv, s.effectValue), s))
+      achievementsAt += ((tp, list))
+    }
+    achievementsAt(tp)
+  }
+
+  def getConditionsAt(tp: AbsTP) = {
+    if(!conditionsAt.containsKey(tp)) {
+      val list : util.List[(AbstractFluent, AbstractLogStatement)] =
+        logStatements
+          .flatMap(s => s match {
+            case t: AbstractTransition if stn.concurrent(tp, t.start) => List(t)
+            case p: AbstractPersistence if stn.between(tp, p.start, p.end) => List(p)
+            case _ => Nil
+          })
+          .map(s => (AbstractFluent(s.sv, s.conditionValue), s))
+      conditionsAt += ((tp, list))
+    }
+    conditionsAt(tp)
+  }
+
+  def getChangesStartingFrom(tp: AbsTP) = {
+    if(!changesFrom.containsKey(tp)) {
+      val list : util.List[AbstractLogStatement] = logStatements
+        .filter(s => s.hasEffectAtEnd && stn.concurrent(tp, s.start))
+      changesFrom += ((tp, list))
+    }
+    changesFrom(tp)
+  }
 
   /** For every fluent 'p' achieved by this action, gives a list of fluent that are achieved at the same time */
   lazy val concurrentChanges : util.Map[AbstractFluent, util.List[AbstractFluent]] = {
@@ -229,6 +273,11 @@ object AbstractAction {
       val stn = new FullSTN(timepoints)
       for(AbstractMinDelay(from, to, minDelay) <- simpleTempConst)
         stn.addMinDelay(from, to, minDelay)
+      action.logStatements.foreach(s => s match {
+        case t:AbstractTransition => stn.addMinDelay(t.start, t.end, 1)
+        case p:AbstractPersistence => stn.addMinDelay(p.start, p.end, 0)
+        case _ =>
+      })
 
       val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
       action.flexibleTimepoints = new IList(flexs)

@@ -13,6 +13,7 @@ abstract class AbstractStatement(val id:LocalRef) {
   /**
    * Produces the corresponding concrete statement, by replacing all local variables
    * by the global ones defined in Context
+ *
    * @param context Context in which this statement appears.
    * @return
    */
@@ -54,13 +55,14 @@ abstract class AbstractLogStatement(val sv:AbstractParameterizedStateVariable, o
   def bind(context:Context, pb:AnmlProblem, container:Chronicle, refCounter: RefCounter) : LogStatement
 
   def hasConditionAtStart : Boolean
-  def hasEffectAfterEnd : Boolean
+  def hasEffectAtEnd: Boolean
   def conditionValue : LVarRef
   def effectValue : LVarRef
 }
 
 /**
  * Describes an assignment of a state variable to value `statevariable(x, y) := v`
+ *
  * @param sv State variable getting the assignment
  * @param value value of the state variable after the assignment
  */
@@ -75,7 +77,7 @@ class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRe
   override def hasConditionAtStart: Boolean = false
   override def conditionValue: LVarRef = throw new ANMLException("Assignments have conditions at start")
   override def effectValue: LVarRef = value
-  override def hasEffectAfterEnd: Boolean = true
+  override def hasEffectAtEnd: Boolean = true
 }
 
 class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef, val to:LVarRef, id:LStatementRef)
@@ -89,7 +91,7 @@ class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef
   override def hasConditionAtStart: Boolean = true
   override def conditionValue: LVarRef = from
   override def effectValue: LVarRef = to
-  override def hasEffectAfterEnd: Boolean = true
+  override def hasEffectAtEnd: Boolean = true
 }
 
 class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
@@ -103,6 +105,6 @@ class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarR
   override def hasConditionAtStart: Boolean = true
   override def conditionValue: LVarRef = value
   override def effectValue: LVarRef = throw new ANMLException("Persistences have no effects at end")
-  override def hasEffectAfterEnd: Boolean = false
+  override def hasEffectAtEnd: Boolean = false
 }
 
