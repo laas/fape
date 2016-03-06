@@ -1,6 +1,7 @@
 package planstack.anml.model.concrete
 
 import planstack.anml.model.ParameterizedStateVariable
+import planstack.anml.pending.{IntExpression, IntExpression$}
 
 
 abstract class Constraint
@@ -11,32 +12,14 @@ abstract class TemporalConstraint extends Constraint {
   def isParameterized : Boolean
 }
 
-case class MinDelayConstraint(src:TPRef, dst:TPRef, minDelay:Integer) extends TemporalConstraint {
+case class MinDelayConstraint(src:TPRef, dst:TPRef, minDelay:IntExpression) extends TemporalConstraint {
   override def toString = s"$src + $minDelay <= $dst"
   override def isParameterized = false
 }
 
-case class ParameterizedMinDelayConstraint(src:TPRef, dst:TPRef, minDelay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
-  override def toString = "%s >= %s + f(%s)".format(dst, src, minDelay)
-  override def isParameterized = true
-}
-
-case class ParameterizedExactDelayConstraint(src:TPRef, dst:TPRef, delay:ParameterizedStateVariable, trans: (Int => Int)) extends TemporalConstraint {
-  override def toString = "%s = %s + f(%s)".format(dst, src, delay)
-  override def isParameterized = true
-}
-
-case class ContingentConstraint(src :TPRef, dst :TPRef, min :Int, max :Int) extends TemporalConstraint {
+case class ContingentConstraint(src :TPRef, dst :TPRef, min :IntExpression, max :IntExpression) extends TemporalConstraint {
   override def toString = s"$src == [$min, $max] ==> $dst"
   override def isParameterized = false
-}
-
-case class ParameterizedContingentConstraint(src :TPRef, dst :TPRef, min :ParameterizedStateVariable,
-                                max :ParameterizedStateVariable, minTrans: (Int => Int), maxTrans: (Int => Int))
-  extends TemporalConstraint
-{
-  override def toString = s"$src == [$min, $max] ==> $dst"
-  override def isParameterized = true
 }
 
 

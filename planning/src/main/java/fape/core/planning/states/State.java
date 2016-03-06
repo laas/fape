@@ -574,31 +574,10 @@ public class State implements Reporter {
     private void apply(Chronicle mod, TemporalConstraint tc) {
 
         if(tc instanceof MinDelayConstraint) {
-            csp.stn().enforceMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay());
-        } else if(tc instanceof ParameterizedMinDelayConstraint) {
-            ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
-            assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-            assert pmd.minDelay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-            VarRef var = new VarRef("integer", refCounter);
-            csp.bindings().AddIntVariable(var);
-            List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.minDelay().args()));
-            varsOfExtConst.add(var);
-            csp.bindings().addNAryConstraint(varsOfExtConst, pmd.minDelay().func().name());
-            csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+            csp.addMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay(), refCounter);
         } else if(tc instanceof ContingentConstraint) {
             ContingentConstraint cc = (ContingentConstraint) tc;
-            csp.stn().enforceContingent(cc.src(), cc.dst(), cc.min(), cc.max());
-        } else if(tc instanceof ParameterizedExactDelayConstraint) {
-            ParameterizedExactDelayConstraint pmd = (ParameterizedExactDelayConstraint) tc;
-            assert pmd.delay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-            assert pmd.delay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-            VarRef var = new VarRef("integer", refCounter);
-            csp.bindings().AddIntVariable(var);
-            List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.delay().args()));
-            varsOfExtConst.add(var);
-            csp.bindings().addNAryConstraint(varsOfExtConst, pmd.delay().func().name());
-            csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
-            csp.addMaxDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+            csp.addContingentConstraint(cc.src(), cc.dst(), cc.min(), cc.max(), Option.empty(), refCounter);
         } else {
             throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }

@@ -53,25 +53,23 @@ abstract class GenSTNUManager[ID]
   }
 
   final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int): Unit = {
+    enforceContingent(u, v, min, max, None)
+  }
+
+  protected def commitContingent(u:Int, v:Int, d:Int, optID:Option[ID])
+
+  final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int, optID:Option[ID]) {
     assert(hasTimePoint(u) && !isVirtual(u), "Cannot add contingent constraint on virtual timepoints")
     assert(hasTimePoint(v) && !isVirtual(v), "Cannot add contingent constraint on virtual timepoints")
-    val c1 = new Const(u, v, max, CONTINGENT, None)
-    val c2 = new Const(v, u, -min, CONTINGENT, None)
+    val c1 = new Const(u, v, max, CONTINGENT, optID)
+    val c2 = new Const(v, u, -min, CONTINGENT, optID)
     rawConstraints = c1 :: c2 :: rawConstraints
     commit(c1)
     commit(c2)
   }
 
-  protected def commitContingent(u:Int, v:Int, d:Int, optID:Option[ID])
-
   final def enforceContingentWithID(u:TPRef, v:TPRef, min:Int, max:Int, constID:ID) {
-    assert(hasTimePoint(u) && !isVirtual(u), "Cannot add contingent constraint on virtual timepoints")
-    assert(hasTimePoint(v) && !isVirtual(v), "Cannot add contingent constraint on virtual timepoints")
-    val c1 = new Const(u, v, max, CONTINGENT, Some(constID))
-    val c2 = new Const(v, u, -min, CONTINGENT, Some(constID))
-    rawConstraints = c1 :: c2 :: rawConstraints
-    commit(c1)
-    commit(c2)
+    enforceContingent(u, v, min, max, Some(constID))
   }
 
   final def addDispatchableTimePoint(tp : TPRef) : Int = {

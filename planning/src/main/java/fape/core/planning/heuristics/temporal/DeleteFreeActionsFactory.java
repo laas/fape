@@ -11,6 +11,8 @@ import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.abs.time.StandaloneTP;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.IntLiteral;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,45 +20,6 @@ import java.util.stream.Collectors;
 public class DeleteFreeActionsFactory {
 
     private static final boolean dbg = false;
-
-    interface Time extends Comparable<Time> {
-        static ParameterizedTime of(AbstractParameterizedStateVariable sv, java.util.function.Function<Integer,Integer> trans) {
-            return new ParameterizedTime(sv.func(), sv.jArgs(), trans);
-        }
-        static IntTime of(int value) {
-            return new IntTime(value);
-        }
-
-        @Override
-        default int compareTo(Time t) {
-            if(this instanceof ParameterizedTime && t instanceof ParameterizedTime)
-                return 0;
-            else if(this instanceof ParameterizedTime)
-                return 1;
-            else if(t instanceof ParameterizedTime)
-                return -1;
-            else
-                return ((IntTime) this).value - ((IntTime) t).value;
-        }
-        Time delay(int d);
-    }
-
-    @Value static class IntTime implements Time {
-        public final int value;
-        @Override public String toString() { return ""+value; }
-
-        @Override
-        public Time delay(int d) { return new IntTime(value+d); }
-    }
-
-    @Value static class ParameterizedTime implements Time {
-        public final Function f;
-        public final List<LVarRef> args;
-        public final java.util.function.Function<Integer,Integer> trans;
-
-        @Override
-        public Time delay(int d) { throw new UnsupportedOperationException("Not supported yet."); }
-    }
 
     interface FluentTemplate {}
 
@@ -79,12 +42,12 @@ public class DeleteFreeActionsFactory {
 
     class TempFluentTemplate {
         final FluentTemplate fluent;
-        final Time time;
+        final IntExpression time;
         public TempFluentTemplate(FluentTemplate fluent, int time) {
             this.fluent = fluent;
-            this.time = Time.of(time);
+            this.time = new IntLiteral(time);
         }
-        public TempFluentTemplate(FluentTemplate fluent, Time time) {
+        public TempFluentTemplate(FluentTemplate fluent, IntExpression time) {
             this.fluent = fluent;
             this.time = time;
         }
@@ -111,10 +74,15 @@ public class DeleteFreeActionsFactory {
         public void addCondition(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
             addCondition(new SVFluentTemplate(sv, var), time);
         }
+
         public void addCondition(FluentTemplate ft, int time) {
             addCondition(new TempFluentTemplate(ft, time));
-
         }
+
+        public void addCondition(FluentTemplate ft, IntExpression time) {
+            addCondition(new TempFluentTemplate(ft, time));
+        }
+
         public void addCondition(TempFluentTemplate ft) {
             conditions.add(ft);
             Collections.sort(conditions, (p1, p2) -> p1.time.compareTo(p2.time));
@@ -219,38 +187,6 @@ public class DeleteFreeActionsFactory {
             templates.get(startAnchor).addCondition(new TaskFluentTemplate("task", abs.taskName(), abs.args()), startDelay);
         }
 
-        List<AbstractParameterizedExactDelay> pmds = abs.jConstraints().stream()
-                .filter(ac -> ac instanceof AbstractParameterizedExactDelay)
-                .map(ac -> (AbstractParameterizedExactDelay) ac).collect(Collectors.toList());
-
-        // merge actions that are binded by a parameterized exact duration
-        for(AbstractParameterizedExactDelay ped : pmds) {
-            AbsTP leftAnchor = anchorOf(ped.from(), abs);
-            AbsTP rightAnchor = anchorOf(ped.to(), abs);
-            if(leftAnchor.equals(rightAnchor))
-                continue; // nothing to merge, they are already together
-            int leftDelay = -relativeTimeOf(ped.from(), abs);
-            int rightDelay = -relativeTimeOf(ped.to(), abs);
-            // merge right "action" into left "action"
-            RActTemplate leftAct = templates.get(leftAnchor);
-            RActTemplate rightAct = templates.get(rightAnchor);
-            for(TempFluentTemplate f : rightAct.conditions) {
-                assert f.time instanceof IntTime;
-                Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
-                TempFluentTemplate cond = new TempFluentTemplate(f.fluent, newTime);
-                leftAct.conditions.add(cond);
-            }
-            for(TempFluentTemplate f : rightAct.effects) {
-                assert f.time instanceof IntTime;
-                Time newTime = Time.of(ped.delay(), t -> ((IntTime) f.time).value - leftDelay +rightDelay + (Integer) ped.trans().apply(t));
-                TempFluentTemplate eff = new TempFluentTemplate(f.fluent, newTime);
-                leftAct.effects.add(eff);
-            }
-
-            // remove right action as it was merge into left
-            templates.remove(rightAnchor);
-        }
-
         // merge all subactions with no conditions into others
         /*
         for(AbsTP left : new HashSet<AbsTP>(templates.keySet())) {
@@ -278,7 +214,7 @@ public class DeleteFreeActionsFactory {
             for(AbsTP right : templates.keySet()) {
                 if(left == right) continue;
                 RActTemplate rightAct = templates.get(right);
-                int maxDelay = abs.maxDelay(left, right);
+                IntExpression maxDelay = abs.maxDelay(left, right);
                 leftAct.addCondition(new DoneFluentTemplate(rightAct), maxDelay);
             }
         }
@@ -351,21 +287,21 @@ public class DeleteFreeActionsFactory {
                     int currEffect = 0;
                     int currCond = 0;
                     while (currCond < template.conditions.size() && currEffect < template.effects.size()) {
-                        int shift = ((IntTime) template.effects.get(currEffect).time).getValue() - 1;
+                        int shift = template.effects.get(currEffect).time.get() - 1;
                         RActTemplate act = new RActTemplate(template.abs, new StandaloneTP(template.tp.toString() + "+" + shift));
                         while (currCond < template.conditions.size() && template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) < 0) {
                             TempFluentTemplate condition = template.conditions.get(currCond++);
-                            act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                            act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.plus(-shift)));
                         }
                         while (currEffect < template.effects.size() &&
                                 (currCond >= template.conditions.size() || template.conditions.get(currCond).time.compareTo(template.effects.get(currEffect).time) >= 0)) {
                             TempFluentTemplate eff = template.effects.get(currEffect++);
-                            act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.delay(-shift)));
+                            act.addEffect(new TempFluentTemplate(eff.fluent, eff.time.plus(-shift)));
                         }
                         if(includeLateConditions) {
                             for (; currCond < template.conditions.size() ; currCond++) {
                                 TempFluentTemplate condition = template.conditions.get(currCond);
-                                act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.delay(-shift)));
+                                act.addCondition(new TempFluentTemplate(condition.fluent, condition.time.plus(-shift)));
                             }
                         }
                         currCond = 0;

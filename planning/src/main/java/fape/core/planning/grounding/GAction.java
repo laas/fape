@@ -17,6 +17,9 @@ import planstack.anml.model.abs.statements.*;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.IntLiteral;
+import planstack.anml.pending.LStateVariable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,8 +37,8 @@ public class GAction implements Identifiable {
         public GLogStatement(GStateVariable sv, int minDuration, AbstractLogStatement original) {
             this.sv = sv;
             this.minDuration = minDuration;
-            assert minDuration >= 0;
             this.original = original;
+            assert minDuration >= 0;
         }
         public final GStateVariable getStateVariable() { return sv; }
         abstract public boolean isChange();
@@ -67,7 +70,7 @@ public class GAction implements Identifiable {
             this.to = to;
         }
         @Override public final boolean isChange() { return true; }
-        @Override public String toString() { return sv.toString()+"=:="+to; }
+        @Override public String toString() { return sv.toString()+":="+to; }
         @Override public InstanceRef startValue() { throw new FAPEException("Assignments define no start value."); }
         @Override public InstanceRef endValue() { return to; }
     }
@@ -96,6 +99,8 @@ public class GAction implements Identifiable {
     protected final InstanceRef[] values;
 
     public final ArrayList<GTask> subTasks;
+    public final GroundProblem ggpb;
+
 
     public final int id;
 
@@ -143,7 +148,8 @@ public class GAction implements Identifiable {
 
     public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
 
-        AnmlProblem pb = gPb.liftedPb;
+        this.ggpb = gPb;
+        AnmlProblem pb = ggpb.liftedPb;
         this.abs = abs;
 
         assert bindings.size() == abs.allVars().length : "Some variables seem to be missing.";
@@ -249,10 +255,27 @@ public class GAction implements Identifiable {
     }
 
     public int minDuration(AbsTP from, AbsTP to) {
-        return this.abs.minDelay(from, to); // TODO: take into account parameterized temporal constraints
+        return evaluate(abs.minDelay(from,to));
     }
     public int maxDuration(AbsTP from, AbsTP to) {
-        return this.abs.maxDelay(from, to); // TODO: take into account parameterized temporal constraints
+        return this.evaluate(abs.maxDelay(from, to));
+    }
+
+    public int evaluate(IntExpression e) {
+        java.util.function.Function<IntExpression,IntExpression> t = expr -> {
+                if(expr instanceof LStateVariable) {
+                    List<InstanceRef> params = ((LStateVariable) expr).lsv().jArgs().stream()
+                            .map(v -> valueOf(v, ggpb.liftedPb))
+                            .collect(Collectors.toList());
+                    int realValue = ggpb.intInvariants.get(new GroundProblem.IntegerInvariantKey(((LStateVariable) expr).lsv().func(), params));
+                    return IntExpression.lit(realValue);
+                } else {
+                    return expr;
+                }
+            };
+        IntExpression binded = e.jTrans(t);
+        assert binded.isKnown();
+        return binded.get();
     }
 
     @Override

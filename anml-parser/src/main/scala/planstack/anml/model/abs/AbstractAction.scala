@@ -7,6 +7,7 @@ import planstack.anml.model._
 import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time._
 import planstack.anml.model.concrete.RefCounter
+import planstack.anml.pending.{IntExpression, IntExpression$, LStateVariable, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 import planstack.structures.IList
 
@@ -149,30 +150,13 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   override def toString = name
 }
 
-/** Represents a duration used to represent minimal or maximal duration f an action.
-  * It can either be constant or a state variable (underlying function must be constant in time).
-  *
-  * @param constantDur Constant duration. SHould be set to -1 if the duration is a state variable
-  * @param func State Variable representing the (parameterized) duration of the action. Should be set
-  *             to null if the duration is represented by an integer.
-  */
-class AbstractDuration(val constantDur : Int, val func : AbstractParameterizedStateVariable) {
-  require(constantDur == -1 || func == null)
-  require(func == null || func.func.isConstant, "Error: a duration is represented as a non-constant function.")
-
-  def this(constantDur : Int) = this(constantDur, null)
-  def this(func : AbstractParameterizedStateVariable) = this (-1, func)
-
-  def isConstant = func == null
-}
-
 object AbstractDuration {
 
   /** Creates an abstract duration from an expression. */
-  def apply(e : parser.Expr, context : AbstractContext, pb : AnmlProblem) : AbstractDuration = {
+  def apply(e : parser.Expr, context : AbstractContext, pb : AnmlProblem) : IntExpression = {
     e match {
-      case v : parser.NumExpr => new AbstractDuration(v.value.toInt)
-      case e : parser.Expr => new AbstractDuration(StatementsFactory.asStateVariable(e, context, pb))
+      case v : parser.NumExpr => IntExpression.lit(v.value.toInt)
+      case e : parser.Expr => IntExpression.locSV(StatementsFactory.asStateVariable(e, context, pb))
     }
   }
 }
@@ -208,7 +192,7 @@ object AbstractAction {
 
       val actionStart = ContainerStart
       val actionEnd = ContainerEnd
-      allConstraints += new AbstractMinDelay(actionStart, actionEnd, 1)
+      allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
 
       content foreach {
         case ts:parser.TemporalStatement => {
@@ -223,22 +207,12 @@ object AbstractAction {
           action.motivated = true
         case parser.ExactDuration(e) => {
           val dur = AbstractDuration(e, action.context, pb)
-          if (dur.isConstant) {
-            allConstraints += AbstractMinDelay(actionStart, actionEnd, dur.constantDur)
-            allConstraints += AbstractMaxDelay(actionStart, actionEnd, dur.constantDur)
-          } else {
-            val sv = StatementsFactory.asStateVariable(e, action.context, pb)
-            allConstraints += AbstractParameterizedExactDelay(actionStart, actionEnd, sv, (x:Int) => x)
-          }
+          allConstraints ++= AbstractExactDelay(actionStart, actionEnd, dur)
         }
         case parser.UncertainDuration(min, max) => {
           val minDur = AbstractDuration(min, action.context, pb)
           val maxDur = AbstractDuration(max, action.context, pb)
-          if(minDur.isConstant && maxDur.isConstant) {
-            allConstraints += new AbstractContingentConstraint(actionStart, actionEnd, minDur.constantDur, maxDur.constantDur)
-          } else {
-            throw new ANMLException("Parameterized contingent durations are not supported yet.")
-          }
+          allConstraints += new AbstractContingentConstraint(actionStart, actionEnd, minDur, maxDur)
         }
         case const:parser.Constant => action.context.addUndefinedVar(new LVarRef(const.name), const.tipe)
         case _:parser.Decomposition => throw new ANMLException("Decomposition should have been filtered out previously")
@@ -263,10 +237,8 @@ object AbstractAction {
         List(ContainerStart, ContainerEnd) ++
         allConstraints.filter(s => s.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]).flatMap(c => List(c.from, c.to))).toSet.toList
 
-
       // find all contingent timepoints
       val contingents = allConstraints.collect {
-        case AbstractParameterizedContingentConstraint(_, ctg, _, _, _, _) => ctg
         case AbstractContingentConstraint(_, ctg, _, _) => ctg
       }
 
@@ -276,7 +248,9 @@ object AbstractAction {
       action.logStatements.foreach(s => s match {
         case t:AbstractTransition => stn.addMinDelay(t.start, t.end, 1)
         case p:AbstractPersistence => stn.addMinDelay(p.start, p.end, 0)
-        case _ =>
+        case p:AbstractAssignment =>
+          stn.addMinDelay(p.start, p.end, 1)
+          stn.addMinDelay(p.end, p.start, -1)
       })
 
       val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
@@ -285,7 +259,7 @@ object AbstractAction {
       action.stn = stn
 
       // add all minimized temporal statements
-      action.constraints ++= constraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, -stnCst.label))
+      action.constraints ++= constraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, IntExpression.minus(stnCst.label)))
       //add all non temporal statements
       action.constraints ++= otherConsts
 

@@ -82,10 +82,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
     @Override
     public float hc(State st) {
 
-        for(GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
-            TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
-            System.out.println(dtg);
-        }
+//        for(GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
+//            TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
+//            System.out.println(dtg);
+//        }
 
 
         if(additionalCosts.containsKey(st.mID))

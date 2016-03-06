@@ -9,11 +9,15 @@ import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.IntLiteral;
+import planstack.anml.pending.LStateVariable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Value public class TempFluent {
@@ -77,20 +81,8 @@ import java.util.stream.Collectors;
     @Override public String toString() { return time+": "+fluent; }
 
     public static TempFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, GroundProblem pb, GStore store) {
-        int time;
-        if(template.time instanceof DeleteFreeActionsFactory.IntTime) {
-            time = ((DeleteFreeActionsFactory.IntTime) template.time).getValue();
-        } else if(template.time instanceof DeleteFreeActionsFactory.ParameterizedTime) {
-            List<InstanceRef> params = ((DeleteFreeActionsFactory.ParameterizedTime) template.time).args.stream()
-                    .map(v -> container.valueOf(v, pb.liftedPb))
-                    .collect(Collectors.toList());
-            time = pb.intInvariants.get(new GroundProblem.IntegerInvariantKey(((DeleteFreeActionsFactory.ParameterizedTime) template.time).f, params));
-        } else {
-            throw new FAPEException("Unsupported time template: "+template.time);
-        }
-
+        int time = container.evaluate(template.time);
         DGFluent fluent = DGFluent.from(template.fluent, container, pb.liftedPb, store);
-
         return new TempFluent(time, fluent);
     }
 }

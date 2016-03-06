@@ -5,6 +5,7 @@ import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 import planstack.anml.model.concrete.RefCounter
 import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
+import planstack.anml.pending.{IntExpression, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 
 object StatementsFactory {
@@ -40,7 +41,8 @@ object StatementsFactory {
   /**
    * Transforms an annotated statement into its corresponding statement and the temporal constraints that applies
    * to its time-points (derived from the annotation).
-   * @param annotatedStatement Statement (with temporal annotations) to translate
+    *
+    * @param annotatedStatement Statement (with temporal annotations) to translate
    * @param context Context in which the annotated statement appears
    * @param pb Problem in which the statement appears
    * @return An equivalent list of AbstractStatement
@@ -80,7 +82,7 @@ object StatementsFactory {
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
           val e = normalizeExpr(s.term, context, pb)
           val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
-          (Some(task), List(AbstractMinDelay(task.start, task.end, 1)))
+          (Some(task), List(AbstractMinDelay(task.start, task.end, IntExpression.lit(1))))
         }
       }
       case parser.TwoTermsStatement(e1, op, e2, id) => {

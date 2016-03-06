@@ -1,6 +1,9 @@
 package planstack.constraints
 
-import planstack.anml.model.concrete.{TPRef, VarRef}
+import java.util
+
+import planstack.anml.model.concrete.{RefCounter, TPRef, VarRef}
+import planstack.anml.pending.{LStateVariable, StateVariable, Variable, IntExpression}
 import planstack.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
 import planstack.constraints.stnu.{GenSTNUManager, MinimalSTNUManager}
 
@@ -13,13 +16,14 @@ abstract class PendingConstraint[VarRef, TPRef, ID](val from:TPRef, val to:TPRef
   }
 }
 
-class PendingContingency[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val min:VarRef, val max:VarRef)
+class PendingContingency[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID],
+                                            val min:IntExpression, val max:IntExpression)
   extends PendingConstraint[VarRef, TPRef, ID](from, to, optID)
 {
   override def toString = s"$from $to [$min, $max] $optID"
 }
 
-class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val value:VarRef, val f:(Int=>Int))
+class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val value: IntExpression)
   extends PendingConstraint[VarRef, TPRef, ID](from, to, optID) {
 
 }
@@ -49,57 +53,45 @@ class MetaCSP[ID](
   def futureConstraint(u:TPRef,v:TPRef,id:ID,f:(Int=>Int)) =
     Tuple4[TPRef,TPRef,ID,(Int=>Int)](u, v, id, f)
 
-  /** Add a constraint u < v + d */
-  def addMaxDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
-    addRequirement(u, v, d, x => x)
-  }
-  /** Add a constraint u < v + d */
-  def addMaxDelay(u:TPRef, v:TPRef, d:VarRef, trans: Int => Int): Unit = {
-    addRequirement(u, v, d, trans)
-  }
-
-  /** Add a constraint u +d >= v */
-  def addMaxDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](u, v, Some(id), d, (x:Int)=>x)
-    varsToConstraints =
-      if(varsToConstraints.contains(d))
-        varsToConstraints.updated(d, pending :: varsToConstraints(d))
-      else
-        varsToConstraints.updated(d, List(pending))
-
-    if(bindings.domainOfIntVar(d).size() == 1)
-      onBinded(d, bindings.domainOfIntVar(d).get(0))
+  def replaceStateVariablesByVariables(expr: IntExpression, refCounter: RefCounter) : IntExpression = {
+    val transformationFunc : IntExpression => IntExpression = e => e match {
+      case StateVariable(sv) =>
+        assert(sv.func.isConstant, "Temporal constraint involving the non-constant function: "+sv.func)
+        assert(sv.func.valueType == "integer", "Temporal constraint involving the non-integer function: "+sv.func)
+        val variable = new VarRef("integer", refCounter)
+        bindings.AddIntVariable(variable)
+        val variablesOfNAryConst = new util.ArrayList[VarRef](sv.args.toSeq.asJavaCollection)
+        variablesOfNAryConst.add(variable)
+        bindings.addNAryConstraint(variablesOfNAryConst, sv.func.name)
+        IntExpression.variable(variable, e.lb, e.ub)
+      case LStateVariable(_) => throw new RuntimeException("This variable was not binded")
+      case x => x
+    }
+    expr.trans(transformationFunc)
   }
 
-  def addRequirement(u :TPRef, v:TPRef, d :VarRef, trans: (Int => Int)): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](u, v, None, d, trans)
-    varsToConstraints =
-      if(varsToConstraints.contains(d))
-        varsToConstraints.updated(d, pending :: varsToConstraints(d))
-      else
-        varsToConstraints.updated(d, List(pending))
+  def addRequirement(u :TPRef, v:TPRef, value: IntExpression, refCounter: RefCounter): Unit = {
+    if(value.isKnown) {
+      stn.enforceMaxDelay(u, v, value.get)
+    } else {
+      // declared and bind necessary variables
+      val newExpr = replaceStateVariablesByVariables(value, refCounter)
+      val pending = new PendingRequirement[VarRef, TPRef, ID](u, v, None, newExpr)
+      for (d <- newExpr.allVariables) {
+        varsToConstraints =
+          if (varsToConstraints.contains(d))
+            varsToConstraints.updated(d, pending :: varsToConstraints(d))
+          else
+            varsToConstraints.updated(d, List(pending))
 
-    if(bindings.domainOfIntVar(d).size() == 1)
-      onBinded(d, bindings.domainOfIntVar(d).get(0))
+        if (bindings.domainOfIntVar(d).size() == 1)
+          onBinded(d, bindings.domainOfIntVar(d).get(0))
+      }
+    }
   }
 
-  def addMinDelay(u :TPRef, v:TPRef, d:VarRef, trans: (Int => Int)): Unit = {
-    addRequirement(v, u, d, x => -trans(x))
-  }
-  def addMinDelay(u:TPRef, v:TPRef, d:VarRef): Unit = {
-    addRequirement(v, u, d, (x:Int) => -x)
-  }
-
-  def addMinDelayWithID(u:TPRef, v:TPRef, d:VarRef, id:ID): Unit = {
-    val pending = new PendingRequirement[VarRef,TPRef,ID](v, u, Some(id), d, (x:Int)=> -x)
-    varsToConstraints =
-      if(varsToConstraints.contains(d))
-        varsToConstraints.updated(d, pending :: varsToConstraints(d))
-      else
-        varsToConstraints.updated(d, List(pending))
-
-    if(bindings.domainSize(d) == 1)
-      onBinded(d, bindings.domainOfIntVar(d).get(0))
+  def addMinDelay(u: TPRef, v:TPRef, d: IntExpression, refCounter: RefCounter): Unit = {
+    addRequirement(v, u, IntExpression.minus(d), refCounter)
   }
 
   def removeConstraintsWithID(id:ID) = {
@@ -110,71 +102,69 @@ class MetaCSP[ID](
     stn.removeConstraintsWithID(id)
   }
 
-  def addContingentConstraint(from:TPRef, to:TPRef, min:VarRef, max:VarRef): Unit = {
-    val pending = new PendingContingency[VarRef,TPRef,ID](from, to, None, min, max)
+  def addContingentConstraint(from:TPRef, to:TPRef, min:IntExpression, max:IntExpression,
+                                    optionID:Option[ID], refCounter: RefCounter): Unit = {
+    val newMin = replaceStateVariablesByVariables(min, refCounter)
+    val newMax = replaceStateVariablesByVariables(max, refCounter)
 
-    varsToConstraints += ((min, pending :: varsToConstraints.getOrElse(min, List())))
-    varsToConstraints += ((max, pending :: varsToConstraints.getOrElse(max, List())))
+    if(newMin.isKnown && newMax.isKnown) {
+      stn.enforceContingent(from, to, min.get, max.get, optionID)
+    }
 
-    propagateMixedConstraints()
+    val pending = new PendingContingency[VarRef,TPRef,ID](from, to, optionID, min, max)
+    for(v <- List(newMin.allVariables, newMax.allVariables).flatten) {
+      varsToConstraints += ((v, pending :: varsToConstraints.getOrElse(v, List())))
 
-    if(bindings.domainSize(min) == 1)
-      onBinded(min, bindings.domainOfIntVar(min).get(0))
-    if(bindings.domainSize(max) == 1)
-      onBinded(max, bindings.domainOfIntVar(max).get(0))
-  }
+      propagateMixedConstraints()
 
-  def addContingentConstraintWithID(from:TPRef, to:TPRef, min:VarRef, max:VarRef, id:ID): Unit = {
-    val pending = new PendingContingency[VarRef,TPRef,ID](from, to, Some(id), min, max)
-    varsToConstraints += ((min, pending :: varsToConstraints.getOrElse(min, List())))
-    varsToConstraints += ((max, pending :: varsToConstraints.getOrElse(max, List())))
-
-     propagateMixedConstraints()
-
-    if(bindings.domainSize(min) == 1)
-      onBinded(min, bindings.domainOfIntVar(min).get(0))
-    if(bindings.domainSize(max) == 1)
-      onBinded(max, bindings.domainOfIntVar(max).get(0))
+      if (bindings.domainSize(v) == 1)
+        onBinded(v, bindings.domainOfIntVar(v).get(0))
+    }
   }
 
   /** Invoked by the binding constraint network when a variable is binded.
     * If this variable is part of a pending constraint, we propagate this one in hte STN.
+ *
     * @param variable Integer variable that was binded.
     * @param value Value of the variable.
     */
   override def onBinded(variable: VarRef, value: Int): Unit = {
+    val bounds: VarRef => (Int,Int) = v => {
+      val dom = bindings.domainOfIntVar(v)
+      assert(dom.asScala.min == dom.get(0))
+      assert(dom.asScala.max == dom.get(dom.size()-1))
+      (dom.get(0), dom.get(dom.size()-1))
+    }
     if(varsToConstraints contains variable) {
       for (c <- varsToConstraints(variable)) c match {
         case cont:PendingContingency[VarRef,TPRef,ID] => {
           // contingent constraint, add the contingent one if both variable are binded
-          assert(variable == cont.max || variable == cont.min)
-          val bothBinded = bindings.domainSize(cont.min) == 1 && bindings.domainSize(cont.max) == 1
+          val (minLB, minUB) = cont.min.asFunction.apply(bounds)
+          val (maxLB, maxUB) = cont.max.asFunction.apply(bounds)
+          val bothBinded = minLB == minUB && maxLB == maxUB
           if(bothBinded) {
             // both variables are binded, we add the contingent variable
-            val min = bindings.domainOfIntVar(cont.min).get(0)
-            val max = bindings.domainOfIntVar(cont.max).get(0)
-            cont.optID match {
-              case Some(id) => stn.enforceContingentWithID(cont.from, cont.to, min, max, id)
-              case None => stn.enforceContingent(cont.from, cont.to, min, max)
-            }
+            stn.enforceContingent(cont.from, cont.to, minLB, maxLB, cont.optID)
           } else {
             // only one variable is binded, simply add a requirement
             cont.optID match {
               case Some(id) =>
-                if(variable == cont.max) stn.enforceMaxDelayWithID(cont.from, cont.to, value, id)
-                else stn.enforceMinDelayWithID(cont.from, cont.to, value, id)
+                stn.enforceMaxDelayWithID(cont.from, cont.to, maxUB, id)
+                stn.enforceMinDelayWithID(cont.from, cont.to, minLB, id)
               case None =>
-                if(variable == cont.max) stn.enforceMaxDelay(cont.from, cont.to, value)
-                else stn.enforceMinDelay(cont.from, cont.to, value)
+                stn.enforceMaxDelay(cont.from, cont.to, maxUB)
+                stn.enforceMinDelay(cont.from, cont.to, minLB)
             }
           }
         }
-        case req:PendingRequirement[VarRef,TPRef,ID] => req.optID match {
+        case req:PendingRequirement[VarRef,TPRef,ID] =>
+          val (minVal, maxVal) = req.value.asFunction.apply(bounds)
+          req.optID match {
           // requirement (only one variable), propagate it
           case Some(id) =>
-            stn.enforceMaxDelayWithID(req.from, req.to, req.f(value), id)
+            stn.enforceMaxDelayWithID(req.from, req.to, maxVal, id)
           case None =>
-            stn.enforceMaxDelay(req.from, req.to, req.f(value))
+            stn.enforceMaxDelay(req.from, req.to, maxVal)
         }
       }
       // remove the entries of this variable from the table
@@ -188,22 +178,22 @@ class MetaCSP[ID](
         case req: PendingRequirement[VarRef, TPRef, ID] =>
           ???
         case cont: PendingContingency[VarRef, TPRef, ID] =>
-          val minDuration = stn.getMinDelay(cont.from, cont.to)
-          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
-          bindings.keepValuesBelowOrEqualTo(cont.min, maxDuration)
-          bindings.keepValuesAboveOrEqualTo(cont.max, minDuration)
-//          println("mindom: "+bindings.domainOfIntVar(cont.min))
-//          println("maxdom: "+bindings.domainOfIntVar(cont.max))
-          val minDelay = bindings.domainOfIntVar(cont.min).asScala.foldLeft(Int.MaxValue)((x, y) => if (x < y) x else y)
-          val maxDelay = bindings.domainOfIntVar(cont.max).asScala.foldLeft(Int.MinValue)((x, y) => if (x > y) x else y)
-          cont.optID match {
-            case Some(id) =>
-              stn.enforceMinDelayWithID(cont.from, cont.to, minDelay, id)
-              stn.enforceMaxDelayWithID(cont.from, cont.to, maxDelay, id)
-            case None =>
-              stn.enforceMinDelay(cont.from, cont.to, minDelay)
-              stn.enforceMaxDelay(cont.from, cont.to, maxDelay)
-          }
+//          val minDuration = stn.getMinDelay(cont.from, cont.to)
+//          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
+//          bindings.keepValuesBelowOrEqualTo(cont.min, maxDuration)
+//          bindings.keepValuesAboveOrEqualTo(cont.max, minDuration)
+////          println("mindom: "+bindings.domainOfIntVar(cont.min))
+////          println("maxdom: "+bindings.domainOfIntVar(cont.max))
+//          val minDelay = bindings.domainOfIntVar(cont.min).asScala.foldLeft(Int.MaxValue)((x, y) => if (x < y) x else y)
+//          val maxDelay = bindings.domainOfIntVar(cont.max).asScala.foldLeft(Int.MinValue)((x, y) => if (x > y) x else y)
+//          cont.optID match {
+//            case Some(id) =>
+//              stn.enforceMinDelayWithID(cont.from, cont.to, minDelay, id)
+//              stn.enforceMaxDelayWithID(cont.from, cont.to, maxDelay, id)
+//            case None =>
+//              stn.enforceMinDelay(cont.from, cont.to, minDelay)
+//              stn.enforceMaxDelay(cont.from, cont.to, maxDelay)
+//          }
       }
       isConsistent
     } catch {

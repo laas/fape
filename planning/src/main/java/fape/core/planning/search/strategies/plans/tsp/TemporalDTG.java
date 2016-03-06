@@ -91,7 +91,7 @@ public class TemporalDTG {
                         if(cond.isTransition())
                             return new DurativeCondition(f, 0);
                         else // persistence
-                            return new DurativeCondition(f, act.abs.minDelay(cond.start(), cond.end()));
+                            return new DurativeCondition(f, act.minDuration(cond.start(), cond.end()));
                     })
                     .collect(Collectors.toList());
             List<DurativeEffect> effs = act.changesStartingAt(s.start(), planner).stream()
@@ -147,7 +147,7 @@ public class TemporalDTG {
                                 if(cond.isTransition())
                                     return new DurativeCondition(f, 0);
                                 else // persistence
-                                    return new DurativeCondition(f, act.abs.minDelay(cond.start(), cond.end()));
+                                    return new DurativeCondition(f, act.minDuration(cond.start(), cond.end()));
                             })
                             .collect(Collectors.toList());
                     List<DurativeEffect> effs = act.changesStartingAt(s.start(), planner).stream()

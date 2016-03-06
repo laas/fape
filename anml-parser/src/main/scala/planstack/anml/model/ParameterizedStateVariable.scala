@@ -18,6 +18,12 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   def isResource = func.isInstanceOf[NumFunction]
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+
+  override def hashCode() = func.hashCode() + 59 * args.hashCode()
+  override def equals(o: Any) : Boolean = o match {
+    case sv: AbstractParameterizedStateVariable => func == sv.func && args == sv.args
+    case _ => false
+  }
 }
 
 /** A state variable parameterized with variables.
