@@ -1,8 +1,11 @@
 package planstack
 
-import planstack.anml.pending.{IntExpression, IntLiteral, IntExpression$}
+import planstack.anml.model.AbstractParameterizedStateVariable
+import planstack.anml.pending._
 
 import IntExpression._
+
+import scala.collection.mutable
 
 class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 
@@ -45,19 +48,48 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
   def strictlyBetween(tp: AbsTP, min:AbsTP, max:AbsTP) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
 
   def floydWarshall(): Unit = {
+    val svNodes = mutable.Map[AbstractParameterizedStateVariable, LStateVariable]()
+    val lbs = mutable.Map[AbstractParameterizedStateVariable, Int]()
+    val ubs = mutable.Map[AbstractParameterizedStateVariable, Int]()
+
+
     for(k <- 0 until size) {
       for(i <- 0 until size) {
         for(j <- 0 until size) {
           dist(i)(j) = min(dist(i)(j), sum(dist(i)(k), dist(k)(j)))
           val l = sum(dist(i)(j), dist(j)(i))
           assert(l.ub >= 0,  "Error: temporal inconsistency in the definition of this action")
-          if(l.ub == 0 && !l.isKnown) {
-            dist(i)(j) = IntExpression.lit(dist(i)(j).ub)
-            dist(j)(i) = IntExpression.lit(dist(j)(i).ub)
+          val inferredConstraints = geConstraint(l, 0)
+          for(c <- inferredConstraints) {
+            c match {
+              case GreaterEqualConstraint(LStateVariable(sv, locLB, _), lb) =>
+                lbs.update(sv, Math.max(lb, lbs.getOrElseUpdate(sv, locLB)))
+              case LesserEqualConstraint(LStateVariable(sv, _, _), ub) =>
+                ubs.update(sv, Math.min(ub, lbs.getOrElse(sv, Int.MaxValue)))
+              case _ =>
+                println(c)
+            }
           }
+          val transfo = (e:IntExpression) => e match {
+            case LStateVariable(sv, lb, ub) =>
+              IntExpression.locSV(sv, lbs.getOrElse(sv, lb), ubs.getOrElse(sv, ub))
+            case x =>
+              x
+          }
+
+          dist(i)(j) = dist(i)(j).trans(transfo)
+          dist(j)(i) = dist(j)(i).trans(transfo)
+//          if(l.ub == 0 && !l.isKnown) {
+//            println("next: ")
+//            println("  "+geConstraint(l, 0).mkString("\n  "))
+//            dist(i)(j) = IntExpression.lit(dist(i)(j).ub)
+//            dist(j)(i) = IntExpression.lit(dist(j)(i).ub)
+//          }
         }
       }
     }
+    println(lbs)
+    println(ubs)
   }
 
   private def extractFlex(prio: List[AbsTP], pending:Set[AbsTP], result: Result) : Result = {

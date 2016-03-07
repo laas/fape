@@ -36,12 +36,19 @@ abstract class IntExpression extends Comparable[IntExpression] {
       0
 }
 
+abstract class UnaryIntExpression extends IntExpression
+abstract class BinaryIntExpression extends IntExpression
+
+abstract class Constraint
+case class GreaterEqualConstraint(e: IntExpression, value: Int) extends Constraint
+case class LesserEqualConstraint(e: IntExpression, value: Int) extends Constraint
+
 object IntExpression {
   val maxes: mutable.Map[(IntExpression,IntExpression),IntExpression] = mutable.Map()
   val minus: mutable.Map[(IntExpression,IntExpression),IntExpression] = mutable.Map()
   val sums: mutable.Map[(IntExpression,IntExpression),IntExpression] = mutable.Map()
   val inversions: mutable.Map[IntExpression,IntExpression] = mutable.Map()
-  val locStateVars: mutable.Map[AbstractParameterizedStateVariable, IntExpression] = mutable.Map()
+  val locStateVars: mutable.Map[(AbstractParameterizedStateVariable,Int,Int), LStateVariable] = mutable.Map()
   val literals: mutable.Map[Int, IntExpression] = mutable.Map()
   val stateVariables: mutable.Map[ParameterizedStateVariable, IntExpression] = mutable.Map()
   val variables: mutable.Map[(VarRef,Int,Int), IntExpression] = mutable.Map()
@@ -63,8 +70,29 @@ object IntExpression {
     else
       -x
 
+  def geConstraint(e: IntExpression, value:Int) : Seq[Constraint] = e match {
+    case _ if e.lb >= value => Nil
+    case Min(x, y) => geConstraint(x, value) ++ geConstraint(y, value)
+    case Sum(x, y) if x.isKnown => geConstraint(y, value - x.get)
+    case Sum(x, y) if y.isKnown => geConstraint(x, value - y.get)
+    case Sum(x, y) if x.ub + y.ub == value => geConstraint(x, x.ub) ++ geConstraint(y, y.ub)
+    case Invert(x) => leConstraint(x, - value)
+    case x => List(new GreaterEqualConstraint(e, value))
+  }
+
+  def leConstraint(e: IntExpression, value:Int) : Seq[Constraint] = e match {
+    case _ if e.ub <= value => Nil
+    case Max(x, y) => leConstraint(x, value) ++ leConstraint(y, value)
+    case Sum(x, y) if x.isKnown => leConstraint(y, value - x.get)
+    case Sum(x, y) if y.isKnown => leConstraint(x, value - y.get)
+    case Sum(x, y) if x.lb + y.lb == value => leConstraint(x, x.lb) ++ leConstraint(y, y.lb)
+    case Invert(x) => geConstraint(x, -value)
+    case x => List(new LesserEqualConstraint(e, value))
+  }
+
   def lit(i: Int) = literals.getOrElseUpdate(i, { IntLiteral(i) })
-  def locSV(lsv: AbstractParameterizedStateVariable) = locStateVars.getOrElseUpdate(lsv, { LStateVariable(lsv) })
+  def locSV(lsv: AbstractParameterizedStateVariable) : LStateVariable = locSV(lsv, lsv.func.asInstanceOf[IntFunction].minValue, lsv.func.asInstanceOf[IntFunction].maxValue)
+  def locSV(lsv: AbstractParameterizedStateVariable, lb:Int, ub:Int) = locStateVars.getOrElseUpdate((lsv,lb,ub), { LStateVariable(lsv,lb,ub) })
   def stateVariable(sv: ParameterizedStateVariable) = stateVariables.getOrElseUpdate(sv, { StateVariable(sv) })
   def variable(v: VarRef, lb:Int, ub:Int) = variables.getOrElseUpdate((v,lb,ub), { Variable(v,lb,ub) })
 
@@ -76,11 +104,19 @@ object IntExpression {
     else
       (v1, v2) match {
         case (IntLiteral(d1), IntLiteral(d2)) => lit(d1 + d2)
-        case (x, y:IntLiteral) => sum(y,x) //always put literals first
+        case (x:BinaryIntExpression, y:UnaryIntExpression) => sum(y,x) //always put literals first
+        case (x:Sum, y:BinaryIntExpression) if !y.isInstanceOf[Sum] => sum(y,x)
+        case (x, y:IntLiteral) => sum(y, x)
         case (IntLiteral(0), x) => x
         case (x:IntLiteral, Max(y,z)) => max(sum(x,y), sum(x,z))
         case (x:IntLiteral, Min(y,z)) => min(sum(x,y), sum(x,z))
+        case (x:UnaryIntExpression, Min(y,z)) => min(sum(x,y), sum(x,z))
         case (IntLiteral(x), Sum(IntLiteral(y),z)) => sum(lit(x+y), z)
+        case (x:UnaryIntExpression, Sum(y:IntLiteral, z)) => sum(y, sum(x,z))
+        case (Sum(IntLiteral(x), y), Sum(IntLiteral(z), w)) => sum(lit(x+z), sum(y,w))
+        case (Min(x,y), z:Sum) => min(sum(x,z), sum(y,z))
+        case (Min(x,y), Min(z,w)) => min(min(sum(x,z), sum(x,w)), min(sum(y,z), sum(y,w)))
+        case (Max(x,y), z:Sum) => min(sum(x,z), sum(y,z))
         case (x, Invert(y)) if x == y => lit(0)
         case (Invert(y), x) if x == y => lit(0)
         case _ => sums.getOrElseUpdate((v1,v2), {Sum(v1,v2)})
@@ -94,7 +130,8 @@ object IntExpression {
     else
       (v1,v2) match {
         case (IntLiteral(d1), IntLiteral(d2)) => if(d1 > d2) v1 else v2
-        case (x, y:IntLiteral) => max(y, x)
+        case (x:BinaryIntExpression, y:UnaryIntExpression) => max(y, x)
+        case (x, y:IntLiteral) => max(y,x)
         case (x, Max(y,z)) if (x eq y) || (x eq z) => max(y,z)
         case (x, Min(y,z)) if x eq y => z
         case (x, Min(y,z)) if x eq z => y
@@ -114,7 +151,8 @@ object IntExpression {
     else
       (v1,v2) match {
         case (IntLiteral(d1), IntLiteral(d2)) => if(d1 < d2) v1 else v2
-        case (x, y:IntLiteral) => min(y, x)
+        case (x:BinaryIntExpression, y:UnaryIntExpression) => min(y, x)
+        case (x, y:IntLiteral) => min(y,x)
         case (x:IntLiteral, Min(y:IntLiteral, z)) => min(min(x,y), z)
         case (Min(x,y), Min(w,z)) if y == z => min(min(x,w), z)
         case _ if v1 eq v2 => v1
@@ -154,7 +192,7 @@ object IntExpression {
     }
 }
 
-case class IntLiteral private[pending] (val value: Int) extends IntExpression {
+case class IntLiteral private[pending] (val value: Int) extends UnaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = this
   override def isParameterized: Boolean = false
   override def lb: Int = value
@@ -168,12 +206,9 @@ case class IntLiteral private[pending] (val value: Int) extends IntExpression {
   override def toString = value.toString
 }
 
-case class LStateVariable private[pending] (val lsv: AbstractParameterizedStateVariable) extends IntExpression {
+case class LStateVariable private[pending] (val lsv: AbstractParameterizedStateVariable, lb: Int, ub: Int) extends UnaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = new StateVariable(new ParameterizedStateVariable(lsv.func, lsv.args.map(f).toArray))
   override def isParameterized: Boolean = true
-
-  override val lb: Int = lsv.func.asInstanceOf[IntFunction].minValue
-  override val ub: Int = lsv.func.asInstanceOf[IntFunction].maxValue
 
   override def asFunction: ((VarRef) => (Int, Int)) => (Int, Int) = throw new RuntimeException("This should have been binded and replaced by a variable first.")
   override def allParts: Iterable[IntExpression] = List(this)
@@ -181,7 +216,7 @@ case class LStateVariable private[pending] (val lsv: AbstractParameterizedStateV
   override def trans(transformation: (IntExpression) => IntExpression): IntExpression = transformation(this)
 }
 
-case class StateVariable private[pending] (val sv: ParameterizedStateVariable) extends IntExpression {
+case class StateVariable private[pending] (val sv: ParameterizedStateVariable) extends UnaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = this
   override def isParameterized: Boolean = true
   override def lb: Int = sv.func.asInstanceOf[IntFunction].minValue
@@ -192,7 +227,7 @@ case class StateVariable private[pending] (val sv: ParameterizedStateVariable) e
   override def trans(transformation: (IntExpression) => IntExpression): IntExpression = transformation(this)
 }
 
-case class Variable private[pending] (val variable: VarRef, val lb: Int, val ub: Int) extends IntExpression {
+case class Variable private[pending] (val variable: VarRef, val lb: Int, val ub: Int) extends UnaryIntExpression {
   require(variable.typ == "integer")
 
   override def bind(f: (LVarRef) => VarRef): IntExpression = this
@@ -203,7 +238,7 @@ case class Variable private[pending] (val variable: VarRef, val lb: Int, val ub:
   override def trans(transformation: (IntExpression) => IntExpression): IntExpression = transformation(this)
 }
 
-case class Max private[pending] (val left: IntExpression, val right: IntExpression) extends IntExpression {
+case class Max private[pending] (val left: IntExpression, val right: IntExpression) extends BinaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = IntExpression.max(left.bind(f), right.bind(f))
   override def isParameterized: Boolean = left.isParameterized || right.isParameterized
   override val lb = Math.max(left.lb, right.lb)
@@ -220,7 +255,7 @@ case class Max private[pending] (val left: IntExpression, val right: IntExpressi
   override def trans(t: (IntExpression) => IntExpression): IntExpression = IntExpression.max(left.trans(t), right.trans(t))
 }
 
-case class Min private[pending] (val left: IntExpression, val right: IntExpression) extends IntExpression {
+case class Min private[pending] (val left: IntExpression, val right: IntExpression) extends BinaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = IntExpression.min(left.bind(f), right.bind(f))
   override def isParameterized: Boolean = left.isParameterized || right.isParameterized
   override val lb = Math.min(left.lb, right.lb)
@@ -235,7 +270,7 @@ case class Min private[pending] (val left: IntExpression, val right: IntExpressi
   override def trans(t: (IntExpression) => IntExpression): IntExpression = IntExpression.min(left.trans(t), right.trans(t))
 }
 
-case class Invert private[pending] (val value: IntExpression) extends IntExpression {
+case class Invert private[pending] (val value: IntExpression) extends UnaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = IntExpression.minus(value.bind(f))
   override def isParameterized: Boolean = value.isParameterized
   override val lb = IntExpression.safeinvert(value.ub)
@@ -250,7 +285,7 @@ case class Invert private[pending] (val value: IntExpression) extends IntExpress
   override def trans(t: (IntExpression) => IntExpression): IntExpression = IntExpression.minus(value.trans(t))
 }
 
-case class Sum private[pending] (val left: IntExpression, val right: IntExpression) extends IntExpression {
+case class Sum private[pending] (val left: IntExpression, val right: IntExpression) extends BinaryIntExpression {
   override def bind(f: (LVarRef) => VarRef): IntExpression = IntExpression.sum(left.bind(f), right.bind(f))
   override def isParameterized: Boolean = left.isParameterized && right.isParameterized
   override val lb = IntExpression.safesum(left.lb, right.lb)
