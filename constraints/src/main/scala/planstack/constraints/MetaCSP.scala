@@ -2,6 +2,7 @@ package planstack.constraints
 
 import java.util
 
+import planstack.anml.model.ParameterizedStateVariable
 import planstack.anml.model.concrete.{RefCounter, TPRef, VarRef}
 import planstack.anml.pending.{LStateVariable, StateVariable, Variable, IntExpression}
 import planstack.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
@@ -37,47 +38,27 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @tparam ID Type of identifiers for constraints in the STN.
  */
 class MetaCSP[ID](
-                          val bindings: BindingConstraintNetwork,
-                          val stn: GenSTNUManager[ID],
-                          protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]])
+                   val bindings: BindingConstraintNetwork,
+                   val stn: GenSTNUManager[ID],
+                   protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]]
+                 )
   extends IntBindingListener[VarRef]
 {
 
   bindings.setListener(this)
 
   def this() = this(new BindingConstraintNetwork(), new MinimalSTNUManager[ID](), Map())
-//  def this() = this(new ConservativeConstraintNetwork[VarRef](), new MinimalSTNUManager[TPRef,ID](), Map())
 
   def this(toCopy : MetaCSP[ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 
-  def futureConstraint(u:TPRef,v:TPRef,id:ID,f:(Int=>Int)) =
-    Tuple4[TPRef,TPRef,ID,(Int=>Int)](u, v, id, f)
-
-  def replaceStateVariablesByVariables(expr: IntExpression, refCounter: RefCounter) : IntExpression = {
-    val transformationFunc : IntExpression => IntExpression = e => e match {
-      case StateVariable(sv) =>
-        assert(sv.func.isConstant, "Temporal constraint involving the non-constant function: "+sv.func)
-        assert(sv.func.valueType == "integer", "Temporal constraint involving the non-integer function: "+sv.func)
-        val variable = new VarRef("integer", refCounter)
-        bindings.AddIntVariable(variable)
-        val variablesOfNAryConst = new util.ArrayList[VarRef](sv.args.toSeq.asJavaCollection)
-        variablesOfNAryConst.add(variable)
-        bindings.addNAryConstraint(variablesOfNAryConst, sv.func.name)
-        IntExpression.variable(variable, e.lb, e.ub)
-      case LStateVariable(_) => throw new RuntimeException("This variable was not binded")
-      case x => x
-    }
-    expr.trans(transformationFunc)
-  }
-
-  def addRequirement(u :TPRef, v:TPRef, value: IntExpression, refCounter: RefCounter): Unit = {
+  def addRequirement(u :TPRef, v:TPRef, value: IntExpression): Unit = {
     if(value.isKnown) {
       stn.enforceMaxDelay(u, v, value.get)
     } else {
       // declared and bind necessary variables
-      val newExpr = replaceStateVariablesByVariables(value, refCounter)
-      val pending = new PendingRequirement[VarRef, TPRef, ID](u, v, None, newExpr)
-      for (d <- newExpr.allVariables) {
+      assert(!value.isParameterized)
+      val pending = new PendingRequirement[VarRef, TPRef, ID](u, v, None, value)
+      for (d <- value.allVariables) {
         varsToConstraints =
           if (varsToConstraints.contains(d))
             varsToConstraints.updated(d, pending :: varsToConstraints(d))
@@ -90,8 +71,8 @@ class MetaCSP[ID](
     }
   }
 
-  def addMinDelay(u: TPRef, v:TPRef, d: IntExpression, refCounter: RefCounter): Unit = {
-    addRequirement(v, u, IntExpression.minus(d), refCounter)
+  def addMinDelay(u: TPRef, v:TPRef, d: IntExpression): Unit = {
+    addRequirement(v, u, IntExpression.minus(d))
   }
 
   def removeConstraintsWithID(id:ID) = {
@@ -103,22 +84,22 @@ class MetaCSP[ID](
   }
 
   def addContingentConstraint(from:TPRef, to:TPRef, min:IntExpression, max:IntExpression,
-                                    optionID:Option[ID], refCounter: RefCounter): Unit = {
-    val newMin = replaceStateVariablesByVariables(min, refCounter)
-    val newMax = replaceStateVariablesByVariables(max, refCounter)
+                                    optionID:Option[ID]): Unit = {
+    require(!min.isParameterized, "This IntExpression should have been cleaned of parameterized state variables first.")
+    require(!max.isParameterized, "This IntExpression should have been cleaned of parameterized state variables first.")
 
-    if(newMin.isKnown && newMax.isKnown) {
+    if(min.isKnown && max.isKnown) {
       stn.enforceContingent(from, to, min.get, max.get, optionID)
-    }
+    } else {
+      val pending = new PendingContingency[VarRef, TPRef, ID](from, to, optionID, min, max)
+      for (v <- List(min.allVariables, max.allVariables).flatten) {
+        varsToConstraints += ((v, pending :: varsToConstraints.getOrElse(v, List())))
 
-    val pending = new PendingContingency[VarRef,TPRef,ID](from, to, optionID, min, max)
-    for(v <- List(newMin.allVariables, newMax.allVariables).flatten) {
-      varsToConstraints += ((v, pending :: varsToConstraints.getOrElse(v, List())))
+        propagateMixedConstraints()
 
-      propagateMixedConstraints()
-
-      if (bindings.domainSize(v) == 1)
-        onBinded(v, bindings.domainOfIntVar(v).get(0))
+        if (bindings.domainSize(v) == 1)
+          onBinded(v, bindings.domainOfIntVar(v).get(0))
+      }
     }
   }
 
@@ -131,8 +112,8 @@ class MetaCSP[ID](
   override def onBinded(variable: VarRef, value: Int): Unit = {
     val bounds: VarRef => (Int,Int) = v => {
       val dom = bindings.domainOfIntVar(v)
-      assert(dom.asScala.min == dom.get(0))
-      assert(dom.asScala.max == dom.get(dom.size()-1))
+//      assert(dom.asScala.min == dom.get(0))
+//      assert(dom.asScala.max == dom.get(dom.size()-1))
       (dom.get(0), dom.get(dom.size()-1))
     }
     if(varsToConstraints contains variable) {

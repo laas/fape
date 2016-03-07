@@ -25,7 +25,7 @@ public class Factory {
 
     /** Returns a MetaCSP that will consistent only if the underlying STNU is dynamically controllable */
     public static <ID> MetaCSP<ID> getMetaWithDynamicControllability() {
-        return new MetaCSP<>(
+        return new MetaCSP<ID>(
                 new BindingConstraintNetwork(),
                 new STNUManager<>(),
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());

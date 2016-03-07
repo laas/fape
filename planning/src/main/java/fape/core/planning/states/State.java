@@ -34,6 +34,9 @@ import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.LStateVariable;
+import planstack.anml.pending.StateVariable;
 import planstack.constraints.MetaCSP;
 import planstack.constraints.bindings.Domain;
 import planstack.constraints.stnu.Controllability;
@@ -42,6 +45,7 @@ import scala.Option;
 import scala.Tuple2;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,6 +78,9 @@ public class State implements Reporter {
     protected final ResourceManager resMan;
 
     public final RefCounter refCounter;
+
+    /** Maps a constant parameterized variable to a variable in the CSP */
+    public final Map<ParameterizedStateVariable, VarRef> stateVarsToVariables;
 
     private boolean isDeadEnd = false;
 
@@ -166,6 +173,7 @@ public class State implements Reporter {
         potentialSupporters = new HashMap<>();
         addableActions = null;
         addableTemplates = null;
+        stateVarsToVariables = new HashMap<>();
 
         supportConstraints = new LinkedList<>();
         extensions = new LinkedList<>();
@@ -197,6 +205,7 @@ public class State implements Reporter {
         resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
         potentialSupporters = new HashMap<>(st.potentialSupporters);
+        stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
 
@@ -574,10 +583,14 @@ public class State implements Reporter {
     private void apply(Chronicle mod, TemporalConstraint tc) {
 
         if(tc instanceof MinDelayConstraint) {
-            csp.addMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay(), refCounter);
+            csp.addMinDelay(tc.src(), tc.dst(), translateToCSPVariable(((MinDelayConstraint) tc).minDelay()));
         } else if(tc instanceof ContingentConstraint) {
             ContingentConstraint cc = (ContingentConstraint) tc;
-            csp.addContingentConstraint(cc.src(), cc.dst(), cc.min(), cc.max(), Option.empty(), refCounter);
+            csp.addContingentConstraint(
+                    cc.src(), cc.dst(),
+                    translateToCSPVariable(cc.min()),
+                    translateToCSPVariable(cc.max()),
+                    Option.empty());
         } else {
             throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }
@@ -1047,7 +1060,7 @@ public class State implements Reporter {
     public IRSet<GAction> getGroundActions(Action lifted) {
         assert csp.bindings().isRecorded(lifted.instantiationVar());
         Domain dom = csp.bindings().rawDomain(lifted.instantiationVar());
-        return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
+        return new IRSet<>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
     }
 
     public List<Action> getAllActions() { return actions; }
@@ -1137,6 +1150,37 @@ public class State implements Reporter {
 
     public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addNAryConstraint(variables, setID);}
 
+    /**
+     * Retrieves the CSP variable representing a cosntant parameterized state variable.
+     * If necessary, this variable is created and added to the CSP.
+     */
+    public VarRef getVariableOf(ParameterizedStateVariable sv) {
+        assert sv.func().isConstant();
+        if(!stateVarsToVariables.containsKey(sv)) {
+            assert sv.func().valueType().equals("integer") : "Temporal constraint involving the non-integer function: " + sv.func();
+            VarRef variable = new VarRef("integer", refCounter);
+            csp.bindings().AddIntVariable(variable);
+            List<VarRef> variablesOfNAryConst = new ArrayList<>(Arrays.asList(sv.args()));
+            variablesOfNAryConst.add(variable);
+            csp.bindings().addNAryConstraint(variablesOfNAryConst, sv.func().name());
+            stateVarsToVariables.put(sv, variable);
+        }
+        return stateVarsToVariables.get(sv);
+    }
+
+    public IntExpression translateToCSPVariable(IntExpression expr) {
+        Function<IntExpression,IntExpression> transformation = e -> {
+            if(e instanceof StateVariable) {
+                ParameterizedStateVariable sv = ((StateVariable) e).sv();
+                assert sv.func().valueType().equals("integer");
+                return IntExpression.variable(getVariableOf(sv), e.lb(), e.ub());
+            } else {
+                assert !(e instanceof LStateVariable) : "Error: local state variable was not binded";
+                return e;
+            }
+        };
+        return expr.jTrans(transformation);
+    }
 
     /************ Wrapper around TemporalDatabaseManager **********************/
 

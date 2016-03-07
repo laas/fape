@@ -1,5 +1,7 @@
 package planstack.anml.model
 
+import java.util
+
 import planstack.anml.model.concrete.VarRef
 import planstack.anml.{ANMLException, parser}
 
@@ -38,6 +40,12 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
   def arg(i: Int) : VarRef = args(i)
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+  override lazy val hashCode = func.hashCode() + 59 * util.Arrays.asList(args).hashCode()
+  override def equals(o: Any) = o match {
+    case sv: ParameterizedStateVariable =>
+      func == sv.func && args.indices.forall(i => args(i) == sv.args(i))
+    case _ => false
+  }
 }
 
 object AbstractParameterizedStateVariable {
