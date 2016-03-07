@@ -241,7 +241,6 @@ object AbstractAction {
       val contingents = allConstraints.collect {
         case AbstractContingentConstraint(_, ctg, _, _) => ctg
       }
-
       val stn = new FullSTN(timepoints)
       for(AbstractMinDelay(from, to, minDelay) <- simpleTempConst)
         stn.addMinDelay(from, to, minDelay)
