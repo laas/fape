@@ -9,10 +9,19 @@ import scala.collection.mutable
 
 class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 
+  /**
+    * A rigid set contains on reference timepoint.
+    * All other time points are defined rigidly with respect
+    * to this reference.
+    * Any timepopint 'tp' in the set is defined with:
+    *   time(reference) + dists(tp) = time(tp)
+    */
   class RigidSet(var reference: Int) {
     val dists = mutable.Map[Int,Int]()
     dists(reference) = 0
 
+    /** record a new rigid relation between those two timepoints.
+      * At least one of them must be in the set already */
     def addRigidRelation(from: Int, to: Int, d: Int): Unit = {
       if(dists.contains(from))
         dists(to) = dists(from) + d
@@ -72,10 +81,11 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     dist(src)(dst) = min(dist(src)(dst), t)
   }
 
-  def concurrent(tp1: AbsTP, tp2: AbsTP) = equals(rigidAwareDist(tp1,tp2), rigidAwareDist(tp2,tp1))
+
 
   private def rigidAwareDist(a:AbsTP, b:AbsTP) : IntExpression =
     rigidAwareDist(toIndex(a), toIndex(b))
+
   private def rigidAwareDist(a:Int, b:Int) : IntExpression = {
     val (aRef:Int, aRefToA:Int) =
       if(rigids.contains(a)) (rigids(a).reference, rigids(a).distFromRef(a))
@@ -87,6 +97,8 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     return sum(lit(bRefToB - aRefToA), dist(aRef)(bRef))
   }
 
+  def concurrent(tp1: AbsTP, tp2: AbsTP) = equals(rigidAwareDist(tp1,tp2), rigidAwareDist(tp2,tp1))
+
   def minDelay(from: AbsTP, to:AbsTP) = minus(rigidAwareDist(to, from))
   def maxDelay(from: AbsTP, to: AbsTP) = rigidAwareDist(from, to)
   def beforeOrConcurrent(first: AbsTP, second: AbsTP) = lesserEqual(rigidAwareDist(second, first), NIL)
@@ -94,6 +106,9 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
   def between(tp: AbsTP, min:AbsTP, max:AbsTP) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
   def strictlyBetween(tp: AbsTP, min:AbsTP, max:AbsTP) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
 
+  /** Check whether two timepoints are rigidly constrained.
+    * If this is the case, the will be added to the relevant rigid set
+    * and removed from the distance matrix. */
   private def checkRigid(t1: Int, t2: Int): Unit = {
     if(t1 == t2)
       return
@@ -126,8 +141,11 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     }
   }
 
+  /** Returns false for any timepoint that was pruned out of the dist array because it was rigid */
   private def isActive(tp:Int) = !rigids.contains(tp) || references.contains(tp)
 
+  /** Redirect all constraints involving a rigid time point to point
+    * to its reference */
   def enforceNewRigid(tp: Int): Unit = {
     import IntExpression._
     assert(!references.contains(tp))
@@ -143,6 +161,14 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     }
   }
 
+  /**
+    * Makes a complete propagation using the floyd-warshall algorithm.
+    * Online, this method: (i) infers bounds (lb and ub) on the variables
+    * appearing on the distance matrix that must hold for the STN to be
+    * consistent, (ii) detects "rigig" timpoint that have a fixed distance to a
+    * reference timpoint. Those timepoints are compiled out of the distance matrix
+    * to avoid useless propagation.
+    */
   def floydWarshall(): Unit = {
     val svNodes = mutable.Map[AbstractParameterizedStateVariable, LStateVariable]()
     val lbs = mutable.Map[AbstractParameterizedStateVariable, Int]() //TODO: enforce those bounds
@@ -182,6 +208,9 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
 //    println(ubs)
   }
 
+  /** Returns a list of (ref, rigids) where ref is a timepoint and rigids is a possibly emptu set
+    * of that are rigidly attached to it. All timepoints of the STN are present either as a reference
+    * or as a rigid timepoint. Timepoints in 'prio' are selected first to become references. */
   private def extractFlex(prio: List[AbsTP], pending:Set[AbsTP], result: Result) : Result = {
     prio match {
       case cur :: tail if !pending.contains(cur) =>
