@@ -161,4 +161,17 @@ public class TemporalDTG {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(sv);
+        for(Node n : outTransitions.keySet()) {
+            sb.append("\n  "); sb.append(n);
+            for(Transition tr : outTransitions.get(n)) {
+                sb.append("\n    "); sb.append(tr);
+            }
+        }
+        return sb.toString();
+    }
 }
