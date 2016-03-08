@@ -7,7 +7,6 @@ import fape.core.planning.planner.APlanner;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.statements.LogStatement;
 
 import static fape.core.planning.grounding.GAction.*;
 
@@ -19,11 +18,16 @@ public class TemporalDTG {
     public final APlanner planner;
     public final GStateVariable sv;
 
+    /** Stays false until the postProcess method has been called.
+     * Until then, the DTG might not be in a consistent state. */
+    private boolean postProcessed = false;
+
     @AllArgsConstructor @Getter
     public class Node {
         final Fluent f;
         final int minStay;
         final int maxStay;
+        final boolean isChangePossible;
         @Override public String toString() { return "["+minStay+","+(maxStay<Integer.MAX_VALUE?maxStay:"inf")+"] "+f; }
     }
 
@@ -41,8 +45,19 @@ public class TemporalDTG {
         @Override public String toString() { return "["+minDuration+"] "+f; }
     }
 
+    public interface Change {
+        Node getFrom();
+        Node getTo();
+        int getDuration();
+        List<DurativeCondition> getConditions();
+        List<DurativeEffect> getSimultaneousEffects();
+        GLogStatement getStatement();
+        GAction getContainer();
+        boolean isTransition();
+    }
+
     @AllArgsConstructor @Getter
-    public class Transition {
+    public class Transition implements Change {
         final Node from;
         final Node to;
         final int duration;
@@ -50,34 +65,77 @@ public class TemporalDTG {
         final List<DurativeEffect> simultaneousEffects;
         final GAction.GLogStatement statement;
         final GAction container;
+        public boolean isTransition() { return true; }
         @Override public String toString() { return from+" -["+duration+"]-> "+to; }
     }
 
-    public Map<InstanceRef, Node> baseNodes = new HashMap<>();
-    public Map<Node, List<Transition>> outTransitions = new HashMap<>();
-    public Map<Node, List<Transition>> inTransitions = new HashMap<>();
+    @AllArgsConstructor @Getter
+    private class Assignment implements Change {
+        final Node to;
+        final int duration;
+        final List<DurativeCondition> conditions;
+        final List<DurativeEffect> simultaneousEffects;
+        final GAction.GLogStatement statement;
+        final GAction container;
+        public Node getFrom() { throw new UnsupportedOperationException("Trying to get the origin of an assignment change."); }
+        public boolean isTransition() { return false; }
+        @Override public String toString() { return " :=["+duration+"]:= "+to; }
+    }
+
+    private Map<InstanceRef, Node> baseNodes = new HashMap<>();
+    private Map<Node, List<Change>> outTransitions = new HashMap<>();
+    private Map<Node, List<Change>> inTransitions = new HashMap<>();
+    private List<Assignment> allAssignments = new ArrayList<>();
 
     public TemporalDTG(GStateVariable sv, Collection<InstanceRef> domain, APlanner pl) {
         this.planner = pl;
         this.sv = sv;
         for(InstanceRef val : domain) {
             Fluent f = pl.preprocessor.getFluent(sv, val);
-            baseNodes.put(val, new Node(f, 0, Integer.MAX_VALUE));
+            Node n = new Node(f, 0, Integer.MAX_VALUE, true);
+            baseNodes.put(val, n);
+            inTransitions.put(n, new ArrayList<>());
+            outTransitions.put(n, new ArrayList<>());
         }
     }
 
     private void recordTransition(Transition tr) {
+        assert !postProcessed;
         if(!outTransitions.containsKey(tr.getFrom()))
             outTransitions.put(tr.getFrom(), new ArrayList<>());
+        if(!outTransitions.containsKey(tr.getTo()))
+            outTransitions.put(tr.getTo(), new ArrayList<>());
+        if(!inTransitions.containsKey(tr.getFrom()))
+            inTransitions.put(tr.getFrom(), new ArrayList<>());
         if(!inTransitions.containsKey(tr.getTo()))
             inTransitions.put(tr.getTo(), new ArrayList<>());
+
         outTransitions.get(tr.getFrom()).add(tr);
         inTransitions.get(tr.getTo()).add(tr);
+    }
 
-        // TODO check that we are not missing any edge going out of non-base nodes
+    private void recordAssignment(Assignment ass) {
+        assert !postProcessed;
+        if(!outTransitions.containsKey(ass.getTo()))
+            outTransitions.put(ass.getTo(), new ArrayList<>());
+        if(!inTransitions.containsKey(ass.getTo()))
+            inTransitions.put(ass.getTo(), new ArrayList<>());
+
+        allAssignments.add(ass);
+    }
+
+    public List<Change> getChangesFrom(Node n) {
+        assert postProcessed;
+        return outTransitions.get(n);
+    }
+
+    public List<Change> getChangesTo(Node n) {
+        assert postProcessed;
+        return inTransitions.get(n);
     }
 
     public void extendWith(GAction act) {
+        assert !postProcessed;
         List<GAction.GLogStatement> changes = act.getStatements().stream()
                 .filter(s -> s.getStateVariable() == sv && s.isChange())
                 .collect(Collectors.toList());
@@ -102,8 +160,7 @@ public class TemporalDTG {
                 Transition tr = new Transition(from, to, duration, conds, effs, s, act);
                 recordTransition(tr);
             } else { // assignement
-                for(Node from : baseNodes.values())
-                    recordTransition(new Transition(from, to, duration, conds, effs, s, act));
+                allAssignments.add(new Assignment(to, duration, conds, effs, s, act));
             }
         } else { // multiple changes on this state variable
             // sort all statements by increasing time
@@ -114,8 +171,11 @@ public class TemporalDTG {
             subchains.add(new LinkedList<>());
             for(GLogStatement s : changes) {
                 if(s.isAssignement())
+                    // start new subchain on assignments
                     subchains.add(new LinkedList<>());
-                if(s.isTransition() && !s.startValue().equals(subchains.getLast().getLast().endValue()))
+                if(s.isTransition() &&
+                        (subchains.getLast().isEmpty() || !s.startValue().equals(subchains.getLast().getLast().endValue())))
+                    // start new subchain on transitions whose value is incompatible with the previous one
                     subchains.add(new LinkedList<>());
                 subchains.getLast().add(s);
             }
@@ -123,22 +183,33 @@ public class TemporalDTG {
                 Node lastNode = null;
                 for(int i=0 ; i<chain.size() ; i++) {
                     GLogStatement s = chain.get(i);
-                    List<Node> froms;
+                    Optional<Node> from;
                     if(s.isAssignement())
-                        froms = baseNodes.values().stream().collect(Collectors.toList());
+                        from = Optional.empty();
                     else if(i == 0)
-                        froms = Collections.singletonList(baseNodes.get(s.startValue()));
+                        from = Optional.of(baseNodes.get(s.startValue()));
                     else
-                        froms = Collections.singletonList(lastNode);
+                        from = Optional.of(lastNode);
                     Node to;
                     if(i == chain.size()-1) {
                         to = baseNodes.get(s.endValue());
                     } else {
-                        int minStay = act.minDuration(s.end(), chain.get(i+1).start());
-                        int maxStay = act.maxDuration(s.end(), chain.get(i+1).start());
+                        GLogStatement nextChange = chain.get(i+1);
+                        int minStay = act.minDuration(s.end(), nextChange.start());
+                        int maxStay = act.maxDuration(s.end(), nextChange.start());
+                        // try to find out if there is a persistence condition until the next change
+                        boolean isChangePossible = act.getStatements().stream()
+                                .filter(pers -> pers.isPersistence())
+                                .filter(pers -> pers.getStateVariable() == s.getStateVariable())
+                                .filter(pers -> pers.endValue().equals(s.endValue()))
+                                .filter(pers -> act.maxDuration(s.end(), pers.start()) <= 1)
+                                .filter(pers -> nextChange.isAssignement() && act.maxDuration(pers.end(), nextChange.start()) == 0
+                                        || nextChange.isTransition() && act.maxDuration(pers.end(), nextChange.start()) <= 1)
+                                .count() == 0;
+
                         to = new Node(
                                 planner.preprocessor.getFluent(s.sv, s.endValue()),
-                                minStay, maxStay);
+                                minStay, maxStay, isChangePossible);
                     }
                     int duration = act.minDuration(s.start(), s.end());
                     List<DurativeCondition> conds = act.conditionsAt(s.start(), planner).stream()
@@ -154,12 +225,33 @@ public class TemporalDTG {
                             .map(eff -> new DurativeEffect(planner.preprocessor.getFluent(eff.sv, eff.endValue()), eff.getMinDuration()))
                             .collect(Collectors.toList());
 
-                    for(Node from : froms)
-                        recordTransition(new Transition(from, to, duration, conds, effs, s, act));
+                    if(s.isTransition())
+                        recordTransition(new Transition(from.get(), to, duration, conds, effs, s, act));
+                    else
+                        allAssignments.add(new Assignment(to, duration, conds, effs, s, act));
                     lastNode = to;
                 }
             }
         }
+    }
+
+    public void postProcess() {
+        Map<Fluent, Set<Node>> nodesByValue = new HashMap<>();
+        for(Node n : inTransitions.keySet()) {
+            if(!nodesByValue.containsKey(n.getF()))
+                nodesByValue.put(n.getF(), new HashSet<>());
+            nodesByValue.get(n.getF()).add(n);
+        }
+
+        for(Assignment ass : allAssignments) {
+            for(Node from : outTransitions.keySet()) {
+                if(from.isChangePossible())
+                    outTransitions.get(from).add(ass);
+            }
+            inTransitions.get(ass.getTo()).add(ass);
+        }
+
+        postProcessed = true;
     }
 
     @Override
@@ -168,7 +260,7 @@ public class TemporalDTG {
         sb.append(sv);
         for(Node n : outTransitions.keySet()) {
             sb.append("\n  "); sb.append(n);
-            for(Transition tr : outTransitions.get(n)) {
+            for(Change tr : outTransitions.get(n)) {
                 sb.append("\n    "); sb.append(tr);
             }
         }

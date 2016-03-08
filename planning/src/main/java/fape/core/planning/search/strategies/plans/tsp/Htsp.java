@@ -79,13 +79,18 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         return candidates.stream().findFirst().get();
     }
 
+    private boolean firstTime = true;
+
     @Override
     public float hc(State st) {
 
-//        for(GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
-//            TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
-//            System.out.println(dtg);
-//        }
+        if(firstTime) {
+            for (GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
+                TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
+                System.out.println(dtg);
+            }
+            firstTime = false;
+        }
 
 
         if(additionalCosts.containsKey(st.mID))

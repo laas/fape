@@ -196,6 +196,7 @@ public class Preprocessor {
             TemporalDTG dtg = new TemporalDTG(sv, dom, planner);
             for(GAction ga : getActionsInvolving(sv))
                 dtg.extendWith(ga);
+            dtg.postProcess();
             temporalDTGs.put(sv, dtg);
         }
         return temporalDTGs.get(sv);
