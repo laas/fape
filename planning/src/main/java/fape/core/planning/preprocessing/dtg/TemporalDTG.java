@@ -26,20 +26,21 @@ public class TemporalDTG {
 
     @Getter @Ident(Node.class)
     public class Node implements Identifiable {
-        public Node(Fluent f, int minStay, int maxStay, boolean isChangePossible) {
-            this.f = f;
+        public Node(Fluent fluent, int minStay, int maxStay, boolean isChangePossible) {
+            this.fluent = fluent;
             this.minStay = minStay;
             this.maxStay = maxStay;
             this.isChangePossible = isChangePossible;
             this.id = planner.preprocessor.nextTemporalDTGNodeID++;
             planner.preprocessor.store.record(this);
         }
-        final Fluent f;
+        final Fluent fluent;
         final int minStay;
         final int maxStay;
         final boolean isChangePossible;
-        @Override public String toString() { return "["+minStay+","+(maxStay<Integer.MAX_VALUE?maxStay:"inf")+"] "+f; }
-        public boolean isUndefined() { return f == null; }
+        @Override public String toString() { return "["+minStay+","+(maxStay<Integer.MAX_VALUE?maxStay:"inf")+"] "+ fluent; }
+        public boolean isUndefined() { return fluent == null; }
+        public GStateVariable getStateVariable() { return getFluent().sv; }
 
         private int id = -1;
 
@@ -70,6 +71,7 @@ public class TemporalDTG {
         GLogStatement getStatement();
         GAction getContainer();
         boolean isTransition();
+        default GStateVariable getStateVariable() { return getStatement().getStateVariable(); }
     }
 
     @AllArgsConstructor @Getter
@@ -86,7 +88,7 @@ public class TemporalDTG {
     }
 
     @AllArgsConstructor @Getter
-    private class Assignment implements Change {
+    public class Assignment implements Change {
         final Node to;
         final int duration;
         final List<DurativeCondition> conditions;
@@ -102,6 +104,12 @@ public class TemporalDTG {
     private Map<Node, List<Change>> outTransitions = new HashMap<>();
     private Map<Node, List<Change>> inTransitions = new HashMap<>();
     private List<Assignment> allAssignments = new ArrayList<>();
+
+    public Iterable<Assignment> getAssignments(Set<GAction> validActions) {
+        return allAssignments.stream()
+                .filter(ass -> validActions.contains(ass.getContainer()))
+                ::iterator;
+    }
 
     public TemporalDTG(GStateVariable sv, Collection<InstanceRef> domain, APlanner pl) {
         this.planner = pl;
@@ -140,9 +148,11 @@ public class TemporalDTG {
         allAssignments.add(ass);
     }
 
-    public List<Change> getChangesFrom(Node n) {
+    public Iterable<Change> getChangesFrom(Node n, Set<GAction> validActions) {
         assert postProcessed;
-        return outTransitions.get(n);
+        return outTransitions.get(n).stream()
+                .filter(ch -> validActions.contains(ch.getContainer()))
+                ::iterator;
     }
 
     public List<Change> getChangesTo(Node n) {
@@ -258,9 +268,9 @@ public class TemporalDTG {
     public void postProcess() {
         Map<Fluent, Set<Node>> nodesByValue = new HashMap<>();
         for(Node n : inTransitions.keySet()) {
-            if(!nodesByValue.containsKey(n.getF()))
-                nodesByValue.put(n.getF(), new HashSet<>());
-            nodesByValue.get(n.getF()).add(n);
+            if(!nodesByValue.containsKey(n.getFluent()))
+                nodesByValue.put(n.getFluent(), new HashSet<>());
+            nodesByValue.get(n.getFluent()).add(n);
         }
 
         for(Assignment ass : allAssignments) {

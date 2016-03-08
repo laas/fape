@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class Htsp implements PartialPlanComparator, Heuristic {
 
-    public enum DistanceEvaluationMethod {dtg, cea}
+    public enum DistanceEvaluationMethod {dtg, tdtg, cea}
 
     protected static int dbgLvl = 0;
     static void log1(String s) { assert dbgLvl>=1; System.out.println(s); }
@@ -40,6 +40,8 @@ public class Htsp implements PartialPlanComparator, Heuristic {
     public Htsp(DistanceEvaluationMethod method) {
         if(method == DistanceEvaluationMethod.dtg)
             routePlanner = new DTGRoutePlanner();
+        else if(method == DistanceEvaluationMethod.tdtg)
+            routePlanner = new TemporalDTGRoutePlanner();
         else
             throw new FAPEException("Unsupported distance evaluation method for Htsp: "+method);
     }

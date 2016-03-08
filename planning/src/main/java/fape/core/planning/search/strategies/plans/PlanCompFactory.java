@@ -41,7 +41,7 @@ public class PlanCompFactory {
                     compList.add(new RPGComp(planner));
                     break;
                 case "tsp":
-                    compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf("dtg")));
+                    compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf("tdtg")));
                     break;
                 default:
                     if(compID.startsWith("tsp-"))
