@@ -38,11 +38,13 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
                 }
             }
         }
+        if(Htsp.dbgLvl >= 2)
         log2("  Targets: "+targets);
         Fluent sol = null;
         while(!q.isEmpty() && sol == null) {
             Fluent cur = q.poll();
-            log3("  dij current: "+cur+"  "+q.getCost(cur));
+            if(Htsp.dbgLvl >= 3)
+                log3("  dij current: "+cur+"  "+q.getCost(cur));
             if(targets.contains(cur)) {
                 sol = cur;
             } else {
@@ -74,7 +76,8 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
                         cur = null;
                 }
             }
-            log2("Dij choice: "+sol);
+            if(Htsp.dbgLvl >= 2)
+                log2("Dij choice: "+sol);
             final Fluent endFluent = sol;
             return new Result(sol, q.getCost(sol), partialState -> {
                 for(GLogStatement pred : preds) {
@@ -87,7 +90,8 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
                 partialState.setValue(endFluent.sv, endFluent.value, q.getCost(endFluent), 0);
             });
         } else {
-            log1("DEAD-END!!!!");
+            if(Htsp.dbgLvl >= 1)
+                log1("DEAD-END!!!!");
             return null;
         }
     }

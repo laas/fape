@@ -1,9 +1,11 @@
-package fape.core.planning.search.strategies.plans.tsp;
+package fape.core.planning.preprocessing.dtg;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
+import fr.laas.fape.structures.Ident;
+import fr.laas.fape.structures.Identifiable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import planstack.anml.model.concrete.InstanceRef;
@@ -22,13 +24,27 @@ public class TemporalDTG {
      * Until then, the DTG might not be in a consistent state. */
     private boolean postProcessed = false;
 
-    @AllArgsConstructor @Getter
-    public class Node {
+    @Getter @Ident(Node.class)
+    public class Node implements Identifiable {
+        public Node(Fluent f, int minStay, int maxStay, boolean isChangePossible) {
+            this.f = f;
+            this.minStay = minStay;
+            this.maxStay = maxStay;
+            this.isChangePossible = isChangePossible;
+            this.id = planner.preprocessor.nextTemporalDTGNodeID++;
+            planner.preprocessor.store.record(this);
+        }
         final Fluent f;
         final int minStay;
         final int maxStay;
         final boolean isChangePossible;
         @Override public String toString() { return "["+minStay+","+(maxStay<Integer.MAX_VALUE?maxStay:"inf")+"] "+f; }
+        public boolean isUndefined() { return f == null; }
+
+        private int id = -1;
+
+        @Override public void setID(int i) { assert id == -1; id = i; }
+        @Override public int getID() { return id; }
     }
 
     @AllArgsConstructor @Getter
@@ -132,6 +148,10 @@ public class TemporalDTG {
     public List<Change> getChangesTo(Node n) {
         assert postProcessed;
         return inTransitions.get(n);
+    }
+
+    public Node getBaseNode(InstanceRef value) {
+        return baseNodes.get(value);
     }
 
     public void extendWith(GAction act) {

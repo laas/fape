@@ -6,6 +6,7 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.State;
@@ -29,11 +30,10 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
     public enum DistanceEvaluationMethod {dtg, cea}
 
-    private static int dbgLvl = 0;
-    static void log1(String s) { if(dbgLvl>=1) System.out.println(s); }
-    static void log2(String s) { if(dbgLvl>=2) System.out.println(s); }
-    static void log3(String s) { if(dbgLvl>=3) System.out.println(s); }
-    static void log4(String s) { if(dbgLvl>=4) System.out.println(s); }
+    protected static int dbgLvl = 0;
+    static void log1(String s) { assert dbgLvl>=1; System.out.println(s); }
+    static void log2(String s) { assert dbgLvl>=2; System.out.println(s); }
+    static void log3(String s) { assert dbgLvl>=3; System.out.println(s); }
 
     final TSPRoutePlanner routePlanner;
 
@@ -84,13 +84,13 @@ public class Htsp implements PartialPlanComparator, Heuristic {
     @Override
     public float hc(State st) {
 
-        if(firstTime) {
-            for (GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
-                TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
-                System.out.println(dtg);
-            }
-            firstTime = false;
-        }
+//        if(firstTime) {
+//            for (GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
+//                TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(sv);
+//                System.out.println(dtg);
+//            }
+//            firstTime = false;
+//        }
 
 
         if(additionalCosts.containsKey(st.mID))
@@ -98,7 +98,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
 
         Preprocessor pp = st.pl.preprocessor;
         GoalNetwork gn = goalNetwork(st);
-        PartialState ps = new PartialState();
+        PartialState ps = new PartialState(st.pl);
 
         int additionalCost = 0;
         int existingCost = 0;
@@ -106,7 +106,8 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         // reduce the goal network until it is empty
         while(!gn.isEmpty()) {
             List<Pair<GLogStatement, DisjunctiveGoal>> sat = gn.satisfiable(ps);
-            log2("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
+            if(dbgLvl >= 2)
+                log2("Satisfiable: "+sat.stream().map(x -> x.value1).collect(Collectors.toList()));
 
             if(!sat.isEmpty()) {
                 // at least one goal is achievable right away. Greedily select the best one and achieve it.
@@ -134,21 +135,21 @@ public class Htsp implements PartialPlanComparator, Heuristic {
             }
         }
         int makespan = ps.labels.values().stream().map(list -> list.getLast()).map(lbl -> lbl.getUntil()).max(Integer::compare).get();
-        log1("State: "+st.mID+"  cost: "+additionalCost);
-        log1(" makespan: "+makespan);
-        for(GStateVariable sv : ps.labels.keySet()) {
-            String res = "  "+sv.toString()+" ";
-            for(PartialState.Label lbl : ps.labels.get(sv))
-                if(lbl.getVal() != null)
-                    res += String.format("  [%d,%d] %s", lbl.getSince(), lbl.getUntil(), lbl.getVal());
-            log1(res);
+        if(dbgLvl >= 1) {
+            log1("State: " + st.mID + "  cost: " + additionalCost);
+            log1(" makespan: " + makespan);
+            for (GStateVariable sv : ps.labels.keySet()) {
+                String res = "  " + sv.toString() + " ";
+                for (PartialState.Label lbl : ps.labels.get(sv))
+                    if (!lbl.isUndefined())
+                        res += String.format("  [%d,%d] %s", lbl.getSince(), lbl.getUntil(), lbl.getVal());
+                log1(res);
+            }
         }
 
         additionalCosts.put(st.mID, additionalCost);
         existingCosts.put(st.mID, existingCost);
         makespans.put(st.mID, makespan);
-
-        log1("");
 
         return additionalCost;
     }

@@ -13,7 +13,8 @@ import java.util.stream.Collectors;
 
 public class GoalNetwork {
 
-    public static void log(String s) { if(false) System.out.println(s); }
+    private static int debugLvl = 0;
+    public static void log(String s) { assert debugLvl > 0; System.out.println(s); }
 
     @RequiredArgsConstructor @Getter @ToString
     public static class DisjunctiveGoal {
@@ -64,7 +65,8 @@ public class GoalNetwork {
     }
 
     public void setAchieved(DisjunctiveGoal g, GAction.GLogStatement achievedDisjunct) {
-        log("Achieved: "+achievedDisjunct);
+        if(debugLvl > 0)
+            log("Achieved: "+achievedDisjunct);
         assert inPrecLinks.get(g).isEmpty();
         for(DisjunctiveGoal descendant : outPrecLinks.get(g)) {
             inPrecLinks.get(descendant).remove(g);

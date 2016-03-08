@@ -64,6 +64,7 @@ public class IRStorage {
     }
 
     public void record(Identifiable o) {
+        assert o.getID() >= 0;
         Class identClazz = getIdentClass(o.getClass());
         instances.putIfAbsent(identClazz, new ArrayList<>(50));
         ArrayList<Identifiable> allVals = instances.get(identClazz);

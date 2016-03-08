@@ -12,10 +12,9 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.search.strategies.plans.tsp.DTG;
-import fape.core.planning.search.strategies.plans.tsp.TemporalDTG;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
-import fr.laas.fape.structures.IRMap;
 import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
@@ -48,6 +47,8 @@ public class Preprocessor {
     private Map<GStateVariable, Set<GAction>> actionUsingStateVariable;
 
     Boolean isHierarchical = null;
+
+    public int nextTemporalDTGNodeID = 0;
 
     public Preprocessor(APlanner container, State initialState) {
         this.planner = container;
