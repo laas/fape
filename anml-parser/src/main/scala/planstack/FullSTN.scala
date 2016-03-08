@@ -159,8 +159,8 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
             c match {
               case GreaterEqualConstraint(LStateVariable(sv, locLB, _), lb) =>
                 lbs.update(sv, Math.max(lb, lbs.getOrElseUpdate(sv, locLB)))
-              case LesserEqualConstraint(LStateVariable(sv, _, _), ub) =>
-                ubs.update(sv, Math.min(ub, lbs.getOrElse(sv, Int.MaxValue)))
+              case LesserEqualConstraint(LStateVariable(sv, _, locUB), ub) =>
+                ubs.update(sv, Math.min(ub, lbs.getOrElseUpdate(sv, locUB)))
               case _ =>
                 // constraints is still a bit complex (e.g. involves two variables)
             }
