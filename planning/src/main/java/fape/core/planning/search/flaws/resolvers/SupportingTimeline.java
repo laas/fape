@@ -23,6 +23,7 @@ public class SupportingTimeline extends Resolver {
         this.supporterID = supporterID;
         supportingComponent = supportingChangeNumber;
         this.consumerID = consumer.mID;
+        assert consumerID != supporterID: "Error: a resolver was generated that supports a timeline with itself.";
     }
 
     @Override
@@ -31,6 +32,7 @@ public class SupportingTimeline extends Resolver {
         final Timeline consumer = st.getTimeline(consumerID);
         assert supporter != null;
         assert consumer != null;
+        assert supporter != consumer : "Error: a resolver was generated that supports a timeline with itself.";
 
         ChainComponent precedingComponent = supporter.getChangeNumber(supportingComponent);
 

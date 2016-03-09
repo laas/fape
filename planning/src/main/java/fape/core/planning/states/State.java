@@ -465,7 +465,10 @@ public class State implements Reporter {
      */
     private void apply(LogStatement s) {
         assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
-        csp.stn().enforceBefore(s.start(), s.end());
+        if(s.isChange())
+            csp.stn().enforceStrictlyBefore(s.start(), s.end());
+        else
+            csp.stn().enforceBefore(s.start(), s.end());
         tdb.addNewTimeline(s);
     }
 

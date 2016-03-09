@@ -80,6 +80,8 @@ public class UnsupportedTimeline extends Flaw {
                 return false;
         }
 
+        assert potentialSupporter != consumer;
+
         return true;
     }
 
