@@ -267,7 +267,10 @@ public class GAction implements Identifiable {
                     List<InstanceRef> params = ((LStateVariable) expr).lsv().jArgs().stream()
                             .map(v -> valueOf(v, ggpb.liftedPb))
                             .collect(Collectors.toList());
-                    int realValue = ggpb.intInvariants.get(new GroundProblem.IntegerInvariantKey(((LStateVariable) expr).lsv().func(), params));
+                    GroundProblem.IntegerInvariantKey o = new GroundProblem.IntegerInvariantKey(((LStateVariable) expr).lsv().func(), params);
+                    if(!ggpb.intInvariants.containsKey(o))
+                        throw new NotValidGroundAction("Some of its duration depends on an undefined constant.");
+                    int realValue = ggpb.intInvariants.get(o);
                     return IntExpression.lit(realValue);
                 } else {
                     return expr;
