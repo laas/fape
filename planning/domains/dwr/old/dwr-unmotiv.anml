@@ -1,0 +1,336 @@
+// -*-c++-*-
+
+//*** types ***
+
+type piles_robots_cranes ;
+
+type sites;
+type waypoints < sites ; 
+
+type docks < sites with {
+  variable robots occupant ;
+};
+
+type robots < piles_robots_cranes with {
+  variable sites loc ;
+  variable containers freight ;
+};
+
+type cranes < piles_robots_cranes with {
+  variable containers grip ;
+  constant docks attached ;
+};
+
+type piles < piles_robots_cranes with {
+  variable containers top ;
+  constant docks attached ;
+};
+
+type containers with {
+  variable piles_robots_cranes in ;
+  variable containers on ;
+};
+  
+constant boolean adjacent(docks d, waypoints w);
+constant boolean connected(waypoints wa, waypoints wb);
+
+// adjacent and connected are relations, attached is an unvarying function
+
+instance containers empty ; // to denote an empty pile, robot or crane
+instance robots free ; // to denote a free dock
+
+//*** primitives ***
+
+action leave (robots r, docks d, waypoints w){
+  adjacent(d, w) ;
+  [all] {
+    r.loc == d :-> w ;
+    d.occupant == r :-> free ;} ;
+};
+
+action enter (robots r, docks d, waypoints w){
+  adjacent(d, w) ;
+  [all] {
+    r.loc == w :-> d ;
+    d.occupant == free :-> r ;} ;
+};
+
+action move(robots r, waypoints wa, waypoints wb){
+ duration :in [1, 2];
+  connected(wa, wb) ;
+  [all] r.loc == wa :-> wb ;  
+};
+
+// k holding c stacks it on top of p
+action stack(cranes k, containers c, piles p){
+  constant containers prevtop ;
+  k.attached == p.attached ;
+  [all] {
+    k.grip == c :-> empty ;
+    c.in == k :-> p ;
+    c.on == empty :-> prevtop ;
+    p.top == prevtop :-> c ;} ;
+};
+
+// k empty unstack c from the top of p 
+action unstack(cranes k, containers c, piles p){
+  constant containers nextop ;
+  k.attached == p.attached ;
+  [all] {
+    k.grip == empty :-> c ;
+    c.in == p :-> k ;
+    c.on == nextop :-> empty ;
+    p.top == c :-> nextop ;} ;
+};
+
+
+// k holding c puts in on r which was empty
+action put(cranes k, containers c, robots r){
+  constant docks d;
+  k.attached == d;
+  [all] {
+    k.grip == c :-> empty ;
+    r.freight == empty :-> c ;
+    c.in == k :-> r ;
+    r.loc == d ;} ;
+};
+
+// k empty takes c from r
+action take(cranes k, containers c, robots r){
+  constant docks d;
+  k.attached == d;
+  [all] {
+    k.grip == empty :-> c ;
+    r.freight == c :-> empty ;
+    c.in == r :-> k ;
+    r.loc == d ;} ;
+};
+
+//*** tasks ***
+
+//c on top of p is put on r
+action load (containers c, robots r, piles p){
+  :decomposition {
+    constant cranes k;
+    constant docks d;
+    k.attached == d;
+    p.attached == d ;
+    [start] p.top == c ;
+    [all] r.loc == d ;
+    [all] contains{
+    s1 : unstack(k, c, p) ;
+    s2 : put(k, c, r) ;};
+    end(s1) <= start(s2);
+  };
+};
+
+//c on r is stacked on top of p
+action unload (containers c, robots r, piles p){
+  :decomposition {
+    constant cranes k ;
+    constant docks d;
+    k.attached == d;
+    p.attached == d ;
+    [start] c.in == r ;
+    [all] r.loc == d ;
+    [all] contains {
+    s1 : take(k, c, r) ;
+    s2 : stack(k, c, p) ;};
+    end(s1) <= start(s2);
+  }; 
+};
+
+//c in p is made at the top of p
+action uncover (containers c, piles p){
+  [start] c.in == p ;
+  :decomposition {
+    [all] p.top == c ;
+  };
+  :decomposition {
+    constant containers prevtop ;
+    constant cranes k ;
+    constant docks d;
+    constant piles otherp ;
+    [start] p.top == prevtop ;
+    p != otherp ;
+    c != prevtop ;
+    k.attached == d  ;
+    p.attached == d ;
+    otherp.attached ==d ;
+    [all] contains {
+    s1 : unstack(k,prevtop,p) ;
+    s2: stack(k,prevtop,otherp);
+    s3:	uncover(c,p) ;};
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+};
+
+// r navigates between two waypoints
+action navigate (robots r, waypoints wa, waypoints wb){
+  :decomposition {
+    connected(wa, wb) ;
+    [all] move(r, wa, wb) ;
+  };
+  :decomposition {
+    constant waypoints wc ;
+    connected(wa, wc);
+    [all] contains {
+    s1 : move(r, wa, wc);
+    s2 : navigate(r, wc, wb) ;};
+    end(s1) <= start(s2);
+  };
+};
+
+// r goes to dock to
+action goto (robots r, docks to){
+  constant  docks from;
+  constant waypoints wa ;
+  constant waypoints wb ;
+  [start] r.loc == from ;
+  :decomposition {from == to ;
+  };
+  :decomposition {
+    from !=to ;
+    adjacent(from, wa) ;
+    adjacent(to, wb) ;
+    [all] contains {
+    s1 : leave(r, from, wa) ;
+    s2: navigate(r, wa, wb) ;
+    s3 : enter(r, to, wb) ;};
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+};
+
+
+// brings c to pile p
+action bring (containers c, piles p){
+  constant piles otherp;
+  :decomposition {
+    [all] c.in == p ;
+  };
+  :decomposition {
+    constant cranes k ;
+    constant docks d;
+    [start] c.in == otherp ;
+    otherp != p ;
+    p.attached == d ;
+    otherp.attached == d ;
+    k.attached == d ;
+    [all] contains {
+    s1 : uncover(c, otherp) ;
+    s2 : unstack(k, c, otherp) ;
+    s3: stack(k, c, p) ;};
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+  :decomposition {
+    constant robots r;
+    constant docks from ;
+    constant docks to ;
+    [start] c.in == otherp ;
+    p.attached == to;
+    otherp.attached == from ;
+    from != to ;
+    [all] contains {
+    s1 : goto(r, from);
+    s2 : uncover(c, otherp);
+    s3 :load(c, r, otherp);
+    s4 : goto(r, to);
+    s5 : unload(c, r, p) ;};
+    end(s1) <= start(s3);
+    end(s2) <= start(s3);
+    end(s3) <= start(s4);
+    end(s4) <= start(s5);
+    }; 
+};
+
+
+
+//*** instances ***
+
+instance robots r1, r2;
+instance docks d1, d2, d3, d4;
+instance cranes k1, k2, k3, k4;
+instance containers c11, c12, c21, c22;
+instance waypoints w1, w2, w3, w4, w5, w6;
+instance piles p11, p12, p21, p22, p3, p4;
+
+adjacent(d1, w1) := true;
+adjacent(d2, w2) := true;
+adjacent(d3, w3) := true;
+adjacent(d4, w4) := true;
+
+connected(w1, w5) := true;
+connected(w5, w1) := true;
+connected(w2, w5) := true;
+connected(w5, w2) := true;
+connected(w3, w6) := true;
+connected(w6, w3) := true;
+connected(w4, w6) := true;
+connected(w6, w4) := true;
+connected(w5, w6) := true;
+connected(w6, w5) := true;
+
+connected(w1, w3) := true;
+connected(w3, w1) := true;
+connected(w2, w4) := true;
+connected(w4, w2) := true;
+
+
+
+k1.attached := d1;
+k2.attached := d2;
+k3.attached := d3;
+k4.attached := d4;
+
+p11.attached := d1;
+p12.attached := d1;
+p21.attached := d2;
+p22.attached := d2;
+p3.attached := d3;
+p4.attached := d4;
+
+//problem
+
+[start] {
+ k1.grip := empty;
+ k2.grip := empty;
+ k3.grip := empty;
+ k4.grip := empty;
+  
+ d1.occupant := free;
+ d2.occupant := free;
+ d3.occupant := r1 ;
+ d4.occupant := r2 ;
+  
+ r1.loc := d3;
+ r2.loc := d4;
+ r1.freight := empty;
+ r2.freight := empty;
+ 
+ c11.on := empty;
+ c11.in := p12;
+ c12.on := c11;
+ c12.in := p12;
+ c21.on := empty;
+ c21.in := p22;
+ c22.on := c21;
+ c22.in := p22;
+
+ p11.top := empty;  
+ p12.top := c12;
+ p21.top := empty;
+ p22.top := c22;
+ p3.top := empty;
+ p4.top := empty;
+};
+
+// [all] contains {goto(r2, d3) ; goto(r1,d4);};
+// [all]uncover(c11,p12);
+
+bring(c11,p3);
+//bring(c21,p4);
+
+
