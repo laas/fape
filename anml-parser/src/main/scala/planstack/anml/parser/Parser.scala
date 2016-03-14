@@ -392,14 +392,14 @@ object AnmlParser extends JavaTokenParsers {
   lazy val kwType : Parser[String] = numType | symType
 
   /** predefined symbolic types: boolean, object */
-  lazy val symType : Parser[String] = "boolean"// | "object"
+  lazy val symType : Parser[String] = "boolean\\b".r// | "object"
 
   /** Predefined numeric types: float and integer */
-  lazy val numType : Parser[String] = "float" | "integer"
+  lazy val numType : Parser[String] = "float\\b".r | "integer\\b".r
 
-  lazy val kwTempAnnot : Parser[String] = "start" | "end"
+  lazy val kwTempAnnot : Parser[String] = "start\\b".r | "end\\b".r
 
-  lazy val keywords = (kwType | kwTempAnnot | "motivated" | "duration")
+  lazy val keywords = (kwType | kwTempAnnot | "motivated\\b".r | "duration\\b".r)
 
   lazy val word = not(keywords) ~> ident
 //  lazy val word = ident
