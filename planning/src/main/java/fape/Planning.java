@@ -230,6 +230,8 @@ public class Planning {
         writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, " +
                 "fast-forwarded, sol-depth, flaw-sel, plan-sel, reachability, fast-forward, ae\n");
 
+        boolean allSolved = true;
+
         final int repetitions = commandLineConfig.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
 
@@ -319,6 +321,7 @@ public class Planning {
                 String time;
                 String planningTime = Float.toString((end - planningStart) / 1000f);
                 if (failure) {
+                    allSolved = false;
                     if(planner.planState == APlanner.EPlanState.TIMEOUT)
                         time = "TIMEOUT";
                     else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
@@ -362,5 +365,8 @@ public class Planning {
         }
         if (!commandLineConfig.getString("output").equals("stdout"))
             writer.close();
+
+        if(!allSolved)
+            System.exit(1);
     }
 }
