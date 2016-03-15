@@ -316,6 +316,7 @@ public abstract class APlanner {
                 searchView.setProperty(st.getState(), SearchView.COMMENT, "Pruned by old reachability");
                 searchView.setDeadEnd(st.getState());
             }
+            st.setExpanded();
             return Collections.emptyList();
         }
 
@@ -324,7 +325,6 @@ public abstract class APlanner {
         List<SearchNode> children = new LinkedList<>();
 
         // compute all valid children
-//        for (Resolver res : resolvers) {
         for(int resolverID=0 ; resolverID < resolvers.size() ; resolverID++) {
             SearchNode next = new SearchNode(st);
             final int currentResolver = resolverID;
@@ -335,9 +335,7 @@ public abstract class APlanner {
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
             });
-//            TinyLogger.LogInfo(st.getState(), "   Res: %s", res);
 
-//            TinyLogger.LogInfo(st.getState(), "     [%s] Adding %s", next.mID, res);
             boolean success = next.getState().isConsistent();
             String hrComment = "";
 
@@ -379,6 +377,7 @@ public abstract class APlanner {
                 //inconsistent state, doing nothing
             }
         }
+        st.setExpanded();
         return children;
     }
 

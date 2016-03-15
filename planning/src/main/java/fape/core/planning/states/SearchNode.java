@@ -4,6 +4,7 @@ import fape.util.StrongReference;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -56,6 +57,14 @@ public class SearchNode {
      * index were already applied
      */
     int nextOperation = 0;
+
+    public void setExpanded() {
+        State s = state.get();
+        if(s != null && depth != 0) {
+            // switch to a weak reference
+            state = new WeakReference<>(s);
+        }
+    }
 
     /** List of 'h', 'g', 'hc' heuristic values */
     List<Float> hs = new ArrayList<>();
