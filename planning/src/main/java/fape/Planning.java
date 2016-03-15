@@ -366,7 +366,7 @@ public class Planning {
         if (!commandLineConfig.getString("output").equals("stdout"))
             writer.close();
 
-        if(!allSolved)
+        if(!allSolved && !commandLineConfig.getBoolean("display-search"))
             System.exit(1);
     }
 }
