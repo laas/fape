@@ -22,7 +22,7 @@ public class DisjunctiveFluent implements Landmark {
         this.fluents = new HashSet<>(fluentsOf(sv, value, st, planner));
     }
 
-    public static Collection<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
+    public static Set<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
         HashSet<Fluent> fluents = new HashSet<>();
         List<VarRef> variables = new LinkedList<>();
         for(VarRef var : sv.args()) {

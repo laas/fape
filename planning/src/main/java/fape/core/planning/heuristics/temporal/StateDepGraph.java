@@ -1,13 +1,18 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.PlannerFactory;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -166,6 +171,19 @@ public class StateDepGraph implements DependencyGraph {
             core = new DepGraphCore(feasibles, core.store);
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
+            if(APlanner.debugging) {
+                String tmpDir = System.getProperty("java.io.tmpdir");
+                String outFile = tmpDir + "/ground-instances.txt";
+                System.out.println("Writing all ground action instances to: "+outFile);
+                try {
+                    PrintWriter pw = new PrintWriter(outFile, "UTF-8");
+                    feasibles.stream().map(f -> f.act).collect(Collectors.toSet()).forEach(a -> pw.println(a.toString()));
+                    pw.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
         }
 
         if(dbgLvl >= 2) printActions();

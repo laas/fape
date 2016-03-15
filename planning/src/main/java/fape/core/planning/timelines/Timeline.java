@@ -1,5 +1,6 @@
 package fape.core.planning.timelines;
 
+import fape.core.planning.grounding.Fluent;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -8,10 +9,8 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -379,6 +378,28 @@ public class Timeline {
         }
 
         return cls;
+    }
+
+    public List<FluentHolding> getCausalLinks() {
+        List<FluentHolding> ret = new ArrayList<>();
+        if(hasSinglePersistence()) {
+            ret.add(new FluentHolding(stateVariable, getGlobalConsumeValue(), getConsumeTimePoint(), getLastTimePoints()));
+        } else {
+            for (int i = 0; i < numChanges(); i++) {
+                ChainComponent cc = getChangeNumber(i);
+                if (i + 1 < numChanges()) {
+                    TPRef endCausalLink = getChangeNumber(i + 1).getConsumeTimePoint();
+                    List<TPRef> endTimes = Collections.singletonList(endCausalLink);
+                    FluentHolding cl = new FluentHolding(stateVariable, cc.getSupportValue(), cc.getSupportTimePoint(), endTimes);
+                    ret.add(cl);
+                } else if (indexOf(cc) < chain.length - 1) {
+                    List<TPRef> endTimes = Arrays.asList(chain[indexOf(cc) + 1].statements).stream().map(s -> s.end()).collect(Collectors.toList());
+                    FluentHolding cl = new FluentHolding(stateVariable, cc.getSupportValue(), cc.getSupportTimePoint(), endTimes);
+                    ret.add(cl);
+                }
+            }
+        }
+        return ret;
     }
 
     public Stream<LogStatement> allStatements() {
