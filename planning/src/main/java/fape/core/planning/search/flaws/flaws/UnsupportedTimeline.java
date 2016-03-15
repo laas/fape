@@ -7,6 +7,7 @@ import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -186,7 +187,17 @@ public class UnsupportedTimeline extends Flaw {
                         !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
                     continue;
 
-                resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
+                boolean areStateVariablesUnifiable = true;
+                for(int i=0 ; i<supporter.sv().args().size() ; i++) {
+                    if(aa.absAct.context().hasGlobalVar(supporter.sv().jArgs().get(i)) &&
+                            !st.unifiable(
+                                    aa.absAct.context().getGlobalVar(supporter.sv().jArgs().get(i)),
+                                    consumer.stateVariable.arg(i)))
+                        areStateVariablesUnifiable = false;
+                }
+
+                if(areStateVariablesUnifiable)
+                    resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
             }
         }
 
