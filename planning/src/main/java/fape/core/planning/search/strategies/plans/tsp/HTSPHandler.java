@@ -4,6 +4,7 @@ package fape.core.planning.search.strategies.plans.tsp;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.Handler;
+import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 
 import java.util.*;
@@ -11,7 +12,7 @@ import java.util.*;
 public class HTSPHandler implements Handler {
 
     @Override
-    public void apply(State st, StateLifeTime time, APlanner planner) {
+    public void apply(SearchNode n, StateLifeTime time, APlanner planner) {
     }
 
     @Override

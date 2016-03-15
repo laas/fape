@@ -352,7 +352,7 @@ public class Planning {
                                 + planner.expandedStates + ", "
                                 + planner.GeneratedStates + ", "
                                 + planner.numFastForwarded + ", "
-                                + (failure ? "-" : sol.depth) + ", "
+                                + (failure ? "-" : sol.getDepth()) + ", "
                                 + Utils.print(planner.options.flawSelStrategies, ":") + ", "
                                 + Utils.print(planner.options.planSelStrategies, ":") + ", "
                                 + reachStr + ", "

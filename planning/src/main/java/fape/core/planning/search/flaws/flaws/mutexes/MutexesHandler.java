@@ -5,6 +5,7 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
+import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.Pair;
@@ -201,16 +202,18 @@ public class MutexesHandler implements Handler {
     }
 
     @Override
-    public void apply(State st, StateLifeTime time, APlanner planner) {
+    public void apply(SearchNode n, StateLifeTime time, APlanner planner) {
         this.planner = planner;
-        if(time == StateLifeTime.SELECTION) {
-            if(!st.hasExtension(Ext.class)) {
-                getMutexes(st);
+        n.addOperation(st -> {
+            if (time == StateLifeTime.SELECTION) {
+                if (!st.hasExtension(Ext.class)) {
+                    getMutexes(st);
 
-                Ext ext = new Ext();
-                st.addExtension(ext);
+                    Ext ext = new Ext();
+                    st.addExtension(ext);
+                }
             }
-        }
+        });
     }
 
     @Override

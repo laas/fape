@@ -5,7 +5,7 @@ import fape.core.planning.states.State;
 /**
  * Breadth first search strategy: the least deep state is always selected first.
  */
-public class BreadthFirst implements PartialPlanComparator {
+public class BreadthFirst extends PartialPlanComparator {
     @Override
     public String shortName() {
         return "bfs";
@@ -13,11 +13,21 @@ public class BreadthFirst implements PartialPlanComparator {
 
     @Override
     public String reportOnState(State st) {
-        return "BFS:\t depth: "+st.depth;
+        return "BFS:\t depth: "+st.getDepth();
     }
 
     @Override
-    public int compare(State state, State state2) {
-        return state.depth - state2.depth;
+    public float g(State st) {
+        return st.getDepth();
+    }
+
+    @Override
+    public float h(State st) {
+        return 0;
+    }
+
+    @Override
+    public float hc(State st) {
+        return 0;
     }
 }

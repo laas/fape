@@ -5,7 +5,6 @@ import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
-import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
@@ -13,6 +12,7 @@ import fape.core.planning.search.strategies.plans.PlanCompFactory;
 import fape.core.planning.search.strategies.plans.SeqPlanComparator;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.core.planning.states.SearchNode;
 import fape.drawing.gui.ChartWindow;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
@@ -40,7 +40,7 @@ public abstract class APlanner {
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(initialState);
+        queue.add(new SearchNode(initialState));
 
         if(options.usePlanningGraphReachability) {
             initialState.pgr = preprocessor.getFeasibilityReasoner();
@@ -62,7 +62,7 @@ public abstract class APlanner {
         this.queue = new PriorityQueue<>(100, this.stateComparator());
 
         State initState = new State(pb, controllability);
-        queue.add(initState);
+        queue.add(new SearchNode(initState));
         initState.setPlanner(this);
 
         if(options.usePlanningGraphReachability)
@@ -95,7 +95,7 @@ public abstract class APlanner {
 
     public abstract ActionSupporterFinder getActionSupporterFinder();
 
-    protected final PriorityQueue<State> queue;
+    protected final PriorityQueue<SearchNode> queue;
 
     /**
      * This method is invoked whenever a causal link is added and offers a way
@@ -124,23 +124,8 @@ public abstract class APlanner {
 
     public List<Handler> getHandlers() { return options.handlers; }
 
-    /**
-     * Finds all flaws of a given state. Currently, threats and unbound
-     * variables are considered only if no other flaws are present.
-     *
-     * @return A list of flaws present in the system. The list of flaws might not
-     * be exhaustive.
-     */
-    public List<Flaw> getFlaws(State st) {
-        List<Flaw> flaws = new LinkedList<>();
-
-        for (FlawFinder fd : options.flawFinders)
-            flaws.addAll(fd.getFlaws(st, this));
-
-        //find the resource flaws
-        flaws.addAll(st.resourceFlaws());
-
-        return flaws;
+    public List<Flaw> getFlaws(SearchNode st) {
+        return st.getState().getFlaws(options.flawFinders, flawComparator(st.getState()));
     }
 
     /**
@@ -175,7 +160,7 @@ public abstract class APlanner {
 
     public State bestFirstSearch(final long deadline, final int maxDepth, final boolean incrementalDeepening){
 
-        List<State> toRestore = new LinkedList<>(queue);
+        List<SearchNode> toRestore = new LinkedList<>(queue);
 
         int currentMaxDepth;
         if(incrementalDeepening)
@@ -244,15 +229,15 @@ public abstract class APlanner {
             }
 
             //get the best state and continue the search
-            State st = queue.remove();
+            SearchNode st = queue.remove();
 
             // let all handlers know that this state was selected for expansion
             for(Handler h : options.handlers)
                 h.apply(st, Handler.StateLifeTime.SELECTION, this);
 
-            if(!st.isConsistent()) {
+            if(!st.getState().isConsistent()) {
                 if(options.displaySearch)
-                    searchView.setDeadEnd(st);
+                    searchView.setDeadEnd(st.getState());
                 continue;
             }
 
@@ -260,15 +245,15 @@ public abstract class APlanner {
             if (flaws.isEmpty()) {
                 // this is a solution state
                 if(options.displaySearch)
-                    searchView.setSolution(st);
+                    searchView.setSolution(st.getState());
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(st);
-                return st;
-            } else if(st.depth < maxDepth) {
-                List<State> children = expand(st, flaws);
-                for(State child : children) {
+                TinyLogger.LogInfo(st.getState());
+                return st.getState();
+            } else if(st.getDepth() < maxDepth) {
+                List<SearchNode> children = expand(st, flaws);
+                for(SearchNode child : children) {
                     queue.add(child);
                 }
             }
@@ -281,79 +266,77 @@ public abstract class APlanner {
      * @param flaws List of flaws in the partial plan. Those are asked to avoid duplication of work.
      * @return      All consistent children as a result of the expansion.
      */
-    public List<State> expand(State st, List<Flaw> flaws) {
+    public List<SearchNode> expand(SearchNode st, List<Flaw> flaws) {
         for(Flaw f : flaws)
-            f.getNumResolvers(st, this);
-
-        List<State> children = new LinkedList<>();
+            f.getNumResolvers(st.getState(), this);
 
         if(options.displaySearch)
-            searchView.setCurrentFocus(st);
+            searchView.setCurrentFocus(st.getState());
 
-        assert st.isConsistent() : "Expand was given an inconsistent state.";
+        assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
         expandedStates++;
 
-//        if(options.usePlanningGraphReachability) {
-//            if (!preprocessor.getFeasibilityReasoner().checkFeasibility(st)) {
-//                TinyLogger.LogInfo(st, "\nDead End State: [%s]", st.mID);
-//                if (options.displaySearch)
-//                    searchView.setDeadEnd(st);
-//                return children;
-//            }
-//        }
-
         assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
-        TinyLogger.LogInfo(st, "\nCurrent state: [%s]", st.mID);
+        TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
 
         // sort the flaws, higher priority come first
         try {
-            Collections.sort(flaws, this.flawComparator(st));
+            Collections.sort(flaws, this.flawComparator(st.getState()));
         } catch (java.lang.IllegalArgumentException e) {
             // problem with the sort function, try to find an problematic example and exit
             System.err.println("The flaw comparison function is not legal (for instance, it might not be transitive).");
-            Utils.showExampleProblemWithFlawComparator(flaws, this.flawComparator(st), st, this);
+            Utils.showExampleProblemWithFlawComparator(flaws, this.flawComparator(st.getState()), st.getState(), this);
             System.exit(1);
         }
 
         // just take the first flaw and its resolvers (unless the flaw is chosen on command line)
         Flaw f;
         if(options.chooseFlawManually) {
-            System.out.print("STATE :" + st.mID + "\n");
+            System.out.print("STATE :" + st.getID() + "\n");
             for(int i=0 ; i<flaws.size() ; i++)
-                System.out.println("["+i+"] "+Printer.p(st, flaws.get(i)));
+                System.out.println("["+i+"] "+Printer.p(st.getState(), flaws.get(i)));
             int choosen = Utils.readInt();
             f = flaws.get(choosen);
         } else {
             f = flaws.get(0);
         }
-        List<Resolver> resolvers = f.getResolvers(st, this);
+        List<Resolver> resolvers = f.getResolvers(st.getState(), this);
         // make sure resolvers are always in the same order (for reproducibility)
         Collections.sort(resolvers);
 
         if(options.displaySearch)
-            searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st, f));
+            searchView.setProperty(st.getState(), SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
 
         if (resolvers.isEmpty()) {
             // dead end, keep going
-            TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
             if(options.displaySearch) {
-                searchView.setProperty(st, SearchView.COMMENT, "Pruned by old reachability");
-                searchView.setDeadEnd(st);
+                searchView.setProperty(st.getState(), SearchView.COMMENT, "Pruned by old reachability");
+                searchView.setDeadEnd(st.getState());
             }
-            return children;
+            st.setExpanded();
+            return Collections.emptyList();
         }
 
-        TinyLogger.LogInfo(st, " Flaw: %s", f);
+        TinyLogger.LogInfo(st.getState(), " Flaw: %s", f);
 
-        // Append the possibles fixed state to the queue
-        for (Resolver res : resolvers) {
-            TinyLogger.LogInfo(st, "   Res: %s", res);
+        List<SearchNode> children = new LinkedList<>();
 
-            State next = st.cc();
-            TinyLogger.LogInfo(st, "     [%s] Adding %s", next.mID, res);
-            boolean success = applyResolver(next, res);
+        // compute all valid children
+        for(int resolverID=0 ; resolverID < resolvers.size() ; resolverID++) {
+            SearchNode next = new SearchNode(st);
+            final int currentResolver = resolverID;
+            next.addOperation(s -> {
+                List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
+                Resolver res = fs.get(0).getResolvers(s, this)
+                        .get(currentResolver);
+                if(!applyResolver(s, res))
+                    s.setDeadEnd();
+            });
+
+            boolean success = next.getState().isConsistent();
             String hrComment = "";
 
             if(!success)
@@ -367,29 +350,34 @@ public abstract class APlanner {
                 }
             }
 
-            // build reachibility graphs
+            // build reachability graphs
             if(success && options.usePlanningGraphReachability) {
-                next.reachabilityGraphs = new ReachabilityGraphs(this, next);
-                success &= next.reachabilityGraphs.isRefinableToSolution();
+                next.addOperation(s -> {
+                    s.reachabilityGraphs = new ReachabilityGraphs(this, s);
+                    if(!s.reachabilityGraphs.isRefinableToSolution())
+                        s.setDeadEnd();
+                });
+                success &= next.getState().isConsistent();
                 if(!success)
                     hrComment = "Pruned by reachability.";
             }
 
             if(options.displaySearch) {
-                searchView.addNode(next, st);
-                searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st, res));
-                searchView.setProperty(next, SearchView.COMMENT, hrComment);
+                searchView.addNode(next.getState(), st.getState());
+                searchView.setProperty(next.getState(), SearchView.LAST_APPLIED_RESOLVER, Printer.p(st.getState(), resolvers.get(currentResolver)));
+                searchView.setProperty(next.getState(), SearchView.COMMENT, hrComment);
             }
             if (success) {
                 children.add(next);
                 GeneratedStates++;
             } else {
-                TinyLogger.LogInfo(st, "     Dead-end reached for state: %s", next.mID);
+                TinyLogger.LogInfo(st.getState(), "     Dead-end reached for state: %s", next.getID());
                 if (options.displaySearch)
-                    searchView.setDeadEnd(next);
+                    searchView.setDeadEnd(next.getState());
                 //inconsistent state, doing nothing
             }
         }
+        st.setExpanded();
         return children;
     }
 
@@ -397,7 +385,7 @@ public abstract class APlanner {
      * This function looks at flaws and resolvers in the state and fixes flaws with a single resolver.
      * It does that at most "maxForwardState"
      */
-    public boolean fastForward(State st, int maxForwardStates) {
+    public boolean fastForward(SearchNode st, int maxForwardStates) {
         List<Flaw> flaws = getFlaws(st);
 
         if(maxForwardStates == 0)
@@ -407,23 +395,23 @@ public abstract class APlanner {
             return true;
         }
 
-        //do some sorting here - min domain
-        //Collections.sort(opts, optionsComparatorMinDomain);
-        Collections.sort(flaws, this.flawComparator(st));
-
         //we just take the first flaw and its resolvers
         Flaw f = flaws.get(0);
-        List<Resolver> resolvers = f.getResolvers(st, this);
+        List<Resolver> resolvers = f.getResolvers(st.getState(), this);
         if (resolvers.isEmpty()) {
             // dead end, keep going
-            TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
             return false;
         }
 
         if(resolvers.size() == 1) {
-            Resolver res = resolvers.get(0);
-            TinyLogger.LogInfo(st, "     [%s] ff: Adding %s", st.mID, res);
-            if(applyResolver(st, res)) {
+            st.addOperation(s -> {
+                Resolver res = s.getFlaws(options.flawFinders, flawComparator(s)).get(0).getResolvers(s, this).get(0);
+                if(!applyResolver(s, res))
+                    s.setDeadEnd();
+            });
+            TinyLogger.LogInfo(st.getState(), "     [%s] ff: Adding %s", st.getID(), resolvers.get(0));
+            if(st.getState().isConsistent()) {
                 numFastForwarded++;
                 return fastForward(st, maxForwardStates-1);
             } else {
@@ -444,14 +432,16 @@ public abstract class APlanner {
      *         False otherwise.
      */
     public boolean applyResolver(State st, Resolver resolver) {
-        return resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.isConsistent();
+        boolean result = resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.isConsistent();
+        st.flaws = null; // clear flaws cache
+        return result;
     }
 
     protected State aEpsilonSearch(final long deadLine, final int maxDepth, final boolean incrementalDeepening) {
         assert !incrementalDeepening : "Incremental Deepening is not supported in A-Epsilon search.";
 
         // stores the admissible children of the last expanded node.
-        PriorityQueue<State> AX = new PriorityQueue<State>(10, stateComparator());
+        PriorityQueue<SearchNode> AX = new PriorityQueue<SearchNode>(10, stateComparator());
 
 
         if (queue.isEmpty()) {
@@ -472,7 +462,7 @@ public abstract class APlanner {
                 return null;
             }
 
-            State current;
+            SearchNode current;
             if(AX.isEmpty()) {
                 // get best in open
                 current = queue.poll();
@@ -486,9 +476,9 @@ public abstract class APlanner {
             for(Handler h : options.handlers)
                 h.apply(current, Handler.StateLifeTime.SELECTION, this);
 
-            if(!current.isConsistent()) {
+            if(!current.getState().isConsistent()) {
                 if(options.displaySearch)
-                    searchView.setDeadEnd(current);
+                    searchView.setDeadEnd(current.getState());
                 continue;
             }
 
@@ -496,17 +486,17 @@ public abstract class APlanner {
             if (flaws.isEmpty()) {
                 // this is a solution state
                 if(options.displaySearch)
-                    searchView.setSolution(current);
+                    searchView.setSolution(current.getState());
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(current);
-                return current;
-            } else if(current.depth < maxDepth) {
+                TinyLogger.LogInfo(current.getState());
+                return current.getState();
+            } else if(current.getDepth() < maxDepth) {
                 // expand the state
-                List<State> children = expand(current, flaws);
+                List<SearchNode> children = expand(current, flaws);
                 AX.clear();
-                for(State child : children) {
+                for(SearchNode child : children) {
                     queue.add(child);
                     // add admissible children to AX for next iteration
                     if(f(child) < fThreshold) {
@@ -521,15 +511,9 @@ public abstract class APlanner {
         }
     }
 
-    public float h(State st){
-        return stateComparator().h(st);
-    }
-
-    public float g(State st){
-        return stateComparator().g(st);
-    }
-    public float f(State st) { return g(st) + h(st); }
-    public boolean definesHeuristicsValues() { return stateComparator().definesHeuristicsValues(); }
+    public float h(SearchNode st){ return stateComparator().h(st); }
+    public float g(SearchNode st){ return stateComparator().g(st); }
+    public float f(SearchNode st) { return g(st) + h(st); }
 
     private ChartWindow chartWindow = null;
     public void drawState(State st) {

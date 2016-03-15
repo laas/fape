@@ -5,6 +5,7 @@ import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
+import fape.core.planning.states.SearchNode;
 import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;
 import fr.laas.fape.structures.IRSet;
@@ -30,32 +31,32 @@ public class DGHandler implements fape.core.planning.search.Handler {
         st.addExtension(new DepGraphCore.StateExt(core));
 
         // Record ground action ids as possible values for variables in the CSP
-        for(GAction ga : pl.preprocessor.getAllActions()) {
+        for (GAction ga : pl.preprocessor.getAllActions()) {
             st.csp.bindings().addPossibleValue(ga.id);
         }
 
         // record all n ary constraints (action instantiations and task supporters)
         Set<String> recordedTask = new HashSet<>();
-        for(AbstractAction aa : pl.pb.abstractActions()) {
-            st.csp.bindings().recordEmptyNAryConstraint(aa.name(), true, aa.allVars().length+1);
+        for (AbstractAction aa : pl.pb.abstractActions()) {
+            st.csp.bindings().recordEmptyNAryConstraint(aa.name(), true, aa.allVars().length + 1);
             st.csp.bindings().addPossibleValue(aa.name());
-            if(!recordedTask.contains(aa.taskName())) {
-                st.csp.bindings().recordEmptyNAryConstraint(aa.taskName(), true, aa.args().size()+2);
+            if (!recordedTask.contains(aa.taskName())) {
+                st.csp.bindings().recordEmptyNAryConstraint(aa.taskName(), true, aa.args().size() + 2);
                 recordedTask.add(aa.taskName());
             }
         }
 
-        for(GAction ga : pl.preprocessor.getAllActions()) {
+        for (GAction ga : pl.preprocessor.getAllActions()) {
             // values for all variables of this action
             List<String> values = new LinkedList<>();
-            for(LVarRef var : ga.variables)
+            for (LVarRef var : ga.variables)
                 values.add(ga.valueOf(var).instance());
             // add possible tuple to instantiation constraints
             st.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.name(), values, ga.id);
 
             // values for arguments of this action
             List<String> argValues = new LinkedList<>();
-            for(LVarRef var : ga.abs.args())
+            for (LVarRef var : ga.abs.args())
                 argValues.add(ga.valueOf(var).instance());
             argValues.add(ga.abs.name());
             // add possible tuple to supporter constraints
@@ -63,9 +64,9 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         // notify ourself of the presence of any actions and tasks in the plan
-        for(Action a : st.getAllActions())
+        for (Action a : st.getAllActions())
             actionInserted(a, st, pl);
-        for(Task t : st.getOpenTasks())
+        for (Task t : st.getOpenTasks())
             taskInserted(t, st, pl);
 
         // trigger propagation of constraint networks
@@ -75,10 +76,12 @@ public class DGHandler implements fape.core.planning.search.Handler {
     }
 
     @Override
-    public void apply(State st, StateLifeTime time, APlanner planner) {
-        if(time == StateLifeTime.SELECTION) {
-            propagateNetwork(st, planner);
-        }
+    public void apply(SearchNode searchNode, StateLifeTime time, APlanner planner) {
+        searchNode.addOperation(st -> {
+            if (time == StateLifeTime.SELECTION) {
+                propagateNetwork(st, planner);
+            }
+        });
     }
 
     @Override

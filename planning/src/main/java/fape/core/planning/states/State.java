@@ -11,6 +11,7 @@ import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
+import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
@@ -51,19 +52,9 @@ import java.util.stream.Stream;
 
 public class State implements Reporter {
 
-    public float h = -1, g = -1, f=-1;
-
-    private static int idCounter = 0;
-
-    /**
-     * Unique identifier of the database.
-     */
-    public final int mID = idCounter++;
-
-    /**
-     * Depth of the state in the search tree
-     */
-    public final int depth;
+    public static int idCounter = 0;
+    public final int mID;
+    int depth;
 
     /**
      *
@@ -94,7 +85,7 @@ public class State implements Reporter {
 
     public final AnmlProblem pb;
 
-    /** Current planner instane handling this state */
+    /** Current planner instance handling this state */
     public APlanner pl;
 
     public final Controllability controllability;
@@ -118,6 +109,8 @@ public class State implements Reporter {
     public ReachabilityGraphs reachabilityGraphs = null;
 
     final List<StateExtension> extensions;
+
+    public List<Flaw> flaws = null;
 
     class PotentialThreat {
         private final int id1, id2;
@@ -160,11 +153,12 @@ public class State implements Reporter {
      * constructed from from the existing states
      */
     public State(AnmlProblem pb, Controllability controllability) {
+        this.mID = idCounter++;
         this.pb = pb;
+        this.depth = 0;
         this.controllability = controllability;
         this.refCounter = new RefCounter(pb.refCounter());
         this.actions = new ArrayList<>();
-        depth = 0;
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
@@ -188,14 +182,15 @@ public class State implements Reporter {
      *
      * @param st State to copy
      */
-    public State(State st) {
+    public State(State st, int id) {
+        this.mID = id;
+        this.depth = st.depth +1;
         pb = st.pb;
         pl = st.pl;
         this.controllability = st.controllability;
         this.refCounter = new RefCounter(st.refCounter);
         this.pgr = st.pgr;
         this.actions = new ArrayList<>(st.actions);
-        depth = st.depth + 1;
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -212,6 +207,9 @@ public class State implements Reporter {
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
 
+    /** Returns the depth of this node in the search space */
+    public int getDepth() { return depth; }
+
     public void setPlanner(APlanner planner) {
         assert pl == null : "This state is already attached to a planner.";
         this.pl = planner;
@@ -221,8 +219,8 @@ public class State implements Reporter {
 
     public void setDeadEnd() { isDeadEnd = true; }
 
-    public State cc() {
-        return new State(this);
+    public State cc(int newID) {
+        return new State(this, newID);
     }
 
     private List<Handler> getHandlers() {
@@ -871,6 +869,22 @@ public class State implements Reporter {
         // this check is quite expensive
 //        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
         return verifiedThreats;
+    }
+
+    /**
+     * Returns a sorted list of flaws in this state.
+     * Flaws are identified using the provided finders and sorted with the provided comparator.
+     */
+    public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
+        if(flaws == null) {
+            flaws = new LinkedList<>();
+
+            for (FlawFinder fd : finders)
+                flaws.addAll(fd.getFlaws(this, pl));
+
+            Collections.sort(flaws, comparator);
+        }
+        return flaws;
     }
 
     public TimedCanvas getCanvasOfActions() {

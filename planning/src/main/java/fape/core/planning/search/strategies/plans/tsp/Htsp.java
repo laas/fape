@@ -9,6 +9,7 @@ import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
+import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
@@ -26,7 +27,7 @@ import static fape.core.planning.search.strategies.plans.tsp.GoalNetwork.Disjunc
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Htsp implements PartialPlanComparator, Heuristic {
+public class Htsp extends PartialPlanComparator {
 
     public enum DistanceEvaluationMethod {dtg, tdtg, cea}
 
@@ -61,7 +62,7 @@ public class Htsp implements PartialPlanComparator, Heuristic {
         return "g: "+g(st)+"hc: "+hc(st)+"  makespan: "+makespans.get(st.mID);
     }
     @Override
-    public int compare(State s1, State s2) {
+    public int compare(SearchNode s1, SearchNode s2) {
         return (int) (f(s1) - f(s2));
     }
 

@@ -16,25 +16,7 @@ import fape.core.planning.states.State;
 /**
  * Gives priority to state with the least number of unbound variables
  */
-public class NumUnboundVariables implements PartialPlanComparator  {
-    
-    public float f(State s) {
-        return s.getUnboundVariables().size();
-    }
-
-    @Override
-    public int compare(State state, State state2) {
-        float f_state = f(state);
-        float f_state2 = f(state2);
-
-        // comparison (and not difference) is necessary sicne the input is a float.
-        if(f_state > f_state2)
-            return 1;
-        else if(f_state2 > f_state)
-            return -1;
-        else
-            return 0;
-    }
+public class NumUnboundVariables extends PartialPlanComparator {
 
     @Override
     public String shortName() {
@@ -46,4 +28,7 @@ public class NumUnboundVariables implements PartialPlanComparator  {
         return "Unbound: num-unbound: "+ st.getUnboundVariables().size();
     }
 
+    @Override public float g(State st) { return 0; }
+    @Override public float h(State st) { return st.getUnboundVariables().size(); }
+    @Override public float hc(State st) { return h(st); }
 }

@@ -6,7 +6,7 @@ import fape.core.planning.states.State;
 
 import java.util.HashMap;
 
-public class RPGComp implements PartialPlanComparator, Heuristic {
+public class RPGComp extends PartialPlanComparator {
 
     final APlanner planner;
 
@@ -45,17 +45,8 @@ public class RPGComp implements PartialPlanComparator, Heuristic {
 
     HashMap<Integer, Integer> hc = new HashMap<>();
 
-    public int eval(State st) {
-        return (int) g(st) + (int) h(st);
-    }
-
     public int numAdditionalSteps(State st) {
         RelaxedPlanExtractor rpe = new RelaxedPlanExtractor(planner, st);
         return rpe.computeH();
-    }
-
-    @Override
-    public int compare(State state, State t1) {
-        return  -(eval(t1) - eval(state));
     }
 }

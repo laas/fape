@@ -243,9 +243,7 @@ public class SearchView {
         h.append("\n");
         try {
             h.append(planner.stateComparator().reportOnState(st));
-            if (planner.definesHeuristicsValues()) {
-                h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
-            }
+            h.append(String.format(" g: %s, h: %s", planner.stateComparator().g(st), planner.stateComparator().h(st)));
         } catch (Exception e) {} // just to make sure the planner does not crash because of the view
 
         n.setString(LABEL, label);
