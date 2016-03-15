@@ -1,5 +1,7 @@
 package fape.core.planning.states;
 
+import fape.util.StrongReference;
+
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -23,24 +25,25 @@ public class SearchNode {
 
     public SearchNode(SearchNode parent) {
         this.parent = parent;
-        this.stronglyReferencedState = null;
+        state = null;
         this.mID = State.idCounter++;
+        this.depth = parent.depth +1;
     }
     public SearchNode(State initialState) {
         this.parent = null;
-        this.stronglyReferencedState = initialState;
+        state = new StrongReference<>(initialState);
         this.mID = initialState.mID;
+        this.depth = 0;
     }
 
     /** Identifier of the contained state. */
     final int mID;
 
-    /** A strong reference to a state that we cannot afford to forget about.
-     * This is used at least for the root of the search tree */
-    private final State stronglyReferencedState;
+    /** Depth of this search node */
+    final int depth;
 
-    /** Typically a soft reference to a state. */
-    private Reference<State> forgettableState = null;
+    /** A soft, strong or weak reference to a state. */
+    private Reference<State> state = null;
 
     /** Predecessor in hte search tree */
     private final SearchNode parent;
@@ -85,16 +88,14 @@ public class SearchNode {
      * Returns the base state from which the complete state can be built.
      */
     private State getBaseState() {
-        if(stronglyReferencedState != null) {
-            assert forgettableState == null;
-            return stronglyReferencedState;
-        } else if(forgettableState != null && forgettableState.get() != null) {
-            return forgettableState.get();
+        if(state != null && state.get() != null) {
+            return state.get();
         } else {
+            assert depth != 0;
             assert parent != null;
             State st = parent.getState().cc(mID);
             nextOperation = 0;
-            forgettableState = new SoftReference<>(st);
+            state = new SoftReference<>(st);
             return st;
         }
     }
