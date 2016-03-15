@@ -59,6 +59,9 @@ public class UnsupportedTimeline extends Flaw {
 
     /** Returns true if the nth change in potentialSupporter (n = changeNumber) can support the consumer timeline */
     public static boolean isSupporting(Timeline potentialSupporter, int changeNumber, Timeline consumer, State st) {
+        if(consumer == potentialSupporter)
+            return false; //TODO: this should not be necessary to avoid the assertion since they should be temporally distinct
+
         if(!st.unifiable(potentialSupporter, consumer))
             return false;
 
