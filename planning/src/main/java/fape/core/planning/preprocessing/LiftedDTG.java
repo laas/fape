@@ -4,6 +4,7 @@ import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
+import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -14,9 +15,6 @@ import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.VarRef;
-import planstack.graph.GraphFactory;
-import planstack.graph.core.LabeledEdge;
-import planstack.graph.core.MultiLabeledDigraph;
 import scala.collection.JavaConversions;
 
 import java.util.*;
@@ -25,18 +23,18 @@ public class LiftedDTG implements ActionSupporterFinder{
 
     final AnmlProblem problem;
 
-    MultiLabeledDigraph<FluentType, SupportingAction> dag = GraphFactory.getMultiLabeledDigraph();
-
+    Map<FluentType, List<SupportingAction>> potentialSupporters = null;
 
     public LiftedDTG(AnmlProblem pb) {
         this.problem = pb;
+
+        Map<FluentType, Set<SupportingAction>> temporaryPotentialSupporters = new HashMap<>();
 
         for(Function func : pb.functions().getAll()) {
             if(func instanceof SymFunction) {
                 FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaCollection(func.argTypes()), func.valueType());
                 for(FluentType derived : derivedSubTypes(fluent)) {
-                    if(!dag.contains(derived))
-                        dag.addVertex(derived);
+                    temporaryPotentialSupporters.putIfAbsent(derived, new HashSet<>());
                 }
             }
         }
@@ -45,19 +43,18 @@ public class LiftedDTG implements ActionSupporterFinder{
         for(AbstractAction aa : problem.abstractActions()) {
             for(AbstractLogStatement s : aa.jLogStatements()) {
                 if(s instanceof AbstractTransition || s instanceof AbstractAssignment) {
-                    for(FluentType prec : getPreconditions(aa, s)) {
-                        for(FluentType eff : getEffects(aa, s)) {
-                            if(!dag.contains(prec))
-                                dag.addVertex(prec);
-                            if(!dag.contains(eff))
-                                dag.addVertex(eff);
-                            dag.addEdge(prec, eff, new SupportingAction(aa, s.id()));
-                        }
+                    for(FluentType eff : getEffects(aa, s)) {
+                        assert temporaryPotentialSupporters.containsKey(eff) : "This type was not previously detected.";
+                        temporaryPotentialSupporters.get(eff).add(new SupportingAction(aa, s.id()));
                     }
                 }
             }
         }
-//        dag.exportToDotFile("dtg.dot");
+
+        potentialSupporters = new HashMap<>();
+        for(FluentType ft : temporaryPotentialSupporters.keySet()) {
+            potentialSupporters.put(ft, Utils.asImmutableList(temporaryPotentialSupporters.get(ft)));
+        }
     }
 
     public Collection<SupportingAction> getActionsSupporting(State st, Timeline db) {
@@ -69,28 +66,17 @@ public class LiftedDTG implements ActionSupporterFinder{
             argTypes.add(st.typeOf(argVar));
         }
         String valueType = st.typeOf(db.getGlobalConsumeValue());
-//        System.err.println(Printer.temporalDatabaseManager(st));
         return this.getActionsSupporting(new FluentType(predicate, argTypes, valueType));
-
     }
 
-    public Set<SupportingAction> getActionsSupporting(FluentType f) {
-        Set<SupportingAction> supporters = new HashSet<>();
-
-        try {
-            for(LabeledEdge<FluentType, SupportingAction> inEdge : JavaConversions.asJavaIterable(dag.inEdges(f))) {
-                supporters.add(inEdge.l());
-            }
-        } catch (NoSuchElementException e) {
-            // type is not recorded
-            e.printStackTrace();
+    public Collection<SupportingAction> getActionsSupporting(FluentType f) {
+        if(!potentialSupporters.containsKey(f)) {
             System.err.println("Unable to find a type: "+f.toString());
-            System.err.println("Possible signatures are: ");
-            for(FluentType ft : JavaConversions.asJavaIterable(dag.vertices()))
-                System.err.println("   "+ft.toString());
+            System.err.println("Possible signatures are: "+ potentialSupporters.keySet());
             throw new FAPEException("Unable to find type: "+f+". See error output.");
+        } else {
+            return potentialSupporters.get(f);
         }
-        return supporters;
     }
 
     public Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
