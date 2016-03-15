@@ -102,10 +102,32 @@ public class SearchNode {
         } else {
             assert depth != 0;
             assert parent != null;
-            State st = parent.getState().cc(mID);
+            State st = parent.getStateWithID(mID);
             nextOperation = 0;
             state = new SoftReference<>(st);
             return st;
+        }
+    }
+
+    private State getStateWithID(int id) {
+        if(state != null && state.get() != null) {
+            // I already my own state, make sure it is up to date and give it away
+            State s = state.get();
+            while(nextOperation < operations.size()) {
+                operations.get(nextOperation++).accept(s);
+            }
+            return s.cc(id);
+        } else {
+            assert depth != 0;
+            // ask one from my father and apply my changes
+            State s = parent.getStateWithID(id);
+            nextOperation = 0;
+            while(nextOperation < operations.size()) {
+                operations.get(nextOperation++).accept(s);
+            }
+            if(depth % 5 == 0)
+                state = new SoftReference<>(s.cc(mID));
+            return s;
         }
     }
 
