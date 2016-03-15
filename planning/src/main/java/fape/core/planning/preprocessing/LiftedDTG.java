@@ -30,21 +30,13 @@ public class LiftedDTG implements ActionSupporterFinder{
 
         Map<FluentType, Set<SupportingAction>> temporaryPotentialSupporters = new HashMap<>();
 
-        for(Function func : pb.functions().getAll()) {
-            if(func instanceof SymFunction) {
-                FluentType fluent = new FluentType(func.name(), JavaConversions.asJavaCollection(func.argTypes()), func.valueType());
-                for(FluentType derived : derivedSubTypes(fluent)) {
-                    temporaryPotentialSupporters.putIfAbsent(derived, new HashSet<>());
-                }
-            }
-        }
-
         // build the constraint between fluents types
         for(AbstractAction aa : problem.abstractActions()) {
             for(AbstractLogStatement s : aa.jLogStatements()) {
                 if(s instanceof AbstractTransition || s instanceof AbstractAssignment) {
                     for(FluentType eff : getEffects(aa, s)) {
-                        assert temporaryPotentialSupporters.containsKey(eff) : "This type was not previously detected.";
+                        if(!temporaryPotentialSupporters.containsKey(eff))
+                            temporaryPotentialSupporters.put(eff, new HashSet<>());
                         temporaryPotentialSupporters.get(eff).add(new SupportingAction(aa, s.id()));
                     }
                 }
@@ -70,13 +62,9 @@ public class LiftedDTG implements ActionSupporterFinder{
     }
 
     public Collection<SupportingAction> getActionsSupporting(FluentType f) {
-        if(!potentialSupporters.containsKey(f)) {
-            System.err.println("Unable to find a type: "+f.toString());
-            System.err.println("Possible signatures are: "+ potentialSupporters.keySet());
-            throw new FAPEException("Unable to find type: "+f+". See error output.");
-        } else {
-            return potentialSupporters.get(f);
-        }
+        if(!potentialSupporters.containsKey(f))
+            potentialSupporters.put(f, Collections.emptyList());
+        return potentialSupporters.get(f);
     }
 
     public Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
