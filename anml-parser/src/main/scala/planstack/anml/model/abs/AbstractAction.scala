@@ -59,8 +59,8 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   def end = ContainerEnd
 
   def subTasks = statements.filter(_.isInstanceOf[AbstractTask]).map(_.asInstanceOf[AbstractTask])
-  def logStatements = statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement])
-  def resStatements = statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement])
+  lazy val logStatements = statements.filter(_.isInstanceOf[AbstractLogStatement]).map(_.asInstanceOf[AbstractLogStatement])
+  lazy val resStatements = statements.filter(_.isInstanceOf[AbstractResourceStatement]).map(_.asInstanceOf[AbstractResourceStatement])
 
   /** Java friendly version of [[planstack.anml.model.abs.AbstractAction#temporalStatements]]. */
   def jStatements = seqAsJavaList(statements)
