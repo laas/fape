@@ -70,7 +70,7 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   def jLogStatements = seqAsJavaList(logStatements)
   def jResStatements = seqAsJavaList(resStatements)
 
-  def getLogStatement(ref: LStatementRef) = statements.find(s => s.id == ref).getOrElse({ throw new ANMLException("No statement with this ref.") })
+  def getLogStatement(ref: LStatementRef) = logStatements.find(s => s.id == ref).getOrElse({ throw new ANMLException("No statement with this ref.") })
 
   lazy private val _allVars : Array[LVarRef] = context.variables.keys.toArray
   def allVars : Array[LVarRef] = {

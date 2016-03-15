@@ -179,12 +179,11 @@ public class UnsupportedTimeline extends Flaw {
                     continue;
 
                 // if the supporting variable is defined already (typically a constant) check if it is unifiable with our consumer
-                AbstractLogStatement supporter = aa.absAct.jLogStatements().stream()
-                        .filter(p -> p.id() == aa.statementRef).findFirst().get();
-                LVarRef supportingCar = supporter instanceof AbstractAssignment
-                        ? ((AbstractAssignment) supporter).value()
-                        : ((AbstractTransition) supporter).to();
-                if(aa.absAct.context().hasGlobalVar(supportingCar) && !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
+                AbstractLogStatement supporter = aa.absAct.getLogStatement(aa.statementRef);
+                assert supporter.id().equals(aa.statementRef);
+                LVarRef supportingCar = supporter.effectValue();
+                if(aa.absAct.context().hasGlobalVar(supportingCar) &&
+                        !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
                     continue;
 
                 resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
