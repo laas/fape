@@ -50,11 +50,7 @@ public class State implements Reporter {
 
     public static int idCounter = 0;
     public final int mID;
-
-    /**
-     * Depth of the state in the search tree
-     */
-    public final int depth;
+    int depth;
 
     /**
      *
@@ -152,10 +148,10 @@ public class State implements Reporter {
     public State(AnmlProblem pb, Controllability controllability) {
         this.mID = idCounter++;
         this.pb = pb;
+        this.depth = 0;
         this.controllability = controllability;
         this.refCounter = new RefCounter(pb.refCounter());
         this.actions = new ArrayList<>();
-        depth = 0;
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
@@ -180,13 +176,13 @@ public class State implements Reporter {
      */
     public State(State st, int id) {
         this.mID = id;
+        this.depth = st.depth +1;
         pb = st.pb;
         pl = st.pl;
         this.controllability = st.controllability;
         this.refCounter = new RefCounter(st.refCounter);
         this.pgr = st.pgr;
         this.actions = new ArrayList<>(st.actions);
-        depth = st.depth + 1;
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -201,6 +197,9 @@ public class State implements Reporter {
 
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
+
+    /** Returns the depth of this node in the search space */
+    public int getDepth() { return depth; }
 
     public void setPlanner(APlanner planner) {
         assert pl == null : "This state is already attached to a planner.";

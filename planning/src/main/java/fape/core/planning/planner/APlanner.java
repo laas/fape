@@ -251,7 +251,7 @@ public abstract class APlanner {
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(st.getState());
                 return st.getState();
-            } else if(st.getState().depth < maxDepth) {
+            } else if(st.getDepth() < maxDepth) {
                 List<SearchNode> children = expand(st, flaws);
                 for(SearchNode child : children) {
                     queue.add(child);
@@ -492,7 +492,7 @@ public abstract class APlanner {
                 TinyLogger.LogInfo("Plan found:");
                 TinyLogger.LogInfo(current.getState());
                 return current.getState();
-            } else if(current.getState().depth < maxDepth) {
+            } else if(current.getDepth() < maxDepth) {
                 // expand the state
                 List<SearchNode> children = expand(current, flaws);
                 AX.clear();

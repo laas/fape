@@ -13,12 +13,12 @@ public class BreadthFirst extends PartialPlanComparator {
 
     @Override
     public String reportOnState(State st) {
-        return "BFS:\t depth: "+st.depth;
+        return "BFS:\t depth: "+st.getDepth();
     }
 
     @Override
     public float g(State st) {
-        return st.depth;
+        return st.getDepth();
     }
 
     @Override

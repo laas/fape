@@ -13,12 +13,12 @@ public class DepthFirst extends PartialPlanComparator {
 
     @Override
     public String reportOnState(State st) {
-        return String.format("DFS:\t depth: %s", st.depth);
+        return String.format("DFS:\t depth: %s", st.getDepth());
     }
 
     @Override
     public float g(State st) {
-        return 10000f - st.depth;
+        return 10000f - st.getDepth();
     }
 
     @Override

@@ -133,11 +133,14 @@ public class SearchNode {
 
     public State getState() {
         State s = getBaseState();
+        s.depth = depth;
         while(nextOperation < operations.size()) {
             operations.get(nextOperation++).accept(s);
         }
         return s;
     }
+
+    public int getDepth() { return depth; }
 
     /**
      * Appends a new operation necessary to build the complete state.
