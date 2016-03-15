@@ -209,7 +209,7 @@ class AnmlProblem extends TemporalInterval {
       val abs = AbstractAction(actionDecl, this, refCounter)
       assert(abs.nonEmpty)
       val task = abs.head.taskName
-      assert(!actionsByTask.contains(task), "Task is already registered")
+      assert(!actionsByTask.contains(task), "Task \""+task+"\" is already registered. Maybe the corresponding action was declared twice.")
       abstractActions ++= abs
       actionsByTask += ((task, abs.asJava))
     })
