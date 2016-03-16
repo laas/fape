@@ -3,6 +3,7 @@ package planstack.anml.model
 import java.util
 
 import planstack.anml.model.concrete.VarRef
+import planstack.anml.parser.VarExpr
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -58,7 +59,7 @@ object AbstractParameterizedStateVariable {
           parser.FuncExpr(nameParts, argList)
         } else {
           assert(nameParts.tail.length == 1, "Does not seem to be a valid function: "+expr)
-          val headType = context.getType(new LVarRef(nameParts.head))
+          val headType = context.getType(nameParts.head)
           parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         }
       }
@@ -72,7 +73,7 @@ object AbstractParameterizedStateVariable {
       }
       case parser.NumExpr(_) => throw new ANMLException("Cannot build a state variable from a numeric expression: "+expr)
     }
-    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(e => new LVarRef(e.variable)))
+    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(a => context.getLocalVar(a.variable)))
   }
 
 }

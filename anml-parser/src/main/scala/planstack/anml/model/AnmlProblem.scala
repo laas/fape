@@ -90,7 +90,7 @@ class AnmlProblem extends TemporalInterval {
     // add predefined instance to context and to StateModifier
     for((name, tipe) <- instances.instances) {
       initialChronicle.instances += name
-      context.addVar(new LVarRef(name), instances.referenceOf(name))
+      context.addVar(new LVarRef(name, tipe), instances.referenceOf(name))
     }
 
     initialChronicle.initTemporalObjects()
@@ -178,7 +178,7 @@ class AnmlProblem extends TemporalInterval {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe, refCounter)
       chronicle.instances += instanceDecl.name
       // all instances are added to the context
-      context.addVar(new LVarRef(instanceDecl.name), instances.referenceOf(instanceDecl.name))
+      context.addVar(new LVarRef(instanceDecl.name, instanceDecl.tipe), instances.referenceOf(instanceDecl.name))
     })
 
     // add all functions to the function manager
@@ -189,7 +189,7 @@ class AnmlProblem extends TemporalInterval {
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
         val newVar = new VarRef(funcDecl.tipe, refCounter)
-        context.addVar(LVarRef(funcDecl.name), newVar)
+        context.addVar(LVarRef(funcDecl.name, funcDecl.tipe), newVar)
         chronicle.vars += newVar
       } else {
         // either non-constant or with arguments
@@ -267,7 +267,7 @@ class AnmlProblem extends TemporalInterval {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
         val newVar = new VarRef(func.tipe, refCounter)
-        localContext.addVar(LVarRef(func.name), newVar)
+        localContext.addVar(LVarRef(func.name, func.tipe), newVar)
         chron.vars += newVar
 
       // complete function definition, would change the problem.
