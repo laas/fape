@@ -274,8 +274,6 @@ public abstract class APlanner {
 
         expandedStates++;
 
-
-
         TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
 
         List<Flaw> flaws = getFlaws(st);
@@ -295,6 +293,8 @@ public abstract class APlanner {
         List<Resolver> resolvers = f.getResolvers(st.getState(), this);
         // make sure resolvers are always in the same order (for reproducibility)
         Collections.sort(resolvers);
+
+
 
         if(options.displaySearch)
             searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
@@ -322,6 +322,7 @@ public abstract class APlanner {
                 List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
                 Flaw selectedFlaw = fs.get(0);
                 List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
+                Collections.sort(possibleResolvers);
                 Resolver res = possibleResolvers.get(currentResolver);
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
@@ -392,6 +393,7 @@ public abstract class APlanner {
         //we just take the first flaw and its resolvers
         Flaw f = flaws.get(0);
         List<Resolver> resolvers = f.getResolvers(st.getState(), this);
+
         if (resolvers.isEmpty()) {
             // dead end, keep going
             TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
