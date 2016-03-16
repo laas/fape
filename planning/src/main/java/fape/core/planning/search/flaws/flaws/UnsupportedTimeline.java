@@ -11,6 +11,7 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.Context;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
@@ -19,9 +20,11 @@ import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.Task;
+import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 public class UnsupportedTimeline extends Flaw {
 
@@ -170,6 +173,8 @@ public class UnsupportedTimeline extends Flaw {
                 }
             }
         }
+
+
 
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {

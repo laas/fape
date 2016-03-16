@@ -40,7 +40,8 @@ public abstract class APlanner {
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
-        queue.add(new SearchNode(initialState));
+        SearchNode root = new SearchNode(initialState);
+        queue.add(root);
 
         if(options.usePlanningGraphReachability) {
             initialState.pgr = preprocessor.getFeasibilityReasoner();
@@ -49,7 +50,7 @@ public abstract class APlanner {
 
         if(options.displaySearch) {
             searchView = new SearchView(this);
-            searchView.addNode(initialState, null);
+            searchView.addNode(root);
         }
     }
 
@@ -237,7 +238,7 @@ public abstract class APlanner {
 
             if(!st.getState().isConsistent()) {
                 if(options.displaySearch)
-                    searchView.setDeadEnd(st.getState());
+                    searchView.setDeadEnd(st);
                 continue;
             }
 
@@ -245,7 +246,7 @@ public abstract class APlanner {
             if (flaws.isEmpty()) {
                 // this is a solution state
                 if(options.displaySearch)
-                    searchView.setSolution(st.getState());
+                    searchView.setSolution(st);
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
@@ -271,7 +272,7 @@ public abstract class APlanner {
             f.getNumResolvers(st.getState(), this);
 
         if(options.displaySearch)
-            searchView.setCurrentFocus(st.getState());
+            searchView.setCurrentFocus(st);
 
         assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
@@ -307,14 +308,14 @@ public abstract class APlanner {
         Collections.sort(resolvers);
 
         if(options.displaySearch)
-            searchView.setProperty(st.getState(), SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
+            searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
 
         if (resolvers.isEmpty()) {
             // dead end, keep going
             TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
             if(options.displaySearch) {
-                searchView.setProperty(st.getState(), SearchView.COMMENT, "Pruned by old reachability");
-                searchView.setDeadEnd(st.getState());
+                searchView.setProperty(st, SearchView.COMMENT, "Pruned by old reachability");
+                searchView.setDeadEnd(st);
             }
             st.setExpanded();
             return Collections.emptyList();
@@ -330,8 +331,9 @@ public abstract class APlanner {
             final int currentResolver = resolverID;
             next.addOperation(s -> {
                 List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
-                Resolver res = fs.get(0).getResolvers(s, this)
-                        .get(currentResolver);
+                Flaw selectedFlaw = fs.get(0);
+                List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
+                Resolver res = possibleResolvers.get(currentResolver);
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
             });
@@ -363,9 +365,9 @@ public abstract class APlanner {
             }
 
             if(options.displaySearch) {
-                searchView.addNode(next.getState(), st.getState());
-                searchView.setProperty(next.getState(), SearchView.LAST_APPLIED_RESOLVER, Printer.p(st.getState(), resolvers.get(currentResolver)));
-                searchView.setProperty(next.getState(), SearchView.COMMENT, hrComment);
+                searchView.addNode(next);
+                searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st.getState(), resolvers.get(currentResolver)));
+                searchView.setProperty(next, SearchView.COMMENT, hrComment);
             }
             if (success) {
                 children.add(next);
@@ -373,7 +375,7 @@ public abstract class APlanner {
             } else {
                 TinyLogger.LogInfo(st.getState(), "     Dead-end reached for state: %s", next.getID());
                 if (options.displaySearch)
-                    searchView.setDeadEnd(next.getState());
+                    searchView.setDeadEnd(next);
                 //inconsistent state, doing nothing
             }
         }
@@ -478,7 +480,7 @@ public abstract class APlanner {
 
             if(!current.getState().isConsistent()) {
                 if(options.displaySearch)
-                    searchView.setDeadEnd(current.getState());
+                    searchView.setDeadEnd(current);
                 continue;
             }
 
@@ -486,7 +488,7 @@ public abstract class APlanner {
             if (flaws.isEmpty()) {
                 // this is a solution state
                 if(options.displaySearch)
-                    searchView.setSolution(current.getState());
+                    searchView.setSolution(current);
 
                 this.planState = EPlanState.CONSISTENT;
                 TinyLogger.LogInfo("Plan found:");
