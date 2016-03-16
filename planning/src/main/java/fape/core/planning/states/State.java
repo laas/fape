@@ -111,8 +111,6 @@ public class State implements Reporter {
 
     final List<StateExtension> extensions;
 
-    public List<Flaw> flaws = null;
-
     class PotentialThreat {
         private final int id1, id2;
         public PotentialThreat(Timeline tl1, Timeline tl2) {
@@ -876,19 +874,26 @@ public class State implements Reporter {
         return verifiedThreats;
     }
 
+    /** Returns true if this State has no flaws */
+    public boolean isSolution(List<FlawFinder> finders) {
+        for(FlawFinder ff : finders) {
+            if(!ff.getFlaws(this, pl).isEmpty())
+                return false;
+        }
+        return true;
+    }
+
     /**
      * Returns a sorted list of flaws in this state.
      * Flaws are identified using the provided finders and sorted with the provided comparator.
      */
     public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
-        if(flaws == null) {
-            flaws = new LinkedList<>();
+        List<Flaw> flaws = new ArrayList<>();
 
-            for (FlawFinder fd : finders)
-                flaws.addAll(fd.getFlaws(this, pl));
+        for (FlawFinder fd : finders)
+            flaws.addAll(fd.getFlaws(this, pl));
 
-            Collections.sort(flaws, comparator);
-        }
+        Collections.sort(flaws, comparator);
         return flaws;
     }
 

@@ -430,7 +430,6 @@ public abstract class APlanner {
      */
     public boolean applyResolver(State st, Resolver resolver) {
         boolean result = resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.checkConsistency();
-        st.flaws = null; // clear flaws cache
         return result;
     }
 
@@ -479,8 +478,7 @@ public abstract class APlanner {
                 continue;
             }
 
-            List<Flaw> flaws = getFlaws(current);
-            if (flaws.isEmpty()) {
+            if (current.getState().isSolution(options.flawFinders)) {
                 // this is a solution state
                 if(options.displaySearch)
                     searchView.setSolution(current);
