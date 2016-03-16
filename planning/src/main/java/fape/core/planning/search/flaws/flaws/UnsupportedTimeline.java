@@ -187,18 +187,38 @@ public class UnsupportedTimeline extends Flaw {
                 // if the supporting variable is defined already (typically a constant) check if it is unifiable with our consumer
                 AbstractLogStatement supporter = aa.absAct.getLogStatement(aa.statementRef);
                 assert supporter.id().equals(aa.statementRef);
-                LVarRef supportingCar = supporter.effectValue();
-                if(aa.absAct.context().hasGlobalVar(supportingCar) &&
-                        !st.unifiable(aa.absAct.context().getGlobalVar(supportingCar), consumer.getGlobalConsumeValue()))
-                    continue;
+                LVarRef supportingVar = supporter.effectValue();
+                VarRef consumerVar = consumer.getGlobalConsumeValue();
 
                 boolean areStateVariablesUnifiable = true;
-                for(int i=0 ; i<supporter.sv().args().size() ; i++) {
-                    if(aa.absAct.context().hasGlobalVar(supporter.sv().jArgs().get(i)) &&
-                            !st.unifiable(
-                                    aa.absAct.context().getGlobalVar(supporter.sv().jArgs().get(i)),
-                                    consumer.stateVariable.arg(i)))
+                if(aa.absAct.context().hasGlobalVar(supportingVar)) {
+                    if(!st.unifiable(aa.absAct.context().getGlobalVar(supportingVar), consumerVar))
                         areStateVariablesUnifiable = false;
+                } else {
+                     // this is quite expensive but can prove useful on some domains
+//                    Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(supportingVar.getType()));
+//                    List<String> dom = st.csp.bindings().domainOf(consumerVar);
+//                    futureDom.retainAll(dom);
+//                    if(futureDom.isEmpty())
+//                        areStateVariablesUnifiable = false;
+                }
+
+                for(int i=0 ; i<supporter.sv().args().size() ; i++) {
+                    LVarRef lv = supporter.sv().jArgs().get(i);
+                    VarRef v = consumer.stateVariable.arg(i);
+                    if(aa.absAct.context().hasGlobalVar(lv)) {
+                        if(!st.unifiable(aa.absAct.context().getGlobalVar(lv), v))
+                            areStateVariablesUnifiable = false;
+                    } else {
+                        // this is quite expensive but can prove useful on some domains
+//                        Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(lv.getType()));
+//                        List<String> dom = st.csp.bindings().domainOf(v);
+//                        futureDom.retainAll(dom);
+//                        if(futureDom.isEmpty())
+//                            areStateVariablesUnifiable =false;
+                    }
+
+
                 }
 
                 if(areStateVariablesUnifiable)
