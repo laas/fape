@@ -29,7 +29,7 @@ public class TemporalSeparation extends Resolver {
                 firstDB.getLastTimePoints(),
                 secondDB.getFirstChange().start()
         );
-        return st.isConsistent();
+        return st.checkConsistency();
     }
 
     @Override

@@ -9,11 +9,7 @@ import fape.core.planning.states.State;
 
 import java.util.*;
 
-public class HTSPHandler implements Handler {
-
-    @Override
-    public void apply(SearchNode n, StateLifeTime time, APlanner planner) {
-    }
+public class HTSPHandler extends Handler {
 
     @Override
     public void stateBindedToPlanner(State st, APlanner pl) {

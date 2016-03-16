@@ -124,7 +124,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 st.applyChronicle(ch);
                 for(Pair<TPRef,TPRef> prec : precedences) {
                     st.enforceBefore(prec.value1, prec.value2);
-                    st.isConsistent();
+                    st.checkConsistency();
 //                    System.out.println(prec.value1 + " : " + st.getEarliestStartTime(prec.value1) + "  " + st.getLatestStartTime(prec.value1));
 //                    System.out.println(prec.value2+" : "+st.getEarliestStartTime(prec.value2)+"  "+st.getLatestStartTime(prec.value2));
                 }

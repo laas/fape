@@ -17,7 +17,7 @@ import planstack.anml.model.concrete.InstanceRef;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MutexesHandler implements Handler {
+public class MutexesHandler extends Handler {
 
     static boolean debug = false;
 
@@ -202,18 +202,16 @@ public class MutexesHandler implements Handler {
     }
 
     @Override
-    public void apply(SearchNode n, StateLifeTime time, APlanner planner) {
+    protected void apply(State st, StateLifeTime time, APlanner planner) {
         this.planner = planner;
-        n.addOperation(st -> {
-            if (time == StateLifeTime.SELECTION) {
-                if (!st.hasExtension(Ext.class)) {
-                    getMutexes(st);
+        if (time == StateLifeTime.SELECTION) {
+            if (!st.hasExtension(Ext.class)) {
+                getMutexes(st);
 
-                    Ext ext = new Ext();
-                    st.addExtension(ext);
-                }
+                Ext ext = new Ext();
+                st.addExtension(ext);
             }
-        });
+        }
     }
 
     @Override

@@ -74,6 +74,7 @@ public class State implements Reporter {
     public final Map<ParameterizedStateVariable, VarRef> stateVarsToVariables;
 
     private boolean isDeadEnd = false;
+    private boolean isConsistent = true;
 
     /**
      * Keep tracks of statements that must be supported by a particular
@@ -256,12 +257,16 @@ public class State implements Reporter {
 
 
     /**
-     * @return True if the state is consistent (ie. stn and bindings
+     * Returns True if the state is consistent (ie. stn and bindings
      * consistent), False otherwise.
+     * This method propagates the constraint neworks
      */
-    public boolean isConsistent() {
-        return !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
+    public boolean checkConsistency() {
+        isConsistent &= !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
+        return isConsistent;
     }
+
+    public boolean isConsistent() { return isConsistent; }
 
     public String report() {
         String ret = "";

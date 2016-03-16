@@ -4,7 +4,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
 
-public class PreprocessorHandler implements Handler {
+public class PreprocessorHandler extends Handler {
 
     @Override
     public void stateBindedToPlanner(State st, APlanner planner) {

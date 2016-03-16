@@ -234,7 +234,7 @@ public abstract class APlanner {
 
             // let all handlers know that this state was selected for expansion
             for(Handler h : options.handlers)
-                h.apply(st, Handler.StateLifeTime.SELECTION, this);
+                h.addOperation(st, Handler.StateLifeTime.SELECTION, this);
 
             if(!st.getState().isConsistent()) {
                 if(options.displaySearch)
@@ -336,6 +336,8 @@ public abstract class APlanner {
                 Resolver res = possibleResolvers.get(currentResolver);
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
+
+                s.checkConsistency();
             });
 
             boolean success = next.getState().isConsistent();
@@ -358,6 +360,7 @@ public abstract class APlanner {
                     s.reachabilityGraphs = new ReachabilityGraphs(this, s);
                     if(!s.reachabilityGraphs.isRefinableToSolution())
                         s.setDeadEnd();
+                    s.checkConsistency();
                 });
                 success &= next.getState().isConsistent();
                 if(!success)
@@ -411,6 +414,7 @@ public abstract class APlanner {
                 Resolver res = s.getFlaws(options.flawFinders, flawComparator(s)).get(0).getResolvers(s, this).get(0);
                 if(!applyResolver(s, res))
                     s.setDeadEnd();
+                s.checkConsistency();
             });
             TinyLogger.LogInfo(st.getState(), "     [%s] ff: Adding %s", st.getID(), resolvers.get(0));
             if(st.getState().isConsistent()) {
@@ -434,7 +438,7 @@ public abstract class APlanner {
      *         False otherwise.
      */
     public boolean applyResolver(State st, Resolver resolver) {
-        boolean result = resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.isConsistent();
+        boolean result = resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.checkConsistency();
         st.flaws = null; // clear flaws cache
         return result;
     }
@@ -476,9 +480,9 @@ public abstract class APlanner {
 
             // let all handlers know that this state was selected for expansion
             for(Handler h : options.handlers)
-                h.apply(current, Handler.StateLifeTime.SELECTION, this);
+                h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
 
-            if(!current.getState().isConsistent()) {
+            if(!current.getState().checkConsistency()) {
                 if(options.displaySearch)
                     searchView.setDeadEnd(current);
                 continue;

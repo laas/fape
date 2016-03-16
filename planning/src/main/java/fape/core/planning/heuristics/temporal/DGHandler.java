@@ -20,7 +20,7 @@ import planstack.constraints.bindings.Domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DGHandler implements fape.core.planning.search.Handler {
+public class DGHandler extends fape.core.planning.search.Handler {
 
     @Override
     public void stateBindedToPlanner(State st, APlanner pl) {
@@ -70,18 +70,16 @@ public class DGHandler implements fape.core.planning.search.Handler {
             taskInserted(t, st, pl);
 
         // trigger propagation of constraint networks
-        st.isConsistent();
+        st.checkConsistency();
         propagateNetwork(st, pl);
-        st.isConsistent();
+        st.checkConsistency();
     }
 
     @Override
-    public void apply(SearchNode searchNode, StateLifeTime time, APlanner planner) {
-        searchNode.addOperation(st -> {
-            if (time == StateLifeTime.SELECTION) {
-                propagateNetwork(st, planner);
-            }
-        });
+    protected void apply(State st, StateLifeTime time, APlanner planner) {
+        if (time == StateLifeTime.SELECTION) {
+            propagateNetwork(st, planner);
+        }
     }
 
     @Override
@@ -228,6 +226,6 @@ public class DGHandler implements fape.core.planning.search.Handler {
                 st.setDeadEnd();
         }
 
-        st.isConsistent();
+        st.checkConsistency();
     }
 }
