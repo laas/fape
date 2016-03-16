@@ -253,7 +253,7 @@ public abstract class APlanner {
                 TinyLogger.LogInfo(st.getState());
                 return st.getState();
             } else if(st.getDepth() < maxDepth) {
-                List<SearchNode> children = expand(st, flaws);
+                List<SearchNode> children = expand(st);
                 for(SearchNode child : children) {
                     queue.add(child);
                 }
@@ -264,13 +264,9 @@ public abstract class APlanner {
     /**
      * Expand a partial plan by selecting a flaw and generating resolvers for this flaw.
      * @param st    Partial plan to expand
-     * @param flaws List of flaws in the partial plan. Those are asked to avoid duplication of work.
      * @return      All consistent children as a result of the expansion.
      */
-    public List<SearchNode> expand(SearchNode st, List<Flaw> flaws) {
-        for(Flaw f : flaws)
-            f.getNumResolvers(st.getState(), this);
-
+    public List<SearchNode> expand(SearchNode st) {
         if(options.displaySearch)
             searchView.setCurrentFocus(st);
 
@@ -278,19 +274,12 @@ public abstract class APlanner {
 
         expandedStates++;
 
-        assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
+
 
         TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
 
-        // sort the flaws, higher priority come first
-        try {
-            Collections.sort(flaws, this.flawComparator(st.getState()));
-        } catch (java.lang.IllegalArgumentException e) {
-            // problem with the sort function, try to find an problematic example and exit
-            System.err.println("The flaw comparison function is not legal (for instance, it might not be transitive).");
-            Utils.showExampleProblemWithFlawComparator(flaws, this.flawComparator(st.getState()), st.getState(), this);
-            System.exit(1);
-        }
+        List<Flaw> flaws = getFlaws(st);
+        assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
         // just take the first flaw and its resolvers (unless the flaw is chosen on command line)
         Flaw f;
@@ -500,7 +489,7 @@ public abstract class APlanner {
                 return current.getState();
             } else if(current.getDepth() < maxDepth) {
                 // expand the state
-                List<SearchNode> children = expand(current, flaws);
+                List<SearchNode> children = expand(current);
                 AX.clear();
                 for(SearchNode child : children) {
                     queue.add(child);
