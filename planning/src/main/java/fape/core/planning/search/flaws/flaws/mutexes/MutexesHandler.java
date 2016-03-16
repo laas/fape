@@ -196,7 +196,12 @@ public class MutexesHandler extends Handler {
 
         for(Fluent p : pp.getGroundProblem().allFluents(st)) {
             for(Fluent q : pp.getGroundProblem().allFluents(st)) {
-                assert !mutexes.get(p).contains(q);
+                if(p.sv == q.sv && p.value != q.value) {
+                    // we are sure of this mutex, it must be timed initial literals
+                } else {
+                    assert !mutexes.get(p).contains(q) : "Those two are mutex but both in the state definition:" +
+                            p + " and " + q;
+                }
             }
         }
     }
