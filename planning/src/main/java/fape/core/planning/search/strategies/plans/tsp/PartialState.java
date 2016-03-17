@@ -31,6 +31,7 @@ public class PartialState {
     Map<GStateVariable, LinkedList<Label>> labels = new HashMap<>();
 
     public Label latestLabel(GStateVariable sv) {
+        labels.putIfAbsent(sv, new LinkedList<>(Collections.singletonList(new Label(null, -1, -1))));
         return labels.get(sv).getLast();
     }
 

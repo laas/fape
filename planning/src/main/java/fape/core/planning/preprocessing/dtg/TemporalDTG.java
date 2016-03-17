@@ -23,6 +23,7 @@ public class TemporalDTG {
     /** Stays false until the postProcess method has been called.
      * Until then, the DTG might not be in a consistent state. */
     private boolean postProcessed = false;
+    private int numNodes = 0;
 
     @Getter @Ident(Node.class)
     public class Node implements Identifiable {
@@ -38,9 +39,16 @@ public class TemporalDTG {
         final int minStay;
         final int maxStay;
         final boolean isChangePossible;
+        final int localNodeID = numNodes++;
         @Override public String toString() { return "["+minStay+","+(maxStay<Integer.MAX_VALUE?maxStay:"inf")+"] "+ fluent; }
         public boolean isUndefined() { return fluent == null; }
+
         public GStateVariable getStateVariable() { return getFluent().sv; }
+        public List<Change> inChanges() { return getChangesTo(this); }
+
+        public int getMinDelayTo(Node target) {
+            return dist(this, target);
+        }
 
         private int id = -1;
 
@@ -105,11 +113,8 @@ public class TemporalDTG {
     private Map<Node, List<Change>> inTransitions = new HashMap<>();
     private List<Assignment> allAssignments = new ArrayList<>();
 
-    public Iterable<Assignment> getAssignments(Set<GAction> validActions) {
-        return allAssignments.stream()
-                .filter(ass -> validActions.contains(ass.getContainer()))
-                ::iterator;
-    }
+    /** Matrix containing the All Pairs Shortest Path for this DTG. */
+    int[] apsp;
 
     public TemporalDTG(GStateVariable sv, Collection<InstanceRef> domain, APlanner pl) {
         this.planner = pl;
@@ -148,6 +153,12 @@ public class TemporalDTG {
         allAssignments.add(ass);
     }
 
+    public Iterable<Assignment> getAssignments(Set<GAction> validActions) {
+        return allAssignments.stream()
+                .filter(ass -> validActions.contains(ass.getContainer()))
+                ::iterator;
+    }
+
     public Iterable<Change> getChangesFrom(Node n, Set<GAction> validActions) {
         assert postProcessed;
         return outTransitions.get(n).stream()
@@ -162,6 +173,13 @@ public class TemporalDTG {
 
     public Node getBaseNode(InstanceRef value) {
         return baseNodes.get(value);
+    }
+
+    /** returns the minimal delay between those two nodes. */
+    public int getMinimalDelay(Node from, Node to) {
+        assert from.getStateVariable() == sv && to.getStateVariable() == sv;
+        assert postProcessed;
+        return dist(from, to);
     }
 
     public void extendWith(GAction act) {
@@ -280,8 +298,55 @@ public class TemporalDTG {
             }
             inTransitions.get(ass.getTo()).add(ass);
         }
+        floydWarshall();
 
         postProcessed = true;
+    }
+
+    private int index(int x, int y) { return x + y*numNodes; }
+    private int dist(int x, int y) { return apsp[index(x,y)]; }
+    private void setDist(int x, int y, int d) { apsp[index(x,y)] = d; }
+    private void updateIfLower(int x, int y, int d) {
+        if(d < dist(x,y))
+            setDist(x, y, d);
+    }
+    private int dist(Node x, Node y) { return apsp[index(x.localNodeID, y.localNodeID)]; }
+    private void setDist(Node x, Node y, int dist) { apsp[index(x.localNodeID, y.localNodeID)] = dist; }
+    private void updateIfLower(Node x, Node y, int dist) {
+        if(dist < dist(x,y))
+            setDist(x,y,dist);
+    }
+    private static int INF = Integer.MAX_VALUE /2-1;
+
+    private void floydWarshall() {
+        apsp = new int[numNodes*numNodes];
+        for(int i=0 ; i<numNodes ; i++) {
+            for(int j=0 ; j<numNodes ; j++) {
+                apsp[index(i,j)] = INF;
+            }
+        }
+
+        for(Node n : outTransitions.keySet()) {
+            setDist(n, n, 0);
+            for(Change ch : outTransitions.get(n)) {
+                updateIfLower(n, ch.getTo(), ch.getDuration());
+            }
+        }
+
+        for(int k=0 ; k<numNodes ; k++) {
+            for(int i=0; i<numNodes ; i++) {
+                for(int j=0 ; j<numNodes ; j++) {
+                    updateIfLower(i, j, dist(i,k) + dist(k,j));
+                }
+            }
+        }
+//        System.out.println("All pairs shortest path: "+sv);
+//        for(Node n1 : outTransitions.keySet()) {
+//            System.out.println("  "+n1);
+//            for(Node n2 : outTransitions.keySet()) {
+//                System.out.println("    "+ (dist(n1,n2)==INF ? "inf  " : dist(n1,n2)+"  ")+ n2);
+//            }
+//        }
     }
 
     @Override

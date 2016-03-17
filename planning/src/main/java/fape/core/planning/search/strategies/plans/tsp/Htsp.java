@@ -37,6 +37,7 @@ public class Htsp extends PartialPlanComparator {
     static void log3(String s) { assert dbgLvl>=3; System.out.println(s); }
 
     final TSPRoutePlanner routePlanner;
+    APlanner pl;
 
     public Htsp(DistanceEvaluationMethod method) {
         if(method == DistanceEvaluationMethod.dtg)
@@ -84,7 +85,7 @@ public class Htsp extends PartialPlanComparator {
 
     private boolean firstTime = true;
 
-    @Override
+//    @Override
     public float hc(State st) {
 
 //        if(firstTime) {
@@ -139,7 +140,7 @@ public class Htsp extends PartialPlanComparator {
         }
         int makespan = ps.labels.values().stream().map(list -> list.getLast()).map(lbl -> lbl.getUntil()).max(Integer::compare).get();
         if(dbgLvl >= 1) {
-            log1("State: " + st.mID + "  cost: " + additionalCost);
+            log1("\nState: " + st.mID + "  cost: " + additionalCost);
             log1(" makespan: " + makespan);
             for (GStateVariable sv : ps.labels.keySet()) {
                 String res = "  " + sv.toString() + " ";
@@ -148,6 +149,7 @@ public class Htsp extends PartialPlanComparator {
                         res += String.format("  [%d,%d] %s", lbl.getSince(), lbl.getUntil(), lbl.getVal());
                 log1(res);
             }
+            log1("\n\n");
         }
 
         additionalCosts.put(st.mID, additionalCost);
@@ -157,6 +159,120 @@ public class Htsp extends PartialPlanComparator {
         return additionalCost;
     }
 
+    private int distPerSV(TemporalDTG.Node n, GoalNetwork gn, DisjunctiveGoal fluentOrigin) {
+        GStateVariable sv = n.getStateVariable();
+        TemporalDTG dtg = pl.preprocessor.getTemporalDTG(sv);
+
+        int maxDist = -1;
+        for(DisjunctiveGoal dg : gn.getAllGoals()) {
+            if(dg == fluentOrigin)
+                continue;
+
+            int minDist = dg.getGoals().stream()
+                    .filter(s -> s.getStateVariable() == sv)
+                    .map(s -> {
+                        if(s.isAssignement())
+                            return 0;
+                        else
+                            return n.getMinDelayTo(dtg.getBaseNode(s.startValue())); //TODO: the baseNode needs more evolved handling
+                    })
+                    .min(Integer::compare)
+                    .orElse(0);
+            assert minDist >= 0;
+            maxDist = Math.max(maxDist, minDist);
+        }
+        return maxDist;
+    }
+
+    public float newhc(State st) {
+        if(additionalCosts.containsKey(st.mID))
+            return additionalCosts.get(st.mID);
+
+        pl = st.pl;
+        Preprocessor pp = st.pl.preprocessor;
+        GoalNetwork gn = goalNetwork(st);
+        PartialState ps = new PartialState(st.pl);
+
+        int additionalCost = 0;
+        int existingCost = 0;
+
+        // reduce the goal network until it is empty
+        while(!gn.isEmpty()) {
+            Collection<DisjunctiveGoal> actives = gn.getActiveGoals();
+
+            int bestG = Integer.MAX_VALUE/2-1;
+            int bestH = Integer.MAX_VALUE/2-1;
+            GLogStatement bestStatement = null;
+            DisjunctiveGoal bestGoalSet = null;
+
+            for(DisjunctiveGoal goalSet : actives) {
+                for(GLogStatement cur : goalSet.getGoals()) {
+                    TemporalDTG dtg = pp.getTemporalDTG(cur.sv);
+                    int g = ps.latestLabel(cur.sv).getUntil(); //TODO: use until when on assignments/changes
+                    if(cur.isAssignement()) {
+                        g += 0;
+                    } else if(ps.latestLabel(cur.sv).isUndefined()) {
+                        // g is the minimal duration on incoming assignments
+                        g += dtg.getBaseNode(cur.startValue()).inChanges().stream()
+                                .filter(ch -> !ch.isTransition())
+                                .map(ch -> ch.getDuration())
+                                .min(Integer::compare)
+                                .orElse(Integer.MAX_VALUE/2-1);
+                    } else  {
+                        // dist from state to statement start
+                        TemporalDTG.Node startVal = dtg.getBaseNode(cur.startValue());
+                        g += ps.latestLabel(cur.sv).getNode().getMinDelayTo(startVal);
+                    };
+                    int h = distPerSV(dtg.getBaseNode(cur.endValue()), gn, goalSet);
+//                    h = 0;
+
+                    if(g+h < bestG+bestH) {
+                        bestG = g;
+                        bestH = h;
+                        bestStatement = cur;
+                        bestGoalSet = goalSet;
+                    }
+                }
+            }
+            if(bestStatement != null) {
+                existingCost++;
+                if(!bestStatement.isAssignement()
+                        && !ps.latestLabel(bestStatement.sv).isUndefined()
+                        && ps.latestLabel(bestStatement.sv).getVal().equals(bestStatement.startValue()))
+                    additionalCost++; // at least one transition
+                ps.setValue(bestStatement.sv, bestStatement.endValue(), bestG, bestStatement.minDuration);
+                gn.setAchieved(bestGoalSet, bestStatement);
+//                System.out.println(bestStatement);
+//                System.out.println("  g: "+bestG+"  h: "+bestH);
+            } else {
+                additionalCost = 999999;
+                break;
+            }
+        }
+        int makespan = ps.labels.values().stream()
+                .map(list -> list.getLast())
+                .map(lbl -> lbl.getUntil())
+                .max(Integer::compare).get();
+
+        if(dbgLvl >= 1) {
+            log1("\nState: " + st.mID + "  cost: " + additionalCost);
+            log1(" makespan: " + makespan);
+            for (GStateVariable sv : ps.labels.keySet()) {
+                String res = "  " + sv.toString() + " ";
+                for (PartialState.Label lbl : ps.labels.get(sv))
+                    if (!lbl.isUndefined())
+                        res += String.format("  [%d,%d] %s", lbl.getSince(), lbl.getUntil(), lbl.getVal());
+                log1(res);
+            }
+            log1("\n\n");
+        }
+
+        additionalCosts.put(st.mID, additionalCost);
+        existingCosts.put(st.mID, existingCost);
+        makespans.put(st.mID, makespan);
+
+        return additionalCost;
+    }
 
     public static GoalNetwork goalNetwork(State st) {
         APlanner planner = st.pl;
