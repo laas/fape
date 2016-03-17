@@ -1,0 +1,45 @@
+// -*-c++-*-
+
+
+//*** instances ***
+
+instance robots r1, r2 ;
+instance rooms room1, room2, room3;
+instance doors d1, d2, d3;
+instance places p1, p2, p3, hall1, hall2, hall3 ;
+instance objects o1, o2, o3 ;
+
+adjacent(room1, p1):= true ; adjacent(p1, room1):= true ;
+adjacent(room2, p2):= true ; adjacent(p2, room2):= true ;
+adjacent(room3, p3):= true ; adjacent(p3, room3):= true ;
+
+adjacent(hall1, hall2):= true ;  adjacent(hall2, hall1):= true ;
+adjacent(hall2, hall3):= true ;  adjacent(hall3, hall2):= true ;
+
+
+connect(d1, p1, hall1):= true ; connect(d1, hall1, p1):= true ;
+connect(d2, p2, hall2):= true ; connect(d2, hall2, p2):= true ;
+connect(d3, p3, hall3):= true ; connect(d3, hall3, p3):= true ;
+
+//*** problem ***
+
+[start] {
+ r1.loc := room1 ; r1.grasp := o1 ; r1.busy:= true ;
+ r2.loc := hall1 ; r2.grasp := empty ; r2.busy:= false ;
+  
+ o1.pos := held ;
+ o2.pos := room2 ;
+ o3.pos := room3 ;
+
+ d1.unlatched := false ; d1.open := false ; 
+ d2.unlatched := false ; d2.open := false ; 
+ d3.unlatched := false ; d3.open := false ; 
+};
+
+
+
+
+//goto(r1, p1, hall1);
+
+fetch(o1, room2);
+
