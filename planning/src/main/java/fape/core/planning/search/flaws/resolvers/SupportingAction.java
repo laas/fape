@@ -1,6 +1,5 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -11,8 +10,6 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Statement;
-
-import java.util.Collection;
 
 /**
  * A resolver for an open goal. The supporting statement is brought by a new action to be inserted.
@@ -35,10 +32,6 @@ public class SupportingAction extends Resolver {
     @Override
     public String toString() {
         return "Supporting action: "+act;
-    }
-
-    public boolean hasActionInsertion() {
-        return true;
     }
 
     @Override

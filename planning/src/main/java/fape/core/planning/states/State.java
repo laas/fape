@@ -831,12 +831,13 @@ public class State implements Reporter {
             if(t.id1 == tl.mID || t.id2 == tl.mID)
                 toRemove.add(t);
         threats.removeAll(toRemove);
+        potentialSupporters.remove(tl.mID);
     }
 
     /**
      * Retrieves all valid supporters for this timeline.
      *
-     * As a side effects, this method also cleans up the supporters store in this state to remove double entries
+     * As a side effects, this method also cleans up the supporters stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
     public Set<SupportingTimeline> getTimelineSupportersFor(Timeline consumer) {
@@ -850,7 +851,7 @@ public class State implements Reporter {
                 supporters.add(sup);
             }
         }
-        potentialSupporters.put(consumer.mID, new IList<SupportingTimeline>(supporters));
+        potentialSupporters.put(consumer.mID, new IList<>(supporters));
         return supporters;
     }
 

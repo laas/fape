@@ -150,7 +150,7 @@ public class UnsupportedTimeline extends Flaw {
 
         // adding actions
         // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions
-        //find actions that help me with achieving my value through some decomposition in the task netAbstractActionwork
+        //find actions that help me with achieving my value through some decomposition in the task network
         //they are those that I can find in the virtual decomposition tree
         //first get the action names from the abstract dtgs
         ActionSupporterFinder supporters = planner.getActionSupporterFinder();
@@ -174,55 +174,13 @@ public class UnsupportedTimeline extends Flaw {
             }
         }
 
-
-
         //now we can look for adding the actions ad-hoc ...
         if (APlanner.actionResolvers) {
             for (fape.core.planning.preprocessing.SupportingAction aa : potentialSupporters) {
-                if (planner.isTopDownOnly() && aa.absAct.mustBeMotivated())
-                    continue;
-                if(!st.isAddable(aa.absAct))
-                    continue;
-
-                // if the supporting variable is defined already (typically a constant) check if it is unifiable with our consumer
-                AbstractLogStatement supporter = aa.absAct.getLogStatement(aa.statementRef);
-                assert supporter.id().equals(aa.statementRef);
-                LVarRef supportingVar = supporter.effectValue();
-                VarRef consumerVar = consumer.getGlobalConsumeValue();
-
-                boolean areStateVariablesUnifiable = true;
-                if(aa.absAct.context().hasGlobalVar(supportingVar)) {
-                    if(!st.unifiable(aa.absAct.context().getGlobalVar(supportingVar), consumerVar))
-                        areStateVariablesUnifiable = false;
-                } else {
-                     // this is quite expensive but can prove useful on some domains
-//                    Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(supportingVar.getType()));
-//                    List<String> dom = st.csp.bindings().domainOf(consumerVar);
-//                    futureDom.retainAll(dom);
-//                    if(futureDom.isEmpty())
-//                        areStateVariablesUnifiable = false;
+                SupportingAction res = new SupportingAction(aa.absAct, aa.statementRef, consumer);
+                if(isValid(res, consumer, st)) {
+                    resolvers.add(res);
                 }
-
-                for(int i=0 ; i<supporter.sv().args().size() ; i++) {
-                    LVarRef lv = supporter.sv().jArgs().get(i);
-                    VarRef v = consumer.stateVariable.arg(i);
-                    if(aa.absAct.context().hasGlobalVar(lv)) {
-                        if(!st.unifiable(aa.absAct.context().getGlobalVar(lv), v))
-                            areStateVariablesUnifiable = false;
-                    } else {
-                        // this is quite expensive but can prove useful on some domains
-//                        Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(lv.getType()));
-//                        List<String> dom = st.csp.bindings().domainOf(v);
-//                        futureDom.retainAll(dom);
-//                        if(futureDom.isEmpty())
-//                            areStateVariablesUnifiable =false;
-                    }
-
-
-                }
-
-                if(areStateVariablesUnifiable)
-                    resolvers.add(new SupportingAction(aa.absAct, aa.statementRef, consumer));
             }
         }
 
@@ -232,6 +190,52 @@ public class UnsupportedTimeline extends Flaw {
         }
 
         return this.resolvers;
+    }
+
+    public static boolean isValid(SupportingAction supportingAction, Timeline consumer, State st) {
+        assert consumer.mID == supportingAction.consumerID;
+
+        APlanner planner = st.pl;
+        if (planner.isTopDownOnly() && supportingAction.act.mustBeMotivated())
+            return false;
+        if(!st.isAddable(supportingAction.act))
+            return false;
+
+        // if the supporting variable is defined already (typically a constant) check if it is unifiable with our consumer
+        AbstractLogStatement supporter = supportingAction.act.getLogStatement(supportingAction.statementRef);
+        assert supporter.id().equals(supportingAction.statementRef);
+        LVarRef supportingVar = supporter.effectValue();
+        VarRef consumerVar = consumer.getGlobalConsumeValue();
+
+        if(supportingAction.act.context().hasGlobalVar(supportingVar)) {
+            if(!st.unifiable(supportingAction.act.context().getGlobalVar(supportingVar), consumerVar))
+                return false;
+        } else {
+            // this is quite expensive but can prove useful on some domains
+            Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(supportingVar.getType()));
+            List<String> dom = st.csp.bindings().domainOf(consumerVar);
+            futureDom.retainAll(dom);
+            if(futureDom.isEmpty())
+                return false;
+        }
+
+        for(int i=0 ; i<supporter.sv().args().size() ; i++) {
+            LVarRef lv = supporter.sv().jArgs().get(i);
+            VarRef v = consumer.stateVariable.arg(i);
+            if(supportingAction.act.context().hasGlobalVar(lv)) {
+                if(!st.unifiable(supportingAction.act.context().getGlobalVar(lv), v))
+                    return false;
+            } else {
+                // this is quite expensive but can prove useful on some domains
+                Set<String> futureDom = new HashSet<>(st.pb.instances().instancesOfType(lv.getType()));
+                List<String> dom = st.csp.bindings().domainOf(v);
+                futureDom.retainAll(dom);
+                if(futureDom.isEmpty())
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
