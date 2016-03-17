@@ -7,6 +7,8 @@ import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.preprocessing.ActionSupporterFinder;
+import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -14,6 +16,7 @@ import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.stn.STNNodePrinter;
@@ -137,7 +140,7 @@ public class State implements Reporter {
      *  - the same supporter twice.
      *  - supporters that are no longer valid (timeline removed or supporter not valid because of new constraints).
      */
-    final HashMap<Integer, IList<SupportingTimeline>> potentialSupporters;
+    final HashMap<Integer, IList<Resolver>> potentialSupporters;
 
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
@@ -687,6 +690,7 @@ public class State implements Reporter {
      * @return A list of resolvers containing only the valid ones.
      */
     public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
+        assert pl.isTopDownOnly();
         if (f instanceof Threat || f instanceof UnboundVariable ||
                 f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
             return opts;
@@ -778,23 +782,27 @@ public class State implements Reporter {
             }
         }
 
-        if(a.isConsumer()) {
-            // gather all potential supporters for this new timeline
-            potentialSupporters.put(a.mID, new IList<SupportingTimeline>());
-            for(Timeline sup : getTimelines()) {
-                for(int i = 0 ; i < sup.numChanges() ; i++) {
-                    if(UnsupportedTimeline.isSupporting(sup, i, a, this))
-                        potentialSupporters.put(a.mID, potentialSupporters.get(a.mID).with(new SupportingTimeline(sup.mID, i, a)));
-                }
-            }
-        }
-
         // checks if this new timeline can provide support to others
         for(int i=0 ; i < a.numChanges() ; i++) {
             for(Timeline b : tdb.getConsumers()) {
-                if (UnsupportedTimeline.isSupporting(a, i, b, this)) {
-                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
+                if(!potentialSupporters.containsKey(b.mID))
+                    continue; // resolvers have not been initialized yet
+                if (!UnsupportedTimeline.isSupporting(a, i, b, this))
+                    continue; // a cannot support b
+
+                // check if don't already have a has a support for b (to avoid duplication)
+                boolean alreadyPresent = false;
+                IList<Resolver> previous = potentialSupporters.get(b.mID);
+                for(Resolver r : previous) {
+                    if(r instanceof SupportingTimeline
+                            && ((SupportingTimeline) r).supporterID == a.mID
+                            && ((SupportingTimeline) r).supportingComponent == i) {
+                        alreadyPresent = true;
+                        break;
+                    }
                 }
+                if(!alreadyPresent)
+                    potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(a.mID, i, b)));
             }
         }
 
@@ -819,8 +827,24 @@ public class State implements Reporter {
         // checks if the modifications on this timeline creates new supporters for others
         for(int i=0 ; i < tl.numChanges() ; i++) {
             for(Timeline b : tdb.getConsumers()) {
-                if (UnsupportedTimeline.isSupporting(tl, i, b, this))
-                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(tl.mID, i, b)));
+                if(!potentialSupporters.containsKey(b.mID))
+                    continue; // resolvers of b have not been initialized yet
+                if (!UnsupportedTimeline.isSupporting(tl, i, b, this))
+                    continue; // a cannot support b
+
+                // check if don't already have a has a support for b (to avoid duplication)
+                boolean alreadyPresent = false;
+                IList<Resolver> previous = potentialSupporters.get(b.mID);
+                for(Resolver r : previous) {
+                    if(r instanceof SupportingTimeline
+                            && ((SupportingTimeline) r).supporterID == tl.mID
+                            && ((SupportingTimeline) r).supportingComponent == i) {
+                        alreadyPresent = true;
+                        break;
+                    }
+                }
+                if(!alreadyPresent)
+                    potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(tl.mID, i, b)));
             }
         }
     }
@@ -835,24 +859,56 @@ public class State implements Reporter {
     }
 
     /**
-     * Retrieves all valid supporters for this timeline.
+     * Retrieves all valid resolvers for this unsupported timeline.
      *
-     * As a side effects, this method also cleans up the supporters stored in this state to remove double entries
+     * As a side effects, this method also cleans up the resolvers stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
-    public Set<SupportingTimeline> getTimelineSupportersFor(Timeline consumer) {
-        assert tdb.getConsumers().contains(consumer);
-        HashSet<SupportingTimeline> supporters = new HashSet<>();
-        for(SupportingTimeline sup : potentialSupporters.get(consumer.mID)) {
-            assert sup.consumerID == consumer.mID;
-            if(!supporters.contains(sup)
-                    && containsTimelineWithID(sup.supporterID)
-                    && UnsupportedTimeline.isSupporting(getTimeline(sup.supporterID), sup.supportingComponent, consumer, this)) {
-                supporters.add(sup);
+    public Iterable<Resolver> getResolversForOpenGoal(Timeline og) {
+        assert og.isConsumer();
+        assert tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
+
+        if(!potentialSupporters.containsKey(og.mID)) {
+            // generate optimistic resolvers
+            IList<Resolver> resolvers = new IList<>();
+
+            // gather all potential supporters for this timeline
+            for(Timeline sup : getTimelines()) {
+                for(int i = 0 ; i < sup.numChanges() ; i++) {
+                    SupportingTimeline supporter = new SupportingTimeline(sup.mID, i, og);
+                    if(UnsupportedTimeline.isValidResolver(supporter, og, this))
+                        resolvers = resolvers.with(supporter);
+                }
+            }
+
+            // get all action supporters (new actions whose insertion would result in an interesting timeline)
+            // a list of (abstract-action, decompositionID) of supporters
+            Collection<fape.core.planning.preprocessing.SupportingAction> actionSupporters =
+                    pl.getActionSupporterFinder().getActionsSupporting(this, og);
+
+            //now we can look for adding the actions ad-hoc ...
+            if (APlanner.actionResolvers) {
+                for (fape.core.planning.preprocessing.SupportingAction aa : actionSupporters) {
+                    SupportingAction res = new SupportingAction(aa.absAct, aa.statementRef, og);
+                    if(UnsupportedTimeline.isValidResolver(res, og, this))
+                        resolvers = resolvers.with(res);
+                }
+            }
+            potentialSupporters.put(og.mID, resolvers);
+        } else {
+            // we already have a set of resolvers, simply filter the invalid ones
+            List<Resolver> toRemove = new ArrayList<>();
+            for (Resolver sup : potentialSupporters.get(og.mID)) {
+                if (!UnsupportedTimeline.isValidResolver(sup, og, this))
+                    toRemove.add(sup);
+            }
+            if (!toRemove.isEmpty()) {
+                IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(toRemove);
+                potentialSupporters.put(og.mID, onlyValidResolvers);
             }
         }
-        potentialSupporters.put(consumer.mID, new IList<>(supporters));
-        return supporters;
+
+        return potentialSupporters.get(og.mID);
     }
 
     public List<Flaw> getAllThreats() {
@@ -900,12 +956,8 @@ public class State implements Reporter {
 
     public TimedCanvas getCanvasOfActions() {
         List<Action> acts = new LinkedList<>(getAllActions());
-        Collections.sort(acts, new Comparator<Action>() {
-            @Override
-            public int compare(Action a1, Action a2) {
-                return (getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
-            }
-        });
+        Collections.sort(acts, (Action a1, Action a2) ->
+                getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
         List<ChartLine> lines = new LinkedList<>();
 
         for (Action a : acts) {

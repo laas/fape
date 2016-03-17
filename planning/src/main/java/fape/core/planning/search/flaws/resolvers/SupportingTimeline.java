@@ -23,7 +23,6 @@ public class SupportingTimeline extends Resolver {
         this.supporterID = supporterID;
         supportingComponent = supportingChangeNumber;
         this.consumerID = consumer.mID;
-        assert consumerID != supporterID: "Error: a resolver was generated that supports a timeline with itself.";
     }
 
     @Override
