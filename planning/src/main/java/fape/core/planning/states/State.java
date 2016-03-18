@@ -105,6 +105,7 @@ public class State implements Reporter {
      * Contains all ground versions of fluents in the state with their associated time points
      */
     public List<TempFluents> fluents = null;
+    public List<TempFluents> fluentsWithChange = null;
 
     public HReasoner<Term> reasoner = null;
 

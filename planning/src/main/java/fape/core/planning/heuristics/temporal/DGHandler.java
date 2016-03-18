@@ -4,6 +4,7 @@ package fape.core.planning.heuristics.temporal;
 import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.states.SearchNode;
 import fape.core.planning.timelines.Timeline;
@@ -136,11 +137,22 @@ public class DGHandler extends fape.core.planning.search.Handler {
         final Preprocessor pp = st.pl.preprocessor;
         final GroundProblem gpb = pp.getGroundProblem();
 
-        List<TempFluent> tempFluents = gpb.tempsFluents(st).stream()
+        List<TempFluent> tempFluents = new ArrayList<>();
+        // gather all fluents appearing in the partial plan
+        // those fluents can not be used to support changes
+        gpb.tempsFluents(st).stream()
                 .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
                         st.getEarliestStartTime(tfs.timepoints.iterator().next()),
-                        TempFluent.DGFluent.from(f, pp.store))))
-                .collect(Collectors.toList());
+                        TempFluent.DGFluent.getBasicFluent(f, pp.store))))
+                .forEach(tempFluents::add);
+
+        // gather all fluents achieved and not involved in any causal link
+        // those cn be used to support transitions
+        gpb.tempsFluentsThatCanSupportATransition(st).stream()
+                .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
+                        st.getEarliestStartTime(tfs.timepoints.iterator().next()),
+                        TempFluent.DGFluent.getFluentWithChange(f, pp.store))))
+                .forEach(tempFluents::add);
 
         Set<TempFluent> tasks = new HashSet<>();
         for(Task t : st.getOpenTasks()) {
@@ -214,16 +226,27 @@ public class DGHandler extends fape.core.planning.search.Handler {
         // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
             int latest = st.getLatestStartTime(og.getConsumeTimePoint());
+            int earliest = st.getEarliestStartTime(og.getConsumeTimePoint());
             boolean doable = false;
+            int optimisticEarliestTime = Integer.MAX_VALUE;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, pl)) {
-                TempFluent.DGFluent dgf = TempFluent.DGFluent.from(f, graph.core.store);
-                if(graph.earliestAppearances.containsKey(dgf) && graph.earliestAppearances.get(dgf) <= latest) {
+                TempFluent.DGFluent dgf;
+                if(og.hasSinglePersistence())
+                    dgf = TempFluent.DGFluent.getBasicFluent(f, graph.core.store);
+                else
+                    dgf = TempFluent.DGFluent.getFluentWithChange(f, graph.core.store);
+                final int ea = graph.earliestAppearances.containsKey(dgf) ? graph.earliestAppearances.get(dgf) : Integer.MAX_VALUE;
+                if (ea  <= latest)
                     doable = true;
-                    break;
-                }
+                if(optimisticEarliestTime > ea)
+                    optimisticEarliestTime = ea;
             }
             if(!doable)
+                // at least one open goal is not achievable
                 st.setDeadEnd();
+            else if(earliest < optimisticEarliestTime)
+                // push back in time we had a too optimistic value
+                st.enforceDelay(st.pb.start(), og.getConsumeTimePoint(), optimisticEarliestTime);
         }
 
         st.checkConsistency();

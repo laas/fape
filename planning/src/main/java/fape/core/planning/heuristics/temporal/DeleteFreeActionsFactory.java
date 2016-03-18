@@ -28,6 +28,11 @@ public class DeleteFreeActionsFactory {
         public final LVarRef value;
         @Override public String toString() { return sv+"="+value; }
     }
+    @Value class SVFluentWithChangeTemplate implements FluentTemplate {
+        public final AbstractParameterizedStateVariable sv;
+        public final LVarRef value;
+        @Override public String toString() { return sv+"="+value; }
+    }
     @Value class DoneFluentTemplate implements FluentTemplate {
         public final RActTemplate act;
         @Override public String toString() { return "startable-act: "+act; }
@@ -71,7 +76,7 @@ public class DeleteFreeActionsFactory {
 //        public LVarRef[] args() { return abs.allVars(); }
         public LVarRef[] args() { return abs.args().toArray(new LVarRef[abs.args().size()]); }
 
-        public void addCondition(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
+        public void addPersistenceCondition(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
             addCondition(new SVFluentTemplate(sv, var), time);
         }
 
@@ -88,9 +93,9 @@ public class DeleteFreeActionsFactory {
             Collections.sort(conditions, (p1, p2) -> p1.time.compareTo(p2.time));
         }
 
-        public void addEffect(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
-            addEffect(new SVFluentTemplate(sv, var), time);
-        }
+//        public void addEffect(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
+//            addEffect(new SVFluentTemplate(sv, var), time);
+//        }
         public void addEffect(FluentTemplate ft, int time) {
             addEffect(new TempFluentTemplate(ft, time));
         }
@@ -152,12 +157,18 @@ public class DeleteFreeActionsFactory {
             if(s.hasConditionAtStart()) {
                 AbsTP main = anchorOf(s.start(), abs);
                 int delay = -relativeTimeOf(s.start(), abs);
-                templates.get(main).addCondition(s.sv(), s.conditionValue(), delay);
+                if(s.hasEffectAtEnd()) {
+                    // we cannot depend on a fluent involved in a causal link
+                    templates.get(main).addCondition(new SVFluentWithChangeTemplate(s.sv(), s.conditionValue()), delay);
+                } else {
+                    templates.get(main).addCondition(new SVFluentTemplate(s.sv(), s.conditionValue()), delay);
+                }
             }
             if(s.hasEffectAtEnd()) {
                 AbsTP main = anchorOf(s.end(), abs);
                 int delay = -relativeTimeOf(s.end(), abs);
-                templates.get(main).addEffect(s.sv(), s.effectValue(), delay);
+                templates.get(main).addEffect(new SVFluentTemplate(s.sv(), s.effectValue()), delay);
+                templates.get(main).addEffect(new SVFluentWithChangeTemplate(s.sv(), s.effectValue()), delay);
             }
         }
 
