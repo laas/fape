@@ -947,7 +947,7 @@ public class State implements Reporter {
                                     .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
                                     .map(change1 -> change1.getContainer().abs)
                                     .collect(Collectors.toSet()));
-            
+
             Set<Resolver> invalids = potentialSupporters.get(og.mID).stream()
                     .filter(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)))
                     .collect(Collectors.toSet());
