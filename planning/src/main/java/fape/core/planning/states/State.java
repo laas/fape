@@ -50,7 +50,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public class State implements Reporter {
 
@@ -939,13 +938,16 @@ public class State implements Reporter {
                 if(instantiations.size() == 1)
                     locked.addAll(instantiations);
             }
-            Set<AbstractAction> authorizedSupporters =
-                    dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
-                            .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
-                            .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
-                            .map(change1 -> change1.getContainer().abs)
-                            .collect(Collectors.toSet());
+            Pair<Fluent, Set<GStateVariable>> key = new Pair<>(f, locked);
 
+            Set<AbstractAction> authorizedSupporters =
+                    pl.preprocessor.authorizedSupportersCache.computeIfAbsent(key, x ->
+                            dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
+                                    .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
+                                    .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
+                                    .map(change1 -> change1.getContainer().abs)
+                                    .collect(Collectors.toSet()));
+            
             Set<Resolver> invalids = potentialSupporters.get(og.mID).stream()
                     .filter(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)))
                     .collect(Collectors.toSet());
@@ -958,6 +960,7 @@ public class State implements Reporter {
 
         return potentialSupporters.get(og.mID);
     }
+
 
     public List<Flaw> getAllThreats() {
         List<PotentialThreat> toRemove = new LinkedList<>();
