@@ -4,6 +4,7 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
+import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.Identifiable;
 import lombok.AllArgsConstructor;
@@ -47,7 +48,7 @@ public class TemporalDTG {
         public List<Change> inChanges() { return getChangesTo(this); }
 
         public int getMinDelayTo(Node target) {
-            return dist(this, target);
+            return getMinimalDelay(this, target);
         }
 
         private int id = -1;
@@ -80,6 +81,18 @@ public class TemporalDTG {
         GAction getContainer();
         boolean isTransition();
         default GStateVariable getStateVariable() { return getStatement().getStateVariable(); }
+
+        /** Returns a set of state variables that will be affected by taking this change.
+         * Those state variable will be the target of change statement (assignment or transition)
+         * prior or concurrently to the end of this change. */
+        default Set<GStateVariable> affected() {
+            return getContainer().getStatements().stream()
+                    .filter(GLogStatement::isChange)
+                    .filter(s2 -> s2.getStateVariable() != getTo().getStateVariable())
+                    .filter(s2 -> getContainer().minDuration(s2.start(), getStatement().end()) >= 0)
+                    .map(GLogStatement::getStateVariable)
+                    .collect(Collectors.toSet());
+        }
     }
 
     @AllArgsConstructor @Getter

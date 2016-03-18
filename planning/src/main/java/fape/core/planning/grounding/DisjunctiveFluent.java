@@ -71,6 +71,46 @@ public class DisjunctiveFluent implements Landmark {
         return fluents;
     }
 
+    public static Set<GStateVariable> instantiationsOf(ParameterizedStateVariable sv, State st) {
+        HashSet<GStateVariable> svs = new HashSet<>();
+        List<VarRef> variables = new LinkedList<>();
+        for(VarRef var : sv.args()) {
+            if(!variables.contains(var)) {
+                variables.add(var);
+            }
+        }
+
+        List<List<InstanceRef>> valuesSets = new LinkedList<>();
+        for(VarRef var : variables) {
+            List<InstanceRef> values = new LinkedList<>();
+            for(String val : st.domainOf(var)) {
+                values.add(st.pb.instances().referenceOf(val));
+            }
+            valuesSets.add(values);
+        }
+
+        List<List<InstanceRef>> argList = PGUtils.allCombinations(valuesSets);
+
+        for(List<InstanceRef> args : argList) {
+
+            VarRef[] fluentArgs = new VarRef[sv.args().length];
+            int i =0;
+            for(VarRef arg : sv.args()) {
+                int argIndex;
+                for(argIndex=0 ; argIndex<variables.size() ; argIndex++) {
+                    if(arg.equals(variables.get(argIndex)))
+                        break;
+                }
+                assert argIndex < args.size() : "Couldn't find argument for ";
+                fluentArgs[i++] = args.get(argIndex);
+            }
+
+            GStateVariable gsv = st.pl.preprocessor.getStateVariable(sv.func(), fluentArgs);
+            svs.add(gsv);
+        }
+        return svs;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

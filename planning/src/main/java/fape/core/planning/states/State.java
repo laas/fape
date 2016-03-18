@@ -7,8 +7,6 @@ import fape.core.planning.grounding.TempFluents;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -205,6 +203,7 @@ public class State implements Reporter {
         stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
+        locked = new HashMap<>(st.locked);
 
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
@@ -847,7 +846,18 @@ public class State implements Reporter {
                     potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(tl.mID, i, b)));
             }
         }
+
+        // keep track of state variables that are locked from start to given timepoint
+        if(getLatestStartTime(tl.getFirstChangeTimePoint()) <= 0) {
+            if(!locked.containsKey(tl.stateVariable)) {
+                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
+            }else if(getEarliestStartTime(tl.getLastTimePoints().getFirst()) > getEarliestStartTime(locked.get(tl.stateVariable))) {
+                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
+            }
+        }
     }
+
+    public Map<ParameterizedStateVariable, TPRef> locked = new HashMap<>();
 
     public void timelineRemoved(Timeline tl) {
         List<PotentialThreat> toRemove = new LinkedList<>();

@@ -1,8 +1,13 @@
 package fape.core.planning.search.flaws.flaws;
 
+import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.Fluent;
+import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.TaskDecompositions;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
@@ -80,6 +85,30 @@ public class UnsupportedTimeline extends Flaw {
         // get the resolvers that are cached in the state: SupportingTimelines and SupportingActions
         for(Resolver r : st.getResolversForOpenGoal(consumer))
             resolvers.add(r);
+
+        Set<Fluent> fluents = DisjunctiveFluent.fluentsOf(consumer.stateVariable, consumer.getGlobalConsumeValue(), st, planner);
+        if(fluents.size() == 1) {
+            Fluent f = fluents.iterator().next();
+            TemporalDTG dtg = planner.preprocessor.getTemporalDTG(f.sv);
+
+            Set<GStateVariable> locked = new HashSet<>();
+
+            for(ParameterizedStateVariable psv : st.locked.keySet()) {
+                if(st.canBeBefore(st.locked.get(psv), consumer.getConsumeTimePoint()))
+                    continue;
+
+                Collection<GStateVariable> instantiations = DisjunctiveFluent.instantiationsOf(psv, st);
+                if(instantiations.size() == 1)
+                    locked.addAll(instantiations);
+            }
+            Set<AbstractAction> authorizedSupporters =
+                    dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
+                            .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
+                            .map(change1 -> change1.getContainer().abs)
+                            .collect(Collectors.toSet());
+
+            resolvers.removeIf(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)));
+        }
 
         // checks all the given resolvers to check if one must be applied.
         // this is true iff the supporter is non separable from the consumer:
