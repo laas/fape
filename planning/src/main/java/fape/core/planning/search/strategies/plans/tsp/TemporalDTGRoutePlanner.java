@@ -88,8 +88,8 @@ public class TemporalDTGRoutePlanner implements TSPRoutePlanner {
             final Node endNode = sol;
             return new Result(sol.getFluent(), q.getCost(sol), partialState -> {
                 for(Change pred : preds) {
-                    if(pred instanceof GTransition) {
-                        InstanceRef endValue = ((GTransition) pred).to;
+                    if(pred instanceof Transition) {
+                        InstanceRef endValue = pred.getTo().getFluent().value;
                         partialState.setValue(
                                 pred.getStateVariable(),
                                 endValue,
