@@ -2,11 +2,11 @@ package fape.core.planning.states;
 
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.TempFluents;
+import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -50,6 +50,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class State implements Reporter {
 
@@ -917,6 +918,42 @@ public class State implements Reporter {
                 IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(toRemove);
                 potentialSupporters.put(og.mID, onlyValidResolvers);
             }
+        }
+        boolean checkDTGInputs =
+                potentialSupporters.get(og.mID).stream().anyMatch(res -> res instanceof SupportingAction)
+                        && domainSizeOf(og.getGlobalConsumeValue()) == 1
+                        && Arrays.stream(og.stateVariable.args()).allMatch(a -> domainSizeOf(a) == 1);
+
+        if(checkDTGInputs) {
+            Set<Fluent> fluents = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), this, pl);
+            Fluent f = fluents.iterator().next();
+            TemporalDTG dtg = pl.preprocessor.getTemporalDTG(f.sv);
+
+            Set<GStateVariable> locked = new HashSet<>();
+
+            for(ParameterizedStateVariable psv : this.locked.keySet()) {
+                if(this.canBeBefore(this.locked.get(psv), og.getConsumeTimePoint()))
+                    continue;
+
+                Collection<GStateVariable> instantiations = DisjunctiveFluent.instantiationsOf(psv, this);
+                if(instantiations.size() == 1)
+                    locked.addAll(instantiations);
+            }
+            Set<AbstractAction> authorizedSupporters =
+                    dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
+                            .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
+                            .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
+                            .map(change1 -> change1.getContainer().abs)
+                            .collect(Collectors.toSet());
+
+            Set<Resolver> invalids = potentialSupporters.get(og.mID).stream()
+                    .filter(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)))
+                    .collect(Collectors.toSet());
+            if(!invalids.isEmpty()) {
+                IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(invalids);
+                potentialSupporters.put(og.mID, onlyValidResolvers);
+            }
+
         }
 
         return potentialSupporters.get(og.mID);

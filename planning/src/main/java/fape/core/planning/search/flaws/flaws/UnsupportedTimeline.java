@@ -86,30 +86,6 @@ public class UnsupportedTimeline extends Flaw {
         for(Resolver r : st.getResolversForOpenGoal(consumer))
             resolvers.add(r);
 
-        Set<Fluent> fluents = DisjunctiveFluent.fluentsOf(consumer.stateVariable, consumer.getGlobalConsumeValue(), st, planner);
-        if(fluents.size() == 1) {
-            Fluent f = fluents.iterator().next();
-            TemporalDTG dtg = planner.preprocessor.getTemporalDTG(f.sv);
-
-            Set<GStateVariable> locked = new HashSet<>();
-
-            for(ParameterizedStateVariable psv : st.locked.keySet()) {
-                if(st.canBeBefore(st.locked.get(psv), consumer.getConsumeTimePoint()))
-                    continue;
-
-                Collection<GStateVariable> instantiations = DisjunctiveFluent.instantiationsOf(psv, st);
-                if(instantiations.size() == 1)
-                    locked.addAll(instantiations);
-            }
-            Set<AbstractAction> authorizedSupporters =
-                    dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
-                            .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
-                            .map(change1 -> change1.getContainer().abs)
-                            .collect(Collectors.toSet());
-
-            resolvers.removeIf(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)));
-        }
-
         // checks all the given resolvers to check if one must be applied.
         // this is true iff the supporter is non separable from the consumer:
         //    they are necessarily on the same state variable and they cannot be temporally separated.
