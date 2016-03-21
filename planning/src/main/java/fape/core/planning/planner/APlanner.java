@@ -303,7 +303,7 @@ public abstract class APlanner {
             // dead end, keep going
             TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
             if(options.displaySearch) {
-                searchView.setProperty(st, SearchView.COMMENT, "Pruned by old reachability");
+                searchView.setProperty(st, SearchView.COMMENT, "  Dead-end, flaw without resolvers: "+ flaws.get(0));
                 searchView.setDeadEnd(st);
             }
             st.setExpanded();
