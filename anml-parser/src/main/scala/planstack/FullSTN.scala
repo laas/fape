@@ -97,7 +97,7 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     return sum(lit(bRefToB - aRefToA), dist(aRef)(bRef))
   }
 
-  def concurrent(tp1: AbsTP, tp2: AbsTP) = equals(rigidAwareDist(tp1,tp2), rigidAwareDist(tp2,tp1))
+  def concurrent(tp1: AbsTP, tp2: AbsTP) = rigidAwareDist(tp1,tp2) == rigidAwareDist(tp2,tp1)
 
   def minDelay(from: AbsTP, to:AbsTP) = minus(rigidAwareDist(to, from))
   def maxDelay(from: AbsTP, to: AbsTP) = rigidAwareDist(from, to)
