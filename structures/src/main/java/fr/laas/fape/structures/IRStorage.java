@@ -19,11 +19,10 @@ public class IRStorage {
         try {
             final Class identClazz = getIdentClass(clazz);
 
-            List<Object> paramsAndClass = new ArrayList<>(params);
-            paramsAndClass.add(clazz);
+            List<Object> paramsAndClass = new ImmutableList<>(params, clazz);
 
-            instancesByParams.putIfAbsent(identClazz, new HashMap<>());
-            instances.putIfAbsent(identClazz, new ArrayList<>());
+            instancesByParams.computeIfAbsent(identClazz, x -> new HashMap<>());
+            instances.computeIfAbsent(identClazz, x -> new ArrayList<>());
 
             if (instancesByParams.get(identClazz).containsKey(paramsAndClass)) {
                 return instancesByParams.get(identClazz).get(paramsAndClass);
@@ -47,6 +46,7 @@ public class IRStorage {
                 return n;
             }
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }

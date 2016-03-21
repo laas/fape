@@ -2,13 +2,11 @@ package fape.core.planning.states;
 
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.TempFluents;
+import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.TaskDecompositions;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -107,6 +105,7 @@ public class State implements Reporter {
      * Contains all ground versions of fluents in the state with their associated time points
      */
     public List<TempFluents> fluents = null;
+    public List<TempFluents> fluentsWithChange = null;
 
     public HReasoner<Term> reasoner = null;
 
@@ -205,6 +204,7 @@ public class State implements Reporter {
         stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
+        locked = new HashMap<>(st.locked);
 
         extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
     }
@@ -847,7 +847,18 @@ public class State implements Reporter {
                     potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(tl.mID, i, b)));
             }
         }
+
+        // keep track of state variables that are locked from start to given timepoint
+        if(getLatestStartTime(tl.getFirstChangeTimePoint()) <= 0) {
+            if(!locked.containsKey(tl.stateVariable)) {
+                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
+            }else if(getEarliestStartTime(tl.getLastTimePoints().getFirst()) > getEarliestStartTime(locked.get(tl.stateVariable))) {
+                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
+            }
+        }
     }
+
+    public Map<ParameterizedStateVariable, TPRef> locked = new HashMap<>();
 
     public void timelineRemoved(Timeline tl) {
         List<PotentialThreat> toRemove = new LinkedList<>();
@@ -907,9 +918,49 @@ public class State implements Reporter {
                 potentialSupporters.put(og.mID, onlyValidResolvers);
             }
         }
+        boolean checkDTGInputs =
+                potentialSupporters.get(og.mID).stream().anyMatch(res -> res instanceof SupportingAction)
+                        && domainSizeOf(og.getGlobalConsumeValue()) == 1
+                        && Arrays.stream(og.stateVariable.args()).allMatch(a -> domainSizeOf(a) == 1);
+
+        if(checkDTGInputs) {
+            Set<Fluent> fluents = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), this, pl);
+            Fluent f = fluents.iterator().next();
+            TemporalDTG dtg = pl.preprocessor.getTemporalDTG(f.sv);
+
+            Set<GStateVariable> locked = new HashSet<>();
+
+            for(ParameterizedStateVariable psv : this.locked.keySet()) {
+                if(this.canBeBefore(this.locked.get(psv), og.getConsumeTimePoint()))
+                    continue;
+
+                Collection<GStateVariable> instantiations = DisjunctiveFluent.instantiationsOf(psv, this);
+                if(instantiations.size() == 1)
+                    locked.addAll(instantiations);
+            }
+            Pair<Fluent, Set<GStateVariable>> key = new Pair<>(f, locked);
+
+            Set<AbstractAction> authorizedSupporters =
+                    pl.preprocessor.authorizedSupportersCache.computeIfAbsent(key, x ->
+                            dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
+                                    .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
+                                    .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
+                                    .map(change1 -> change1.getContainer().abs)
+                                    .collect(Collectors.toSet()));
+
+            Set<Resolver> invalids = potentialSupporters.get(og.mID).stream()
+                    .filter(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)))
+                    .collect(Collectors.toSet());
+            if(!invalids.isEmpty()) {
+                IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(invalids);
+                potentialSupporters.put(og.mID, onlyValidResolvers);
+            }
+
+        }
 
         return potentialSupporters.get(og.mID);
     }
+
 
     public List<Flaw> getAllThreats() {
         List<PotentialThreat> toRemove = new LinkedList<>();

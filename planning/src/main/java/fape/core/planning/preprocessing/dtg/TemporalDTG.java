@@ -4,6 +4,7 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
+import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.Identifiable;
 import lombok.AllArgsConstructor;
@@ -47,7 +48,7 @@ public class TemporalDTG {
         public List<Change> inChanges() { return getChangesTo(this); }
 
         public int getMinDelayTo(Node target) {
-            return dist(this, target);
+            return getMinimalDelay(this, target);
         }
 
         private int id = -1;
@@ -70,20 +71,36 @@ public class TemporalDTG {
         @Override public String toString() { return "["+minDuration+"] "+f; }
     }
 
-    public interface Change {
-        Node getFrom();
-        Node getTo();
-        int getDuration();
-        List<DurativeCondition> getConditions();
-        List<DurativeEffect> getSimultaneousEffects();
-        GLogStatement getStatement();
-        GAction getContainer();
-        boolean isTransition();
-        default GStateVariable getStateVariable() { return getStatement().getStateVariable(); }
+    public abstract class Change {
+        public abstract Node getFrom();
+        public abstract Node getTo();
+        public abstract int getDuration();
+        public abstract List<DurativeCondition> getConditions();
+        public abstract List<DurativeEffect> getSimultaneousEffects();
+        public abstract GLogStatement getStatement();
+        public abstract GAction getContainer();
+        public abstract boolean isTransition();
+        public  GStateVariable getStateVariable() { return getStatement().getStateVariable(); }
+
+        private Set<GStateVariable> affectedStateVariables = null;
+
+        /** Returns a set of state variables that will be affected by taking this change.
+         * Those state variable will be the target of change statement (assignment or transition)
+         * prior or concurrently to the end of this change. */
+        public final Set<GStateVariable> affected() {
+            if(affectedStateVariables == null)
+                affectedStateVariables = getContainer().getStatements().stream()
+                        .filter(GLogStatement::isChange)
+                        .filter(s2 -> s2.getStateVariable() != getTo().getStateVariable())
+                        .filter(s2 -> getContainer().minDuration(s2.start(), getStatement().end()) >= 0)
+                        .map(GLogStatement::getStateVariable)
+                        .collect(Collectors.toSet());
+            return affectedStateVariables;
+        }
     }
 
     @AllArgsConstructor @Getter
-    public class Transition implements Change {
+    public class Transition extends Change {
         final Node from;
         final Node to;
         final int duration;
@@ -96,7 +113,7 @@ public class TemporalDTG {
     }
 
     @AllArgsConstructor @Getter
-    public class Assignment implements Change {
+    public class Assignment extends Change {
         final Node to;
         final int duration;
         final List<DurativeCondition> conditions;

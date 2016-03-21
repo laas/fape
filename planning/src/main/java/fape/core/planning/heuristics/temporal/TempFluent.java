@@ -31,11 +31,19 @@ import java.util.stream.Collectors;
             } else if(template instanceof DeleteFreeActionsFactory.SVFluentTemplate) {
                 DeleteFreeActionsFactory.SVFluentTemplate ft = (DeleteFreeActionsFactory.SVFluentTemplate) template;
                 List<InstanceRef> args = new ArrayList<>();
-                for(LVarRef lArg : ft.sv.jArgs())
+                for (LVarRef lArg : ft.sv.jArgs())
                     args.add(container.valueOf(lArg, pb));
                 GStateVariable sv = store.getGStateVariable(ft.sv.func(), args);
                 Fluent f = store.getFluent(sv, container.valueOf(ft.value, pb));
                 return (SVFluent) store.get(SVFluent.class, Collections.singletonList(f));
+            } else if(template instanceof DeleteFreeActionsFactory.SVFluentWithChangeTemplate) {
+                DeleteFreeActionsFactory.SVFluentWithChangeTemplate ft = (DeleteFreeActionsFactory.SVFluentWithChangeTemplate) template;
+                List<InstanceRef> args = new ArrayList<>();
+                for(LVarRef lArg : ft.sv.jArgs())
+                    args.add(container.valueOf(lArg, pb));
+                GStateVariable sv = store.getGStateVariable(ft.sv.func(), args);
+                Fluent f = store.getFluent(sv, container.valueOf(ft.value, pb));
+                return (SVFluentWithChange) store.get(SVFluentWithChange.class, Collections.singletonList(f));
             } else {
                 DeleteFreeActionsFactory.TaskFluentTemplate tft = (DeleteFreeActionsFactory.TaskFluentTemplate) template;
                 List<InstanceRef> args = new ArrayList<>();
@@ -45,8 +53,11 @@ import java.util.stream.Collectors;
             }
         }
 
-        public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
+        public static DGFluent getBasicFluent(fape.core.planning.grounding.Fluent f, GStore store) {
             return (SVFluent) store.get(SVFluent.class, Collections.singletonList(f));
+        }
+        public static DGFluent getFluentWithChange(fape.core.planning.grounding.Fluent f, GStore store) {
+            return (SVFluentWithChange) store.get(SVFluentWithChange.class, Collections.singletonList(f));
         }
         public static DGFluent from(GTask task, AnmlProblem pb, GStore store) {
             return (DGFluent) store.get(TaskPropFluent.class, Arrays.asList("task", task));
@@ -59,10 +70,20 @@ import java.util.stream.Collectors;
         @ValueConstructor @Deprecated
         public ActEndFluent(GAction act, AbsTP tp) { this.act = act; this.tp = tp; }
     }
+    /** A fluent that is part of a causal link (can only support persistences) */
     @Ident(DependencyGraph.Node.class) public static class SVFluent extends DGFluent {
         public final Fluent fluent;
         @ValueConstructor @Deprecated
         public SVFluent(Fluent f) { this.fluent = f; }
+
+        @Override
+        public String toString() { return fluent.toString(); }
+    }
+    /** a fluent that is not part of any causal link (can support either persistences or transitions */
+    @Ident(DependencyGraph.Node.class) public static class SVFluentWithChange extends DGFluent {
+        public final Fluent fluent;
+        @ValueConstructor @Deprecated
+        public SVFluentWithChange(Fluent f) { this.fluent = f; }
 
         @Override
         public String toString() { return fluent.toString(); }

@@ -15,6 +15,7 @@ import fape.core.planning.search.strategies.plans.tsp.DTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
+import fape.util.Pair;
 import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
@@ -49,6 +50,8 @@ public class Preprocessor {
     Boolean isHierarchical = null;
 
     public int nextTemporalDTGNodeID = 0;
+
+    public Map<Pair<Fluent, Set<GStateVariable>>, Set<AbstractAction>> authorizedSupportersCache = new HashMap<>();
 
     public Preprocessor(APlanner container, State initialState) {
         this.planner = container;

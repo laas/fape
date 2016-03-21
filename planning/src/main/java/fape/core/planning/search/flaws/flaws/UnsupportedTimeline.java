@@ -1,8 +1,13 @@
 package fape.core.planning.search.flaws.flaws;
 
+import fape.core.planning.grounding.DisjunctiveFluent;
+import fape.core.planning.grounding.Fluent;
+import fape.core.planning.grounding.GAction;
+import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.TaskDecompositions;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
