@@ -260,8 +260,6 @@ public class DeleteFreeActionsFactory {
                 relaxedGround.addAll(pp.instantiations(template, ground, pl));
             }
         }
-//        for(RAct a : relaxedGround)
-//            System.out.println(a.toStringDetailed());
         return relaxedGround;
     }
 
