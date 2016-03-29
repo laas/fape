@@ -442,6 +442,7 @@ public abstract class APlanner {
 
         if (queue.isEmpty()) {
             this.planState = EPlanState.INFEASIBLE;
+            TinyLogger.LogInfo("Initially empty queue.");
             return null;
         }
         float fThreshold = (1f + options.epsilon) * f(queue.peek());
@@ -455,6 +456,7 @@ public abstract class APlanner {
 
             if (queue.isEmpty()) {
                 this.planState = EPlanState.INFEASIBLE;
+                TinyLogger.LogInfo("Empty queue.");
                 return null;
             }
 
@@ -475,6 +477,8 @@ public abstract class APlanner {
             if(!current.getState().checkConsistency()) {
                 if(options.displaySearch)
                     searchView.setDeadEnd(current);
+                TinyLogger.LogInfo("\nCurrent state: ["+current.getID()+"]");
+                TinyLogger.LogInfo("  Non consistent");
                 continue;
             }
 

@@ -21,7 +21,7 @@ public class TinyLogger {
     //public static boolean logging = false;
     public static void LogInfo(String st) {
         if (logging) {
-            System.out.println("Logger:" + st);
+            System.out.println(st);
         }
     }
 
