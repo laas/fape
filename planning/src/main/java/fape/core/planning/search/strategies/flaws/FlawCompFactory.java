@@ -38,6 +38,9 @@ public class FlawCompFactory {
                 case "hf":
                     compList.add(new HierarchicalFirstComp(st, planner));
                     break;
+                case "hier-fifo":
+                    compList.add(new HierFIFO(st, planner));
+                    break;
                 case "ogf":
                     compList.add(new OpenGoalFirst());
                     break;

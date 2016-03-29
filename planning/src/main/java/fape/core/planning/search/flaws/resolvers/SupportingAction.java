@@ -35,7 +35,7 @@ public class SupportingAction extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         final Timeline consumer = st.getTimeline(consumerID);
 
         assert consumer != null : "Consumer was not found.";
@@ -52,7 +52,7 @@ public class SupportingAction extends Resolver {
             // add the causal link
             Resolver opt = new SupportingTimeline(supportingDatabase.mID, supportingDatabase.numChanges()-1, consumer);
             TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
-            return opt.apply(st, planner);
+            return opt.apply(st, planner, isFastForwarding);
         } else {
             // turns out this statement cannot support our database.
             return false;

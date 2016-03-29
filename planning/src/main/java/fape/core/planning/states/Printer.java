@@ -49,8 +49,8 @@ public class Printer {
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
-        else if(o instanceof UnsupportedTaskCond)
-            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).task);
+        else if(o instanceof UnsupportedTask)
+            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTask) o).task);
         else if(o instanceof UnsupportedTimeline)
             return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)

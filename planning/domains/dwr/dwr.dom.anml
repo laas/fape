@@ -177,7 +177,8 @@ action uncover (containers c, piles p){
     [all] contains {
     s1 : unstack(k,prevtop,p) ;
     s2: stack(k,prevtop,otherp);
-    s3:	uncover(c,p) ;};
+    s3:	uncover(c,p) ;
+    };
     end(s1) <= start(s2);
     end(s2) <= start(s3);
   };

@@ -30,7 +30,7 @@ public class TemporalConstraint extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         for(TPRef first : firsts)
             for(TPRef second : seconds)
                 st.enforceConstraint(first, second, min, max);

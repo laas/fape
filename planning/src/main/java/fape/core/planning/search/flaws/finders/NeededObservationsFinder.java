@@ -104,7 +104,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
             @Override
-            public boolean apply(State st, APlanner planner) {
+            public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
                 Chronicle ch = new BaseChronicle(st.pb);
                 List<Pair<TPRef,TPRef>> precedences = new ArrayList<>();
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);

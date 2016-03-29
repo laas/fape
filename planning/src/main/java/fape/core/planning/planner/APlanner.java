@@ -324,7 +324,7 @@ public abstract class APlanner {
                 List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
                 Collections.sort(possibleResolvers);
                 Resolver res = possibleResolvers.get(currentResolver);
-                if(!applyResolver(s, res))
+                if(!applyResolver(s, res, false))
                     s.setDeadEnd();
 
                 s.checkConsistency();
@@ -403,7 +403,7 @@ public abstract class APlanner {
         if(resolvers.size() == 1) {
             st.addOperation(s -> {
                 Resolver res = s.getFlaws(options.flawFinders, flawComparator(s)).get(0).getResolvers(s, this).get(0);
-                if(!applyResolver(s, res))
+                if(!applyResolver(s, res, true))
                     s.setDeadEnd();
                 s.checkConsistency();
             });
@@ -428,8 +428,8 @@ public abstract class APlanner {
      * @return True if the resolver was successfully applied and the resulting state is consistent.
      *         False otherwise.
      */
-    public boolean applyResolver(State st, Resolver resolver) {
-        boolean result = resolver.apply(st, this) && st.csp.propagateMixedConstraints() && st.checkConsistency();
+    public boolean applyResolver(State st, Resolver resolver, boolean isFastForwarding) {
+        boolean result = resolver.apply(st, this, isFastForwarding) && st.csp.propagateMixedConstraints() && st.checkConsistency();
         return result;
     }
 

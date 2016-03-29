@@ -60,7 +60,7 @@ object StatementsFactory {
         (optStatement, constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
-        assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task.")
+        assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task: "+constraints)
         (optStatement, optStatement.get.getTemporalConstraints(annot) ::: constraints)
       }
     }

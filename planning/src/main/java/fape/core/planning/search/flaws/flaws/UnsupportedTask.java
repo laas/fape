@@ -19,11 +19,11 @@ import java.util.List;
  *  - unification with an existing action
  *  - insertion of a new action to support it
  */
-public class UnsupportedTaskCond extends Flaw {
+public class UnsupportedTask extends Flaw {
 
     public final Task task;
 
-    public UnsupportedTaskCond(Task ac) { task = ac; }
+    public UnsupportedTask(Task ac) { task = ac; }
 
     @Override
     public List<Resolver> getResolvers(State st, APlanner planner) {
@@ -49,7 +49,7 @@ public class UnsupportedTaskCond extends Flaw {
 
     @Override
     public int compareTo(Flaw o) {
-        assert o instanceof UnsupportedTaskCond;
-        return ((UnsupportedTaskCond) o).task.start().id() - task.start().id();
+        assert o instanceof UnsupportedTask;
+        return ((UnsupportedTask) o).task.start().id() - task.start().id();
     }
 }

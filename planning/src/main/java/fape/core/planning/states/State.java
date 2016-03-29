@@ -31,6 +31,8 @@ import fape.util.EffSet;
 import fape.util.Pair;
 import fape.util.Reporter;
 import fr.laas.fape.structures.IRSet;
+import lombok.Getter;
+import lombok.Setter;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
@@ -56,6 +58,11 @@ public class State implements Reporter {
     public static int idCounter = 0;
     public final int mID;
     int depth;
+
+    @Setter @Getter
+    /** Number of the last decomposition that was used in this state.
+     * This is used to always conisder the ethod in the order they are given in the domain file.*/
+    int lastDecompositionNumber = 0;
 
     /**
      *
@@ -692,7 +699,7 @@ public class State implements Reporter {
     public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
         assert pl.isTopDownOnly();
         if (f instanceof Threat || f instanceof UnboundVariable ||
-                f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
+                f instanceof ResourceFlaw || f instanceof UnsupportedTask || f instanceof UnmotivatedAction) {
             return opts;
         } else if (f instanceof UnsupportedTimeline) {
             Action requiredAncestor = getSupportConstraint(((UnsupportedTimeline) f).consumer);
@@ -918,7 +925,7 @@ public class State implements Reporter {
                 potentialSupporters.put(og.mID, onlyValidResolvers);
             }
         }
-        boolean checkDTGInputs =
+        boolean checkDTGInputs = false && //TODO: this is apparently was not sound
                 potentialSupporters.get(og.mID).stream().anyMatch(res -> res instanceof SupportingAction)
                         && domainSizeOf(og.getGlobalConsumeValue()) == 1
                         && Arrays.stream(og.stateVariable.args()).allMatch(a -> domainSizeOf(a) == 1);
