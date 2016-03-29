@@ -7,7 +7,7 @@ import planstack.anml.model._
 import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time._
 import planstack.anml.model.concrete.RefCounter
-import planstack.anml.pending.{IntExpression, IntExpression$, LStateVariable, IntLiteral}
+import planstack.anml.pending.{IntExpression, LStateVariable, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 import planstack.structures.IList
 
@@ -32,7 +32,7 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   case class AnchoredTimepoint(timepoint: AbsTP, anchor :AbsTP, delay :Int)
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
-  protected var motivated = false
+  private var motivated = false
 
   val name =
     if(decID == 0) baseName
@@ -42,7 +42,7 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   val taskName = "t-"+baseName
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
-  def mustBeMotivated = motivated
+  def mustBeMotivated = motivated || AbstractAction.allActionsAreMotivated
 
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
@@ -162,6 +162,9 @@ object AbstractDuration {
 }
 
 object AbstractAction {
+
+  var allActionsAreMotivated = false
+  def setAllActionMotivated(value: Boolean) { allActionsAreMotivated = value }
 
   /** Factory method to build an abstract action
     *

@@ -263,7 +263,7 @@ public class Preprocessor {
         if(baseDerivabilityReasoner == null) {
             baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
             for (GAction ga : getAllActions()) {
-                if (ga.abs.motivated()) {
+                if (ga.abs.mustBeMotivated()) {
                     GTask[] condition = new GTask[1];
                     condition[0] = ga.task;
                     baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);

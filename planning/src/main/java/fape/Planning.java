@@ -14,6 +14,7 @@ import fape.util.Configuration;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
@@ -47,6 +48,11 @@ public class Planning {
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
                                         + "  - topdown: Traditional top-down HTN planning (lacks completeness for ANML).\n"
                                         + "  - fape: Complete planner that allows going either down or up in action hierarchies.\n"),
+                        new FlaggedOption("all-motivated")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setLongFlag("all-motivated")
+                                .setDefault("false")
+                                .setHelp("All actions will be considered motivated (even if this does not appear in the domain definition)"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -201,6 +207,7 @@ public class Planning {
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
+        AbstractAction.setAllActionMotivated(commandLineConfig.getBoolean("all-motivated"));
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -208,12 +215,8 @@ public class Planning {
         for (String path : configFiles) {
             File f = new File(path);
             if (f.isDirectory()) {
-                File[] anmls = f.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File fi) {
-                        return fi.getName().endsWith(".anml") && !fi.getName().endsWith(".dom.anml");
-                    }
-                });
+                // all files ending with ".anml" except those ending with ".dom.anml"
+                File[] anmls = f.listFiles((File fi) -> fi.getName().endsWith(".anml") && !fi.getName().endsWith(".dom.anml"));
                 for (File anmlFile : anmls) {
                     if(anmlFile.getName().endsWith(".anml") && !anmlFile.getName().endsWith(".dom.anml"))
                     anmlFiles.add(anmlFile.getPath());

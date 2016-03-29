@@ -194,7 +194,7 @@ public class DeleteFreeActionsFactory {
         int endDelay = -relativeTimeOf(abs.end(), abs);
         templates.get(endAnchor).addEffect(new TaskFluentTemplate("ended", abs.taskName(), abs.args()), endDelay+1);
 
-        if(abs.motivated()) {
+        if(abs.mustBeMotivated()) {
             templates.get(startAnchor).addCondition(new TaskFluentTemplate("task", abs.taskName(), abs.args()), startDelay);
         }
 
