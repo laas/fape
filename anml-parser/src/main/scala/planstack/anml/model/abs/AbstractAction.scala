@@ -42,7 +42,7 @@ class AbstractAction(val baseName:String, val decID:Int, private val mArgs:List[
   val taskName = "t-"+baseName
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
-  def mustBeMotivated = motivated || AbstractAction.allActionsAreMotivated
+  def mustBeMotivated = motivated
 
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
@@ -162,9 +162,6 @@ object AbstractDuration {
 }
 
 object AbstractAction {
-
-  var allActionsAreMotivated = false
-  def setAllActionMotivated(value: Boolean) { allActionsAreMotivated = value }
 
   /** Factory method to build an abstract action
     *

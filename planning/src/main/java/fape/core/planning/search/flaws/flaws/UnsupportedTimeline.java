@@ -123,7 +123,7 @@ public class UnsupportedTimeline extends Flaw {
             resolvers = st.retainValidResolvers(this, resolvers);
         }
 
-        if(AbstractAction.allActionsAreMotivated()) {
+        if(st.pb.allActionsAreMotivated()) {
             ActionSupporterFinder supporters = planner.getActionSupporterFinder();
             TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
 

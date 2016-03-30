@@ -15,7 +15,7 @@ public class OpenGoalFinder implements FlawFinder {
     @Override
     public List<Flaw> getFlaws(State st, APlanner planner) {
         return st.tdb.getConsumers().stream()
-                .filter(tl -> !AbstractAction.allActionsAreMotivated() || !st.getHierarchicalConstraints().isWaitingForADecomposition(tl))
+                .filter(tl -> !planner.pb.allActionsAreMotivated() || !st.getHierarchicalConstraints().isWaitingForADecomposition(tl))
                 .map(UnsupportedTimeline::new)
                 .collect(Collectors.toList());
     }

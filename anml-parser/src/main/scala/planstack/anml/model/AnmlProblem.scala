@@ -74,6 +74,8 @@ class AnmlProblem extends TemporalInterval {
   /** All abstract actions appearing in the problem */
   val abstractActions = new ju.LinkedList[AbstractAction]()
 
+  lazy val allActionsAreMotivated = abstractActions.asScala.forall(aa => aa.mustBeMotivated)
+
   val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]()
 
   /**

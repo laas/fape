@@ -48,11 +48,6 @@ public class Planning {
                                 .setHelp("Defines which planner implementation to use. Possible values are:\n"
                                         + "  - topdown: Traditional top-down HTN planning (lacks completeness for ANML).\n"
                                         + "  - fape: Complete planner that allows going either down or up in action hierarchies.\n"),
-                        new FlaggedOption("all-motivated")
-                                .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setLongFlag("all-motivated")
-                                .setDefault("false")
-                                .setHelp("All actions will be considered motivated (even if this does not appear in the domain definition)"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -207,7 +202,6 @@ public class Planning {
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
-        AbstractAction.setAllActionMotivated(commandLineConfig.getBoolean("all-motivated"));
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -305,6 +299,9 @@ public class Planning {
                     System.err.println((new File(anmlFile)).getAbsolutePath());
                     return;
                 }
+                if(APlanner.debugging)
+                    System.out.println(pb.allActionsAreMotivated() ?
+                            "Problem is entirely hierarchical (all actions are motivated)": "Non-hierarchical problem (some actions are not motivated)");
                 final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
                 final APlanner planner = PlannerFactory.getPlannerFromInitialState(plannerID, iniState, options);
 

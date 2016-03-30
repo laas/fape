@@ -113,7 +113,7 @@ public abstract class APlanner {
     public abstract boolean isTopDownOnly();
 
     /**
-     * All possible state of the planner.
+     * All possible states of the planner.
      */
     public enum EPlanState {
         TIMEOUT, CONSISTENT, INCONSISTENT, INFEASIBLE
@@ -404,7 +404,8 @@ public abstract class APlanner {
 
         if(resolvers.size() == 1) {
             st.addOperation(s -> {
-                Resolver res = s.getFlaws(options.flawFinders, flawComparator(s)).get(0).getResolvers(s, this).get(0);
+                Flaw flaw = s.getFlaws(options.flawFinders, flawComparator(s)).get(0);
+                Resolver res = flaw.getResolvers(s, this).get(0);
                 if(!applyResolver(s, res, true))
                     s.setDeadEnd();
                 s.checkConsistency();
