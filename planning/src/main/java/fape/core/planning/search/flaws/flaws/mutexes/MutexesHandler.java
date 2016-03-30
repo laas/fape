@@ -5,7 +5,6 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
-import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.Pair;
@@ -37,7 +36,7 @@ public class MutexesHandler extends Handler {
         }
 
         @Override
-        public StateExtension clone() {
+        public StateExtension clone(State st) {
             return this;
         }
     }

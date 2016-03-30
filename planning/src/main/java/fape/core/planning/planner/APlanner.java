@@ -283,6 +283,7 @@ public abstract class APlanner {
         Flaw f;
         if(options.chooseFlawManually) {
             System.out.print("STATE :" + st.getID() + "\n");
+            System.out.println(Printer.temporalDatabaseManager(st.getState()));
             for(int i=0 ; i<flaws.size() ; i++)
                 System.out.println("["+i+"] "+Printer.p(st.getState(), flaws.get(i)));
             int choosen = Utils.readInt();

@@ -8,5 +8,5 @@ package fape.core.planning.states;
  */
 public interface StateExtension {
 
-    StateExtension clone();
+    StateExtension clone(State st);
 }

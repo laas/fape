@@ -118,6 +118,7 @@ public class State implements Reporter {
 
     public ReachabilityGraphs reachabilityGraphs = null;
 
+    /** Extensions of a state that will be inherited by its children */
     final List<StateExtension> extensions;
 
     class PotentialThreat {
@@ -178,7 +179,8 @@ public class State implements Reporter {
         stateVarsToVariables = new HashMap<>();
 
         supportConstraints = new LinkedList<>();
-        extensions = new LinkedList<>();
+        extensions = new ArrayList<>();
+        extensions.add(new HierarchicalConstraints(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -213,7 +215,7 @@ public class State implements Reporter {
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
         locked = new HashMap<>(st.locked);
 
-        extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
+        extensions = st.extensions.stream().map(ext -> ext.clone(this)).collect(Collectors.toList());
     }
 
     /** Returns the depth of this node in the search space */
@@ -234,6 +236,10 @@ public class State implements Reporter {
 
     private List<Handler> getHandlers() {
         return pl != null ? pl.getHandlers() : Collections.emptyList();
+    }
+
+    public HierarchicalConstraints getHierarchicalConstraints() {
+        return getExtension(HierarchicalConstraints.class);
     }
 
     /**

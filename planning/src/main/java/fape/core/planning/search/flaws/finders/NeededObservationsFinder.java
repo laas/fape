@@ -56,7 +56,7 @@ public class NeededObservationsFinder implements FlawFinder {
         public final Set<TPRef> observed;
 
         @Override
-        public StateExtension clone() { return new SecuredObservations(new HashSet<>(observed)); }
+        public StateExtension clone(State st) { return new SecuredObservations(new HashSet<>(observed)); }
     }
 
 

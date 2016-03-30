@@ -8,10 +8,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.TaskDecompositions;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
-import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.search.flaws.resolvers.SupportingAction;
-import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
-import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
+import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
@@ -32,6 +29,8 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class UnsupportedTimeline extends Flaw {
 
@@ -155,6 +154,56 @@ public class UnsupportedTimeline extends Flaw {
             }
 
             resolvers = st.retainValidResolvers(this, resolvers);
+        }
+
+        if(AbstractAction.allActionsAreMotivated()) {
+            ActionSupporterFinder supporters = planner.getActionSupporterFinder();
+            TaskDecompositions decompositions = new TaskDecompositions(st.pb);
+
+            // a list of (abstract-action, decompositionID) of supporters
+            Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
+
+            // all actions that have an effect on the state variable
+            Set<AbstractAction> potentiallySupportingAction = potentialSupporters.stream()
+                    .map(x -> x.absAct)
+                    .collect(Collectors.toSet());
+
+            Set<Task> tasks = new HashSet<>();
+            assert !st.getHierarchicalConstraints().isWaitingForADecomposition(consumer);
+
+            for (Task t : st.getOpenTasks()) {
+                if(!st.canBeStrictlyBefore(t.start(), consumer.getConsumeTimePoint()))
+                    continue;
+                if(!st.getHierarchicalConstraints().isValidTaskSupport(t, consumer))
+                    continue;
+
+                Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
+                if(!decs.isEmpty())
+                    tasks.add(t);
+            }
+
+            List<Resolver> newRes = Stream.concat(
+                    resolvers.stream()
+                            .filter(resolver -> resolver instanceof SupportingTimeline)
+                            .map(resolver1 -> (SupportingTimeline) resolver1)
+                            .filter(res -> st.getHierarchicalConstraints().isValidSupport(res.getSupportingStatement(st), consumer)),
+                    tasks.stream()
+                            .map(t -> new FutureTaskSupport(consumer, t)))
+                    .collect(Collectors.toList());
+
+            resolvers = newRes;
+
+//            if(resolvers.stream().filter(resolver -> resolver instanceof SupportingTimeline).count() == 0) {
+//                if(tasks.isEmpty()) {
+//                    System.out.println("Dead end: "+st.mID);
+//                    st.setDeadEnd();
+//                } else if(tasks.size() == 1) {
+//                    System.out.println("One choice: "+st.mID);
+//                }
+//                System.out.println("\n"+Printer.inlineTemporalDatabase(st, consumer));
+//                System.out.println(tasks);
+//            }
+
         }
 
         return this.resolvers;

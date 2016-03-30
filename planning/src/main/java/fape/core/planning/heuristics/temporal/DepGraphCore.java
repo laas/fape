@@ -1,6 +1,7 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.heuristics.temporal.TempFluent.DGFluent;
+import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
@@ -129,7 +130,7 @@ public class DepGraphCore implements DependencyGraph {
         }
 
         @Override
-        public StateExt clone() {
+        public StateExt clone(State st) {
             if(currentGraph != null)
                 return new StateExt(currentGraph);
             else
