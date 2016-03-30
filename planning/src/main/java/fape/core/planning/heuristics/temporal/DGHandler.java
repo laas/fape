@@ -170,7 +170,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
         // create new graph from the core graph (actions) and the facts
         StateDepGraph graph = new StateDepGraph(ext.getCoreGraph(), allFacts, pl);
         ext.currentGraph = graph;
-        graph.propagate(ext.prevGraph); 
+        graph.propagate(ext.prevGraph);
 
         if(!pp.fluentsInitialized()) {
             IRSet<Fluent> fluents = new IRSet<>(pp.store.getIntRep(Fluent.class));

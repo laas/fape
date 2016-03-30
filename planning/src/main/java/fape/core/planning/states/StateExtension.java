@@ -1,5 +1,7 @@
 package fape.core.planning.states;
 
+import fape.core.planning.timelines.Timeline;
+
 /**
  * Represents imforamtion that can ve attached to a state.
  *
@@ -9,4 +11,8 @@ package fape.core.planning.states;
 public interface StateExtension {
 
     StateExtension clone(State st);
+
+    default void timelineAdded(Timeline tl) {}
+    default void timelineRemoved(Timeline tl) {}
+    default void timelineExtended(Timeline tl) {}
 }

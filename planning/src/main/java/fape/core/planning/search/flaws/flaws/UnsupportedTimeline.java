@@ -95,28 +95,6 @@ public class UnsupportedTimeline extends Flaw {
             }
         }
 
-        if(planner.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
-            // here we check to see if some resolvers are not valid because they would result in unsolvable threats
-            List<Resolver> toRemove = new LinkedList<>();
-            for (Resolver res : resolvers.stream().filter(r -> r instanceof SupportingTimeline).collect(Collectors.toList())) {
-                Timeline supporter = st.getTimeline(((SupportingTimeline) res).supporterID);
-                for (Timeline other : st.getTimelines()) {
-                    if (other != consumer && other != supporter)
-                        if (!other.hasSinglePersistence() && (st.unified(other, supporter) || st.unified(other, consumer))) {
-                            // other is on the same state variable and chages the value of the state variable
-                            // if it must be between the two, it will result in an unsolvable threat
-                            // hence it must can be after the end of the consumer or before the start of the
-                            if (!st.canAllBeBefore(consumer.getLastTimePoints(), other.getFirstChangeTimePoint())
-                                    && !st.canAllBeBefore(other.getSupportTimePoint(), supporter.getFirstTimePoints())) {
-                                // will result in unsolvable threat
-                                toRemove.add(res);
-                            }
-                        }
-                }
-            }
-            resolvers.removeAll(toRemove);
-        }
-
         // look for task decomposition that might produce a desired action in the future
         if(planner.isTopDownOnly()) {
             // adding actions
@@ -161,16 +139,17 @@ public class UnsupportedTimeline extends Flaw {
             assert !st.getHierarchicalConstraints().isWaitingForADecomposition(consumer);
 
             for (Task t : st.getOpenTasks()) {
-                if(!st.canBeStrictlyBefore(t.start(), consumer.getConsumeTimePoint()))
+                if (!st.canBeStrictlyBefore(t.start(), consumer.getConsumeTimePoint()))
                     continue;
-                if(!st.getHierarchicalConstraints().isValidTaskSupport(t, consumer))
+                if (!st.getHierarchicalConstraints().isValidTaskSupport(t, consumer))
                     continue;
 
                 Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
-                if(!decs.isEmpty())
+                if (!decs.isEmpty())
                     tasks.add(t);
             }
 
+            // resolvers are only existing statements that validate the constraints and the future task supporters we found
             List<Resolver> newRes = Stream.concat(
                     resolvers.stream()
                             .filter(resolver -> resolver instanceof SupportingTimeline)
@@ -181,18 +160,6 @@ public class UnsupportedTimeline extends Flaw {
                     .collect(Collectors.toList());
 
             resolvers = newRes;
-
-//            if(resolvers.stream().filter(resolver -> resolver instanceof SupportingTimeline).count() == 0) {
-//                if(tasks.isEmpty()) {
-//                    System.out.println("Dead end: "+st.mID);
-//                    st.setDeadEnd();
-//                } else if(tasks.size() == 1) {
-//                    System.out.println("One choice: "+st.mID);
-//                }
-//                System.out.println("\n"+Printer.inlineTemporalDatabase(st, consumer));
-//                System.out.println(tasks);
-//            }
-
         }
 
         return this.resolvers;

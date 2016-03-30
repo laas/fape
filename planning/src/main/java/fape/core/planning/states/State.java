@@ -142,14 +142,6 @@ public class State implements Reporter {
     final HashSet<PotentialThreat> threats;
 
     /**
-     * Maps from timeline's IDs to potentially supporting (timeline, chain component).
-     * The lists are exhaustive but might contain:
-     *  - the same supporter twice.
-     *  - supporters that are no longer valid (timeline removed or supporter not valid because of new constraints).
-     */
-    final HashMap<Integer, IList<Resolver>> potentialSupporters;
-
-    /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
     private int problemRevision;
@@ -173,7 +165,7 @@ public class State implements Reporter {
         taskNet = new TaskNetworkManager();
         resMan = new ResourceManager();
         threats = new HashSet<>();
-        potentialSupporters = new HashMap<>();
+
         addableActions = null;
         addableTemplates = null;
         stateVarsToVariables = new HashMap<>();
@@ -181,6 +173,7 @@ public class State implements Reporter {
         supportConstraints = new LinkedList<>();
         extensions = new ArrayList<>();
         extensions.add(new HierarchicalConstraints(this));
+        extensions.add(new OpenGoalSupportersCache(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -209,11 +202,9 @@ public class State implements Reporter {
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
-        potentialSupporters = new HashMap<>(st.potentialSupporters);
         stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
-        locked = new HashMap<>(st.locked);
 
         extensions = st.extensions.stream().map(ext -> ext.clone(this)).collect(Collectors.toList());
     }
@@ -786,6 +777,9 @@ public class State implements Reporter {
 
 
     public void timelineAdded(Timeline a) {
+        for(StateExtension ext : extensions)
+            ext.timelineAdded(a);
+
         for(Timeline b : tdb.getTimelines()) {
             if(!unifiable(a.stateVariable, b.stateVariable))
                 continue;
@@ -794,35 +788,12 @@ public class State implements Reporter {
                 threats.add(new PotentialThreat(a, b));
             }
         }
-
-        // checks if this new timeline can provide support to others
-        for(int i=0 ; i < a.numChanges() ; i++) {
-            for(Timeline b : tdb.getConsumers()) {
-                if(!potentialSupporters.containsKey(b.mID))
-                    continue; // resolvers have not been initialized yet
-                if (!UnsupportedTimeline.isSupporting(a, i, b, this))
-                    continue; // a cannot support b
-
-                // check if don't already have a has a support for b (to avoid duplication)
-                boolean alreadyPresent = false;
-                IList<Resolver> previous = potentialSupporters.get(b.mID);
-                for(Resolver r : previous) {
-                    if(r instanceof SupportingTimeline
-                            && ((SupportingTimeline) r).supporterID == a.mID
-                            && ((SupportingTimeline) r).supportingComponent == i) {
-                        alreadyPresent = true;
-                        break;
-                    }
-                }
-                if(!alreadyPresent)
-                    potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(a.mID, i, b)));
-            }
-        }
-
-
     }
 
     public void timelineExtended(Timeline tl) {
+        for(StateExtension ext : extensions)
+            ext.timelineExtended(tl);
+
         List<PotentialThreat> toRemove = new LinkedList<>();
         for(PotentialThreat pt : threats)
             if(pt.id1 == tl.mID || pt.id2 == tl.mID)
@@ -835,51 +806,17 @@ public class State implements Reporter {
             }
         }
 
-        if(tl.isConsumer()) assert tdb.getConsumers().contains(tl);
-
-        // checks if the modifications on this timeline creates new supporters for others
-        for(int i=0 ; i < tl.numChanges() ; i++) {
-            for(Timeline b : tdb.getConsumers()) {
-                if(!potentialSupporters.containsKey(b.mID))
-                    continue; // resolvers of b have not been initialized yet
-                if (!UnsupportedTimeline.isSupporting(tl, i, b, this))
-                    continue; // a cannot support b
-
-                // check if don't already have a has a support for b (to avoid duplication)
-                boolean alreadyPresent = false;
-                IList<Resolver> previous = potentialSupporters.get(b.mID);
-                for(Resolver r : previous) {
-                    if(r instanceof SupportingTimeline
-                            && ((SupportingTimeline) r).supporterID == tl.mID
-                            && ((SupportingTimeline) r).supportingComponent == i) {
-                        alreadyPresent = true;
-                        break;
-                    }
-                }
-                if(!alreadyPresent)
-                    potentialSupporters.put(b.mID, previous.with(new SupportingTimeline(tl.mID, i, b)));
-            }
-        }
-
-        // keep track of state variables that are locked from start to given timepoint
-        if(getLatestStartTime(tl.getFirstChangeTimePoint()) <= 0) {
-            if(!locked.containsKey(tl.stateVariable)) {
-                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
-            }else if(getEarliestStartTime(tl.getLastTimePoints().getFirst()) > getEarliestStartTime(locked.get(tl.stateVariable))) {
-                locked.put(tl.stateVariable, tl.getLastTimePoints().getFirst());
-            }
-        }
+        assert !tl.isConsumer() || tdb.getConsumers().contains(tl);
     }
 
-    public Map<ParameterizedStateVariable, TPRef> locked = new HashMap<>();
-
     public void timelineRemoved(Timeline tl) {
+        for(StateExtension ext : extensions)
+            ext.timelineRemoved(tl);
         List<PotentialThreat> toRemove = new LinkedList<>();
         for(PotentialThreat t : threats)
             if(t.id1 == tl.mID || t.id2 == tl.mID)
                 toRemove.add(t);
         threats.removeAll(toRemove);
-        potentialSupporters.remove(tl.mID);
     }
 
     /**
@@ -892,86 +829,7 @@ public class State implements Reporter {
         assert og.isConsumer();
         assert tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
 
-        if(!potentialSupporters.containsKey(og.mID)) {
-            // generate optimistic resolvers
-            IList<Resolver> resolvers = new IList<>();
-
-            // gather all potential supporters for this timeline
-            for(Timeline sup : getTimelines()) {
-                for(int i = 0 ; i < sup.numChanges() ; i++) {
-                    SupportingTimeline supporter = new SupportingTimeline(sup.mID, i, og);
-                    if(UnsupportedTimeline.isValidResolver(supporter, og, this))
-                        resolvers = resolvers.with(supporter);
-                }
-            }
-
-            // get all action supporters (new actions whose insertion would result in an interesting timeline)
-            // a list of (abstract-action, decompositionID) of supporters
-            Collection<fape.core.planning.preprocessing.SupportingAction> actionSupporters =
-                    pl.getActionSupporterFinder().getActionsSupporting(this, og);
-
-            //now we can look for adding the actions ad-hoc ...
-            if (APlanner.actionResolvers) {
-                for (fape.core.planning.preprocessing.SupportingAction aa : actionSupporters) {
-                    SupportingAction res = new SupportingAction(aa.absAct, aa.statementRef, og);
-                    if(UnsupportedTimeline.isValidResolver(res, og, this))
-                        resolvers = resolvers.with(res);
-                }
-            }
-            potentialSupporters.put(og.mID, resolvers);
-        } else {
-            // we already have a set of resolvers, simply filter the invalid ones
-            List<Resolver> toRemove = new ArrayList<>();
-            for (Resolver sup : potentialSupporters.get(og.mID)) {
-                if (!UnsupportedTimeline.isValidResolver(sup, og, this))
-                    toRemove.add(sup);
-            }
-            if (!toRemove.isEmpty()) {
-                IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(toRemove);
-                potentialSupporters.put(og.mID, onlyValidResolvers);
-            }
-        }
-        boolean checkDTGInputs = false && //TODO: this is apparently was not sound
-                potentialSupporters.get(og.mID).stream().anyMatch(res -> res instanceof SupportingAction)
-                        && domainSizeOf(og.getGlobalConsumeValue()) == 1
-                        && Arrays.stream(og.stateVariable.args()).allMatch(a -> domainSizeOf(a) == 1);
-
-        if(checkDTGInputs) {
-            Set<Fluent> fluents = DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), this, pl);
-            Fluent f = fluents.iterator().next();
-            TemporalDTG dtg = pl.preprocessor.getTemporalDTG(f.sv);
-
-            Set<GStateVariable> locked = new HashSet<>();
-
-            for(ParameterizedStateVariable psv : this.locked.keySet()) {
-                if(this.canBeBefore(this.locked.get(psv), og.getConsumeTimePoint()))
-                    continue;
-
-                Collection<GStateVariable> instantiations = DisjunctiveFluent.instantiationsOf(psv, this);
-                if(instantiations.size() == 1)
-                    locked.addAll(instantiations);
-            }
-            Pair<Fluent, Set<GStateVariable>> key = new Pair<>(f, locked);
-
-            Set<AbstractAction> authorizedSupporters =
-                    pl.preprocessor.authorizedSupportersCache.computeIfAbsent(key, x ->
-                            dtg.getChangesTo(dtg.getBaseNode(f.value)).stream()
-                                    .filter(change -> change.affected().stream().allMatch(sv -> !locked.contains(sv)))
-                                    .filter(change -> this.addableActions == null || this.addableActions.contains(change.getContainer()))
-                                    .map(change1 -> change1.getContainer().abs)
-                                    .collect(Collectors.toSet()));
-
-            Set<Resolver> invalids = potentialSupporters.get(og.mID).stream()
-                    .filter(res -> res instanceof SupportingAction && !(authorizedSupporters.contains(((SupportingAction) res).act)))
-                    .collect(Collectors.toSet());
-            if(!invalids.isEmpty()) {
-                IList<Resolver> onlyValidResolvers = potentialSupporters.get(og.mID).withoutAll(invalids);
-                potentialSupporters.put(og.mID, onlyValidResolvers);
-            }
-
-        }
-
-        return potentialSupporters.get(og.mID);
+        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og);
     }
 
 
@@ -990,8 +848,6 @@ public class State implements Reporter {
         }
         threats.removeAll(toRemove);
 
-        // this check is quite expensive
-//        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
         return verifiedThreats;
     }
 

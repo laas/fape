@@ -109,6 +109,7 @@ public abstract class APlanner {
     public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) {
     }
 
+    @Deprecated
     public abstract boolean isTopDownOnly();
 
     /**
