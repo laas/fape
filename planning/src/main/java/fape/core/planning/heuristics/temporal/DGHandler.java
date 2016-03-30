@@ -28,7 +28,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
         assert !st.hasExtension(DepGraphCore.StateExt.class);
 
         // init the core of the dependency graph
-        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), pl.preprocessor.store);
+        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), false, pl.preprocessor.store);
         st.addExtension(new DepGraphCore.StateExt(core));
 
         // Record ground action ids as possible values for variables in the CSP
@@ -168,9 +168,9 @@ public class DGHandler extends fape.core.planning.search.Handler {
         allFacts.addAll(tasks);
 
         // create new graph from the core graph (actions) and the facts
-        StateDepGraph graph = new StateDepGraph(ext.core, allFacts, pl);
+        StateDepGraph graph = new StateDepGraph(ext.getCoreGraph(), allFacts, pl);
         ext.currentGraph = graph;
-        graph.propagate(ext.prevGraph);
+        graph.propagate(ext.prevGraph); 
 
         if(!pp.fluentsInitialized()) {
             IRSet<Fluent> fluents = new IRSet<>(pp.store.getIntRep(Fluent.class));

@@ -10,6 +10,9 @@ import java.util.*;
 
 public class DepGraphCore implements DependencyGraph {
 
+    /** True if this graph has already been reduced to reachable actions only */
+    public final boolean wasReduced;
+
     protected GStore store;
 
     // graph structure
@@ -26,8 +29,9 @@ public class DepGraphCore implements DependencyGraph {
      *  If they are ignored the graph will not contain any negative cycle. //TODO: double check that */
     private List<MaxEdge> toIgnoreInDijkstra;
 
-    public DepGraphCore(Collection<RAct> actions, GStore store) { // List<TempFluent> facts, State st) {
+    public DepGraphCore(Collection<RAct> actions, boolean isReduced, GStore store) { // List<TempFluent> facts, State st) {
         this.store = store;
+        this.wasReduced = isReduced;
 
         for(RAct act : actions) {
             addAction(act);
@@ -114,7 +118,7 @@ public class DepGraphCore implements DependencyGraph {
      */
     public static class StateExt implements StateExtension {
 
-        public final DepGraphCore core;
+        private final DepGraphCore core;
         public final Optional<StateDepGraph> prevGraph;
 
         public StateDepGraph currentGraph = null;
@@ -127,6 +131,13 @@ public class DepGraphCore implements DependencyGraph {
         private StateExt(StateDepGraph prevGraph) {
             this.core = prevGraph.core;
             this.prevGraph = Optional.of(prevGraph);
+        }
+
+        public DepGraphCore getCoreGraph() {
+            if(currentGraph != null)
+                return currentGraph.core; // this version might be more recent
+            else
+                return core;
         }
 
         @Override
