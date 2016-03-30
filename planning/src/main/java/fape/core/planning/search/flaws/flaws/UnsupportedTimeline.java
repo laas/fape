@@ -107,9 +107,9 @@ public class UnsupportedTimeline extends Flaw {
         }
 
         if(planner.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
-            // here we check to see if some resolvers are not valid because resulting in unsolvable threats
+            // here we check to see if some resolvers are not valid because they would result in unsolvable threats
             List<Resolver> toRemove = new LinkedList<>();
-            for (Resolver res : resolvers) {
+            for (Resolver res : resolvers.stream().filter(r -> r instanceof SupportingTimeline).collect(Collectors.toList())) {
                 Timeline supporter = st.getTimeline(((SupportingTimeline) res).supporterID);
                 for (Timeline other : st.getTimelines()) {
                     if (other != consumer && other != supporter)
