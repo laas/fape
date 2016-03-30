@@ -35,7 +35,7 @@ public class ResourceSupportingAction extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         assert false : "Needs to be checked.";
 
         Action action = Factory.getStandaloneAction(st.pb, absAction, st.refCounter);

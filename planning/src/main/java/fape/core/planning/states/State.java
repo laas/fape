@@ -2,11 +2,11 @@ package fape.core.planning.states;
 
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.TempFluents;
+import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -14,6 +14,7 @@ import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
 import fape.core.planning.stn.STNNodePrinter;
@@ -30,11 +31,16 @@ import fape.util.EffSet;
 import fape.util.Pair;
 import fape.util.Reporter;
 import fr.laas.fape.structures.IRSet;
+import lombok.Getter;
+import lombok.Setter;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
 import planstack.anml.model.concrete.statements.*;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.LStateVariable;
+import planstack.anml.pending.StateVariable;
 import planstack.constraints.MetaCSP;
 import planstack.constraints.bindings.Domain;
 import planstack.constraints.stnu.Controllability;
@@ -43,6 +49,7 @@ import scala.Option;
 import scala.Tuple2;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +58,11 @@ public class State implements Reporter {
     public static int idCounter = 0;
     public final int mID;
     int depth;
+
+    @Setter @Getter
+    /** Number of the last decomposition that was used in this state.
+     * This is used to always conisder the ethod in the order they are given in the domain file.*/
+    int lastDecompositionNumber = 0;
 
     /**
      *
@@ -66,7 +78,11 @@ public class State implements Reporter {
 
     public final RefCounter refCounter;
 
+    /** Maps a constant parameterized variable to a variable in the CSP */
+    public final Map<ParameterizedStateVariable, VarRef> stateVarsToVariables;
+
     private boolean isDeadEnd = false;
+    private boolean isConsistent = true;
 
     /**
      * Keep tracks of statements that must be supported by a particular
@@ -96,14 +112,14 @@ public class State implements Reporter {
      * Contains all ground versions of fluents in the state with their associated time points
      */
     public List<TempFluents> fluents = null;
+    public List<TempFluents> fluentsWithChange = null;
 
     public HReasoner<Term> reasoner = null;
 
     public ReachabilityGraphs reachabilityGraphs = null;
 
+    /** Extensions of a state that will be inherited by its children */
     final List<StateExtension> extensions;
-
-    public List<Flaw> flaws = null;
 
     class PotentialThreat {
         private final int id1, id2;
@@ -124,14 +140,6 @@ public class State implements Reporter {
     }
 
     final HashSet<PotentialThreat> threats;
-
-    /**
-     * Maps from timeline's IDs to potentially supporting (timeline, chain component).
-     * The lists are exhaustive but might contain:
-     *  - the same supporter twice.
-     *  - supporters that are no longer valid (timeline removed or supporter not valid because of new constraints).
-     */
-    final HashMap<Integer, IList<SupportingTimeline>> potentialSupporters;
 
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
@@ -157,12 +165,15 @@ public class State implements Reporter {
         taskNet = new TaskNetworkManager();
         resMan = new ResourceManager();
         threats = new HashSet<>();
-        potentialSupporters = new HashMap<>();
+
         addableActions = null;
         addableTemplates = null;
+        stateVarsToVariables = new HashMap<>();
 
         supportConstraints = new LinkedList<>();
-        extensions = new LinkedList<>();
+        extensions = new ArrayList<>();
+        extensions.add(new HierarchicalConstraints(this));
+        extensions.add(new OpenGoalSupportersCache(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -191,11 +202,11 @@ public class State implements Reporter {
         supportConstraints = new LinkedList<>(st.supportConstraints);
         resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
-        potentialSupporters = new HashMap<>(st.potentialSupporters);
+        stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
         addableTemplates = st.addableTemplates != null ? new HashSet<>(st.addableTemplates) : null;
 
-        extensions = st.extensions.stream().map(StateExtension::clone).collect(Collectors.toList());
+        extensions = st.extensions.stream().map(ext -> ext.clone(this)).collect(Collectors.toList());
     }
 
     /** Returns the depth of this node in the search space */
@@ -216,6 +227,10 @@ public class State implements Reporter {
 
     private List<Handler> getHandlers() {
         return pl != null ? pl.getHandlers() : Collections.emptyList();
+    }
+
+    public HierarchicalConstraints getHierarchicalConstraints() {
+        return getExtension(HierarchicalConstraints.class);
     }
 
     /**
@@ -247,12 +262,16 @@ public class State implements Reporter {
 
 
     /**
-     * @return True if the state is consistent (ie. stn and bindings
+     * Returns True if the state is consistent (ie. stn and bindings
      * consistent), False otherwise.
+     * This method propagates the constraint neworks
      */
-    public boolean isConsistent() {
-        return !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
+    public boolean checkConsistency() {
+        isConsistent &= !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
+        return isConsistent;
     }
+
+    public boolean isConsistent() { return isConsistent; }
 
     public String report() {
         String ret = "";
@@ -454,7 +473,10 @@ public class State implements Reporter {
      */
     private void apply(LogStatement s) {
         assert !s.sv().func().isConstant() : "LogStatement on a constant function: "+s;
-        csp.stn().enforceBefore(s.start(), s.end());
+        if(s.isChange())
+            csp.stn().enforceStrictlyBefore(s.start(), s.end());
+        else
+            csp.stn().enforceBefore(s.start(), s.end());
         tdb.addNewTimeline(s);
     }
 
@@ -572,31 +594,14 @@ public class State implements Reporter {
     private void apply(Chronicle mod, TemporalConstraint tc) {
 
         if(tc instanceof MinDelayConstraint) {
-            csp.stn().enforceMinDelay(tc.src(), tc.dst(), ((MinDelayConstraint) tc).minDelay());
-        } else if(tc instanceof ParameterizedMinDelayConstraint) {
-            ParameterizedMinDelayConstraint pmd = (ParameterizedMinDelayConstraint) tc;
-            assert pmd.minDelay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-            assert pmd.minDelay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-            VarRef var = new VarRef("integer", refCounter);
-            csp.bindings().AddIntVariable(var);
-            List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.minDelay().args()));
-            varsOfExtConst.add(var);
-            csp.bindings().addNAryConstraint(varsOfExtConst, pmd.minDelay().func().name());
-            csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+            csp.addMinDelay(tc.src(), tc.dst(), translateToCSPVariable(((MinDelayConstraint) tc).minDelay()));
         } else if(tc instanceof ContingentConstraint) {
             ContingentConstraint cc = (ContingentConstraint) tc;
-            csp.stn().enforceContingent(cc.src(), cc.dst(), cc.min(), cc.max());
-        } else if(tc instanceof ParameterizedExactDelayConstraint) {
-            ParameterizedExactDelayConstraint pmd = (ParameterizedExactDelayConstraint) tc;
-            assert pmd.delay().func().isConstant() : "Cannot parameterize an action duration with non-constant functions.";
-            assert pmd.delay().func().valueType().equals("integer") : "Cannot parameterize an action duration with a non-integer function.";
-            VarRef var = new VarRef("integer", refCounter);
-            csp.bindings().AddIntVariable(var);
-            List<VarRef> varsOfExtConst = new ArrayList<>(Arrays.asList(pmd.delay().args()));
-            varsOfExtConst.add(var);
-            csp.bindings().addNAryConstraint(varsOfExtConst, pmd.delay().func().name());
-            csp.addMinDelay(pmd.src(), pmd.dst(), var, pmd.trans());
-            csp.addMaxDelay(pmd.src(), pmd.dst(), var, pmd.trans());
+            csp.addContingentConstraint(
+                    cc.src(), cc.dst(),
+                    translateToCSPVariable(cc.min()),
+                    translateToCSPVariable(cc.max()),
+                    Option.empty());
         } else {
             throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }
@@ -689,8 +694,9 @@ public class State implements Reporter {
      * @return A list of resolvers containing only the valid ones.
      */
     public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
+        assert pl.isTopDownOnly();
         if (f instanceof Threat || f instanceof UnboundVariable ||
-                f instanceof ResourceFlaw || f instanceof UnsupportedTaskCond || f instanceof UnmotivatedAction) {
+                f instanceof ResourceFlaw || f instanceof UnrefinedTask || f instanceof UnmotivatedAction) {
             return opts;
         } else if (f instanceof UnsupportedTimeline) {
             Action requiredAncestor = getSupportConstraint(((UnsupportedTimeline) f).consumer);
@@ -771,6 +777,9 @@ public class State implements Reporter {
 
 
     public void timelineAdded(Timeline a) {
+        for(StateExtension ext : extensions)
+            ext.timelineAdded(a);
+
         for(Timeline b : tdb.getTimelines()) {
             if(!unifiable(a.stateVariable, b.stateVariable))
                 continue;
@@ -779,31 +788,12 @@ public class State implements Reporter {
                 threats.add(new PotentialThreat(a, b));
             }
         }
-
-        if(a.isConsumer()) {
-            // gather all potential supporters for this new timeline
-            potentialSupporters.put(a.mID, new IList<SupportingTimeline>());
-            for(Timeline sup : getTimelines()) {
-                for(int i = 0 ; i < sup.numChanges() ; i++) {
-                    if(UnsupportedTimeline.isSupporting(sup, i, a, this))
-                        potentialSupporters.put(a.mID, potentialSupporters.get(a.mID).with(new SupportingTimeline(sup.mID, i, a)));
-                }
-            }
-        }
-
-        // checks if this new timeline can provide support to others
-        for(int i=0 ; i < a.numChanges() ; i++) {
-            for(Timeline b : tdb.getConsumers()) {
-                if (UnsupportedTimeline.isSupporting(a, i, b, this)) {
-                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(a.mID, i, b)));
-                }
-            }
-        }
-
-
     }
 
     public void timelineExtended(Timeline tl) {
+        for(StateExtension ext : extensions)
+            ext.timelineExtended(tl);
+
         List<PotentialThreat> toRemove = new LinkedList<>();
         for(PotentialThreat pt : threats)
             if(pt.id1 == tl.mID || pt.id2 == tl.mID)
@@ -816,18 +806,12 @@ public class State implements Reporter {
             }
         }
 
-        if(tl.isConsumer()) assert tdb.getConsumers().contains(tl);
-
-        // checks if the modifications on this timeline creates new supporters for others
-        for(int i=0 ; i < tl.numChanges() ; i++) {
-            for(Timeline b : tdb.getConsumers()) {
-                if (UnsupportedTimeline.isSupporting(tl, i, b, this))
-                    potentialSupporters.put(b.mID, potentialSupporters.get(b.mID).with(new SupportingTimeline(tl.mID, i, b)));
-            }
-        }
+        assert !tl.isConsumer() || tdb.getConsumers().contains(tl);
     }
 
     public void timelineRemoved(Timeline tl) {
+        for(StateExtension ext : extensions)
+            ext.timelineRemoved(tl);
         List<PotentialThreat> toRemove = new LinkedList<>();
         for(PotentialThreat t : threats)
             if(t.id1 == tl.mID || t.id2 == tl.mID)
@@ -836,25 +820,18 @@ public class State implements Reporter {
     }
 
     /**
-     * Retrieves all valid supporters for this timeline.
+     * Retrieves all valid resolvers for this unsupported timeline.
      *
-     * As a side effects, this method also cleans up the supporters store in this state to remove double entries
+     * As a side effects, this method also cleans up the resolvers stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
-    public Set<SupportingTimeline> getTimelineSupportersFor(Timeline consumer) {
-        assert tdb.getConsumers().contains(consumer);
-        HashSet<SupportingTimeline> supporters = new HashSet<>();
-        for(SupportingTimeline sup : potentialSupporters.get(consumer.mID)) {
-            assert sup.consumerID == consumer.mID;
-            if(!supporters.contains(sup)
-                    && containsTimelineWithID(sup.supporterID)
-                    && UnsupportedTimeline.isSupporting(getTimeline(sup.supporterID), sup.supportingComponent, consumer, this)) {
-                supporters.add(sup);
-            }
-        }
-        potentialSupporters.put(consumer.mID, new IList<SupportingTimeline>(supporters));
-        return supporters;
+    public Iterable<Resolver> getResolversForOpenGoal(Timeline og) {
+        assert og.isConsumer();
+        assert tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
+
+        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og);
     }
+
 
     public List<Flaw> getAllThreats() {
         List<PotentialThreat> toRemove = new LinkedList<>();
@@ -871,9 +848,16 @@ public class State implements Reporter {
         }
         threats.removeAll(toRemove);
 
-        // this check is quite expensive
-//        assert verifiedThreats.size() == AllThreatFinder.getAllThreats(this).size();
         return verifiedThreats;
+    }
+
+    /** Returns true if this State has no flaws */
+    public boolean isSolution(List<FlawFinder> finders) {
+        for(FlawFinder ff : finders) {
+            if(!ff.getFlaws(this, pl).isEmpty())
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -881,25 +865,19 @@ public class State implements Reporter {
      * Flaws are identified using the provided finders and sorted with the provided comparator.
      */
     public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
-        if(flaws == null) {
-            flaws = new LinkedList<>();
+        List<Flaw> flaws = new ArrayList<>();
 
-            for (FlawFinder fd : finders)
-                flaws.addAll(fd.getFlaws(this, pl));
+        for (FlawFinder fd : finders)
+            flaws.addAll(fd.getFlaws(this, pl));
 
-            Collections.sort(flaws, comparator);
-        }
+        Collections.sort(flaws, comparator);
         return flaws;
     }
 
     public TimedCanvas getCanvasOfActions() {
         List<Action> acts = new LinkedList<>(getAllActions());
-        Collections.sort(acts, new Comparator<Action>() {
-            @Override
-            public int compare(Action a1, Action a2) {
-                return (getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
-            }
-        });
+        Collections.sort(acts, (Action a1, Action a2) ->
+                getEarliestStartTime(a1.start()) - getEarliestStartTime(a2.start()));
         List<ChartLine> lines = new LinkedList<>();
 
         for (Action a : acts) {
@@ -1082,7 +1060,7 @@ public class State implements Reporter {
     public IRSet<GAction> getGroundActions(Action lifted) {
         assert csp.bindings().isRecorded(lifted.instantiationVar());
         Domain dom = csp.bindings().rawDomain(lifted.instantiationVar());
-        return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
+        return new IRSet<>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
     }
 
     public List<Action> getAllActions() { return actions; }
@@ -1172,6 +1150,37 @@ public class State implements Reporter {
 
     public void addValuesSetConstraint(List<VarRef> variables, String setID) { csp.bindings().addNAryConstraint(variables, setID);}
 
+    /**
+     * Retrieves the CSP variable representing a cosntant parameterized state variable.
+     * If necessary, this variable is created and added to the CSP.
+     */
+    public VarRef getVariableOf(ParameterizedStateVariable sv) {
+        assert sv.func().isConstant();
+        if(!stateVarsToVariables.containsKey(sv)) {
+            assert sv.func().valueType().equals("integer") : "Temporal constraint involving the non-integer function: " + sv.func();
+            VarRef variable = new VarRef("integer", refCounter);
+            csp.bindings().AddIntVariable(variable);
+            List<VarRef> variablesOfNAryConst = new ArrayList<>(Arrays.asList(sv.args()));
+            variablesOfNAryConst.add(variable);
+            csp.bindings().addNAryConstraint(variablesOfNAryConst, sv.func().name());
+            stateVarsToVariables.put(sv, variable);
+        }
+        return stateVarsToVariables.get(sv);
+    }
+
+    public IntExpression translateToCSPVariable(IntExpression expr) {
+        Function<IntExpression,IntExpression> transformation = e -> {
+            if(e instanceof StateVariable) {
+                ParameterizedStateVariable sv = ((StateVariable) e).sv();
+                assert sv.func().valueType().equals("integer");
+                return IntExpression.variable(getVariableOf(sv), e.lb(), e.ub());
+            } else {
+                assert !(e instanceof LStateVariable) : "Error: local state variable was not binded";
+                return e;
+            }
+        };
+        return expr.jTrans(transformation);
+    }
 
     /************ Wrapper around TemporalDatabaseManager **********************/
 

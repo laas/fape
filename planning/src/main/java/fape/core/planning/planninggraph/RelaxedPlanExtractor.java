@@ -174,7 +174,7 @@ public class RelaxedPlanExtractor {
 
         for (GStateVariable sv : possibleStateVariables) {
             if(!dtgsOfStateVariables.containsKey(sv)) {
-                final DTGImpl dtg = planner.preprocessor.getDTG(sv);
+                final DTGImpl dtg = planner.preprocessor.getOldDTG(sv);
                 final int dtgID = dtgs.add(dtg);
                 dtgsOfStateVariables.put(sv, dtgID);
             }
@@ -234,7 +234,7 @@ public class RelaxedPlanExtractor {
 
         for(GStateVariable sv : possibleStateVariables) {
             if(!dtgsOfStateVariables.containsKey(sv)) {
-                final DTGImpl dtg = planner.preprocessor.getDTG(sv);
+                final DTGImpl dtg = planner.preprocessor.getOldDTG(sv);
                 final int dtgID = dtgs.add(dtg);
                 dtgsOfStateVariables.put(sv, dtgID);
             }

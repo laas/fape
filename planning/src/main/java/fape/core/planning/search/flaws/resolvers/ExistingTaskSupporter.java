@@ -22,7 +22,7 @@ public class ExistingTaskSupporter extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         assert task.args().size() == act.args().size();
         assert task.name().equals(act.taskName());
 
@@ -32,6 +32,9 @@ public class ExistingTaskSupporter extends Resolver {
         }
         //enforce equality of time points and add support to task network
         st.addSupport(task, act);
+
+        if(!isFastForwarding)
+            st.setLastDecompositionNumber(act.abs().decID());
 
         return true;
     }

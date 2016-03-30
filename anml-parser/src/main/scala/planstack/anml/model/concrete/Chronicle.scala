@@ -8,6 +8,7 @@ import planstack.anml.model.abs._
 import planstack.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import planstack.anml.model.concrete.statements.{LogStatement, ResourceStatement, Statement}
 import planstack.anml.model.{AnmlProblem, Context}
+import planstack.anml.pending.{IntExpression, IntExpression$, IntLiteral}
 import planstack.structures.IList
 
 import scala.collection.JavaConversions._
@@ -117,7 +118,6 @@ trait Chronicle {
     val timepoints = (intervals.flatMap(int => List(int.start, int.end)) ++ temporalConstraints.flatMap(tc => List(tc.src, tc.dst))).toSet
 
     val contingents = temporalConstraints.collect {
-      case ParameterizedContingentConstraint(_, ctg, _, _, _, _) => ctg
       case ContingentConstraint(_, ctg, _, _) => ctg
     }
 
@@ -125,7 +125,7 @@ trait Chronicle {
     val tConstraintsCopy = new util.ArrayList[TemporalConstraint](temporalConstraints)
     this.temporalConstraints.clear()
     tConstraintsCopy.foreach {
-      case MinDelayConstraint(from, to, minDelay) => stn.addEdge(to, from, -minDelay)
+      case MinDelayConstraint(from, to, minDelay) => stn.addEdge(to, from, IntExpression.minus(minDelay))
       case x => this.temporalConstraints.add(x)
     }
 
@@ -139,7 +139,7 @@ trait Chronicle {
 
     this.flexibleTimepoints = new IList(flexs)
     for(tc <- constraints)
-      this.temporalConstraints.add(new MinDelayConstraint(tc.dst, tc.src, -tc.label))
+      this.temporalConstraints.add(new MinDelayConstraint(tc.dst, tc.src, IntExpression.minus(tc.label)))
 
     // no anchored tps
     this.anchoredTimepoints = new IList[AnchoredTimepoint](anchored.map(a => new AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))

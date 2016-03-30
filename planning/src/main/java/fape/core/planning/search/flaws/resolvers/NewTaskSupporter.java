@@ -13,24 +13,28 @@ import planstack.anml.model.concrete.Task;
 public class NewTaskSupporter extends Resolver {
 
     /** Action condition to support */
-    public final Task condition;
+    public final Task unrefined;
 
     /** Abstract action to be instantiated and inserted. */
     public final AbstractAction abs;
 
-    public NewTaskSupporter(Task cond, AbstractAction abs) {
-        this.condition = cond;
+    public NewTaskSupporter(Task unrefinedTask, AbstractAction abs) {
+        this.unrefined = unrefinedTask;
         this.abs = abs;
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         // create a new action with the same args as the condition
-        Action act = Factory.getInstantiatedAction(st.pb, abs, condition.args(), st.refCounter);
+        Action act = Factory.getInstantiatedAction(st.pb, abs, unrefined.args(), st.refCounter);
         st.insert(act);
 
         // enforce equality of time points and add support to task network
-        st.addSupport(condition, act);
+        st.addSupport(unrefined, act);
+
+        if(!isFastForwarding)
+            st.setLastDecompositionNumber(abs.decID());
+
 
         return true;
     }
@@ -39,7 +43,7 @@ public class NewTaskSupporter extends Resolver {
     public int compareWithSameClass(Resolver e) {
         assert e instanceof NewTaskSupporter;
         NewTaskSupporter o = (NewTaskSupporter) e;
-        assert condition == o.condition : "Comparing two resolvers on different flaws.";
+        assert unrefined == o.unrefined : "Comparing two resolvers on different flaws.";
         assert abs != o.abs : "Comparing two identical resolvers.";
         return abs.name().compareTo(o.abs.name());
     }

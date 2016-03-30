@@ -109,34 +109,6 @@ class Action(
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
 }
 
-/** Expresses either the min or max duration of an action. */
-sealed trait Duration {
-  def d : Int = -1
-  def sv : ParameterizedStateVariable = null
-
-  def isFunction = sv != null
-  def isConstant = sv == null
-}
-
-object Duration {
-  def apply(abs:AbstractDuration, context:Context) : Duration = {
-    if(abs.isConstant)
-      new IntDuration(abs.constantDur)
-    else
-      new FuncDuration(abs.func.bind(context))
-  }
-}
-
-/** A constant duration. Does not deepend on any parameters. */
-class IntDuration(override val d : Int) extends Duration
-
-/** A constant duration depending on some parameters.
-  * This is represented by a *constant* parameterized state variable.
-  */
-class FuncDuration(override val sv : ParameterizedStateVariable) extends Duration {
-  require(sv.func.isConstant, "Function used as duration is not constant: "+sv)
-}
-
 
 object Action {
 
@@ -223,7 +195,7 @@ object Action {
     val act = new Action(abs, context, id, parentAction, refCounter)
 
     val ctgTimepoints = act.temporalConstraints
-      .filter(tc => tc.isInstanceOf[ParameterizedContingentConstraint] || tc.isInstanceOf[ContingentConstraint])
+      .filter(tc => tc.isInstanceOf[ContingentConstraint])
       .map(tc => tc.dst)
       .toSet
 

@@ -14,10 +14,12 @@ public abstract class Resolver implements Comparable<Resolver> {
      * @param st State to modify
      * @param planner The planner from which this method is called. It used to extract options and
      *                results from preprocessing that might be used.
+     * @param isFastForwarding True if this resolver application is done while fast forwarding
+     *                         (i.e. does not result in additional nodes in the search tree).
      * @return True if the resolvers was successfully applied. (Note that the state might still e inconsistent, the only
      *         guarantee is that the flaw is fixed.
      */
-    public abstract boolean apply(State st, APlanner planner);
+    public abstract boolean apply(State st, APlanner planner, boolean isFastForwarding);
 
     /**
      * Should provide a comparison with another resolver of the same class.

@@ -17,7 +17,7 @@ public class BindingSeparation extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         st.addSeparationConstraint(a, b);
 
         return true;

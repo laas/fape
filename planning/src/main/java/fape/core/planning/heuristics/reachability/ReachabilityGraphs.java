@@ -63,7 +63,7 @@ public class ReachabilityGraphs {
     }
 
     public boolean isRefinableToSolution() {
-        return st.isConsistent() && !hasUnreachableGoal();
+        return st.checkConsistency() && !hasUnreachableGoal();
     }
 
     private void initUnsupporting() {
@@ -128,7 +128,7 @@ public class ReachabilityGraphs {
         Domain dom = new Domain(potentialSupporters.toBitSet());
         for(Task t : st.getOpenTasks())
             st.csp.bindings().restrictDomain(t.groundSupportersVar(), dom);
-        st.isConsistent();
+        st.checkConsistency();
     }
 
     private boolean hasUnreachableGoal() { //TODO: should just restrict the domain?

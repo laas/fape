@@ -42,6 +42,9 @@ abstract class LogStatement(sv:ParameterizedStateVariable, container:Chronicle) 
 
   /** Returns true if the statement requires an enabler for its `startValue` */
   def needsSupport : Boolean
+
+  /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
+  def isChange : Boolean
 }
 
 /** Statement of the form `state-variable := value`
@@ -62,6 +65,9 @@ class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chro
   val needsSupport = false
 
   override def toString = "%s := %s".format(sv, value)
+
+  /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
+  override def isChange: Boolean = true
 }
 
 /** Statement of the form `stateVariable(arg1, arg2, ...) == x :-> y;` referring to the change of the state variable from
@@ -81,6 +87,9 @@ class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, 
   val endValue = to
   val needsSupport = true
   override def toString = "%s == %s :-> %s".format(sv, from, to)
+
+  /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
+  override def isChange: Boolean = true
 }
 
 /** Statement of the form `stateVariable(arg1, arg2, ...) == x;` refering to a persistence of the state variable at value x
@@ -99,4 +108,7 @@ class Persistence(sv:ParameterizedStateVariable, val value:VarRef, container:Chr
   val endValue = value
   val needsSupport = true
   override def toString = "%s == %s".format(sv, value)
+
+  /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
+  override def isChange: Boolean = false
 }

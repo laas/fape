@@ -4,6 +4,7 @@ import fape.core.planning.planner.APlanner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.concrete.statements.LogStatement;
 
 public class SupportingTimeline extends Resolver {
 
@@ -25,12 +26,17 @@ public class SupportingTimeline extends Resolver {
         this.consumerID = consumer.mID;
     }
 
+    public LogStatement getSupportingStatement(State st) {
+        return st.getTimeline(supporterID).getChangeNumber(supportingComponent).getFirst();
+    }
+
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         final Timeline supporter = st.getTimeline(supporterID);
         final Timeline consumer = st.getTimeline(consumerID);
         assert supporter != null;
         assert consumer != null;
+        assert supporter != consumer : "Error: a resolver was generated that supports a timeline with itself.";
 
         ChainComponent precedingComponent = supporter.getChangeNumber(supportingComponent);
 

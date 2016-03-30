@@ -2,6 +2,7 @@ package fr.laas.fape.structures;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class IRStorage {
@@ -18,11 +19,10 @@ public class IRStorage {
         try {
             final Class identClazz = getIdentClass(clazz);
 
-            List<Object> paramsAndClass = new ArrayList<>(params);
-            paramsAndClass.add(clazz);
+            List<Object> paramsAndClass = new ImmutableList<>(params, clazz);
 
-            instancesByParams.putIfAbsent(identClazz, new HashMap<>());
-            instances.putIfAbsent(identClazz, new ArrayList<>());
+            instancesByParams.computeIfAbsent(identClazz, x -> new HashMap<>());
+            instances.computeIfAbsent(identClazz, x -> new ArrayList<>());
 
             if (instancesByParams.get(identClazz).containsKey(paramsAndClass)) {
                 return instancesByParams.get(identClazz).get(paramsAndClass);
@@ -46,6 +46,7 @@ public class IRStorage {
                 return n;
             }
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -63,6 +64,7 @@ public class IRStorage {
     }
 
     public void record(Identifiable o) {
+        assert o.getID() >= 0;
         Class identClazz = getIdentClass(o.getClass());
         instances.putIfAbsent(identClazz, new ArrayList<>(50));
         ArrayList<Identifiable> allVals = instances.get(identClazz);
@@ -87,5 +89,17 @@ public class IRStorage {
             @Override
             public boolean hasRepresentation(T t) { return true; }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> List<T> getInstances(Class<T> clazz) {
+        final Class identClazz = getIdentClass(clazz);
+        instancesByParams.putIfAbsent(identClazz, new HashMap<>());
+        instances.putIfAbsent(identClazz, new ArrayList<>());
+
+        return instances.get(identClazz).stream()
+                .filter(o -> clazz.isInstance(o))
+                .map(o -> (T) o)
+                .collect(Collectors.toList());
     }
 }

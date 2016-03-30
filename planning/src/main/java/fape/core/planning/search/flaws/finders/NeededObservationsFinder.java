@@ -56,7 +56,7 @@ public class NeededObservationsFinder implements FlawFinder {
         public final Set<TPRef> observed;
 
         @Override
-        public StateExtension clone() { return new SecuredObservations(new HashSet<>(observed)); }
+        public StateExtension clone(State st) { return new SecuredObservations(new HashSet<>(observed)); }
     }
 
 
@@ -104,7 +104,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
             @Override
-            public boolean apply(State st, APlanner planner) {
+            public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
                 Chronicle ch = new BaseChronicle(st.pb);
                 List<Pair<TPRef,TPRef>> precedences = new ArrayList<>();
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);
@@ -124,7 +124,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 st.applyChronicle(ch);
                 for(Pair<TPRef,TPRef> prec : precedences) {
                     st.enforceBefore(prec.value1, prec.value2);
-                    st.isConsistent();
+                    st.checkConsistency();
 //                    System.out.println(prec.value1 + " : " + st.getEarliestStartTime(prec.value1) + "  " + st.getLatestStartTime(prec.value1));
 //                    System.out.println(prec.value2+" : "+st.getEarliestStartTime(prec.value2)+"  "+st.getLatestStartTime(prec.value2));
                 }

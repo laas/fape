@@ -6,6 +6,7 @@ import planstack.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation, Interva
 import planstack.anml.model.abs.{AbstractExactDelay, AbstractMinDelay}
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.concrete.{Chronicle, RefCounter}
+import planstack.anml.pending.{IntExpression, IntLiteral}
 
 abstract trait ChronicleComponent
 
@@ -13,7 +14,8 @@ abstract class AbstractStatement(val id:LocalRef) {
   /**
    * Produces the corresponding concrete statement, by replacing all local variables
    * by the global ones defined in Context
-   * @param context Context in which this statement appears.
+    *
+    * @param context Context in which this statement appears.
    * @return
    */
   def bind(context:Context, pb:AnmlProblem, container: Chronicle, refCounter: RefCounter) : Any
@@ -30,18 +32,18 @@ abstract class AbstractStatement(val id:LocalRef) {
         throw new ANMLException("Instantaneous transitions are not allowed: "+this)
       case (AbstractTemporalAnnotation(s, e, "is"), ass:AbstractAssignment) =>
         assert(s == e, "Non instantaneous assignment: "+this)
-        AbstractExactDelay(annot.start.timepoint, stEnd, annot.start.delta) ++
-          AbstractExactDelay(stStart, stEnd, 1)
+        AbstractExactDelay(annot.start.timepoint, stEnd, IntExpression.lit(annot.start.delta)) ++
+          AbstractExactDelay(stStart, stEnd, IntExpression.lit(1))
       case (AbstractTemporalAnnotation(s, e, "is"), _) =>
-        AbstractExactDelay(annot.start.timepoint, stStart, annot.start.delta) ++
-          AbstractExactDelay(annot.end.timepoint, stEnd, annot.end.delta)
+        AbstractExactDelay(annot.start.timepoint, stStart, IntExpression.lit(annot.start.delta)) ++
+          AbstractExactDelay(annot.end.timepoint, stEnd, IntExpression.lit(annot.end.delta))
       case ((AbstractTemporalAnnotation(_, _, "contains"), s:AbstractTransition)) =>
         throw new ANMLException("The contains annotation is not allowed on transitions ")
       case ((AbstractTemporalAnnotation(_, _, "contains"), s:AbstractAssignment)) =>
         throw new ANMLException("The contains annotation is not allowed on assignments ")
       case (AbstractTemporalAnnotation(s,e,"contains"), i) => List(
-        new AbstractMinDelay(s.timepoint, stStart, s.delta), // start(id) >= start+delta
-        new AbstractMinDelay(stEnd, e.timepoint, -e.delta) // end(id) <= end+delta
+        new AbstractMinDelay(s.timepoint, stStart, IntExpression.lit(s.delta)), // start(id) >= start+delta
+        new AbstractMinDelay(stEnd, e.timepoint, IntExpression.lit(-e.delta)) // end(id) <= end+delta
       )
     }
   }
@@ -54,14 +56,15 @@ abstract class AbstractLogStatement(val sv:AbstractParameterizedStateVariable, o
   def bind(context:Context, pb:AnmlProblem, container:Chronicle, refCounter: RefCounter) : LogStatement
 
   def hasConditionAtStart : Boolean
-  def hasEffectAfterEnd : Boolean
+  def hasEffectAtEnd: Boolean
   def conditionValue : LVarRef
   def effectValue : LVarRef
 }
 
 /**
  * Describes an assignment of a state variable to value `statevariable(x, y) := v`
- * @param sv State variable getting the assignment
+  *
+  * @param sv State variable getting the assignment
  * @param value value of the state variable after the assignment
  */
 class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
@@ -75,7 +78,7 @@ class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRe
   override def hasConditionAtStart: Boolean = false
   override def conditionValue: LVarRef = throw new ANMLException("Assignments have conditions at start")
   override def effectValue: LVarRef = value
-  override def hasEffectAfterEnd: Boolean = true
+  override def hasEffectAtEnd: Boolean = true
 }
 
 class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef, val to:LVarRef, id:LStatementRef)
@@ -89,7 +92,7 @@ class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef
   override def hasConditionAtStart: Boolean = true
   override def conditionValue: LVarRef = from
   override def effectValue: LVarRef = to
-  override def hasEffectAfterEnd: Boolean = true
+  override def hasEffectAtEnd: Boolean = true
 }
 
 class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
@@ -103,6 +106,6 @@ class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarR
   override def hasConditionAtStart: Boolean = true
   override def conditionValue: LVarRef = value
   override def effectValue: LVarRef = throw new ANMLException("Persistences have no effects at end")
-  override def hasEffectAfterEnd: Boolean = false
+  override def hasEffectAtEnd: Boolean = false
 }
 

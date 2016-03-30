@@ -45,7 +45,7 @@ public class DijkstraQueue<E extends Identifiable> {
     private void arraySet(int index, int valueID) {
         if(index >= array.length) {
             int[] oldArray = array;
-            this.array = Arrays.copyOf(oldArray, Math.max(oldArray.length, index + 1));
+            this.array = Arrays.copyOf(oldArray, Math.max(oldArray.length*2, index + 1));
             Arrays.fill(this.array, oldArray.length, array.length, -1);
         }
         array[index] = valueID;

@@ -62,7 +62,7 @@ public class MotivatedSupport extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         assert toSupport.mustBeMotivated();
 
         // action that will be decomposed. Either it is already in the plan or we add it now

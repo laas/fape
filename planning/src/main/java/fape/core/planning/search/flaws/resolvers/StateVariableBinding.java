@@ -28,7 +28,7 @@ public class StateVariableBinding extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         st.addUnificationConstraint(a, b);
         return true;
     }

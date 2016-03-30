@@ -5,6 +5,7 @@ import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
 import planstack.anml.model.concrete.RefCounter
 import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
+import planstack.anml.pending.{IntExpression, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 
 object StatementsFactory {
@@ -15,7 +16,7 @@ object StatementsFactory {
         if(nameParts.size == 2 && !pb.instances.containsType(nameParts.head)) {
           // function prefixed with a var/constant.
           // find its type (part of the function name) and add the var as the first argument
-          val headType = context.getType(new LVarRef(nameParts.head))
+          val headType = context.getType(nameParts.head)
           parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         } else if(nameParts .size <= 2) {
           parser.FuncExpr(nameParts, argList)
@@ -40,7 +41,8 @@ object StatementsFactory {
   /**
    * Transforms an annotated statement into its corresponding statement and the temporal constraints that applies
    * to its time-points (derived from the annotation).
-   * @param annotatedStatement Statement (with temporal annotations) to translate
+    *
+    * @param annotatedStatement Statement (with temporal annotations) to translate
    * @param context Context in which the annotated statement appears
    * @param pb Problem in which the statement appears
    * @return An equivalent list of AbstractStatement
@@ -58,7 +60,7 @@ object StatementsFactory {
         (optStatement, constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
-        assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task.")
+        assert(optStatement.nonEmpty, "Temporal annotation on something that is not a statement or a task: "+constraints)
         (optStatement, optStatement.get.getTemporalConstraints(annot) ::: constraints)
       }
     }
@@ -72,15 +74,15 @@ object StatementsFactory {
           val sv = asStateVariable(s.term, context, pb)
           assert(sv.func.valueType == "boolean", "Non-boolean function as a single term statement: "+s)
           if(sv.func.isConstant)
-            (None, List(new AbstractEqualityConstraint(sv, LVarRef("true"), LStatementRef(s.id))))
+            (None, List(new AbstractEqualityConstraint(sv, context.getLocalVar("true"), LStatementRef(s.id))))
           else
-            (Some(new AbstractPersistence(sv, LVarRef("true"), LStatementRef(s.id))), Nil)
+            (Some(new AbstractPersistence(sv, context.getLocalVar("true"), LStatementRef(s.id))), Nil)
         } else {
           // it should be an action, but we can't check since this action might not have been parsed yet
           //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
           val e = normalizeExpr(s.term, context, pb)
-          val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => LVarRef(v.variable)), LActRef(s.id))
-          (Some(task), List(AbstractMinDelay(task.start, task.end, 1)))
+          val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => context.getLocalVar(v.variable)), LActRef(s.id))
+          (Some(task), List(AbstractMinDelay(task.start, task.end, IntExpression.lit(1))))
         }
       }
       case parser.TwoTermsStatement(e1, op, e2, id) => {
@@ -117,7 +119,7 @@ object StatementsFactory {
                 }
                 case e2: VarExpr => {
                   // f(a, b) == c  and f(a, b) != c
-                  val variable = LVarRef(e2.functionName)
+                  val variable = context.getLocalVar(e2.functionName)
                   op.op match {
                     case "==" => (None, List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id))))
                     case "!=" => (None, List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id))))
@@ -143,18 +145,15 @@ object StatementsFactory {
                       else
                         throw new ANMLException("The two state variables have incompatible types: " + sv + " -- " + rightSv)
 
-                    val variable = new LVarRef()
-                    context.addUndefinedVar(variable, sharedType, refCounter)
+                    val variable = context.getNewUndefinedVar(sharedType, refCounter)
                     (None, List(
                       new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
                     ))
                   } else {
                     assert(op.op == "!=", "Unsupported operator in statement: " + statement)
-                    val v1 = new LVarRef()
-                    context.addUndefinedVar(v1, sv.func.valueType, refCounter)
-                    val v2 = new LVarRef()
-                    context.addUndefinedVar(v2, rightSv.func.valueType, refCounter)
+                    val v1 = context.getNewUndefinedVar(sv.func.valueType, refCounter)
+                    val v2 = context.getNewUndefinedVar(rightSv.func.valueType, refCounter)
                     (None, List(
                       new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
                       new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),
@@ -165,7 +164,7 @@ object StatementsFactory {
               }
             } else {
               assert(e2.isInstanceOf[VarExpr], "Compound expression at the right side of a statement: " + statement)
-              val variable = LVarRef(e2.functionName)
+              val variable = context.getLocalVar(e2.functionName)
               assert(pb.instances.isValueAcceptableForType(variable, sv.func.valueType, context),
                 "In the statement: " + statement + ", " + context.getType(variable) + "is not a subtype of " + sv.func.valueType)
 
@@ -182,8 +181,8 @@ object StatementsFactory {
           // a == b or a != b
           assert(e1.isInstanceOf[VarExpr], "Left part is not a variable and was not identified as a function: "+statement)
           assert(e2.isInstanceOf[VarExpr], "Right part is not a variable and was not identified as a function: "+statement)
-          val v1 = LVarRef(e1.functionName)
-          val v2 = LVarRef(e2.functionName)
+          val v1 = context.getLocalVar(e1.functionName)
+          val v2 = context.getLocalVar(e2.functionName)
           op.op match {
             case "==" => (None, List(new AbstractVarEqualityConstraint(v1, v2, LStatementRef(id))))
             case "!=" => (None, List(new AbstractVarInequalityConstraint(v1, v2, LStatementRef(id))))
@@ -197,8 +196,8 @@ object StatementsFactory {
         assert(e3.isInstanceOf[VarExpr], "Compound expression in the right side of a transition: " + statement)
         assert(isStateVariable(e1, context, pb), "Left term does not seem to be a state variable: "+e1)
         val sv = asStateVariable(e1, context, pb)
-        val v1 = LVarRef(e2.functionName)
-        val v2 = LVarRef(e3.functionName)
+        val v1 = context.getLocalVar(e2.functionName)
+        val v2 = context.getLocalVar(e3.functionName)
         val tipe = sv.func.valueType
         assert(pb.instances.isValueAcceptableForType(v1, tipe, context),
           "Type: "+context.getType(v1)+" is not a subtype of "+tipe+

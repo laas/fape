@@ -61,7 +61,7 @@ public class PlanningOptions {
      * In this case, the resolver will not be included (this is beneficial in a least commitment strategy
      * where choice of the flaw is based on the number of its resolvers).
      */
-    public boolean checkUnsolvableThreatsForOpenGoalsResolvers = false;
+    public boolean checkUnsolvableThreatsForOpenGoalsResolvers = true;
 
     /**
      * If true, the planner will use A-Epsilon for search

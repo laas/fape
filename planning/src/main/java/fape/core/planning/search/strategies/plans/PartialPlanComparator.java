@@ -9,10 +9,10 @@ public abstract class PartialPlanComparator implements Comparator<SearchNode>, H
 
     int id = -1;
 
-    abstract String shortName();
+    public abstract String shortName();
 
     /** Gives a human readable string of the metrics used to evaluate a state, and their values. */
-    abstract String reportOnState(State st);
+    public abstract String reportOnState(State st);
 
     public float h(SearchNode sw) {
         if(!sw.isRecordedH(id))

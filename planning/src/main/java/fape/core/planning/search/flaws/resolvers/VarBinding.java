@@ -21,7 +21,7 @@ public class VarBinding extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         List<String> values = new LinkedList<>();
         values.add(value);
         st.restrictDomain(var, values);

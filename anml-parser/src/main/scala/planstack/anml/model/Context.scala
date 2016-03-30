@@ -20,6 +20,7 @@ abstract class AbstractContext {
 
   def parentContext : Option[AbstractContext]
   val variables = mutable.Map[LVarRef, VarRef]()
+  val nameToLocalVar = mutable.Map[String, LVarRef]()
 
   protected val actions = mutable.Map[LActRef, Action]()
   protected val tasks = mutable.Map[LActRef, Task]()
@@ -46,6 +47,16 @@ abstract class AbstractContext {
   def getTimepoint(id: String, refCounter: RefCounter) = {
     assert(id != "start" && id != "end")
     standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
+  }
+
+  def getNewUndefinedVar(typ: String, refCounter: RefCounter) : LVarRef = {
+    var i = 0
+    while(nameToLocalVar.contains("locVar_"+i)) {
+      i += 1
+    }
+    val v = new LVarRef("locVar_"+i, typ)
+    addUndefinedVar(v, typ, refCounter)
+    v
   }
 
   def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter)
@@ -83,7 +94,13 @@ abstract class AbstractContext {
     * @return The type of this local variable. Trows an ANMLException if this variable is
     *         not defined.
     */
-  def getType(localRef:LVarRef) : String = getDefinition(localRef).typ
+  def getType(localRef:LVarRef) : String = {
+    val t = getDefinition(localRef).typ
+    assert(t == localRef.typ)
+    t
+  }
+
+  def getType(localVarName: String) : String = nameToLocalVar(localVarName).typ
 
   /** Looks up the global reference associated to this local variable.
     * 
@@ -102,6 +119,15 @@ abstract class AbstractContext {
   def hasGlobalVar(localRef: LVarRef) : Boolean =
     getDefinition(localRef).nonEmpty
 
+  def getLocalVar(name:String) : LVarRef = {
+    if(nameToLocalVar.contains(name))
+      nameToLocalVar(name)
+    else parentContext match {
+      case Some(parent) => parent.getLocalVar(name)
+      case None => throw new ANMLException("Unable to find variable: "+name)
+    }
+  }
+
   def getLocalVar(globalRef: VarRef) : LVarRef = {
     for((lv, v) <- variables ; if v == globalRef)
       return lv
@@ -114,6 +140,7 @@ abstract class AbstractContext {
 
   def addVar(localName:LVarRef, globalName:VarRef) {
     assert(!variables.contains(localName), "Error: Context already contains local variable: "+localName)
+    nameToLocalVar.put(localName.id, localName)
     variables.put(localName, globalName)
   }
 
@@ -207,6 +234,7 @@ class Context(
 
   override def addUndefinedVar(name: LVarRef, typeName: String, refCounter: RefCounter): Unit = {
     val globalVar = new VarRef(typeName, refCounter)
+    assert(name.typ == typeName)
     addVar(name, globalVar)
     addVarToCreate(globalVar)
   }

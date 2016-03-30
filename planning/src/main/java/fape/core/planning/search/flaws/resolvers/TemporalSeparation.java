@@ -15,7 +15,7 @@ public class TemporalSeparation extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         final Timeline firstDB = st.getTimeline(firstDbID);
         final Timeline secondDB = st.getTimeline(secondDbID);
         assert firstDB != null && secondDB != null;
@@ -29,7 +29,7 @@ public class TemporalSeparation extends Resolver {
                 firstDB.getLastTimePoints(),
                 secondDB.getFirstChange().start()
         );
-        return st.isConsistent();
+        return st.checkConsistency();
     }
 
     @Override

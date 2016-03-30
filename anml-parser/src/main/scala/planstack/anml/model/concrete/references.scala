@@ -55,7 +55,7 @@ object EmptyActRef extends ActRef(NullID)
   * binding constraints).
   * @param id Unique id of the reference.
   */
-class VarRef(id:Int, val typ :String) extends GlobalRef(id) { //TODO: this should be typed
+class VarRef(id:Int, val typ :String) extends GlobalRef(id) {
   def this(typ :String, refCounter: RefCounter) = this(refCounter.nextVar(), typ)
 }
 

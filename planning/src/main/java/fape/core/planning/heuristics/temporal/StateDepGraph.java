@@ -162,16 +162,28 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         // if this was the first propagation, we recreate a core graph containing only possible nodes
-        if(!ancestorGraph.isPresent()) {
+        if(!core.wasReduced) {
             List<RAct> feasibles = earliestAppearances.keySet().stream()
                     .filter(n -> n instanceof RAct)
                     .map(n -> (RAct) n)
                     .collect(Collectors.toList());
             DepGraphCore prevCore = core;
-            core = new DepGraphCore(feasibles, core.store);
+            core = new DepGraphCore(feasibles, true, core.store);
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
             if(APlanner.debugging) {
+                System.out.println(String.format("Initially %d ground actions. Reachability analysis reduced them to %d.",
+                        prevCore.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof RAct)
+                                .map(ract -> ((RAct) ract).act)
+                                .collect(Collectors.toSet())
+                                .size(),
+                        core.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof RAct)
+                                .map(ract -> ((RAct) ract).act)
+                                .collect(Collectors.toSet())
+                                .size()
+                ));
                 String tmpDir = System.getProperty("java.io.tmpdir");
                 String outFile = tmpDir + "/ground-instances.txt";
                 System.out.println("Writing all ground action instances to: "+outFile);

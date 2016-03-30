@@ -74,7 +74,6 @@ public class IRSet<T extends Identifiable> implements Set<T> {
             arr[i++] = o;
         return arr;
     }
-
     @Override
     public <T1> T1[] toArray(T1[] t1s) {
         throw new UnsupportedOperationException("");

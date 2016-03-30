@@ -1,6 +1,7 @@
 package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.planner.APlanner;
+import fape.core.planning.search.strategies.plans.tsp.Htsp;
 import fape.exceptions.FAPEException;
 
 import java.util.LinkedList;
@@ -36,8 +37,18 @@ public class PlanCompFactory {
                 case "rplan":
                     compList.add(new RPGComp(planner));
                     break;
+                case "ord-dec":
+                    compList.add(new OrderedDecompositions());
+                    break;
+                case "tsp":
+                    compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf("tdtg")));
+                    break;
+
                 default:
-                    throw new FAPEException("Unrecognized flaw comparator option: " + compID);
+                    if(compID.startsWith("tsp-"))
+                        compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf(compID.replace("tsp-",""))));
+                    else
+                        throw new FAPEException("Unrecognized plan comparator option: " + compID);
             }
         }
         return new SeqPlanComparator(compList);

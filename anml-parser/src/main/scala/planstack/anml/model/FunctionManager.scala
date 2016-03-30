@@ -84,6 +84,7 @@ class IntFunction(name:String, valueType:String, argTypes:List[String], isConsta
   extends NumFunction(name, valueType, argTypes, isConstant, resourceType)
 {
   assert(valueType == "integer")
+  require(maxValue > Int.MinValue)
 
   def scoped(container : String) : IntFunction =
     new IntFunction(container+"."+name, valueType, container::argTypes, isConstant, minValue, maxValue, resourceType)

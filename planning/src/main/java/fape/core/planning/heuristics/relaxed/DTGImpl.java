@@ -281,9 +281,9 @@ public class DTGImpl {
                         toFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GTransition) gs).to);
 
                     } else {
-                        assert gs instanceof GAction.GAssignement;
+                        assert gs instanceof GAction.GAssignment;
                         fromFluent = null;
-                        toFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GAssignement) gs).to);
+                        toFluent = planner.preprocessor.getFluent(gs.sv, ((GAction.GAssignment) gs).to);
                     }
 
                     if(dtg.hasNode(fromFluent, i)) {

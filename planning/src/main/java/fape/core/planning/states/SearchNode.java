@@ -109,6 +109,8 @@ public class SearchNode {
         }
     }
 
+    public SearchNode getParent() { return parent; }
+
     private State getStateWithID(int id) {
         if(state != null && state.get() != null) {
             // I already my own state, make sure it is up to date and give it away

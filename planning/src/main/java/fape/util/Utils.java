@@ -27,6 +27,11 @@ public class Utils {
         else return o1.equals(o2);
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> asImmutableList(Collection<T> coll) {
+        return Arrays.asList(coll.toArray((T[]) new Object[coll.size()]));
+    }
+
     /**
      * This method tries to find an example of an inconsistent comparison function for flaws.
      * It will exit if a problematic example is found and throw a FAPEException when no example was found.

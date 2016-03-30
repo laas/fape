@@ -4,6 +4,7 @@ package fape.core.planning.heuristics.temporal;
 import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
+import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.states.SearchNode;
 import fape.core.planning.timelines.Timeline;
@@ -20,14 +21,14 @@ import planstack.constraints.bindings.Domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DGHandler implements fape.core.planning.search.Handler {
+public class DGHandler extends fape.core.planning.search.Handler {
 
     @Override
     public void stateBindedToPlanner(State st, APlanner pl) {
         assert !st.hasExtension(DepGraphCore.StateExt.class);
 
         // init the core of the dependency graph
-        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), pl.preprocessor.store);
+        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), false, pl.preprocessor.store);
         st.addExtension(new DepGraphCore.StateExt(core));
 
         // Record ground action ids as possible values for variables in the CSP
@@ -70,16 +71,16 @@ public class DGHandler implements fape.core.planning.search.Handler {
             taskInserted(t, st, pl);
 
         // trigger propagation of constraint networks
-        st.isConsistent();
+        st.checkConsistency();
+        propagateNetwork(st, pl);
+        st.checkConsistency();
     }
 
     @Override
-    public void apply(SearchNode searchNode, StateLifeTime time, APlanner planner) {
-        searchNode.addOperation(st -> {
-            if (time == StateLifeTime.SELECTION) {
-                propagateNetwork(st, planner);
-            }
-        });
+    protected void apply(State st, StateLifeTime time, APlanner planner) {
+        if (time == StateLifeTime.SELECTION) {
+            propagateNetwork(st, planner);
+        }
     }
 
     @Override
@@ -96,7 +97,7 @@ public class DGHandler implements fape.core.planning.search.Handler {
         }
 
         // Variable representing the ground versions of this action
-        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(addableActions(st, pl).toBitSet()));
+        st.csp.bindings().addIntVariable(act.instantiationVar(), new Domain(st.addableActions.toBitSet()));
         values.add(act.instantiationVar());
         st.addValuesSetConstraint(values, act.abs().name());
 
@@ -136,11 +137,22 @@ public class DGHandler implements fape.core.planning.search.Handler {
         final Preprocessor pp = st.pl.preprocessor;
         final GroundProblem gpb = pp.getGroundProblem();
 
-        List<TempFluent> tempFluents = gpb.tempsFluents(st).stream()
+        List<TempFluent> tempFluents = new ArrayList<>();
+        // gather all fluents appearing in the partial plan
+        // those fluents can not be used to support changes
+        gpb.tempsFluents(st).stream()
                 .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
                         st.getEarliestStartTime(tfs.timepoints.iterator().next()),
-                        TempFluent.DGFluent.from(f, pp.store))))
-                .collect(Collectors.toList());
+                        TempFluent.DGFluent.getBasicFluent(f, pp.store))))
+                .forEach(tempFluents::add);
+
+        // gather all fluents achieved and not involved in any causal link
+        // those cn be used to support transitions
+        gpb.tempsFluentsThatCanSupportATransition(st).stream()
+                .flatMap(tfs -> tfs.fluents.stream().map(f -> new TempFluent(
+                        st.getEarliestStartTime(tfs.timepoints.iterator().next()),
+                        TempFluent.DGFluent.getFluentWithChange(f, pp.store))))
+                .forEach(tempFluents::add);
 
         Set<TempFluent> tasks = new HashSet<>();
         for(Task t : st.getOpenTasks()) {
@@ -156,14 +168,15 @@ public class DGHandler implements fape.core.planning.search.Handler {
         allFacts.addAll(tasks);
 
         // create new graph from the core graph (actions) and the facts
-        StateDepGraph graph = new StateDepGraph(ext.core, allFacts, pl);
+        StateDepGraph graph = new StateDepGraph(ext.getCoreGraph(), allFacts, pl);
         ext.currentGraph = graph;
         graph.propagate(ext.prevGraph);
 
-        if(pp.allFluents == null) {
-            pp.allFluents = new IRSet<>(pp.store.getIntRep(Fluent.class));
+        if(!pp.fluentsInitialized()) {
+            IRSet<Fluent> fluents = new IRSet<>(pp.store.getIntRep(Fluent.class));
             for(Fluent f : graph.fluentsEAs.keys())
-                pp.allFluents.add(f);
+                fluents.add(f);
+            pp.setPossibleFluents(fluents);
         }
 
         // unsupporting actions // TODO: shouldn't those be in the graph as well
@@ -213,30 +226,29 @@ public class DGHandler implements fape.core.planning.search.Handler {
         // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
             int latest = st.getLatestStartTime(og.getConsumeTimePoint());
+            int earliest = st.getEarliestStartTime(og.getConsumeTimePoint());
             boolean doable = false;
+            int optimisticEarliestTime = Integer.MAX_VALUE;
             for(Fluent f : DisjunctiveFluent.fluentsOf(og.stateVariable, og.getGlobalConsumeValue(), st, pl)) {
-                TempFluent.DGFluent dgf = TempFluent.DGFluent.from(f, graph.core.store);
-                if(graph.earliestAppearances.containsKey(dgf) && graph.earliestAppearances.get(dgf) <= latest) {
+                TempFluent.DGFluent dgf;
+                if(og.hasSinglePersistence())
+                    dgf = TempFluent.DGFluent.getBasicFluent(f, graph.core.store);
+                else
+                    dgf = TempFluent.DGFluent.getFluentWithChange(f, graph.core.store);
+                final int ea = graph.earliestAppearances.containsKey(dgf) ? graph.earliestAppearances.get(dgf) : Integer.MAX_VALUE;
+                if (ea  <= latest)
                     doable = true;
-                    break;
-                }
+                if(optimisticEarliestTime > ea)
+                    optimisticEarliestTime = ea;
             }
             if(!doable)
+                // at least one open goal is not achievable
                 st.setDeadEnd();
+            else if(earliest < optimisticEarliestTime)
+                // push back in time we had a too optimistic value
+                st.enforceDelay(st.pb.start(), og.getConsumeTimePoint(), optimisticEarliestTime);
         }
 
-        st.isConsistent();
-    }
-
-    /**
-     * Returns all addable actions: either the ones from the dependency graph if they were computed, or the ones
-     * from preprocessing (i.e. without reachability analysis)
-     */
-    private static IRSet<GAction> addableActions(State st, APlanner pl) {
-        if(st.getExtension(DepGraphCore.StateExt.class).currentGraph != null)
-            return st.getExtension(DepGraphCore.StateExt.class).currentGraph.addableActs;
-        else
-            return new IRSet<GAction>(pl.preprocessor.store.getIntRep(GAction.class), pl.preprocessor.getAllActions().toBitSet());
-
+        st.checkConsistency();
     }
 }

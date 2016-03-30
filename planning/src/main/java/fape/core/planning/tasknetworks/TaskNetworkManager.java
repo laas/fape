@@ -244,6 +244,14 @@ public class TaskNetworkManager implements Reporter {
         clearCache();
     }
 
+    public boolean isDescendantOf(Action child, Task potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
+    }
+
+    public boolean isDescendantOf(Task child, Task potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
+    }
+
     public boolean isDescendantOf(Action child, Action potentialAncestor) {
         return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
     }

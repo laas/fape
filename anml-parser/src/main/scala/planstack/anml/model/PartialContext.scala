@@ -7,6 +7,8 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
   def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter = null) {
     assert(!variables.contains(name), "Local variable already defined: "+name)
+    nameToLocalVar.put(name.id, name)
+    assert(name.typ == typeName)
     variables.put(name, new EmptyVarRef(typeName))
   }
 
@@ -22,10 +24,10 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    */
   def getNewLocalVar(tipe:String) : LVarRef = {
     var i = 0
-    var lVarRef = new LVarRef("locVar_"+i)
+    var lVarRef = new LVarRef("locVar_"+i, tipe)
     while(contains(lVarRef)) {
       i += 1
-      lVarRef = new LVarRef("locVar_"+i)
+      lVarRef = new LVarRef("locVar_"+i, tipe)
     }
     addUndefinedVar(lVarRef, tipe)
     lVarRef

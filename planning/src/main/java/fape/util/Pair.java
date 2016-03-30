@@ -17,5 +17,5 @@ import lombok.Data;
         return "["+value1 + ","+value2+"]";
     }
     
-    
+    public static <T,V> Pair<T,V> pair(T v1, V v2) { return new Pair<>(v1,v2); }
 }

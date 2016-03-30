@@ -21,7 +21,7 @@ public class SupportingTaskDecomposition extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
         // create a new action with the same args as the condition
         Action act = Factory.getInstantiatedAction(st.pb, abs, task.args(), st.refCounter);
         st.insert(act);
@@ -29,7 +29,7 @@ public class SupportingTaskDecomposition extends Resolver {
         // enforce equality of time points and add support to task network
         st.addSupport(task, act);
 
-        // make sure this open goal can a=only be solved by a statement from this action or one of its child
+        // make sure this open goal can only be solved by a statement from this action or one of its child
         st.addSupportConstraint(tl.getFirst(), act);
         throw new UnsupportedOperationException("Not supported yet.");
     }

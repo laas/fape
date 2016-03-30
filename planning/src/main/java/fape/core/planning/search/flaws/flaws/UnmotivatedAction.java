@@ -1,7 +1,7 @@
 package fape.core.planning.search.flaws.flaws;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.preprocessing.TaskDecompositions;
+import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -53,11 +53,11 @@ public class UnmotivatedAction extends Flaw {
                 resolvers.add(new ExistingTaskSupporter(task, act));
         }
 
-        TaskDecompositions preproc = new TaskDecompositions(st.pb);
+        TaskDecompositionsReasoner preproc = st.pl.preprocessor.getTaskDecompositionsReasoner();
 
         // resolvers: any action we add to the plan and that might provide (through decomposition)
         // a task condition
-        for(Pair<AbstractAction, LActRef> insertion : preproc.supporterForMotivatedAction(act)) {
+        for(Pair<AbstractAction, LActRef> insertion : preproc.supportersForMotivatedAction(act)) {
             if(st.isAddable(insertion.value1))
                 resolvers.add(new MotivatedSupport(act, insertion.value1, insertion.value2));
         }

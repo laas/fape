@@ -70,7 +70,12 @@ public class EffSet<T> implements Set<T> {
 
     @Override
     public Object[] toArray() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        Object[] arr = new Object[size()];
+        int i = 0;
+        for(T o : this) {
+            arr[i++] = o;
+        }
+        return arr;
     }
 
     @Override

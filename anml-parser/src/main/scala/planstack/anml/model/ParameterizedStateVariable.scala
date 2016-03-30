@@ -1,6 +1,9 @@
 package planstack.anml.model
 
+import java.util
+
 import planstack.anml.model.concrete.VarRef
+import planstack.anml.parser.VarExpr
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -18,6 +21,12 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   def isResource = func.isInstanceOf[NumFunction]
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+
+  override def hashCode() = func.hashCode() + 59 * args.hashCode()
+  override def equals(o: Any) : Boolean = o match {
+    case sv: AbstractParameterizedStateVariable => func == sv.func && args == sv.args
+    case _ => false
+  }
 }
 
 /** A state variable parameterized with variables.
@@ -32,6 +41,12 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
   def arg(i: Int) : VarRef = args(i)
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+  override lazy val hashCode = func.hashCode() + 59 * util.Arrays.asList(args).hashCode()
+  override def equals(o: Any) = o match {
+    case sv: ParameterizedStateVariable =>
+      func == sv.func && args.indices.forall(i => args(i) == sv.args(i))
+    case _ => false
+  }
 }
 
 object AbstractParameterizedStateVariable {
@@ -44,7 +59,7 @@ object AbstractParameterizedStateVariable {
           parser.FuncExpr(nameParts, argList)
         } else {
           assert(nameParts.tail.length == 1, "Does not seem to be a valid function: "+expr)
-          val headType = context.getType(new LVarRef(nameParts.head))
+          val headType = context.getType(nameParts.head)
           parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
         }
       }
@@ -58,7 +73,7 @@ object AbstractParameterizedStateVariable {
       }
       case parser.NumExpr(_) => throw new ANMLException("Cannot build a state variable from a numeric expression: "+expr)
     }
-    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(e => new LVarRef(e.variable)))
+    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(a => context.getLocalVar(a.variable)))
   }
 
 }

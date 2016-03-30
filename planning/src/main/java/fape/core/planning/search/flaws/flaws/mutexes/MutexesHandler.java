@@ -5,7 +5,6 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
-import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.util.Pair;
@@ -17,7 +16,7 @@ import planstack.anml.model.concrete.InstanceRef;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MutexesHandler implements Handler {
+public class MutexesHandler extends Handler {
 
     static boolean debug = false;
 
@@ -37,7 +36,7 @@ public class MutexesHandler implements Handler {
         }
 
         @Override
-        public StateExtension clone() {
+        public StateExtension clone(State st) {
             return this;
         }
     }
@@ -109,7 +108,7 @@ public class MutexesHandler implements Handler {
                     simultaneousProductions.add(new Pair<>(p,q));
 
         for(GAction ga : pp.getAllActions()) {
-            for(Map.Entry<Fluent,List<Fluent>> e : ga.concurrentValuesOnAchievements(planner).entrySet()) {
+            for(Map.Entry<Fluent,List<Fluent>> e : ga.concurrentChanges(planner).entrySet()) {
                 Fluent p = e.getKey();
                 List<Fluent> qs = e.getValue();
                 IRSet<Fluent> localMutexes = new IRSet<>(fluentRep);
@@ -196,24 +195,27 @@ public class MutexesHandler implements Handler {
 
         for(Fluent p : pp.getGroundProblem().allFluents(st)) {
             for(Fluent q : pp.getGroundProblem().allFluents(st)) {
-                assert !mutexes.get(p).contains(q);
+                if(p.sv == q.sv && p.value != q.value) {
+                    // we are sure of this mutex, it must be timed initial literals
+                } else {
+                    assert !mutexes.get(p).contains(q) : "Those two are mutex but both in the state definition:" +
+                            p + " and " + q;
+                }
             }
         }
     }
 
     @Override
-    public void apply(SearchNode n, StateLifeTime time, APlanner planner) {
+    protected void apply(State st, StateLifeTime time, APlanner planner) {
         this.planner = planner;
-        n.addOperation(st -> {
-            if (time == StateLifeTime.SELECTION) {
-                if (!st.hasExtension(Ext.class)) {
-                    getMutexes(st);
+        if (time == StateLifeTime.SELECTION) {
+            if (!st.hasExtension(Ext.class)) {
+                getMutexes(st);
 
-                    Ext ext = new Ext();
-                    st.addExtension(ext);
-                }
+                Ext ext = new Ext();
+                st.addExtension(ext);
             }
-        });
+        }
     }
 
     @Override
