@@ -172,6 +172,18 @@ public class StateDepGraph implements DependencyGraph {
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
             if(APlanner.debugging) {
+                System.out.println(String.format("Initially %d ground actions. Reachability analysis reduced them to %d.",
+                        prevCore.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof RAct)
+                                .map(ract -> ((RAct) ract).act)
+                                .collect(Collectors.toSet())
+                                .size(),
+                        core.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof RAct)
+                                .map(ract -> ((RAct) ract).act)
+                                .collect(Collectors.toSet())
+                                .size()
+                ));
                 String tmpDir = System.getProperty("java.io.tmpdir");
                 String outFile = tmpDir + "/ground-instances.txt";
                 System.out.println("Writing all ground action instances to: "+outFile);
