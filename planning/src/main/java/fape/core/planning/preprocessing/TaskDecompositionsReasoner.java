@@ -16,7 +16,7 @@ import java.util.*;
  *
  * In the current state, no preprocessing is done and analyse is repeated on every method invocation.
  */
-public class TaskDecompositions {
+public class TaskDecompositionsReasoner {
 
     final AnmlProblem pb;
 
@@ -24,7 +24,7 @@ public class TaskDecompositions {
      * Creates a new ActionDecompositions tied to an AnmlProblem
      * @param pb Problem to be inspected.
      */
-    public TaskDecompositions(AnmlProblem pb) {
+    TaskDecompositionsReasoner(AnmlProblem pb) {
         this.pb = pb;
     }
 
@@ -76,7 +76,7 @@ public class TaskDecompositions {
      * The actRef gives the ID of a task condition that is approprate to support a.
      * @param a An action that need support (it is motivated and must be part of decomposition)
      */
-    public List<Pair<AbstractAction, LActRef>> supporterForMotivatedAction(Action a) {
+    public List<Pair<AbstractAction, LActRef>> supportersForMotivatedAction(Action a) {
         List<Pair<AbstractAction, LActRef>> supporters = new LinkedList<>();
         for(AbstractAction abs : pb.abstractActions()) {
             for(AbstractTask actRef : abs.jSubTasks()) {

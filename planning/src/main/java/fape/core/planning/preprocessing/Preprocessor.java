@@ -66,6 +66,10 @@ public class Preprocessor {
         return fr;
     }
 
+    public TaskDecompositionsReasoner getTaskDecompositionsReasoner() {
+        return new TaskDecompositionsReasoner(planner.pb);
+    }
+
     public GroundProblem getGroundProblem() {
         if(gPb == null) {
             gPb = new GroundProblem(initialState.pb, planner);

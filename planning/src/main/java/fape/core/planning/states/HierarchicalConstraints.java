@@ -1,28 +1,31 @@
 package fape.core.planning.states;
 
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.tasknetworks.TNNode;
+import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.statements.LogStatement;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class HierarchicalConstraints implements StateExtension {
 
     private final Map<Integer, Task> timelineSupportConstraints;
     private final State st;
+    private final Map<Task, Set<AbstractAction>> possibleRefinements;
 
     public HierarchicalConstraints(State st) {
         this.st = st;
         timelineSupportConstraints = new HashMap<>();
+        possibleRefinements = new HashMap<>();
     }
 
     public HierarchicalConstraints(HierarchicalConstraints toCopy, State st) {
         this.st = st;
         timelineSupportConstraints = new HashMap<>(toCopy.timelineSupportConstraints);
+        possibleRefinements = new HashMap<>(toCopy.possibleRefinements);
     }
 
     public boolean isConstrained(Timeline tl) {
@@ -33,6 +36,21 @@ public class HierarchicalConstraints implements StateExtension {
         assert !isConstrained(consumer) || st.taskNet.isSupported(timelineSupportConstraints.get(consumer.mID));
         st.enforceStrictlyBefore(task.start(), consumer.getConsumeTimePoint());
         timelineSupportConstraints.put(consumer.mID, task);
+
+        // all actions with a statements affecting this state variable of the consumer
+        Collection<AbstractAction> potentiallySupportingAction =
+                st.pl.getActionSupporterFinder().getActionsSupporting(st, consumer).stream()
+                .map(x -> x.absAct)
+                .collect(Collectors.toSet());
+
+        Collection<AbstractAction> decs = st.pl.preprocessor.getTaskDecompositionsReasoner()
+                .possibleMethodsToDeriveTargetActions(task, potentiallySupportingAction);
+
+        HashSet<AbstractAction> possibleSupportersForTask = new HashSet<>(decs);
+        possibleSupportersForTask.retainAll(getPossibleRefinements(task));
+
+        if(possibleSupportersForTask.size() < getPossibleRefinements(task).size())
+            possibleRefinements.put(task, Collections.unmodifiableSet(possibleSupportersForTask));
     }
 
     public boolean isValidSupport(LogStatement supporter, Timeline consumer) {
@@ -61,6 +79,10 @@ public class HierarchicalConstraints implements StateExtension {
             return !st.taskNet.isSupported(timelineSupportConstraints.get(consumer.mID));
         else
             return false;
+    }
+
+    public Set<AbstractAction> getPossibleRefinements(Task t) {
+        return possibleRefinements.computeIfAbsent(t, task -> Collections.unmodifiableSet(new HashSet<>(st.pb.getSupportersForTask(task.name()))));
     }
 
     @Override

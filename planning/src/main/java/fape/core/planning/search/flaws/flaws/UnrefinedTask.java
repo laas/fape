@@ -19,11 +19,11 @@ import java.util.List;
  *  - unification with an existing action
  *  - insertion of a new action to support it
  */
-public class UnsupportedTask extends Flaw {
+public class UnrefinedTask extends Flaw {
 
     public final Task task;
 
-    public UnsupportedTask(Task ac) { task = ac; }
+    public UnrefinedTask(Task ac) { task = ac; }
 
     @Override
     public List<Resolver> getResolvers(State st, APlanner planner) {
@@ -33,7 +33,7 @@ public class UnsupportedTask extends Flaw {
         resolvers = new LinkedList<>();
 
         // inserting a new action is always a resolver.
-        for(AbstractAction abs : st.pb.getSupportersForTask(task.name()))
+        for(AbstractAction abs : st.getHierarchicalConstraints().getPossibleRefinements(task))
             if(st.isAddable(abs))
                 resolvers.add(new NewTaskSupporter(task, abs));
 
@@ -49,7 +49,7 @@ public class UnsupportedTask extends Flaw {
 
     @Override
     public int compareTo(Flaw o) {
-        assert o instanceof UnsupportedTask;
-        return ((UnsupportedTask) o).task.start().id() - task.start().id();
+        assert o instanceof UnrefinedTask;
+        return ((UnrefinedTask) o).task.start().id() - task.start().id();
     }
 }

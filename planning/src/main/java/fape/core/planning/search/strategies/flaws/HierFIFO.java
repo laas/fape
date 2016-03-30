@@ -2,8 +2,7 @@ package fape.core.planning.search.strategies.flaws;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnmotivatedAction;
-import fape.core.planning.search.flaws.flaws.UnsupportedTask;
+import fape.core.planning.search.flaws.flaws.UnrefinedTask;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Task;
 
@@ -27,10 +26,10 @@ public class HierFIFO implements FlawComparator {
     }
 
     private int priority(Flaw flaw) {
-        if(!(flaw instanceof UnsupportedTask))
+        if(!(flaw instanceof UnrefinedTask))
             return 99999;
 
-        UnsupportedTask ut = (UnsupportedTask) flaw;
+        UnrefinedTask ut = (UnrefinedTask) flaw;
         final int depth = st.getDepth();
         return encounterDepth.computeIfAbsent(ut.task, task -> depth);
     }

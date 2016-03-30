@@ -705,7 +705,7 @@ public class State implements Reporter {
     public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
         assert pl.isTopDownOnly();
         if (f instanceof Threat || f instanceof UnboundVariable ||
-                f instanceof ResourceFlaw || f instanceof UnsupportedTask || f instanceof UnmotivatedAction) {
+                f instanceof ResourceFlaw || f instanceof UnrefinedTask || f instanceof UnmotivatedAction) {
             return opts;
         } else if (f instanceof UnsupportedTimeline) {
             Action requiredAncestor = getSupportConstraint(((UnsupportedTimeline) f).consumer);

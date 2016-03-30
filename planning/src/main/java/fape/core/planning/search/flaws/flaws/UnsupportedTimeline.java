@@ -1,36 +1,25 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.grounding.DisjunctiveFluent;
-import fape.core.planning.grounding.Fluent;
-import fape.core.planning.grounding.GAction;
-import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
-import fape.core.planning.preprocessing.TaskDecompositions;
-import fape.core.planning.preprocessing.dtg.TemporalDTG;
+import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
 import fape.core.planning.search.flaws.resolvers.*;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
-import planstack.anml.model.Context;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
-import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
-import planstack.anml.model.abs.statements.AbstractTransition;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public class UnsupportedTimeline extends Flaw {
 
@@ -136,7 +125,7 @@ public class UnsupportedTimeline extends Flaw {
             //they are those that I can find in the virtual decomposition tree
             //first get the action names from the abstract dtgs
             ActionSupporterFinder supporters = planner.getActionSupporterFinder();
-            TaskDecompositions decompositions = new TaskDecompositions(st.pb);
+            TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
 
             // a list of (abstract-action, decompositionID) of supporters
             Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
@@ -158,7 +147,7 @@ public class UnsupportedTimeline extends Flaw {
 
         if(AbstractAction.allActionsAreMotivated()) {
             ActionSupporterFinder supporters = planner.getActionSupporterFinder();
-            TaskDecompositions decompositions = new TaskDecompositions(st.pb);
+            TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
 
             // a list of (abstract-action, decompositionID) of supporters
             Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);

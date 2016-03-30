@@ -2,7 +2,7 @@ package fape.core.planning.search.flaws.finders;
 
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.search.flaws.flaws.Flaw;
-import fape.core.planning.search.flaws.flaws.UnsupportedTask;
+import fape.core.planning.search.flaws.flaws.UnrefinedTask;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Task;
 
@@ -15,7 +15,7 @@ public class UnsupportedTaskConditionFinder implements FlawFinder {
         List<Flaw> flaws = new LinkedList<>();
 
         for(Task ac : st.getOpenTasks())
-            flaws.add(new UnsupportedTask(ac));
+            flaws.add(new UnrefinedTask(ac));
 
         return flaws;
     }
