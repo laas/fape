@@ -180,6 +180,8 @@ public abstract class APlanner {
             if (currentMaxDepth == Integer.MAX_VALUE) // make sure we don't overflow
                 break;
             currentMaxDepth += 1;
+            if (debugging && incrementalDeepening)
+                System.out.println("Current max depth: "+currentMaxDepth+". Expanded nodes: "+expandedStates);
         }
         return solution;
     }
