@@ -6,21 +6,21 @@ type loc;
 
 constant boolean connected(loc l1, loc l2);
 
-action go(rover r,loc l) {
-  motivated;
-  :decomposition {
-    [all] r.at == l;
-  };
-  :decomposition {
-    constant loc l1;
-    [start+1,end] contains g:go(r,l1);
-    [end(g),end] contains m: move(r, l1,l);
-  };
-};
+// action go(rover r,loc l) {
+//   motivated;
+//   :decomposition {
+//     [all] r.at == l;
+//   };
+//   :decomposition {
+//     constant loc l1;
+//     [start+1,end] contains g:go(r,l1);
+//     [end(g),end] contains m: move(r, l1,l);
+//   };
+// };
 
 
 action move(rover r, loc l1, loc l2) {
-  motivated;
+//  motivated;
   duration := 10;
   [all] r.at == l1 :-> l2;
   connected(l1,l2);
@@ -38,10 +38,11 @@ connected(d0,d1) := true;
 connected(d1,d0) := true;
 connected(d2,d1) := true;
 connected(d1,d2) := true;
+
 connected(d3,d4) := true;
 connected(d4,d3) := true;
 
 
 constant rover r;
-[all] contains go(r, d1);
+//[all] contains go(r, d1);
 

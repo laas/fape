@@ -8,6 +8,7 @@ import lombok.Value;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.time.AbsTP;
+import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.pending.IntExpression;
 import planstack.anml.pending.IntLiteral;
@@ -44,12 +45,16 @@ import java.util.stream.Collectors;
                 GStateVariable sv = store.getGStateVariable(ft.sv.func(), args);
                 Fluent f = store.getFluent(sv, container.valueOf(ft.value, pb));
                 return (SVFluentWithChange) store.get(SVFluentWithChange.class, Collections.singletonList(f));
-            } else {
+            } else if(template instanceof DeleteFreeActionsFactory.TaskFluentTemplate){
                 DeleteFreeActionsFactory.TaskFluentTemplate tft = (DeleteFreeActionsFactory.TaskFluentTemplate) template;
                 List<InstanceRef> args = new ArrayList<>();
                 for(LVarRef lArg : tft.args)
                     args.add(container.valueOf(lArg, pb));
                 return (TaskPropFluent) store.get(TaskPropFluent.class, Arrays.asList(tft.prop, store.getTask(tft.taskName, args)));
+            } else if(template instanceof DeleteFreeActionsFactory.ActionPossibleTemplate) {
+                return (ActionPossible) store.get(ActionPossible.class, Collections.singletonList(container));
+            } else {
+                throw new FAPEException("Unsupported template: "+template);
             }
         }
 
@@ -69,6 +74,9 @@ import java.util.stream.Collectors;
         public final AbsTP tp;
         @ValueConstructor @Deprecated
         public ActEndFluent(GAction act, AbsTP tp) { this.act = act; this.tp = tp; }
+
+        @Override
+        public String toString() { return "Subaction-startable: "+act.toString()+"__"+tp; }
     }
     /** A fluent that is part of a causal link (can only support persistences) */
     @Ident(DependencyGraph.Node.class) public static class SVFluent extends DGFluent {
@@ -94,6 +102,13 @@ import java.util.stream.Collectors;
         @ValueConstructor @Deprecated
         public TaskPropFluent(String prop, GTask task) { this.proposition = prop; this.task = task; }
         public String toString() { return proposition+"("+task+")"; }
+    }
+
+    @Ident(DependencyGraph.Node.class)
+    public static class ActionPossible extends DGFluent {
+        public final GAction action;
+        @ValueConstructor @Deprecated
+        public ActionPossible(GAction action) { this.action = action; }
     }
 
     public final int time;

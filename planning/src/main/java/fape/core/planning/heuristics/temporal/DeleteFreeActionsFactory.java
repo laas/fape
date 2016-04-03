@@ -37,6 +37,8 @@ public class DeleteFreeActionsFactory {
         public final RActTemplate act;
         @Override public String toString() { return "startable-act: "+act; }
     }
+    @Value class ActionPossibleTemplate implements FluentTemplate {
+    }
     @Value class TaskFluentTemplate implements FluentTemplate {
         public final String prop;
         public final String taskName;
@@ -93,9 +95,6 @@ public class DeleteFreeActionsFactory {
             Collections.sort(conditions, (p1, p2) -> p1.time.compareTo(p2.time));
         }
 
-//        public void addEffect(AbstractParameterizedStateVariable sv, LVarRef var, int time) {
-//            addEffect(new SVFluentTemplate(sv, var), time);
-//        }
         public void addEffect(FluentTemplate ft, int time) {
             addEffect(new TempFluentTemplate(ft, time));
         }
@@ -189,11 +188,11 @@ public class DeleteFreeActionsFactory {
         int startDelay = -relativeTimeOf(abs.start(), abs);
         templates.get(startAnchor).addEffect(new TaskFluentTemplate("started", abs.taskName(), abs.args()), startDelay);
 
-        // add end of action fluent
+        // add end of action fluents
         AbsTP endAnchor = anchorOf(abs.end(), abs);
         int endDelay = -relativeTimeOf(abs.end(), abs);
         templates.get(endAnchor).addEffect(new TaskFluentTemplate("ended", abs.taskName(), abs.args()), endDelay+1);
-
+        templates.get(endAnchor).addEffect(new ActionPossibleTemplate(), endDelay+1);
         if(abs.mustBeMotivated()) {
             templates.get(startAnchor).addCondition(new TaskFluentTemplate("task", abs.taskName(), abs.args()), startDelay);
         }
@@ -243,11 +242,19 @@ public class DeleteFreeActionsFactory {
             default:
                 throw new FAPEException("Invalid dependency graph style: "+pl.options.depGraphStyle);
         }
+        if(dbg) {
+            System.out.println("\n-----------------\n");
+            System.out.println("Before preprocessing: ");
+            for (RActTemplate at : templates.values()) {
+                System.out.println(at.toStringDetailed());
+            }
+        }
+
         List<RActTemplate> rActTemplates = pp.postProcess(templates.values());
 
 
         if(dbg) {
-            System.out.println("\n-----------------\n");
+            System.out.println("\nAfter preprocessing");
             for (RActTemplate at : rActTemplates) {
                 System.out.println(at.toStringDetailed());
             }

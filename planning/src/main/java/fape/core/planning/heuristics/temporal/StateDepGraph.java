@@ -147,10 +147,10 @@ public class StateDepGraph implements DependencyGraph {
         addableActs = new IRSet<>(core.store.getIntRep(GAction.class));
         fluentsEAs = new IR2IntMap<>(core.store.getIntRep(Fluent.class));
         for(Node n : earliestAppearances.keys()) {
-            if (n instanceof RAct) {
-                addableActs.add(((RAct) n).getAct());
-            } else if(n instanceof TempFluent.SVFluent) {
+            if(n instanceof TempFluent.SVFluent) {
                 fluentsEAs.put(((TempFluent.SVFluent) n).fluent, earliestAppearances.get(n));
+            } else if(n instanceof TempFluent.ActionPossible) {
+                addableActs.add(((TempFluent.ActionPossible) n).action);
             }
         }
 
@@ -174,13 +174,13 @@ public class StateDepGraph implements DependencyGraph {
             if(APlanner.debugging) {
                 System.out.println(String.format("Initially %d ground actions. Reachability analysis reduced them to %d.",
                         prevCore.getDefaultEarliestApprearances().keySet().stream()
-                                .filter(node -> node instanceof RAct)
-                                .map(ract -> ((RAct) ract).act)
+                                .filter(node -> node instanceof TempFluent.ActionPossible)
+                                .map(a -> ((TempFluent.ActionPossible) a).action)
                                 .collect(Collectors.toSet())
                                 .size(),
                         core.getDefaultEarliestApprearances().keySet().stream()
-                                .filter(node -> node instanceof RAct)
-                                .map(ract -> ((RAct) ract).act)
+                                .filter(node -> node instanceof TempFluent.ActionPossible)
+                                .map(a -> ((TempFluent.ActionPossible) a).action)
                                 .collect(Collectors.toSet())
                                 .size()
                 ));
