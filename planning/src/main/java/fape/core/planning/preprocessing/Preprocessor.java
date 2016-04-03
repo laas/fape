@@ -91,6 +91,11 @@ public class Preprocessor {
         return allActions;
     }
 
+    public void restrictPossibleActions(EffSet<GAction> actions) {
+        assert allActions != null;
+        allActions = actions.clone();
+    }
+
     public boolean fluentsInitialized() { return allFluents != null; }
 
     public void setPossibleFluents(IRSet<Fluent> fluents) {

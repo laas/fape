@@ -275,6 +275,11 @@ public abstract class APlanner {
 
         assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
+        if(st.getDepth() == 0 && st.getState().addableActions != null) {
+            assert st.getState().getAllActions().isEmpty();
+            preprocessor.restrictPossibleActions(st.getState().addableActions);
+        }
+
         numExpandedStates++;
 
         TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
