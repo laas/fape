@@ -14,7 +14,6 @@ import fape.util.Configuration;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.abs.AbstractAction;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
@@ -292,7 +291,6 @@ public class Planning {
                 final AnmlProblem pb = new AnmlProblem();
                 try {
                     pb.extendWithAnmlFile(anmlFile);
-
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.err.println("Problem with ANML file: " + anmlFile);
@@ -335,6 +333,11 @@ public class Planning {
                 }
 
                 if (!failure && !config.getBoolean("quiet")) {
+                    System.out.println("Expanded states: "+planner.numExpandedStates);
+                    System.out.println("Generated states: "+planner.numGeneratedStates);
+                    System.out.println("Fast-Forwarded states: "+planner.numFastForwardedStates);
+                    System.out.println("Num ground actions after analysis:"+planner.preprocessor.getAllActions().size());
+                    System.out.println();
                     System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
                 }
@@ -349,9 +352,9 @@ public class Planning {
                                 + time + ", "
                                 + planningTime + ", "
                                 + anmlFile + ", "
-                                + planner.expandedStates + ", "
-                                + planner.GeneratedStates + ", "
-                                + planner.numFastForwarded + ", "
+                                + planner.numExpandedStates + ", "
+                                + planner.numGeneratedStates + ", "
+                                + planner.numFastForwardedStates + ", "
                                 + (failure ? "-" : sol.getDepth()) + ", "
                                 + Utils.print(planner.options.flawSelStrategies, ":") + ", "
                                 + Utils.print(planner.options.planSelStrategies, ":") + ", "

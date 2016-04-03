@@ -76,9 +76,9 @@ public abstract class APlanner {
     public static boolean debugging = false;
     public final static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
-    public int GeneratedStates = 1; //count the initial state
-    public int expandedStates = 0;
-    public int numFastForwarded = 0;
+    public int numGeneratedStates = 1; //count the initial state
+    public int numExpandedStates = 0;
+    public int numFastForwardedStates = 0;
 
     public final Controllability controllability;
 
@@ -181,7 +181,7 @@ public abstract class APlanner {
                 break;
             currentMaxDepth += 1;
             if (debugging && incrementalDeepening)
-                System.out.println("Current max depth: "+currentMaxDepth+". Expanded nodes: "+expandedStates);
+                System.out.println("Current max depth: "+currentMaxDepth+". Expanded nodes: "+ numExpandedStates);
         }
         return solution;
     }
@@ -275,7 +275,7 @@ public abstract class APlanner {
 
         assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
-        expandedStates++;
+        numExpandedStates++;
 
         TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
 
@@ -368,7 +368,7 @@ public abstract class APlanner {
             }
             if (success) {
                 children.add(next);
-                GeneratedStates++;
+                numGeneratedStates++;
             } else {
                 TinyLogger.LogInfo(st.getState(), "     Dead-end reached for state: %s", next.getID());
                 if (options.displaySearch)
@@ -414,7 +414,7 @@ public abstract class APlanner {
             });
             TinyLogger.LogInfo(st.getState(), "     [%s] ff: Adding %s", st.getID(), resolvers.get(0));
             if(st.getState().isConsistent()) {
-                numFastForwarded++;
+                numFastForwardedStates++;
                 return fastForward(st, maxForwardStates-1);
             } else {
                 return false;
