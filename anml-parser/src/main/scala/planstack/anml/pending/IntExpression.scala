@@ -29,7 +29,7 @@ abstract class IntExpression extends Comparable[IntExpression] {
 
   override def compareTo(t: IntExpression): Int =
     if(ub < t.lb)
-      ub.compareTo(lb)
+      ub.compareTo(t.lb)
     else if(lb > t.ub)
       lb.compareTo(t.ub)
     else
