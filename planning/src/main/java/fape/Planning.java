@@ -77,6 +77,12 @@ public class Planning {
                                         "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
                                         "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
+                        new FlaggedOption("threats-early-check")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setLongFlag("threats-early-check")
+                                .setDefault("true")
+                                .setHelp("If true, the planner will check if a resolver will necessarily result in a threat. " +
+                                "This allows an early filtering of resolvers."),
                         new FlaggedOption("a-epsilon")
                                 .setStringParser(JSAP.FLOAT_PARSER)
                                 .setShortFlag('e')
@@ -258,6 +264,7 @@ public class Planning {
                 options.usePlanningGraphReachability = config.getBoolean("reachability") || Arrays.asList(planStrat).contains("rplan");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
+                options.checkUnsolvableThreatsForOpenGoalsResolvers = config.getBoolean("threats-early-check");
 
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
