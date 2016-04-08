@@ -592,7 +592,6 @@ public class State implements Reporter {
      * @param tc The TemporalConstraint to insert.
      */
     private void apply(Chronicle mod, TemporalConstraint tc) {
-
         if(tc instanceof MinDelayConstraint) {
             csp.addMinDelay(tc.src(), tc.dst(), translateToCSPVariable(((MinDelayConstraint) tc).minDelay()));
         } else if(tc instanceof ContingentConstraint) {
@@ -619,7 +618,6 @@ public class State implements Reporter {
      * @param mod StateModifier to apply
      */
     private void apply(Chronicle mod) {
-
         for (TPRef tp : mod.flexibleTimepoints()) {
             if(tp.equals(pb.start()) || tp.equals(pb.end()) || tp.equals(pb.earliestExecution()))
                 continue;

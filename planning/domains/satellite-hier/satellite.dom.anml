@@ -21,11 +21,11 @@ action turn_to(satellite s, direction d_new) {
 //    motivated;
 
     duration := 5;
-    :decomposition {
+//    :decomposition {
         constant direction d_prev;
 	d_new != d_prev;	 
     	[all] s.pointing == d_prev :-> d_new;
-    };
+//    };
 //    :decomposition{
 //      [all] s.pointing == d_new;
 //    };

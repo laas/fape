@@ -6,6 +6,7 @@ import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.Flaws;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.strategies.flaws.FlawCompFactory;
 import fape.core.planning.search.strategies.plans.PlanCompFactory;
@@ -14,6 +15,7 @@ import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.states.SearchNode;
 import fape.drawing.gui.ChartWindow;
+import fape.exceptions.FlawOrderingAnomaly;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
@@ -36,17 +38,19 @@ public abstract class APlanner {
     public APlanner(State initialState, PlanningOptions options) {
         this.options = options;
         this.pb = initialState.pb;
-        initialState.setPlanner(this);
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.stateComparator());
         SearchNode root = new SearchNode(initialState);
         queue.add(root);
 
-        if(options.usePlanningGraphReachability) {
-            initialState.pgr = preprocessor.getFeasibilityReasoner();
-            initialState.reachabilityGraphs = new ReachabilityGraphs(this, initialState);
-        }
+        root.addOperation(s -> {
+            s.setPlanner(this);
+            if (options.usePlanningGraphReachability) {
+                initialState.pgr = preprocessor.getFeasibilityReasoner();
+                initialState.reachabilityGraphs = new ReachabilityGraphs(this, initialState);
+            }
+        });
 
         if(options.displaySearch) {
             searchView = new SearchView(this);
@@ -323,19 +327,34 @@ public abstract class APlanner {
 
         List<SearchNode> children = new LinkedList<>();
 
+        final Object flawsHash = Flaws.hash(flaws);
+
         // compute all valid children
         for(int resolverID=0 ; resolverID < resolvers.size() ; resolverID++) {
             SearchNode next = new SearchNode(st);
             final int currentResolver = resolverID;
             next.addOperation(s -> {
                 List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
+                assert Flaws.hash(fs).equals(flawsHash) : "There is a problem with the generated flaws.";
+
                 Flaw selectedFlaw = fs.get(0);
                 List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
                 Collections.sort(possibleResolvers);
-                Resolver res = possibleResolvers.get(currentResolver);
+                Resolver res;
+                try {
+                    res = possibleResolvers.get(currentResolver);
+                } catch (IndexOutOfBoundsException e) {
+                    // apparently we tried to access a resolver that did not exists, either a
+                    // resolver disapeared or the flaw is not the one we expected
+                    throw new FlawOrderingAnomaly(flaws, 0, currentResolver);
+                }
                 if(!applyResolver(s, res, false))
                     s.setDeadEnd();
-
+                else {
+                    s.checkConsistency();
+                    if(s.isConsistent() && options.useFastForward)
+                        fastForward(s, 10);
+                }
                 s.checkConsistency();
             });
 
@@ -343,15 +362,7 @@ public abstract class APlanner {
             String hrComment = "";
 
             if(!success)
-                hrComment = "Non consistent resolver application.";
-
-            // if we use fast forward, solve any flaw with at most one resolver
-            if(success && options.useFastForward) {
-                success &= fastForward(next, 10);
-                if(!success) {
-                    hrComment = "Inconsistency or flaw with no resolvers when fast forwarding.";
-                }
-            }
+                hrComment = "Non consistent resolver application or error while fast-forwarding.";
 
             // build reachability graphs
             if(success && options.usePlanningGraphReachability) {
@@ -389,36 +400,35 @@ public abstract class APlanner {
      * This function looks at flaws and resolvers in the state and fixes flaws with a single resolver.
      * It does that at most "maxForwardState"
      */
-    public boolean fastForward(SearchNode st, int maxForwardStates) {
-        List<Flaw> flaws = getFlaws(st);
-
+    public boolean fastForward(State st, int maxForwardStates) {
         if(maxForwardStates == 0)
             return true;
+
+        List<Flaw> flaws = st.getFlaws(options.flawFinders, flawComparator(st));
 
         if (flaws.isEmpty()) {
             return true;
         }
 
         //we just take the first flaw and its resolvers
-        Flaw f = flaws.get(0);
-        List<Resolver> resolvers = f.getResolvers(st.getState(), this);
+        Flaw flaw = flaws.get(0);
+        List<Resolver> resolvers = flaw.getResolvers(st, this);
 
         if (resolvers.isEmpty()) {
+            st.setDeadEnd();
             // dead end, keep going
-            TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+            TinyLogger.LogInfo(st, "  Dead-end, flaw without resolvers: %s", flaw);
             return false;
         }
 
         if(resolvers.size() == 1) {
-            st.addOperation(s -> {
-                Flaw flaw = s.getFlaws(options.flawFinders, flawComparator(s)).get(0);
-                Resolver res = flaw.getResolvers(s, this).get(0);
-                if(!applyResolver(s, res, true))
-                    s.setDeadEnd();
-                s.checkConsistency();
-            });
-            TinyLogger.LogInfo(st.getState(), "     [%s] ff: Adding %s", st.getID(), resolvers.get(0));
-            if(st.getState().isConsistent()) {
+            Resolver res = flaw.getResolvers(st, this).get(0);
+            if(!applyResolver(st, res, true))
+                st.setDeadEnd();
+            else
+                st.checkConsistency();
+            TinyLogger.LogInfo(st, "     [%s] ff: Adding %s", st.mID, resolvers.get(0));
+            if(st.isConsistent()) {
                 numFastForwardedStates++;
                 return fastForward(st, maxForwardStates-1);
             } else {
@@ -484,7 +494,7 @@ public abstract class APlanner {
             for(Handler h : options.handlers)
                 h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
 
-            if(!current.getState().checkConsistency()) {
+            if(!current.getState().isConsistent()) {
                 if(options.displaySearch)
                     searchView.setDeadEnd(current);
                 TinyLogger.LogInfo("\nCurrent state: ["+current.getID()+"]");

@@ -1,6 +1,7 @@
 package fape.core.planning.states;
 
 import fape.util.StrongReference;
+import jdk.nashorn.internal.ir.ThrowNode;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -96,45 +97,31 @@ public class SearchNode {
     /**
      * Returns the base state from which the complete state can be built.
      */
-    private State getBaseState() {
+    private State getBaseState(boolean isForChild) {
         if(state != null && state.get() != null) {
             return state.get();
         } else {
             assert depth != 0;
             assert parent != null;
-            State st = parent.getStateWithID(mID);
+            State st = parent.getState(true).cc(mID);
+            st.depth = depth;
             nextOperation = 0;
-            state = new SoftReference<>(st);
+            if(!isForChild) // directly request, save the reference
+                state = new SoftReference<>(st);
+            else if(depth %5 == 0) // save at regular depths
+                state = new SoftReference<>(st);
             return st;
         }
     }
 
     public SearchNode getParent() { return parent; }
 
-    private State getStateWithID(int id) {
-        if(state != null && state.get() != null) {
-            // I already my own state, make sure it is up to date and give it away
-            State s = state.get();
-            while(nextOperation < operations.size()) {
-                operations.get(nextOperation++).accept(s);
-            }
-            return s.cc(id);
-        } else {
-            assert depth != 0;
-            // ask one from my father and apply my changes
-            State s = parent.getStateWithID(id);
-            nextOperation = 0;
-            while(nextOperation < operations.size()) {
-                operations.get(nextOperation++).accept(s);
-            }
-            if(depth % 5 == 0)
-                state = new SoftReference<>(s.cc(mID));
-            return s;
-        }
+    public State getState() {
+        return getState(false);
     }
 
-    public State getState() {
-        State s = getBaseState();
+    private State getState(boolean isForChild) {
+        State s = getBaseState(isForChild);
         s.depth = depth;
         while(nextOperation < operations.size()) {
             operations.get(nextOperation++).accept(s);
@@ -155,5 +142,21 @@ public class SearchNode {
 //        if(forgettableState != null && forgettableState.get() != null)
 //            assert forgettableState.get().mID == this.mID; // this can cause a failure if the GC is invoked between those two lines
         return this.mID;
+    }
+
+    /** This method give a false assert if the it is not called from either:
+     *  - a getState call, meaning that is part of a recorded operation
+     *  - a State.update, meaning that is part of the initialization of the first state.
+     *  Any method that modifies a state should verify that */
+    public static void assertPartOfRecordeedOperation() {
+        if(false) {
+            StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+            for (StackTraceElement e : elems)
+                if (e.getClassName().equals("SearchNode") && e.getMethodName().equals("getState")
+                        || (e.getClassName().equals("State") && e.getMethodName().equals("update")))
+                    return;
+
+            assert false;
+        }
     }
 }
