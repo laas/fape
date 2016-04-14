@@ -136,6 +136,7 @@ public class Planning {
                                 " - \"soca\" that simply compare the number of flaws and actions is the partial plans\n" +
                                 " - \"dfs\": Deepest partial plan extracted first.\n" +
                                 " - \"bfs\": Shallowest partial plan extracted first.\n" +
+                                " - \"ord-dec\": Tries method in the order they are defined (should be combined with dfs)\n" +
                                 "If more than one selector is given, the " +
                                 "second is used to break ties  of the first one, the third to break ties of both " +
                                 "the first and second, etc. Plan selectors can be found in the package " +
@@ -154,7 +155,8 @@ public class Planning {
                                 "- 'ogf': Open goal flaws first.\n" +
                                 "- 'abs': Gives higher priority to flaws high in the abstraction hierarchy of the problem.\n" +
                                 "- 'lcf': Least Commiting First, select the flaw with the least number of resolvers\n" +
-                                "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n"),
+                                "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n" +
+                                "- 'hier-fifo': always selects the unrefined task that has been pending for the longest time.\n"),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')
@@ -343,6 +345,7 @@ public class Planning {
                     System.out.println("Expanded states: "+planner.numExpandedStates);
                     System.out.println("Generated states: "+planner.numGeneratedStates);
                     System.out.println("Fast-Forwarded states: "+planner.numFastForwardedStates);
+                    System.out.println("Makespan: "+sol.getEarliestStartTime(sol.pb.end()));
                     System.out.println("Num ground actions after reachability analysis: "+planner.preprocessor.getAllActions().size());
                     System.out.println();
                     System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
