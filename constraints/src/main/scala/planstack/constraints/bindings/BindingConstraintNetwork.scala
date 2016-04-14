@@ -391,12 +391,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   private def ensureSpaceForVar(v:VarRef, futureDomID: Int): Unit = {
     if(v.id >= domIds.length) {
       val tmp = domIds
-      domIds = Array.fill(domIds.length * 2)(-1)
+      domIds = Array.fill(Math.max(domIds.length*2, v.id+1))(-1)
       Array.copy(tmp, 0, domIds, 0, tmp.length)
-      variables = util.Arrays.copyOf(variables, variables.length * 2)
+      variables = util.Arrays.copyOf(variables, Math.max(variables.length*2, v.id+1))
     }
     if(futureDomID >= domains.length) {
-      domains = util.Arrays.copyOf(domains, domains.length * 2)
+      domains = util.Arrays.copyOf(domains, Math.max(domains.length*2, futureDomID+1))
     }
 
     assert(domIds(v.id) == -1)
