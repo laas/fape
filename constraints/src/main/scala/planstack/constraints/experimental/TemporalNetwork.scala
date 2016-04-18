@@ -124,12 +124,29 @@ object TemporalNetwork {
 
     val nonObservable = tps.filter(tp => tp.isContingent && !observable.contains(tp) && !observed.contains(tp))
 
-    val controllables = tps.filter(tp => tp.isDispatchable)
+    val controllables = tps.filter(tp => tp.isDispatchable || tp.isStructural)
 
 
     new TemporalNetwork(controllables.map(_.id), observed.map(_.id), nonObservable.map(_.id), observable.map(_.id), edges)
 //    val delNonObs = makeNonObservable(edges, nonObservable.map(toInt).toList)
 //    getMinimalObservationSets(delNonObs, observed.map(_.id))
 //      .map(sets => sets.map(i => tpsFromInt(i)))
+  }
+
+  def loadFromFile(filename: String) : TemporalNetwork = {
+    val fileContent = scala.io.Source.fromFile(filename).getLines().foldLeft("")((all: String, curr: String) => all + curr + "\n")
+    val ret = Parser.parseAll(Parser.problem, fileContent)
+    if(ret.isEmpty) {
+      // show error
+      println(ret)
+      sys.error("Was not able to parse "+filename)
+    } else {
+      val (tps, edges) = ret.get
+      val controllables = tps.collect { case ("controllable", x) => x }.toSet
+      val visibles = tps.collect { case ("visible", x) => x }.toSet
+      val observable = tps.collect { case ("observable",x) => x }.toSet
+      val hidden = tps.collect { case ("hidden", x) => x }.toSet
+      new TemporalNetwork(controllables, visibles, hidden, observable, edges)
+    }
   }
 }
