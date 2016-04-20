@@ -57,8 +57,8 @@ def gen(numAreas, numRabbitsPerArea, numAgents, numGoals, linked):
 # gen(2,2,2,1,None)
 # gen(3,4,4,2)
 
-for areas in [2,3,4,6,8,10,12]:
-    for density in [2,3,4,6]:
-        for goals in [2,3,4,5,6,8]:
+for areas in [2,3,4,6,8,10,12,16,20]:
+    for density in [2,3,4,6,8,10]:
+        for goals in [2,3,4,5,6,8,10,12]:
             gen(areas, density, 3, goals, False)
-            gen(areas, density, 3, goals, True)
+#            gen(areas, density, 3, goals, True)
