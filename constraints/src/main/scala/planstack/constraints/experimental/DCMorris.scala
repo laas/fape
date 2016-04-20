@@ -10,6 +10,7 @@ import planstack.constraints.stnu.{Controllability, Constraint, ElemStatus}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer => Buff, HashMap => MMap, PriorityQueue => Queue, Set => MSet}
 import scala.language.implicitConversions
 
@@ -149,6 +150,73 @@ object PartialObservability {
 
   case class NeededObservations(resolvingObs: ju.Collection[ju.Set[TPRef]])
 
+  def makePossiblyObservable(edges: List[Edge], nodes: Set[Node]) : List[Edge] = {
+    val lowers = mutable.Map[Node,Edge]()
+    val uppers = mutable.Map[Node,Edge]()
+    val processedNodes = mutable.Set[Node]()
+    // edges that are final (not involved with any observable node)
+    val finalEdges = mutable.Buffer[Edge]()
+    // queues for each observable node, those edge will need to be compiled when the node is removed
+    val edgesInvolved = mutable.Map[Node,mutable.Buffer[Edge]]()
+    for(n <- nodes)
+      edgesInvolved.put(n, mutable.Buffer[Edge]())
+
+    // place the edge in the appropriate queue
+    def sortEdge(e: Edge) {
+      def isPending(n: Node) =
+        nodes.contains(n) && !processedNodes.contains(n)
+      e match {
+        case x@Upper(from, to, d, lbl, _) if isPending(lbl) =>
+          assert(from == lbl)
+          uppers.put(lbl, x)
+        case x@Lower(from, to, d, lbl, _) if isPending(lbl) =>
+          assert(to == lbl)
+          lowers.put(lbl, x)
+        case _ =>
+      }
+
+      e match {
+        // attach to the node with the smaller ID
+        case x: Edge if isPending(x.from) && isPending(x.to) =>
+          edgesInvolved(Math.min(x.from, x.to)) += x
+        case x: Edge if isPending(x.from) =>
+          edgesInvolved(x.from) += x
+        case x: Edge if isPending(x.to) =>
+          edgesInvolved(x.to) += x
+        case x: Edge =>
+          finalEdges += x
+      }
+    }
+
+    // sort edges
+    for(e <- edges)
+      sortEdge(e)
+
+    for(n <- nodes.toList.sorted) {
+      processedNodes += n
+      val upper = uppers(n)
+      val lower = lowers(n)
+      val l = lower.d
+      val u = upper.d
+      val src = lower.from
+
+      // compile away all edges for this node
+      for(e <- edgesInvolved(n) if e != upper && e != lower) {
+        // create new edge
+        val newEdge = e match {
+          case Req(`n`,y,d, projs) => Req(src, y, l+d, projs ++ lower.proj + MinProj(n))
+          case Req(x,`n`,d, projs) => Req(x, src, d+u, projs ++ upper.proj + MaxProj(n))
+          case Lower(`n`, y, d, lbl, projs) => Lower(src, y, l+d, lbl, projs ++ lower.proj + MinProj(n))
+          case Upper(x, `n`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upper.proj + MaxProj(n))
+          case e => assert(e.from != n && e.to != n); e
+        }
+        // place the edge in the appropriate queue
+        sortEdge(newEdge)
+      }
+    }
+    finalEdges.toList
+  }
+/* Simpler but less efficient version of the above method
   def makePossiblyObservable(edges: List[Edge], nodes: List[Node]) : List[Edge] = nodes match {
     case Nil => edges
     case h::tail => makePossiblyObservable(makePossiblyObservable(edges, h), tail)
@@ -170,7 +238,8 @@ object PartialObservability {
       case Upper(x, `node`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upper.proj + MaxProj(node))
       case e => assert(e.from != node && e.to != node); e
     }
-  }
+  }*/
+
   def makeNonObservable(edges: List[Edge], nodes: List[Node]) : List[Edge] = nodes match {
     case Nil => edges
     case h::tail => makeNonObservable(makeNonObservable(edges, h), tail)
@@ -196,7 +265,6 @@ object PartialObservability {
 
   var useLabelsForFocus : Boolean = true
   var allSolutions : Boolean = true
-  var instrument : Boolean = false
   var numIterations : Int = 0
   val debug = false
 
@@ -310,52 +378,5 @@ object NeededObsBenchmarking extends App {
 
 
 
-  /** Drop in replacement for getMinimalObservationSet that will display some runtime information
-    * on each invocation.
-  def instrumentedGetMinimalObservationSets(edges: List[Edge], observed: Set[Node]) : List[Set[Node]] = {
-    val numContingents = edges.count(e => e.isInstanceOf[Upper])
 
-    PartialObservability.instrument = true
-    PartialObservability.useLabelsForFocus = true
-    val ret = getMinimalObservationSets(edges, observed)
-    val smartIter = PartialObservability.numIterations
-    PartialObservability.useLabelsForFocus = false
-
-    PartialObservability.debug = false
-    val dumbIter = try {
-      getMinimalObservationSets(edges, observed)
-      PartialObservability.numIterations
-    } catch {
-      case ex:TimeoutException => 9999999
-    }
-    PartialObservability.useLabelsForFocus = true
-    PartialObservability.instrument = false
-    if(smartIter != 1 && dumbIter != 1)
-      println(s"allsols ($smartIter, $dumbIter, $numContingents)")
-    PartialObservability.debug = false
-
-    val t1 = System.nanoTime()
-    PartialObservability.allSolutions = false
-    PartialObservability.instrument = true
-    PartialObservability.useLabelsForFocus = true
-    getMinimalObservationSets(edges, observed)
-    val smartIterOne = PartialObservability.numIterations
-    PartialObservability.useLabelsForFocus = false
-    val t2 = System.nanoTime()
-
-    val dumbIterOne = try {
-      getMinimalObservationSets(edges, observed)
-      PartialObservability.numIterations
-    } catch {
-      case ex:TimeoutException => 9999999
-    }
-    PartialObservability.useLabelsForFocus = true
-    PartialObservability.instrument = false
-    PartialObservability.allSolutions = true
-    val t3 = System.nanoTime()
-    if(smartIterOne != 1 && dumbIterOne != 1)
-      println(s"onesol, $smartIterOne, $dumbIterOne, $numContingents, ${(t2-t1)/1000000f}, ${(t3-t2)/1000000f}")
-
-    ret
-  }*/
 }

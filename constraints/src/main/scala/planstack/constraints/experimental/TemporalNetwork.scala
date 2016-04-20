@@ -19,6 +19,8 @@ class TemporalNetwork(
                        val constraints: List[Edge]
                      ) {
 
+  lazy val contingents : Set[Node] = (visibles ++ invisibles) ++ possiblyObservables
+
   /** Move the given possibly observable nodes to the invisible set */
   def makeInvisible(tps: Set[Node]): TemporalNetwork = {
     assert(tps.forall(possiblyObservables.contains(_)))
@@ -36,7 +38,7 @@ class TemporalNetwork(
     * are labeled to show what are the projection they enforce
     */
   def supposeNonObservable : TemporalNetwork = {
-    val newEdges = PartialObservability.makePossiblyObservable(constraints, possiblyObservables.toList)
+    val newEdges = PartialObservability.makePossiblyObservable(constraints, possiblyObservables)
     new TemporalNetwork(controllables, visibles, invisibles ++ possiblyObservables, Set(), newEdges)
   }
 
@@ -95,6 +97,23 @@ class TemporalNetwork(
     pw.write(sb.toString())
     pw.close()
   }
+
+  lazy val longestContingentChain = {
+    val edges = constraints.collect { case x:Upper => x }
+    val next = edges.map(e => (e.from, e.to)).toMap
+
+    var longestChain = 0
+    for(n <- next.keySet) {
+      var cur = n
+      var chainSize = 0
+      while(next.contains(cur)) {
+        cur = next(cur)
+        chainSize += 1
+      }
+      longestChain = Math.max(longestChain, chainSize)
+    }
+    longestChain
+  }
 }
 
 
@@ -128,9 +147,6 @@ object TemporalNetwork {
 
 
     new TemporalNetwork(controllables.map(_.id), observed.map(_.id), nonObservable.map(_.id), observable.map(_.id), edges)
-//    val delNonObs = makeNonObservable(edges, nonObservable.map(toInt).toList)
-//    getMinimalObservationSets(delNonObs, observed.map(_.id))
-//      .map(sets => sets.map(i => tpsFromInt(i)))
   }
 
   def loadFromFile(filename: String) : TemporalNetwork = {
