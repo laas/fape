@@ -161,6 +161,10 @@ public class Timeline {
         throw new FAPEException("Problem: finding change number "+changeNumber+" in timeline "+this);
     }
 
+    public LogStatement getEvent(int numEvent) {
+        return getChangeNumber(numEvent).getFirst();
+    }
+
     public String Report() {
         String ret = "";
         //ret += "{\n";

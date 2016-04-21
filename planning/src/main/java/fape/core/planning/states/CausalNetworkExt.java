@@ -4,6 +4,7 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.core.planning.timelines.TimelinesManager;
 import lombok.Value;
+import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.ISet;
 
 import java.util.*;
@@ -16,6 +17,7 @@ public class CausalNetworkExt implements StateExtension {
     public static class Event {
         public final int supporterID;
         public final int changeNumber;
+        public final LogStatement statement;
     }
 
     private final State container;
@@ -81,7 +83,8 @@ public class CausalNetworkExt implements StateExtension {
             for(Timeline sup : container.tdb.getTimelines()) {
                 for(int i=0 ; i<sup.numChanges() ; i++) {
                     if (mightIndirectlySupport(sup, i, tl)) {
-                        Event pis = new Event(sup.mID, i);
+                        LogStatement ls = sup.getChangeNumber(i).getFirst();
+                        Event pis = new Event(sup.mID, i, ls);
                         potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                     }
                 }
@@ -106,7 +109,8 @@ public class CausalNetworkExt implements StateExtension {
                         .forEach(sup -> {
                             for (int i = 0; i < sup.numChanges(); i++) {
                                 if (mightIndirectlySupport(sup, i, tl)) {
-                                    Event pis = new Event(sup.mID, i);
+                                    LogStatement ls = sup.getChangeNumber(i).getFirst();
+                                    Event pis = new Event(sup.mID, i, ls);
                                     potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                                 }
                             }
@@ -119,7 +123,8 @@ public class CausalNetworkExt implements StateExtension {
                             assert lastProcessedChange.containsKey(sup.mID);
                             for (int i = lastProcessedChange.get(sup.mID)+1; i < sup.numChanges(); i++) {
                                 if (mightIndirectlySupport(sup, i, tl)) {
-                                    Event pis = new Event(sup.mID, i);
+                                    LogStatement ls = sup.getChangeNumber(i).getFirst();
+                                    Event pis = new Event(sup.mID, i, ls);
                                     potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                                 }
                             }
