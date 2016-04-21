@@ -255,9 +255,9 @@ public class Printer {
                         } else if(s instanceof Transition) {
                             line.add("== " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
                         }
-                        Action act = st.getActionContaining(s);
-                        if(act != null)
-                            line.add("  From: "+action(st, act));
+                        Optional<Action> act = st.getActionContaining(s);
+                        if(act.isPresent())
+                            line.add("  From: "+action(st, act.get()));
                         else
                             line.add("  From: problem definition");
 

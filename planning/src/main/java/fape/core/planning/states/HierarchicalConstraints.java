@@ -57,11 +57,11 @@ public class HierarchicalConstraints implements StateExtension {
         if(!timelineSupportConstraints.containsKey(consumer.mID))
             return true;
 
-        if(st.getActionContaining(supporter) == null)
+        if(!st.getActionContaining(supporter).isPresent())
             return false;
 
         Task t = timelineSupportConstraints.get(consumer.mID); // any supporter must be derived from this task
-        Action a = st.getActionContaining(supporter); // the action that introduced the statement
+        Action a = st.getActionContaining(supporter).get(); // the action that introduced the statement
 
         return st.taskNet.isDescendantOf(a, t);
     }

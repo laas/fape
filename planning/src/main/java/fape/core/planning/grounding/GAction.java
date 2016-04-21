@@ -34,10 +34,14 @@ public class GAction implements Identifiable {
         @Getter
         public final int minDuration;
         public final AbstractLogStatement original;
-        public GLogStatement(GStateVariable sv, int minDuration, AbstractLogStatement original) {
+        public final Optional<GAction> container;
+        public GLogStatement(GStateVariable sv, int minDuration,
+                             AbstractLogStatement original,
+                             Optional<GAction> container) {
             this.sv = sv;
             this.minDuration = minDuration;
             this.original = original;
+            this.container = container;
             assert minDuration >= 0;
         }
         public final GStateVariable getStateVariable() { return sv; }
@@ -53,8 +57,9 @@ public class GAction implements Identifiable {
     public static class GTransition extends GLogStatement {
         public final InstanceRef from ;
         public final InstanceRef to;
-        public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to, int minDuration, AbstractLogStatement original) {
-            super(sv, minDuration, original);
+        public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to,
+                           int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(sv, minDuration, original, container);
             this.from = from;
             this.to = to;
         }
@@ -65,8 +70,8 @@ public class GAction implements Identifiable {
     }
     public static final class GAssignment extends GLogStatement {
         public final InstanceRef to;
-        public GAssignment(GStateVariable sv, InstanceRef to, int minDuration, AbstractLogStatement original) {
-            super(sv, minDuration, original);
+        public GAssignment(GStateVariable sv, InstanceRef to, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(sv, minDuration, original, container);
             this.to = to;
         }
         @Override public final boolean isChange() { return true; }
@@ -76,8 +81,8 @@ public class GAction implements Identifiable {
     }
     public static final class GPersistence extends GLogStatement {
         public final InstanceRef value;
-        public GPersistence(GStateVariable sv, InstanceRef value, int minDuration, AbstractLogStatement original) {
-            super(sv, minDuration, original);
+        public GPersistence(GStateVariable sv, InstanceRef value, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(sv, minDuration, original, container);
             this.value = value;
         }
         @Override public final boolean isChange() { return false; }
@@ -192,7 +197,7 @@ public class GAction implements Identifiable {
                         sv(t.sv(), pb, planner),
                         valueOf(t.from(), pb), valueOf(t.to(), pb),
                         minDuration(t.start(), t.end()),
-                        t);
+                        t, Optional.of(this));
                 gStatements.add(new Pair<>(t.id(), gls));
                 pre.add(fluent(t.sv(), t.from(), planner));
                 if(!fluent(t.sv(), t.from(), planner).equals(fluent(t.sv(), t.to(), planner))) {
@@ -205,7 +210,8 @@ public class GAction implements Identifiable {
                         sv(p.sv(), pb, planner),
                         valueOf(p.value(), pb),
                         minDuration(p.start(), p.end()),
-                        p);
+                        p,
+                        Optional.of(this));
                 gStatements.add(new Pair<>(p.id(), gls));
                 pre.add(fluent(p.sv(), p.value(), planner));
             } else if(as instanceof AbstractAssignment) {
@@ -214,7 +220,8 @@ public class GAction implements Identifiable {
                         sv(a.sv(), pb, planner),
                         valueOf(a.value(), pb),
                         minDuration(a.start(), a.end()),
-                        a);
+                        a,
+                        Optional.of(this));
                 gStatements.add(new Pair<>(a.id(), gls));
                 add.add(fluent(a.sv(), a.value(), planner));
             }

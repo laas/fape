@@ -6,7 +6,6 @@ import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.resources.Replenishable;
 import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
@@ -14,10 +13,9 @@ import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
-import fape.core.planning.search.strategies.plans.tsp.GoalNetwork;
+import fape.core.planning.search.strategies.plans.tsp.MinSpanTreeExt;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
@@ -46,7 +44,6 @@ import planstack.anml.pending.StateVariable;
 import planstack.constraints.MetaCSP;
 import planstack.constraints.bindings.Domain;
 import planstack.constraints.stnu.Controllability;
-import planstack.structures.IList;
 import scala.Option;
 import scala.Tuple2;
 
@@ -177,6 +174,7 @@ public class State implements Reporter {
         extensions.add(new HierarchicalConstraints(this));
         extensions.add(new OpenGoalSupportersCache(this));
         extensions.add(new CausalNetworkExt(this));
+        extensions.add(new MinSpanTreeExt(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -314,15 +312,15 @@ public class State implements Reporter {
      * @return the Action containing s. Returns null if no action containing s
      * was found.
      */
-    public Action getActionContaining(LogStatement s) {
+    public Optional<Action> getActionContaining(LogStatement s) {
         if(s.container() instanceof Action) {
             Action a = (Action) s.container();
             assert a.contains(s);
             assert getAllActions().contains(a);
-            return a;
+            return Optional.of(a);
         } else {
             assert getAllActions().stream().noneMatch(a -> a.contains(s));
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -761,9 +759,9 @@ public class State implements Reporter {
             assert cc != null : "There is no support statement in " + db;
             assert cc.change : "Support is not a change.";
             assert cc.size() == 1;
-            Action a = getActionContaining(cc.getFirst());
+            Optional<Action> a = getActionContaining(cc.getFirst());
 
-            return a != null && taskNet.isDescendantOf(a, requiredAncestor);
+            return a.isPresent() && taskNet.isDescendantOf(a.get(), requiredAncestor);
         } else if(opt instanceof SupportingTaskDecomposition) {
             return taskNet.isDescendantOf(((SupportingTaskDecomposition) opt).task, requiredAncestor);
         }else {
@@ -1072,16 +1070,16 @@ public class State implements Reporter {
     /** Returns all ground versions of this statements */
     public Set<GAction.GLogStatement> getGroundStatements(LogStatement s) {
         // action by which this statement was introduced (null if no action)
-        Action containingAction = getActionContaining(s);
+        Optional<Action> containingAction = getActionContaining(s);
 
-        if (containingAction == null) { // statement was not added as part of an action
+        if (!containingAction.isPresent()) { // statement was not added as part of an action
             int minDur = csp.stn().getMinDelay(s.start(), s.end());
             if(!s.needsSupport()) {
                 assert s instanceof Assignment;
                 assert s.endValue() instanceof InstanceRef;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
                 return fluents.stream()
-                        .map(f -> new GAction.GAssignment(f.sv, f.value, minDur, null))
+                        .map(f -> new GAction.GAssignment(f.sv, f.value, minDur, null, Optional.empty()))
                         .collect(Collectors.toSet());
             } else if(s.isChange()) {
                 assert s instanceof Persistence;
@@ -1090,22 +1088,22 @@ public class State implements Reporter {
 
                 return fluents.stream()
                         .flatMap(f -> startValues.stream()
-                                .map(startVal -> new GAction.GTransition(f.sv, startVal, f.value, minDur, null)))
+                                .map(startVal -> new GAction.GTransition(f.sv, startVal, f.value, minDur, null, Optional.empty())))
                         .collect(Collectors.toSet());
             } else {
                 assert s instanceof Persistence;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
 
                 return fluents.stream()
-                        .map(f -> new GAction.GPersistence(f.sv, f.value, minDur, null))
+                        .map(f -> new GAction.GPersistence(f.sv, f.value, minDur, null, Optional.empty()))
                         .collect(Collectors.toSet());
             }
         } else { // statement was added as part of an action or a decomposition
-            Collection<GAction> acts = getGroundActions(containingAction);
+            Collection<GAction> acts = getGroundActions(containingAction.get());
 
             // local reference of the statement, used to extract the corresponding ground statement from the GAction
-            assert containingAction.context().contains(s);
-            LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
+            assert containingAction.get().context().contains(s);
+            LStatementRef statementRef = containingAction.get().context().getRefOfStatement(s);
 
             return acts.stream()
                     .map(ga -> ga.statementWithRef(statementRef))

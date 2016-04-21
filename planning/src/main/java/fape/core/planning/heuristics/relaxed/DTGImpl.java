@@ -17,6 +17,7 @@ import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.PrimitiveIterator;
 
 public class DTGImpl {
@@ -244,11 +245,11 @@ public class DTGImpl {
             }
 
             // action by which this statement was introduced (null if no action)
-            Action containingAction = st.getActionContaining(s);
+            Optional<Action> containingAction = st.getActionContaining(s);
             TPRef start = s.end();
             TPRef end = i+1 < tl.numChanges() ? tl.getChangeNumber(i+1).getConsumeTimePoint() : null;
 
-            if(containingAction == null) { // statement was not added as part of an action
+            if(!containingAction.isPresent()) { // statement was not added as part of an action
                 assert s instanceof Assignment : "rplan does not currently support transitions in the problem definition.";
                 assert s.endValue() instanceof InstanceRef;
                 assert i == 0;
@@ -265,11 +266,11 @@ public class DTGImpl {
                     }
                 }
             } else { // statement was added as part of an action or a decomposition
-                Collection<GAction> acts = st.getGroundActions(containingAction);
+                Collection<GAction> acts = st.getGroundActions(containingAction.get());
 
                 // local reference of the statement, used to extract the corresponding ground statement from the GAction
-                assert containingAction.context().contains(s);
-                LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
+                assert containingAction.get().context().contains(s);
+                LStatementRef statementRef = containingAction.get().context().getRefOfStatement(s);
 
                 for(GAction ga : acts) {
                     GAction.GLogStatement gs = ga.statementWithRef(statementRef);
@@ -290,7 +291,7 @@ public class DTGImpl {
                         if(!dtg.hasNode(toFluent, i+1))
                             dtg.addNode(toFluent, i+1, start, end);
 
-                        dtg.addEdge(fromFluent, i, containingAction, ga, toFluent, i+1);
+                        dtg.addEdge(fromFluent, i, containingAction.get(), ga, toFluent, i+1);
                         if(i == tl.numChanges()-1) {
                             dtg.setEntryPoint(toFluent, i+1);
                         }
