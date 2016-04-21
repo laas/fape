@@ -78,7 +78,6 @@ public abstract class APlanner {
     public Preprocessor preprocessor;
 
     public static boolean debugging = false;
-    public final static boolean actionResolvers = true; // do we add actions to resolve flaws?
 
     public int numGeneratedStates = 1; //count the initial state
     public int numExpandedStates = 0;

@@ -210,33 +210,6 @@ public class UnsupportedTimeline extends Flaw {
         return true;
     }
 
-    public static boolean mightIndirectlySupport(Timeline potentialSupporter, int changeNumber, Timeline consumer, State st) {
-        if(consumer == potentialSupporter)
-            return false;
-
-        if(!st.unifiable(potentialSupporter, consumer))
-            return false;
-
-        // if the consumer contains changes, the only possible support is the last change of the supporter
-        if(!consumer.hasSinglePersistence() && changeNumber != potentialSupporter.numChanges()-1)
-            return false;
-
-        final ChainComponent supportingCC = potentialSupporter.getChangeNumber(changeNumber);
-        if(!st.canAllBeBefore(supportingCC.getSupportTimePoint(), consumer.getFirstTimePoints()))
-            return false;
-
-        // if the supporter is not the last change, check that we can fit the consuming db before the next change
-        if(changeNumber < potentialSupporter.numChanges()-1) {
-            final ChainComponent afterCC = potentialSupporter.getChangeNumber(changeNumber+1);
-            if(!st.canAllBeBefore(consumer.getLastTimePoints(), afterCC.getConsumeTimePoint()))
-                return false;
-        }
-
-        assert potentialSupporter != consumer;
-
-        return true;
-    }
-
     public static boolean isValid(SupportingAction supportingAction, Timeline consumer, State st) {
         assert consumer.mID == supportingAction.consumerID;
 
