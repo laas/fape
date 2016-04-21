@@ -5,11 +5,15 @@ import fape.core.planning.grounding.GAction;
 import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.core.planning.timelines.Timeline;
+import fr.laas.fape.structures.IRSet;
+import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.statements.LogStatement;
 import fape.core.planning.grounding.GAction.*;
+import planstack.constraints.bindings.Domain;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,7 +51,7 @@ public class MinSpanTreeExt implements StateExtension {
                     restricted.add(tl.getEvent(i));
             }
 
-            for(int i=tl.numChanges()-2; i>0; i++) {
+            for(int i=tl.numChanges()-2; i>=0; i--) {
                 // fluents supported by statement i-1
                 Set<Fluent> supportfluents = getGrounded(tl.getEvent(i+1)).stream()
                         .map(gs -> startFluent(gs))
@@ -62,6 +66,17 @@ public class MinSpanTreeExt implements StateExtension {
 
             if(!restricted.isEmpty())
                 System.out.println(restricted);
+
+            for(LogStatement s : restricted) {
+                Optional<Action> optAct = st.getActionContaining(s);
+                if(optAct.isPresent()) {
+                    IRSet<GAction> allowed = new IRSet<>(st.pl.preprocessor.store.getIntRep(GAction.class));
+                    for(GLogStatement gs : getGrounded(s))
+                        allowed.add(gs.container.get());
+                    Domain dom = new Domain(allowed.toBitSet());
+                    st.csp.bindings().restrictDomain(optAct.get().instantiationVar(), dom);
+                }
+            }
         }
     }
 
