@@ -17,6 +17,7 @@ import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingAction;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
+import fape.core.planning.search.strategies.plans.tsp.GoalNetwork;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
@@ -34,6 +35,7 @@ import fr.laas.fape.structures.IRSet;
 import lombok.Getter;
 import lombok.Setter;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.LStatementRef;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.*;
@@ -1065,6 +1067,58 @@ public class State implements Reporter {
         assert csp.bindings().isRecorded(lifted.instantiationVar());
         Domain dom = csp.bindings().rawDomain(lifted.instantiationVar());
         return new IRSet<>(pl.preprocessor.store.getIntRep(GAction.class), dom.toBitSet());
+    }
+
+    /** Returns all ground versions of this statements */
+    public Set<GAction.GLogStatement> getGroundStatements(LogStatement s) {
+        // action by which this statement was introduced (null if no action)
+        Action containingAction = getActionContaining(s);
+
+        if (containingAction == null) { // statement was not added as part of an action
+            int minDur = csp.stn().getMinDelay(s.start(), s.end());
+            if(!s.needsSupport()) {
+                assert s instanceof Assignment;
+                assert s.endValue() instanceof InstanceRef;
+                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
+                return fluents.stream()
+                        .map(f -> new GAction.GAssignment(f.sv, f.value, minDur, null))
+                        .collect(Collectors.toSet());
+            } else if(s.isChange()) {
+                assert s instanceof Persistence;
+                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
+                Collection<InstanceRef> startValues = valuesOf(s.startValue());
+
+                return fluents.stream()
+                        .flatMap(f -> startValues.stream()
+                                .map(startVal -> new GAction.GTransition(f.sv, startVal, f.value, minDur, null)))
+                        .collect(Collectors.toSet());
+            } else {
+                assert s instanceof Persistence;
+                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
+
+                return fluents.stream()
+                        .map(f -> new GAction.GPersistence(f.sv, f.value, minDur, null))
+                        .collect(Collectors.toSet());
+            }
+        } else { // statement was added as part of an action or a decomposition
+            Collection<GAction> acts = getGroundActions(containingAction);
+
+            // local reference of the statement, used to extract the corresponding ground statement from the GAction
+            assert containingAction.context().contains(s);
+            LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
+
+            return acts.stream()
+                    .map(ga -> ga.statementWithRef(statementRef))
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    public List<InstanceRef> valuesOf(VarRef var) {
+        List<InstanceRef> values = new ArrayList<>();
+        for(String val : domainOf(var)) {
+            values.add(pb.instances().referenceOf(val));
+        }
+        return values;
     }
 
     public List<Action> getAllActions() { return actions; }

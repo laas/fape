@@ -275,8 +275,6 @@ public class Htsp extends PartialPlanComparator {
     }
 
     public static GoalNetwork goalNetwork(State st) {
-        APlanner planner = st.pl;
-
         GoalNetwork gn = new GoalNetwork();
 
         for (Timeline tl : st.getTimelines()) {
@@ -285,47 +283,15 @@ public class Htsp extends PartialPlanComparator {
 
             if(tl.hasSinglePersistence()) {
                 goals = new GoalNetwork.DisjunctiveGoal[1];
-
                 LogStatement s = tl.getChainComponent(0).getFirst();
-                assert s instanceof Persistence;
-                Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
-
-                Set<GLogStatement> persistences = fluents.stream()
-                        .map(f -> new GAction.GPersistence(f.sv, f.value, st.csp.stn().getMinDelay(s.start(),s.end()), null)) //TODO NULL
-                        .collect(Collectors.toSet());
+                Set<GLogStatement> persistences = st.getGroundStatements(s);
                 goals[0] = new GoalNetwork.DisjunctiveGoal(persistences, s.start(), s.end());
-
             } else {
                 goals = new GoalNetwork.DisjunctiveGoal[tl.numChanges()];
                 for (int i = 0; i < tl.numChanges(); i++) {
                     LogStatement s = tl.getChangeNumber(i).getFirst();
-
-                    // action by which this statement was introduced (null if no action)
-                    Action containingAction = st.getActionContaining(s);
-
-                    if (containingAction == null) { // statement was not added as part of an action
-                        assert s instanceof Assignment;
-                        assert s.endValue() instanceof InstanceRef;
-                        assert i == 0;
-                        Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), st, planner);
-
-                        Set<GLogStatement> assignments = fluents.stream()
-                                .map(f -> new GAction.GAssignment(f.sv, f.value, st.csp.stn().getMinDelay(s.start(), s.end()), null)) //TODO NULL
-                                .collect(Collectors.toSet());
-                        goals[i] = new GoalNetwork.DisjunctiveGoal(assignments, s.start(), s.end());
-
-                    } else { // statement was added as part of an action or a decomposition
-                        Collection<GAction> acts = st.getGroundActions(containingAction);
-
-                        // local reference of the statement, used to extract the corresponding ground statement from the GAction
-                        assert containingAction.context().contains(s);
-                        LStatementRef statementRef = containingAction.context().getRefOfStatement(s);
-
-                        Set<GLogStatement> statements = acts.stream()
-                                .map(ga -> ga.statementWithRef(statementRef))
-                                .collect(Collectors.toSet());
-                        goals[i] = new GoalNetwork.DisjunctiveGoal(statements, s.start(), s.end());
-                    }
+                    Set<GLogStatement> gStatements = st.getGroundStatements(s);
+                    goals[i] = new GoalNetwork.DisjunctiveGoal(gStatements, s.start(), s.end());
                 }
             }
 

@@ -36,11 +36,7 @@ public class DisjunctiveFluent implements Landmark {
 
         List<List<InstanceRef>> valuesSets = new LinkedList<>();
         for(VarRef var : variables) {
-            List<InstanceRef> values = new LinkedList<>();
-            for(String val : st.domainOf(var)) {
-                values.add(st.pb.instances().referenceOf(val));
-            }
-            valuesSets.add(values);
+            valuesSets.add(st.valuesOf(var));
         }
 
         List<List<InstanceRef>> argList = PGUtils.allCombinations(valuesSets);
