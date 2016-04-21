@@ -11,14 +11,9 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
   def this(l : java.lang.Iterable[T]) = this(l.asScala.toList)
 
   class IListIterator[X](private var l : List[X]) extends util.Iterator[X] {
-    override def hasNext: Boolean = l.nonEmpty
-
-    override def next(): X = {
-      val item = l.head
-      l = l.tail
-      item
-    }
-
+    val it = l.iterator
+    override def hasNext: Boolean = it.hasNext
+    override def next(): X = it.next()
     override def remove(): Unit = ???
   }
 

@@ -1,6 +1,7 @@
 package planstack.structures
 
 import java.util
+import java.util.function.Predicate
 
 import scala.collection.JavaConverters._
 
@@ -10,13 +11,9 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
   def this(l : java.lang.Iterable[T]) = this(l.asScala.toSet)
 
   class ISetIterator[X](private var s : Set[X]) extends java.util.Iterator[X] {
-    override def hasNext: Boolean = s.nonEmpty
-
-    override def next(): X = {
-      val item = s.head
-      s = s.tail
-      item
-    }
+    val it = s.iterator
+    override def hasNext: Boolean = it.hasNext
+    override def next(): X = it.next()
 
     override def remove(): Unit = ???
   }
@@ -42,6 +39,9 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
 
   def filter(f: T => Boolean) : ISet[T] =
     new ISet[T](s.filter(f))
+
+  def filter(f: Predicate[T]) : ISet[T] =
+    new ISet[T](s.filter(e => f.test(e)))
 
   def contains(p1: T): Boolean =
     s.contains(p1)
