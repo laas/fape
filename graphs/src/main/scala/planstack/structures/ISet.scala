@@ -29,7 +29,10 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
   def head(): T = s.head
 
   def withoutAll(p1: util.Collection[T]): ISet[T] =
-    new ISet(s.filter(e => !p1.contains(e)))
+    if(p1.isEmpty)
+      this
+    else
+      new ISet(s.filter(e => !p1.contains(e)))
 
   def onlyWithAll(p1: util.Collection[_]): ISet[T] =
     new ISet(s.filter(e => p1.contains(e)))
@@ -47,7 +50,10 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
     new ISetIterator[T](s)
 
   def withAll(p1: util.Collection[T]): ISet[T] =
-    new ISet(s ++ p1.asScala)
+    if(p1.isEmpty)
+      this
+    else
+      new ISet(s ++ p1.asScala)
 
   def containsAll(p1: util.Collection[T]): Boolean = p1.asScala.forall(item => s.contains(item))
 
@@ -55,6 +61,8 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
 
   def `with`(p1: T): ISet[T] =
     new ISet(s + p1)
+
+    def stream : java.util.stream.Stream[T] = s.asJavaCollection.stream()
 
   override def toString = s.toString()
 }

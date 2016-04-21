@@ -28,7 +28,10 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
   def size(): Int = l.size
 
   def withoutAll(p1: util.Collection[_]): IList[T] =
-    new IList(l.filter(e => !p1.contains(e)))
+    if(p1.isEmpty)
+      this
+    else
+      new IList(l.filter(e => !p1.contains(e)))
 
   def onlyWithAll(p1: util.Collection[_]): IList[T] =
     new IList(l.filter(e => p1.contains(e)))
@@ -49,7 +52,10 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
     new IListIterator[T](l)
 
   def withAll(p1: util.Collection[_ <: T]): IList[T] =
-    new IList(l ++ p1)
+    if(p1.isEmpty)
+      this
+    else
+      new IList(l ++ p1)
 
   def containsAll(p1: util.Collection[_]): Boolean = p1.forall(l.contains(_))
 
