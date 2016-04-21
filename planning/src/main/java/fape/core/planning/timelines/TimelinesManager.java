@@ -17,10 +17,7 @@ import java.util.stream.StreamSupport;
 public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
 
-    /**
-     * All temporal timelines.
-     */
-//    private List<Timeline> vars = new LinkedList<>();
+    /** All timelines, indexed by their ID */
     private Timeline[] timelines;
     private final State listener;
 
@@ -379,6 +376,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
     }
 
     public Iterable<Timeline> getTimelines() { return this; }
+    public Stream<Timeline> getTimelinesStream() { return StreamSupport.stream(getTimelines().spliterator(), false); }
 
     public Stream<LogStatement> allStatements() {
         return StreamSupport.stream(getTimelines().spliterator(), false).flatMap(Timeline::allStatements);
