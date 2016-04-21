@@ -61,7 +61,7 @@ public class State implements Reporter {
 
     @Setter @Getter
     /** Number of the last decomposition that was used in this state.
-     * This is used to always conisder the ethod in the order they are given in the domain file.*/
+     * This is used to always consider the method in the order they are given in the domain file.*/
     int lastDecompositionNumber = 0;
 
     /**
@@ -174,6 +174,7 @@ public class State implements Reporter {
         extensions = new ArrayList<>();
         extensions.add(new HierarchicalConstraints(this));
         extensions.add(new OpenGoalSupportersCache(this));
+        extensions.add(new CausalNetworkExt(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;
@@ -1024,6 +1025,11 @@ public class State implements Reporter {
                 return false;
         }
         return true;
+    }
+
+    public boolean mustOverlap(Collection<TPRef> firstIntervalStart, Collection<TPRef> firstIntervalEnd,
+                               Collection<TPRef> secondIntervalStart, Collection<TPRef> secondIntervalEnd) {
+        return !canAllBeBefore(firstIntervalEnd, secondIntervalStart) || !canAllBeBefore(secondIntervalEnd, firstIntervalStart);
     }
 
     public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().canBeStrictlyBefore(a, b); }
