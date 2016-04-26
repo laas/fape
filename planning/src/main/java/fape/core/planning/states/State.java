@@ -174,7 +174,6 @@ public class State implements Reporter {
         extensions.add(new HierarchicalConstraints(this));
         extensions.add(new OpenGoalSupportersCache(this));
         extensions.add(new CausalNetworkExt(this));
-        extensions.add(new MinSpanTreeExt(this));
 
         // Insert all problem-defined modifications into the state
         problemRevision = -1;

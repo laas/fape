@@ -346,7 +346,7 @@ public class Planning {
                     System.out.println("Generated states: "+planner.numGeneratedStates);
                     System.out.println("Fast-Forwarded states: "+planner.numFastForwardedStates);
                     System.out.println("Makespan: "+sol.getEarliestStartTime(sol.pb.end()));
-                    System.out.println("Num ground actions after reachability analysis: "+planner.preprocessor.getAllActions().size());
+                    System.out.println("Num actions: "+sol.getAllActions().size());
                     System.out.println();
                     System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));

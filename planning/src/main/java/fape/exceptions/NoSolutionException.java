@@ -5,6 +5,7 @@ public class NoSolutionException extends Exception {
 
     final String message;
     public NoSolutionException(String msg) { this.message = msg; }
+    public NoSolutionException() { this.message = "no message =)"; }
 
     @Override public String toString() {
         return "NoSolution: "+message;
