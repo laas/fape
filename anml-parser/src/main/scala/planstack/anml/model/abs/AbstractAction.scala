@@ -227,6 +227,11 @@ object AbstractAction {
           allConstraints ++= constraints
       }
 
+      for((function,variable) <- action.context.bindings) {
+        val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => action.context.getLocalVar(a.name)))
+        allConstraints += new AbstractEqualityConstraint(sv, action.context.getLocalVar(variable.name), LStatementRef(""))
+      }
+
       // minimize all temporal constraints and split timepoints between flexible and rigid (a rigid timepoint a a fixed delay wrt to a flexible)
       val simpleTempConst = allConstraints.filter(s => s.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay])
       val otherConsts = allConstraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])

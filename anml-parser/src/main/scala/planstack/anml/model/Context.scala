@@ -1,8 +1,10 @@
 package planstack.anml.model
 
 import planstack.anml.ANMLException
+import planstack.anml.model.concrete.{Action => CAction}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.statements.Statement
+import planstack.anml.parser._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -22,7 +24,7 @@ abstract class AbstractContext {
   val variables = mutable.Map[LVarRef, VarRef]()
   val nameToLocalVar = mutable.Map[String, LVarRef]()
 
-  protected val actions = mutable.Map[LActRef, Action]()
+  protected val actions = mutable.Map[LActRef, CAction]()
   protected val tasks = mutable.Map[LActRef, Task]()
 
   protected val statements = mutable.Map[LStatementRef, Statement]()
@@ -60,6 +62,8 @@ abstract class AbstractContext {
   }
 
   def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter)
+
+  def bindVarToConstant(name:LVarRef, const:InstanceRef)
 
   /**
    * @param localName Name of the local variable to look up
@@ -144,7 +148,7 @@ abstract class AbstractContext {
     variables.put(localName, globalName)
   }
 
-  def getAction(localID:LActRef) : Action = {
+  def getAction(localID:LActRef) : CAction = {
     if(actions.contains(localID)) {
       actions(localID)
     } else {
@@ -181,7 +185,7 @@ abstract class AbstractContext {
     * @param localID Local reference of the AbstractAction
     * @param globalID Global reference of the Action
     */
-  def addAction(localID:LActRef, globalID:Action) {
+  def addAction(localID:LActRef, globalID:CAction) {
     assert(!actions.contains(localID) || actions(localID) == null)
     actions(localID) = globalID
   }
@@ -192,8 +196,102 @@ abstract class AbstractContext {
     tasks(localID) = globalDef
   }
 
+  val bindings : mutable.Map[EFunction,EVariable] = mutable.Map()
+  private var nextBindingID = 0
+  def bindingOf(f:EFunction, refCounter: RefCounter): EVariable = {
+    assert(f.isConstant)
+    assert(f.func.valueType != "integer")
+    if(!bindings.contains(f)) {
+      bindings.put(f, EVariable("__binding_var__"+nextBindingID, f.func.valueType, Some(f)))
+      addUndefinedVar(new LVarRef("__binding_var__"+nextBindingID, f.func.valueType), f.func.valueType, refCounter)
+      nextBindingID += 1
+    }
+    bindings(f)
+  }
 
+  import planstack.anml.parser
+  def simplify(e: parser.Expr, pb:AnmlProblem) : E = {
+    val simple = e match {
+      case VarExpr(name) if pb.functions.isDefined(name) =>
+        EFunction(pb.functions.get(name), Nil)
+      case VarExpr(name) =>
+        EVariable(name, getType(getLocalVar(name)), None)
+      case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
+        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+        case FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
+        ETask(tName, args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+      case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
+        second match {
+          case VarExpr(sec) =>
+            EFunction(pb.functions.get(s"$typ.$sec"), Nil)
+          case FuncExpr(sec,args) =>
+            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+      }
+      case ChainedExpr(left, right) =>
+        val sleft = simplify(left, pb)
+        (sleft, right) match {
+          case (v@EVariable(_,typ, _), FuncExpr(fe, args)) =>
+            val f = pb.functions.get(pb.instances.getQualifiedFunction(typ, fe.functionName).mkString("."))
+            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+          case (v@EVariable(_,typ, _), VarExpr(fname)) =>
+            val f = pb.functions.get(pb.instances.getQualifiedFunction(typ, fname).mkString("."))
+            EFunction(f, List(v))
+        }
+      case NumExpr(value) =>
+        ENumber(value.toInt)
+      case x => sys.error("Unmatched: "+x)
+    }
+    simple match {
+      case f:EFunction if f.isConstant => simplifyToVar(f, pb)
+      case x => x
+    }
+  }
+
+  private def simplifyToVar(e: E, pb: AnmlProblem) : EVariable = e match {
+    case v:EVariable => v
+    case f:EFunction if f.isConstant && f.func.valueType != "integer" =>
+      bindingOf(f, pb.refCounter)
+    case EFunction(f, args) if f.isConstant && f.valueType == "integer" && !args.forall(a => a.expr.isEmpty) =>
+      sys.error("Functions are not accepted as parameters of integer functions.")
+    case ef@EFunction(f, args) if f.isConstant && f.valueType == "integer" => // TODO this is a hack to make sure actions never end up with integer variables
+      EVariable("xxxxxxxx"+{nextBindingID+=1;nextBindingID-1}, "integer", Some(ef))
+    case f:EFunction if !f.isConstant => throw new ANMLException("Trying to use "+f+" as a constant function.")
+    case x => throw new ANMLException("Unrecognized expression: "+x)
+  }
+
+  def simplifyStatement(s: parser.Statement, pb:AnmlProblem) : EStatement = {
+    s match {
+      case parser.SingleTermStatement(e, id) => simplify(e, pb) match {
+        case f:EFunction =>
+          assert(f.func.valueType == "boolean")
+          EBiStatement(f, "==", EVariable("true", "boolean", None), id)
+        case v@EVariable(_,"boolean",_) =>
+          EBiStatement(v, "==", EVariable("true", "boolean", None), id)
+        case t:ETask =>
+          EUnStatement(t, id)
+        case x => sys.error("Problem: "+x)
+      }
+      case parser.TwoTermsStatement(e1, op, e2, id) =>
+        EBiStatement(simplify(e1,pb), op.op, simplify(e2,pb), id)
+      case parser.ThreeTermsStatement(e1,op1,e2,op2,e3,id) =>
+        ETriStatement(simplify(e1,pb), op1.op, simplify(e2,pb), op2.op, simplify(e3,pb), id)
+    }
+
+  }
 }
+
+trait E
+case class EVariable(name:String, typ:String, expr:Option[EFunction]) extends E
+case class EFunction(func:Function, args:List[EVariable]) extends E {
+  def isConstant = func.isConstant
+}
+case class ENumber(n:Int) extends E
+case class ETask(name:String, args:List[EVariable]) extends E
+
+trait EStatement
+case class EUnStatement(e:E, id:String) extends EStatement
+case class EBiStatement(e1:E, op:String, e2:E, id:String) extends EStatement
+case class ETriStatement(e1:E, op:String, e2:E, op2:String, e3:E, id:String) extends EStatement
 
 /** A context where all references are fully defined (i.e. every local reference has a corresponding global reference).
   *
@@ -237,6 +335,14 @@ class Context(
     assert(name.typ == typeName)
     addVar(name, globalVar)
     addVarToCreate(globalVar)
+  }
+
+  def bindVarToConstant(name:LVarRef, const:InstanceRef): Unit = {
+    assert(variables.contains(name))
+    val previousGlobal = variables(name)
+    varsToCreate -= previousGlobal
+    variables.put(name, const)
+
   }
 }
 

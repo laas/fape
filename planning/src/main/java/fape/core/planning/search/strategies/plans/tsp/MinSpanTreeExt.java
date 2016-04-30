@@ -14,6 +14,8 @@ import fape.core.planning.timelines.Timeline;
 import fape.exceptions.NoSolutionException;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IRSet;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.statements.LogStatement;
 import fape.core.planning.grounding.GAction.*;
@@ -22,14 +24,18 @@ import planstack.constraints.bindings.Domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public class MinSpanTreeExt implements StateExtension {
 
     final State st;
+    final boolean useNumChangesInAction;
 
     final HashMap<LogStatement, HashSet<GLogStatement>> groundStatements = new HashMap<>();
 
-    public MinSpanTreeExt(State st) {
-        this.st = st;
+
+    @Override
+    public StateExtension clone(State st) {
+        return new MinSpanTreeExt(st, useNumChangesInAction);
     }
 
     public int costToGo() {
@@ -184,9 +190,5 @@ public class MinSpanTreeExt implements StateExtension {
         IRSet<Fluent> fs =new IRSet<>(st.pl.preprocessor.store.getIntRep(Fluent.class));
         getGrounded(s).stream().forEach(gs -> fs.add(endFluent(gs)));
         return fs;
-    }
-    @Override
-    public StateExtension clone(State st) {
-        return new MinSpanTreeExt(st);
     }
 }

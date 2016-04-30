@@ -234,6 +234,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
     val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID)
+    assert(asIDs.forall(_ >= 0))
     mapping += ((asIDs, setID))
     extToCheck += mapping.size-1
   }

@@ -74,11 +74,19 @@ case class Decomposition(content:Seq[DecompositionContent]) extends ActionConten
 sealed trait Expr {
   def functionName : String
 }
+
+case class Word(w:String) extends Expr {
+  def functionName = w
+}
+case class ChainedExpr(left:Expr, right:Expr) extends Expr {
+  require(!right.isInstanceOf[ChainedExpr])
+  def functionName = s"$left.$right"
+}
 case class VarExpr(variable:String) extends Expr {
   override def functionName = variable
 }
-case class FuncExpr(svExpr:List[String], args:List[VarExpr]) extends Expr {
-  override def functionName = svExpr.mkString(".")
+case class FuncExpr(funcExpr:Expr, args:List[Expr]) extends Expr {
+  override def functionName = funcExpr.functionName
 }
 
 case class NumExpr(value : Float) extends Expr {
@@ -200,9 +208,9 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   lazy val statementWithoutID : Parser[Statement] = (
-      expr<~";" ^^ (e => new SingleTermStatement(e, ""))
-    | expr~op~expr<~";" ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
-    | expr~op~expr~op~expr<~";" ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
+      literal<~";" ^^ (e => new SingleTermStatement(e, ""))
+    | literal~op~literal<~";" ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
+    | literal~op~literal~op~literal<~";" ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
     )
 
   /** Temporal constraint between two time points. It is of the form:
@@ -226,23 +234,28 @@ object AnmlParser extends JavaTokenParsers {
     case "-"~num => - num.toInt
   }
 
-  lazy val expr : Parser[Expr] = (
+  lazy val unchainedLiteral : Parser[Expr] = (
       decimalNumber ^^ { x => NumExpr(x.toFloat) }
     | "-"~>decimalNumber ^^ { x => NumExpr(-x.toFloat) }
-    | repsep(word,".")~opt(refArgs) ^^ {
-        case List(variable) ~ None => VarExpr(variable)
-        case svExpr~None => FuncExpr(svExpr, Nil)
-        case svExpr~Some(args) => FuncExpr(svExpr, args)
+    | word~opt(refArgs) ^^ {
+        case f~None => VarExpr(f)
+        case f~Some(args) => FuncExpr(VarExpr(f), args)
       }
   )
+
+  lazy val literal : Parser[Expr] =
+    rep1sep(unchainedLiteral,".") ^^ {
+      case List(variable) => variable
+      case l => l.tail.foldLeft(l.head)((acc,cur) => ChainedExpr(acc, cur))
+    }
 
   /** a var expr is a single word such as x, prettyLongName, ... */
   lazy val varExpr : Parser[VarExpr] =
     word ^^ (x => VarExpr(x))
 
   /** List of variable expression such as (x, y, z) */
-  lazy val refArgs : Parser[List[VarExpr]] =
-    "("~>repsep(varExpr, ",")<~")"
+  lazy val refArgs : Parser[List[Expr]] =
+    "("~>repsep(literal, ",")<~")"
 
   lazy val action : Parser[Action] =
     "action"~>word~"("~repsep(argument, ",")~")"~actionBody ^^
@@ -260,8 +273,8 @@ object AnmlParser extends JavaTokenParsers {
       | "motivated"~";" ^^^ List(Motivated)
       | "constant"~>(word|kwType)~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe)) }
-      | "duration"~":="~>expr<~";" ^^ (x => List(ExactDuration(x)))
-      | "duration"~":in"~"["~>expr~","~expr<~"]"~";" ^^ {
+      | "duration"~":="~>literal<~";" ^^ (x => List(ExactDuration(x)))
+      | "duration"~":in"~"["~>literal~","~literal<~"]"~";" ^^ {
         case min~","~max => List(UncertainDuration(min, max))
       }
     )

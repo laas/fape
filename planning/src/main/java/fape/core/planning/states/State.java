@@ -492,10 +492,10 @@ public class State implements Reporter {
             AssignmentConstraint c = (AssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
             for (VarRef v : c.sv().args()) {
-                assert v instanceof InstanceRef;
+                assert v instanceof InstanceRef : "Value "+v+" of "+bc+" is not an instance";
                 values.add(((InstanceRef) v).instance());
             }
-            assert c.variable() instanceof InstanceRef;
+            assert c.variable() instanceof InstanceRef : "Left value of "+bc+" is not an instance";
             values.add(((InstanceRef) c.variable()).instance());
             csp.bindings().addAllowedTupleToNAryConstraint(c.sv().func().name(), values);
         } else if (bc instanceof VarEqualityConstraint) {
@@ -506,6 +506,7 @@ public class State implements Reporter {
             csp.bindings().AddSeparationConstraint(c.leftVar(), c.rightVar());
         } else if (bc instanceof EqualityConstraint) {
             EqualityConstraint c = (EqualityConstraint) bc;
+            assert csp.bindings().isRecorded(c.variable());
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             variables.add(c.variable());
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());

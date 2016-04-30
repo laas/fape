@@ -77,6 +77,7 @@ class AnmlProblem extends TemporalInterval {
   lazy val allActionsAreMotivated = abstractActions.asScala.forall(aa => aa.mustBeMotivated)
 
   val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]()
+  val tasks = mutable.ArrayBuffer[String]()
 
   /**
    * All [[planstack.anml.model.concrete.Chronicle]] that need to be applied to a state for it to represent this problem.
@@ -169,7 +170,6 @@ class AnmlProblem extends TemporalInterval {
 
     // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
     val chronicle = new BaseChronicle(this)
-
     // add all type declarations to the instance manager.
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       instances.addType(typeDecl.name, typeDecl.parent)
@@ -207,6 +207,10 @@ class AnmlProblem extends TemporalInterval {
       })
     })
 
+    blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]).foreach(actionDecl => {
+      tasks += actionDecl.name
+    })
+
     blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
       val abs = AbstractAction(actionDecl, this, refCounter)
       assert(abs.nonEmpty)
@@ -228,6 +232,12 @@ class AnmlProblem extends TemporalInterval {
     blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
       absConstraints ++= AbstractTemporalConstraint(constraint)
     })
+
+    for((function,variable) <- context.bindings if function.func.valueType != "integer") {
+      val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => context.getLocalVar(a.name)))
+      absConstraints += new AbstractEqualityConstraint(sv, context.getLocalVar(variable.name), LStatementRef(""))
+    }
+
     chronicle.addAllStatements(absStatements, context, this, refCounter)
     chronicle.addAllConstraints(absConstraints, context, this, refCounter)
 
@@ -293,6 +303,7 @@ class AnmlProblem extends TemporalInterval {
         throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
           "change the problem definition: "+block)
     }
+    assert(context.varsToCreate.isEmpty)
     chron.addAllStatements(statements, localContext, this, refCounter)
     chron.addAllConstraints(constraints, localContext, this, refCounter)
 

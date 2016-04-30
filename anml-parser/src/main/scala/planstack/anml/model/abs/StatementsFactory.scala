@@ -3,36 +3,12 @@ package planstack.anml.model.abs
 import planstack.anml.model._
 import planstack.anml.model.abs.statements._
 import planstack.anml.model.abs.time.AbstractTemporalAnnotation
-import planstack.anml.model.concrete.RefCounter
+import planstack.anml.model.concrete.{InstanceRef, RefCounter}
 import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
 import planstack.anml.pending.{IntExpression, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 
 object StatementsFactory {
-
-  def normalizeExpr(expr : parser.Expr, context:AbstractContext, pb:AnmlProblem) : FuncExpr = {
-    expr match {
-      case parser.FuncExpr(nameParts, argList) => {
-        if(nameParts.size == 2 && !pb.instances.containsType(nameParts.head)) {
-          // function prefixed with a var/constant.
-          // find its type (part of the function name) and add the var as the first argument
-          val headType = context.getType(nameParts.head)
-          parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
-        } else if(nameParts .size <= 2) {
-          parser.FuncExpr(nameParts, argList)
-        } else {
-          throw new ANMLException("This func expr is not valid: "+expr)
-        }
-      }
-      case parser.VarExpr(x) => parser.FuncExpr(List(x), Nil)
-      case _ => throw new ANMLException("Unsupported expression: "+expr)
-    }
-  }
-
-  def isStateVariable(expr : parser.Expr, context:AbstractContext, pb:AnmlProblem) : Boolean = {
-    val e = normalizeExpr(expr, context, pb)
-    pb.functions.isDefined(e.functionName)
-  }
 
   def asStateVariable(expr:parser.Expr, context:AbstractContext, pb:AnmlProblem) = {
     AbstractParameterizedStateVariable(pb, context, expr)
@@ -67,146 +43,32 @@ object StatementsFactory {
   }
 
   def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem, refCounter: RefCounter) : (Option[AbstractStatement], List[AbstractConstraint]) = {
-    statement match {
-      case s:parser.SingleTermStatement => {
-        if (isStateVariable(s.term, context, pb)) {
-          // state variable alone. Make sure it is a boolean make it a persistence condition at true
-          val sv = asStateVariable(s.term, context, pb)
-          assert(sv.func.valueType == "boolean", "Non-boolean function as a single term statement: "+s)
-          if(sv.func.isConstant)
-            (None, List(new AbstractEqualityConstraint(sv, context.getLocalVar("true"), LStatementRef(s.id))))
-          else
-            (Some(new AbstractPersistence(sv, context.getLocalVar("true"), LStatementRef(s.id))), Nil)
-        } else {
-          // it should be an action, but we can't check since this action might not have been parsed yet
-          //assert(pb.containsAction(s.term.functionName), s.term.functionName + " is neither a function nor an action")
-          val e = normalizeExpr(s.term, context, pb)
-          val task = new AbstractTask("t-"+s.term.functionName, e.args.map(v => context.getLocalVar(v.variable)), LActRef(s.id))
-          (Some(task), List(AbstractMinDelay(task.start, task.end, IntExpression.lit(1))))
-        }
-      }
-      case parser.TwoTermsStatement(e1, op, e2, id) => {
-        if (isStateVariable(e1, context, pb)) {
-          val sv = asStateVariable(e1, context, pb)
-          if(sv.isResource && !sv.func.isConstant) {
-            assert(e2.isInstanceOf[NumExpr], "Non numerical expression at the right side of a resource statement.")
-            val rightValue = e2.asInstanceOf[NumExpr].value
-            op.op match {
-              case ":use" =>
-                (Some(new AbstractUseResource(sv, rightValue, LStatementRef(id))), Nil)
-              case ":produce" =>
-                (Some(new AbstractProduceResource(sv, rightValue, LStatementRef(id))), Nil)
-              case ":lend" =>
-                (Some(new AbstractLendResource(sv, rightValue, LStatementRef(id))), Nil)
-              case ":consume" =>
-                (Some(new AbstractConsumeResource(sv, rightValue, LStatementRef(id))), Nil)
-              case ":=" =>
-                (Some(new AbstractSetResource(sv, rightValue, LStatementRef(id))), Nil)
-              case op if Set("<","<=",">",">=").contains(op) =>
-                (Some(new AbstractRequireResource(sv, op, rightValue, LStatementRef(id))), Nil)
-              case x =>
-                throw new ANMLException("Operator "+x+" is not valid in the resource statement: "+statement)
-            }
-          } else {
-            if(sv.func.isConstant) {
-              // those are binding constraints (on constant functions)
-              e2 match {
-                case e2: NumExpr => {
-                  assert(sv.func.valueType == "integer", "Function "+sv.func+" does not have the type integer.")
-                  assert(op.op == ":=")
-                  val value = e2.asInstanceOf[NumExpr].value.toInt
-                  (None, List(new AbstractIntAssignmentConstraint(sv, value, LStatementRef(id))))
-                }
-                case e2: VarExpr => {
-                  // f(a, b) == c  and f(a, b) != c
-                  val variable = context.getLocalVar(e2.functionName)
-                  op.op match {
-                    case "==" => (None, List(new AbstractEqualityConstraint(sv, variable, LStatementRef(id))))
-                    case "!=" => (None, List(new AbstractInequalityConstraint(sv, variable, LStatementRef(id))))
-                    case ":=" => (None, List(new AbstractAssignmentConstraint(sv, variable, LStatementRef(id))))
-                    case x => throw new ANMLException("Wrong operator in statement: " + statement)
-                  }
-                }
-                case e2: FuncExpr => {
-                  //  f(a, b) == g(d, e)  and  f(a, b) != g(d, e)
-                  assert(isStateVariable(e2, context, pb), s"$e2 is not a state variable. From statement: $statement")
-                  val rightSv = asStateVariable(e2, context, pb)
-                  assert(rightSv.func.isConstant)
+    def asSv(f:EFunction) = new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+    def asVar(v:EVariable) = context.getLocalVar(v.name)
+    def asRef(id:String) = LStatementRef(id)
+    context.simplifyStatement(statement, pb) match {
 
-                  if (op.op == "==") {
-                    // f(a, b) == g(d, e)
-                    val sharedType =
-                      if (sv.func.valueType == rightSv.func.valueType)
-                        sv.func.valueType
-                      else if (pb.instances.subTypes(sv.func.valueType).contains(rightSv.func.valueType))
-                        rightSv.func.valueType
-                      else if (pb.instances.subTypes(rightSv.func.valueType).contains(sv.func.valueType))
-                        sv.func.valueType
-                      else
-                        throw new ANMLException("The two state variables have incompatible types: " + sv + " -- " + rightSv)
-
-                    val variable = context.getNewUndefinedVar(sharedType, refCounter)
-                    (None, List(
-                      new AbstractEqualityConstraint(sv, variable, LStatementRef(id)),
-                      new AbstractEqualityConstraint(rightSv, variable, new LStatementRef())
-                    ))
-                  } else {
-                    assert(op.op == "!=", "Unsupported operator in statement: " + statement)
-                    val v1 = context.getNewUndefinedVar(sv.func.valueType, refCounter)
-                    val v2 = context.getNewUndefinedVar(rightSv.func.valueType, refCounter)
-                    (None, List(
-                      new AbstractEqualityConstraint(sv, v1, LStatementRef(id)),
-                      new AbstractEqualityConstraint(rightSv, v2, new LStatementRef()),
-                      new AbstractVarInequalityConstraint(v1, v2, new LStatementRef())
-                    ))
-                  }
-                }
-              }
-            } else {
-              assert(e2.isInstanceOf[VarExpr], "Compound expression at the right side of a statement: " + statement)
-              val variable = context.getLocalVar(e2.functionName)
-              assert(pb.instances.isValueAcceptableForType(variable, sv.func.valueType, context),
-                "In the statement: " + statement + ", " + context.getType(variable) + "is not a subtype of " + sv.func.valueType)
-
-              //logical statement
-              op.op match {
-                case "==" => (Some(new AbstractPersistence(sv, variable, LStatementRef(id))), Nil)
-                case ":=" => (Some(new AbstractAssignment(sv, variable, LStatementRef(id))), Nil)
-                case _ => throw new ANMLException("Invalid operator in: " + statement)
-              }
-            }
-          }
-        } else {
-          // e1 is not a state variable, it can only be something like:
-          // a == b or a != b
-          assert(e1.isInstanceOf[VarExpr], "Left part is not a variable and was not identified as a function: "+statement)
-          assert(e2.isInstanceOf[VarExpr], "Right part is not a variable and was not identified as a function: "+statement)
-          val v1 = context.getLocalVar(e1.functionName)
-          val v2 = context.getLocalVar(e2.functionName)
-          op.op match {
-            case "==" => (None, List(new AbstractVarEqualityConstraint(v1, v2, LStatementRef(id))))
-            case "!=" => (None, List(new AbstractVarInequalityConstraint(v1, v2, LStatementRef(id))))
-            case _ => throw new ANMLException("Unsupported statement: "+statement)
-          }
-        }
-      }
-      case parser.ThreeTermsStatement(e1, o1, e2, o2, e3, id) => {
-        assert(o1.op == "==" && o2.op == ":->", "This statement is not a valid transition: "+statement)
-        assert(e2.isInstanceOf[VarExpr], "Compound expression in the middle of a transition: " + statement)
-        assert(e3.isInstanceOf[VarExpr], "Compound expression in the right side of a transition: " + statement)
-        assert(isStateVariable(e1, context, pb), "Left term does not seem to be a state variable: "+e1)
-        val sv = asStateVariable(e1, context, pb)
-        val v1 = context.getLocalVar(e2.functionName)
-        val v2 = context.getLocalVar(e3.functionName)
-        val tipe = sv.func.valueType
-        assert(pb.instances.isValueAcceptableForType(v1, tipe, context),
-          "Type: "+context.getType(v1)+" is not a subtype of "+tipe+
-            " which is the type of the state variable. In statement: "+statement)
-        assert(pb.instances.isValueAcceptableForType(v2, tipe, context),
-          "Type: "+context.getType(v2)+" is not a subtype of "+tipe+
-            " which is the type of the state variable. In statement: "+statement)
-        (Some(new AbstractTransition(sv, v1, v2, LStatementRef(id))), Nil)
-      }
+      case ETriStatement(f:EFunction, "==", v1:EVariable, ":->", v2:EVariable, id) =>
+        (Some(new AbstractTransition(asSv(f), asVar(v1), asVar(v2), asRef(id))), Nil)
+      case EBiStatement(vleft@EVariable(_,_,Some(f)), ":=", value:EVariable, id) =>
+        assert(context.hasGlobalVar(asVar(value)), s"$value is not defined yet when assigned to $f")
+        assert(context.getGlobalVar(asVar(value)).isInstanceOf[InstanceRef], s"$value is not recognied as a constant symbol when assigned to $f")
+        context.bindVarToConstant(asVar(vleft), context.getGlobalVar(asVar(value)).asInstanceOf[InstanceRef])
+        (None, List(new AbstractAssignmentConstraint(asSv(f), asVar(value), asRef(id))))
+      case EBiStatement(vleft@EVariable(_,_,Some(f)), ":=", ENumber(value), id) =>
+        (None, List(new AbstractIntAssignmentConstraint(asSv(f), value, asRef(id))))
+      case EBiStatement(vleft:EVariable, "==", vright:EVariable, id) =>
+        (None, List(new AbstractVarEqualityConstraint(asVar(vleft), asVar(vright), asRef(id))))
+      case EBiStatement(vleft:EVariable, "!=", vright:EVariable, id) =>
+        (None, List(new AbstractVarInequalityConstraint(asVar(vleft), asVar(vright), asRef(id))))
+      case EBiStatement(f:EFunction, ":=", value:EVariable, id) =>
+        assert(!f.func.isConstant)
+        (Some(new AbstractAssignment(asSv(f), asVar(value), asRef(id))), Nil)
+      case EBiStatement(f:EFunction, "==", value:EVariable, id) =>
+        (Some(new AbstractPersistence(asSv(f), asVar(value), asRef(id))), Nil)
+      case EUnStatement(ETask(t, args), id) =>
+        (Some(new AbstractTask("t-"+t, args.map(arg => asVar(arg)), LActRef(id))), Nil)
+      case x => sys.error("Unmatched: "+x)
     }
   }
 

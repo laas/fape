@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 
-class InstanceManager(refCounter: RefCounter) {
+class InstanceManager(val refCounter: RefCounter) {
 
   private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
 
@@ -23,6 +23,7 @@ class InstanceManager(refCounter: RefCounter) {
 
   // predefined ANML types and instances
   addType("boolean", "")
+//  addType("integer", "")
   addInstance("true", "boolean", refCounter)
   addInstance("false", "boolean", refCounter)
   addType("typeOfUnknown", "")
@@ -115,16 +116,24 @@ class InstanceManager(refCounter: RefCounter) {
   def allInstances : java.util.Collection[String] =  asJavaCollection(instancesDef.keys)
 
   /** Retrieves the variable reference linked to this instance
+    *
     * @param name Name of the instance to lookup
     * @return The global variable reference linked to this instance
     */
   def referenceOf(name: String) : InstanceRef = instancesDef(name)._2
+
+  def referenceOf(value: Int) : InstanceRef = {
+    if (!instancesDef.contains(value.toString))
+      addInstance(value.toString, "integer", refCounter)
+    instancesDef(value.toString)._2
+  }
 
   /** Lookup for all instances of this types (including all instances of any of its subtypes). */
   def instancesOfType(tipe:String) : java.util.List[String] = seqAsJavaList(instancesOfTypeRec(tipe))
 
   /** Returns all instances of the given type */
   private def instancesOfTypeRec(tipe:String) : List[String] = {
+    assert(tipe != "integer", "Requested instances of type integer.")
     try {
       instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
     } catch {
@@ -136,7 +145,8 @@ class InstanceManager(refCounter: RefCounter) {
    * Checks if the type an accept the given value. This is true if
    *  - the value's type is subtype of typ
    *  - the value is "unknown" (always aceptable value)
-   * @param value Value to be checked.
+    *
+    * @param value Value to be checked.
    * @param typ Type that should accept the value.
    * @param context Context in which the value is declared (used to retrieve its type.
    * @return True if the value is acceptable.
@@ -149,6 +159,7 @@ class InstanceManager(refCounter: RefCounter) {
 
   /** Return a fully qualified function definition in the form
     * [Robot, location].
+    *
     * @param typeName base type in which the method is used
     * @param methodName name of the method
     * @return

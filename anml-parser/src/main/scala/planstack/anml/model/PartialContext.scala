@@ -1,6 +1,6 @@
 package planstack.anml.model
 
-import planstack.anml.model.concrete.{EmptyVarRef, RefCounter, VarRef}
+import planstack.anml.model.concrete.{InstanceRef, EmptyVarRef, RefCounter, VarRef}
 
 
 class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
@@ -12,6 +12,12 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
     variables.put(name, new EmptyVarRef(typeName))
   }
 
+  def bindVarToConstant(name:LVarRef, const:InstanceRef): Unit = {
+    assert(variables.contains(name))
+    assert(variables(name).isInstanceOf[EmptyVarRef])
+    variables.put(name, const)
+  }
+
   def addUndefinedAction(localID:LActRef) {
     assert(!actions.contains(localID))
     actions.put(localID, null)
@@ -19,6 +25,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
 
   /**
    * Creates a new local var with type tipe. Returns the name of the created variable.
+ *
    * @param tipe Type of the variable to create
    * @return Name of the new local variable
    */
@@ -37,6 +44,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    * Builds a new concrete context (i.e. all local vars map to a global var) by
    *  - adding all (local, global) variable pairs to the new context.
    *  - creating the missing global variables using `factory`
+ *
    * @param parent Concrete context to be added as the parent of the built context
    * @param newVars map of (localVar -> globalVar) to be added to the context)
    * @return

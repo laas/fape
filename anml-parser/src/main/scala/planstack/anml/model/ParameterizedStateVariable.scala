@@ -52,30 +52,15 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
 object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
-    // get a normalized version of the expression
-    val func:parser.FuncExpr = expr match {
-      case parser.FuncExpr(nameParts, argList) => {
-        if(pb.functions.isDefined(nameParts.mkString("."))) {
-          parser.FuncExpr(nameParts, argList)
-        } else {
-          assert(nameParts.tail.length == 1, "Does not seem to be a valid function: "+expr)
-          val headType = context.getType(nameParts.head)
-          parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
-        }
-      }
-      case parser.VarExpr(x) => {
-        if(pb.functions.isDefined(x)) {
-          // it is a function with no arguments
-          parser.FuncExpr(List(x), Nil)
-        } else {
-          throw new ANMLException("This VarExpr does not refer to any existing function: "+expr)
-        }
-      }
-      case parser.NumExpr(_) => throw new ANMLException("Cannot build a state variable from a numeric expression: "+expr)
+    context.simplify(expr, pb) match {
+      case f: EFunction =>
+        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+      case EVariable(_,_,Some(f)) =>
+        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+      case x =>
+        throw new ANMLException("Cannot build a state variable from: " + x)
     }
-    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(a => context.getLocalVar(a.variable)))
   }
-
 }
 
 
