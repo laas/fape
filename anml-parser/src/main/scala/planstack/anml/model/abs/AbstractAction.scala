@@ -170,104 +170,109 @@ object AbstractAction {
     * @return
     */
   def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractAction] = {
-    val baseName = act.name
-    val args = act.args.map(a => new LVarRef(a.name, a.tipe))
+    try {
+      val baseName = act.name
+      val args = act.args.map(a => new LVarRef(a.name, a.tipe))
 
-    val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
-    val content = act.content.filterNot(_.isInstanceOf[parser.Decomposition])
+      val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
+      val content = act.content.filterNot(_.isInstanceOf[parser.Decomposition])
 
-    val decIdsAndStatements : Seq[(Int,Seq[parser.DecompositionContent])] = decompositions.size match {
-      case 0 => List((0,Nil))
-      case n => (1 to n).zip(decompositions.map(_.content))
+      val decIdsAndStatements: Seq[(Int, Seq[parser.DecompositionContent])] = decompositions.size match {
+        case 0 => List((0, Nil))
+        case n => (1 to n).zip(decompositions.map(_.content))
+      }
+
+      val acts = for ((decID, additionalStatements) <- decIdsAndStatements) yield {
+
+        val action = new AbstractAction(baseName, decID, args, new PartialContext(Some(pb.context)))
+
+        args.foreach(arg => {
+          action.context.addUndefinedVar(arg, arg.typ)
+        })
+        val allConstraints = ArrayBuffer[AbstractConstraint]()
+
+        val actionStart = ContainerStart
+        val actionEnd = ContainerEnd
+        allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
+
+        content foreach {
+          case ts: parser.TemporalStatement =>
+            val (optStatement, contraints) = StatementsFactory(ts, action.context, pb, refCounter)
+            action.statements ++= optStatement
+            allConstraints ++= contraints
+          case tempConstraint: parser.TemporalConstraint =>
+            allConstraints ++= AbstractTemporalConstraint(tempConstraint)
+          case parser.Motivated =>
+            action.motivated = true
+          case parser.ExactDuration(e) =>
+            val dur = AbstractDuration(e, action.context, pb)
+            allConstraints ++= AbstractExactDelay(actionStart, actionEnd, dur)
+          case parser.UncertainDuration(min, max) =>
+            val minDur = AbstractDuration(min, action.context, pb)
+            val maxDur = AbstractDuration(max, action.context, pb)
+            allConstraints += new AbstractContingentConstraint(actionStart, actionEnd, minDur, maxDur)
+          case const: parser.Constant =>
+            action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
+          case _: parser.Decomposition =>
+            throw new ANMLException("Decomposition should have been filtered out previously")
+        }
+
+        additionalStatements foreach {
+          case constraint: parser.TemporalConstraint =>
+            allConstraints ++= AbstractTemporalConstraint(constraint)
+          case const: parser.Constant => // constant function with no arguments is interpreted as local variable
+            action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
+          case statement: parser.TemporalStatement =>
+            val (optStatement, constraints) = StatementsFactory(statement, action.context, pb, refCounter)
+            action.statements ++= optStatement
+            allConstraints ++= constraints
+        }
+
+        for ((function, variable) <- action.context.bindings) {
+          val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => action.context.getLocalVar(a.name)))
+          allConstraints += new AbstractEqualityConstraint(sv, action.context.getLocalVar(variable.name), LStatementRef(""))
+        }
+
+        // minimize all temporal constraints and split timepoints between flexible and rigid (a rigid timepoint a a fixed delay wrt to a flexible)
+        val simpleTempConst = allConstraints.filter(s => s.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay])
+        val otherConsts = allConstraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])
+        val timepoints = (action.statements.flatMap(s => List(s.start, s.end)) ++
+          List(ContainerStart, ContainerEnd) ++
+          allConstraints.filter(s => s.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]).flatMap(c => List(c.from, c.to))).toSet.toList
+
+        // find all contingent timepoints
+        val contingents = allConstraints.collect {
+          case AbstractContingentConstraint(_, ctg, _, _) => ctg
+        }
+        val stn = new FullSTN(timepoints)
+        for (AbstractMinDelay(from, to, minDelay) <- simpleTempConst)
+          stn.addMinDelay(from, to, minDelay)
+        action.logStatements.foreach {
+          case t: AbstractTransition =>
+            stn.addMinDelay(t.start, t.end, 1)
+          case p: AbstractPersistence =>
+            stn.addMinDelay(p.start, p.end, 0)
+          case p: AbstractAssignment =>
+            stn.addMinDelay(p.start, p.end, 1)
+            stn.addMinDelay(p.end, p.start, -1)
+        }
+
+        val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
+        action.flexibleTimepoints = new IList(flexs)
+        action.anchoredTimepoints = new IList(anchored.map(a => action.AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))
+        action.stn = stn
+
+        // add all minimized temporal statements
+        action.constraints ++= constraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, IntExpression.minus(stnCst.label)))
+        //add all non temporal statements
+        action.constraints ++= otherConsts
+
+        action
+      }
+      acts.toList
+    } catch {
+      case e:Throwable =>
+        throw new ANMLException(s"Unable to build action \'${act.name}\'", e)
     }
-
-    val acts = for((decID, additionalStatements) <- decIdsAndStatements) yield {
-
-      val action = new AbstractAction(baseName, decID, args, new PartialContext(Some(pb.context)))
-
-      args.foreach(arg => {
-        action.context.addUndefinedVar(arg, arg.typ)
-      })
-      val allConstraints = ArrayBuffer[AbstractConstraint]()
-
-      val actionStart = ContainerStart
-      val actionEnd = ContainerEnd
-      allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
-
-      content foreach {
-        case ts:parser.TemporalStatement =>
-          val (optStatement, contraints) = StatementsFactory(ts, action.context, pb, refCounter)
-          action.statements ++= optStatement
-          allConstraints ++= contraints
-        case tempConstraint:parser.TemporalConstraint =>
-          allConstraints ++= AbstractTemporalConstraint(tempConstraint)
-        case parser.Motivated =>
-          action.motivated = true
-        case parser.ExactDuration(e) =>
-          val dur = AbstractDuration(e, action.context, pb)
-          allConstraints ++= AbstractExactDelay(actionStart, actionEnd, dur)
-        case parser.UncertainDuration(min, max) =>
-          val minDur = AbstractDuration(min, action.context, pb)
-          val maxDur = AbstractDuration(max, action.context, pb)
-          allConstraints += new AbstractContingentConstraint(actionStart, actionEnd, minDur, maxDur)
-        case const:parser.Constant =>
-          action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
-        case _:parser.Decomposition =>
-          throw new ANMLException("Decomposition should have been filtered out previously")
-      }
-
-      additionalStatements foreach {
-        case constraint:parser.TemporalConstraint =>
-          allConstraints ++= AbstractTemporalConstraint(constraint)
-        case const:parser.Constant => // constant function with no arguments is interpreted as local variable
-          action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
-        case statement:parser.TemporalStatement =>
-          val (optStatement, constraints) = StatementsFactory(statement, action.context, pb, refCounter)
-          action.statements ++= optStatement
-          allConstraints ++= constraints
-      }
-
-      for((function,variable) <- action.context.bindings) {
-        val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => action.context.getLocalVar(a.name)))
-        allConstraints += new AbstractEqualityConstraint(sv, action.context.getLocalVar(variable.name), LStatementRef(""))
-      }
-
-      // minimize all temporal constraints and split timepoints between flexible and rigid (a rigid timepoint a a fixed delay wrt to a flexible)
-      val simpleTempConst = allConstraints.filter(s => s.isInstanceOf[AbstractMinDelay]).map(_.asInstanceOf[AbstractMinDelay])
-      val otherConsts = allConstraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])
-      val timepoints = (action.statements.flatMap(s => List(s.start, s.end)) ++
-        List(ContainerStart, ContainerEnd) ++
-        allConstraints.filter(s => s.isInstanceOf[AbstractTemporalConstraint]).map(_.asInstanceOf[AbstractTemporalConstraint]).flatMap(c => List(c.from, c.to))).toSet.toList
-
-      // find all contingent timepoints
-      val contingents = allConstraints.collect {
-        case AbstractContingentConstraint(_, ctg, _, _) => ctg
-      }
-      val stn = new FullSTN(timepoints)
-      for(AbstractMinDelay(from, to, minDelay) <- simpleTempConst)
-        stn.addMinDelay(from, to, minDelay)
-      action.logStatements.foreach {
-        case t:AbstractTransition =>
-          stn.addMinDelay(t.start, t.end, 1)
-        case p:AbstractPersistence =>
-          stn.addMinDelay(p.start, p.end, 0)
-        case p:AbstractAssignment =>
-          stn.addMinDelay(p.start, p.end, 1)
-          stn.addMinDelay(p.end, p.start, -1)
-      }
-
-      val (flexs, constraints, anchored) = stn.minimalRepresentation(actionStart :: actionEnd :: contingents.toList)
-      action.flexibleTimepoints = new IList(flexs)
-      action.anchoredTimepoints = new IList(anchored.map(a => action.AnchoredTimepoint(a.timepoint, a.anchor, a.delay)))
-      action.stn = stn
-
-      // add all minimized temporal statements
-      action.constraints ++= constraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, IntExpression.minus(stnCst.label)))
-      //add all non temporal statements
-      action.constraints ++= otherConsts
-
-      action
-    }
-    acts.toList
   }
 }

@@ -73,24 +73,30 @@ case class Decomposition(content:Seq[DecompositionContent]) extends ActionConten
 
 sealed trait Expr {
   def functionName : String
+  def asANML : String
 }
 
 case class Word(w:String) extends Expr {
   def functionName = w
+  def asANML = w.toString
 }
 case class ChainedExpr(left:Expr, right:Expr) extends Expr {
   require(!right.isInstanceOf[ChainedExpr])
   def functionName = s"$left.$right"
+  def asANML = s"${left.asANML}.${right.asANML}"
 }
 case class VarExpr(variable:String) extends Expr {
   override def functionName = variable
+  def asANML = variable.toString
 }
 case class FuncExpr(funcExpr:Expr, args:List[Expr]) extends Expr {
   override def functionName = funcExpr.functionName
+  def asANML = s"${funcExpr.asANML}(${args.map(_.asANML).mkString(",")})"
 }
 
 case class NumExpr(value : Float) extends Expr {
   override def functionName = value.toString
+  def asANML = value.toString
 }
 
 trait TemporalConstraint extends DecompositionContent with ActionContent with AnmlBlock

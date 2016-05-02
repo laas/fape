@@ -1,6 +1,6 @@
 package planstack.anml.model
 
-import planstack.anml.ANMLException
+import planstack.anml.{UnrecognizedExpression, VariableNotFound, ANMLException}
 import planstack.anml.model.concrete.{Action => CAction}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.statements.Statement
@@ -128,7 +128,7 @@ abstract class AbstractContext {
       nameToLocalVar(name)
     else parentContext match {
       case Some(parent) => parent.getLocalVar(name)
-      case None => throw new ANMLException("Unable to find variable: "+name)
+      case None => throw new VariableNotFound(name)
     }
   }
 
@@ -210,7 +210,7 @@ abstract class AbstractContext {
   }
 
   import planstack.anml.parser
-  def simplify(e: parser.Expr, pb:AnmlProblem) : E = {
+  def simplify(e: parser.Expr, pb:AnmlProblem) : E = try {
     val simple = e match {
       case VarExpr(name) if pb.functions.isDefined(name) =>
         EFunction(pb.functions.get(name), Nil)
@@ -239,12 +239,16 @@ abstract class AbstractContext {
         }
       case NumExpr(value) =>
         ENumber(value.toInt)
-      case x => sys.error("Unmatched: "+x)
+      case x => sys.error(s"Unrecognized expression: ${x.asANML}  --  $x")
     }
     simple match {
       case f:EFunction if f.isConstant => simplifyToVar(f, pb)
       case x => x
     }
+  } catch {
+    case exc:Throwable =>
+      throw new UnrecognizedExpression(e, Some(exc))
+
   }
 
   private def simplifyToVar(e: E, pb: AnmlProblem) : EVariable = e match {
