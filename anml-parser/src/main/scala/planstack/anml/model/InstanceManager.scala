@@ -17,7 +17,7 @@ class InstanceManager(val refCounter: RefCounter) {
   private val types = mutable.Map[String, SimpleType]()
 
   /** Maps an instance name to a (type, GlobalReference) pair */
-  private val instancesDef = mutable.Map[String, Pair[String, InstanceRef]]()
+  private val instancesDef = mutable.Map[String, InstanceRef]()
 
   // predefined ANML types and instances
   addType(NON_NUM_SOURCE_TYPE,"")
@@ -40,8 +40,8 @@ class InstanceManager(val refCounter: RefCounter) {
   def addInstance(name:String, t:String, refCounter: RefCounter) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
-    val newInstance = new InstanceRef(name, t, refCounter)
-    instancesDef(name) = (t, newInstance)
+    val newInstance = new InstanceRef(name, asType(t), refCounter)
+    instancesDef(name) = newInstance
     types(t).addInstance(newInstance)
   }
 
@@ -59,6 +59,8 @@ class InstanceManager(val refCounter: RefCounter) {
       }
     }
   }
+
+  def asType(typeName: String) = types(typeName)
 
   /** Records a new type.
     *
@@ -96,7 +98,7 @@ class InstanceManager(val refCounter: RefCounter) {
   def containsType(typeName:String) = types.contains(typeName)
 
   /** Returns the type of a given instance */
-  def typeOf(instanceName:String) = instancesDef(instanceName)._1
+  def typeOf(instanceName:String) = instancesDef(instanceName).getType
 
   /** Returns all (including indirect) subtypes of the given parameter, including itself.
     *
@@ -110,11 +112,6 @@ class InstanceManager(val refCounter: RefCounter) {
     setAsJavaSet(types(typeName).parents.map(_.toString))
   }
 
-  /**
-   * @return All instances as a list of (name, type) pairs
-   */
-  def instances : List[Pair[String, String]] = instancesDef.toList.map(x => (x._1, x._2._1))
-
   /** Return a collection containing all instances. */
   def allInstances : java.util.Collection[String] =  asJavaCollection(instancesDef.keys)
 
@@ -123,12 +120,12 @@ class InstanceManager(val refCounter: RefCounter) {
     * @param name Name of the instance to lookup
     * @return The global variable reference linked to this instance
     */
-  def referenceOf(name: String) : InstanceRef = instancesDef(name)._2
+  def referenceOf(name: String) : InstanceRef = instancesDef(name)
 
   def referenceOf(value: Int) : InstanceRef = {
     if (!instancesDef.contains(value.toString))
       addInstance(value.toString, "integer", refCounter)
-    instancesDef(value.toString)._2
+    instancesDef(value.toString)
   }
 
   /** Lookup for all instances of this types (including all instances of any of its subtypes). */
@@ -152,7 +149,7 @@ class InstanceManager(val refCounter: RefCounter) {
    * @return True if the value is acceptable.
    */
   def isValueAcceptableForType(value:LVarRef, typ:String, context: AbstractContext) : Boolean =
-    subTypes(typ).contains(context.getType(value)) || value.id == "unknown"
+    subTypes(typ).contains(value.getType) || value.id == "unknown"
 
   /** Returns all instances of the given type */
   def jInstancesOfType(tipe:String) = seqAsJavaList(instancesOfType(tipe))
@@ -166,7 +163,7 @@ class InstanceManager(val refCounter: RefCounter) {
     */
   def getQualifiedFunction(typeName:String, methodName:String) : List[String] = {
     assert(types.contains(typeName), s"Type $typeName does not seem to exist.")
-    val ret = types(typeName).getQualidiedFunction(methodName)
+    val ret = types(typeName).getQualifiedFunction(methodName)
     assert(ret.nonEmpty)
     ret.split("\\.").toList
   }

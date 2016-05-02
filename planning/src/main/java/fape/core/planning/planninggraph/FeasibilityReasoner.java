@@ -324,8 +324,8 @@ public class FeasibilityReasoner {
         Collection<String> supportingMethods = planner.pb.getSupportersForTask(task.name()).stream()
                 .map(aa -> aa.name()).collect(Collectors.toList());
 
-        st.csp.bindings().AddVariable(task.methodSupportersVar(), supportingMethods);
-        st.csp.bindings().AddIntVariable(task.groundSupportersVar());
+        st.csp.bindings().addVariable(task.methodSupportersVar(), supportingMethods);
+        st.csp.bindings().addIntVariable(task.groundSupportersVar());
 
         List<VarRef> variables = new LinkedList<>();
         variables.addAll(task.args());

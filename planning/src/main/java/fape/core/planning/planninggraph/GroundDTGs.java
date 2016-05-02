@@ -6,6 +6,7 @@ import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.planner.APlanner;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.Type;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Collection;
@@ -29,8 +30,7 @@ public class GroundDTGs {
                 if(!dtgs.containsKey(effect.sv)) {
                     dtgs.put(effect.sv, initDTGForStateVariable(effect.sv));
                     // initialize nodes
-                    for(String val : pb.instances().instancesOfType(effect.sv.f.valueType())) {
-                        InstanceRef instance = pb.instance(val);
+                    for(InstanceRef instance : effect.sv.f.valueType().jInstances()) {
                         Fluent f = planner.preprocessor.getFluent(effect.sv, instance);
                         dtgs.get(effect.sv).addNodeIfAbsent(f, 0, null, null);
                     }
@@ -65,8 +65,7 @@ public class GroundDTGs {
     public DTGImpl initDTGForStateVariable(GStateVariable sv) {
         DTGImpl dtg = new DTGImpl(1, false);
         // initialize nodes
-        for(String val : pb.instances().instancesOfType(sv.f.valueType())) {
-            InstanceRef instance = pb.instance(val);
+        for(InstanceRef instance : sv.f.valueType().jInstances()) {
             final Fluent f = planner.preprocessor.getFluent(sv, instance);
             dtg.addNode(f, 0, null, null);
             dtg.setEntryPoint(f, 0);

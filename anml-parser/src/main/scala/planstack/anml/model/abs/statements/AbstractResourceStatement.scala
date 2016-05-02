@@ -16,7 +16,7 @@ import planstack.anml.model.{AbstractParameterizedStateVariable, AnmlProblem, Co
 abstract class AbstractResourceStatement(val sv:AbstractParameterizedStateVariable, val param:Float, override val id:LStatementRef)
   extends AbstractStatement(id)
 {
-  require(sv.func.valueType == "integer", "Functions in resource statements must have an integer value type: "+sv)
+  require(sv.func.valueType.isNumeric, "Functions in resource statements must have an integer value type: "+sv)
 
   def operator : String
 

@@ -3,13 +3,12 @@ package planstack.anml.model
 import planstack.anml.model.concrete.{InstanceRef, EmptyVarRef, RefCounter, VarRef}
 
 
-class PartialContext(val parentContext:Option[AbstractContext]) extends AbstractContext {
+class PartialContext(pb: AnmlProblem, val parentContext:Option[AbstractContext]) extends AbstractContext(pb) {
 
-  def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter = null) {
-    assert(!variables.contains(name), "Local variable already defined: "+name)
-    nameToLocalVar.put(name.id, name)
-    assert(name.typ == typeName)
-    variables.put(name, new EmptyVarRef(typeName))
+  def addUndefinedVar(v:LVarRef, refCounter: RefCounter = null) {
+    assert(!variables.contains(v), "Local variable already defined: "+v)
+    nameToLocalVar.put(v.id, v)
+    variables.put(v, new EmptyVarRef(v.typ))
   }
 
   def bindVarToConstant(name:LVarRef, const:InstanceRef): Unit = {
@@ -26,17 +25,17 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
   /**
    * Creates a new local var with type tipe. Returns the name of the created variable.
  *
-   * @param tipe Type of the variable to create
+   * @param typ Type of the variable to create
    * @return Name of the new local variable
    */
-  def getNewLocalVar(tipe:String) : LVarRef = {
+  def getNewLocalVar(typ:Type) : LVarRef = {
     var i = 0
-    var lVarRef = new LVarRef("locVar_"+i, tipe)
+    var lVarRef = new LVarRef("locVar_"+i, typ)
     while(contains(lVarRef)) {
       i += 1
-      lVarRef = new LVarRef("locVar_"+i, tipe)
+      lVarRef = new LVarRef("locVar_"+i, typ)
     }
-    addUndefinedVar(lVarRef, tipe)
+    addUndefinedVar(lVarRef)
     lVarRef
   }
 
@@ -50,7 +49,7 @@ class PartialContext(val parentContext:Option[AbstractContext]) extends Abstract
    * @return
    */
   def buildContext(pb:AnmlProblem, parent:Option[Context], refCounter: RefCounter, newVars:Map[LVarRef, VarRef] = Map()) = {
-    val context = new Context(parent)
+    val context = new Context(pb, parent)
 
     for((local, global) <- variables) {
       if(global.isEmpty && newVars.contains(local)) {

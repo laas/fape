@@ -5,10 +5,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.Utils;
-import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.Function;
-import planstack.anml.model.LVarRef;
-import planstack.anml.model.SymFunction;
+import planstack.anml.model.*;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
@@ -18,6 +15,7 @@ import planstack.anml.model.concrete.VarRef;
 import scala.collection.JavaConversions;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class LiftedDTG implements ActionSupporterFinder{
 
@@ -53,12 +51,10 @@ public class LiftedDTG implements ActionSupporterFinder{
         assert db.isConsumer() : "Error: this database doesn't need support: "+db;
 
         String predicate = db.stateVariable.func().name();
-        List<String> argTypes = new LinkedList<>();
-        for(VarRef argVar : db.stateVariable.args()) {
-            argTypes.add(st.typeOf(argVar));
-        }
-        String valueType = st.typeOf(db.getGlobalConsumeValue());
-        return this.getActionsSupporting(new FluentType(predicate, argTypes, valueType));
+        List<Type> argTypes = Arrays.asList(db.stateVariable.args()).stream()
+                .map(arg -> arg.getType())
+                .collect(Collectors.toList());
+        return this.getActionsSupporting(new FluentType(predicate, argTypes, db.getGlobalConsumeValue().getType()));
     }
 
     public Collection<SupportingAction> getActionsSupporting(FluentType f) {
@@ -68,24 +64,12 @@ public class LiftedDTG implements ActionSupporterFinder{
     }
 
     public Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
-        Set<FluentType> allEffects = new HashSet<>();
-        List<String> argTypes = new LinkedList<>();
-        String valType = null;
-        if(s instanceof AbstractTransition) {
-            for(LVarRef arg : s.sv().jArgs()) {
-                argTypes.add(a.context().getType(arg));
-            }
-            valType = a.context().getType(((AbstractTransition) s).to());
+        if(!s.hasEffectAtEnd())
+            return Collections.emptySet();
 
-        } else if(s instanceof AbstractAssignment) {
-            for(LVarRef arg : s.sv().jArgs()) {
-                argTypes.add(a.context().getType(arg));
-            }
-            valType = a.context().getType(((AbstractAssignment) s).value());
-        } else {
-            // this statement has no effects
-            return allEffects;
-        }
+        Set<FluentType> allEffects = new HashSet<>();
+        List<Type> argTypes = s.sv().jArgs().stream().map(x -> x.getType()).collect(Collectors.toList());
+        Type valType = s.effectValue().getType();
 
         FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
         allEffects.addAll(derivedSubTypes(fluent));
@@ -102,30 +86,12 @@ public class LiftedDTG implements ActionSupporterFinder{
     }
 
     public Set<FluentType> getPreconditions(AbstractAction a, AbstractLogStatement s) {
-        Set<FluentType> allPrecond = new HashSet<>();
-        List<String> argTypes = new LinkedList<>();
-        String valType = null;
-        if(s instanceof AbstractTransition) {
-            for(LVarRef arg : s.sv().jArgs()) {
-                argTypes.add(a.context().getType(arg));
-            }
-            valType = a.context().getType(((AbstractTransition) s).from());
+        if(!s.hasConditionAtStart())
+            return Collections.emptySet();
 
-        } else if(s instanceof AbstractPersistence) {
-            for(LVarRef arg : s.sv().jArgs()) {
-                argTypes.add(a.context().getType(arg));
-            }
-            valType = a.context().getType(((AbstractPersistence) s).value());
-        } else if(s instanceof AbstractAssignment) {
-            for(LVarRef arg : s.sv().jArgs()) {
-                argTypes.add(a.context().getType(arg));
-            }
-            // the value before an assignment can be anything with the type of the state variable.
-            valType = s.sv().func().valueType();
-        } else {
-            // this statement has no effects
-            return allPrecond;
-        }
+        Set<FluentType> allPrecond = new HashSet<>();
+        List<Type> argTypes = s.sv().jArgs().stream().map(x -> x.getType()).collect(Collectors.toList());
+        Type valType = s.conditionValue().getType();
 
         FluentType fluent = new FluentType(s.sv().func().name(), argTypes, valType);
         allPrecond.addAll(derivedSubTypes(fluent));
@@ -156,13 +122,13 @@ public class LiftedDTG implements ActionSupporterFinder{
         if(ft == null) {
             return allFluents;
         } else {
-            List<List<String>> argTypesSets = new LinkedList<>();
-            for(String argType : ft.argTypes) {
-                argTypesSets.add(new LinkedList<>(problem.instances().subTypes(argType)));
+            List<List<Type>> argTypesSets = new LinkedList<>();
+            for(Type argType : ft.argTypes) {
+                argTypesSets.add(new LinkedList<>(argType.jAllSubTypes()));
             }
 
-            for(List<String> argTypeList : PGUtils.allCombinations(argTypesSets)) {
-                for(String valueType : problem.instances().subTypes(ft.valueType)) {
+            for(List<Type> argTypeList : PGUtils.allCombinations(argTypesSets)) {
+                for(Type valueType : ft.valueType.jAllSubTypes()) {
                     allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
                 }
             }
@@ -183,15 +149,15 @@ public class LiftedDTG implements ActionSupporterFinder{
         if(ft == null) {
             return allFluents;
         } else {
-            List<List<String>> argTypesSets = new LinkedList<>();
-            for(String argType : ft.argTypes) {
-                List<String> parentsAndSelf = new LinkedList<>(problem.instances().parents(argType));
+            List<List<Type>> argTypesSets = new LinkedList<>();
+            for(Type argType : ft.argTypes) {
+                List<Type> parentsAndSelf = new LinkedList<>(argType.jParents());
                 parentsAndSelf.add(argType);
                 argTypesSets.add(parentsAndSelf);
             }
 
-            for(List<String> argTypeList : PGUtils.allCombinations(argTypesSets)) {
-                for(String valueType : problem.instances().parents(ft.valueType)) {
+            for(List<Type> argTypeList : PGUtils.allCombinations(argTypesSets)) {
+                for(Type valueType : ft.valueType.jParents()) {
                     allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
                 }
             }

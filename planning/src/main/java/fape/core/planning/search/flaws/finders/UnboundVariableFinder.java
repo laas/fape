@@ -14,7 +14,7 @@ public class UnboundVariableFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, APlanner planner) {
         List<Flaw> flaws = new LinkedList<>();
         for (VarRef v : st.getUnboundVariables()) {
-            assert !st.typeOf(v).equals("integer");
+            assert !v.getType().isNumeric();
             flaws.add(new UnboundVariable(v));
         }
         return flaws;

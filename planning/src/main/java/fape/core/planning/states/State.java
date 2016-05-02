@@ -6,8 +6,6 @@ import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.resources.Replenishable;
-import fape.core.planning.resources.ResourceManager;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -15,7 +13,6 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
-import fape.core.planning.search.strategies.plans.tsp.MinSpanTreeExt;
 import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
@@ -72,8 +69,6 @@ public class State implements Reporter {
 
     public final TaskNetworkManager taskNet;
     private final ArrayList<Action> actions;
-
-    protected final ResourceManager resMan;
 
     public final RefCounter refCounter;
 
@@ -162,7 +157,6 @@ public class State implements Reporter {
         tdb = new TimelinesManager(this);
         csp = planstack.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
-        resMan = new ResourceManager();
         threats = new HashSet<>();
 
         addableActions = null;
@@ -200,7 +194,6 @@ public class State implements Reporter {
         tdb = new TimelinesManager(st.tdb, this); //st.tdb.deepCopy();
         taskNet = st.taskNet.deepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
-        resMan = st.resMan.DeepCopy();
         threats = new HashSet<>(st.threats);
         stateVarsToVariables = new HashMap<>(st.stateVarsToVariables);
         addableActions = st.addableActions != null ? st.addableActions.clone() : null;
@@ -267,7 +260,7 @@ public class State implements Reporter {
      * This method propagates the constraint neworks
      */
     public boolean checkConsistency() {
-        isConsistent &= !isDeadEnd && csp.isConsistent() && resMan.isConsistent(this);
+        isConsistent &= !isDeadEnd && csp.isConsistent();
         return isConsistent;
     }
 
@@ -516,7 +509,7 @@ public class State implements Reporter {
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
             VarRef tmp = new VarRef(c.sv().func().valueType(), refCounter);
-            csp.bindings().AddVariable(tmp, pb.instances().jInstancesOfType(tmp.typ()));
+            csp.bindings().addVariable(tmp);
             variables.add(tmp);
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());
             csp.bindings().AddSeparationConstraint(tmp, c.variable());
@@ -634,17 +627,14 @@ public class State implements Reporter {
         }
 
         // for every instance declaration, create a new CSP Var with itself as domain
-        for (String instance : mod.instances()) {
-            csp.bindings().addPossibleValue(instance);
-            List<String> domain = new LinkedList<>();
-            domain.add(instance);
-            csp.bindings().AddVariable(pb.instances().referenceOf(instance), domain);
+        for (String instanceName : mod.instances()) {
+            csp.bindings().addPossibleValue(instanceName);
+            csp.bindings().addVariable(pb.instances().referenceOf(instanceName), Collections.singletonList(instanceName));
         }
 
         // Declare new variables to the constraint network.
         for (VarRef var : mod.vars()) {
-            Collection<String> domain = pb.instances().jInstancesOfType(var.typ());
-            csp.bindings().AddVariable(var, domain);
+            csp.bindings().addVariable(var);
         }
 
         for(BindingConstraint bc : mod.bindingConstraints())
@@ -1184,8 +1174,6 @@ public class State implements Reporter {
 
     public void addSeparationConstraint(VarRef a, VarRef b) { csp.bindings().AddSeparationConstraint(a, b); }
 
-    public String typeOf(VarRef var) { return csp.bindings().typeOf(var); }
-
     public void restrictDomain(VarRef var, Collection<String> values) { csp.bindings().restrictDomain(var, values); }
 
     public void bindVariable(VarRef var, String value) {
@@ -1213,9 +1201,9 @@ public class State implements Reporter {
     public VarRef getVariableOf(ParameterizedStateVariable sv) {
         assert sv.func().isConstant();
         if(!stateVarsToVariables.containsKey(sv)) {
-            assert sv.func().valueType().equals("integer") : "Temporal constraint involving the non-integer function: " + sv.func();
-            VarRef variable = new VarRef("integer", refCounter);
-            csp.bindings().AddIntVariable(variable);
+            assert sv.func().valueType().isNumeric() : "Temporal constraint involving the non-integer function: " + sv.func();
+            VarRef variable = new VarRef(sv.func().valueType(), refCounter);
+            csp.bindings().addIntVariable(variable);
             List<VarRef> variablesOfNAryConst = new ArrayList<>(Arrays.asList(sv.args()));
             variablesOfNAryConst.add(variable);
             csp.bindings().addNAryConstraint(variablesOfNAryConst, sv.func().name());
@@ -1247,16 +1235,6 @@ public class State implements Reporter {
     }
 
     public Timeline getDBContaining(LogStatement s) { return tdb.getTimelineContaining(s); }
-
-
-    /************** Wrapper around the Resource Manager ****************/
-
-    public Collection<Resolver> getResolvingBindings(Replenishable replenishable, float f) {
-        return resMan.GetResolvingBindings(replenishable, f, this);
-    }
-
-    public Collection<Flaw> resourceFlaws() { return resMan.GatherFlaws(this); }
-
 
 
     /***************** Execution related methods **************************/

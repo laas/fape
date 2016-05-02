@@ -4,9 +4,7 @@ package fape.core.planning.heuristics.temporal;
 import fape.core.planning.grounding.*;
 import fape.core.planning.planner.APlanner;
 import fape.core.planning.preprocessing.Preprocessor;
-import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
-import fape.core.planning.states.SearchNode;
 import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;
 import fr.laas.fape.structures.IRSet;
@@ -114,8 +112,8 @@ public class DGHandler extends fape.core.planning.search.Handler {
         Collection<String> supportingMethods = planner.pb.getSupportersForTask(task.name()).stream()
                 .map(aa -> aa.name()).collect(Collectors.toList());
 
-        st.csp.bindings().AddVariable(task.methodSupportersVar(), supportingMethods);
-        st.csp.bindings().AddIntVariable(task.groundSupportersVar());
+        st.csp.bindings().addVariable(task.methodSupportersVar(), supportingMethods);
+        st.csp.bindings().addIntVariable(task.groundSupportersVar());
 
         List<VarRef> variables = new LinkedList<>();
         variables.addAll(task.args());

@@ -89,7 +89,7 @@ public class MutexesHandler extends Handler {
 
         for(Fluent p : pp.getAllFluents()) {
             IRSet<Fluent> incompatible = new IRSet<Fluent>(fluentRep);
-            for(InstanceRef i : st.pb.instances().instancesOfType(p.sv.f.valueType()).stream().map(str -> st.pb.instance(str)).collect(Collectors.toList())) {
+            for(InstanceRef i : p.sv.f.valueType().jInstances()) {
                 Fluent f = pp.getFluent(p.sv, i);
                 if(!i.equals(p.value) && pp.getAllFluents().contains(f))
                     incompatible.add(f);

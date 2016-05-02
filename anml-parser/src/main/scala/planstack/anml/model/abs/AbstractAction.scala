@@ -170,9 +170,10 @@ object AbstractAction {
     * @return
     */
   def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractAction] = {
+    def t(typeName: String) = pb.instances.asType(typeName)
     try {
       val baseName = act.name
-      val args = act.args.map(a => new LVarRef(a.name, a.tipe))
+      val args = act.args.map(a => new LVarRef(a.name, t (a.tipe)))
 
       val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
       val content = act.content.filterNot(_.isInstanceOf[parser.Decomposition])
@@ -184,10 +185,10 @@ object AbstractAction {
 
       val acts = for ((decID, additionalStatements) <- decIdsAndStatements) yield {
 
-        val action = new AbstractAction(baseName, decID, args, new PartialContext(Some(pb.context)))
+        val action = new AbstractAction(baseName, decID, args, new PartialContext(pb, Some(pb.context)))
 
         args.foreach(arg => {
-          action.context.addUndefinedVar(arg, arg.typ)
+          action.context.addUndefinedVar(arg)
         })
         val allConstraints = ArrayBuffer[AbstractConstraint]()
 
@@ -212,7 +213,7 @@ object AbstractAction {
             val maxDur = AbstractDuration(max, action.context, pb)
             allConstraints += new AbstractContingentConstraint(actionStart, actionEnd, minDur, maxDur)
           case const: parser.Constant =>
-            action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
+            action.context.addUndefinedVar(new LVarRef(const.name, t(const.tipe)))
           case _: parser.Decomposition =>
             throw new ANMLException("Decomposition should have been filtered out previously")
         }
@@ -221,7 +222,7 @@ object AbstractAction {
           case constraint: parser.TemporalConstraint =>
             allConstraints ++= AbstractTemporalConstraint(constraint)
           case const: parser.Constant => // constant function with no arguments is interpreted as local variable
-            action.context.addUndefinedVar(new LVarRef(const.name, const.tipe), const.tipe)
+            action.context.addUndefinedVar(new LVarRef(const.name, t(const.tipe)))
           case statement: parser.TemporalStatement =>
             val (optStatement, constraints) = StatementsFactory(statement, action.context, pb, refCounter)
             action.statements ++= optStatement

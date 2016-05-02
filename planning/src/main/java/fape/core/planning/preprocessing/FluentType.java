@@ -1,6 +1,8 @@
 package fape.core.planning.preprocessing;
 
 
+import planstack.anml.model.Type;
+
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +15,8 @@ import java.util.List;
 */
 class FluentType {
     public final String predicateName;
-    public final List<String> argTypes;
-    public final String valueType;
+    public final List<Type> argTypes;
+    public final Type valueType;
 
     /*
     public FluentType(ParameterizedStateVariable sv, VariableRef value) {
@@ -23,7 +25,7 @@ class FluentType {
         this.valueType = value.type;
     }
 */
-    public FluentType(String predicate, Collection<String> argTypes, String valueType) {
+    public FluentType(String predicate, Collection<Type> argTypes, Type valueType) {
         this.predicateName = predicate;
         this.argTypes = new LinkedList<>(argTypes);
         this.valueType = valueType;
@@ -53,7 +55,7 @@ class FluentType {
         int i=0;
         int hash = predicateName.hashCode() *42 * i++;
         hash += valueType.hashCode() * 42 * i++;
-        for(String argType : argTypes) {
+        for(Type argType : argTypes) {
             hash += argType.hashCode() * 42 * i++;
         }
         return hash;

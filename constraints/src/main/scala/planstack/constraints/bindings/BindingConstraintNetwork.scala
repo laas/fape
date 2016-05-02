@@ -2,6 +2,7 @@ package planstack.constraints.bindings
 
 import java.util
 
+import planstack.anml.model.Type
 import planstack.anml.model.concrete.VarRef
 import planstack.constraints.bindings.BindingConstraintNetwork.ExtID
 
@@ -170,13 +171,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     rawDomain(v).vals.map(_.asInstanceOf[Integer]).toList.asJava
   }
 
-  def isIntegerVar(v: VarRef): Boolean =
-    typeOf(v) == "integer" || typeOf(v) == "int"
+  def isIntegerVar(v: VarRef): Boolean = v.getType.isNumeric
 
   def stringValuesAsDomain(stringDomain: util.Collection[String]): Domain =
     new Domain(stringDomain.asScala.map(valuesIds(_)))
 
-  def typeOf(v: VarRef): String = v.typ
+  def typeOf(v: VarRef): Type = v.typ
 
   def unifiable(a: VarRef, b: VarRef): Boolean =
     domID(a) == domID(b) || (!isDiff(a, b) && rawDomain(a).hasOneCommonElement(rawDomain(b)))
@@ -384,8 +384,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
-  def AddVariable(v: VarRef, domain: util.Collection[String]): Unit = {
-    assert(v.typ != "integer")
+  def addVariable(v: VarRef): Unit = {
+    addVariable(v, v.getType.instances.map(i => i.instance).asJava)
+  }
+
+  def addVariable(v: VarRef, domain: util.Collection[String]): Unit = {
+    assert(!v.typ.isNumeric)
     addVariable(v, stringValuesAsDomain(domain))
   }
 
@@ -428,18 +432,18 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def domainSize(v: VarRef): Integer = rawDomain(v).size()
 
-  def AddIntVariable(v: VarRef): Unit = {
-    assert(v.typ == "integer")
+  def addIntVariable(v: VarRef): Unit = {
+    assert(v.typ.isNumeric)
     addVariable(v, defaultIntDomain.head)
   }
 
   def addIntVariable(v: VarRef, dom: Domain) : Unit = {
-    assert(v.typ == "integer")
+    assert(v.typ.isNumeric)
     addVariable(v, dom)
   }
 
-  def AddIntVariable(v: VarRef, domain: util.Collection[Integer]): Unit = {
-    assert(v.typ == "integer")
+  def addIntVariable(v: VarRef, domain: util.Collection[Integer]): Unit = {
+    assert(v.typ.isNumeric)
     addVariable(v, intValuesAsDomain(domain))
   }
 

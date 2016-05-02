@@ -392,10 +392,7 @@ public class GAction implements Identifiable {
                 varSet.add((InstanceRef) context.getDefinition(ref));
             } else {
                 // get the type of the argument and add all possible values to the argument list.
-                List<String> instanceSet = pb.instances().instancesOfType(context.getType(ref));
-                for (String instance : instanceSet) {
-                    varSet.add(pb.instances().referenceOf(instance));
-                }
+                varSet.addAll(ref.getType().jInstances());
             }
             possibleValues.add(varSet);
         }

@@ -13,7 +13,7 @@ import scala.collection.mutable
   * @param argTypes Types of the arguments of the function in order.
   * @param isConstant True if this function is defined as constant. False otherwise
   */
-abstract class Function(val name:String, val valueType:String, val argTypes:List[String], val isConstant:Boolean) {
+abstract class Function(val name:String, val valueType:Type, val argTypes:List[Type], val isConstant:Boolean) {
 
   override def toString =
     name+"("+argTypes.mkString(",")+"):"+valueType
@@ -25,7 +25,7 @@ abstract class Function(val name:String, val valueType:String, val argTypes:List
     * @param containingType Type in which the function was declared.
     * @return THe scoped version of the function.
     */
-  def scoped(containingType : String) : Function
+  def scoped(containingType : Type) : Function
 }
 
 /** Representation of an ANML symbolic function.
@@ -36,10 +36,10 @@ abstract class Function(val name:String, val valueType:String, val argTypes:List
   * @param argTypes Types of the arguments of the function in order.
   * @param isConstant True if this function is defined as constant. False otherwise
   */
-class SymFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean)
+class SymFunction(name:String, valueType:Type, argTypes:List[Type], isConstant:Boolean)
   extends Function(name, valueType, argTypes, isConstant)
 {
-  def scoped(containingType : String) : SymFunction =
+  def scoped(containingType : Type) : SymFunction =
     new SymFunction(containingType+"."+name, valueType, containingType::argTypes, isConstant)
 }
 
@@ -55,11 +55,9 @@ class SymFunction(name:String, valueType:String, argTypes:List[String], isConsta
   * @param resourceType Type of the resource which can be one of consumable, replenishable, reusable or producible.
   *                     If it is an empty String, then it is a generic resource.
   */
-abstract class NumFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean, val resourceType:String)
+abstract class NumFunction(name:String, valueType:NumericType, argTypes:List[Type], isConstant:Boolean, val resourceType:String)
   extends Function(name, valueType, argTypes, isConstant)
 {
-  assert(valueType == "integer" || valueType == "float")
-
   /** Returns true if this function has a specific resource type in consumable, replenishable, reusable or producible.
     * If this is the case, you should check `resourceType` to see what it is.
     */
@@ -70,7 +68,6 @@ abstract class NumFunction(name:String, valueType:String, argTypes:List[String],
   *
   * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
   *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
-  * @param valueType Type of the function's value.
   * @param argTypes Types of the arguments of the function in order.
   * @param isConstant True if this function is defined as constant. False otherwise
   * @param minValue Minimum possible value of the function. It is set to `Integer.MIN_VALUE` if no lower bound is
@@ -80,41 +77,17 @@ abstract class NumFunction(name:String, valueType:String, argTypes:List[String],
   * @param resourceType Type of the resource which can be one of consumable, replenishable, reusable or producible.
   *                     If it is an empty String, then it is a generic resource.
   */
-class IntFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean, val minValue:Int, val maxValue:Int, resourceType:String)
-  extends NumFunction(name, valueType, argTypes, isConstant, resourceType)
+class IntFunction(name:String,  argTypes:List[Type], isConstant:Boolean, val minValue:Int, val maxValue:Int, resourceType:String)
+  extends NumFunction(name, TInteger, argTypes, isConstant, resourceType)
 {
-  assert(valueType == "integer")
   require(maxValue > Int.MinValue)
 
-  def scoped(container : String) : IntFunction =
-    new IntFunction(container+"."+name, valueType, container::argTypes, isConstant, minValue, maxValue, resourceType)
-}
-
-/** Representation of an ANML function on floats.
-  *
-  * @param name Name of the function. the function name can be of the form `functionName` if it is defined at the root of
-  *             an anml problem or `typeName.scopedFunctionName` if it is defined in a type
-  * @param valueType Type of the function's value.
-  * @param argTypes Types of the arguments of the function in order.
-  * @param isConstant True if this function is defined as constant. False otherwise
-  * @param minValue Minimum possible value of the function. It is set to `Float.MIN_VALUE` if no lower bound is
-  *                 specified in the ANML model.
-  * @param maxValue Maximum possible value of the function. It is set to `Float.MAX_VALUE` if no upper bound is
-  *                 specified in the ANML model.
-  * @param resourceType Type of the resource which can be one of consumable, replenishable, reusable or producible.
-  *                     If it is an empty String, then it is a generic resource.
-  */
-class FloatFunction(name:String, valueType:String, argTypes:List[String], isConstant:Boolean, val minValue:Float, val maxValue:Float, resourceType:String)
-  extends NumFunction(name, valueType, argTypes, isConstant, resourceType)
-{
-  assert(valueType == "float")
-
-  def scoped(container : String) : FloatFunction =
-    new FloatFunction(container+"."+name, valueType, container::argTypes, isConstant, minValue, maxValue, resourceType)
+  def scoped(container : Type) : IntFunction =
+    new IntFunction(container+"."+name, container::argTypes, isConstant, minValue, maxValue, resourceType)
 }
 
 /** Storage for functions found in an [[planstack.anml.model.AnmlProblem]] */
-class FunctionManager {
+class FunctionManager(val pb:AnmlProblem) {
 
   /**
    * Maps function name to definition.
@@ -129,20 +102,15 @@ class FunctionManager {
 
   /** Builds a Function from the output of the ANML parser. */
   private def buildFunction(f : parser.Function) : Function = {
+    def t(typeName: String) = pb.instances.asType(typeName)
     f match {
       case parser.SymFunction(name, args, tipe, isConstant) =>
-        new SymFunction(name, tipe, args.map(_.tipe), isConstant)
+        new SymFunction(name, t(tipe), args.map(a => t(a.tipe)), isConstant)
       case parser.IntFunction(name, args, tipe, isConstant, min, max, Some(resourceType)) => {
-        new IntFunction(name, tipe, args.map(_.tipe), isConstant, min, max, resourceType)
+        new IntFunction(name, args.map(a => t(a.tipe)), isConstant, min, max, resourceType)
       }
       case parser.IntFunction(name, args, tipe, isConstant, min, max, None) => {
-        new IntFunction(name, tipe, args.map(_.tipe), isConstant, min, max, "")
-      }
-      case parser.FloatFunction(name, args, tipe, isConstant, min, max, Some(resourceType)) => {
-        new FloatFunction(name, tipe, args.map(_.tipe), isConstant, min, max, resourceType)
-      }
-      case parser.FloatFunction(name, args, tipe, isConstant, min, max, None) => {
-        new FloatFunction(name, tipe, args.map(_.tipe), isConstant, min, max, "")
+        new IntFunction(name, args.map(a => t(a.tipe)), isConstant, min, max, "")
       }
     }
   }
@@ -156,7 +124,7 @@ class FunctionManager {
    * @param scope Name of the type in which the function is declared
    * @param f function definition
    */
-  def addScopedFunction(scope:String, f:parser.Function) {
+  def addScopedFunction(scope:Type, f:parser.Function) {
     addFunction(buildFunction(f).scoped(scope))
   }
 

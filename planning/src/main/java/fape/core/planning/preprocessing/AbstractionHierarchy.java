@@ -3,6 +3,7 @@ package fape.core.planning.preprocessing;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
+import planstack.anml.model.Type;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
@@ -13,6 +14,7 @@ import planstack.graph.algorithms.StronglyConnectedComponent;
 import planstack.graph.core.UnlabeledDigraph;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -94,24 +96,8 @@ public class AbstractionHierarchy {
     public Set<Function> getEffects(AbstractAction a) {
         Set<Function> allEffects = new HashSet<>();
         for(AbstractLogStatement ls : a.jLogStatements()) {
-            List<String> argTypes = new LinkedList<>();
-            String valType = null;
-            if (ls instanceof AbstractTransition) {
-                for (LVarRef arg : ls.sv().jArgs()) {
-                    argTypes.add(a.context().getType(arg));
-                }
-                valType = a.context().getType(((AbstractTransition) ls).to());
-
-            } else if (ls instanceof AbstractAssignment) {
-                for (LVarRef arg : ls.sv().jArgs()) {
-                    argTypes.add(a.context().getType(arg));
-                }
-                valType = a.context().getType(((AbstractAssignment) ls).value());
-            } else {
-                // this statement has no effects
-                continue;
-            }
-            allEffects.add(ls.sv().func());
+            if(ls.hasEffectAtEnd())
+                allEffects.add(ls.sv().func());
         }
         return allEffects;
     }
@@ -119,24 +105,8 @@ public class AbstractionHierarchy {
     public Set<Function> getPreconditions(AbstractAction a) {
         Set<Function> allPrecond = new HashSet<>();
         for(AbstractLogStatement s : a.jLogStatements()) {
-            List<String> argTypes = new LinkedList<>();
-            String valType = null;
-            if (s instanceof AbstractTransition) {
-                for (LVarRef arg : s.sv().jArgs()) {
-                    argTypes.add(a.context().getType(arg));
-                }
-                valType = a.context().getType(((AbstractTransition) s).from());
-
-            } else if (s instanceof AbstractPersistence) {
-                for (LVarRef arg : s.sv().jArgs()) {
-                    argTypes.add(a.context().getType(arg));
-                }
-                valType = a.context().getType(((AbstractPersistence) s).value());
-            } else {
-                // this statement has no effects
-                continue;
-            }
-            allPrecond.add(s.sv().func());
+            if(s.hasConditionAtStart())
+                allPrecond.add(s.sv().func());
         }
         return allPrecond;
     }

@@ -52,7 +52,7 @@ abstract class AbstractStatement(val id:LocalRef) {
 abstract class AbstractLogStatement(val sv:AbstractParameterizedStateVariable, override val id:LStatementRef)
   extends AbstractStatement(id)
 {
-  require(sv.func.valueType != "integer", "Error: the function of this LogStatement has an integer value.")
+  require(!sv.func.valueType.isNumeric, "Error: the function of this LogStatement has an integer value.")
   def bind(context:Context, pb:AnmlProblem, container:Chronicle, refCounter: RefCounter) : LogStatement
 
   def hasConditionAtStart : Boolean

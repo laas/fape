@@ -63,12 +63,12 @@ class AnmlProblem extends TemporalInterval {
    * A [[planstack.anml.model.FunctionManager]] that keeps track of all functions (ie. definition of state variables)
    * in the problem.
    */
-  val functions = new FunctionManager
+  val functions = new FunctionManager(this)
 
   /** Context that all variables and and action that appear in the problem scope.
     * Those typically contain instances of the problem and predefined ANML literals (such as true, false, ...)
     */
-  val context = new Context(None)
+  val context = new Context(this, None)
   context.setInterval(this)
 
   /** All abstract actions appearing in the problem */
@@ -91,9 +91,9 @@ class AnmlProblem extends TemporalInterval {
     val initialChronicle = new BaseChronicle(this)
 
     // add predefined instance to context and to StateModifier
-    for((name, tipe) <- instances.instances) {
+    for(name <- instances.allInstances) {
       initialChronicle.instances += name
-      context.addVar(new LVarRef(name, tipe), instances.referenceOf(name))
+      context.addVar(new LVarRef(name, instances.typeOf(name)), instances.referenceOf(name))
     }
 
     initialChronicle.initTemporalObjects()
@@ -180,7 +180,8 @@ class AnmlProblem extends TemporalInterval {
       instances.addInstance(instanceDecl.name, instanceDecl.tipe, refCounter)
       chronicle.instances += instanceDecl.name
       // all instances are added to the context
-      context.addVar(new LVarRef(instanceDecl.name, instanceDecl.tipe), instances.referenceOf(instanceDecl.name))
+      val inst = instance(instanceDecl.name)
+      context.addVar(new LVarRef(instanceDecl.name, inst.getType), instances.referenceOf(instanceDecl.name))
     })
 
     // add all functions to the function manager
@@ -190,8 +191,8 @@ class AnmlProblem extends TemporalInterval {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val newVar = new VarRef(funcDecl.tipe, refCounter)
-        context.addVar(LVarRef(funcDecl.name, funcDecl.tipe), newVar)
+        val newVar = new VarRef(instances.asType(funcDecl.tipe), refCounter)
+        context.addVar(LVarRef(funcDecl.name, instances.asType(funcDecl.tipe)), newVar)
         chronicle.vars += newVar
       } else {
         // either non-constant or with arguments
@@ -202,7 +203,7 @@ class AnmlProblem extends TemporalInterval {
     // find all methods declared inside a type and them to functions and to the type.
     blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
       typeDecl.content.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]).foreach(scopedFunction => {
-        functions.addScopedFunction(typeDecl.name, scopedFunction)
+        functions.addScopedFunction(instances.asType(typeDecl.name), scopedFunction)
         instances.addMethodToType(typeDecl.name, scopedFunction.name)
       })
     })
@@ -233,7 +234,7 @@ class AnmlProblem extends TemporalInterval {
       absConstraints ++= AbstractTemporalConstraint(constraint)
     })
 
-    for((function,variable) <- context.bindings if function.func.valueType != "integer") {
+    for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
       val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => context.getLocalVar(a.name)))
       absConstraints += new AbstractEqualityConstraint(sv, context.getLocalVar(variable.name), LStatementRef(""))
     }
@@ -270,7 +271,7 @@ class AnmlProblem extends TemporalInterval {
 
     // this context is declared locally to avoid polluting the problem's context
     // they have the same interval so start/end map to the ones of the problem
-    val localContext = new Context(Some(this.context))
+    val localContext = new Context(this, Some(this.context))
     localContext.setInterval(this.context.interval)
 
     // first process variable definitions to make them available (in local context)
@@ -278,8 +279,8 @@ class AnmlProblem extends TemporalInterval {
     for(block <- blocks.filter(_.isInstanceOf[parser.Function])) block match {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
-        val newVar = new VarRef(func.tipe, refCounter)
-        localContext.addVar(LVarRef(func.name, func.tipe), newVar)
+        val newVar = new VarRef(instances.asType(func.tipe), refCounter)
+        localContext.addVar(LVarRef(func.name, instances.asType(func.tipe)), newVar)
         chron.vars += newVar
 
       // complete function definition, would change the problem.

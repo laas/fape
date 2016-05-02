@@ -18,7 +18,7 @@ import scala.collection.mutable.ListBuffer
  *
  *
  */
-abstract class AbstractContext {
+abstract class AbstractContext(val pb:AnmlProblem) {
 
   def parentContext : Option[AbstractContext]
   val variables = mutable.Map[LVarRef, VarRef]()
@@ -51,17 +51,17 @@ abstract class AbstractContext {
     standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
   }
 
-  def getNewUndefinedVar(typ: String, refCounter: RefCounter) : LVarRef = {
+  def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : LVarRef = {
     var i = 0
     while(nameToLocalVar.contains("locVar_"+i)) {
       i += 1
     }
     val v = new LVarRef("locVar_"+i, typ)
-    addUndefinedVar(v, typ, refCounter)
+    addUndefinedVar(v, refCounter)
     v
   }
 
-  def addUndefinedVar(name:LVarRef, typeName:String, refCounter: RefCounter)
+  def addUndefinedVar(name:LVarRef, refCounter: RefCounter)
 
   def bindVarToConstant(name:LVarRef, const:InstanceRef)
 
@@ -92,19 +92,7 @@ abstract class AbstractContext {
     }
   }
 
-  /** Looks up for the type of the local variable.
-    * 
-    * @param localRef Reference to the local variable to look up.
-    * @return The type of this local variable. Trows an ANMLException if this variable is
-    *         not defined.
-    */
-  def getType(localRef:LVarRef) : String = {
-    val t = getDefinition(localRef).typ
-    assert(t == localRef.typ)
-    t
-  }
-
-  def getType(localVarName: String) : String = nameToLocalVar(localVarName).typ
+  def getType(localVarName: String) : Type = nameToLocalVar(localVarName).getType
 
   /** Looks up the global reference associated to this local variable.
     * 
@@ -200,10 +188,10 @@ abstract class AbstractContext {
   private var nextBindingID = 0
   def bindingOf(f:EFunction, refCounter: RefCounter): EVariable = {
     assert(f.isConstant)
-    assert(f.func.valueType != "integer")
+    assert(!f.func.valueType.isNumeric)
     if(!bindings.contains(f)) {
       bindings.put(f, EVariable("__binding_var__"+nextBindingID, f.func.valueType, Some(f)))
-      addUndefinedVar(new LVarRef("__binding_var__"+nextBindingID, f.func.valueType), f.func.valueType, refCounter)
+      addUndefinedVar(new LVarRef("__binding_var__"+nextBindingID, f.func.valueType), refCounter)
       nextBindingID += 1
     }
     bindings(f)
@@ -215,7 +203,7 @@ abstract class AbstractContext {
       case VarExpr(name) if pb.functions.isDefined(name) =>
         EFunction(pb.functions.get(name), Nil)
       case VarExpr(name) =>
-        EVariable(name, getType(getLocalVar(name)), None)
+        EVariable(name, getLocalVar(name).getType, None)
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
         EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
         case FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
@@ -231,10 +219,10 @@ abstract class AbstractContext {
         val sleft = simplify(left, pb)
         (sleft, right) match {
           case (v@EVariable(_,typ, _), FuncExpr(fe, args)) =>
-            val f = pb.functions.get(pb.instances.getQualifiedFunction(typ, fe.functionName).mkString("."))
+            val f = pb.functions.get(typ.getQualifiedFunction(fe.functionName))
             EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
           case (v@EVariable(_,typ, _), VarExpr(fname)) =>
-            val f = pb.functions.get(pb.instances.getQualifiedFunction(typ, fname).mkString("."))
+            val f = pb.functions.get(typ.getQualifiedFunction(fname))
             EFunction(f, List(v))
         }
       case NumExpr(value) =>
@@ -253,12 +241,12 @@ abstract class AbstractContext {
 
   private def simplifyToVar(e: E, pb: AnmlProblem) : EVariable = e match {
     case v:EVariable => v
-    case f:EFunction if f.isConstant && f.func.valueType != "integer" =>
+    case f:EFunction if f.isConstant && !f.func.valueType.isNumeric =>
       bindingOf(f, pb.refCounter)
-    case EFunction(f, args) if f.isConstant && f.valueType == "integer" && !args.forall(a => a.expr.isEmpty) =>
+    case EFunction(f, args) if f.isConstant && f.valueType.isNumeric && !args.forall(a => a.expr.isEmpty) =>
       sys.error("Functions are not accepted as parameters of integer functions.")
-    case ef@EFunction(f, args) if f.isConstant && f.valueType == "integer" => // TODO this is a hack to make sure actions never end up with integer variables
-      EVariable("xxxxxxxx"+{nextBindingID+=1;nextBindingID-1}, "integer", Some(ef))
+    case ef@EFunction(f, args) if f.isConstant && f.valueType.isNumeric => // TODO this is a hack to make sure actions never end up with integer variables
+      EVariable("xxxxxxxx"+{nextBindingID+=1;nextBindingID-1}, TInteger, Some(ef))
     case f:EFunction if !f.isConstant => throw new ANMLException("Trying to use "+f+" as a constant function.")
     case x => throw new ANMLException("Unrecognized expression: "+x)
   }
@@ -267,10 +255,10 @@ abstract class AbstractContext {
     s match {
       case parser.SingleTermStatement(e, id) => simplify(e, pb) match {
         case f:EFunction =>
-          assert(f.func.valueType == "boolean")
-          EBiStatement(f, "==", EVariable("true", "boolean", None), id)
-        case v@EVariable(_,"boolean",_) =>
-          EBiStatement(v, "==", EVariable("true", "boolean", None), id)
+          assert(f.func.valueType.name == "boolean")
+          EBiStatement(f, "==", EVariable("true", f.func.valueType, None), id)
+        case v@EVariable(_,t:SimpleType,_) if t.name == "boolean" =>
+          EBiStatement(v, "==", EVariable("true", t, None), id)
         case t:ETask =>
           EUnStatement(t, id)
         case x => sys.error("Problem: "+x)
@@ -285,7 +273,7 @@ abstract class AbstractContext {
 }
 
 trait E
-case class EVariable(name:String, typ:String, expr:Option[EFunction]) extends E
+case class EVariable(name:String, typ:Type, expr:Option[EFunction]) extends E
 case class EFunction(func:Function, args:List[EVariable]) extends E {
   def isConstant = func.isConstant
 }
@@ -324,9 +312,10 @@ case class ETriStatement(e1:E, op:String, e2:E, op2:String, e3:E, id:String) ext
   *                     exists in the state.
   */
 class Context(
+    pb:AnmlProblem,
     val parentContext:Option[Context],
     val varsToCreate :ListBuffer[VarRef] = ListBuffer())
-  extends AbstractContext {
+  extends AbstractContext(pb) {
 
   var interval :TemporalInterval = null
 
@@ -334,10 +323,9 @@ class Context(
 
   def addVarToCreate(globalVar:VarRef) = varsToCreate += globalVar
 
-  override def addUndefinedVar(name: LVarRef, typeName: String, refCounter: RefCounter): Unit = {
-    val globalVar = new VarRef(typeName, refCounter)
-    assert(name.typ == typeName)
-    addVar(name, globalVar)
+  override def addUndefinedVar(v: LVarRef, refCounter: RefCounter): Unit = {
+    val globalVar = new VarRef(v.getType, refCounter)
+    addVar(v, globalVar)
     addVarToCreate(globalVar)
   }
 

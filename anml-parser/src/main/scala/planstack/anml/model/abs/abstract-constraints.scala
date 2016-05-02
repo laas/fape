@@ -92,7 +92,7 @@ class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, 
 class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val value : Int, id:LStatementRef)
   extends AbstractBindingConstraint
 {
-  require(sv.func.isConstant && sv.func.valueType == "integer")
+  require(sv.func.isConstant && sv.func.valueType.isNumeric)
 
   override def toString = "%s := %s".format(sv, value)
 

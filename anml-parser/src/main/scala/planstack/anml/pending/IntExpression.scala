@@ -228,7 +228,7 @@ case class StateVariable private[pending] (val sv: ParameterizedStateVariable) e
 }
 
 case class Variable private[pending] (val variable: VarRef, val lb: Int, val ub: Int) extends UnaryIntExpression {
-  require(variable.typ == "integer")
+  require(variable.typ.isNumeric)
 
   override def bind(f: (LVarRef) => VarRef): IntExpression = this
   override def isParameterized: Boolean = false

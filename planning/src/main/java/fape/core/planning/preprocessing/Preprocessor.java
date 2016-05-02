@@ -167,12 +167,9 @@ public class Preprocessor {
         return oldDTGs.getDTGOf(groundStateVariable);
     }
 
-    /** Generates a DTG for the given state variables that contains all node bu no edges */
+    /** Generates a DTG for the given state variables that contains all node but no edges */
     private DTG initDTGForStateVariable(GStateVariable missingSV) {
-        Collection<InstanceRef> dom = planner.pb.instances().instancesOfType(missingSV.f.valueType()).stream()
-                .map(str -> planner.pb.instance(str))
-                .collect(Collectors.toList());
-        return new DTG(missingSV, dom);
+        return new DTG(missingSV, missingSV.f.valueType().jInstances());
     }
 
     public DTG getDTG(GStateVariable gStateVariable) {
@@ -203,10 +200,7 @@ public class Preprocessor {
 
     public TemporalDTG getTemporalDTG(GStateVariable sv) {
         if(!temporalDTGs.containsKey(sv)) {
-            Collection<InstanceRef> dom = planner.pb.instances().instancesOfType(sv.f.valueType()).stream()
-                .map(str -> planner.pb.instance(str))
-                .collect(Collectors.toList());
-            TemporalDTG dtg = new TemporalDTG(sv, dom, planner);
+            TemporalDTG dtg = new TemporalDTG(sv, sv.f.valueType().jInstances(), planner);
             for(GAction ga : getActionsInvolving(sv))
                 dtg.extendWith(ga);
             dtg.postProcess();

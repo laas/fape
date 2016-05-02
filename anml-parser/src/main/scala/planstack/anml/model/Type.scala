@@ -5,7 +5,33 @@ import planstack.anml.model.concrete.InstanceRef
 
 import scala.collection.mutable
 
-trait Type
+import scala.collection.JavaConverters._
+
+trait Type {
+  def name : String
+  def instances : collection.Set[InstanceRef] = ???
+  def jInstances = instances.asJava
+  def instancesAsStrings = instances.map(i => i.instance).toList.asJava
+  def allSubTypes : collection.Set[Type] = ???
+  def jAllSubTypes = allSubTypes.asJava
+  def parents : collection.Set[Type] = ???
+  def jParents = parents.asJava
+  def getQualifiedFunction(funcName: String): String = ???
+
+  def isNumeric : Boolean
+}
+
+trait NumericType extends Type {
+  override def isNumeric = true
+}
+object TInteger extends NumericType {
+  def name = "integer"
+}
+
+object TMethods extends Type {
+  def name = "Methods"
+  def isNumeric = false
+}
 
 class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
   private val _methods = mutable.Set[String]()
@@ -26,18 +52,20 @@ class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
     _children += typ
   }
 
-  def parents: collection.Set[Type] = parent.toSet.flatMap((p:SimpleType) => p.parents) ++ parent.toSet
+  override def isNumeric = false
 
-  def instances: collection.Set[InstanceRef] = _instances
+  override def parents: collection.Set[Type] = parent.toSet.flatMap((p:SimpleType) => p.parents) ++ parent.toSet
 
-  def allSubTypes : collection.Set[SimpleType] = _children.flatMap(_.allSubTypes) + this
+  override def instances: collection.Set[InstanceRef] = _instances
 
-  def getQualidiedFunction(funcName: String): String = {
+  override def allSubTypes : collection.Set[Type] = _children.toSet.flatMap((c:SimpleType) => c.allSubTypes) + this
+
+  override def getQualifiedFunction(funcName: String): String = {
     try {
       if (_methods.contains(funcName))
         name + "." + funcName
       else parent match {
-        case Some(p) => p.getQualidiedFunction(funcName)
+        case Some(p) => p.getQualifiedFunction(funcName)
         case None => throw new FunctionNotFoundInType(funcName, name)
       }
     } catch {
@@ -48,6 +76,6 @@ class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
   override def toString = name
 }
 
-case class UnionType(val parts:Set[Type])
+//case class UnionType(val parts:Set[Type])
 
 

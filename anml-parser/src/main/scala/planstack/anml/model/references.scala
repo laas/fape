@@ -44,13 +44,13 @@ object LActRef {
 }
 
 /** Local reference to a variable */
-class LVarRef(id:T, val typ: String) extends LocalRef(id) {
+class LVarRef(id:T, val typ: Type) extends LocalRef(id) {
 //  def this(typ:String) = this(getNext, typ:String)
   def getType = typ
 }
 
 object LVarRef {
-  def apply(id:T, typ:String) =
+  def apply(id:T, typ:Type) =
     if(id == NullID) new LVarRef(getNext, typ)
     else new LVarRef(id,typ)
 }
