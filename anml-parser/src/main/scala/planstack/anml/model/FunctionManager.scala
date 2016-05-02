@@ -102,7 +102,7 @@ class FunctionManager(val pb:AnmlProblem) {
 
   /** Builds a Function from the output of the ANML parser. */
   private def buildFunction(f : parser.Function) : Function = {
-    def t(typeName: String) = pb.instances.asType(typeName)
+    def t(typeName: parser.PType) = pb.instances.asType(typeName)
     f match {
       case parser.SymFunction(name, args, tipe, isConstant) =>
         new SymFunction(name, t(tipe), args.map(a => t(a.tipe)), isConstant)

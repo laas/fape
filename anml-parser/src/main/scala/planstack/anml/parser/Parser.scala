@@ -66,8 +66,11 @@ case class ExactDuration(dur : Expr) extends Duration {
 
 case class UncertainDuration(minDur : Expr, maxDur : Expr) extends Duration
 
+sealed trait PType
+case class PSimpleType(name: String) extends PType
+case class PDisjunctiveType(types: List[PSimpleType]) extends PType
 
-case class Argument(tipe:String, name:String)
+case class Argument(tipe:PType, name:String)
 
 case class Decomposition(content:Seq[DecompositionContent]) extends ActionContent
 
@@ -107,22 +110,22 @@ case class ReqTemporalConstraint(tp1:TimepointRef, operator:String, tp2:Timepoin
 }
 case class ContingentConstraint(src:TimepointRef, dst:TimepointRef, min:Int, max:Int) extends TemporalConstraint
 
-class Function(val name:String, val args:List[Argument], val tipe:String, val isConstant:Boolean) extends AnmlBlock with TypeContent
+class Function(val name:String, val args:List[Argument], val tipe:PType, val isConstant:Boolean) extends AnmlBlock with TypeContent
 
 case class SymFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean)
   extends Function(name, args, tipe, isConstant)
 {
-  assert(tipe != "integer" && tipe != "float", "Symbolic function with a numeric type: "+this)
+  assert(tipe.toString != "integer" && tipe.toString != "float", "Symbolic function with a numeric type: "+this)
 }
 
 class NumFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean,
     val resourceType:Option[String])
   extends Function(name, args, tipe, isConstant)
@@ -136,37 +139,37 @@ class NumFunction(
 case class IntFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean,
     minValue:Int,
     maxValue:Int,
     override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe == "integer", "The type of this int function is not an integer: "+this)
+  assert(tipe.toString == "integer", "The type of this int function is not an integer: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in integer function: "+this)
 }
 
 case class FloatFunction(
                           override val name:String,
                           override val args:List[Argument],
-                          override val tipe:String,
+                          override val tipe:PType,
                           override val isConstant:Boolean,
                           minValue:Float,
                           maxValue:Float,
                           override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe == "float", "The type of this float function is not a float: "+this)
+  assert(tipe.toString == "float", "The type of this float function is not a float: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
 }
 
-class Constant(override val name :String, override val tipe:String)
+class Constant(override val name :String, override val tipe:PType)
   extends Function(name, Nil, tipe, true) with DecompositionContent with ActionContent
 
-case class Type(name:String, parent:String, content:List[TypeContent]) extends AnmlBlock
+case class TypeDecl(name:PSimpleType, parent:Option[PSimpleType], content:List[TypeContent]) extends AnmlBlock
 
-case class Instance(tipe:String, name:String) extends AnmlBlock
+case class Instance(tipe:PSimpleType, name:String) extends AnmlBlock
 
 object AnmlParser extends JavaTokenParsers {
 
@@ -277,7 +280,7 @@ object AnmlParser extends JavaTokenParsers {
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
       | "motivated"~";" ^^^ List(Motivated)
-      | "constant"~>(word|kwType)~word<~";" ^^ {
+      | "constant"~>typ~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe)) }
       | "duration"~":="~>literal<~";" ^^ (x => List(ExactDuration(x)))
       | "duration"~":in"~"["~>literal~","~literal<~"]"~";" ^^ {
@@ -293,13 +296,13 @@ object AnmlParser extends JavaTokenParsers {
   lazy val decompositionContent : Parser[List[DecompositionContent]] = (
     tempConstraint ^^ (x => List(x))
       | temporalStatements
-      | "constant"~>(word|kwType)~word<~";" ^^ {
+      | "constant"~>typ~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe))
     })
 
 
   lazy val argument : Parser[Argument] = (
-    tipe~word ^^ { case tipe~name => new Argument(tipe, name)}
+    typ~word ^^ { case tipe~name => new Argument(tipe, name)}
       | failure("Argument malformed.")
     )
 
@@ -328,10 +331,8 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val functionDecl : Parser[Function] = numFunctionDecl | symFunctionDecl
 
-  lazy val anySymType : Parser[String] = symType | word
-
   lazy val symFunctionDecl : Parser[SymFunction] = (
-    "constant"~>anySymType~word~opt(argList)<~";" ^^ {
+    "constant"~>typ~word~opt(argList)<~";" ^^ {
       case t~name~Some(args) => SymFunction(name, args, t, isConstant=true)
       case t~name~None => SymFunction(name, Nil, t, isConstant=true)
     }
@@ -339,7 +340,7 @@ object AnmlParser extends JavaTokenParsers {
         case t~name~optArgs => SymFunction(name, optArgs.getOrElse(Nil), t, isConstant = false) }
       | "variable"~>anySymType~word<~";" ^^ {case t~name => SymFunction(name, List(), t, isConstant=false)}
       | "function"~>anySymType~word~argList<~";" ^^ {case t~name~args => SymFunction(name, args, t, isConstant=false)}
-      | "predicate"~>anySymType~argList<~";" ^^ {case name~args => SymFunction(name, args, "boolean", isConstant=false)}
+      | "predicate"~>word~argList<~";" ^^ {case name~args => SymFunction(name, args, PSimpleType("boolean"), isConstant=false)}
     )
 
   lazy val numFunctionDecl : Parser[NumFunction] = integerFunctionDecl | floatFunctionDecl
@@ -368,7 +369,7 @@ object AnmlParser extends JavaTokenParsers {
           case None => List()
           case Some(arguments) => arguments
         }
-        new FloatFunction(name, args, "float", fType == "constant", constraints._1, constraints._2, resourceType)
+        new FloatFunction(name, args, PSimpleType("float"), fType == "constant", constraints._1, constraints._2, resourceType)
       }
     }
 
@@ -386,26 +387,39 @@ object AnmlParser extends JavaTokenParsers {
           case None => List()
           case Some(arguments) => arguments
         }
-        new IntFunction(name, args, "integer", fType == "constant", constraints._1, constraints._2, resourceType)
+        new IntFunction(name, args, PSimpleType("integer"), fType == "constant", constraints._1, constraints._2, resourceType)
       }
     }
 
 
-  lazy val tipe : Parser[String] =
-    kwType | word | failure("Unable to parse type")
+  lazy val simpleSymType : Parser[PSimpleType] =
+    (symType | word) ^^ { case t => PSimpleType(t)} |
+      failure("Unable to parse type")
 
-  lazy val typeDecl : Parser[Type] = (
-    "type"~>tipe~"<"~tipe~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => Type(name, parent, content)}
-      | "type"~>tipe~"with"~typeBody<~";" ^^ {case name~"with"~content => Type(name, "", content)}
-      | "type"~>tipe~"<"~tipe<~";" ^^ {case name~"<"~parent => Type(name, parent, List())}
-      | "type"~>tipe<~";" ^^ (name => Type(name, "", List()))
+  lazy val anySymType : Parser[PType] =
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l) } |
+      simpleType
+
+  lazy val simpleType : Parser[PSimpleType] =
+    (kwType | word) ^^ { case t => PSimpleType(t)} |
+      failure("Unable to parse type")
+
+  lazy val typ : Parser[PType] =
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l) } |
+    simpleType
+
+  lazy val typeDecl : Parser[TypeDecl] = (
+    "type"~>simpleType~"<"~simpleType~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => TypeDecl(name, Some(parent), content)}
+      | "type"~>simpleType~"with"~typeBody<~";" ^^ {case name~"with"~content => TypeDecl(name, None, content)}
+      | "type"~>simpleType~"<"~simpleType<~";" ^^ {case name~"<"~parent => TypeDecl(name, Some(parent), List())}
+      | "type"~>simpleType<~";" ^^ (name => TypeDecl(name, None, List()))
       | failure("Not a valid type declaration")
     )
 
   lazy val typeBody : Parser[List[TypeContent]] = "{"~>rep(functionDecl)<~"}"
 
   lazy val instanceDecl : Parser[List[Instance]] =
-    "instance"~>tipe~repsep(word,",")<~";" ^^ {
+    "instance"~>simpleType~repsep(word,",")<~";" ^^ {
       case tipe~names => names.map(Instance(tipe, _))
     }
 

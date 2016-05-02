@@ -170,7 +170,7 @@ object AbstractAction {
     * @return
     */
   def apply(act:parser.Action, pb:AnmlProblem, refCounter: RefCounter) : List[AbstractAction] = {
-    def t(typeName: String) = pb.instances.asType(typeName)
+    def t(typeName: parser.PType) = pb.instances.asType(typeName)
     try {
       val baseName = act.name
       val args = act.args.map(a => new LVarRef(a.name, t (a.tipe)))

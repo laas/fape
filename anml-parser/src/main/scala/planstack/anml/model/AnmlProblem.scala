@@ -6,7 +6,7 @@ import java.{util => ju}
 import planstack.anml.model.abs._
 import planstack.anml.model.abs.statements.AbstractStatement
 import planstack.anml.model.concrete._
-import planstack.anml.parser.{ANMLFactory, ParseResult}
+import planstack.anml.parser.{PSimpleType, TypeDecl, ANMLFactory, ParseResult}
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -102,7 +102,8 @@ class AnmlProblem extends TemporalInterval {
 
   /**
    * Retrieves the abstract action with the given name.
-   * @param name Name of the action to lookup.
+    *
+    * @param name Name of the action to lookup.
    * @return The corresponding AbstractAction.
    */
   def getAction(name:String) = abstractActions.find(_.name == name) match {
@@ -128,7 +129,8 @@ class AnmlProblem extends TemporalInterval {
    * xxxxxx.dom.anml as well.
    * If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
-   * @param filename File in which the anml text can be found.
+    *
+    * @param filename File in which the anml text can be found.
    */
   def extendWithAnmlFile(filename: String) : Unit = {
     if(filename.endsWith(".pb.anml")) {
@@ -148,7 +150,8 @@ class AnmlProblem extends TemporalInterval {
    * Extends this problem with the ANML found in the string.
    * If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
-   * @param anml An anml string.
+    *
+    * @param anml An anml string.
    */
   def extendWithAnmlText(anml: String) : Unit = {
     addAnml(ANMLFactory.parseAnmlString(anml))
@@ -157,32 +160,36 @@ class AnmlProblem extends TemporalInterval {
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
-   * @param anml Output of the ANML parser for the ANML block.
+    *
+    * @param anml Output of the ANML parser for the ANML block.
    */
   private def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
 
   /**
    * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
    * those are encoded as a Chronicle and added to `chronicles`
-   * @param blocks A sequence of ANML blocks.
+    *
+    * @param blocks A sequence of ANML blocks.
    */
   private def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
     // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
     val chronicle = new BaseChronicle(this)
     // add all type declarations to the instance manager.
-    blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
-      instances.addType(typeDecl.name, typeDecl.parent)
+    blocks.filter(_.isInstanceOf[parser.TypeDecl]).map(_.asInstanceOf[parser.TypeDecl]).foreach({
+      case TypeDecl(PSimpleType(name), None, _) => instances.addType(name, "")
+      case TypeDecl(PSimpleType(name), Some(PSimpleType(parent)), _) => instances.addType(name, parent)
     })
 
     // add all instance declaration to the instance manager and to the chronicle
-    blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach(instanceDecl => {
-      instances.addInstance(instanceDecl.name, instanceDecl.tipe, refCounter)
-      chronicle.instances += instanceDecl.name
-      // all instances are added to the context
-      val inst = instance(instanceDecl.name)
-      context.addVar(new LVarRef(instanceDecl.name, inst.getType), instances.referenceOf(instanceDecl.name))
-    })
+    blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach {
+      case parser.Instance(PSimpleType(typeName), name) =>
+        instances.addInstance(name, typeName, refCounter)
+        chronicle.instances += name
+        // all instances are added to the context
+        val inst = instance(name)
+        context.addVar(new LVarRef(name, inst.getType), inst)
+    }
 
     // add all functions to the function manager
     blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {
@@ -201,10 +208,10 @@ class AnmlProblem extends TemporalInterval {
     })
 
     // find all methods declared inside a type and them to functions and to the type.
-    blocks.filter(_.isInstanceOf[parser.Type]).map(_.asInstanceOf[parser.Type]) foreach(typeDecl => {
+    blocks.filter(_.isInstanceOf[parser.TypeDecl]).map(_.asInstanceOf[parser.TypeDecl]) foreach(typeDecl => {
       typeDecl.content.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]).foreach(scopedFunction => {
         functions.addScopedFunction(instances.asType(typeDecl.name), scopedFunction)
-        instances.addMethodToType(typeDecl.name, scopedFunction.name)
+        instances.asType(typeDecl.name).addMethod(scopedFunction.name)
       })
     })
 
@@ -251,6 +258,7 @@ class AnmlProblem extends TemporalInterval {
    * The context (instances, action, functions, ...) of this chronicle is the
    * one defined in this problem. However the problem will not be updated.
    * Hence any declaration of action, type, function or instance will fail.
+ *
    * @return The chronicle representing the ANML text.
    */
   def getChronicleFromFile(filename: String) : Chronicle =
@@ -261,6 +269,7 @@ class AnmlProblem extends TemporalInterval {
    * The context (instances, action, functions, ...) of this chronicle is the
    * one defined in this problem. However the problem will not be updated.
    * Hence any declaration of action, type, function or instance will fail.
+ *
    * @return The chronicle representing the ANML text.
    */
   def getChronicleFromAnmlText(anml: String) : Chronicle =

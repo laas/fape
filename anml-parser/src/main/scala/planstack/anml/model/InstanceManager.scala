@@ -2,6 +2,7 @@ package planstack.anml.model
 
 import planstack.anml.ANMLException
 import planstack.anml.model.concrete.{InstanceRef, RefCounter}
+import planstack.anml.parser.{PSimpleType, PType}
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 
 import scala.collection.JavaConversions._
@@ -62,6 +63,10 @@ class InstanceManager(val refCounter: RefCounter) {
 
   def asType(typeName: String) = types(typeName)
 
+  def asType(typ: PType) : Type = typ match {
+    case PSimpleType(typeName) => asType(typeName)
+  }
+
   /** Records a new type.
     *
     * @param name Name of the type
@@ -75,16 +80,6 @@ class InstanceManager(val refCounter: RefCounter) {
       case "" => new SimpleType(name, None)
       case par => new SimpleType(name, Some(types(par)))
     }
-  }
-
-  /** Adds a new scoped method to a type.
-    *
-    * @param typeName Type to whom the method belong
-    * @param methodName Name of the method
-    */
-  def addMethodToType(typeName:String, methodName:String) {
-    assert(types.contains(typeName))
-    types(typeName).addMethod(methodName)
   }
 
   /**

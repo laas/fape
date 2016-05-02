@@ -18,6 +18,8 @@ trait Type {
   def jParents = parents.asJava
   def getQualifiedFunction(funcName: String): String = ???
 
+  private[model] def addMethod(methodName: String) { ??? }
+
   def isNumeric : Boolean
 }
 
@@ -39,7 +41,7 @@ class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
   private val _children = mutable.Set[SimpleType]()
   parent.foreach(p => p.addDirectSubType(this))
 
-  private[model] def addMethod(methodName: String) {
+  private[model] override def addMethod(methodName: String) {
     _methods += methodName
   }
 
