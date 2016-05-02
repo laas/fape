@@ -10,18 +10,17 @@ import scala.collection.mutable
 
 class InstanceManager(val refCounter: RefCounter) {
 
-  private val typeHierarchy = new SimpleUnlabeledDirectedAdjacencyList[String]()
+  /** Root of the type Hierarchy */
+  private val NON_NUM_SOURCE_TYPE = "__NON_NUM_SOURCE_TYPE__"
 
   /** Maps every type name to a full type definition */
-  private val types = mutable.Map[String, Type]()
+  private val types = mutable.Map[String, SimpleType]()
 
   /** Maps an instance name to a (type, GlobalReference) pair */
   private val instancesDef = mutable.Map[String, Pair[String, InstanceRef]]()
 
-  /** Maps every type to a list of instance that are exactly of this type (doesn't contain instances of sub types */
-  private val instancesByType = mutable.Map[String, List[String]]()
-
   // predefined ANML types and instances
+  addType(NON_NUM_SOURCE_TYPE,"")
   addType("boolean", "")
 //  addType("integer", "")
   addInstance("true", "boolean", refCounter)
@@ -41,9 +40,24 @@ class InstanceManager(val refCounter: RefCounter) {
   def addInstance(name:String, t:String, refCounter: RefCounter) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
     assert(types.contains(t), "Unknown type: " + t)
+    val newInstance = new InstanceRef(name, t, refCounter)
+    instancesDef(name) = (t, newInstance)
+    types(t).addInstance(newInstance)
+  }
 
-    instancesDef(name) = (t, new InstanceRef(name, t, refCounter))
-    instancesByType(t) = name :: instancesByType(t)
+  def addTypes(typeList: List[(String,String)]): Unit = {
+    val q = mutable.Queue[(String,String)]()
+    q.enqueue(typeList: _*)
+    while(q.nonEmpty) {
+      q.dequeue() match {
+        case (typ,"") =>
+          q.enqueue((typ, NON_NUM_SOURCE_TYPE))
+        case t@(_,parent) if !types.contains(parent) =>
+          q.enqueue(t)
+        case (typ,parentName) =>
+          addType(typ, parentName)
+      }
+    }
   }
 
   /** Records a new type.
@@ -53,15 +67,11 @@ class InstanceManager(val refCounter: RefCounter) {
     */
   def addType(name:String, parent:String) {
     assert(!types.contains(name), "Error: type \""+name+"\" is already recorded.")
+    assert(parent.isEmpty || types.contains(parent), s"Parent type \'$parent\'  of \'$name\' is not defined yet.")
 
-    types(name) = new Type(name, parent)
-    typeHierarchy.addVertex(name)
-    instancesByType(name) = Nil
-
-    if(parent.nonEmpty) {
-      assert(types.contains(parent), "Unknown parent type %s for type %s. Did you declare them in order?".format(parent, name))
-
-      typeHierarchy.addEdge(parent, name)
+    types(name) = parent match {
+      case "" => new SimpleType(name, None)
+      case par => new SimpleType(name, Some(types(par)))
     }
   }
 
@@ -93,19 +103,12 @@ class InstanceManager(val refCounter: RefCounter) {
     * @param typeName Name of the type to inspect.
     * @return All subtypes including itself.
     */
-  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(subTypesRec(typeName) + "typeOfUnknown")
+  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(types(typeName).allSubTypes.map(_.name))
 
   /** Returns all parents of this type */
-  def parents(typeName: String) : java.util.Set[String] = {
-    def parentsScala(t: String) : Set[String] =
-      if(typeHierarchy.parents(t).isEmpty)
-        Set()
-      else
-        parentsScala(typeHierarchy.parents(t).head) + typeHierarchy.parents(t).head
-    setAsJavaSet(parentsScala(typeName))
+  def parents(typeName: String) : java.util.Set[String] =  {
+    setAsJavaSet(types(typeName).parents.map(_.toString))
   }
-
-  private def subTypesRec(typeName:String) : Set[String] = typeHierarchy.children(typeName).map(subTypes(_)).flatten + typeName
 
   /**
    * @return All instances as a list of (name, type) pairs
@@ -134,11 +137,8 @@ class InstanceManager(val refCounter: RefCounter) {
   /** Returns all instances of the given type */
   private def instancesOfTypeRec(tipe:String) : List[String] = {
     assert(tipe != "integer", "Requested instances of type integer.")
-    try {
-      instancesByType(tipe) ++ typeHierarchy.children(tipe).map(instancesOfTypeRec(_)).flatten
-    } catch {
-      case e: java.util.NoSuchElementException => throw new ANMLException("Unable to find a type: "+e.getMessage)
-    }
+    assert(types.contains(tipe), s"Unknown type: $tipe")
+    types(tipe).instances.toList.map(_.instance)
   }
 
   /**
@@ -166,17 +166,8 @@ class InstanceManager(val refCounter: RefCounter) {
     */
   def getQualifiedFunction(typeName:String, methodName:String) : List[String] = {
     assert(types.contains(typeName), s"Type $typeName does not seem to exist.")
-    if(types(typeName).methods.contains(methodName)) {
-      typeName :: methodName :: Nil
-    } else if(types(typeName).parent.nonEmpty) {
-      try {
-        getQualifiedFunction(types(typeName).parent, methodName)
-      } catch {
-        case _:ANMLException => // make sure we raise the correct type
-          throw new ANMLException("Unable to find a method \"%s\" for type \"%s\".".format(methodName, typeName))
-      }
-    } else {
-      throw new ANMLException("Unable to find a method \"%s\" for type \"%s\".".format(methodName, typeName))
-    }
+    val ret = types(typeName).getQualidiedFunction(methodName)
+    assert(ret.nonEmpty)
+    ret.split("\\.").toList
   }
 }

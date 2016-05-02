@@ -9,3 +9,5 @@ class VariableNotFound(varName:String) extends ANMLException(s"Unable to find va
 
 class UnrecognizedExpression(e: parser.Expr, cause: Option[Throwable])
   extends ANMLException(s"Could not recognize expression: ${e.asANML}  --  $e", cause)
+
+class FunctionNotFoundInType(funcName:String, typ:String) extends ANMLException(s"Could not find function \'$funcName\' in type: \'$typ\'")
