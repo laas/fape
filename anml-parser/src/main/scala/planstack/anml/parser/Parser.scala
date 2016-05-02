@@ -335,6 +335,8 @@ object AnmlParser extends JavaTokenParsers {
       case t~name~Some(args) => SymFunction(name, args, t, isConstant=true)
       case t~name~None => SymFunction(name, Nil, t, isConstant=true)
     }
+      | "fluent"~>anySymType~word~opt(argList)<~";" ^^ {
+        case t~name~optArgs => SymFunction(name, optArgs.getOrElse(Nil), t, isConstant = false) }
       | "variable"~>anySymType~word<~";" ^^ {case t~name => SymFunction(name, List(), t, isConstant=false)}
       | "function"~>anySymType~word~argList<~";" ^^ {case t~name~args => SymFunction(name, args, t, isConstant=false)}
       | "predicate"~>anySymType~argList<~";" ^^ {case name~args => SymFunction(name, args, "boolean", isConstant=false)}
