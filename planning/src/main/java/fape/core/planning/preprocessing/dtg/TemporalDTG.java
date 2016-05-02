@@ -3,8 +3,7 @@ package fape.core.planning.preprocessing.dtg;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planner.APlanner;
-import fr.laas.fape.structures.IRSet;
+import fape.core.planning.planner.Planner;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.Identifiable;
 import lombok.AllArgsConstructor;
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
 
 
 public class TemporalDTG {
-    public final APlanner planner;
+    public final Planner planner;
     public final GStateVariable sv;
 
     /** Stays false until the postProcess method has been called.
@@ -133,7 +132,7 @@ public class TemporalDTG {
     /** Matrix containing the All Pairs Shortest Path for this DTG. */
     int[] apsp;
 
-    public TemporalDTG(GStateVariable sv, Collection<InstanceRef> domain, APlanner pl) {
+    public TemporalDTG(GStateVariable sv, Collection<InstanceRef> domain, Planner pl) {
         this.planner = pl;
         this.sv = sv;
         for(InstanceRef val : domain) {

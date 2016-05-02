@@ -1,6 +1,6 @@
 package fape.core.planning.grounding;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -21,7 +21,7 @@ import java.util.*;
 public class GroundProblem {
 
     public final AnmlProblem liftedPb;
-    public final APlanner planner;
+    public final Planner planner;
 
     public final List<GAction> gActions;
 
@@ -117,7 +117,7 @@ public class GroundProblem {
         return fluents;
     }
 
-    public GroundProblem(AnmlProblem liftedPb, APlanner planner) {
+    public GroundProblem(AnmlProblem liftedPb, Planner planner) {
         this.liftedPb = liftedPb;
         this.gActions = new LinkedList<>();
         this.planner = planner;

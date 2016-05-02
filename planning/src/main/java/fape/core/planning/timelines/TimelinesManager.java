@@ -1,6 +1,6 @@
 package fape.core.planning.timelines;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
@@ -31,7 +31,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         this.timelines = Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
         this.nextTimelineID = toCopy.nextTimelineID;
 
-        if(APlanner.debugging) {
+        if(Planner.debugging) {
             for (Timeline a : consumers) assert hasTimeline(a);
             for (Timeline a : timelines) if (a != null && a.isConsumer()) assert consumers.contains(a);
         }

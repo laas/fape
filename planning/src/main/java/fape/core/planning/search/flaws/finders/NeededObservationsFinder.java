@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
@@ -28,7 +28,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
     @Override
-    public List<Flaw> getFlaws(State st, APlanner planner) {
+    public List<Flaw> getFlaws(State st, Planner planner) {
         Stream<TPRef> actionEnds = st.getAllActions().stream().map(Action::end);
         Stream<TPRef> contingents = st.csp.stn().timepoints().stream().filter(TPRef::isContingent);
 
@@ -90,7 +90,7 @@ public class NeededObservationsFinder implements FlawFinder {
         }
 
         @Override
-        public List<Resolver> getResolvers(State st, APlanner planner) {
+        public List<Resolver> getResolvers(State st, Planner planner) {
             return possibleObservationsSets.stream().map(NeededObsResolver::new).collect(Collectors.toList());
         }
 
@@ -104,7 +104,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
             @Override
-            public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+            public boolean apply(State st, Planner planner, boolean isFastForwarding) {
                 Chronicle ch = new BaseChronicle(st.pb);
                 List<Pair<TPRef,TPRef>> precedences = new ArrayList<>();
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);

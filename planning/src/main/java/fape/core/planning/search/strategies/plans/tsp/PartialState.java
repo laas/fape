@@ -2,7 +2,7 @@ package fape.core.planning.search.strategies.plans.tsp;
 
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.*;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import static fape.core.planning.grounding.GAction.*;
 @RequiredArgsConstructor
 public class PartialState {
 
-    public final APlanner planner;
+    public final Planner planner;
 
     @Data @AllArgsConstructor
     public static class Label {

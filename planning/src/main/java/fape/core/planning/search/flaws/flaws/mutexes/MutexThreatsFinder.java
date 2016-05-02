@@ -2,7 +2,7 @@ package fape.core.planning.search.flaws.flaws.mutexes;
 
 import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.Printer;
@@ -30,7 +30,7 @@ public class MutexThreatsFinder implements FlawFinder {
     }
 
     @Override
-    public List<Flaw> getFlaws(State st, APlanner planner) {
+    public List<Flaw> getFlaws(State st, Planner planner) {
         List<Flaw> threats = new LinkedList<>();
 
         Ext ext = st.getExtension(Ext.class);

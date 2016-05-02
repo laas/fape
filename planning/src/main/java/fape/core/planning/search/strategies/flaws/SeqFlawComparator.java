@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
@@ -18,10 +18,10 @@ import java.util.List;
 public class SeqFlawComparator implements FlawComparator {
 
     final List<FlawComparator> comparators;
-    final APlanner planner;
+    final Planner planner;
     final State st;
 
-    public SeqFlawComparator(State st, APlanner planner, List<FlawComparator> comparators) {
+    public SeqFlawComparator(State st, Planner planner, List<FlawComparator> comparators) {
         this.comparators = new LinkedList<>(comparators);
         this.comparators.add(new TieBreaker());
         this.st = st;

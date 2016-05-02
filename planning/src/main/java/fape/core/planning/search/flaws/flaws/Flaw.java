@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 
@@ -30,7 +30,7 @@ public abstract class Flaw {
      *                on the problem (typically coming from preprocessing)
      * @return Number of resolvers for this flaw.
      */
-    public int getNumResolvers(State st, APlanner planner) {
+    public int getNumResolvers(State st, Planner planner) {
         if(resolvers == null)
             resolvers = getResolvers(st, planner);
         return resolvers.size();
@@ -47,7 +47,7 @@ public abstract class Flaw {
      *                on the problem (typically coming from preprocessing)
      * @return A list of resolvers.
      */
-    public abstract List<Resolver> getResolvers(State st, APlanner planner);
+    public abstract List<Resolver> getResolvers(State st, Planner planner);
 
     public abstract int compareTo(Flaw o);
 }

@@ -2,7 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 
 import fape.core.planning.grounding.*;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class DGHandler extends fape.core.planning.search.Handler {
 
     @Override
-    public void stateBindedToPlanner(State st, APlanner pl) {
+    public void stateBindedToPlanner(State st, Planner pl) {
         assert !st.hasExtension(DepGraphCore.StateExt.class);
 
         // init the core of the dependency graph
@@ -75,14 +75,14 @@ public class DGHandler extends fape.core.planning.search.Handler {
     }
 
     @Override
-    protected void apply(State st, StateLifeTime time, APlanner planner) {
+    protected void apply(State st, StateLifeTime time, Planner planner) {
         if (time == StateLifeTime.SELECTION) {
             propagateNetwork(st, planner);
         }
     }
 
     @Override
-    public void actionInserted(Action act, State st, APlanner pl) {
+    public void actionInserted(Action act, State st, Planner pl) {
         if(st.csp.bindings().isRecorded(act.instantiationVar()))
             return;
         assert !st.csp.bindings().isRecorded(act.instantiationVar()) : "The action already has a variable for its ground versions.";
@@ -103,7 +103,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
     }
 
     @Override
-    public void taskInserted(Task task, State st, APlanner planner) {
+    public void taskInserted(Task task, State st, Planner planner) {
         if(st.csp.bindings().isRecorded(task.methodSupportersVar()))
             return;
 
@@ -127,7 +127,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
         st.addUnificationConstraint(task.groundSupportersVar(), act.instantiationVar());
     }
 
-    private void propagateNetwork(State st, APlanner pl) {
+    private void propagateNetwork(State st, Planner pl) {
         final IntRep<GAction> gactsRep = pl.preprocessor.store.getIntRep(GAction.class);
 
         DepGraphCore.StateExt ext = st.getExtension(DepGraphCore.StateExt.class);

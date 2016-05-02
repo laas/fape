@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -31,7 +31,7 @@ public class SupportingTimeline extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         final Timeline supporter = st.getTimeline(supporterID);
         final Timeline consumer = st.getTimeline(consumerID);
         assert supporter != null;
@@ -44,7 +44,6 @@ public class SupportingTimeline extends Resolver {
         // we concatenate the two timelines
 
         assert precedingComponent != null && precedingComponent.change;
-        planner.causalLinkAdded(st, precedingComponent.getFirst(), consumer.getFirst().getFirst());
 
         // database concatenation
         st.insertTimelineAfter(supporter, consumer, precedingComponent);

@@ -1,8 +1,7 @@
 package fape.gui;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.SearchNode;
-import fape.core.planning.states.State;
 import fape.drawing.TimedCanvas;
 import fape.drawing.gui.ChartWindow;
 import prefuse.Visualization;
@@ -50,14 +49,14 @@ public class SearchView {
     final Node root;
     final static String ACTIVITY_ON_FOCUS_CHANGE = "filter";
 
-    final APlanner planner;
+    final Planner planner;
 
     boolean skipDrawing = false;
     boolean followCurrentNode = true;
 
     ChartWindow actionsChartWindow = null;
 
-    public SearchView(APlanner planner) {
+    public SearchView(Planner planner) {
         this.planner = planner;
         Table nodeData = new Table();
         Table edgeData = new Table(0,1);

@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.VarBinding;
 import fape.core.planning.states.State;
@@ -25,7 +25,7 @@ public class UnboundVariable extends Flaw {
      * Hence we lazily return that without creating the resolvers themselves.
      */
     @Override
-    public int getNumResolvers(State st, APlanner planner) {
+    public int getNumResolvers(State st, Planner planner) {
         if(resolvers != null)
             return resolvers.size();
         else
@@ -33,7 +33,7 @@ public class UnboundVariable extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
         if(resolvers != null)
             return resolvers;
 

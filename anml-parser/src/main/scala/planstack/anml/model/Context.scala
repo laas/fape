@@ -198,39 +198,43 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   }
 
   import planstack.anml.parser
-  def simplify(e: parser.Expr, pb:AnmlProblem) : E = try {
+  def simplify(e: parser.Expr) : E = try {
     val simple = e match {
       case VarExpr(name) if pb.functions.isDefined(name) =>
         EFunction(pb.functions.get(name), Nil)
       case VarExpr(name) =>
         EVariable(name, getLocalVar(name).getType, None)
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
-        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg))))
         case FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
-        ETask(tName, args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+        ETask(tName, args.map(arg => simplifyToVar(simplify(arg))))
       case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
         second match {
           case VarExpr(sec) =>
             EFunction(pb.functions.get(s"$typ.$sec"), Nil)
           case FuncExpr(sec,args) =>
-            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg))))
+          case x =>
+            sys.error("Second part of a chained expression should always be a func or a variable: "+x)
       }
       case ChainedExpr(left, right) =>
-        val sleft = simplify(left, pb)
+        val sleft = simplify(left)
         (sleft, right) match {
           case (v@EVariable(_,typ, _), FuncExpr(fe, args)) =>
             val f = pb.functions.get(typ.getQualifiedFunction(fe.functionName))
-            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg, pb), pb)))
+            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg))))
           case (v@EVariable(_,typ, _), VarExpr(fname)) =>
             val f = pb.functions.get(typ.getQualifiedFunction(fname))
             EFunction(f, List(v))
+          case x =>
+            throw new ANMLException("Left part of chained expr was not reduced to variable: "+left)
         }
       case NumExpr(value) =>
         ENumber(value.toInt)
       case x => sys.error(s"Unrecognized expression: ${x.asANML}  --  $x")
     }
     simple match {
-      case f:EFunction if f.isConstant => simplifyToVar(f, pb)
+      case f:EFunction if f.isConstant => simplifyToVar(f)
       case x => x
     }
   } catch {
@@ -239,7 +243,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 
   }
 
-  private def simplifyToVar(e: E, pb: AnmlProblem) : EVariable = e match {
+  private def simplifyToVar(e: E) : EVariable = e match {
     case v:EVariable => v
     case f:EFunction if f.isConstant && !f.func.valueType.isNumeric =>
       bindingOf(f, pb.refCounter)
@@ -253,7 +257,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 
   def simplifyStatement(s: parser.Statement, pb:AnmlProblem) : EStatement = {
     s match {
-      case parser.SingleTermStatement(e, id) => simplify(e, pb) match {
+      case parser.SingleTermStatement(e, id) => simplify(e) match {
         case f:EFunction =>
           assert(f.func.valueType.name == "boolean")
           EBiStatement(f, "==", EVariable("true", f.func.valueType, None), id)
@@ -264,9 +268,9 @@ abstract class AbstractContext(val pb:AnmlProblem) {
         case x => sys.error("Problem: "+x)
       }
       case parser.TwoTermsStatement(e1, op, e2, id) =>
-        EBiStatement(simplify(e1,pb), op.op, simplify(e2,pb), id)
+        EBiStatement(simplify(e1), op.op, simplify(e2), id)
       case parser.ThreeTermsStatement(e1,op1,e2,op2,e3,id) =>
-        ETriStatement(simplify(e1,pb), op1.op, simplify(e2,pb), op2.op, simplify(e3,pb), id)
+        ETriStatement(simplify(e1), op1.op, simplify(e2), op2.op, simplify(e3), id)
     }
 
   }

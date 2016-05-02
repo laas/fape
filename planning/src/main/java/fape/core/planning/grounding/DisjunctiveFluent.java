@@ -1,6 +1,6 @@
 package fape.core.planning.grounding;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.util.Utils;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -17,11 +17,11 @@ public class DisjunctiveFluent {
         this.fluents = new HashSet<>(fluents);
     }
 
-    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
+    public DisjunctiveFluent(ParameterizedStateVariable sv, VarRef value, State st, Planner planner) {
         this.fluents = new HashSet<>(fluentsOf(sv, value, st, planner));
     }
 
-    public static Set<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, APlanner planner) {
+    public static Set<Fluent> fluentsOf(ParameterizedStateVariable sv, VarRef value, State st, Planner planner) {
         HashSet<Fluent> fluents = new HashSet<>();
         List<VarRef> variables = new LinkedList<>();
         for(VarRef var : sv.args()) {

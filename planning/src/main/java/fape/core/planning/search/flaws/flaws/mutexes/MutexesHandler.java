@@ -2,7 +2,7 @@ package fape.core.planning.search.flaws.flaws.mutexes;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.search.Handler;
 import fape.core.planning.states.State;
@@ -14,13 +14,12 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MutexesHandler extends Handler {
 
     static boolean debug = false;
 
-    APlanner planner = null;
+    Planner planner = null;
 
     class Ext implements StateExtension {
 
@@ -45,7 +44,7 @@ public class MutexesHandler extends Handler {
     HashMap<GAction, Set<Fluent>> eDeletesLists = new HashMap<>();
     boolean hasUsefulMutexes = false;
 
-    public void stateBindedToPlanner(State st, APlanner pl) {
+    public void stateBindedToPlanner(State st, Planner pl) {
         pl.options.flawFinders.add(new MutexThreatsFinder());
     }
 
@@ -206,7 +205,7 @@ public class MutexesHandler extends Handler {
     }
 
     @Override
-    protected void apply(State st, StateLifeTime time, APlanner planner) {
+    protected void apply(State st, StateLifeTime time, Planner planner) {
         this.planner = planner;
         if (time == StateLifeTime.SELECTION) {
             if (!st.hasExtension(Ext.class)) {
@@ -219,7 +218,7 @@ public class MutexesHandler extends Handler {
     }
 
     @Override
-    public void actionInserted(Action act, State st, APlanner pl) {
+    public void actionInserted(Action act, State st, Planner pl) {
 
     }
 }

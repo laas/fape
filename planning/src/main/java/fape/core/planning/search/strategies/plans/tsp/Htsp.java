@@ -1,25 +1,17 @@
 package fape.core.planning.search.strategies.plans.tsp;
 
-import fape.core.planning.grounding.DisjunctiveFluent;
 import fape.core.planning.grounding.Fluent;
-import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
-import fape.core.planning.search.strategies.plans.Heuristic;
 import fape.core.planning.search.strategies.plans.PartialPlanComparator;
 import fape.core.planning.states.SearchNode;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
 import fape.util.Pair;
-import planstack.anml.model.LStatementRef;
-import planstack.anml.model.concrete.Action;
-import planstack.anml.model.concrete.InstanceRef;
-import planstack.anml.model.concrete.statements.Assignment;
 import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
 
 import static fape.core.planning.grounding.GAction.*;
 import static fape.core.planning.search.strategies.plans.tsp.GoalNetwork.DisjunctiveGoal;
@@ -37,7 +29,7 @@ public class Htsp extends PartialPlanComparator {
     static void log3(String s) { assert dbgLvl>=3; System.out.println(s); }
 
     final TSPRoutePlanner routePlanner;
-    APlanner pl;
+    Planner pl;
 
     public Htsp(DistanceEvaluationMethod method) {
         if(method == DistanceEvaluationMethod.dtg)

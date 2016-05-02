@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import lombok.Value;
@@ -13,7 +13,7 @@ public class FutureTaskSupport extends Resolver {
     private final Task task;
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         st.getHierarchicalConstraints().setSupportConstraint(consumer, task);
         return true;
     }

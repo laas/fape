@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnrefinedTask;
 import fape.core.planning.states.State;
@@ -11,9 +11,9 @@ import java.util.WeakHashMap;
 public class HierFIFO implements FlawComparator {
 
     public final State st;
-    public final APlanner planner;
+    public final Planner planner;
 
-    public HierFIFO(State st, APlanner planner) {
+    public HierFIFO(State st, Planner planner) {
         this.st = st;
         this.planner = planner;
     }

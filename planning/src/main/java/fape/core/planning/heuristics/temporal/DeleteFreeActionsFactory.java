@@ -1,11 +1,10 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.exceptions.FAPEException;
 import lombok.Value;
 import planstack.anml.model.AbstractParameterizedStateVariable;
-import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
@@ -146,7 +145,7 @@ public class DeleteFreeActionsFactory {
         throw new FAPEException("Unable to find the timepoint: "+tp);
     }
 
-    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, APlanner pl) {
+    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, Planner pl) {
         Map<AbsTP, RActTemplate> templates = new HashMap<>();
         for(AbsTP tp : abs.flexibleTimepoints()) {
             templates.put(tp, new RActTemplate(abs, tp));
@@ -274,7 +273,7 @@ public class DeleteFreeActionsFactory {
         default List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
             return new ArrayList<>(templates);
         }
-        default List<RAct> instantiations(RActTemplate template, GAction groundAct, APlanner pl) {
+        default List<RAct> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
             return Collections.singletonList(RAct.from(template, groundAct, pl));
         }
     }
@@ -330,7 +329,7 @@ public class DeleteFreeActionsFactory {
         }
 
         @Override
-        public List<RAct> instantiations(RActTemplate template, GAction groundAct, APlanner pl) {
+        public List<RAct> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
             if(!hasParametrizedTemporalConstraint) {
                 // work was already done by postProcess(.)
                 return PostProcessor.super.instantiations(template, groundAct, pl);

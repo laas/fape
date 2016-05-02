@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
 import fape.core.planning.search.flaws.resolvers.*;
@@ -59,7 +59,7 @@ public class UnsupportedTimeline extends Flaw {
 
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
         if(resolvers != null)
             return resolvers;
 
@@ -93,34 +93,6 @@ public class UnsupportedTimeline extends Flaw {
                     }
                 }
             }
-        }
-
-        // look for task decomposition that might produce a desired action in the future
-        if(planner.isTopDownOnly()) {
-            // adding actions
-            // ... the idea is to decompose actions as long as they provide some support that I need, if they cant, I start adding actions
-            //find actions that help me with achieving my value through some decomposition in the task network
-            //they are those that I can find in the virtual decomposition tree
-            //first get the action names from the abstract dtgs
-            ActionSupporterFinder supporters = planner.getActionSupporterFinder();
-            TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
-
-            // a list of (abstract-action, decompositionID) of supporters
-            Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
-
-            // all actions that have an effect on the state variable
-            Set<AbstractAction> potentiallySupportingAction = potentialSupporters.stream()
-                    .map(x -> x.absAct)
-                    .collect(Collectors.toSet());
-
-            for (Task t : st.getOpenTasks()) {
-                Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
-                for (AbstractAction dec : decs) {
-                    resolvers.add(new SupportingTaskDecomposition(t, dec, consumer));
-                }
-            }
-
-            resolvers = st.retainValidResolvers(this, resolvers);
         }
 
         if(st.pb.allActionsAreMotivated()) {
@@ -213,9 +185,7 @@ public class UnsupportedTimeline extends Flaw {
     public static boolean isValid(SupportingAction supportingAction, Timeline consumer, State st) {
         assert consumer.mID == supportingAction.consumerID;
 
-        APlanner planner = st.pl;
-        if (planner.isTopDownOnly() && supportingAction.act.mustBeMotivated())
-            return false;
+        Planner planner = st.pl;
         if(!st.isAddable(supportingAction.act))
             return false;
 

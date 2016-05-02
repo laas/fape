@@ -7,7 +7,7 @@ import fape.core.planning.heuristics.IntRepresentation;
 import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.heuristics.temporal.GStore;
 import fape.core.planning.heuristics.temporal.RAct;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.strategies.plans.tsp.DTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.states.State;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class Preprocessor {
 
-    final APlanner planner;
+    final Planner planner;
     final State initialState;
 
     public int nextGActionID = 0;
@@ -48,7 +48,7 @@ public class Preprocessor {
 
     public Map<Pair<Fluent, Set<GStateVariable>>, Set<AbstractAction>> authorizedSupportersCache = new HashMap<>();
 
-    public Preprocessor(APlanner container, State initialState) {
+    public Preprocessor(Planner container, State initialState) {
         this.planner = container;
         this.initialState = initialState;
     }

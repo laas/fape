@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.states.State;
 
@@ -10,10 +10,10 @@ import fape.core.planning.states.State;
  */
 public class SOCA extends PartialPlanComparator {
 
-    private final APlanner planner;
+    private final Planner planner;
     private final AllThreatFinder threatFinder = new AllThreatFinder();
 
-    public SOCA(APlanner planner) { this.planner = planner; }
+    public SOCA(Planner planner) { this.planner = planner; }
 
     @Override
     public String shortName() {

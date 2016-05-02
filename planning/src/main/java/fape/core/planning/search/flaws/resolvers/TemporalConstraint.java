@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
 
@@ -30,7 +30,7 @@ public class TemporalConstraint extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         for(TPRef first : firsts)
             for(TPRef second : seconds)
                 st.enforceConstraint(first, second, min, max);

@@ -2,7 +2,7 @@ package fape.core.planning.search.strategies.plans.tsp;
 
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.util.Counter;
 
 import static fape.core.planning.grounding.GAction.*;
@@ -131,7 +131,7 @@ public class CausalGraph {
         return topoLevel;
     }
 
-    public static CausalGraph getCausalGraph(APlanner planner) {
+    public static CausalGraph getCausalGraph(Planner planner) {
         CausalGraph cg = new CausalGraph();
         for(GAction ga : planner.preprocessor.getAllActions()) {
             for(GLogStatement s1 : ga.gStatements.stream().map(p -> p.value2).collect(Collectors.toList())) {

@@ -19,7 +19,6 @@ import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.constraints.stnu.Controllability;
 
 import java.util.*;
@@ -32,9 +31,9 @@ import java.util.*;
  * provide a search policy. Overriding methods can also be done to change the
  * default behaviour.
  */
-public abstract class APlanner {
+public class Planner {
 
-    public APlanner(State initialState, PlanningOptions options) {
+    public Planner(State initialState, PlanningOptions options) {
         this.options = options;
         this.pb = initialState.pb;
         this.controllability = initialState.controllability;
@@ -54,7 +53,7 @@ public abstract class APlanner {
     }
 
     @Deprecated // we should always build from a state (maybe add a constructor from a problem)
-    public APlanner(Controllability controllability, PlanningOptions options) {
+    public Planner(Controllability controllability, PlanningOptions options) {
         this.options = options;
         this.controllability = controllability;
         this.pb = new AnmlProblem();
@@ -81,31 +80,11 @@ public abstract class APlanner {
     LiftedDTG dtg = null;
 
     SearchView searchView = null;
-
-    /**
-     * A short identifier for the planner.
-     *
-     * @return THe planner ID.
-     */
-    public abstract String shortName();
-
-    public abstract ActionSupporterFinder getActionSupporterFinder();
-
-    protected final PriorityQueue<SearchNode> queue;
-
-    /**
-     * This method is invoked whenever a causal link is added and offers a way
-     * to react to it for planner extending this class.
-     *
-     * @param st        State in which the causal link was added.
-     * @param supporter Left side of the causal link.
-     * @param consumer  Right side of the causal link.
-     */
-    public void causalLinkAdded(State st, LogStatement supporter, LogStatement consumer) {
+    public ActionSupporterFinder getActionSupporterFinder() {
+        return dtg;
     }
 
-    @Deprecated
-    public abstract boolean isTopDownOnly();
+    protected final PriorityQueue<SearchNode> queue;
 
     /**
      * All possible states of the planner.

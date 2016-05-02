@@ -1,6 +1,6 @@
 package fape.util;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -41,7 +41,7 @@ public class Utils {
      * @param st State In which the problem arise
      * @param planner Planner in which the problem occured
      */
-    public static void showExampleProblemWithFlawComparator(List<Flaw> flaws, Comparator<Flaw> comp, State st, APlanner planner) {
+    public static void showExampleProblemWithFlawComparator(List<Flaw> flaws, Comparator<Flaw> comp, State st, Planner planner) {
         for(int i=0 ; i< flaws.size() ; i++) {
             Flaw a = flaws.get(i);
             for(int j=i+1 ; j<flaws.size() ; j++) {

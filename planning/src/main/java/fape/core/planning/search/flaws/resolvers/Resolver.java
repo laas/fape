@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 
 /**
@@ -19,7 +19,7 @@ public abstract class Resolver implements Comparable<Resolver> {
      * @return True if the resolvers was successfully applied. (Note that the state might still e inconsistent, the only
      *         guarantee is that the flaw is fixed.
      */
-    public abstract boolean apply(State st, APlanner planner, boolean isFastForwarding);
+    public abstract boolean apply(State st, Planner planner, boolean isFastForwarding);
 
     /**
      * Should provide a comparison with another resolver of the same class.

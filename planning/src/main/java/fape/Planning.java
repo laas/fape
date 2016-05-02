@@ -2,11 +2,9 @@ package fape;
 
 import com.martiansoftware.jsap.*;
 import fape.core.planning.heuristics.temporal.DGHandler;
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.PlannerFactory;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
-import fape.core.planning.search.strategies.plans.tsp.HTSPHandler;
 import fape.core.planning.search.flaws.flaws.mutexes.MutexesHandler;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
@@ -17,7 +15,6 @@ import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,15 +38,7 @@ public class Planning {
                         new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "[experimental] FAPE will build a dispatchable Plan. "+
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
-                        new Switch("salesman", 's', "salesman", "[experimental] activates TSP heuristic"),
                         new Switch("mutex", 'm', "mutex", "[experimental] Use mutex for temporal reasoning as in CPT."),
-                        new FlaggedOption("plannerID")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setLongFlag("planner")
-                                .setDefault("fape")
-                                .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + "  - topdown: Traditional top-down HTN planning (lacks completeness for ANML).\n"
-                                        + "  - fape: Complete planner that allows going either down or up in action hierarchies.\n"),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -204,7 +193,7 @@ public class Planning {
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
         Planning.quiet = commandLineConfig.getBoolean("quiet");
         Planning.verbose = commandLineConfig.getBoolean("verbose");
-        APlanner.debugging = commandLineConfig.getBoolean("debug");
+        Planner.debugging = commandLineConfig.getBoolean("debug");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -227,7 +216,7 @@ public class Planning {
         Collections.sort(anmlFiles);
 
         // output format
-        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, " +
+        writer.write("iter, runtime, planning-time, anml-file, opened-states, generated-states, " +
                 "fast-forwarded, sol-depth, flaw-sel, plan-sel, reachability, fast-forward, ae\n");
 
         boolean allSolved = true;
@@ -242,7 +231,6 @@ public class Planning {
                 // creates the planner that will be tested for this problem
                 String[] planStrat = config.getStringArray("plan-selection");
                 String[] flawStrat = config.getStringArray("flaw-selection");
-                String plannerID = config.getString("plannerID");
 
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
@@ -265,9 +253,6 @@ public class Planning {
 
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
-
-                if(config.getBoolean("salesman"))
-                    options.handlers.add(new HTSPHandler());
 
                 if(config.getBoolean("reachability-graph") && !config.getString("reachability-graph").equals("none")) {
                     options.handlers.add(new DGHandler());
@@ -301,11 +286,11 @@ public class Planning {
                     System.err.println((new File(anmlFile)).getAbsolutePath());
                     return;
                 }
-                if(APlanner.debugging)
+                if(Planner.debugging)
                     System.out.println(pb.allActionsAreMotivated() ?
                             "Problem is entirely hierarchical (all actions are motivated)": "Non-hierarchical problem (some actions are not motivated)");
                 final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
-                final APlanner planner = PlannerFactory.getPlannerFromInitialState(plannerID, iniState, options);
+                final Planner planner = new Planner(iniState, options);
 
                 boolean failure;
                 State sol;
@@ -324,9 +309,9 @@ public class Planning {
                 String planningTime = Float.toString((end - planningStart) / 1000f);
                 if (failure) {
                     allSolved = false;
-                    if(planner.planState == APlanner.EPlanState.TIMEOUT)
+                    if(planner.planState == Planner.EPlanState.TIMEOUT)
                         time = "TIMEOUT";
-                    else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
+                    else if(planner.planState == Planner.EPlanState.INFEASIBLE)
                         time = "INFEASIBLE";
                     else
                         time = "UNKNOWN PROBLEM";
@@ -353,7 +338,6 @@ public class Planning {
 
                 writer.write(
                         i + ", "
-                                + planner.shortName() + ", "
                                 + time + ", "
                                 + planningTime + ", "
                                 + anmlFile + ", "

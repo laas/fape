@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
@@ -62,7 +62,7 @@ public class MotivatedSupport extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         assert toSupport.mustBeMotivated();
 
         // action that will be decomposed. Either it is already in the plan or we add it now

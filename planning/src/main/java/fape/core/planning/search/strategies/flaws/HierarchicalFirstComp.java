@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnmotivatedAction;
 import fape.core.planning.search.flaws.flaws.UnrefinedTask;
@@ -9,9 +9,9 @@ import fape.core.planning.states.State;
 public class HierarchicalFirstComp implements FlawComparator {
 
     public final State st;
-    public final APlanner planner;
+    public final Planner planner;
 
-    public HierarchicalFirstComp(State st, APlanner planner) {
+    public HierarchicalFirstComp(State st, Planner planner) {
         this.st = st;
         this.planner = planner;
     }

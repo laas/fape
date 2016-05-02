@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.NewTaskSupporter;
 import fape.core.planning.search.flaws.resolvers.Resolver;
@@ -26,7 +26,7 @@ public class UnrefinedTask extends Flaw {
     public UnrefinedTask(Task ac) { task = ac; }
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
         if (resolvers != null)
             return resolvers;
 
@@ -37,12 +37,11 @@ public class UnrefinedTask extends Flaw {
             if(st.isAddable(abs))
                 resolvers.add(new NewTaskSupporter(task, abs));
 
-        if(!planner.isTopDownOnly())
-            for (Action act : st.getAllActions()) {
-                if ((planner.options.actionsSupportMultipleTasks || !st.taskNet.isSupporting(act))
-                        && st.canSupport(act, task))
-                    resolvers.add(new ExistingTaskSupporter(task, act));
-            }
+        for (Action act : st.getAllActions()) {
+            if ((planner.options.actionsSupportMultipleTasks || !st.taskNet.isSupporting(act))
+                    && st.canSupport(act, task))
+                resolvers.add(new ExistingTaskSupporter(task, act));
+        }
 
         return resolvers;
     }

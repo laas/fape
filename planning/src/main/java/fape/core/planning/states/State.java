@@ -3,7 +3,7 @@ package fape.core.planning.states;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.*;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -87,7 +87,7 @@ public class State implements Reporter {
     public final AnmlProblem pb;
 
     /** Current planner instance handling this state */
-    public APlanner pl;
+    public Planner pl;
 
     public final Controllability controllability;
 
@@ -197,7 +197,7 @@ public class State implements Reporter {
     /** Returns the depth of this node in the search space */
     public int getDepth() { return depth; }
 
-    public void setPlanner(APlanner planner) {
+    public void setPlanner(Planner planner) {
         assert pl == null : "This state is already attached to a planner.";
         this.pl = planner;
         for(Handler h : getHandlers())
@@ -656,35 +656,6 @@ public class State implements Reporter {
         // needs its timepoints to be defined
         for (Statement ts : mod.statements()) {
             apply(mod, ts);
-        }
-    }
-
-    /**
-     * Given a flaw and a set of resolvers, retain only the valid resolvers. It
-     * is currently used to filter out the resolvers of flaws that have
-     * partially addressed by an action decomposition.
-     *
-     * @param f The flaw for which the resolvers are emitted.
-     * @param opts The set of resolvers to address the flaw
-     * @return A list of resolvers containing only the valid ones.
-     */
-    public List<Resolver> retainValidResolvers(Flaw f, List<Resolver> opts) {
-        assert pl.isTopDownOnly();
-        if (f instanceof Threat || f instanceof UnboundVariable ||
-                f instanceof ResourceFlaw || f instanceof UnrefinedTask || f instanceof UnmotivatedAction) {
-            return opts;
-        } else if (f instanceof UnsupportedTimeline) {
-            Action requiredAncestor = getSupportConstraint(((UnsupportedTimeline) f).consumer);
-            if (requiredAncestor == null) {
-                return opts;
-            } else {
-                // we have a constraint stating that any resolver must be deriving from this action, filter resolvers
-                return opts.stream()
-                        .filter(res -> isOptionDerivedFrom(res, requiredAncestor))
-                        .collect(Collectors.toList());
-            }
-        } else {
-            throw new FAPEException("Error: Unrecognized flaw type.");
         }
     }
 

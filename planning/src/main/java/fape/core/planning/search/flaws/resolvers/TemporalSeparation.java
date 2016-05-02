@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 
@@ -15,7 +15,7 @@ public class TemporalSeparation extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         final Timeline firstDB = st.getTimeline(firstDbID);
         final Timeline secondDB = st.getTimeline(secondDbID);
         assert firstDB != null && secondDB != null;

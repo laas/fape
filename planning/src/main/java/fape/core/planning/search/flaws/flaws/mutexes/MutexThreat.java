@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws.mutexes;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.TemporalConstraint;
@@ -20,7 +20,7 @@ public class MutexThreat extends Flaw {
     final FluentHolding cl2;
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
 
         if(MutexThreatsFinder.debug)
             System.out.println("  "+Printer.p(st, this));

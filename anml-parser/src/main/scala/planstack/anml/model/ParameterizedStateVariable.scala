@@ -52,7 +52,7 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
 object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
-    context.simplify(expr, pb) match {
+    context.simplify(expr) match {
       case f: EFunction =>
         new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
       case EVariable(_,_,Some(f)) =>

@@ -3,14 +3,13 @@ package fape.core.planning.grounding;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.Identifiable;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.*;
 import planstack.anml.model.abs.statements.*;
@@ -18,7 +17,6 @@ import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 import planstack.anml.pending.IntExpression;
-import planstack.anml.pending.IntLiteral;
 import planstack.anml.pending.LStateVariable;
 
 import java.util.*;
@@ -151,7 +149,7 @@ public class GAction implements Identifiable {
         else return false;
     }
 
-    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
+    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, Planner planner) throws NotValidGroundAction {
 
         this.ggpb = gPb;
         AnmlProblem pb = ggpb.liftedPb;
@@ -326,14 +324,14 @@ public class GAction implements Identifiable {
         return (InstanceRef) pb.context().getDefinition(v);
     }
 
-    private GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb, APlanner planner) {
+    private GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb, Planner planner) {
         InstanceRef[] svParams = new InstanceRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), pb);
         return planner.preprocessor.store.getGStateVariable(sv.func(), Arrays.asList(svParams));
     }
 
-    private Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, APlanner planner) {
+    private Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Planner planner) {
         VarRef[] svParams = new VarRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), planner.pb);
@@ -341,7 +339,7 @@ public class GAction implements Identifiable {
         return planner.preprocessor.getFluent(gsv, valueOf(value, planner.pb));
     }
 
-    public Map<Fluent, List<Fluent>> concurrentChanges(APlanner planner) {
+    public Map<Fluent, List<Fluent>> concurrentChanges(Planner planner) {
         Map<Fluent, List<Fluent>> m = new HashMap<>();
         for(AbstractFluent af : abs.concurrentChanges().keySet()) {
             Fluent f = fluent(af.sv(), af.value(), planner);
@@ -353,13 +351,13 @@ public class GAction implements Identifiable {
         return m;
     }
 
-    public List<GLogStatement> conditionsAt(AbsTP tp, APlanner planner) {
+    public List<GLogStatement> conditionsAt(AbsTP tp, Planner planner) {
         return abs.getConditionsAt(tp).stream()
                 .map(p -> statementWithRef(p._2.id()))
                 .collect(Collectors.toList());
     }
 
-    public List<GLogStatement> changesStartingAt(AbsTP tp, APlanner planner) {
+    public List<GLogStatement> changesStartingAt(AbsTP tp, Planner planner) {
         return abs.getChangesStartingFrom(tp).stream()
                 .map(p -> statementWithRef(p.id()))
                 .collect(Collectors.toList());
@@ -528,7 +526,7 @@ public class GAction implements Identifiable {
         return paramsLists;
     }
 
-    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa, APlanner planner) {
+    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa, Planner planner) {
         // all ground actions corresponding to aa
         List<GAction> actions = new LinkedList<>();
 
@@ -545,7 +543,7 @@ public class GAction implements Identifiable {
         return actions;
     }
 
-    private GTask initTask(AnmlProblem pb, APlanner planner) {
+    private GTask initTask(AnmlProblem pb, Planner planner) {
         List<InstanceRef> args = new LinkedList<>();
         for(LVarRef v : abs.args()) {
             args.add(valueOf(v, pb));
@@ -557,7 +555,7 @@ public class GAction implements Identifiable {
         return subTasks;
     }
 
-    public ArrayList<GTask> initSubTasks(AnmlProblem pb, APlanner planner) {
+    public ArrayList<GTask> initSubTasks(AnmlProblem pb, Planner planner) {
         List<AbstractTask> refs = this.abs.jSubTasks();
         ArrayList<GTask> ret = new ArrayList<>();
 

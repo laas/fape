@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.plans;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.strategies.plans.tsp.Htsp;
 import fape.exceptions.FAPEException;
 
@@ -9,7 +9,7 @@ import java.util.List;
 
 public class PlanCompFactory {
 
-    public static SeqPlanComparator get(APlanner planner, String... comparators) {
+    public static SeqPlanComparator get(Planner planner, String... comparators) {
         List<PartialPlanComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {

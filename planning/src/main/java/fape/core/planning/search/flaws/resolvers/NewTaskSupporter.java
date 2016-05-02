@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -24,7 +24,7 @@ public class NewTaskSupporter extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner, boolean isFastForwarding) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         // create a new action with the same args as the condition
         Action act = Factory.getInstantiatedAction(st.pb, abs, unrefined.args(), st.refCounter);
         st.insert(act);

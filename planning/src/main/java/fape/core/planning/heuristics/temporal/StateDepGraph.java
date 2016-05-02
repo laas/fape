@@ -3,16 +3,13 @@ package fape.core.planning.heuristics.temporal;
 import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.PlannerFactory;
+import fape.core.planning.planner.Planner;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
 
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +22,7 @@ public class StateDepGraph implements DependencyGraph {
     public DepGraphCore core;
 
     /** Planner by which this graph is used */
-    public final APlanner planner;
+    public final Planner planner;
 
     /** Timed initial litterals **/
     public final FactAction facts;
@@ -51,7 +48,7 @@ public class StateDepGraph implements DependencyGraph {
      * It is currently only used and set by the dijkstra propagator. **/
     private IR2IntMap<Node> predecessors = null;
 
-    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, APlanner planner) {
+    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, Planner planner) {
         this.core = core;
         this.planner = planner;
 
@@ -171,7 +168,7 @@ public class StateDepGraph implements DependencyGraph {
             core = new DepGraphCore(feasibles, true, core.store);
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
-            if(APlanner.debugging) {
+            if(Planner.debugging) {
                 System.out.println(String.format("Initially %d ground actions. Reachability analysis reduced them to %d.",
                         prevCore.getDefaultEarliestApprearances().keySet().stream()
                                 .filter(node -> node instanceof TempFluent.ActionPossible)
@@ -528,7 +525,7 @@ public class StateDepGraph implements DependencyGraph {
                 }
             }
 
-            if(currentIteration > 500 && (APlanner.debugging || !Planning.quiet)) {
+            if(currentIteration > 500 && (Planner.debugging || !Planning.quiet)) {
                 System.out.println("Warning: Reachability analysis took "+currentIteration+" iterations to converge. " +
                         "You might want that you model has consistent durations or " +
                         "limit the number of iterations of reachability analysis.");

@@ -11,7 +11,7 @@
 
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
 
@@ -29,7 +29,7 @@ public class ResourceFlaw extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
