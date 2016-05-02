@@ -476,6 +476,8 @@ public class StateDepGraph implements DependencyGraph {
             }
 
             while(!q.isEmpty() && (currentIteration++ < MAX_ITERATION)) {
+                if(dbgLvlDij >= 2)
+                    System.out.println("Iteration: "+currentIteration);
                 // run a dijkstra algorithm to extract everything from the queue
                 // this run is limited to positive edges.
                 if (!firstPropagationFinished) {
@@ -516,14 +518,20 @@ public class StateDepGraph implements DependencyGraph {
                 // delete all nodes after the cut threshold. Some nodes might be delayed due to these deletions,
                 // in which case they are put back in the queue (done inside delete(.))
                 if(cut_threshold != Integer.MAX_VALUE) {
-                    if(dbgLvlDij > 2) System.out.println("Start cutting from: "+cut_threshold+", (dmax = "+dmax+")");
+                    if(dbgLvlDij >= 2) System.out.println("Start cutting from: "+cut_threshold+", (dmax = "+dmax+")");
                     for(Node n : q.getCosts().keys()) {
                         if(possible(n) && cost(n) > cut_threshold) {
                             delete(n);
                         }
                     }
-                    if(dbgLvlDij > 2) System.out.println("End cutting from");
+                    if(dbgLvlDij >= 2) System.out.println("End cutting from");
                 }
+            }
+
+            if(currentIteration > 500 && (APlanner.debugging || !Planning.quiet)) {
+                System.out.println("Warning: Reachability analysis took "+currentIteration+" iterations to converge. " +
+                        "You might want that you model has consistent durations or " +
+                        "limit the number of iterations of reachability analysis.");
             }
         }
 

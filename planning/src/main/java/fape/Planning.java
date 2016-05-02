@@ -24,9 +24,12 @@ import java.util.List;
 
 public class Planning {
 
+    public static boolean quiet = false;
+    public static boolean verbose = false;
+
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
-                "FAPE planners",
+                "FAPE",
                 "Solves ANML problems",
                 new Parameter[]{
                         new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
@@ -208,6 +211,8 @@ public class Planning {
         }
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
+        Planning.quiet = commandLineConfig.getBoolean("quiet");
+        Planning.verbose = commandLineConfig.getBoolean("verbose");
         APlanner.debugging = commandLineConfig.getBoolean("debug");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
