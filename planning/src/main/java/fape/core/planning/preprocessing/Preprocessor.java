@@ -4,13 +4,10 @@ import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
-import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.heuristics.temporal.GStore;
 import fape.core.planning.heuristics.temporal.RAct;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.planninggraph.GroundDTGs;
 import fape.core.planning.search.strategies.plans.tsp.DTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.states.State;
@@ -34,13 +31,11 @@ public class Preprocessor {
 
     public final GStore store = new GStore();
 
-    private FeasibilityReasoner fr;
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
     private IRSet<Fluent> allFluents;
     private IRSet<GStateVariable> allStateVariables;
     private Collection<RAct> relaxedActions;
-    private GroundDTGs oldDTGs; //TODO cleanup
     private Map<GStateVariable, DTG> dtgs;
     private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
@@ -56,14 +51,6 @@ public class Preprocessor {
     public Preprocessor(APlanner container, State initialState) {
         this.planner = container;
         this.initialState = initialState;
-    }
-
-    public FeasibilityReasoner getFeasibilityReasoner() {
-        if(fr == null) {
-            fr = new FeasibilityReasoner(planner, initialState);
-        }
-
-        return fr;
     }
 
     public TaskDecompositionsReasoner getTaskDecompositionsReasoner() {
@@ -160,13 +147,6 @@ public class Preprocessor {
             return actionUsingStateVariable.get(sv);
     }
 
-    public DTGImpl getOldDTG(GStateVariable groundStateVariable) {
-        if(oldDTGs == null) {
-            oldDTGs = new GroundDTGs(getAllActions(), planner.pb, planner);
-        }
-        return oldDTGs.getDTGOf(groundStateVariable);
-    }
-
     /** Generates a DTG for the given state variables that contains all node but no edges */
     private DTG initDTGForStateVariable(GStateVariable missingSV) {
         return new DTG(missingSV, missingSV.f.valueType().jInstances());
@@ -226,11 +206,6 @@ public class Preprocessor {
         return isHierarchical;
     }
 
-    @Deprecated
-    public EffSet<GAction> getAllPossibleActionFromState(State st) {
-        return getFeasibilityReasoner().getAllActions(st);
-    }
-
     public HLeveledReasoner<GAction, Fluent> getRestrictedCausalReasoner(EffSet<GAction> allowedActions) {
         if(baseCausalReasoner == null) {
             baseCausalReasoner = new HLeveledReasoner<>(this.groundActionIntRepresentation(), this.fluentIntRepresentation());
@@ -239,10 +214,6 @@ public class Preprocessor {
             }
         }
         return baseCausalReasoner.cloneWithRestriction(allowedActions);
-    }
-
-    public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
-        return getRestrictedCausalReasoner(getAllPossibleActionFromState(st));
     }
 
     HLeveledReasoner<GAction, GTask> baseDecomposabilityReasoner = null;

@@ -1,18 +1,13 @@
 package fape.core.planning.preprocessing;
 
-import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
-import fape.exceptions.FAPEException;
 import fape.util.Utils;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.statements.AbstractAssignment;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
-import planstack.anml.model.abs.statements.AbstractPersistence;
 import planstack.anml.model.abs.statements.AbstractTransition;
-import planstack.anml.model.concrete.VarRef;
-import scala.collection.JavaConversions;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -127,7 +122,7 @@ public class LiftedDTG implements ActionSupporterFinder{
                 argTypesSets.add(new LinkedList<>(argType.jAllSubTypes()));
             }
 
-            for(List<Type> argTypeList : PGUtils.allCombinations(argTypesSets)) {
+            for(List<Type> argTypeList : Utils.allCombinations(argTypesSets)) {
                 for(Type valueType : ft.valueType.jAllSubTypes()) {
                     allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
                 }
@@ -156,7 +151,7 @@ public class LiftedDTG implements ActionSupporterFinder{
                 argTypesSets.add(parentsAndSelf);
             }
 
-            for(List<Type> argTypeList : PGUtils.allCombinations(argTypesSets)) {
+            for(List<Type> argTypeList : Utils.allCombinations(argTypesSets)) {
                 for(Type valueType : ft.valueType.jParents()) {
                     allFluents.add(new FluentType(ft.predicateName, argTypeList, valueType));
                 }

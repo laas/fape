@@ -69,8 +69,6 @@ public class PlanningOptions {
     public boolean useAEpsilon = false;
     public float epsilon = 0.3f;
 
-    /** If set to true, the planner will use planning graphs to assess the reachibility of goals. */
-    public boolean usePlanningGraphReachability = false;
     /** Which type of dependency graph to build */
     public String depGraphStyle = "base";
     public int depGraphMaxIters = Integer.MAX_VALUE;

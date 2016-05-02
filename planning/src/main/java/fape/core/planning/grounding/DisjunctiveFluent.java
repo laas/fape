@@ -1,16 +1,15 @@
 package fape.core.planning.grounding;
 
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.Landmark;
-import fape.core.planning.planninggraph.PGUtils;
 import fape.core.planning.states.State;
+import fape.util.Utils;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 
 import java.util.*;
 
-public class DisjunctiveFluent implements Landmark {
+public class DisjunctiveFluent {
 
     public final Set<Fluent> fluents;
 
@@ -39,7 +38,7 @@ public class DisjunctiveFluent implements Landmark {
             valuesSets.add(st.valuesOf(var));
         }
 
-        List<List<InstanceRef>> argList = PGUtils.allCombinations(valuesSets);
+        List<List<InstanceRef>> argList = Utils.allCombinations(valuesSets);
 
         for(List<InstanceRef> args : argList) {
 
@@ -85,7 +84,7 @@ public class DisjunctiveFluent implements Landmark {
             valuesSets.add(values);
         }
 
-        List<List<InstanceRef>> argList = PGUtils.allCombinations(valuesSets);
+        List<List<InstanceRef>> argList = Utils.allCombinations(valuesSets);
 
         for(List<InstanceRef> args : argList) {
 

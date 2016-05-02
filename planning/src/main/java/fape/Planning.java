@@ -93,20 +93,12 @@ public class Planning {
                                 .setDefault("0.3")
                                 .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
                                 "If set to 0, search is a standard A*."),
-                        new FlaggedOption("reachability")
-                                .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag('r')
-                                .setLongFlag("reachability")
-                                .setDefault("false")
-                                .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
-                                        "consists in an analysis on a ground version of the problem, checking both causal and" +
-                                        "hierarchical properties of a partial plan."),
-                        new QualifiedSwitch("dependency-graph")
+                        new QualifiedSwitch("reachability-graph")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
-                                .setLongFlag("dep-graph")
+                                .setLongFlag("reach-graph")
                                 .setDefault("full")
-                                .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
+                                .setHelp("Planner will use dependency graphs to preform reachability analysis " +
                                 "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
                                 " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
                                 " (same as full but the number of iterations is limited to XX). This option is currently not " +
@@ -135,7 +127,6 @@ public class Planning {
                                 .setHelp("A comma separated list of plan selectors, ordered by priority." +
                                 "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
                                 "with the highest priority is expanded next. The main options are: \n" +
-                                " - \"rplan\": evaluates the remaining search effort by building a relaxed plan\n" +
                                 " - \"soca\" that simply compare the number of flaws and actions is the partial plans\n" +
                                 " - \"dfs\": Deepest partial plan extracted first.\n" +
                                 " - \"bfs\": Shallowest partial plan extracted first.\n" +
@@ -268,7 +259,6 @@ public class Planning {
                 if(options.useAEpsilon) {
                     options.epsilon = config.getFloat("a-epsilon");
                 }
-                options.usePlanningGraphReachability = config.getBoolean("reachability") || Arrays.asList(planStrat).contains("rplan");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
                 options.checkUnsolvableThreatsForOpenGoalsResolvers = config.getBoolean("threats-early-check");
@@ -279,9 +269,9 @@ public class Planning {
                 if(config.getBoolean("salesman"))
                     options.handlers.add(new HTSPHandler());
 
-                if(config.getBoolean("dependency-graph") && !config.getString("dependency-graph").equals("none")) {
+                if(config.getBoolean("reachability-graph") && !config.getString("reachability-graph").equals("none")) {
                     options.handlers.add(new DGHandler());
-                    String degGraphOption = config.getString("dependency-graph");
+                    String degGraphOption = config.getString("reachability-graph");
                     switch (degGraphOption) {
                         case "full":
                             options.depGraphStyle = "full";
@@ -357,7 +347,7 @@ public class Planning {
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
                 }
 
-                final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";
+                final String reachStr = config.getString("reachability-graph");
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
                 final String aeStr = config.getFloat("a-epsilon") > 0 ? "ae" : "no-ae";
 

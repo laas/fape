@@ -3,9 +3,7 @@ package fape.core.planning.states;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.*;
-import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -110,8 +108,6 @@ public class State implements Reporter {
 
     public HReasoner<Term> reasoner = null;
 
-    public ReachabilityGraphs reachabilityGraphs = null;
-
     /** Extensions of a state that will be inherited by its children */
     final List<StateExtension> extensions;
 
@@ -139,9 +135,6 @@ public class State implements Reporter {
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
     private int problemRevision;
-
-    @Deprecated
-    public FeasibilityReasoner pgr = null;
 
     /**
      * this constructor is only for the initial state!! other states are
@@ -186,7 +179,6 @@ public class State implements Reporter {
         pl = st.pl;
         this.controllability = st.controllability;
         this.refCounter = new RefCounter(st.refCounter);
-        this.pgr = st.pgr;
         this.actions = new ArrayList<>(st.actions);
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
@@ -431,9 +423,6 @@ public class State implements Reporter {
         // (when an action is executed)
         csp.stn().enforceMinDelayWithID(pb.earliestExecution(), act.start(), 0, act.start());
 
-        if(pgr != null)
-            pgr.createActionInstantiationVariable(act, this);
-
         for(Handler h : getHandlers())
             h.actionInserted(act, this, pl);
 
@@ -662,9 +651,6 @@ public class State implements Reporter {
 
             for(Handler h : getHandlers())
                 h.taskInserted(t, this, pl);
-
-            if(pgr != null)
-                pgr.createTaskSupportersVariables(t, this);
         }
 
         // needs its timepoints to be defined
@@ -1129,8 +1115,7 @@ public class State implements Reporter {
     public void addSupport(Task task, Action act) {
         csp.stn().enforceConstraint(task.start(), act.start(), 0, 0);
         csp.stn().enforceConstraint(task.end(), act.end(), 0, 0);
-        if(this.pgr != null)
-            addUnificationConstraint(task.groundSupportersVar(), act.instantiationVar());
+
         taskNet.addSupport(task, act);
         for(Handler h : getHandlers())
             h.supportLinkAdded(act, task, this);

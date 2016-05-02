@@ -34,9 +34,6 @@ public class PlanCompFactory {
                 case "lfr":
                     compList.add(new LeastFlawRatio());
                     break;
-                case "rplan":
-                    compList.add(new RPGComp(planner));
-                    break;
                 case "ord-dec":
                     compList.add(new OrderedDecompositions());
                     break;

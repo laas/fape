@@ -1,6 +1,5 @@
 package fape.core.planning.planner;
 
-import fape.core.planning.heuristics.reachability.ReachabilityGraphs;
 import fape.core.planning.preprocessing.ActionSupporterFinder;
 import fape.core.planning.preprocessing.LiftedDTG;
 import fape.core.planning.preprocessing.Preprocessor;
@@ -46,10 +45,6 @@ public abstract class APlanner {
 
         root.addOperation(s -> {
             s.setPlanner(this);
-            if (options.usePlanningGraphReachability) {
-                initialState.pgr = preprocessor.getFeasibilityReasoner();
-                initialState.reachabilityGraphs = new ReachabilityGraphs(this, initialState);
-            }
         });
 
         if(options.displaySearch) {
@@ -69,9 +64,6 @@ public abstract class APlanner {
         State initState = new State(pb, controllability);
         queue.add(new SearchNode(initState));
         initState.setPlanner(this);
-
-        if(options.usePlanningGraphReachability)
-            initState.reachabilityGraphs = new ReachabilityGraphs(this, initState);
     }
 
     public final PlanningOptions options;
@@ -362,19 +354,6 @@ public abstract class APlanner {
 
             if(!success)
                 hrComment = "Non consistent resolver application or error while fast-forwarding.";
-
-            // build reachability graphs
-            if(success && options.usePlanningGraphReachability) {
-                next.addOperation(s -> {
-                    s.reachabilityGraphs = new ReachabilityGraphs(this, s);
-                    if(!s.reachabilityGraphs.isRefinableToSolution())
-                        s.setDeadEnd();
-                    s.checkConsistency();
-                });
-                success &= next.getState().isConsistent();
-                if(!success)
-                    hrComment = "Pruned by reachability.";
-            }
 
             if(options.displaySearch) {
                 searchView.addNode(next);
