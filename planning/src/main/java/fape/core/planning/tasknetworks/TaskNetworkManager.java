@@ -308,7 +308,6 @@ public class TaskNetworkManager implements Reporter {
             if(network.parents(cur).nonEmpty()) {
                 assert network.parents(cur).size() == 1;
                 cur = network.parents(cur).head();
-
             } else {
                 cur = null;
             }

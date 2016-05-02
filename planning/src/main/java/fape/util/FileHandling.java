@@ -15,7 +15,6 @@ public class FileHandling {
      */
     public static String readFileContents(String file_path) {
         StringBuilder contents = new StringBuilder();
-        File fr = new File(file_path);
         try (BufferedReader input = new BufferedReader(new FileReader(file_path))) {
             String line;
             while ((line = input.readLine()) != null) {

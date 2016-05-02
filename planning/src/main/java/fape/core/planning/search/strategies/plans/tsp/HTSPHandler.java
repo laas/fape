@@ -13,12 +13,14 @@ public class HTSPHandler extends Handler {
 
     @Override
     public void stateBindedToPlanner(State st, APlanner pl) {
+        /*
         CausalGraph cg = CausalGraph.getCausalGraph(pl);
         List<Set<GStateVariable>> comps = cg.getStronglyConnectedComponents();
 
         cg.makeAcyclic();
         List<Set<GStateVariable>> comps2 = cg.getStronglyConnectedComponents();
         cg.getTopologicalLevels();
+        */
     }
 
 }

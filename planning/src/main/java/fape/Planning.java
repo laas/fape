@@ -247,7 +247,7 @@ public class Planning {
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
-                long planningStart = 0;
+                long planningStart;
 
                 System.gc(); // clean up previous runs to avoid impact on performance measure
 

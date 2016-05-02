@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 
 public class StateDepGraph implements DependencyGraph {
 
-    static final int dbgLvl = 0;
-    static final int dbgLvlDij = 0;
+    static int dbgLvl = 0;
+    static int dbgLvlDij = 0;
 
     /** Edges and nodes common to all graphs **/
     public DepGraphCore core;

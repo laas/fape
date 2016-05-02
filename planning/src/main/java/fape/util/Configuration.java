@@ -18,14 +18,13 @@ public class Configuration {
         this.userDefined = userDefined;
         File f = new File(defaultConfFile);
         if(f.exists()) {
-            InputStream fis = null;
+            InputStream fis;
             try {
                 fis = new FileInputStream(defaultConfFile);
 
                 InputStreamReader isr = new InputStreamReader(fis, Charset.forName("UTF-8"));
                 BufferedReader br = new BufferedReader(isr);
                 String line = br.readLine();
-                String[] args = line.split(" ");
 
                 SimpleJSAP parser = Planning.getCommandLineParser(false);
                 defaultConf = parser.parse(line);

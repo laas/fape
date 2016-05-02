@@ -490,6 +490,7 @@ public class GAction implements Identifiable {
                         best = partialBindings;
                     }
                 }
+                assert best != null;
                 if(vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
                     // merge this equality into the best looking PartialBindings
                     best.addEquality(c.leftVar(), c.rightVar());

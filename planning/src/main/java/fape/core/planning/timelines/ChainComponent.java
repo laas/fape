@@ -134,6 +134,6 @@ public class ChainComponent {
 
     @Override
     public String toString() {
-        return statements.toString();
+        return Arrays.toString(statements);
     }
 }
