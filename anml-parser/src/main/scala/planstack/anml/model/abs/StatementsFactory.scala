@@ -66,6 +66,10 @@ object StatementsFactory {
         (Some(new AbstractAssignment(asSv(f), asVar(value), asRef(id))), Nil)
       case EBiStatement(f:EFunction, "==", value:EVariable, id) =>
         (Some(new AbstractPersistence(asSv(f), asVar(value), asRef(id))), Nil)
+      case EBiStatement(f:EFunction, "!=", value:EVariable, id) =>
+        val intermediateVar = context.getNewUndefinedVar(f.func.valueType, pb.refCounter)
+        (Some(new AbstractPersistence(asSv(f), intermediateVar, asRef(id))),
+          List(new AbstractVarInequalityConstraint(intermediateVar, asVar(value), LStatementRef(""))))
       case EUnStatement(ETask(t, args), id) =>
         (Some(new AbstractTask("t-"+t, args.map(arg => asVar(arg)), LActRef(id))), Nil)
       case x => sys.error("Unmatched: "+x)
