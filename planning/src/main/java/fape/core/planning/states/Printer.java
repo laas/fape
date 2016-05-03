@@ -399,6 +399,6 @@ public class Printer {
     }
 
     public static String constraints(State st) {
-        return st.csp.bindings().Report();
+        return st.csp.bindings().report();
     }
 }

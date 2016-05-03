@@ -262,7 +262,7 @@ public class State implements Reporter {
         String ret = "";
         ret += "{\n";
         ret += "  state[" + mID + "]\n";
-        ret += "  cons: " + csp.bindings().Report() + "\n";
+        ret += "  cons: " + csp.bindings().report() + "\n";
         //ret += "  stn: " + this.csp.stn().report() + "\n";
         ret += "  consumers: " + tdb.getConsumers().size() + "\n";
         for (Timeline b : tdb.getConsumers()) {
@@ -485,7 +485,7 @@ public class State implements Reporter {
             csp.bindings().AddUnificationConstraint(c.leftVar(), c.rightVar());
         } else if (bc instanceof VarInequalityConstraint) {
             VarInequalityConstraint c = (VarInequalityConstraint) bc;
-            csp.bindings().AddSeparationConstraint(c.leftVar(), c.rightVar());
+            csp.bindings().addSeparationConstraint(c.leftVar(), c.rightVar());
         } else if (bc instanceof EqualityConstraint) {
             EqualityConstraint c = (EqualityConstraint) bc;
             assert csp.bindings().isRecorded(c.variable());
@@ -501,7 +501,7 @@ public class State implements Reporter {
             csp.bindings().addVariable(tmp);
             variables.add(tmp);
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());
-            csp.bindings().AddSeparationConstraint(tmp, c.variable());
+            csp.bindings().addSeparationConstraint(tmp, c.variable());
         } else if (bc instanceof IntegerAssignmentConstraint) {
             IntegerAssignmentConstraint c = (IntegerAssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
@@ -1128,7 +1128,7 @@ public class State implements Reporter {
         }
     }
 
-    public void addSeparationConstraint(VarRef a, VarRef b) { csp.bindings().AddSeparationConstraint(a, b); }
+    public void addSeparationConstraint(VarRef a, VarRef b) { csp.bindings().addSeparationConstraint(a, b); }
 
     public void restrictDomain(VarRef var, Collection<String> values) { csp.bindings().restrictDomain(var, values); }
 

@@ -1,0 +1,26 @@
+
+
+type area;
+type robot with {
+  constant arm left_arm();
+  constant arm right_arm();
+};
+type arm with {
+  variable arm_posture posture;
+};
+
+type arm_posture;
+
+instance arm_posture TUCKED, STRAIGHT;
+instance robot PR2;
+instance arm LEFT_ARM, RIGHT_ARM;
+PR2.left_arm := LEFT_ARM;
+PR2.right_arm := RIGHT_ARM;
+
+action tuck_right_arm(robot r) {
+  [all] arm.posture(r.right_arm) == STRAIGHT :-> TUCKED;
+};
+
+
+[start] PR2.right_arm.posture := STRAIGHT;
+[end] PR2.left_arm.posture == TUCKED;

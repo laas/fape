@@ -39,10 +39,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   /** Extension constraints */
   var extensionConstraints : Map[String, ExtensionConstraint] = null
-  var mapping : ArrayBuffer[(mutable.Buffer[DomID], String)] = null
 
+  var constraints : mutable.Buffer[Constraint] = null
 
-  var extToCheck : mutable.Set[ExtID] = null
+  var pendingConstraints : mutable.Set[Constraint] = null
 
   var unusedDomainIds : mutable.Set[DomID] = null
 
@@ -61,9 +61,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       valuesIds = o.valuesIds
       defaultIntDomain = o.defaultIntDomain
       extensionConstraints = o.extensionConstraints
-      mapping = o.mapping.clone()
+      constraints = o.constraints.clone()
       unusedDomainIds = o.unusedDomainIds.clone()
-      extToCheck = o.extToCheck.clone()
+      pendingConstraints = o.pendingConstraints.clone()
     case None =>
       BindingConstraintNetwork.cnt += 1
       domIds = Array.fill(10)(-1) //mutable.Map[VarRef, DomID]()
@@ -79,10 +79,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       defaultIntDomain = ArrayBuffer(new Domain(Set()))
 
       extensionConstraints = Map()
-      mapping = ArrayBuffer()
+      constraints = ArrayBuffer()
 
-      unusedDomainIds = mutable.Set[DomID]()
-      extToCheck = mutable.Set[ExtID]()
+      unusedDomainIds = mutable.Set()
+      pendingConstraints = mutable.Set()
   }
 
   protected[bindings] def allVars = variables
@@ -126,7 +126,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     different(domID(v1))(domID(v2))
   }
 
-  private def domainChanged(id: DomID, causedByExtended: Option[ExtID]): Unit = {
+  private def domainChanged(id: DomID, causedByExtended: Option[Constraint]): Unit = {
     if(domains(id).size() == 0)
       hasEmptyDomains = true
 
@@ -148,10 +148,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     }
 
     // add extended constraints to the queue
-    extToCheck ++= (causedByExtended match {
-      case Some(extID) => extendedInvolving(id).filter(_ != extID)
-      case None => extendedInvolving(id)
-    })
+    pendingConstraints ++= constraints
+      .filter(c => !causedByExtended.contains(c))
+      .filter(c => vars(id).exists(v => c.involves(v)))
 
     // if it is a integer varaible that got binded, notify the listener if any
     if(listener != null && domains(id).size() == 1 && isIntegerVar(vars(id).head)) {
@@ -189,12 +188,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def recordEmptyNAryConstraint(setID: String, isLastValInteger: Boolean, numVariables: Int) = {
     assert(!extensionConstraints.contains(setID))
-    extensionConstraints += ((setID, new ExtensionConstraint(isLastValInteger, numVariables)))
+    extensionConstraints += ((setID, new ExtensionConstraint(setID, isLastValInteger, numVariables)))
   }
 
   def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String]): Unit = {
     if(!extensionConstraints.contains(setID)) { //TODO: should force usage of record
-      extensionConstraints += ((setID, new ExtensionConstraint(false, values.size())))
+      extensionConstraints += ((setID, new ExtensionConstraint(setID, false, values.size())))
     }
     val valuesAsIDs = values.asScala.map(valuesIds(_).asInstanceOf[Integer]).toList.asJava
     extensionConstraints(setID).addValues(valuesAsIDs)
@@ -202,7 +201,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def addAllowedTupleToNAryConstraint(setID: String, values: util.List[String], lastVal: Int): Unit = {
     if(!extensionConstraints.contains(setID)) {
-      extensionConstraints += ((setID, new ExtensionConstraint(true, values.size()+1)))
+      extensionConstraints += ((setID, new ExtensionConstraint(setID, true, values.size()+1)))
     }
     val valuesAsIDs = values.asScala
       .map(valuesIds(_).asInstanceOf[Integer])
@@ -233,16 +232,20 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   }
 
   def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
-    val asIDs : mutable.Buffer[DomID] = variables.asScala.map(domID)
-    assert(asIDs.forall(_ >= 0))
-    mapping += ((asIDs, setID))
-    extToCheck += mapping.size-1
+    assert(variables.asScala.forall(v => domID(v) >= 0))
+    val c = new NAryConstraint(variables.asScala, extensionConstraints(setID))
+    addConstraint(c)
+  }
+
+  def addConstraint(c: Constraint): Unit = {
+    constraints += c
+    pendingConstraints += c
   }
 
   def restrictIntDomain(v: VarRef, toValues: util.Collection[Integer]): Unit =
     restrictDomain(v, intValuesAsDomain(toValues))
 
-  def AddSeparationConstraint(a: VarRef, b: VarRef): Unit = {
+  def addSeparationConstraint(a: VarRef, b: VarRef): Unit = {
     if(domID(a) == domID(b))
       hasEmptyDomains = true
 
@@ -256,26 +259,27 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   }
 
   def isConsistent: Boolean = {
-    while(extToCheck.nonEmpty && !hasEmptyDomains) {
-      val cur = extToCheck.head
-      extToCheck -= cur
+    while(pendingConstraints.nonEmpty && !hasEmptyDomains) {
+      val cur = pendingConstraints.head
+      pendingConstraints -= cur
 
-      checkExtendedConstraint(cur)
+      checkConstraint(cur)
     }
 
     !hasEmptyDomains
   }
 
-  private def checkExtendedConstraint(extID: ExtID): Unit = {
-    val (domainsIDs, constraintName) = mapping(extID)
+  def checkConstraint(constraint: Constraint): Unit = {
+    constraint.propagate(this)
+  }
 
-    assert(extensionConstraints.contains(constraintName), "No tuples defined for constant \""+constraintName+
-      "\". Have you added any value for it?")
+  private def checkExtendedConstraint(c: NAryConstraint): Unit = {
+    val domainsIDs = c.vars.map(v => domID(v))
 
     // process this constraint // TODO check if there is anything new since last time
-    val ext = extensionConstraints(constraintName)
+    val ext = c.allowedTuple
     val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
-    assert(initialDomains.nonEmpty, "Domain of constraint "+constraintName+" is empty")
+    assert(initialDomains.nonEmpty, "Domain of constraint "+ext.name+" is empty")
     val restrictedDomains = ext.restrictedDomains(initialDomains)
 
     for(i <- initialDomains.indices) {
@@ -284,14 +288,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
         if(domains(domainsIDs(i)).isEmpty)
           hasEmptyDomains = true
 
-        domainChanged(domainsIDs(i), causedByExtended = Some(extID))
+        domainChanged(domainsIDs(i), causedByExtended = Some(c))
       }
     }
-  }
-
-  private def extendedInvolving(domID: DomID) : Iterable[ExtID]= {
-    for(i <- mapping.indices ; if mapping(i)._1.contains(domID)) yield
-      i
   }
 
   def domainAsString(v: VarRef): String =
@@ -300,7 +299,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     else
       "{"+ rawDomain(v).vals.map(values(_)).mkString(", ") +"}"
 
-  def Report(): String =
+  def report(): String =
     allDomIds.map(id => (id, "["+ vars(id).mkString(", ") +"]", "  "+domainAsString(vars(id).head))).mkString("\n")
 
   private def merge(id1: DomID, id2: DomID) : Unit = {
@@ -324,13 +323,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     }
     domains(id2) = null // -= id2
 
-    for(i <- mapping.indices) {
-      if(mapping(i)._1.contains(id2)) {
-        val newDef = mapping(i)._1.map(id => if(id == id2) id1 else id)
-        mapping(i) = (newDef, mapping(i)._2)
-      }
-    }
-
     // make sure new constraints are propagated
     domainChanged(id1, None)
 
@@ -343,12 +335,14 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     }
   }
 
-  def restrictDomain(v: VarRef, domain: Domain): Boolean = {
+  def restrictDomain(v: VarRef, domain: Domain): Boolean = restrictDomain(v, domain, None)
+
+  def restrictDomain(v: VarRef, domain: Domain, origin: Option[Constraint]): Boolean = {
     val newDom = rawDomain(v).intersect(domain)
     val modified = newDom.size() < rawDomain(v).size()
     if(modified) {
       domains(domID(v)) = newDom
-      domainChanged(domID(v), None)
+      domainChanged(domID(v), origin)
     }
     modified
   }
