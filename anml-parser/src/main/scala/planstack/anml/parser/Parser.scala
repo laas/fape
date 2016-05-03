@@ -68,7 +68,7 @@ case class UncertainDuration(minDur : Expr, maxDur : Expr) extends Duration
 
 sealed trait PType
 case class PSimpleType(name: String) extends PType
-case class PDisjunctiveType(types: List[PSimpleType]) extends PType
+case class PDisjunctiveType(types: Set[PSimpleType]) extends PType
 
 case class Argument(tipe:PType, name:String)
 
@@ -397,7 +397,7 @@ object AnmlParser extends JavaTokenParsers {
       failure("Unable to parse type")
 
   lazy val anySymType : Parser[PType] =
-    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l) } |
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l.toSet) } |
       simpleType
 
   lazy val simpleType : Parser[PSimpleType] =
@@ -405,7 +405,7 @@ object AnmlParser extends JavaTokenParsers {
       failure("Unable to parse type")
 
   lazy val typ : Parser[PType] =
-    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l) } |
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l.toSet) } |
     simpleType
 
   lazy val typeDecl : Parser[TypeDecl] = (

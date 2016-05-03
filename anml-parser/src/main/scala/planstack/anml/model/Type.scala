@@ -19,8 +19,10 @@ trait Type {
   def getQualifiedFunction(funcName: String): String = ???
 
   private[model] def addMethod(methodName: String) { ??? }
+  private[model] def addInstance(instance: InstanceRef) { ??? }
 
   def isNumeric : Boolean
+  override def toString = name
 }
 
 trait NumericType extends Type {
@@ -39,15 +41,21 @@ class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
   private val _methods = mutable.Set[String]()
   private val _instances = mutable.Set[InstanceRef]()
   private val _children = mutable.Set[SimpleType]()
-  parent.foreach(p => p.addDirectSubType(this))
+  private val _supertypes = mutable.Set[Type]()
+  parent.foreach(p => {
+    p.addDirectSubType(this)
+    addSuperType(p)
+  })
+
+  private[model] def addSuperType(t: Type) { _supertypes += t }
 
   private[model] override def addMethod(methodName: String) {
     _methods += methodName
   }
 
-  private[model] def addInstance(instance: InstanceRef) {
+  private[model] override def addInstance(instance: InstanceRef) {
     _instances += instance
-    parent.foreach(p => p.addInstance(instance))
+    _supertypes.foreach(p => p.addInstance(instance))
   }
 
   private[model] def addDirectSubType(typ: SimpleType): Unit = {
@@ -74,10 +82,18 @@ class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
       case e: FunctionNotFoundInType => throw new FunctionNotFoundInType(funcName, name)
     }
   }
-
-  override def toString = name
 }
 
-//case class UnionType(val parts:Set[Type])
+case class UnionType(val parts:Set[SimpleType]) extends Type {
+  override def name: String = "("+parts.mkString(" or ")+")"
+  override def isNumeric: Boolean = false
+
+  // initialize instances and record ourself to sub types to get any update
+  val _instances : mutable.Set[InstanceRef] = mutable.Set(parts.flatMap(s => s.instances).toArray: _*)
+  for(sub <- parts) sub.addSuperType(this)
+
+  override def addInstance(i: InstanceRef) { _instances += i }
+  override def instances : collection.Set[InstanceRef] = _instances
+}
 
 

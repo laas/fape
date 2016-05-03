@@ -2,7 +2,7 @@ package planstack.anml.model
 
 import planstack.anml.ANMLException
 import planstack.anml.model.concrete.{InstanceRef, RefCounter}
-import planstack.anml.parser.{PSimpleType, PType}
+import planstack.anml.parser.{PDisjunctiveType, PSimpleType, PType}
 import planstack.graph.core.impl.SimpleUnlabeledDirectedAdjacencyList
 
 import scala.collection.JavaConversions._
@@ -15,7 +15,8 @@ class InstanceManager(val refCounter: RefCounter) {
   private val NON_NUM_SOURCE_TYPE = "__NON_NUM_SOURCE_TYPE__"
 
   /** Maps every type name to a full type definition */
-  private val types = mutable.Map[String, SimpleType]()
+  private val simpleTypes = mutable.Map[String, SimpleType]()
+  private val disjunctiveTypes = mutable.Map[PDisjunctiveType, UnionType]()
 
   /** Maps an instance name to a (type, GlobalReference) pair */
   private val instancesDef = mutable.Map[String, InstanceRef]()
@@ -40,10 +41,10 @@ class InstanceManager(val refCounter: RefCounter) {
     */
   def addInstance(name:String, t:String, refCounter: RefCounter) {
     assert(!instancesDef.contains(name), "Instance already declared: " + name)
-    assert(types.contains(t), "Unknown type: " + t)
+    assert(simpleTypes.contains(t), "Unknown type: " + t)
     val newInstance = new InstanceRef(name, asType(t), refCounter)
     instancesDef(name) = newInstance
-    types(t).addInstance(newInstance)
+    simpleTypes(t).addInstance(newInstance)
   }
 
   def addTypes(typeList: List[(String,String)]): Unit = {
@@ -53,7 +54,7 @@ class InstanceManager(val refCounter: RefCounter) {
       q.dequeue() match {
         case (typ,"") =>
           q.enqueue((typ, NON_NUM_SOURCE_TYPE))
-        case t@(_,parent) if !types.contains(parent) =>
+        case t@(_,parent) if !simpleTypes.contains(parent) =>
           q.enqueue(t)
         case (typ,parentName) =>
           addType(typ, parentName)
@@ -61,10 +62,14 @@ class InstanceManager(val refCounter: RefCounter) {
     }
   }
 
-  def asType(typeName: String) = types(typeName)
+  def asType(typeName: String) = simpleTypes(typeName)
 
   def asType(typ: PType) : Type = typ match {
     case PSimpleType(typeName) => asType(typeName)
+    case t@PDisjunctiveType(l) =>
+      if(!disjunctiveTypes.contains(t))
+        disjunctiveTypes.put(t, UnionType(l.map(st => asType(st).asInstanceOf[SimpleType])))
+      disjunctiveTypes(t)
   }
 
   /** Records a new type.
@@ -73,12 +78,12 @@ class InstanceManager(val refCounter: RefCounter) {
     * @param parent Name of the parent type. If empty (""), no parent is set for this type.
     */
   def addType(name:String, parent:String) {
-    assert(!types.contains(name), "Error: type \""+name+"\" is already recorded.")
-    assert(parent.isEmpty || types.contains(parent), s"Parent type \'$parent\'  of \'$name\' is not defined yet.")
+    assert(!simpleTypes.contains(name), "Error: type \""+name+"\" is already recorded.")
+    assert(parent.isEmpty || simpleTypes.contains(parent), s"Parent type \'$parent\'  of \'$name\' is not defined yet.")
 
-    types(name) = parent match {
+    simpleTypes(name) = parent match {
       case "" => new SimpleType(name, None)
-      case par => new SimpleType(name, Some(types(par)))
+      case par => new SimpleType(name, Some(simpleTypes(par)))
     }
   }
 
@@ -90,7 +95,7 @@ class InstanceManager(val refCounter: RefCounter) {
   def containsInstance(instanceName:String) = instancesDef.contains(instanceName)
 
   /** Returns true if the type with the given name exists */
-  def containsType(typeName:String) = types.contains(typeName)
+  def containsType(typeName:String) = simpleTypes.contains(typeName)
 
   /** Returns the type of a given instance */
   def typeOf(instanceName:String) = instancesDef(instanceName).getType
@@ -100,11 +105,11 @@ class InstanceManager(val refCounter: RefCounter) {
     * @param typeName Name of the type to inspect.
     * @return All subtypes including itself.
     */
-  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(types(typeName).allSubTypes.map(_.name))
+  def subTypes(typeName :String) : java.util.Set[String] = setAsJavaSet(simpleTypes(typeName).allSubTypes.map(_.name))
 
   /** Returns all parents of this type */
   def parents(typeName: String) : java.util.Set[String] =  {
-    setAsJavaSet(types(typeName).parents.map(_.toString))
+    setAsJavaSet(simpleTypes(typeName).parents.map(_.toString))
   }
 
   /** Return a collection containing all instances. */
@@ -129,8 +134,8 @@ class InstanceManager(val refCounter: RefCounter) {
   /** Returns all instances of the given type */
   private def instancesOfTypeRec(tipe:String) : List[String] = {
     assert(tipe != "integer", "Requested instances of type integer.")
-    assert(types.contains(tipe), s"Unknown type: $tipe")
-    types(tipe).instances.toList.map(_.instance)
+    assert(simpleTypes.contains(tipe), s"Unknown type: $tipe")
+    simpleTypes(tipe).instances.toList.map(_.instance)
   }
 
   /**
@@ -157,8 +162,8 @@ class InstanceManager(val refCounter: RefCounter) {
     * @return
     */
   def getQualifiedFunction(typeName:String, methodName:String) : List[String] = {
-    assert(types.contains(typeName), s"Type $typeName does not seem to exist.")
-    val ret = types(typeName).getQualifiedFunction(methodName)
+    assert(simpleTypes.contains(typeName), s"Type $typeName does not seem to exist.")
+    val ret = simpleTypes(typeName).getQualifiedFunction(methodName)
     assert(ret.nonEmpty)
     ret.split("\\.").toList
   }

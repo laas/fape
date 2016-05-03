@@ -1,7 +1,6 @@
 
 
-type ObjectLocation;
-type Area < ObjectLocation;
+type Area;
 type PlArea < Area;
 type ManArea < Area;
 type PreArea < Area;
@@ -11,14 +10,14 @@ type Robot with {
   fluent Area loc;
   fluent TorsoPosture torso;
 };
-type Arm < ObjectLocation with {
+type Arm with {
   fluent ArmPosture posture;
   fluent boolean free;
   constant Robot owner;
 };
 
 type Object with {
-  fluent ObjectLocation loc;
+  fluent (PlArea or Arm) loc;
 };
 
 type ArmPosture;
@@ -28,7 +27,6 @@ type TorsoPosture;
 instance TorsoPosture TorsoDownPosture, TorsoMiddlePosture, TorsoUpPosture;
 
 constant boolean connected(PlArea pl, ManArea man, PreArea pre);
-
 
 action move_base(Robot r, Area from, Area to) {
   end >= start+5000;
