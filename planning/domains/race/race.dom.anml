@@ -1,0 +1,248 @@
+
+
+type ObjectLocation;
+type Area < ObjectLocation;
+type PlArea < Area;
+type ManArea < Area;
+type PreArea < Area;
+type Robot with {
+  constant Arm left_arm;
+  constant Arm right_arm;
+  fluent Area loc;
+  fluent TorsoPosture torso;
+};
+type Arm < ObjectLocation with {
+  fluent ArmPosture posture;
+  fluent boolean free;
+  constant Robot owner;
+};
+
+type Object with {
+  fluent ObjectLocation loc;
+};
+
+type ArmPosture;
+instance ArmPosture ArmTuckedPosture, ArmUntuckedPosture, ArmUnnamedPosture, ArmToSidePosture, ArmCarryPosture;
+
+type TorsoPosture;
+instance TorsoPosture TorsoDownPosture, TorsoMiddlePosture, TorsoUpPosture;
+
+constant boolean connected(PlArea pl, ManArea man, PreArea pre);
+
+
+action move_base(Robot r, Area from, Area to) {
+  end >= start+5000;
+  [all] r.loc == from :-> to;
+};
+
+action move_base_man(Robot r, PreArea from, ManArea to) {
+  end >= start +4000;
+  constant PlArea x;
+  connected(x, to, from);
+  [all] r.loc == from :-> to;
+};
+
+action move_base_pre(Robot r, ManArea from, PreArea to) {
+  end >= start +4000;
+  constant PlArea x;
+  connected(x, from, to);
+  [all] r.loc == from :-> to;
+};
+
+action tuck_arms(Robot r, ArmPosture left_pos, ArmPosture right_pos) {
+  // TODO: left_pos and right_pos in {ArmTuckedPosture, ArmUntuckedPosture}
+  end >= start +4000;
+  constant ArmPosture rarm_ini_pos;
+  constant ArmPosture larm_ini_pos;
+  [all] r.left_arm.posture == larm_ini_pos :-> left_pos;
+  [all] r.right_arm.posture == rarm_ini_pos :-> right_pos;
+  // arm capacity usage
+};
+
+action move_torso(Robot r, TorsoPosture old, TorsoPosture new) {
+  end >= start +4000;
+  [all] r.torso == old :-> new;
+};
+
+action pick_up_object(Arm arm, Object obj) {
+  constant PreArea pre;
+  constant PlArea pl;
+  constant ManArea man;
+  connected(pl, man, pre);
+  [all] obj.loc == pl :-> arm;
+  [all] arm.owner.loc == man;
+  [all] arm.free == false :-> true;
+  // object man
+  // arm man capacity
+};
+
+action place_object(Arm arm, Object obj, PlArea pl) {
+  end >= start +4000;
+  constant ManArea man;
+  constant PreArea pre;
+  connected(pl, man, pre);
+  [start] arm.posture == ArmToSidePosture;
+  [all] arm.owner.loc == man;
+  [all] obj.loc == arm :-> pl;
+};
+
+action move_arm_to_side(Arm arm) {
+  end >= start +4000;
+  constant ArmPosture old_posture;
+  [all] arm.posture == old_posture :-> ArmToSidePosture;
+  :decomposition {
+    old_posture != ArmTuckedPosture;
+  };
+  :decomposition { // arm is tucked, the other must not be
+    old_posture == ArmTuckedPosture;
+    constant Arm other;
+    other.owner == arm.owner;
+    arm != other;
+    [all] other.posture != ArmTuckedPosture;
+  };
+};
+
+action move_arms_to_carryposture(Robot r) {
+  end >= start +4000;
+  constant ArmPosture prevLeft;
+  constant ArmPosture prevRight;
+  [all] r.left_arm.posture == prevLeft :-> ArmCarryPosture;
+  [all] r.right_arm.posture == prevRight :-> ArmCarryPosture;
+  [all] r.torso != TorsoDownPosture;
+};
+
+action observe_objects_on_area(Robot r, PlArea pl) {
+  end >= start +4000;
+  constant ManArea man;
+  constant PreArea pre;
+  connected(pl, man, pre);
+  [all] r.loc == man;
+};
+
+
+
+
+action adapt_torso(Robot r, TorsoPosture pose) {
+  :decomposition {
+    [all] r.torso == pose;
+  };
+  :decomposition {
+    [start] r.torso != pose;
+    [all] move_torso(r, pose);
+  };
+};
+
+action assume_driving_pose(Robot r) {
+  :decomposition { // both arms are free
+    [all] r.left_arm.free == true;
+    [all] r.right_arm.free == true;
+    [all] adapt_torso(TorsoDownPosture);
+  };
+  :decomposition { // there is an occupied arm
+    constant Arm arm;
+    arm.owner == r;
+    [all] arm.free == false;
+    [all] adapt_torso(TorsoMiddlePosture);
+  };
+};
+
+action adapt_arms(Robot r, ArmPosture pose) {
+  :decomposition {
+    [all] r.left_arm.posture == pose;
+    [all] r.right_arm.posture == pose;
+  };
+  :decomposition {
+    constant Arm arm;
+    pose == ArmTuckedPosture;
+    arm.owner == r;
+    [start] arm.posture != ArmTuckedPosture;
+    [all] tuck_arms(r, ArmTuckedPosture, ArmTuckedPosture);
+  };
+  :decomposition {
+    pose == ArmCarryPosture;
+    constant Arm arm;
+    arm.owner == r;
+    [start] arm.posture != ArmCarryPosture;
+    [all] move_arms_to_carryposture(r);
+  };
+
+};
+
+action arms_assume_driving_pose(Robot r) {
+  :decomposition { // both arms are free
+    [all] r.left_arm.free == true;
+    [all] r.right_arm.free == true;
+    [all] adapt_arms(r, ArmTuckedPosture);
+  };
+  :decomposition { // there is an occupied arm
+    constant Arm arm;
+    arm.owner == r;
+    [all] arm.free == false;
+    [all] adapt_arms(r, ArmCarryPosture);
+  };
+};
+
+/*
+action drive_robot(Robot r, Area to) {
+  :decomposition {
+    [all] r.loc == to;
+  };
+  :decomposition {
+    constant ManArea
+  };
+};
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**  Environment shared by all problem instances */
+
+instance Robot PR2;
+instance Arm LEFT_ARM,RIGHT_ARM;
+PR2.right_arm := RIGHT_ARM;
+PR2.left_arm := LEFT_ARM;
+RIGHT_ARM.owner := PR2;
+LEFT_ARM.owner := PR2;
+
+[start] {
+  PR2.right_arm.posture := ArmTuckedPosture;
+  PR2.right_arm.free := true;
+  PR2.left_arm.posture := ArmTuckedPosture;
+  PR2.left_arm.free := true;
+  PR2.torso := TorsoDownPosture;
+  PR2.loc := floorAreaTamsRestaurant1;
+};
+
+[end] {
+  PR2.loc == placingAreaEastLeftTable1;
+  PR2.left_arm.posture == ArmUntuckedPosture;
+};
+
+instance Area floorAreaTamsRestaurant1;
+instance PlArea placingAreaEastRightCounter1, placingAreaWestLeftTable1, placingAreaEastLeftTable1, placingAreaWestRightTable1, placingAreaEastRightTable1, placingAreaNorthLeftTable2, placingAreaNorthRightTable2, placingAreaSouthLeftTable2, placingAreaSouthRightTable2, placingAreaEastRightCounterOS1;
+instance ManArea manipulationAreaEastCounter1, manipulationAreaNorthTable1, manipulationAreaSouthTable1, manipulationAreaEastTable2, manipulationAreaWestTable2, manipulationAreaEastCounterOS1;
+instance PreArea preManipulationAreaEastCounter1, preManipulationAreaNorthTable1, preManipulationAreaSouthTable1, preManipulationAreaEastTable2, preManipulationAreaWestTable2, preManipulationAreaEastCounterOS1;
+
+connected(placingAreaEastRightCounter1, manipulationAreaEastCounter1, preManipulationAreaEastCounter1) := true;
+connected(placingAreaWestLeftTable1, manipulationAreaNorthTable1, preManipulationAreaNorthTable1) := true;
+connected(placingAreaEastLeftTable1, manipulationAreaSouthTable1, preManipulationAreaSouthTable1) := true;
+connected(placingAreaWestRightTable1, manipulationAreaSouthTable1, preManipulationAreaSouthTable1) := true;
+connected(placingAreaEastRightTable1, manipulationAreaNorthTable1, preManipulationAreaNorthTable1) := true;
+connected(placingAreaNorthLeftTable2, manipulationAreaEastTable2,  preManipulationAreaEastTable2) := true;
+connected(placingAreaNorthRightTable2, manipulationAreaWestTable2, preManipulationAreaWestTable2) := true;
+connected(placingAreaSouthLeftTable2, manipulationAreaWestTable2, preManipulationAreaWestTable2) := true;
+connected(placingAreaSouthRightTable2, manipulationAreaEastTable2, preManipulationAreaEastTable2) := true;
+connected(placingAreaEastRightCounterOS1, manipulationAreaEastCounterOS1, preManipulationAreaEastCounterOS1) := true;
+
