@@ -176,13 +176,13 @@ class AnmlProblem extends TemporalInterval {
     // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
     val chronicle = new BaseChronicle(this)
     // add all type declarations to the instance manager.
-    blocks.filter(_.isInstanceOf[parser.TypeDecl]).map(_.asInstanceOf[parser.TypeDecl]).foreach({
+    blocks.filter(_.isInstanceOf[parser.TypeDecl]) foreach {
       case TypeDecl(PSimpleType(name), None, _) => instances.addType(name, "")
       case TypeDecl(PSimpleType(name), Some(PSimpleType(parent)), _) => instances.addType(name, parent)
-    })
+    }
 
     // add all instance declaration to the instance manager and to the chronicle
-    blocks.filter(_.isInstanceOf[parser.Instance]).map(_.asInstanceOf[parser.Instance]) foreach {
+    blocks collect {
       case parser.Instance(PSimpleType(typeName), name) =>
         instances.addInstance(name, typeName, refCounter)
         chronicle.instances += name
@@ -192,7 +192,7 @@ class AnmlProblem extends TemporalInterval {
     }
 
     // add all functions to the function manager
-    blocks.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]) foreach(funcDecl => {
+    blocks collect { case funcDecl:parser.Function =>
       assert(!funcDecl.name.contains("."), "Declaring function "+funcDecl+" is not supported. If you wanted to " +
         "declared a function linked to type, you should do so in the type itself.") // TODO: should be easy to support
 
@@ -205,41 +205,42 @@ class AnmlProblem extends TemporalInterval {
         // either non-constant or with arguments
         functions.addFunction(funcDecl)
       }
-    })
+    }
 
     // find all methods declared inside a type and them to functions and to the type.
-    blocks.filter(_.isInstanceOf[parser.TypeDecl]).map(_.asInstanceOf[parser.TypeDecl]) foreach(typeDecl => {
+    blocks collect { case typeDecl: parser.TypeDecl =>
       typeDecl.content.filter(_.isInstanceOf[parser.Function]).map(_.asInstanceOf[parser.Function]).foreach(scopedFunction => {
         functions.addScopedFunction(instances.asType(typeDecl.name), scopedFunction)
         instances.asType(typeDecl.name).addMethod(scopedFunction.name)
       })
-    })
+    }
 
-    blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]).foreach(actionDecl => {
+    // record all tasks (needed when processing statements)
+    blocks collect { case actionDecl:parser.Action =>
       tasks += actionDecl.name
-    })
+    }
 
-    blocks.filter(_.isInstanceOf[parser.Action]).map(_.asInstanceOf[parser.Action]) foreach(actionDecl => {
+    blocks collect { case actionDecl: parser.Action =>
       val abs = AbstractAction(actionDecl, this, refCounter)
       assert(abs.nonEmpty)
       val task = abs.head.taskName
       assert(!actionsByTask.contains(task), "Task \""+task+"\" is already registered. Maybe the corresponding action was declared twice.")
       abstractActions ++= abs
       actionsByTask += ((task, abs.asJava))
-    })
+    }
 
     val absStatements = ArrayBuffer[AbstractStatement]()
     val absConstraints = ArrayBuffer[AbstractConstraint]()
 
-    blocks.filter(_.isInstanceOf[parser.TemporalStatement]).map(_.asInstanceOf[parser.TemporalStatement]) foreach(tempStatement => {
+    blocks collect { case tempStatement: parser.TemporalStatement =>
       val (statement, constraints) = StatementsFactory(tempStatement, this.context, this, refCounter)
       absStatements ++= statement
       absConstraints ++= constraints
-    })
+    }
 
-    blocks.filter(_.isInstanceOf[parser.TemporalConstraint]).map(_.asInstanceOf[parser.TemporalConstraint]).foreach(constraint => {
+    blocks collect { case constraint: parser.TemporalConstraint =>
       absConstraints ++= AbstractTemporalConstraint(constraint)
-    })
+    }
 
     for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
       val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => context.getLocalVar(a.name)))
@@ -285,7 +286,7 @@ class AnmlProblem extends TemporalInterval {
 
     // first process variable definitions to make them available (in local context)
     // to all other statements
-    for(block <- blocks.filter(_.isInstanceOf[parser.Function])) block match {
+    blocks.filter(_.isInstanceOf[parser.Function]) foreach {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
         val newVar = new VarRef(instances.asType(func.tipe), refCounter)
@@ -294,13 +295,13 @@ class AnmlProblem extends TemporalInterval {
 
       // complete function definition, would change the problem.
       case _ =>
-        throw new ANMLException("Declaration of functions is not allow as it would modify the problem.")
+        throw new ANMLException("Declaration of functions is not allowed as it would modify the problem.")
     }
 
     val statements = ArrayBuffer[AbstractStatement]()
     val constraints = ArrayBuffer[AbstractConstraint]()
 
-    for(block <- blocks.filter(!_.isInstanceOf[parser.Function])) block match {
+    blocks.filter(!_.isInstanceOf[parser.Function]) foreach {
       case ts: parser.TemporalStatement =>
         val (stats, csts) = StatementsFactory(ts, localContext, this, refCounter)
         statements ++= stats
@@ -309,7 +310,7 @@ class AnmlProblem extends TemporalInterval {
       case tc: parser.TemporalConstraint =>
         constraints ++= AbstractTemporalConstraint(tc)
 
-      case _ =>
+      case block =>
         throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
           "change the problem definition: "+block)
     }
@@ -325,7 +326,7 @@ class AnmlProblem extends TemporalInterval {
 
   /** Builds a state variable with the given function and args */
   def stateVariable(funcName: String, args: Seq[String]) = {
-    val vars = args.map(instances.referenceOf(_))
+    val vars = args.map(instances.referenceOf)
     val func = functions.get(funcName)
     new ParameterizedStateVariable(func, vars.toArray)
   }
