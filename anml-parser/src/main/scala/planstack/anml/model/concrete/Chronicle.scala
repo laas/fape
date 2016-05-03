@@ -56,7 +56,7 @@ trait Chronicle {
     */
   def tasks : java.util.List[Task]
 
-  /** (Type, Reference) of global variables to be declared */
+  /** Global variables to be declared */
   def vars : java.util.List[VarRef]
 
   var flexibleTimepoints : IList[TPRef] = null

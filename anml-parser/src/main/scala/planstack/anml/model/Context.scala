@@ -231,6 +231,8 @@ abstract class AbstractContext(val pb:AnmlProblem) {
         }
       case NumExpr(value) =>
         ENumber(value.toInt)
+      case SetExpr(vals) =>
+        ESet(vals.map(v => simplifyToVar(simplify(v))))
       case x => sys.error(s"Unrecognized expression: ${x.asANML}  --  $x")
     }
     simple match {
@@ -283,6 +285,7 @@ case class EFunction(func:Function, args:List[EVariable]) extends E {
 }
 case class ENumber(n:Int) extends E
 case class ETask(name:String, args:List[EVariable]) extends E
+case class ESet(parts: Set[EVariable]) extends E
 
 trait EStatement
 case class EUnStatement(e:E, id:String) extends EStatement

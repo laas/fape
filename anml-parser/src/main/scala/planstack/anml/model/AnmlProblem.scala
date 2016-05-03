@@ -247,6 +247,9 @@ class AnmlProblem extends TemporalInterval {
       absConstraints += new AbstractEqualityConstraint(sv, context.getLocalVar(variable.name), LStatementRef(""))
     }
 
+    for(v <- context.varsToCreate)
+      chronicle.vars += v
+
     chronicle.addAllStatements(absStatements, context, this, refCounter)
     chronicle.addAllConstraints(absConstraints, context, this, refCounter)
 

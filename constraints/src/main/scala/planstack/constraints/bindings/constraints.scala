@@ -34,7 +34,7 @@ class NAryConstraint(val vars:Seq[VarRef], val allowedTuple: ExtensionConstraint
   }
 }
 
-class InConstraint(val left:VarRef, val right:Set[VarRef]) extends Constraint {
+class InSetConstraint(val left:VarRef, val right:Set[VarRef]) extends Constraint {
   def this(left: VarRef, right: util.Collection[VarRef]) = this(left, right.asScala.toSet)
 
   override def propagate(csp: BindingConstraintNetwork): Unit = {

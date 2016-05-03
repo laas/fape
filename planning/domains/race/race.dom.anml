@@ -48,7 +48,8 @@ action move_base_pre(Robot r, ManArea from, PreArea to) {
 };
 
 action tuck_arms(Robot r, ArmPosture left_pos, ArmPosture right_pos) {
-  // TODO: left_pos and right_pos in {ArmTuckedPosture, ArmUntuckedPosture}
+//  left_pos in { ArmTuckedPosture, ArmUntuckedPosture };
+//  right_pos in { ArmTuckedPosture, ArmUntuckedPosture };
   end >= start +4000;
   constant ArmPosture rarm_ini_pos;
   constant ArmPosture larm_ini_pos;
@@ -225,7 +226,7 @@ LEFT_ARM.owner := PR2;
 
 [end] {
   PR2.loc == placingAreaEastLeftTable1;
-  PR2.left_arm.posture == ArmUntuckedPosture;
+  PR2.left_arm.posture == ArmCarryPosture;
 };
 
 instance Area floorAreaTamsRestaurant1;

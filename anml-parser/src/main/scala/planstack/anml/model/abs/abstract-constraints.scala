@@ -139,3 +139,12 @@ class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVar
   override def bind(context: Context, pb: AnmlProblem) =
     new VarInequalityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
 }
+
+class AbstractInConstraint(val leftVar : LVarRef, val rightVars : Set[LVarRef], id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  override def toString = "%s in %s".format(leftVar, rightVars)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new InConstraint(context.getGlobalVar(leftVar), rightVars.map(v => context.getGlobalVar(v)))
+}

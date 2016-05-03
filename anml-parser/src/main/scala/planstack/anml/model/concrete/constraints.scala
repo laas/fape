@@ -36,3 +36,5 @@ class EqualityConstraint(val sv : ParameterizedStateVariable, val variable : Var
 class VarInequalityConstraint(val leftVar : VarRef, val rightVar : VarRef) extends BindingConstraint
 
 class InequalityConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
+
+class InConstraint(val leftVar : VarRef, val rightVars: Set[VarRef]) extends BindingConstraint

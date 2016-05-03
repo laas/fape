@@ -97,6 +97,12 @@ case class FuncExpr(funcExpr:Expr, args:List[Expr]) extends Expr {
   def asANML = s"${funcExpr.asANML}(${args.map(_.asANML).mkString(",")})"
 }
 
+case class SetExpr(parts: Set[Expr]) extends Expr {
+  override def functionName: String = ???
+
+  override def asANML: String = "{"+parts.map(_.asANML).mkString(", ")+"}"
+}
+
 case class NumExpr(value : Float) extends Expr {
   override def functionName = value.toString
   def asANML = value.toString
@@ -249,6 +255,9 @@ object AnmlParser extends JavaTokenParsers {
     | word~opt(refArgs) ^^ {
         case f~None => VarExpr(f)
         case f~Some(args) => FuncExpr(VarExpr(f), args)
+      }
+    | "{"~>rep1sep(literal, ",")<~"}" ^^ {
+        case l => SetExpr(l.toSet)
       }
   )
 
@@ -441,7 +450,7 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
   private def opString : Parser[String] =
-    "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!="
+    "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!=" | "in\\b".r
 
 }
 

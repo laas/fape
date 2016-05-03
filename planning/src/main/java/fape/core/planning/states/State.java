@@ -37,7 +37,8 @@ import planstack.anml.pending.IntExpression;
 import planstack.anml.pending.LStateVariable;
 import planstack.anml.pending.StateVariable;
 import planstack.constraints.MetaCSP;
-import planstack.constraints.bindings.Domain;
+import planstack.constraints.bindings.*;
+import planstack.constraints.bindings.InSetConstraint;
 import planstack.constraints.stnu.Controllability;
 import scala.Option;
 import scala.Tuple2;
@@ -511,6 +512,9 @@ public class State implements Reporter {
             }
             csp.bindings().addPossibleValue(c.value());
             csp.bindings().addAllowedTupleToNAryConstraint(c.sv().func().name(), values, c.value());
+        } else if(bc instanceof InConstraint) {
+            csp.bindings().addConstraint(
+                    new InSetConstraint(((InConstraint) bc).leftVar(), ((InConstraint) bc).rightVars()));
         } else {
             throw new FAPEException("Unhandled constraint type: "+bc);
         }
