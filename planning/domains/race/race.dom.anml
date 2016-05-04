@@ -2,6 +2,8 @@
 
 type Area with {
   constant boolean isManipulationArea;
+  constant PreArea pre_area;
+  constant ManArea man_area;
 };
 type PlArea < Area;
 type ManArea < Area;
@@ -43,19 +45,18 @@ action move_base(Robot r, Area to) {
   [all] r.loc == from :-> to;
 };
 
-action move_base_man(Robot r, PreArea from, ManArea to) {
+// only applicable between a manipulation area and its pre-area 
+action move_base_blind(Robot r, Area to) {
   motivated;
-  end >= start +4000;
-  constant PlArea x;
-  connected(x, to, from);
-  [all] r.loc == from :-> to;
-};
+  end >= start+4000;
 
-action move_base_pre(Robot r, ManArea from, PreArea to) {
-  motivated;
-  end >= start +4000;
-  constant PlArea x;
-  connected(x, from, to);
+  constant ManArea man;
+  
+  constant Area from;
+  from in { man, man.pre_area };
+  to in { man, man.pre_area };
+  from != to;
+
   [all] r.loc == from :-> to;
 };
 
@@ -81,10 +82,9 @@ action move_torso(Robot r, TorsoPosture new) {
 action pick_up_object(Robot r, Arm arm, Object obj) {
   motivated;
   r == arm.owner;
-  constant PreArea pre;
   constant PlArea pl;
   constant ManArea man;
-  connected(pl, man, pre);
+  connected(pl, man, man.pre_area);
   [all] obj.loc == pl :-> arm;
   [all] r.loc == man;
   [all] arm.free == false :-> true;
@@ -97,8 +97,7 @@ action place_object(Robot r, Arm arm, Object obj, PlArea pl) {
   r == arm.owner;
   end >= start +4000;
   constant ManArea man;
-  constant PreArea pre;
-  connected(pl, man, pre);
+  connected(pl, man, man.pre_area);
   [start] arm.posture == ArmToSidePosture;
   [all] r.loc == man;
   [all] obj.loc == arm :-> pl;
@@ -131,8 +130,7 @@ action observe_objects_on_area(Robot r, PlArea pl) {
   motivated;
   end >= start +4000;
   constant ManArea man;
-  constant PreArea pre;
-  connected(pl, man, pre);
+  connected(pl, man, man.pre_area);
   [all] r.loc == man;
 };
 
@@ -225,11 +223,8 @@ action drive_robot(Robot r, Area to) {
     from != to;
     from.isManipulationArea == true;
     [start] r.loc == from;
-    constant PlArea pl;
-    constant PreArea pre;
-    connected(pl,from,pre);
     [all] contains ordered(
-      move_base_pre(r, from, pre),
+      move_base_blind(r, from.pre_area),
       unordered(
         torso_assume_driving_pose(r),
 	arms_assume_driving_pose(r)),
@@ -270,6 +265,112 @@ action move_both_arms_to_side(Robot r) {
   };
 };
 
+action assume_manipulation_pose(Robot r, ManArea l) {
+  motivated;
+  :decomposition { // already in position
+    [all] {
+      r.left_arm.posture == ArmToSidePosture;
+      r.right_arm.posture == ArmToSidePosture;
+      r.loc == l;
+    };
+    [all] adapt_torso(r, TorsoUpPosture);
+  };
+  :decomposition { // at pre-area, assume pose and go to manipulation area
+    [start] r.loc == l.pre_area;
+    [all] contains ordered(
+      unordered(
+        adapt_torso(r, TorsoUpPosture),
+	move_both_arms_to_side(r)),
+      move_base_blind(r, l));
+  };
+  :decomposition { // go back to pre-area, before assuming pose
+    [start] r.loc == l;
+    constant Arm any_arm;
+    any_arm in { r.left_arm, r.right_arm };
+    [start] any_arm.posture != ArmToSidePosture;
+
+    [all] contains ordered(
+      move_base_blind(r, l.pre_area),
+      unordered(
+        adapt_torso(r, TorsoUpPosture),
+	move_both_arms_to_side(r)),
+      move_base_blind(r, l));	
+  };
+};
+
+action leave_manipulation_pose(Robot r, ManArea l) {
+  motivated;
+  :decomposition {
+    [start] r.loc == l;
+    [all] move_base_blind(r, l.pre_area);
+  };
+};
+
+// is this method used?
+action get_object(Robot r, Object o) {
+  motivated;
+  
+  constant ManArea man;
+  constant PlArea pl;
+  connected(pl, man, man.pre_area);
+  [start] o.loc == pl;
+  constant Arm arm;
+  arm in { r.left_arm, r.right_arm };
+  
+  :decomposition {
+    [start] r.loc == man.pre_area; // this is not checked in their version because lead to much backtracking
+    [all] contains ordered(
+      assume_manipulation_pose(r, man),
+      pick_up_object(r, o, arm));
+  };
+  :decomposition {
+    [start] r.loc != man.pre_area;
+    [all] contains ordered(
+      drive_robot(r, man.pre_area),
+      assume_manipulation_pose(r, man),
+      pick_up_object(r, o, man));
+  };
+};
+
+action put_object(Robot r, Object o, PlArea pl) {
+  motivated;
+  constant ManArea man;
+  connected(pl, man, man.pre_area);
+
+  constant Area initialLoc;
+  [start] r.loc == initialLoc;
+
+  constant Arm arm;
+  [start] o.loc == arm;
+  
+  :decomposition {
+    initialLoc != man; initialLoc != man.pre_area;
+    [all] ordered(
+      drive_robot(r, man.pre_area),
+      assume_manipulation_pose(r, man),
+      place_object(r, o, arm, pl));
+  };
+  :decomposition {
+    initialLoc == man.pre_area;
+    [all] ordered(
+      assume_manipulation_pose(r, man.pre_area),
+      place_object(r, o, arm, pl));
+  };
+  :decomposition {
+    initialLoc == man;
+    [all] place_object(r, o, arm, pl);
+  };
+};
+
+
+// missing method to do nothing if there is nothing to do
+action move_object(Robot r, Object o, PlArea area) {
+  :decomposition {
+    [all] ordered(
+      get_object(r, o),
+      put_object(r, o, area));
+  };
+};
 
 
 
@@ -299,3 +400,16 @@ connected(placingAreaSouthLeftTable2, manipulationAreaWestTable2, preManipulatio
 connected(placingAreaSouthRightTable2, manipulationAreaEastTable2, preManipulationAreaEastTable2) := true;
 connected(placingAreaEastRightCounterOS1, manipulationAreaEastCounterOS1, preManipulationAreaEastCounterOS1) := true;
 
+manipulationAreaEastCounter1.pre_area := preManipulationAreaEastCounter1;
+manipulationAreaNorthTable1.pre_area := preManipulationAreaNorthTable1;
+manipulationAreaSouthTable1.pre_area := preManipulationAreaSouthTable1;
+manipulationAreaEastTable2.pre_area :=  preManipulationAreaEastTable2;
+manipulationAreaWestTable2.pre_area := preManipulationAreaWestTable2;
+manipulationAreaEastCounterOS1.pre_area := preManipulationAreaEastCounterOS1;
+
+preManipulationAreaEastCounter1.man_area := manipulationAreaEastCounter1;
+preManipulationAreaNorthTable1.man_area := manipulationAreaNorthTable1;
+preManipulationAreaSouthTable1.man_area := manipulationAreaSouthTable1;
+preManipulationAreaEastTable2.man_area := manipulationAreaEastTable2;
+preManipulationAreaWestTable2.man_area := manipulationAreaWestTable2;
+preManipulationAreaEastCounterOS1.man_area := manipulationAreaEastCounterOS1;
