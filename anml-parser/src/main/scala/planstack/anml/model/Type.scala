@@ -18,6 +18,12 @@ trait Type {
   def jParents = parents.asJava
   def getQualifiedFunction(funcName: String): String = ???
 
+  def compatibleWith(otherType :Type) : Boolean = {
+    this == otherType ||
+      parents.contains(otherType) ||
+      allSubTypes.contains(otherType)
+  }
+
   private[model] def addMethod(methodName: String) { ??? }
   private[model] def addInstance(instance: InstanceRef) { ??? }
 

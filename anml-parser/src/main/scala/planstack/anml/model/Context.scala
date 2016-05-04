@@ -215,8 +215,12 @@ abstract class AbstractContext(val pb:AnmlProblem) {
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
         EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
       case t@FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
-        assert(args.size == pb.tasks(tName), s"Task `${t.asANML}` has the wrong number of arguments.")
-        ETask(tName, args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
+        assert(args.size == pb.tasks(tName).size, s"Task `${t.asANML}` has the wrong number of arguments.")
+        val simpleArgs = args.map(arg => simplifyToVar(simplify(arg,mod),mod))
+        // check that the type of the variable is compatible with the expected type of the task argmuments
+        for((t1, t2) <- simpleArgs.map(_.typ).zip(pb.tasks(tName).map(a => pb.instances.asType(a.tipe))))
+          assert(t1.compatibleWith(t2), s"Type `$t1` and `$t2` are not compatible in the task: "+t)
+        ETask(tName, simpleArgs)
       case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
         second match {
           case VarExpr(sec) =>

@@ -78,7 +78,7 @@ class AnmlProblem extends TemporalInterval {
 
   val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]()
   /** contains all tasks name together with their number of arguments */
-  val tasks = mutable.Map[String,Int]()
+  val tasks = mutable.Map[String,List[parser.Argument]]()
 
   /**
    * All [[planstack.anml.model.concrete.Chronicle]] that need to be applied to a state for it to represent this problem.
@@ -219,7 +219,7 @@ class AnmlProblem extends TemporalInterval {
     // record all tasks (needed when processing statements)
     blocks collect { case parser.Action(name, args, _) =>
       assert(!tasks.contains(name), s"Action \'$name\' is already defined.")
-      tasks.put(name, args.size)
+      tasks.put(name, args)
     }
 
     blocks collect { case actionDecl: parser.Action =>
