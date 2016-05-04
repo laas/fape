@@ -1,0 +1,13 @@
+//the environment is defined in the domain file
+
+[start] {
+  PR2.right_arm.posture := ArmTuckedPosture;
+  PR2.right_arm.free := true;
+  PR2.left_arm.posture := ArmTuckedPosture;
+  PR2.left_arm.free := true;
+  PR2.torso := TorsoUpPosture;
+  PR2.loc := floorAreaTamsRestaurant1;
+};
+
+drive_robot(PR2,manipulationAreaEastTable2);
+

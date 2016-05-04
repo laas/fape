@@ -29,6 +29,9 @@ type Arm with {
 type Object with {
   fluent (PlArea or Arm) loc;
 };
+type CoffeeJug < Object;
+type MilkPot < Object;
+type SugarPot < Object;
 
 type ArmPosture;
 instance ArmPosture ArmTuckedPosture, ArmUntuckedPosture, ArmUnnamedPosture, ArmToSidePosture, ArmCarryPosture;
@@ -81,13 +84,14 @@ action move_torso(Robot r, TorsoPosture new) {
 
 action pick_up_object(Robot r, Arm arm, Object obj) {
   motivated;
+  end >= start +4000;
   r == arm.owner;
   constant PlArea pl;
   constant ManArea man;
   connected(pl, man, man.pre_area);
   [all] obj.loc == pl :-> arm;
   [all] r.loc == man;
-  [all] arm.free == false :-> true;
+  [all] arm.free == true :-> false;
   // object man
   // arm man capacity
 };
@@ -101,6 +105,7 @@ action place_object(Robot r, Arm arm, Object obj, PlArea pl) {
   [start] arm.posture == ArmToSidePosture;
   [all] r.loc == man;
   [all] obj.loc == arm :-> pl;
+  [all] arm.free == false :-> true;
 };
 
 action move_arm_to_side(Robot r, Arm arm) {
@@ -306,7 +311,7 @@ action leave_manipulation_pose(Robot r, ManArea l) {
   };
 };
 
-// is this method used?
+
 action get_object(Robot r, Object o) {
   motivated;
   
@@ -321,14 +326,14 @@ action get_object(Robot r, Object o) {
     [start] r.loc == man.pre_area; // this is not checked in their version because lead to much backtracking
     [all] contains ordered(
       assume_manipulation_pose(r, man),
-      pick_up_object(r, o, arm));
+      pick_up_object(r, arm, o));
   };
   :decomposition {
     [start] r.loc != man.pre_area;
     [all] contains ordered(
       drive_robot(r, man.pre_area),
       assume_manipulation_pose(r, man),
-      pick_up_object(r, o, man));
+      pick_up_object(r, arm, o));
   };
 };
 
@@ -348,23 +353,24 @@ action put_object(Robot r, Object o, PlArea pl) {
     [all] ordered(
       drive_robot(r, man.pre_area),
       assume_manipulation_pose(r, man),
-      place_object(r, o, arm, pl));
+      place_object(r, arm, o, pl));
   };
   :decomposition {
     initialLoc == man.pre_area;
     [all] ordered(
-      assume_manipulation_pose(r, man.pre_area),
-      place_object(r, o, arm, pl));
+      assume_manipulation_pose(r, man),
+      place_object(r, arm, o, pl));
   };
   :decomposition {
     initialLoc == man;
-    [all] place_object(r, o, arm, pl);
+    [all] place_object(r, arm, o, pl);
   };
 };
 
 
 // missing method to do nothing if there is nothing to do
 action move_object(Robot r, Object o, PlArea area) {
+  motivated;
   :decomposition {
     [all] ordered(
       get_object(r, o),
@@ -384,6 +390,10 @@ PR2.left_arm := LEFT_ARM;
 RIGHT_ARM.owner := PR2;
 LEFT_ARM.owner := PR2;
 
+instance CoffeeJug coffeeJug1;
+instance MilkPot milkPot1;
+instance SugarPot sigarPot1,sugarPot2;
+
 instance NavArea floorAreaTamsRestaurant1;
 instance PlArea placingAreaEastRightCounter1, placingAreaWestLeftTable1, placingAreaEastLeftTable1, placingAreaWestRightTable1, placingAreaEastRightTable1, placingAreaNorthLeftTable2, placingAreaNorthRightTable2, placingAreaSouthLeftTable2, placingAreaSouthRightTable2, placingAreaEastRightCounterOS1;
 instance ManArea manipulationAreaEastCounter1, manipulationAreaNorthTable1, manipulationAreaSouthTable1, manipulationAreaEastTable2, manipulationAreaWestTable2, manipulationAreaEastCounterOS1;
@@ -400,6 +410,7 @@ connected(placingAreaSouthLeftTable2, manipulationAreaWestTable2, preManipulatio
 connected(placingAreaSouthRightTable2, manipulationAreaEastTable2, preManipulationAreaEastTable2) := true;
 connected(placingAreaEastRightCounterOS1, manipulationAreaEastCounterOS1, preManipulationAreaEastCounterOS1) := true;
 
+// associate manipulation area to their pre-manipulation area
 manipulationAreaEastCounter1.pre_area := preManipulationAreaEastCounter1;
 manipulationAreaNorthTable1.pre_area := preManipulationAreaNorthTable1;
 manipulationAreaSouthTable1.pre_area := preManipulationAreaSouthTable1;
