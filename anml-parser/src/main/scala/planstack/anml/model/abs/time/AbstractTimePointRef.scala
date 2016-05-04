@@ -8,10 +8,18 @@ import planstack.anml.{ANMLException, parser}
 abstract class AbsTP
 
 case object TimeOrigin extends AbsTP
-case object ContainerStart extends AbsTP
-case object ContainerEnd extends AbsTP
-case class IntervalStart(id :LocalRef) extends AbsTP
-case class IntervalEnd(id :LocalRef) extends AbsTP
+case object ContainerStart extends AbsTP {
+  override def toString = "start"
+}
+case object ContainerEnd extends AbsTP {
+  override def toString = "end"
+}
+case class IntervalStart(id :LocalRef) extends AbsTP {
+  override def toString = s"start($id)"
+}
+case class IntervalEnd(id :LocalRef) extends AbsTP {
+  override def toString = s"end($id)"
+}
 case class StandaloneTP(id: String) extends AbsTP {
 //  require(id != "start" && id != "end" && !id.contains("(") && !id.contains(")"), "Invalid standalone tp: "+id)
 }

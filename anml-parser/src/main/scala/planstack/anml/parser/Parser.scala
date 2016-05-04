@@ -38,7 +38,8 @@ sealed abstract class Statement(id:String)
 case class SingleTermStatement(val term : Expr, val id:String) extends Statement(id)
 case class TwoTermsStatement(left:Expr, op:Operator, right:Expr, id:String) extends Statement(id)
 case class ThreeTermsStatement(left:Expr, op1:Operator, middle:Expr, op2:Operator, right:Expr, id:String) extends Statement(id)
-
+case class OrderedStatements(statements: List[Statement], id: String) extends Statement(id)
+case class UnorderedStatements(statements: List[Statement], id: String) extends Statement(id)
 
 
 
@@ -224,9 +225,11 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   lazy val statementWithoutID : Parser[Statement] = (
-      literal<~";" ^^ (e => new SingleTermStatement(e, ""))
-    | literal~op~literal<~";" ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
-    | literal~op~literal~op~literal<~";" ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
+      literal~op~literal~op~literal ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
+    | literal~op~literal ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
+    | literal ^^ (e => new SingleTermStatement(e, ""))
+    | "ordered"~"("~>rep1sep(statement,",")<~")" ^^ (l => new OrderedStatements(l, ""))
+    | "unordered"~"("~>rep1sep(statement,",")<~")" ^^ (l => new UnorderedStatements(l, ""))
     )
 
   /** Temporal constraint between two time points. It is of the form:
@@ -318,12 +321,14 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val temporalStatements : Parser[List[TemporalStatement]] = (
       annotation~statements ^^ { case annot~statements => statements.map(new TemporalStatement(Some(annot), _))}
-    | statement ^^ { case s:Statement => List(new TemporalStatement(None, s))}
+    | statementSemi ^^ { case s:Statement => List(new TemporalStatement(None, s))}
   )
 
+  lazy val statementSemi : Parser[Statement] = statement<~";"
+
   lazy val statements : Parser[List[Statement]] = (
-    "{"~>rep(statement)<~"}"<~";"
-      | statement ^^ (x => List(x)))
+    "{"~>rep(statementSemi)<~"}"<~";"
+      | statementSemi ^^ (x => List(x)))
 
   lazy val block : Parser[List[AnmlBlock]] = (
     action ^^ (a => List(a))
@@ -450,7 +455,7 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val kwTempAnnot : Parser[String] = "start\\b".r | "end\\b".r
 
-  lazy val keywords = (kwType | kwTempAnnot | "motivated\\b".r | "duration\\b".r)
+  lazy val keywords = (kwType | kwTempAnnot | "motivated\\b".r | "duration\\b".r | "ordered\\b".r | "unordered\\b".r)
 
   lazy val word = not(keywords) ~> ident
 //  lazy val word = ident

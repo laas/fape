@@ -1,6 +1,9 @@
 package planstack.anml.model
 
-import planstack.anml.model.abs.Mod
+import planstack.anml.model.abs.time.{IntervalEnd, IntervalStart, AbstractTemporalAnnotation}
+import planstack.anml.model.abs.{AbstractExactDelay, AbstractMinDelay, AbstractConstraint, Mod}
+import planstack.anml.model.abs.statements.{AbstractAssignment, AbstractTransition, AbstractStatement}
+import planstack.anml.pending.IntExpression
 import planstack.anml.{UnrecognizedExpression, VariableNotFound, ANMLException}
 import planstack.anml.model.concrete.{Action => CAction}
 import planstack.anml.model.concrete._
@@ -262,7 +265,8 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     case x => throw new ANMLException("Unrecognized expression: "+x)
   }
 
-  def simplifyStatement(s: parser.Statement, mod: Mod) : EStatement = {
+  def simplifyStatement(s: parser.Statement, mod: Mod) : EStatementGroup = {
+    implicit def asSingletonGroup(eStatement: EStatement) : EStatementGroup = new ESingletonGroup(eStatement)
     def trans(id:String) = mod.idModifier(id)
     s match {
       case parser.SingleTermStatement(e, id) => simplify(e, mod) match {
@@ -279,6 +283,13 @@ abstract class AbstractContext(val pb:AnmlProblem) {
         EBiStatement(simplify(e1, mod), op.op, simplify(e2, mod), mod.idModifier(id))
       case parser.ThreeTermsStatement(e1,op1,e2,op2,e3,id) =>
         ETriStatement(simplify(e1, mod), op1.op, simplify(e2,mod), op2.op, simplify(e3,mod), mod.idModifier(id))
+
+      case parser.OrderedStatements(l, id) =>
+        val simplified = l.map(s => simplifyStatement(s, mod))
+        new EOrderedStatementGroup(simplified)
+      case parser.UnorderedStatements(l, id) =>
+        val simplified = l.map(s => simplifyStatement(s, mod))
+        new EUnorderedStatementGroup(simplified)
     }
 
   }
@@ -292,6 +303,7 @@ case class EFunction(func:Function, args:List[EVariable]) extends E {
 case class ENumber(n:Int) extends E
 case class ETask(name:String, args:List[EVariable]) extends E
 case class ESet(parts: Set[EVariable]) extends E
+case class Timepoint()
 
 trait EStatement {
   require(id.nonEmpty, "Statement has an empty ID: "+this)
@@ -300,6 +312,107 @@ trait EStatement {
 case class EUnStatement(e:E, id:String) extends EStatement
 case class EBiStatement(e1:E, op:String, e2:E, id:String) extends EStatement
 case class ETriStatement(e1:E, op:String, e2:E, op2:String, e3:E, id:String) extends EStatement
+
+abstract class EStatementGroup {
+  type StatementsConstraints = (List[AbstractStatement],List[AbstractConstraint])
+  def firsts : List[EStatement]
+  def lasts : List[EStatement]
+  def statements : List[EStatement]
+  def process(f : (EStatement => StatementsConstraints)) : AbsStatementGroup
+}
+class ESingletonGroup(val statement: EStatement) extends EStatementGroup {
+  override def firsts: List[EStatement] = List(statement)
+  override def lasts: List[EStatement] = List(statement)
+  override def statements: List[EStatement] = List(statement)
+  override def process(f: (EStatement) => StatementsConstraints): AbsStatementGroup = {
+    val (ss,cs) = f(statement)
+    new LeafGroup(ss,cs)
+  }
+}
+class EOrderedStatementGroup(parts: List[EStatementGroup]) extends EStatementGroup {
+  override def firsts: List[EStatement] = parts.head.firsts
+  override def lasts: List[EStatement] = parts.last.lasts
+  override def statements: List[EStatement] = parts.flatMap(_.statements)
+  override def process(f: (EStatement) => (List[AbstractStatement], List[AbstractConstraint])): AbsStatementGroup =
+    new OrderedGroup(parts.map(_.process(f)))
+}
+class EUnorderedStatementGroup(parts: List[EStatementGroup]) extends EStatementGroup {
+  override def firsts: List[EStatement] = parts.flatMap(_.firsts)
+  override def lasts: List[EStatement] = parts.flatMap(_.lasts)
+  override def statements: List[EStatement] = parts.flatMap(_.statements)
+  override def process(f: (EStatement) => (List[AbstractStatement], List[AbstractConstraint])): AbsStatementGroup =
+  new UnorderedGroup(parts.map(_.process(f)))
+}
+
+abstract class AbsStatementGroup {
+  def firsts : List[AbstractStatement]
+  def lasts : List[AbstractStatement]
+  def statements : List[AbstractStatement]
+  def constraints = getStructuralTemporalConstraints ::: baseConstraints
+  def baseConstraints : List[AbstractConstraint]
+
+  def getStructuralTemporalConstraints : List[AbstractMinDelay]
+
+  /** Produces the temporal constraints by applying the temporal annotation to this statement. */
+  def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractMinDelay] = {
+    annot match {
+      case AbstractTemporalAnnotation(s, e, "is") =>
+        assert(firsts.size == 1, s"Cannot apply the temporal annotation $annot on unordered statemers $firsts. " +
+          s"Maybe a 'contains' is missing.")
+        (firsts flatMap {
+          case ass:AbstractAssignment => // assignment is a special case: any annotation is always applied to end timepoint
+            assert(s == e, "Non instantaneous assignment.")
+            AbstractExactDelay(s.timepoint, ass.end, IntExpression.lit(s.delta)) ++
+              AbstractExactDelay(ass.start, ass.end, IntExpression.lit(1))
+          case x =>
+            AbstractExactDelay(s.timepoint, x.start, IntExpression.lit(s.delta))
+        }) ++
+          (lasts flatMap { x =>
+              AbstractExactDelay(e.timepoint, x.end, IntExpression.lit(e.delta))
+          })
+      case AbstractTemporalAnnotation(s, e, "contains") =>
+        (firsts map {
+          case ass:AbstractAssignment =>
+            throw new ANMLException("The 'contains' keyword is not allowed on assignments becouse it would introduce disjunctive effects: "+ass)
+          case tr:AbstractTransition =>
+            throw new ANMLException("The 'contains' keyword is not allowed on transitions becouse it would introduce disjunctive effects: "+tr)
+          case x =>
+            AbstractMinDelay(s.timepoint, x.start, IntExpression.lit(s.delta)) // start(id) >= start+delta
+        }) ++
+          (lasts map { x =>
+            AbstractMinDelay(x.end, e.timepoint, IntExpression.lit(-e.delta)) // end(id) <= end+delta
+          })
+    }
+  }
+}
+class LeafGroup(val statements:List[AbstractStatement], val baseConstraints: List[AbstractConstraint]) extends AbsStatementGroup {
+  override def firsts: List[AbstractStatement] = statements
+  override def lasts: List[AbstractStatement] = statements
+  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = Nil
+}
+class OrderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGroup {
+  override def firsts: List[AbstractStatement] = parts.head.firsts
+  override def lasts: List[AbstractStatement] = parts.last.lasts
+  override def statements: List[AbstractStatement] = parts.flatMap(_.statements)
+  override def baseConstraints: List[AbstractConstraint] = parts.flatMap(_.baseConstraints)
+  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = {
+    def constraintsBetween(p1:AbsStatementGroup, p2:AbsStatementGroup) =
+      for(e <- p1.lasts ; s <- p2.firsts)
+        yield AbstractMinDelay(e.end, s.start, IntExpression.lit(0))
+    val inter = parts.tail.foldLeft[(AbsStatementGroup, List[AbstractMinDelay])]((parts.head, Nil))(
+      (acc, cur) => (cur, acc._2 ::: constraintsBetween(acc._1,cur)))._2
+    val intra = parts.flatMap(_.getStructuralTemporalConstraints)
+    inter ++ intra
+  }
+}
+class UnorderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGroup {
+  override def firsts: List[AbstractStatement] = parts.flatMap(_.firsts)
+  override def lasts: List[AbstractStatement] = parts.flatMap(_.lasts)
+  override def statements: List[AbstractStatement] = parts.flatMap(_.statements)
+  override def baseConstraints: List[AbstractConstraint] = parts.flatMap(_.baseConstraints)
+  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = parts.flatMap(_.getStructuralTemporalConstraints)
+}
+
 
 /** A context where all references are fully defined (i.e. every local reference has a corresponding global reference).
   *

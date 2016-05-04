@@ -1,6 +1,6 @@
 
 
-type Area {
+type Area with {
   constant boolean isManipulationArea;
 };
 type PlArea < Area;
@@ -9,7 +9,7 @@ type PreArea < Area;
 type NavArea < Area;
 
 
-forall(ManArea a) { isManipulationArea := true; };
+forall(ManArea a) { a.isManipulationArea := true; };
 forall((PlArea or PreArea or NavArea) b) { b.isManipulationArea := false; };
 
 type Robot with {
@@ -139,7 +139,7 @@ action adapt_torso(Robot r, TorsoPosture pose) {
   };
 };
 
-action assume_driving_pose(Robot r) {
+action torso_assume_driving_pose(Robot r) {
   :decomposition { // both arms are free
     [all] r.left_arm.free == true;
     [all] r.right_arm.free == true;
@@ -189,20 +189,22 @@ action arms_assume_driving_pose(Robot r) {
   };
 };
 
-/*
+
 action drive_robot(Robot r, Area to) {
   :decomposition {
     [all] r.loc == to;
   };
   :decomposition {
-    constant Area from:
+    constant Area from;
     from != to;
     from.isManipulationArea == false;
-    [start] t.loc == from;
-    
+    [start] r.loc == from;
+    [all] contains ordered(
+      unordered(torso_assume_driving_pose(r), arms_assume_driving_pose(r)),
+      move_base(r,to));
   };
 };
-*/
+
 
 
 
