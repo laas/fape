@@ -78,45 +78,43 @@ action move_torso(Robot r, TorsoPosture new) {
   [all] r.torso == old :-> new;
 };
 
-action pick_up_object(Arm arm, Object obj) {
+action pick_up_object(Robot r, Arm arm, Object obj) {
   motivated;
+  r == arm.owner;
   constant PreArea pre;
   constant PlArea pl;
   constant ManArea man;
   connected(pl, man, pre);
   [all] obj.loc == pl :-> arm;
-  [all] arm.owner.loc == man;
+  [all] r.loc == man;
   [all] arm.free == false :-> true;
   // object man
   // arm man capacity
 };
 
-action place_object(Arm arm, Object obj, PlArea pl) {
+action place_object(Robot r, Arm arm, Object obj, PlArea pl) {
   motivated;
+  r == arm.owner;
   end >= start +4000;
   constant ManArea man;
   constant PreArea pre;
   connected(pl, man, pre);
   [start] arm.posture == ArmToSidePosture;
-  [all] arm.owner.loc == man;
+  [all] r.loc == man;
   [all] obj.loc == arm :-> pl;
 };
 
-action move_arm_to_side(Arm arm) {
+action move_arm_to_side(Robot r, Arm arm) {
   motivated;
+  arm.owner == r;
   end >= start +4000;
   constant ArmPosture old_posture;
   [all] arm.posture == old_posture :-> ArmToSidePosture;
-  :decomposition {
-    old_posture != ArmTuckedPosture;
-  };
-  :decomposition { // arm is tucked, the other must not be
-    old_posture == ArmTuckedPosture;
-    constant Arm other;
-    other.owner == arm.owner;
-    arm != other;
-    [all] other.posture != ArmTuckedPosture;
-  };
+
+  // at least one of left/right arms must be untucked at start
+  constant Arm any_arm;
+  any_arm in { r.left_arm, r.right_arm };
+  [start] any_arm.posture != ArmTuckedPosture;
 };
 
 action move_arms_to_carryposture(Robot r) {
@@ -239,13 +237,38 @@ action drive_robot(Robot r, Area to) {
   };
 };
 
+action arm_to_side(Robot r, Arm arm) {
+  motivated;
+  arm.owner == r;
+  :decomposition {
+    [all] arm.posture == ArmToSidePosture;
+  };
+  :decomposition {
+    [start] arm.posture != ArmToSidePosture;
+    [all] move_arm_to_side(r, arm);
+  };
+};
 
-
-
-
-
-
-
+action move_both_arms_to_side(Robot r) {
+  motivated;
+  :decomposition {
+    [start] r.left_arm.posture == ArmTuckedPosture;
+    [start] r.right_arm.posture == ArmTuckedPosture;
+    [all] contains ordered(
+      tuck_arms(r, ArmUntuckedPosture, ArmUntuckedPosture),
+      unordered(
+        arm_to_side(r, r.left_arm),
+	arm_to_side(r, r.right_arm)));
+  };
+  :decomposition {
+    constant Arm a;
+    a in { r.right_arm, r.left_arm };
+    [start] a.posture != ArmTuckedPosture;
+    [all] contains ordered( // to stick to the original domain, should probably be unordered in practice
+      arm_to_side(r, r.left_arm),
+      arm_to_side(r, r.right_arm));
+  };
+};
 
 
 
@@ -259,19 +282,6 @@ PR2.right_arm := RIGHT_ARM;
 PR2.left_arm := LEFT_ARM;
 RIGHT_ARM.owner := PR2;
 LEFT_ARM.owner := PR2;
-
-[start] {
-  PR2.right_arm.posture := ArmTuckedPosture;
-  PR2.right_arm.free := true;
-  PR2.left_arm.posture := ArmTuckedPosture;
-  PR2.left_arm.free := true;
-  PR2.torso := TorsoUpPosture;
-  PR2.loc := floorAreaTamsRestaurant1;
-};
-
-ordered(
-  drive_robot(PR2,manipulationAreaEastTable2),
-  drive_robot(PR2,floorAreaTamsRestaurant1));
 
 instance NavArea floorAreaTamsRestaurant1;
 instance PlArea placingAreaEastRightCounter1, placingAreaWestLeftTable1, placingAreaEastLeftTable1, placingAreaWestRightTable1, placingAreaEastRightTable1, placingAreaNorthLeftTable2, placingAreaNorthRightTable2, placingAreaSouthLeftTable2, placingAreaSouthRightTable2, placingAreaEastRightCounterOS1;
