@@ -14,6 +14,7 @@ trait Constraint {
 }
 
 class NAryConstraint(val vars:Seq[VarRef], val allowedTuple: ExtensionConstraint) extends Constraint {
+  require(vars.size == allowedTuple.numVars())
   val varSet : collection.Set[Int] = mutable.Set[Int](vars.map(_.id): _*)
   override def involves(v: VarRef) = varSet.contains(v.id)
 

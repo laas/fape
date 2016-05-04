@@ -37,7 +37,7 @@ object StatementsFactory {
     annotatedStatement.annotation match {
       case None =>
         assert(sg.statements.collect({ case s:AbstractLogStatement => s}).forall(s => !s.sv.func.isConstant))
-        if(sg.statements.nonEmpty)
+        if(sg.statements.exists(_.isInstanceOf[AbstractLogStatement]))
           println("Warning: log statement with no temporal annotation: "+sg.statements)
         (sg.statements, sg.constraints)
       case Some(parsedAnnot) => {

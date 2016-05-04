@@ -214,7 +214,8 @@ abstract class AbstractContext(val pb:AnmlProblem) {
         EFunction(pb.functions.get(name), Nil)
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
         EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
-        case FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
+      case t@FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
+        assert(args.size == pb.tasks(tName), s"Task `${t.asANML}` has the wrong number of arguments.")
         ETask(tName, args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
       case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
         second match {

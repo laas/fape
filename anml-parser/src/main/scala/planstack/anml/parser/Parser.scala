@@ -213,8 +213,7 @@ object AnmlParser extends JavaTokenParsers {
     ident ^^ (kw => Timepoint(kw))
 
   lazy val statement : Parser[Statement] = (
-      statementWithoutID
-    | ident~":"~statementWithoutID ^^ {
+     word~":"~statementWithoutID ^^ {
         case id~":"~s => s match {
           case SingleTermStatement(e, "") => SingleTermStatement(e, id)
           case TwoTermsStatement(e1, o, e2, "") => TwoTermsStatement(e1, o, e2, id)

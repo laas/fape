@@ -77,7 +77,8 @@ class AnmlProblem extends TemporalInterval {
   lazy val allActionsAreMotivated = abstractActions.asScala.forall(aa => aa.mustBeMotivated)
 
   val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]()
-  val tasks = mutable.ArrayBuffer[String]()
+  /** contains all tasks name together with their number of arguments */
+  val tasks = mutable.Map[String,Int]()
 
   /**
    * All [[planstack.anml.model.concrete.Chronicle]] that need to be applied to a state for it to represent this problem.
@@ -216,8 +217,9 @@ class AnmlProblem extends TemporalInterval {
     }
 
     // record all tasks (needed when processing statements)
-    blocks collect { case actionDecl:parser.Action =>
-      tasks += actionDecl.name
+    blocks collect { case parser.Action(name, args, _) =>
+      assert(!tasks.contains(name), s"Action \'$name\' is already defined.")
+      tasks.put(name, args.size)
     }
 
     blocks collect { case actionDecl: parser.Action =>
