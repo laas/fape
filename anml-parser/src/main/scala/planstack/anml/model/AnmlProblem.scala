@@ -233,13 +233,38 @@ class AnmlProblem extends TemporalInterval {
     val absConstraints = ArrayBuffer[AbstractConstraint]()
 
     blocks collect { case tempStatement: parser.TemporalStatement =>
-      val (statement, constraints) = StatementsFactory(tempStatement, this.context, this, refCounter)
+      val (statement, constraints) = StatementsFactory(tempStatement, this.context, refCounter, DefaultMod)
       absStatements ++= statement
       absConstraints ++= constraints
     }
 
     blocks collect { case constraint: parser.TemporalConstraint =>
       absConstraints ++= AbstractTemporalConstraint(constraint)
+    }
+
+    blocks collect { case parser.ForAll(args, content) =>
+      // need an all combinations
+      val domains = args.map(a => instances.asType(a.tipe).instances.map(i => (a.name, i.instance)).toList)
+      def combinations[E](ll: List[List[E]]) : List[List[E]] = //ll.flatMap(l => l.head.map(i => i :: combinations(l.tail)))
+        ll match {
+          case Nil => Nil
+          case l::Nil => l.map(x => List(x))
+          case h::t => for(i <- h ; rest <- combinations(t)) yield i::rest
+        }
+      val combis = combinations(domains)
+      for(binding <- combis) {
+        val transformationMap : Map[String,String] = binding.toMap
+        content collect {
+          case ts: parser.TemporalStatement =>
+            val p@(statement, constraints) =StatementsFactory(ts, this.context, refCounter, new Mod {
+              def varNameMod(name:String) = transformationMap.getOrElse(name, name)
+            })
+            absStatements ++= statement
+            absConstraints ++= constraints
+        }
+      }
+
+
     }
 
     for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
@@ -306,7 +331,7 @@ class AnmlProblem extends TemporalInterval {
 
     blocks.filter(!_.isInstanceOf[parser.Function]) foreach {
       case ts: parser.TemporalStatement =>
-        val (stats, csts) = StatementsFactory(ts, localContext, this, refCounter)
+        val (stats, csts) = StatementsFactory(ts, localContext, refCounter, DefaultMod)
         statements ++= stats
         constraints ++= csts
 

@@ -12,6 +12,7 @@ sealed trait TypeContent
 
 
 
+case class ForAll(args: List[Argument], content:List[DecompositionContent]) extends AnmlBlock with ActionContent with DecompositionContent
 
 case class TemporalStatement(annotation:Option[TemporalAnnotation], statement:Statement) extends AnmlBlock with ActionContent with DecompositionContent
 
@@ -331,7 +332,13 @@ object AnmlParser extends JavaTokenParsers {
       | functionDecl ^^ (func => List(func))
       | typeDecl ^^ (t => List(t))
       | instanceDecl
+      | forallBlock ^^ (t => List(t))
     )
+
+  lazy val forallBlock : Parser[ForAll] =
+    "forall"~"("~>rep1sep(argument,",")~")"~"{"~decompositionContent<~"}"~";" ^^ {
+      case args~")"~"{"~content => ForAll(args, content)
+    }
 
   lazy val anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
 

@@ -1,9 +1,17 @@
 
 
-type Area;
+type Area {
+  constant boolean isManipulationArea;
+};
 type PlArea < Area;
 type ManArea < Area;
 type PreArea < Area;
+type NavArea < Area;
+
+
+forall(ManArea a) { isManipulationArea := true; };
+forall((PlArea or PreArea or NavArea) b) { b.isManipulationArea := false; };
+
 type Robot with {
   constant Arm left_arm;
   constant Arm right_arm;
@@ -187,7 +195,11 @@ action drive_robot(Robot r, Area to) {
     [all] r.loc == to;
   };
   :decomposition {
-    constant ManArea
+    constant Area from:
+    from != to;
+    from.isManipulationArea == false;
+    [start] t.loc == from;
+    
   };
 };
 */

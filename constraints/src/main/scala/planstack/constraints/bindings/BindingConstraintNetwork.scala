@@ -233,6 +233,8 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def addNAryConstraint(variables: util.List[VarRef], setID: String): Unit = {
     assert(variables.asScala.forall(v => domID(v) >= 0))
+    assert(extensionConstraints.contains(setID),
+      s"No recorded allowed values with name \'$setID\'. This usually means that no value was assigned to it.")
     val c = new NAryConstraint(variables.asScala, extensionConstraints(setID))
     addConstraint(c)
   }

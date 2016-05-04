@@ -2,6 +2,7 @@ package planstack.anml.model
 
 import java.util
 
+import planstack.anml.model.abs.DefaultMod
 import planstack.anml.model.concrete.VarRef
 import planstack.anml.parser.VarExpr
 import planstack.anml.{ANMLException, parser}
@@ -52,7 +53,7 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
 object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
-    context.simplify(expr) match {
+    context.simplify(expr,DefaultMod) match {
       case f: EFunction =>
         new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
       case EVariable(_,_,Some(f)) =>

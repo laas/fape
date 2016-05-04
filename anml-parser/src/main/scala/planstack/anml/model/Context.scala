@@ -1,5 +1,6 @@
 package planstack.anml.model
 
+import planstack.anml.model.abs.Mod
 import planstack.anml.{UnrecognizedExpression, VariableNotFound, ANMLException}
 import planstack.anml.model.concrete.{Action => CAction}
 import planstack.anml.model.concrete._
@@ -111,6 +112,9 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   def hasGlobalVar(localRef: LVarRef) : Boolean =
     getDefinition(localRef).nonEmpty
 
+  def hasLocalVar(name:String) : Boolean =
+    nameToLocalVar.contains(name) || parentContext.exists(par => par.hasLocalVar(name))
+
   def getLocalVar(name:String) : LVarRef = {
     if(nameToLocalVar.contains(name))
       nameToLocalVar(name)
@@ -198,31 +202,32 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   }
 
   import planstack.anml.parser
-  def simplify(e: parser.Expr) : E = try {
+  def simplify(e: parser.Expr, mod:Mod) : E = try {
     val simple = e match {
+      case VarExpr(preModName) if hasLocalVar(mod.varNameMod(preModName)) =>
+        val name = mod.varNameMod(preModName)
+        EVariable(name, getLocalVar(name).getType, None)
       case VarExpr(name) if pb.functions.isDefined(name) =>
         EFunction(pb.functions.get(name), Nil)
-      case VarExpr(name) =>
-        EVariable(name, getLocalVar(name).getType, None)
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
-        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg))))
+        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
         case FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
-        ETask(tName, args.map(arg => simplifyToVar(simplify(arg))))
+        ETask(tName, args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
       case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
         second match {
           case VarExpr(sec) =>
             EFunction(pb.functions.get(s"$typ.$sec"), Nil)
           case FuncExpr(sec,args) =>
-            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg))))
+            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
           case x =>
             sys.error("Second part of a chained expression should always be a func or a variable: "+x)
       }
       case ChainedExpr(left, right) =>
-        val sleft = simplify(left)
+        val sleft = simplify(left,mod)
         (sleft, right) match {
           case (v@EVariable(_,typ, _), FuncExpr(fe, args)) =>
             val f = pb.functions.get(typ.getQualifiedFunction(fe.functionName))
-            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg))))
+            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
           case (v@EVariable(_,typ, _), VarExpr(fname)) =>
             val f = pb.functions.get(typ.getQualifiedFunction(fname))
             EFunction(f, List(v))
@@ -232,11 +237,11 @@ abstract class AbstractContext(val pb:AnmlProblem) {
       case NumExpr(value) =>
         ENumber(value.toInt)
       case SetExpr(vals) =>
-        ESet(vals.map(v => simplifyToVar(simplify(v))))
+        ESet(vals.map(v => simplifyToVar(simplify(v,mod),mod)))
       case x => sys.error(s"Unrecognized expression: ${x.asANML}  --  $x")
     }
     simple match {
-      case f:EFunction if f.isConstant => simplifyToVar(f)
+      case f:EFunction if f.isConstant => simplifyToVar(f,mod)
       case x => x
     }
   } catch {
@@ -245,7 +250,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 
   }
 
-  private def simplifyToVar(e: E) : EVariable = e match {
+  private def simplifyToVar(e: E, mod: Mod) : EVariable = e match {
     case v:EVariable => v
     case f:EFunction if f.isConstant && !f.func.valueType.isNumeric =>
       bindingOf(f, pb.refCounter)
@@ -257,9 +262,9 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     case x => throw new ANMLException("Unrecognized expression: "+x)
   }
 
-  def simplifyStatement(s: parser.Statement, pb:AnmlProblem) : EStatement = {
+  def simplifyStatement(s: parser.Statement, mod: Mod) : EStatement = {
     s match {
-      case parser.SingleTermStatement(e, id) => simplify(e) match {
+      case parser.SingleTermStatement(e, id) => simplify(e, mod) match {
         case f:EFunction =>
           assert(f.func.valueType.name == "boolean")
           EBiStatement(f, "==", EVariable("true", f.func.valueType, None), id)
@@ -270,9 +275,9 @@ abstract class AbstractContext(val pb:AnmlProblem) {
         case x => sys.error("Problem: "+x)
       }
       case parser.TwoTermsStatement(e1, op, e2, id) =>
-        EBiStatement(simplify(e1), op.op, simplify(e2), id)
+        EBiStatement(simplify(e1, mod), op.op, simplify(e2, mod), id)
       case parser.ThreeTermsStatement(e1,op1,e2,op2,e3,id) =>
-        ETriStatement(simplify(e1), op1.op, simplify(e2), op2.op, simplify(e3), id)
+        ETriStatement(simplify(e1, mod), op1.op, simplify(e2,mod), op2.op, simplify(e3,mod), id)
     }
 
   }

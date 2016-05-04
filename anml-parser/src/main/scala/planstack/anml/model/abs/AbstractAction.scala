@@ -198,7 +198,7 @@ object AbstractAction {
 
         content foreach {
           case ts: parser.TemporalStatement =>
-            val (optStatement, contraints) = StatementsFactory(ts, action.context, pb, refCounter)
+            val (optStatement, contraints) = StatementsFactory(ts, action.context, refCounter, DefaultMod)
             action.statements ++= optStatement
             allConstraints ++= contraints
           case tempConstraint: parser.TemporalConstraint =>
@@ -224,7 +224,7 @@ object AbstractAction {
           case const: parser.Constant => // constant function with no arguments is interpreted as local variable
             action.context.addUndefinedVar(new LVarRef(const.name, t(const.tipe)))
           case statement: parser.TemporalStatement =>
-            val (optStatement, constraints) = StatementsFactory(statement, action.context, pb, refCounter)
+            val (optStatement, constraints) = StatementsFactory(statement, action.context, refCounter, DefaultMod)
             action.statements ++= optStatement
             allConstraints ++= constraints
         }

@@ -8,6 +8,14 @@ import planstack.anml.parser.{FuncExpr, NumExpr, VarExpr}
 import planstack.anml.pending.{IntExpression, IntLiteral}
 import planstack.anml.{ANMLException, parser}
 
+trait Mod {
+  def varNameMod(str: String) : String
+}
+
+object DefaultMod extends Mod {
+  def varNameMod(str: String) = str
+}
+
 object StatementsFactory {
 
   def asStateVariable(expr:parser.Expr, context:AbstractContext, pb:AnmlProblem) = {
@@ -17,14 +25,9 @@ object StatementsFactory {
   /**
    * Transforms an annotated statement into its corresponding statement and the temporal constraints that applies
    * to its time-points (derived from the annotation).
-    *
-    * @param annotatedStatement Statement (with temporal annotations) to translate
-   * @param context Context in which the annotated statement appears
-   * @param pb Problem in which the statement appears
-   * @return An equivalent list of AbstractStatement
    */
-  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, pb:AnmlProblem, refCounter: RefCounter) : (Option[AbstractStatement],List[AbstractConstraint]) = {
-    val (optStatement, constraints) = StatementsFactory(annotatedStatement.statement, context, pb, refCounter)
+  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : (Option[AbstractStatement],List[AbstractConstraint]) = {
+    val (optStatement, constraints) = StatementsFactory(annotatedStatement.statement, context, refCounter, mod)
 
     annotatedStatement.annotation match {
       case None =>
@@ -42,11 +45,11 @@ object StatementsFactory {
     }
   }
 
-  def apply(statement : parser.Statement, context:AbstractContext, pb : AnmlProblem, refCounter: RefCounter) : (Option[AbstractStatement], List[AbstractConstraint]) = {
+  def apply(statement : parser.Statement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : (Option[AbstractStatement], List[AbstractConstraint]) = {
     def asSv(f:EFunction) = new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
     def asVar(v:EVariable) = context.getLocalVar(v.name)
     def asRef(id:String) = LStatementRef(id)
-    context.simplifyStatement(statement, pb) match {
+    context.simplifyStatement(statement, mod) match {
 
       case ETriStatement(f:EFunction, "==", v1:EVariable, ":->", v2:EVariable, id) =>
         (Some(new AbstractTransition(asSv(f), asVar(v1), asVar(v2), asRef(id))), Nil)
@@ -74,7 +77,7 @@ object StatementsFactory {
         (Some(new AbstractPersistence(asSv(f), asVar(value), asRef(id))), Nil)
 
       case EBiStatement(f:EFunction, "!=", value:EVariable, id) =>
-        val intermediateVar = context.getNewUndefinedVar(f.func.valueType, pb.refCounter)
+        val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
         (Some(new AbstractPersistence(asSv(f), intermediateVar, asRef(id))),
           List(new AbstractVarInequalityConstraint(intermediateVar, asVar(value), LStatementRef(""))))
 
@@ -85,7 +88,7 @@ object StatementsFactory {
         (None, List(new AbstractInConstraint(asVar(v1), vars.map(asVar), asRef(id))))
 
       case EBiStatement(f:EFunction, "in", right@ESet(vars), id) =>
-        val intermediateVar = context.getNewUndefinedVar(f.func.valueType, pb.refCounter)
+        val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
         (Some(new AbstractPersistence(asSv(f), intermediateVar, asRef(id))),
           List(new AbstractInConstraint(intermediateVar, vars.map(asVar), asRef(id))))
 
