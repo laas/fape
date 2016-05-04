@@ -245,7 +245,7 @@ class AnmlProblem extends TemporalInterval {
     blocks collect { case parser.ForAll(args, content) =>
       // need an all combinations
       val domains = args.map(a => instances.asType(a.tipe).instances.map(i => (a.name, i.instance)).toList)
-      def combinations[E](ll: List[List[E]]) : List[List[E]] = //ll.flatMap(l => l.head.map(i => i :: combinations(l.tail)))
+      def combinations[E](ll: List[List[E]]) : List[List[E]] =
         ll match {
           case Nil => Nil
           case l::Nil => l.map(x => List(x))
@@ -258,6 +258,7 @@ class AnmlProblem extends TemporalInterval {
           case ts: parser.TemporalStatement =>
             val p@(statement, constraints) =StatementsFactory(ts, this.context, refCounter, new Mod {
               def varNameMod(name:String) = transformationMap.getOrElse(name, name)
+              def idModifier(s:String) = DefaultMod.idModifier(s)
             })
             absStatements ++= statement
             absConstraints ++= constraints

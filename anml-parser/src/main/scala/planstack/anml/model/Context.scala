@@ -263,21 +263,22 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   }
 
   def simplifyStatement(s: parser.Statement, mod: Mod) : EStatement = {
+    def trans(id:String) = mod.idModifier(id)
     s match {
       case parser.SingleTermStatement(e, id) => simplify(e, mod) match {
         case f:EFunction =>
           assert(f.func.valueType.name == "boolean")
-          EBiStatement(f, "==", EVariable("true", f.func.valueType, None), id)
+          EBiStatement(f, "==", EVariable("true", f.func.valueType, None), mod.idModifier(id))
         case v@EVariable(_,t:SimpleType,_) if t.name == "boolean" =>
-          EBiStatement(v, "==", EVariable("true", t, None), id)
+          EBiStatement(v, "==", EVariable("true", t, None), mod.idModifier(id))
         case t:ETask =>
-          EUnStatement(t, id)
+          EUnStatement(t, mod.idModifier(id))
         case x => sys.error("Problem: "+x)
       }
       case parser.TwoTermsStatement(e1, op, e2, id) =>
-        EBiStatement(simplify(e1, mod), op.op, simplify(e2, mod), id)
+        EBiStatement(simplify(e1, mod), op.op, simplify(e2, mod), mod.idModifier(id))
       case parser.ThreeTermsStatement(e1,op1,e2,op2,e3,id) =>
-        ETriStatement(simplify(e1, mod), op1.op, simplify(e2,mod), op2.op, simplify(e3,mod), id)
+        ETriStatement(simplify(e1, mod), op1.op, simplify(e2,mod), op2.op, simplify(e3,mod), mod.idModifier(id))
     }
 
   }
@@ -292,7 +293,10 @@ case class ENumber(n:Int) extends E
 case class ETask(name:String, args:List[EVariable]) extends E
 case class ESet(parts: Set[EVariable]) extends E
 
-trait EStatement
+trait EStatement {
+  require(id.nonEmpty, "Statement has an empty ID: "+this)
+  def id : String
+}
 case class EUnStatement(e:E, id:String) extends EStatement
 case class EBiStatement(e1:E, op:String, e2:E, id:String) extends EStatement
 case class ETriStatement(e1:E, op:String, e2:E, op2:String, e3:E, id:String) extends EStatement

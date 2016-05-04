@@ -10,10 +10,15 @@ import planstack.anml.{ANMLException, parser}
 
 trait Mod {
   def varNameMod(str: String) : String
+  def idModifier(id: String) : String
 }
 
 object DefaultMod extends Mod {
-  def varNameMod(str: String) = str
+  private var nextID = 0
+  def varNameMod(name: String) = name
+  def idModifier(id:String) =
+    if(id.isEmpty) "__id__"+{nextID+=1; nextID-1}
+    else id
 }
 
 object StatementsFactory {
