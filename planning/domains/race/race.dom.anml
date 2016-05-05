@@ -5,12 +5,12 @@ type Area with {
   constant PreArea pre_area;
   constant ManArea man_area;
 };
-type PlArea < Area;
-type ManArea < Area;
-type PreArea < Area;
-type NavArea < Area;
+type PlArea < Area;  // area to place objects
+type ManArea < Area; // area from which the robot manipulates
+type PreArea < Area; // area from which to access a manipulation area
+type NavArea < Area; // other area where the robot can be 
 
-
+// this would be useless with a primitive to check the type of a variable in ANML
 forall(ManArea a) { a.isManipulationArea := true; };
 forall((PlArea or PreArea or NavArea) b) { b.isManipulationArea := false; };
 
@@ -20,7 +20,7 @@ type Robot with {
   fluent Area loc;
   fluent TorsoPosture torso;
 
-  // the robot is working on a exclusive task
+  // the robot is working on an exclusive task
   fluent boolean busy;
 };
 type Arm with {
@@ -42,6 +42,7 @@ instance ArmPosture ArmTuckedPosture, ArmUntuckedPosture, ArmUnnamedPosture, Arm
 type TorsoPosture;
 instance TorsoPosture TorsoDownPosture, TorsoMiddlePosture, TorsoUpPosture;
 
+// an object on 'pl' can be manipulated from 'man' and 'man' can be accessed from 'pre'
 constant boolean connected(PlArea pl, ManArea man, PreArea pre);
 
 action move_base(Robot r, Area to) {
@@ -68,14 +69,13 @@ action move_base_blind(Robot r, Area to) {
 
 action tuck_arms(Robot r, ArmPosture left_pos, ArmPosture right_pos) {
   motivated;
-//  left_pos in { ArmTuckedPosture, ArmUntuckedPosture };
-//  right_pos in { ArmTuckedPosture, ArmUntuckedPosture };
+  left_pos in { ArmTuckedPosture, ArmUntuckedPosture };
+  right_pos in { ArmTuckedPosture, ArmUntuckedPosture };
   end >= start +4000;
   constant ArmPosture rarm_ini_pos;
   constant ArmPosture larm_ini_pos;
   [all] r.left_arm.posture == larm_ini_pos :-> left_pos;
   [all] r.right_arm.posture == rarm_ini_pos :-> right_pos;
-  // arm capacity usage
 };
 
 action move_torso(Robot r, TorsoPosture new) {
@@ -95,8 +95,6 @@ action pick_up_object(Robot r, Arm arm, Object obj) {
   [all] obj.loc == pl :-> arm;
   [all] r.loc == man;
   [all] arm.free == true :-> false;
-  // object man
-  // arm man capacity
 };
 
 action place_object(Robot r, Arm arm, Object obj, PlArea pl) {
@@ -177,14 +175,14 @@ action adapt_arms(Robot r, ArmPosture pose) {
     [all] r.left_arm.posture == pose;
     [all] r.right_arm.posture == pose;
   };
-  :decomposition {
+  :decomposition { // we want arms to be tucked
     constant Arm arm;
     pose == ArmTuckedPosture;
     arm.owner == r;
     [start] arm.posture != ArmTuckedPosture;
     [all] tuck_arms(r, ArmTuckedPosture, ArmTuckedPosture);
   };
-  :decomposition {
+  :decomposition { // we want arms in carry posture
     pose == ArmCarryPosture;
     constant Arm arm;
     arm.owner == r;
@@ -215,7 +213,7 @@ action drive_robot(Robot r, Area to) {
   :decomposition {
     [all] r.loc == to;
   };
-  :decomposition {
+  :decomposition { // not in manipulation area, assume driving pose and drive
     constant Area from;
     from != to;
     from.isManipulationArea == false;
@@ -226,7 +224,7 @@ action drive_robot(Robot r, Area to) {
 	arms_assume_driving_pose(r)),
       move_base(r,to));
   };
-  :decomposition {
+  :decomposition { // in manipulation area, first go to matchi pre-manip area
     constant ManArea from;
     from != to;
     from.isManipulationArea == true;
@@ -291,7 +289,7 @@ action assume_manipulation_pose(Robot r, ManArea l) {
 	move_both_arms_to_side(r)),
       move_base_blind(r, l));
   };
-  :decomposition { // go back to pre-area, before assuming pose
+  :decomposition { // go back to pre-area before assuming pose
     [start] r.loc == l;
     constant Arm any_arm;
     any_arm in { r.left_arm, r.right_arm };
@@ -326,7 +324,7 @@ action get_object(Robot r, Object o) {
   arm in { r.left_arm, r.right_arm };
   
   :decomposition {
-    [start] r.loc == man.pre_area; // this is not checked in their version because lead to much backtracking
+    [start] r.loc == man.pre_area; // this is not checked in their version (because leading to much backtracking?)
     [all] contains ordered(
       assume_manipulation_pose(r, man),
       pick_up_object(r, arm, o));
@@ -355,7 +353,8 @@ action put_object(Robot r, Object o, PlArea pl) {
   [start] o.loc == arm;
   
   :decomposition {
-    initialLoc != man; initialLoc != man.pre_area;
+    initialLoc != man;
+    initialLoc != man.pre_area;
     [all] ordered(
       drive_robot(r, man.pre_area),
       assume_manipulation_pose(r, man),
