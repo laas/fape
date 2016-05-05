@@ -35,7 +35,7 @@ public class FlawCompFactory {
                 case "rfp":
                     compList.add(new ResourceFlawPreference());
                     break;
-                case "hf":
+                case "hier":
                     compList.add(new HierarchicalFirstComp(st, planner));
                     break;
                 case "hier-fifo":

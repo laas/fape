@@ -112,7 +112,7 @@ public class Planning {
                                 .setLongFlag("plan-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("tsp,soca")
+                                .setDefault("soca")
                                 .setHelp("A comma separated list of plan selectors, ordered by priority." +
                                 "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
                                 "with the highest priority is expanded next. The main options are: \n" +
@@ -130,11 +130,13 @@ public class Planning {
                                 .setLongFlag("flaw-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("hf,ogf,abs,lcf,eogf")
+                                .setDefault("hier,ogf,abs,lcf,eogf")
                                 .setHelp("Ordered list of flaw selectors. Each flaw selector assigns a priority to each " +
                                 "flaw. The first selector has the highest weight, the last has the least weight." +
                                 "The flaw with highest priority is selected to be solved. A (non-exaustive) of flaw selectors:\n" +
-                                "- 'hf': Hierarchical flaws first.\n" +
+                                "- 'hier': For hierarchical planning: the planner will first select unrefined tasks by increasing earliest appearance," +
+                                " then unmotivated dependent actions. In the case where all actions are task dependent (i.e. fully hierarchical domain)," +
+                                " threats are given the highest priority.\n" +
                                 "- 'ogf': Open goal flaws first.\n" +
                                 "- 'abs': Gives higher priority to flaws high in the abstraction hierarchy of the problem.\n" +
                                 "- 'lcf': Least Commiting First, select the flaw with the least number of resolvers\n" +

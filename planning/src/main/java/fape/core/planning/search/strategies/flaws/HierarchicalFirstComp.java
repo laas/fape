@@ -21,7 +21,7 @@ public class HierarchicalFirstComp implements FlawComparator {
 
     @Override
     public String shortName() {
-        return "hf";
+        return "hier";
     }
 
     private double priority(Flaw flaw) {
