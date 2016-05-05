@@ -19,6 +19,9 @@ type Robot with {
   constant Arm right_arm;
   fluent Area loc;
   fluent TorsoPosture torso;
+
+  // the robot is working on a exclusive task
+  fluent boolean busy;
 };
 type Arm with {
   fluent ArmPosture posture;
@@ -314,7 +317,7 @@ action leave_manipulation_pose(Robot r, ManArea l) {
 
 action get_object(Robot r, Object o) {
   motivated;
-  
+
   constant ManArea man;
   constant PlArea pl;
   connected(pl, man, man.pre_area);
@@ -335,6 +338,9 @@ action get_object(Robot r, Object o) {
       assume_manipulation_pose(r, man),
       pick_up_object(r, arm, o));
   };
+
+  // r cannot perform another get or put task concurrrently
+  [all] r.busy == false :-> false;
 };
 
 action put_object(Robot r, Object o, PlArea pl) {
@@ -365,6 +371,9 @@ action put_object(Robot r, Object o, PlArea pl) {
     initialLoc == man;
     [all] place_object(r, arm, o, pl);
   };
+
+  // r cannot perform another get or put task concurrrently
+  [all] r.busy == false :-> false;
 };
 
 
@@ -389,6 +398,8 @@ PR2.right_arm := RIGHT_ARM;
 PR2.left_arm := LEFT_ARM;
 RIGHT_ARM.owner := PR2;
 LEFT_ARM.owner := PR2;
+[start] PR2.busy := false;
+
 
 instance CoffeeJug coffeeJug1;
 instance MilkPot milkPot1;
