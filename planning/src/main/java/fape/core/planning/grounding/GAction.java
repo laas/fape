@@ -492,14 +492,19 @@ public class GAction implements Identifiable {
                 if(vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
                     // merge this equality into the best looking PartialBindings
                     best.addEquality(c.leftVar(), c.rightVar());
-                } else if(!vars.contains(c.leftVar())) {
+                } else if(!vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
                     InstanceRef value = pb.instance(c.leftVar().id());
                     best.bind(c.rightVar(), value);
-                } else if(!vars.contains(c.rightVar())) {
+                } else if(vars.contains(c.leftVar()) && !vars.contains(c.rightVar())) {
                     InstanceRef value = pb.instance(c.rightVar().id());
                     best.bind(c.leftVar(), value);
                 } else {
-                    throw new FAPEException("Equality constraint between two constaint: "+s+" in action "+aa.name());
+                    System.out.println("Warning: equality constraint on two constants: "+c);
+                    InstanceRef leftVal = pb.instance(c.leftVar().id());
+                    InstanceRef rightVal = pb.instance(c.rightVar().id());
+                    if(leftVal != rightVal) // two different cosntant required to be equal
+                        return Collections.emptyList();
+//                    throw new FAPEException("Equality constraint between two constants: "+s+" in action "+aa.name());
                 }
             }
         }
