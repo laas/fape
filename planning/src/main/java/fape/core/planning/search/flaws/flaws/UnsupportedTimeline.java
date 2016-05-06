@@ -56,19 +56,28 @@ public class UnsupportedTimeline extends Flaw {
         return true;
     }
 
-
-
     @Override
     public List<Resolver> getResolvers(State st, Planner planner) {
-        if(resolvers != null)
-            return resolvers;
+        if(this.resolvers == null)
+            if(planner.pb.allActionsAreMotivated())
+                this.resolvers = getResolversDownOnly(st, planner);
+            else
+                this.resolvers = getResolversTopDown(st, planner);
+        return this.resolvers;
+    }
 
-        resolvers = new ArrayList<>();
+    /** this method will consider as a resolver any action that can provide a supporting statement,
+     * even if adding this action results in an Unmotivated flaw.
+     * @param st
+     * @param planner
+     * @return
+     */
+    public List<Resolver> getResolversTopDown(State st, Planner planner) {
+        List<Resolver> resolvers = new ArrayList<>();
 
         //here we need to find several types of supporters
         //1) chain parts that provide the value we need
         //2) actions that provide the value we need and can be added
-        //3) tasks that can decompose into an action we need
 
         // get the resolvers that are cached in the state: SupportingTimelines and SupportingActions
         for(Resolver r : st.getResolversForOpenGoal(consumer))
@@ -95,46 +104,50 @@ public class UnsupportedTimeline extends Flaw {
             }
         }
 
-        if(st.pb.allActionsAreMotivated()) {
-            ActionSupporterFinder supporters = planner.getActionSupporterFinder();
-            TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
+        return resolvers;
+    }
 
-            // a list of (abstract-action, decompositionID) of supporters
-            Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
+    /** Those resolvers never include task-dependent that is not refining yet.
+     * Instead, it will go toward decomposing the task network. */
+    public List<Resolver> getResolversDownOnly(State st, Planner planner) {
+        List<Resolver> resolvers = getResolversTopDown(st, planner);
+        ActionSupporterFinder supporters = planner.getActionSupporterFinder();
+        TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();
 
-            // all actions that have an effect on the state variable
-            Set<AbstractAction> potentiallySupportingAction = potentialSupporters.stream()
-                    .map(x -> x.absAct)
-                    .collect(Collectors.toSet());
+        // a list of (abstract-action, decompositionID) of supporters
+        Collection<fape.core.planning.preprocessing.SupportingAction> potentialSupporters = supporters.getActionsSupporting(st, consumer);
 
-            Set<Task> tasks = new HashSet<>();
-            assert !st.getHierarchicalConstraints().isWaitingForADecomposition(consumer);
+        // all actions that have an effect on the state variable
+        Set<AbstractAction> potentiallySupportingAction = potentialSupporters.stream()
+                .map(x -> x.absAct)
+                .collect(Collectors.toSet());
 
-            for (Task t : st.getOpenTasks()) {
-                if (!st.canBeStrictlyBefore(t.start(), consumer.getConsumeTimePoint()))
-                    continue;
-                if (!st.getHierarchicalConstraints().isValidTaskSupport(t, consumer))
-                    continue;
+        Set<Task> tasks = new HashSet<>();
+        assert !st.getHierarchicalConstraints().isWaitingForADecomposition(consumer);
 
-                Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
-                if (!decs.isEmpty())
-                    tasks.add(t);
-            }
+        for (Task t : st.getOpenTasks()) {
+            if (!st.canBeStrictlyBefore(t.start(), consumer.getConsumeTimePoint()))
+                continue;
+            if (!st.getHierarchicalConstraints().isValidTaskSupport(t, consumer))
+                continue;
 
-            // resolvers are only existing statements that validate the constraints and the future task supporters we found
-            List<Resolver> newRes = Stream.concat(
-                    resolvers.stream()
-                            .filter(resolver -> resolver instanceof SupportingTimeline)
-                            .map(resolver1 -> (SupportingTimeline) resolver1)
-                            .filter(res -> st.getHierarchicalConstraints().isValidSupport(res.getSupportingStatement(st), consumer)),
-                    tasks.stream()
-                            .map(t -> new FutureTaskSupport(consumer, t)))
-                    .collect(Collectors.toList());
-
-            resolvers = newRes;
+            Collection<AbstractAction> decs = decompositions.possibleMethodsToDeriveTargetActions(t, potentiallySupportingAction);
+            if (!decs.isEmpty())
+                tasks.add(t);
         }
 
-        return this.resolvers;
+        // resolvers are only existing statements that validate the constraints and the future task supporters we found
+        List<Resolver> newRes = Stream.concat(
+                resolvers.stream()
+                        .filter(resolver -> resolver instanceof SupportingTimeline)
+                        .map(resolver1 -> (SupportingTimeline) resolver1)
+                        .filter(res -> st.getHierarchicalConstraints().isValidSupport(res.getSupportingStatement(st), consumer)),
+                tasks.stream()
+                        .map(t -> new FutureTaskSupport(consumer, t)))
+                .collect(Collectors.toList());
+
+        resolvers = newRes;
+        return resolvers;
     }
 
     public static boolean isValidResolver(Resolver res, Timeline consumer, State st) {
