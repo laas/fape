@@ -16,8 +16,9 @@
 
 
 move_object(PR2, coffeeJug1, placingAreaNorthLeftTable2);
-move_object(PR2, milkPot1, placingAreaNorthLeftTable2);
-//move_object(PR2, sugarPot2, placingAreaNorthLeftTable2);
+//move_object(PR2, milkPot1, placingAreaNorthLeftTable2); // original
+move_object(PR2, milkPot1, placingAreaSouthLeftTable2);
+move_object(PR2, sugarPot2, placingAreaNorthLeftTable2);
 
 
 

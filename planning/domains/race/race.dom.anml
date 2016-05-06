@@ -336,9 +336,6 @@ action get_object(Robot r, Object o) {
       assume_manipulation_pose(r, man),
       pick_up_object(r, arm, o));
   };
-
-  // r cannot perform another get or put task concurrrently
-  [all] r.busy == false :-> false;
 };
 
 action put_object(Robot r, Object o, PlArea pl) {
@@ -370,9 +367,6 @@ action put_object(Robot r, Object o, PlArea pl) {
     initialLoc == man;
     [all] place_object(r, arm, o, pl);
   };
-
-  // r cannot perform another get or put task concurrrently
-  [all] r.busy == false :-> false;
 };
 
 
@@ -381,8 +375,12 @@ action move_object(Robot r, Object o, PlArea area) {
   motivated;
   :decomposition {
     [all] ordered(
-      get_object(r, o),
-      put_object(r, o, area));
+      get: get_object(r, o),
+      put: put_object(r, o, area));
+
+    // r cannot perform another get or put task concurrrently  
+    [start(get),end(get)] r.busy == false :-> false;
+    [start(put),end(put)] r.busy == false :-> false;
   };
 };
 
