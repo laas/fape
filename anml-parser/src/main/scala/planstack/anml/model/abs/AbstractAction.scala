@@ -196,6 +196,7 @@ object AbstractAction {
         val actionEnd = ContainerEnd
         allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
 
+
         content foreach {
           case ts: parser.TemporalStatement =>
             val (optStatement, contraints) = StatementsFactory(ts, action.context, refCounter, DefaultMod)
@@ -228,6 +229,11 @@ object AbstractAction {
             action.statements ++= optStatement
             allConstraints ++= constraints
         }
+        action.subTasks.foreach(t =>
+          if(!pb.tasksMinDurations.contains(t.name) && t.name != action.taskName)
+            println(s"No known duration of task ${t.name} when processing action ${action.baseName}. Assuming a minimal duration of 1 but you should define it earlier.")
+        )
+        allConstraints ++= action.subTasks.map(t => new AbstractMinDelay(t.start, t.end, IntExpression.lit(pb.tasksMinDurations.getOrElse(t.name, 1))))
 
         for ((function, variable) <- action.context.bindings) {
           val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => action.context.getLocalVar(a.name)))
@@ -270,6 +276,8 @@ object AbstractAction {
 
         action
       }
+      assert(!pb.tasksMinDurations.contains(acts.head.taskName))
+      pb.tasksMinDurations.put(acts.head.taskName, acts.map(a => a.minDelay(a.start,a.end).lb).min)
       acts.toList
     } catch {
       case e:Throwable =>
