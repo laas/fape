@@ -7,6 +7,7 @@ import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.structures.Pair;
 
 import java.util.*;
 import java.util.function.*;
@@ -16,12 +17,22 @@ public class HierarchicalEffects {
 
     @Value
     private class Effect {
+        @Value class Fluent {
+            final Function func;
+            final List<VarPlaceHolder> args;
+            final VarPlaceHolder value;
+        }
         final int delayFromStart;
         final int delayToEnd;
-        final Function func;
-        final List<VarPlaceHolder> args;
-        final VarPlaceHolder value;
-        @Override public String toString() { return "Eff(~>"+delayFromStart+" "+delayToEnd+"<~ "+func.name()+args+"="+value; }
+        final Fluent f;
+
+        public Effect(int delayFromStart, int delayToEnd, Function func, List<VarPlaceHolder> args, VarPlaceHolder value) {
+            this.delayFromStart = delayFromStart;
+            this.delayToEnd = delayToEnd;
+            this.f = new Fluent(func, args, value);
+        }
+
+        @Override public String toString() { return "Eff(~>"+delayFromStart+" "+delayToEnd+"<~ "+f.func.name()+f.args+"="+f.value; }
 
         public Effect asEffectOfTask(String t) {
             List<LVarRef> vars = pb.actionsByTask().get(t).get(0).args();
@@ -35,29 +46,33 @@ public class HierarchicalEffects {
             return new Effect(
                     delayFromStart,
                     delayToEnd,
-                    func,
-                    args.stream().map(trans).collect(Collectors.toList()),
-                    trans.apply(value));
+                    f.func,
+                    f.args.stream().map(trans).collect(Collectors.toList()),
+                    trans.apply(f.value));
         }
 
         public Effect asEffectBySubtask(AbstractAction a, AbstractTask t) {
-            Map<LVarRef,LVarRef> mapping = new HashMap<>();
+            Map<LVarRef,VarPlaceHolder> mapping = new HashMap<>();
             List<LVarRef> taskVars = pb.actionsByTask().get(t.name()).get(0).args();
             for(int i=0 ; i<taskVars.size() ; i++) {
-                mapping.put(taskVars.get(i), t.jArgs().get(i));
+                LVarRef right = t.jArgs().get(i);
+                if(a.context().hasGlobalVar(right) && a.context().getGlobalVar(right) instanceof InstanceRef)
+                    mapping.put(taskVars.get(i), new InstanceArg((InstanceRef) a.context().getGlobalVar(right)));
+                else
+                    mapping.put(taskVars.get(i), new LVarArg(t.jArgs().get(i)));
             }
             java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
               if(v.isVar())
-                  return new LVarArg(mapping.get(v.asVar()));
+                  return mapping.get(v.asVar());
               else
                   return v;
             };
             return new Effect(
                     delayFromStart + a.minDelay(a.start(), t.start()).lb(),
                     delayToEnd + a.minDelay(t.end(), a.end()).lb(),
-                    func,
-                    args.stream().map(trans).collect(Collectors.toList()),
-                    trans.apply(value));
+                    f.func,
+                    f.args.stream().map(trans).collect(Collectors.toList()),
+                    trans.apply(f.value));
         }
         Effect withoutVars() {
             java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
@@ -69,9 +84,9 @@ public class HierarchicalEffects {
             return new Effect(
                     delayFromStart,
                     delayToEnd,
-                    func,
-                    args.stream().map(trans).collect(Collectors.toList()),
-                    trans.apply(value));
+                    f.func,
+                    f.args.stream().map(trans).collect(Collectors.toList()),
+                    trans.apply(f.value));
         }
     }
     private interface VarPlaceHolder {
@@ -117,6 +132,16 @@ public class HierarchicalEffects {
         System.out.println("coucou");
     }
 
+    private List<Effect> regrouped(List<Effect> effects) {
+        Map<Effect.Fluent, List<Effect>> grouped = effects.stream().collect(Collectors.groupingBy(Effect::getF));
+        List<Effect> reduced = grouped.keySet().stream().map(f -> {
+            int minFromStart = grouped.get(f).stream().map(e -> e.delayFromStart).min(Integer::compare).get();
+            int minToEnd = grouped.get(f).stream().map(e -> e.delayToEnd).min(Integer::compare).get();
+            return new Effect(minFromStart, minToEnd, f.func, f.args, f.value);
+        }).collect(Collectors.toList());
+        return reduced;
+    }
+
     private List<Effect> effectsOf(AbstractAction a) {
         java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
             if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
@@ -142,7 +167,8 @@ public class HierarchicalEffects {
             List<Effect> effects = new ArrayList<>(directEffects);
             effects.addAll(undirEffects);
 
-            actionEffects.put(a, effects);
+
+            actionEffects.put(a, regrouped(effects));
         }
 
         return actionEffects.get(a);
@@ -162,9 +188,9 @@ public class HierarchicalEffects {
                         .collect(Collectors.toList());
                 if (recTasks.contains(task)) {
                     // this task is recursive, remove any vars to make sure to do not miss any effect
-                    tasksEffects.put(task, effs.stream().map(Effect::withoutVars).collect(Collectors.toList()));
+                    tasksEffects.put(task, regrouped(effs.stream().map(Effect::withoutVars).collect(Collectors.toList())));
                 } else {
-                    tasksEffects.put(task, effs);
+                    tasksEffects.put(task, regrouped(effs));
                 }
             }
         }
