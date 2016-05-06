@@ -59,6 +59,20 @@ public class HierarchicalEffects {
                     args.stream().map(trans).collect(Collectors.toList()),
                     trans.apply(value));
         }
+        Effect withoutVars() {
+            java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
+              if(v.isVar())
+                  return new TypePlaceHolder(v.asType());
+              else
+                  return v;
+            };
+            return new Effect(
+                    delayFromStart,
+                    delayToEnd,
+                    func,
+                    args.stream().map(trans).collect(Collectors.toList()),
+                    trans.apply(value));
+        }
     }
     private interface VarPlaceHolder {
         boolean isVar();
@@ -90,6 +104,8 @@ public class HierarchicalEffects {
     private final AnmlProblem pb;
     private Map<String, List<Effect>> tasksEffects = new HashMap<>();
     private Map<AbstractAction, List<Effect>> actionEffects = new HashMap<>();
+    private Set<String> pendingTasks = new HashSet<>();
+    private Set<String> recTasks = new HashSet<>();
 
     public HierarchicalEffects(AnmlProblem pb) {
         this.pb = pb;
@@ -134,11 +150,23 @@ public class HierarchicalEffects {
 
     private List<Effect> effectsOf(String task) {
         if(!tasksEffects.containsKey(task)) {
-            List<Effect> effs = pb.actionsByTask().get(task).stream()
-                    .flatMap(a -> effectsOf(a).stream())
-                    .map(e -> e.asEffectOfTask(task))
-                    .collect(Collectors.toList());
-            tasksEffects.put(task, effs);
+            if(pendingTasks.contains(task)) {
+                System.out.println("Hier: "+task);
+                recTasks.add(task);
+                return Collections.emptyList();
+            } else {
+                pendingTasks.add(task);
+                List<Effect> effs = pb.actionsByTask().get(task).stream()
+                        .flatMap(a -> effectsOf(a).stream())
+                        .map(e -> e.asEffectOfTask(task))
+                        .collect(Collectors.toList());
+                if (recTasks.contains(task)) {
+                    // this task is recursive, remove any vars to make sure to do not miss any effect
+                    tasksEffects.put(task, effs.stream().map(Effect::withoutVars).collect(Collectors.toList()));
+                } else {
+                    tasksEffects.put(task, effs);
+                }
+            }
         }
         return tasksEffects.get(task);
     }
