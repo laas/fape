@@ -380,8 +380,12 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
+  def defaultDomain(t: Type) : Domain = {
+    stringValuesAsDomain(t.instances.map(i => i.instance).asJava)
+  }
+
   def addVariable(v: VarRef): Unit = {
-    addVariable(v, v.getType.instances.map(i => i.instance).asJava)
+    addVariable(v, defaultDomain(v.getType))
   }
 
   def addVariable(v: VarRef, domain: util.Collection[String]): Unit = {

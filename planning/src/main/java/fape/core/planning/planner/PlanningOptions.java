@@ -23,7 +23,7 @@ public class PlanningOptions {
      */
     public final List<FlawFinder> flawFinders = new ArrayList<>(Arrays.asList(
             new OpenGoalFinder(),
-            new UnsupportedTaskConditionFinder(),
+            new UnrefinedTaskFinder(),
             new UnmotivatedActionFinder(),
             new AllThreatFinder(),
             new UnboundVariableFinder()

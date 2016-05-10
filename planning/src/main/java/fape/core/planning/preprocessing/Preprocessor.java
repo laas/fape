@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 
 public class Preprocessor {
 
-    final Planner planner;
-    final State initialState;
+    private final Planner planner;
+    private final State initialState;
 
     public int nextGActionID = 0;
 
@@ -39,10 +39,11 @@ public class Preprocessor {
     private Map<GStateVariable, DTG> dtgs;
     private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
-    HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
+    private HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
     private Map<GStateVariable, Set<GAction>> actionUsingStateVariable;
+    private HierarchicalEffects hierarchicalEffects;
 
-    Boolean isHierarchical = null;
+    private Boolean isHierarchical = null;
 
     public int nextTemporalDTGNodeID = 0;
 
@@ -81,6 +82,13 @@ public class Preprocessor {
     public void restrictPossibleActions(EffSet<GAction> actions) {
         assert allActions != null;
         allActions = actions.clone();
+    }
+
+    public HierarchicalEffects getHierarchicalEffects() {
+        if(hierarchicalEffects == null) {
+            hierarchicalEffects = new HierarchicalEffects(planner.pb);
+        }
+        return hierarchicalEffects;
     }
 
     public boolean fluentsInitialized() { return allFluents != null; }

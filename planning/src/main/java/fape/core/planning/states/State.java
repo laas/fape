@@ -775,11 +775,11 @@ public class State implements Reporter {
      * As a side effects, this method also cleans up the resolvers stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
-    public Iterable<Resolver> getResolversForOpenGoal(Timeline og) {
+    public List<Resolver> getResolversForOpenGoal(Timeline og, boolean downwardOnly) {
         assert og.isConsumer();
         assert tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
 
-        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og);
+        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og, downwardOnly);
     }
 
 

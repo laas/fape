@@ -80,7 +80,7 @@ public class UnsupportedTimeline extends Flaw {
         //2) actions that provide the value we need and can be added
 
         // get the resolvers that are cached in the state: SupportingTimelines and SupportingActions
-        for(Resolver r : st.getResolversForOpenGoal(consumer))
+        for(Resolver r : st.getResolversForOpenGoal(consumer, false))
             resolvers.add(r);
 
         // checks all the given resolvers to check if one must be applied.
@@ -106,10 +106,13 @@ public class UnsupportedTimeline extends Flaw {
 
         return resolvers;
     }
+    public List<Resolver> getResolversDownOnly(State st, Planner planner) {
+        return st.getResolversForOpenGoal(consumer, true);
+    }
 
     /** Those resolvers never include task-dependent that is not refining yet.
      * Instead, it will go toward decomposing the task network. */
-    public List<Resolver> getResolversDownOnly(State st, Planner planner) {
+    public List<Resolver> getResolversDownOnlyOld(State st, Planner planner) {
         List<Resolver> resolvers = getResolversTopDown(st, planner);
         ActionSupporterFinder supporters = planner.getActionSupporterFinder();
         TaskDecompositionsReasoner decompositions = st.pl.preprocessor.getTaskDecompositionsReasoner();

@@ -9,7 +9,7 @@ import planstack.anml.model.concrete.Task;
 import java.util.LinkedList;
 import java.util.List;
 
-public class UnsupportedTaskConditionFinder implements FlawFinder {
+public class UnrefinedTaskFinder implements FlawFinder {
     @Override
     public List<Flaw> getFlaws(State st, Planner planner) {
         List<Flaw> flaws = new LinkedList<>();
