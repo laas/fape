@@ -1,6 +1,5 @@
 package fape.core.planning.states;
 
-import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
 import fape.core.planning.tasknetworks.TNNode;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.abs.AbstractAction;
@@ -60,19 +59,6 @@ public class HierarchicalConstraints implements StateExtension {
 
         if(possibleSupportersForTask.size() < getPossibleRefinements(task).size())
             possibleRefinements.put(task, Collections.unmodifiableSet(possibleSupportersForTask));
-    }
-
-    public boolean isValidSupport(LogStatement supporter, Timeline consumer) {
-        if(!timelineSupportConstraints.containsKey(consumer.mID))
-            return true;
-
-        if(!st.getActionContaining(supporter).isPresent())
-            return false;
-
-        TNNode n = timelineSupportConstraints.get(consumer.mID); // any supporter must be derived from this node
-        Action a = st.getActionContaining(supporter).get(); // the action that introduced the statement
-
-        return st.taskNet.isDescendantOf(a, n);
     }
 
     public boolean isValidTaskSupport(Task t, Timeline consumer) {

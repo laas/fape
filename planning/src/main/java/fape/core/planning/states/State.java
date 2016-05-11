@@ -12,7 +12,6 @@ import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.SupportingTaskDecomposition;
 import fape.core.planning.search.flaws.resolvers.SupportingTimeline;
-import fape.core.planning.stn.STNNodePrinter;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -996,10 +995,6 @@ public class State implements Reporter {
 
     public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
     public int getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
-
-    public void exportTemporalNetwork(String filename) {
-        csp.stn().exportToDotFile(filename, new STNNodePrinter(this));
-    }
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
 
