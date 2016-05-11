@@ -41,12 +41,6 @@ variable boolean hasCar;
 variable Place carLocation;
 
 
-action GetVisa(Country c) {
-    [all] contains ask : AskVisa(c);
-    [all] contains ret : RetrieveVisa(c);
-    end(ask) < start(ret) -20;
-};
-
 action AskVisa(Country c) {
     duration := 5;
     motivated;
@@ -55,7 +49,41 @@ action RetrieveVisa(Country c) {
     duration := 5;
     motivated;
 };
+action GetVisa(Country c) {
+    [all] contains ask : AskVisa(c);
+    [all] contains ret : RetrieveVisa(c);
+    end(ask) < start(ret) -20;
+};
 
+
+
+action ByBus(Place a, Place b) {
+    motivated;
+    can_go_by_bus(a, b);
+};
+action ByPlane(Place a, Place b) {
+    motivated;
+    can_go_by_plane(a, b);
+};
+action ByCar(Place a, Place b) { 
+    motivated;
+    can_go_by_car(a, b);
+    [all] hasCar == true;
+    [all] carLocation == a :-> b;
+};
+action Go(Place a, Place b) {
+    // must be part of IntTravel or local travel
+    motivated;
+
+    // lasts 10 time units, TODO: make it dependent on places and transportation mode
+  duration := 10;
+
+    [all] at == a :-> b;
+
+    :decomposition{ [all] ByBus(a, b); };
+    :decomposition{ [all] ByPlane(a, b); };
+    :decomposition{ [all] ByCar(a, b); };
+};
 
 action LocalTravel(Country c, Place a, Place b) {
     a.country == c;
@@ -78,35 +106,15 @@ action IntTravel(Country a, Country b, Place pa, Place pb) {
     end(getVisa) < start;
 };
 
-action Go(Place a, Place b) {
-    // must be part of IntTravel or local travel
+
+action ReturnCar(Place p) {
+    duration := 1;
     motivated;
 
-    // lasts 10 time units, TODO: make it dependent on places and transportation mode
-  duration := 10;
-
-    [all] at == a :-> b;
-
-    :decomposition{ [all] ByBus(a, b); };
-    :decomposition{ [all] ByPlane(a, b); };
-    :decomposition{ [all] ByCar(a, b); };
+    [all] at == p;
+    [all] hasCar == true :-> false;
+    [start] carLocation == p;
 };
-
-action ByBus(Place a, Place b) {
-    motivated;
-    can_go_by_bus(a, b);
-};
-action ByPlane(Place a, Place b) {
-    motivated;
-    can_go_by_plane(a, b);
-};
-action ByCar(Place a, Place b) { 
-    motivated;
-    can_go_by_car(a, b);
-    [all] hasCar == true;
-    [all] carLocation == a :-> b;
-};
-
 action RentCar(Place p) {
     duration := 1;
     [all] at == p;
@@ -116,15 +124,6 @@ action RentCar(Place p) {
     // if I rent a car, I must return it at the same place
     ret : ReturnCar(p); 
     end < start(ret);
-};
-
-action ReturnCar(Place p) {
-    duration := 1;
-    motivated;
-
-    [all] at == p;
-    [all] hasCar == true :-> false;
-    [start] carLocation == p;
 };
 
 

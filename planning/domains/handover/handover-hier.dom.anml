@@ -52,6 +52,34 @@ action Pick(Robot r1, Item i, NavLocation a) {
     };
 };
 
+action Drop(Robot r1, Item i, NavLocation a) {
+        motivated;
+      duration := 5;
+
+    [all] {
+        r1.location == a;
+        i.location == r1 :-> a;
+    };
+};
+
+
+
+action Exchange(Robot r1, Robot r2, Item i) {
+    // note: this gets huge when grounding ...
+    constant NavLocation l1;
+    constant NavLocation l2;
+    constant Robot r;
+    [all] contains {
+      h1 : Handover(r, r2, i, l1, l2);
+    };
+    :decomposition {
+        r == r1;
+    };
+    :decomposition {
+      [start,start(h1)] contains ex : Exchange(r1, r, i);
+    };
+};
+
 action Transport(Robot r1, Robot r2, NavLocation from, NavLocation to, Item i) {
     motivated;
     [all] contains {
@@ -70,31 +98,6 @@ action Transport(Robot r1, Robot r2, NavLocation from, NavLocation to, Item i) {
     };
 };
 
-action Exchange(Robot r1, Robot r2, Item i) {
-    // note: this gets huge when grounding ...
-    constant NavLocation l1;
-    constant NavLocation l2;
-    constant Robot r;
-    [all] contains {
-      h1 : Handover(r, r2, i, l1, l2);
-    };
-    :decomposition {
-        r == r1;
-    };
-    :decomposition {
-      [start,start(h1)] contains ex : Exchange(r1, r, i);
-    };
-};
-
-action Drop(Robot r1, Item i, NavLocation a) {
-        motivated;
-      duration := 5;
-
-    [all] {
-        r1.location == a;
-        i.location == r1 :-> a;
-    };
-};
      
 instance Item I;
 instance Robot Ra, Rb, Rc, Rd;

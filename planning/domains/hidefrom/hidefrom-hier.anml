@@ -41,13 +41,33 @@ action Go(Agent a, NavLocation l1, NavLocation l2) {
     [all] a.loc == l1 :-> l2;
 };
 
+action SeenPick(Agent me, Agent actor, Item i, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid only if the agent is at the picking place at some point during
+    // the pick
+    [all] contains me.loc == l;
+    // update the belief of the agent
+    [end] thinks_at(me, i) := actor;
+};
+
+
+action UnseenPick(Agent me, NavLocation l) {
+    motivated; // this action must be part of another one (here Pick)
+
+    // valid if I'm not in the room where the pick happened
+    // for the whole duration of the action.
+    constant NavLocation my_pos;
+    my_pos != l;
+    [all] me.loc == my_pos;
+};
+
+
 action Pick(Agent a, Item i, NavLocation l) {
   duration :in [10,13];
-    [all] {
-        a.loc == l;
-        thinks_at(a, i) := a;
-        at(i) == l:-> a;
-    };
+    [all] a.loc == l;
+    [all] at(i) == l:-> a;
+    [end] thinks_at(a, i) := a;
 
     // the other agent, constraint to be different of a
     constant Agent other_agent;
@@ -67,52 +87,14 @@ action Pick(Agent a, Item i, NavLocation l) {
     };
 };
 
-action SeenPick(Agent me, Agent actor, Item i, NavLocation l) {
-    motivated; // this action must be part of another one (here Pick)
-
-    // valid only if the agent is at the picking place at some point during
-    // the pick
-    [all] contains me.loc == l;
-    // update the belief of the agent
-    [all] thinks_at(me, i) := actor;
-};
-
-
-action UnseenPick(Agent me, NavLocation l) {
-    motivated; // this action must be part of another one (here Pick)
-
-    // valid if I'm not in the room where the pick happened
-    // for the whole duration of the action.
-    constant NavLocation my_pos;
-    my_pos != l;
-    [all] me.loc == my_pos;
-};
 
 /*********************************************/
 
-action Drop(Agent a, Item i, NavLocation l) {
-  duration :in [7,10];
-    [all] {
-        a.loc == l;
-        thinks_at(a, i) := l;
-        at(i) == a :-> l;
-    };
-
-    constant Agent other_agent;
-    other_agent != a;
-  
-    :decomposition{  
-        [all] UnseenDrop(other_agent, l);
-    };
-    :decomposition{
-        [all] SeenDrop(other_agent, a, i, l);
-    };
-};
 
 action SeenDrop(Agent me, Agent actor, Item i, NavLocation l) {
     motivated;
     [all] contains me.loc == l;
-    [all] thinks_at(me, i) := l;
+    [end] thinks_at(me, i) := l;
 };
 
 
@@ -125,6 +107,22 @@ action UnseenDrop(Agent me, NavLocation l) {
 };
 
 
+action Drop(Agent a, Item i, NavLocation l) {
+  duration :in [7,10];
+    [all] a.loc == l;
+    [end] thinks_at(a, i) := l;
+    [all] at(i) == a :-> l;
+
+    constant Agent other_agent;
+    other_agent != a;
+  
+    :decomposition{  
+        [all] UnseenDrop(other_agent, l);
+    };
+    :decomposition{
+        [all] SeenDrop(other_agent, a, i, l);
+    };
+};
 
 
 

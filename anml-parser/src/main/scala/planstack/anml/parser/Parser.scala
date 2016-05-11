@@ -154,7 +154,10 @@ case class IntFunction(
     override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe.toString == "integer", "The type of this int function is not an integer: "+this)
+  assert(tipe match {
+    case PSimpleType("integer") => true
+    case _ => false
+  }, "The type of this int function is not an integer: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in integer function: "+this)
 }
 

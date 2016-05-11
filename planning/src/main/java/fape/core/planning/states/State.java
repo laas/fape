@@ -1173,11 +1173,11 @@ public class State implements Reporter {
         return stateVarsToVariables.get(sv);
     }
 
-    public IntExpression translateToCSPVariable(IntExpression expr) {
+    IntExpression translateToCSPVariable(IntExpression expr) {
         Function<IntExpression,IntExpression> transformation = e -> {
             if(e instanceof StateVariable) {
                 ParameterizedStateVariable sv = ((StateVariable) e).sv();
-                assert sv.func().valueType().equals("integer");
+                assert sv.func().valueType().isNumeric();
                 return IntExpression.variable(getVariableOf(sv), e.lb(), e.ub());
             } else {
                 assert !(e instanceof LStateVariable) : "Error: local state variable was not binded";

@@ -31,20 +31,6 @@ action turn_to(satellite s, direction d_new) {
 //    };
 };
 
-action use(instrument i, satellite s) {
-  motivated;
-  i.on_board == s;
-  :decomposition{
-    
-  };
-  :decomposition{
-    [start,t1] switch_on(i, s);
-    [t3+1,t5] calibrate(s, i);
-    [t2, end] switch_off(i,s);
-    t5 < t2;
-  };
-};
-
 action switch_on(instrument i, satellite s) {
     motivated;
     duration := 2;
@@ -99,4 +85,20 @@ action take_image(direction d, mode m) {
 //    [t1,t2] turn_to(s, d);
 //    t2 < start;
 };
+
+
+action use(instrument i, satellite s) {
+  motivated;
+  i.on_board == s;
+  :decomposition{
+    
+  };
+  :decomposition{
+    [start,t1] switch_on(i, s);
+    [t3+1,t5] calibrate(s, i);
+    [t2, end] switch_off(i,s);
+    t5 < t2;
+  };
+};
+
 

@@ -29,20 +29,18 @@ type Surface with {
 type State; // current state of a surface
 
 
-action TransportTo(Robot r, Element i, SurfLocation s) {
-  motivated;  
-  :decomposition {
-     constant SurfLocation from;
-     pick : Pick(r, i, from);
-     place : Place(r, i, s);
-     start = start(pick);
-     end = end(place);
-  };
-};
 
 action GoTo(Agent a, SurfLocation to) {
        duration :in [8, 10];
        [end] a.at := to;
+};
+
+action Take(Human h, Robot r, Element e, SurfLocation l) {
+       motivated;
+       duration :in [5,7];
+       [all] e.at == r :-> h;
+       [all] r.holds == true :-> false;
+       [all] h.holds == false :-> true;
 };
 
 action HandOver(Robot r, Human h, Element e, SurfLocation l) {
@@ -54,14 +52,6 @@ action HandOver(Robot r, Human h, Element e, SurfLocation l) {
              e.glued == false;
        };
        [start+10, end-1] contains Take(h, r, e, l);
-};
-
-action Take(Human h, Robot r, Element e, SurfLocation l) {
-       motivated;
-       duration :in [5,7];
-       [all] e.at == r :-> h;
-       [all] r.holds == true :-> false;
-       [all] h.holds == false :-> true;
 };
 	
 action Pick(Agent a, Element e, SurfLocation l) {
@@ -82,26 +72,6 @@ action Place(Agent a, Element e, SurfLocation l) {
        };
 };
 
-action ProcessSurface(Human h, Robot r, Surface s, Glue g) {
-    motivated;
-       constant SurfLocation loc;
-       s.attachedTo == loc;
-       constant Bracket b;
-
-       cleanID : Clean(h, s);
-       glueID : Glue(h, s, g);
-       attachID : AttachBracket(h, b, s);
-       pointID : Point(r, s);
-
-       // those are not needed but make presentation clearer
-       start = start(cleanID);
-       end = end(attachID);
-       start(pointID) = start(glueID) -1;
-//       end(pointID) = end(glueID) + 1;
-
-       end(cleanID) < start(glueID);
-       end(glueID) < start(attachID);
-};
 
 action Clean(Human h, Surface s) {
        motivated;
@@ -155,6 +125,37 @@ action Point(Robot r, Surface s) {
 };
 
 
+action ProcessSurface(Human h, Robot r, Surface s, Glue g) {
+    motivated;
+       constant SurfLocation loc;
+       s.attachedTo == loc;
+       constant Bracket b;
+
+       cleanID : Clean(h, s);
+       glueID : Glue(h, s, g);
+       attachID : AttachBracket(h, b, s);
+       pointID : Point(r, s);
+
+       // those are not needed but make presentation clearer
+       start = start(cleanID);
+       end = end(attachID);
+       start(pointID) = start(glueID) -1;
+//       end(pointID) = end(glueID) + 1;
+
+       end(cleanID) < start(glueID);
+       end(glueID) < start(attachID);
+};
+
+action TransportTo(Robot r, Element i, SurfLocation s) {
+  motivated;  
+  :decomposition {
+     constant SurfLocation from;
+     pick : Pick(r, i, from);
+     place : Place(r, i, s);
+     start = start(pick);
+     end = end(place);
+  };
+};
 
 
 
