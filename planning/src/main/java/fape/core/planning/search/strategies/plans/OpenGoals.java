@@ -6,9 +6,9 @@ import java.util.HashMap;
 
 public class OpenGoals extends PartialPlanComparator {
 
-    HashMap<Integer, Integer> numOpenGoals = new HashMap<>();
+    private HashMap<Integer, Integer> numOpenGoals = new HashMap<>();
 
-    int numOpenGoals(State st) {
+    private int numOpenGoals(State st) {
         if(!numOpenGoals.containsKey(st.mID))
             numOpenGoals.put(st.mID, st.tdb.getConsumers().size());
         return numOpenGoals.get(st.mID);

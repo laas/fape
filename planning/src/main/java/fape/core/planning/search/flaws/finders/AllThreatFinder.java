@@ -10,6 +10,6 @@ import java.util.List;
 public class AllThreatFinder implements FlawFinder {
 
     public List<Flaw> getFlaws(State st, Planner planner) {
-        return st.getAllThreats(); 
+        return st.getAllThreats();
     }
 }

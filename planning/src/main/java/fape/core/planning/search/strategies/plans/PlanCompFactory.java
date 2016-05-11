@@ -2,6 +2,7 @@ package fape.core.planning.search.strategies.plans;
 
 import fape.core.planning.planner.Planner;
 import fape.core.planning.search.strategies.plans.tsp.Htsp;
+import fape.core.planning.search.strategies.plans.tsp.MinSpanTreeComp;
 import fape.exceptions.FAPEException;
 
 import java.util.LinkedList;
@@ -40,7 +41,9 @@ public class PlanCompFactory {
                 case "tsp":
                     compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf("tdtg")));
                     break;
-
+                case "minspan":
+                    compList.add(new MinSpanTreeComp());
+                    break;
                 default:
                     if(compID.startsWith("tsp-"))
                         compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf(compID.replace("tsp-",""))));

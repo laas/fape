@@ -27,20 +27,37 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MinSpanTreeExt implements StateExtension {
 
+    private int dbgLvl = 0;
+
     final State st;
     final boolean useNumChangesInAction;
 
-    final HashMap<LogStatement, HashSet<GLogStatement>> groundStatements = new HashMap<>();
-
+    private final HashMap<LogStatement, HashSet<GLogStatement>> groundStatements = new HashMap<>();
 
     @Override
     public StateExtension clone(State st) {
         return new MinSpanTreeExt(st, useNumChangesInAction);
     }
 
-    public int costToGo() {
-        processTimelines();
-        return computeDistance();
+    private int numChangesInPartialPlan = -1;
+    private int numAdditionalChanges = -1;
+
+    private void computeHeuristic() {
+        if(numAdditionalChanges == -1) {
+            numChangesInPartialPlan = st.tdb.getTimelinesStream().mapToInt(tl -> tl.numChanges()).sum();
+            processTimelines();
+            numAdditionalChanges = computeDistance();
+        }
+    }
+
+    public int getCostToGo() {
+        computeHeuristic();
+        return numAdditionalChanges;
+    }
+
+    public int getCurrentCost() {
+        computeHeuristic();
+        return numChangesInPartialPlan;
     }
 
     private void processTimelines() {
@@ -72,8 +89,8 @@ public class MinSpanTreeExt implements StateExtension {
                     restricted.add(tl.getEvent(i));
             }
 
-            if(!restricted.isEmpty())
-                System.out.println(restricted);
+            if(dbgLvl >= 1 && !restricted.isEmpty())
+                System.out.println("Restricted: "+restricted);
 
             for(LogStatement s : restricted) {
                 Optional<Action> optAct = st.getActionContaining(s);
@@ -121,7 +138,8 @@ public class MinSpanTreeExt implements StateExtension {
         for(Timeline tl : st.getTimelines())
             numChanges += tl.numChanges();
 
-        System.out.println("---------->  "+numChanges+"   "+additionalChanges);
+        if(dbgLvl >= 1)
+            System.out.println("---------->  "+numChanges+"   "+additionalChanges);
 
         return additionalChanges;
     }
@@ -145,19 +163,21 @@ public class MinSpanTreeExt implements StateExtension {
                 cost = q.getCost(cur);
             } else if(q.getCost(cur) == solutionAt) {
                 cost = solutionAt;
-            }else {
+            } else {
                 int c = q.getCost(cur);
                 for(Change ch : cur.inChanges()) {
+                    int costOfChange = useNumChangesInAction ?
+                            (int) ch.getContainer().getStatements().stream().filter(s -> s.isChange()).count() : 1;
                     if(ch.isTransition()) {
                         if(q.hasCost(ch.getFrom())) {
-                            if(q.getCost(ch.getFrom()) > c+1)
-                                q.update(ch.getFrom(), c+1);
+                            if(q.getCost(ch.getFrom()) > c+costOfChange)
+                                q.update(ch.getFrom(), c+costOfChange);
                         } else {
-                            q.insert(ch.getFrom(), c+1);
+                            q.insert(ch.getFrom(), c+costOfChange);
                         }
                     } else {
                         // we have an assignment, hence there is a solution with an additional cost of 1
-                        solutionAt = c +1;
+                        solutionAt = c + costOfChange;
                     }
                 }
             }
