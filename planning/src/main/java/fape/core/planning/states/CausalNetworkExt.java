@@ -4,10 +4,13 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.core.planning.timelines.TimelinesManager;
 import lombok.Value;
+import planstack.anml.model.ParameterizedStateVariable;
+import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.ISet;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,12 +25,16 @@ public class CausalNetworkExt implements StateExtension {
 
     private final State container;
 
-    final HashMap<Integer, ISet<Event>> potentialSupporters;
-    final HashMap<Integer,Integer> lastProcessedChange;
-    final List<Integer> extendedTimelines;
-    final Set<Integer> addedTimelines;
-    final List<Integer> removedTimelines;
-    final Map<Event, ISet<Integer>> possiblyThreateningTimelines;
+    // maps a timeline (by its ID) to a set of possibly indirectly supporting events
+    private final HashMap<Integer, ISet<Event>> potentialSupporters;
+    // maps a timeline ID to number of the last event processed
+    private final HashMap<Integer,Integer> lastProcessedChange;
+    // respectively keep track of the IDs of timelines extended, added or removed since the last update
+    private final List<Integer> extendedTimelines;
+    private final Set<Integer> addedTimelines;
+    private final List<Integer> removedTimelines;
+
+    private final Map<Event, ISet<Integer>> possiblyThreateningTimelines;
 
     CausalNetworkExt(State container) {
         this.container = container;
@@ -39,7 +46,7 @@ public class CausalNetworkExt implements StateExtension {
         possiblyThreateningTimelines = new HashMap<>();
     }
 
-    CausalNetworkExt(CausalNetworkExt toCopy, State container) {
+    private CausalNetworkExt(CausalNetworkExt toCopy, State container) {
         this.container = container;
         potentialSupporters = new HashMap<>(toCopy.potentialSupporters);
         lastProcessedChange = new HashMap<>(toCopy.lastProcessedChange);
@@ -59,18 +66,19 @@ public class CausalNetworkExt implements StateExtension {
         return potentialSupporters.get(tl.mID);
     }
 
-    public ISet<Event> getPotentialSupporters(Timeline tl) {
+    ISet<Event> getPotentialSupporters(Timeline tl) {
         processPending();
-        return potentialSupporters.get(tl.mID).filter(e ->
+        return potentialSupporters.get(tl.mID).filter((Predicate<Event>) e ->
                 container.unifiable(
                         container.getTimeline(tl.mID).getGlobalConsumeValue(),
                         container.getTimeline(e.supporterID).getChangeNumber(e.changeNumber).getSupportValue()));
     }
 
-    public void processPending() {
+    private void processPending() {
         if(extendedTimelines.isEmpty() && addedTimelines.isEmpty() && removedTimelines.isEmpty())
             return;
 
+        // find all indirect supporters of newly added timelines
         for(int tlID : addedTimelines) {
             if(!container.tdb.containsTimelineWithID(tlID))
                 continue;
@@ -96,13 +104,15 @@ public class CausalNetworkExt implements StateExtension {
 
         for(int tlID : potentialSupporters.keySet()) {
             if(!container.tdb.containsTimelineWithID(tlID)) {
+                // timeline was deleted, remove any reference we might have
                 potentialSupporters.remove(tlID);
                 continue;
             }
             Timeline tl = tlMan.getTimeline(tlID);
 
+            // incrementaly update timelines that were not added (new timelines were previously processed already)
             if(!addedTimelines.contains(tlID)) {
-                // the timeline was previously there, process the updated timlines to see if there are new potential supporters
+                // the timeline was previously there, process the updated timelines to see if there are new potential supporters
                 addedTimelines.stream()
                         .filter(tlMan::containsTimelineWithID)
                         .map(tlMan::getTimeline)
@@ -131,12 +141,21 @@ public class CausalNetworkExt implements StateExtension {
                         });
             }
 
-            List<Event> toRemove = new ArrayList<>();
+            Set<Event> toRemove = new HashSet<>();
             for(Event pis : potentialSupporters.get(tlID)) {
+
+
                 if(!tlMan.containsTimelineWithID(pis.supporterID)) {
                     toRemove.add(pis);
                     continue;
                 }
+
+                // if this event can not be separated (temporally or logically) from the open goal,
+                // then it is the only possible supporter
+                if(!canBeSeparated(pis, tlMan.getTimeline(tlID))) {
+                    toRemove.addAll(potentialSupporters.get(tlID).filter((Predicate<Event>) (e -> e != pis)).asJava());
+                }
+
                 Timeline sup = tlMan.getTimeline(pis.supporterID);
                 if(!mightIndirectlySupport(sup, pis.changeNumber, tl)) {
                     toRemove.add(pis);
@@ -188,7 +207,43 @@ public class CausalNetworkExt implements StateExtension {
         }
     }
 
-    public boolean possiblyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
+    /** Returns true if either (i) there can be a temporal gap between the event and the timeline;
+     * ro (ii) they can be on different fluents */
+    private boolean canBeSeparated(Event e, Timeline og) {
+        Timeline tl = container.getTimeline(e.supporterID);
+        List<TPRef> endTimepoints;
+        if(og.hasSinglePersistence()) {
+            endTimepoints = Collections.singletonList(e.getStatement().end());
+        } else {
+            ChainComponent eventComp = tl.getChangeNumber(e.getChangeNumber());
+            if(tl.isLastComponent(eventComp) || !tl.getFollowingComponent(eventComp).change)
+                endTimepoints = eventComp.getEndTimepoints();
+            else
+                endTimepoints = eventComp.getEndTimepoints();
+        }
+
+        boolean temporallySeparable =
+                endTimepoints.stream().allMatch(tp ->
+                        container.csp.stn().isDelayPossible(tp, og.getConsumeTimePoint(), 1) ||
+                        container.csp.stn().isDelayPossible(og.getConsumeTimePoint(), tp, 1));
+        return temporallySeparable || !areNecessarilyIdentical(e.getStatement().sv(), tl.stateVariable);
+    }
+
+    /**
+     * Returns true if the two state variables are necessarily identical.
+     * This is true if they are on the same state variable and all their arguments are equals.
+     */
+    private boolean areNecessarilyIdentical(ParameterizedStateVariable sv1, ParameterizedStateVariable sv2) {
+        if(sv1.func() != sv2.func())
+            return false;
+        for(int i=0 ; i<sv1.args().length ; i++) {
+            if(container.separable(sv1.arg(i), sv2.arg(i)))
+                return false;
+        }
+        return true;
+    }
+
+    private boolean possiblyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
         if(threat.hasSinglePersistence())
             return false;
         if(!container.unifiable(supporter, threat))
@@ -202,7 +257,7 @@ public class CausalNetworkExt implements StateExtension {
         return true;
     }
 
-    public boolean necessarilyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
+    private boolean necessarilyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
         if(threat.hasSinglePersistence())
             return false;
         if(container.unified(supporter, threat) || !container.unified(consumer, threat))

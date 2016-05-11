@@ -238,6 +238,13 @@ public class HierarchicalEffects {
                 return asDomain(v.asType(), st);
             }
         }
+        private static Domain asDomainFromLocalVars(VarPlaceHolder v, State st) {
+            if(v.isInstance()) {
+                return asDomain(v.asInstance(), st);
+            } else {
+                return asDomain(v.asType(), st);
+            }
+        }
         private static DomainList from(ParameterizedStateVariable sv, VarRef value, State st) {
             return new DomainList(Stream.concat(
                     Stream.of(sv.args()).map(v -> asDomain(v, st)),
@@ -249,6 +256,13 @@ public class HierarchicalEffects {
                     Stream.concat(
                             f.getArgs().stream().map(v -> asDomain(v, bindings, st)),
                             Stream.of(asDomain(f.getValue(), bindings, st)))
+                            .collect(Collectors.toList()));
+        }
+        private static DomainList from(Effect.Fluent f, State st) {
+            return new DomainList(
+                    Stream.concat(
+                            f.getArgs().stream().map(v -> asDomainFromLocalVars(v, st)),
+                            Stream.of(asDomainFromLocalVars(f.getValue(), st)))
                             .collect(Collectors.toList()));
         }
     }
@@ -268,6 +282,19 @@ public class HierarchicalEffects {
                 .filter(effect -> effect.f.func == og.stateVariable.func())
                 .filter(effect -> st.csp.stn().isDelayPossible(t.start(), og.getConsumeTimePoint(), effect.delayFromStart))
                 .map(effect -> DomainList.from(effect.f, bindings, st))
+                .anyMatch(domainList -> domainList.compatible(dl));
+    }
+
+    /**
+     * A task can indirectly support an open goal if it can be decomposed in an action
+     * producing a statement (i) that can support the open goal (ii) that can be early enough to support it
+     */
+    public boolean canSupport(Timeline og, AbstractAction aa, State st) {
+        DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
+
+        return effectsOf(aa).stream()
+                .filter(effect -> effect.f.func == og.stateVariable.func())
+                .map(effect -> DomainList.from(effect.f, st))
                 .anyMatch(domainList -> domainList.compatible(dl));
     }
 }

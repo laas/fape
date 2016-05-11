@@ -6,6 +6,9 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.anml.model.concrete.statements.Persistence;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A collection of logical statements. This class mainly provides easier operations on a collection of logical statements.
@@ -69,6 +72,14 @@ public class ChainComponent {
     public TPRef getConsumeTimePoint() {
         assert statements.length == 1 : "There is more than one statement in this chain component.";
         return statements[0].start();
+    }
+
+    public List<TPRef> getStartTimepoints() {
+        return Stream.of(statements).map(s -> s.start()).collect(Collectors.toList());
+    }
+
+    public List<TPRef> getEndTimepoints() {
+        return Stream.of(statements).map(s -> s.end()).collect(Collectors.toList());
     }
 
     /**

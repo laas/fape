@@ -1,6 +1,7 @@
 package fape.core.planning.states;
 
 import fape.core.planning.preprocessing.TaskDecompositionsReasoner;
+import fape.core.planning.tasknetworks.TNNode;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.Action;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class HierarchicalConstraints implements StateExtension {
 
-    private final Map<Integer, Task> timelineSupportConstraints;
+    private final Map<Integer, TNNode> timelineSupportConstraints;
     private final State st;
     private final Map<Task, Set<AbstractAction>> possibleRefinements;
 
@@ -32,10 +33,18 @@ public class HierarchicalConstraints implements StateExtension {
         return timelineSupportConstraints.containsKey(tl.mID);
     }
 
+    public void setSupportConstraint(Timeline consumer, Action a) {
+        assert !isConstrained(consumer) || st.taskNet.isDescendantOf(a, timelineSupportConstraints.get(consumer.mID));
+        timelineSupportConstraints.put(consumer.mID, new TNNode(a));
+    }
+
     public void setSupportConstraint(Timeline consumer, Task task) {
-        assert !isConstrained(consumer) || st.taskNet.isSupported(timelineSupportConstraints.get(consumer.mID));
+        assert !isWaitingForADecomposition(consumer);
+        assert !isConstrained(consumer)
+                || st.taskNet.isDescendantOf(task, timelineSupportConstraints.get(consumer.mID));
+
         st.enforceStrictlyBefore(task.start(), consumer.getConsumeTimePoint());
-        timelineSupportConstraints.put(consumer.mID, task);
+        timelineSupportConstraints.put(consumer.mID, new TNNode(task));
 
         // all actions with a statements affecting this state variable of the consumer
         Collection<AbstractAction> potentiallySupportingAction =
@@ -60,10 +69,10 @@ public class HierarchicalConstraints implements StateExtension {
         if(!st.getActionContaining(supporter).isPresent())
             return false;
 
-        Task t = timelineSupportConstraints.get(consumer.mID); // any supporter must be derived from this task
+        TNNode n = timelineSupportConstraints.get(consumer.mID); // any supporter must be derived from this node
         Action a = st.getActionContaining(supporter).get(); // the action that introduced the statement
 
-        return st.taskNet.isDescendantOf(a, t);
+        return st.taskNet.isDescendantOf(a, n);
     }
 
     public boolean isValidTaskSupport(Task t, Timeline consumer) {
@@ -73,11 +82,14 @@ public class HierarchicalConstraints implements StateExtension {
             return st.taskNet.isDescendantOf(t, timelineSupportConstraints.get(consumer.mID));
     }
 
-
     public boolean isWaitingForADecomposition(Timeline consumer) {
-        if(isConstrained(consumer))
-            return !st.taskNet.isSupported(timelineSupportConstraints.get(consumer.mID));
-        else
+        if(isConstrained(consumer)) {
+            TNNode n = timelineSupportConstraints.get(consumer.mID);
+            if(n.isActionCondition())
+                return !st.taskNet.isSupported(n.asActionCondition());
+            else
+                return false;
+        } else
             return false;
     }
 

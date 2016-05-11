@@ -1,6 +1,5 @@
 package fape.core.planning.timelines;
 
-import fape.core.planning.grounding.Fluent;
 import fape.exceptions.FAPEException;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -303,6 +302,19 @@ public class Timeline {
 
     public ChainComponent getChainComponent(int position) {
         return chain[position];
+    }
+
+    public boolean isLastComponent(ChainComponent cc) {
+        return getLast() == cc;
+    }
+
+    public ChainComponent getFollowingComponent(ChainComponent cc) {
+        assert !isLastComponent(cc);
+        for(int i=0 ; i<size() ; i++) {
+            if(get(i) == cc)
+                return get(i+1);
+        }
+        throw new FAPEException("No such component in this timeline");
     }
 
     /**

@@ -8,6 +8,7 @@ import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
 import fape.core.planning.search.flaws.flaws.mutexes.MutexesHandler;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
 import fape.util.Configuration;
 import fape.util.TinyLogger;
 import fape.util.Utils;
@@ -82,6 +83,14 @@ public class Planning {
                                 .setDefault("0.3")
                                 .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
                                 "If set to 0, search is a standard A*."),
+                        new QualifiedSwitch("action-insertion")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('i')
+                                .setLongFlag("action-insertion")
+                                .setDefault("dec")
+                                .setHelp("Defines which strategy to use for action insertion. \"dec\" will systematically decompose " +
+                                "the existing task network and only consider inserting action that are not task dependent. " +
+                                "\"local\" will insert actions locally as supporters for open goals before linking them to the task network."),
                         new QualifiedSwitch("reachability-graph")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
@@ -256,6 +265,17 @@ public class Planning {
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
 
+                switch(config.getString("action-insertion")) {
+                    case "local":
+                        options.actionInsertionStrategy = PlanningOptions.ActionInsertionStrategy.UP_OR_DOWN;
+                        break;
+                    case "dec":
+                        options.actionInsertionStrategy = PlanningOptions.ActionInsertionStrategy.DOWNWARD_ONLY;
+                        break;
+                    default:
+                        throw new FAPEException("Invalid option for action insertion: "+config.getString("action-insertion"));
+                }
+
                 if(config.getBoolean("reachability-graph") && !config.getString("reachability-graph").equals("none")) {
                     options.handlers.add(new DGHandler());
                     String degGraphOption = config.getString("reachability-graph");
@@ -270,7 +290,7 @@ public class Planning {
                             options.depGraphStyle = "base";
                             break;
                         default:
-                            assert degGraphOption.startsWith("maxiter") : "Invalid parameter for the dependency graph option.";
+                            assert degGraphOption.startsWith("maxiter") : "Invalid parameter for the dependency graph option: "+degGraphOption;
                             options.depGraphStyle = "full";
                             options.depGraphMaxIters = Integer.parseInt(degGraphOption.replaceFirst("maxiter", ""));
                     }

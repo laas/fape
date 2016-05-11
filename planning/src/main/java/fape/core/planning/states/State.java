@@ -4,6 +4,7 @@ import fape.core.inference.HReasoner;
 import fape.core.inference.Term;
 import fape.core.planning.grounding.*;
 import fape.core.planning.planner.Planner;
+import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.AllThreatFinder;
 import fape.core.planning.search.flaws.finders.FlawFinder;
@@ -50,7 +51,7 @@ import java.util.stream.Stream;
 
 public class State implements Reporter {
 
-    public static int idCounter = 0;
+    static int idCounter = 0;
     public final int mID;
     int depth;
 
@@ -775,11 +776,11 @@ public class State implements Reporter {
      * As a side effects, this method also cleans up the resolvers stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
-    public List<Resolver> getResolversForOpenGoal(Timeline og, boolean downwardOnly) {
+    public List<Resolver> getResolversForOpenGoal(Timeline og, PlanningOptions.ActionInsertionStrategy actionInsertionStrategy) {
         assert og.isConsumer();
         assert tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
 
-        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og, downwardOnly);
+        return getExtension(OpenGoalSupportersCache.class).getResolversForOpenGoal(og, actionInsertionStrategy);
     }
 
 

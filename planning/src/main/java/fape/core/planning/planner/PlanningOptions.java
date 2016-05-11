@@ -11,6 +11,8 @@ import java.util.List;
 
 public class PlanningOptions {
 
+    public enum ActionInsertionStrategy { DOWNWARD_ONLY, UP_OR_DOWN }
+
     public PlanningOptions(String[] planSelStrategies, String[] flawSelStrategies) {
         this.planSelStrategies = planSelStrategies;
         this.flawSelStrategies = flawSelStrategies;
@@ -48,6 +50,8 @@ public class PlanningOptions {
      * to the queue
      */
     public boolean useFastForward = false;
+
+    public ActionInsertionStrategy actionInsertionStrategy = ActionInsertionStrategy.DOWNWARD_ONLY;
 
     /**
      * If set to true, the choice of the flaw to solve next will be done on the command line.

@@ -19,6 +19,7 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
   }
 
   def asScala = s
+  def asJava = s.asJava
 
 
   def size(): Int = s.size
