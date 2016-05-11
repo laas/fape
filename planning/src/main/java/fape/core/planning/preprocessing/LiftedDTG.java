@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 
 public class LiftedDTG implements ActionSupporterFinder{
 
-    final AnmlProblem problem;
+    private final AnmlProblem problem;
 
-    Map<FluentType, List<SupportingAction>> potentialSupporters = null;
+    private Map<FluentType, List<SupportingAction>> potentialSupporters = null;
 
     public LiftedDTG(AnmlProblem pb) {
         this.problem = pb;
@@ -52,13 +52,13 @@ public class LiftedDTG implements ActionSupporterFinder{
         return this.getActionsSupporting(new FluentType(predicate, argTypes, db.getGlobalConsumeValue().getType()));
     }
 
-    public Collection<SupportingAction> getActionsSupporting(FluentType f) {
+    private Collection<SupportingAction> getActionsSupporting(FluentType f) {
         if(!potentialSupporters.containsKey(f))
             potentialSupporters.put(f, Collections.emptyList());
         return potentialSupporters.get(f);
     }
 
-    public Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
+    private Set<FluentType> getEffects(AbstractAction a, AbstractLogStatement s) {
         if(!s.hasEffectAtEnd())
             return Collections.emptySet();
 
@@ -80,7 +80,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         return allEffects;
     }
 
-    public Set<FluentType> getPreconditions(AbstractAction a, AbstractLogStatement s) {
+    private Set<FluentType> getPreconditions(AbstractAction a, AbstractLogStatement s) {
         if(!s.hasConditionAtStart())
             return Collections.emptySet();
 
@@ -112,7 +112,7 @@ public class LiftedDTG implements ActionSupporterFinder{
      * @param ft
      * @return
      */
-    public Set<FluentType> derivedSubTypes(FluentType ft) {
+    private Set<FluentType> derivedSubTypes(FluentType ft) {
         Set<FluentType> allFluents = new HashSet<>();
         if(ft == null) {
             return allFluents;
@@ -139,7 +139,7 @@ public class LiftedDTG implements ActionSupporterFinder{
      * @param ft
      * @return
      */
-    public Set<FluentType> derivedSuperTypes(FluentType ft) {
+    private Set<FluentType> derivedSuperTypes(FluentType ft) {
         Set<FluentType> allFluents = new HashSet<>();
         if(ft == null) {
             return allFluents;

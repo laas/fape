@@ -7,7 +7,7 @@ import fape.core.planning.states.State;
  * A resolver is recipe to fix a Flaw.
  * It provides an apply method that modifies a state so that the flaw is fixed.
  */
-public abstract class Resolver implements Comparable<Resolver> {
+public interface Resolver extends Comparable<Resolver> {
 
     /**
      * Modifies the state so that the flaw this resolver was created from is fixed.
@@ -19,13 +19,13 @@ public abstract class Resolver implements Comparable<Resolver> {
      * @return True if the resolvers was successfully applied. (Note that the state might still e inconsistent, the only
      *         guarantee is that the flaw is fixed.
      */
-    public abstract boolean apply(State st, Planner planner, boolean isFastForwarding);
+    boolean apply(State st, Planner planner, boolean isFastForwarding);
 
     /**
      * Should provide a comparison with another resolver of the same class.
      * This is used to sort resolvers for reproducibility.
      */
-    public abstract int compareWithSameClass(Resolver e);
+    int compareWithSameClass(Resolver e);
 
     /**
      * Provides a way to sort resolvers for reproducibility. This is not intended to give information
@@ -33,7 +33,7 @@ public abstract class Resolver implements Comparable<Resolver> {
      * order between two runs.
      */
     @Override
-    public int compareTo(Resolver o) {
+    default int compareTo(Resolver o) {
         String n1 = this.getClass().getCanonicalName();
         String n2 = o.getClass().getCanonicalName();
         int cmp = n1.compareTo(n2);

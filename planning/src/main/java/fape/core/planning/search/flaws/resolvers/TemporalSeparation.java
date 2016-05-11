@@ -4,7 +4,7 @@ import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 
-public class TemporalSeparation extends Resolver {
+public class TemporalSeparation implements Resolver {
 
     public final int firstDbID;
     public final int secondDbID;

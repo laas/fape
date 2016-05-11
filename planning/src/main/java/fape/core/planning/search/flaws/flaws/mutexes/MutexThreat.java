@@ -7,13 +7,14 @@ import fape.core.planning.search.flaws.resolvers.TemporalConstraint;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.FluentHolding;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-@Value
+@Value @EqualsAndHashCode(callSuper = false)
 public class MutexThreat extends Flaw {
 
     final FluentHolding cl1;

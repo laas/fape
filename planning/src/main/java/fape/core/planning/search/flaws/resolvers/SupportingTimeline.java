@@ -6,7 +6,7 @@ import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import planstack.anml.model.concrete.statements.LogStatement;
 
-public class SupportingTimeline extends Resolver {
+public class SupportingTimeline implements Resolver {
 
     /** Database that will support the consumer */
     public final int supporterID;
@@ -18,16 +18,12 @@ public class SupportingTimeline extends Resolver {
     public final int supportingComponent;
 
     /** Database that needs to be supported */
-    public final int consumerID;
+    private final int consumerID;
 
     public SupportingTimeline(int supporterID, int supportingChangeNumber, Timeline consumer) {
         this.supporterID = supporterID;
         supportingComponent = supportingChangeNumber;
         this.consumerID = consumer.mID;
-    }
-
-    public LogStatement getSupportingStatement(State st) {
-        return st.getTimeline(supporterID).getChangeNumber(supportingComponent).getFirst();
     }
 
     @Override

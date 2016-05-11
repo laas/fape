@@ -99,7 +99,7 @@ public class NeededObservationsFinder implements FlawFinder {
             throw new FAPEException("There should not be two needed observations flaws on the same state.");
         }
 
-        @AllArgsConstructor public final class NeededObsResolver extends Resolver {
+        @AllArgsConstructor final class NeededObsResolver implements Resolver {
             public final Set<TPRef> toObserve;
 
 

@@ -18,7 +18,7 @@ import planstack.anml.model.ParameterizedStateVariable;
 /**
  * Unifies both state variables. This is done in unifying all their parameters.
  */
-public class StateVariableBinding extends Resolver {
+public class StateVariableBinding implements Resolver {
 
     public final ParameterizedStateVariable a, b;
 

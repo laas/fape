@@ -29,10 +29,6 @@ public class TieBreaker implements FlawComparator {
             return -1;
         if(f2 instanceof Threat && !(f1 instanceof Threat))
             return 1;
-        if(f1 instanceof ResourceFlaw && !(f2 instanceof ResourceFlaw))
-            return -1;
-        if(f2 instanceof ResourceFlaw && !(f1 instanceof ResourceFlaw))
-            return 1;
         if(f1 instanceof UnboundVariable && !(f2 instanceof UnboundVariable))
             return -1;
         if(f2 instanceof UnboundVariable && !(f1 instanceof UnboundVariable))

@@ -7,7 +7,7 @@ import planstack.anml.model.concrete.VarRef;
 /**
  * Simply adds a difference constraint between the two variables.
  */
-public class BindingSeparation extends Resolver {
+public class BindingSeparation implements Resolver {
 
     public final VarRef a, b;
 

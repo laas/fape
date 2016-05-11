@@ -32,9 +32,6 @@ public class FlawCompFactory {
                 case "lcf":
                     compList.add(new LeastCommitingFirst(st, planner));
                     break;
-                case "rfp":
-                    compList.add(new ResourceFlawPreference());
-                    break;
                 case "hier":
                     compList.add(new HierarchicalFirstComp(st, planner));
                     break;

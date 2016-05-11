@@ -7,7 +7,7 @@ import lombok.Value;
 import planstack.anml.model.concrete.Task;
 
 @Value
-public class FutureTaskSupport extends Resolver {
+public class FutureTaskSupport implements Resolver {
 
     private final Timeline consumer;
     private final Task task;

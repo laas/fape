@@ -10,21 +10,14 @@ import java.util.List;
 /**
  * Enforces a temporal constraints between two time points.
  */
-public class TemporalConstraint extends Resolver {
+public class TemporalConstraint implements Resolver {
 
-    public final List<TPRef> firsts, seconds;
-    public final int min, max;
+    private final List<TPRef> firsts, seconds;
+    private final int min, max;
 
     public TemporalConstraint(List<TPRef> firsts, List<TPRef> seconds, int min, int max) {
         this.firsts = firsts;
         this.seconds = seconds;
-        this.min = min;
-        this.max = max;
-    }
-
-    public TemporalConstraint(TPRef first, TPRef second, int min, int max) {
-        this.firsts = Collections.singletonList(first);
-        this.seconds = Collections.singletonList(second);
         this.min = min;
         this.max = max;
     }

@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Binds a variable to the given value.
  */
-public class VarBinding extends Resolver {
+public class VarBinding implements Resolver {
 
     public final VarRef var;
     public final String value;

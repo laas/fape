@@ -8,7 +8,7 @@ import planstack.anml.model.concrete.Task;
 /**
  * Mark an action (already in the plan) as supporting an action condition.
  */
-public class ExistingTaskSupporter extends Resolver {
+public class ExistingTaskSupporter implements Resolver {
 
     /** Unsupported task */
     public final Task task;

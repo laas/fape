@@ -10,7 +10,7 @@ import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.Task;
 
 @Value
-public class FutureActionSupport extends Resolver {
+public class FutureActionSupport implements Resolver {
 
     private final Timeline consumer;
     private final AbstractAction act;

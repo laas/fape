@@ -16,7 +16,7 @@ import planstack.anml.model.concrete.statements.Statement;
  * Optionally, a decomposition ID might be provided (decID != -1). If this is the case,
  * the supporting statement will be taken from the statements of the decomposition.
  */
-public class SupportingAction extends Resolver {
+public class SupportingAction implements Resolver {
 
     public final AbstractAction act;
     public final int consumerID;

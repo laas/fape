@@ -10,7 +10,7 @@ import planstack.anml.model.concrete.Task;
 /**
  * Inserts a new action to support an action condition.
  */
-public class NewTaskSupporter extends Resolver {
+public class NewTaskSupporter implements Resolver {
 
     /** Action condition to support */
     public final Task unrefined;

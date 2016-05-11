@@ -8,7 +8,7 @@ import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Factory;
 import planstack.anml.model.concrete.Task;
 
-public class SupportingTaskDecomposition extends Resolver {
+public class SupportingTaskDecomposition implements Resolver {
 
     public final Task task;
     public final AbstractAction abs;
