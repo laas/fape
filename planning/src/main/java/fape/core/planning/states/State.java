@@ -666,6 +666,10 @@ public class State implements Reporter {
         return flaws;
     }
 
+    public int getMakespan() {
+        return getAllActions().stream().mapToInt(a -> getEarliestStartTime(a.end())).max().orElse(0);
+    }
+
     public TimedCanvas getCanvasOfActions() {
         List<Action> acts = new LinkedList<>(getAllActions());
         Collections.sort(acts, (Action a1, Action a2) ->
@@ -836,6 +840,7 @@ public class State implements Reporter {
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
     public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
+    public int getMaxEarliestStartTime(List<TPRef> as) { return as.stream().mapToInt(a -> getEarliestStartTime(a)).max().orElse(0); }
     public int getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }

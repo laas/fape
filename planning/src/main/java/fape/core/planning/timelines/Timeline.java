@@ -191,7 +191,7 @@ public class Timeline {
     /**
      * Returns the index of the chain component cc.
      */
-    public int indexOf(ChainComponent cc) {
+    int indexOf(ChainComponent cc) {
         for(int ct = 0; ct < chain.length; ct++) {
             if (chain[ct].equals(cc)) {
                 return ct;
@@ -203,20 +203,13 @@ public class Timeline {
     /**
      * Returns the index of the chain component containing s.
      */
-    public int indexOfContainer(LogStatement s) {
+    int indexOfContainer(LogStatement s) {
         for(int ct = 0; ct < chain.length; ct++) {
             if (chain[ct].contains(s)) {
                 return ct;
             }
         }
         throw new FAPEException("This statement is not present in the database.");
-    }
-
-    /**
-     * @return
-     */
-    public Timeline deepCopy() {
-        return this;
     }
 
     /**
@@ -269,6 +262,18 @@ public class Timeline {
         assert chain.length > 0 : "Database is empty.";
         assert chain[0].size() == 1 : "More than one statement in the first component. Should use getFirstTimepoints()";
         return chain[0].getConsumeTimePoint();
+    }
+
+    /** Returns a group of timepoints that must be before any change statement occuring after this component */
+    public List<TPRef> timepointsPrecedingNextChange(ChainComponent cc) {
+        if(!cc.change) {
+            return cc.getEndTimepoints();
+        } else if(isLastComponent(cc) || getFollowingComponent(cc).change) {
+            return cc.getEndTimepoints();
+        } else {
+            // its a change that supports some persistences
+            return getFollowingComponent(cc).getEndTimepoints();
+        }
     }
 
     /**
@@ -332,10 +337,6 @@ public class Timeline {
         return chain[chain.length-1].getSupportValue();
     }
 
-    /**
-     *
-     * @return
-     */
     public VarRef getGlobalConsumeValue() {
         return chain[0].getConsumeValue();
     }

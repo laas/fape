@@ -189,7 +189,6 @@ action adapt_arms(Robot r, ArmPosture pose) {
     [start] arm.posture != ArmCarryPosture;
     [all] move_arms_to_carryposture(r);
   };
-
 };
 
 action arms_assume_driving_pose(Robot r) {

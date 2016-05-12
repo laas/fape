@@ -3,6 +3,8 @@ package fape.core.planning.states;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.core.planning.timelines.TimelinesManager;
+import fr.laas.fape.exceptions.InconsistencyException;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
@@ -16,12 +18,19 @@ import java.util.stream.Stream;
 
 public class CausalNetworkExt implements StateExtension {
 
+    @Value @EqualsAndHashCode(callSuper = false)
+    private class NoCompatibleTimelineForOpenGoal extends InconsistencyException {
+        final Timeline tl;
+    }
+
     @Value
     public static class Event {
         public final int supporterID;
         public final int changeNumber;
         public final LogStatement statement;
     }
+    private Timeline timelineOf(Event e) { return container.getTimeline(e.getSupporterID()); }
+    private ChainComponent componentOf(Event e) { return timelineOf(e).getChangeNumber(e.getChangeNumber()); }
 
     private final State container;
 
@@ -162,6 +171,7 @@ public class CausalNetworkExt implements StateExtension {
                     continue;
                 }
 
+                // when possible infer temporal constraints on the earliest appearance of the open goal
                 if(container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
                     // update potential threats
                     ISet<Integer> initialList = possiblyThreateningTimelines.containsKey(pis) ?
@@ -195,8 +205,32 @@ public class CausalNetworkExt implements StateExtension {
                 possiblyThreateningTimelines.remove(pis);
             }
             potentialSupporters.put(tlID, potentialSupporters.get(tlID).withoutAll(toRemove));
-        }
 
+            // infer any possible temporal constraints from the need for indirect supporters
+            if(!container.pl.preprocessor.getHierarchicalEffects().hasAssignmentsInAction(tl.stateVariable.func())) {
+                // open goal necessarily has an indirect supporter
+                if(potentialSupporters.get(tlID).isEmpty()) {
+                    throw new NoCompatibleTimelineForOpenGoal(tl);
+                } else if (potentialSupporters.get(tlID).size() <= 1) {
+                    Event e = potentialSupporters.get(tlID).head();
+                    List<TPRef> timepoints = tl.hasSinglePersistence() ?
+                            componentOf(e).getEndTimepoints() : timelineOf(e).timepointsPrecedingNextChange(componentOf(e));
+                    container.enforceBefore(timepoints, tl.getConsumeTimePoint());
+                } else {
+                    if(tl.hasSinglePersistence()) {
+                        int earliest = potentialSupporters.get(tlID).stream()
+                                .mapToInt(event -> container.getMaxEarliestStartTime(componentOf(event).getEndTimepoints()))
+                                .min().orElse(0);
+                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                    } else {
+                        int earliest = potentialSupporters.get(tlID).stream()
+                                .mapToInt(event -> container.getMaxEarliestStartTime(timelineOf(event).timepointsPrecedingNextChange(componentOf(event))))
+                                .min().orElse(0);
+                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                    }
+                }
+            }
+        }
 
         addedTimelines.clear();
         extendedTimelines.clear();
@@ -216,10 +250,7 @@ public class CausalNetworkExt implements StateExtension {
             endTimepoints = Collections.singletonList(e.getStatement().end());
         } else {
             ChainComponent eventComp = tl.getChangeNumber(e.getChangeNumber());
-            if(tl.isLastComponent(eventComp) || !tl.getFollowingComponent(eventComp).change)
-                endTimepoints = eventComp.getEndTimepoints();
-            else
-                endTimepoints = eventComp.getEndTimepoints();
+            endTimepoints = tl.timepointsPrecedingNextChange(eventComp);
         }
 
         boolean temporallySeparable =

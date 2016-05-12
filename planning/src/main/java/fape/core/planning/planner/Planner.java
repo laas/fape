@@ -18,6 +18,7 @@ import fape.exceptions.FlawOrderingAnomaly;
 import fape.gui.SearchView;
 import fape.util.TinyLogger;
 import fape.util.Utils;
+import fr.laas.fape.exceptions.InconsistencyException;
 import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
 
@@ -244,113 +245,127 @@ public class Planner {
      * @return      All consistent children as a result of the expansion.
      */
     public List<SearchNode> expand(SearchNode st) {
-        if(options.displaySearch)
-            searchView.setCurrentFocus(st);
+        try {
+            if (options.displaySearch)
+                searchView.setCurrentFocus(st);
 
-        assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
+            assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
-        if(st.getDepth() == 0 && st.getState().addableActions != null) {
-            assert st.getState().getAllActions().isEmpty();
-            preprocessor.restrictPossibleActions(st.getState().addableActions);
-        }
+            if (st.getDepth() == 0 && st.getState().addableActions != null) {
+                assert st.getState().getAllActions().isEmpty();
+                preprocessor.restrictPossibleActions(st.getState().addableActions);
+            }
 
-        numExpandedStates++;
+            numExpandedStates++;
 
-        TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
+            TinyLogger.LogInfo(st.getState(), "\nCurrent state: [%s]", st.getID());
 
-        List<Flaw> flaws = getFlaws(st);
-        assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
+            List<Flaw> flaws = getFlaws(st);
+            assert !flaws.isEmpty() : "Cannot expand a flaw free state. It is already a solution.";
 
-        // just take the first flaw and its resolvers (unless the flaw is chosen on command line)
-        Flaw f;
-        if(options.chooseFlawManually) {
-            System.out.print("STATE :" + st.getID() + "\n");
-            System.out.println(Printer.temporalDatabaseManager(st.getState()));
-            for(int i=0 ; i<flaws.size() ; i++)
-                System.out.println("["+i+"] "+Printer.p(st.getState(), flaws.get(i)));
-            int choosen = Utils.readInt();
-            f = flaws.get(choosen);
-        } else {
-            f = flaws.get(0);
-        }
-        List<Resolver> resolvers = f.getResolvers(st.getState(), this);
-        // make sure resolvers are always in the same order (for reproducibility)
-        Collections.sort(resolvers);
+            // just take the first flaw and its resolvers (unless the flaw is chosen on command line)
+            Flaw f;
+            if (options.chooseFlawManually) {
+                System.out.print("STATE :" + st.getID() + "\n");
+                System.out.println(Printer.temporalDatabaseManager(st.getState()));
+                for (int i = 0; i < flaws.size(); i++)
+                    System.out.println("[" + i + "] " + Printer.p(st.getState(), flaws.get(i)));
+                int choosen = Utils.readInt();
+                f = flaws.get(choosen);
+            } else {
+                f = flaws.get(0);
+            }
+            List<Resolver> resolvers = f.getResolvers(st.getState(), this);
+            // make sure resolvers are always in the same order (for reproducibility)
+            Collections.sort(resolvers);
 
 
+            if (options.displaySearch)
+                searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
 
-        if(options.displaySearch)
-            searchView.setProperty(st, SearchView.SELECTED_FLAW, Printer.p(st.getState(), f));
+            if (resolvers.isEmpty()) {
+                // dead end, keep going
+                TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
+                if (options.displaySearch) {
+                    searchView.setProperty(st, SearchView.COMMENT, "  Dead-end, flaw without resolvers: " + flaws.get(0));
+                    searchView.setDeadEnd(st);
+                }
+                st.setExpanded();
+                return Collections.emptyList();
+            }
 
-        if (resolvers.isEmpty()) {
-            // dead end, keep going
-            TinyLogger.LogInfo(st.getState(), "  Dead-end, flaw without resolvers: %s", flaws.get(0));
-            if(options.displaySearch) {
-                searchView.setProperty(st, SearchView.COMMENT, "  Dead-end, flaw without resolvers: "+ flaws.get(0));
-                searchView.setDeadEnd(st);
+            TinyLogger.LogInfo(st.getState(), " Flaw: %s", f);
+
+            List<SearchNode> children = new LinkedList<>();
+
+            final Object flawsHash = Flaws.hash(flaws);
+
+            // compute all valid children
+            for (int resolverID = 0; resolverID < resolvers.size(); resolverID++) {
+                SearchNode next = new SearchNode(st);
+                try {
+                    final int currentResolver = resolverID;
+                    next.addOperation(s -> {
+                        List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
+                        assert Flaws.hash(fs).equals(flawsHash) : "There is a problem with the generated flaws.";
+
+                        Flaw selectedFlaw = fs.get(0);
+                        List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
+                        Collections.sort(possibleResolvers);
+                        Resolver res;
+                        try {
+                            res = possibleResolvers.get(currentResolver);
+                        } catch (IndexOutOfBoundsException e) {
+                            // apparently we tried to access a resolver that did not exists, either a
+                            // resolver disapeared or the flaw is not the one we expected
+                            throw new FlawOrderingAnomaly(flaws, 0, currentResolver);
+                        }
+                        if (!applyResolver(s, res, false))
+                            s.setDeadEnd();
+                        else {
+                            s.checkConsistency();
+                            if (s.isConsistent() && options.useFastForward)
+                                fastForward(s, 10);
+                        }
+                        s.checkConsistency();
+                    });
+                    if (options.displaySearch)
+                        searchView.addNode(next);
+                    boolean success = next.getState().isConsistent();
+                    String hrComment = "";
+
+                    if (!success)
+                        hrComment = "Non consistent resolver application or error while fast-forwarding.";
+
+                    if (options.displaySearch) {
+                        searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st.getState(), resolvers.get(currentResolver)));
+                        searchView.setProperty(next, SearchView.COMMENT, hrComment);
+                    }
+                    if (success) {
+                        children.add(next);
+                        numGeneratedStates++;
+                    } else {
+                        TinyLogger.LogInfo(st.getState(), "     Dead-end reached for state: %s", next.getID());
+                        if (options.displaySearch)
+                            searchView.setDeadEnd(next);
+                        //inconsistent state, doing nothing
+                    }
+                } catch (InconsistencyException e) {
+                    if(options.displaySearch) {
+                        searchView.setDeadEnd(next);
+                        searchView.setProperty(next, SearchView.COMMENT, e.toString());
+                    }
+                }
             }
             st.setExpanded();
+            return children;
+        } catch (InconsistencyException e) {
+            if(options.displaySearch) {
+                searchView.setDeadEnd(st);
+                searchView.setProperty(st, SearchView.COMMENT, e.toString());
+            }
             return Collections.emptyList();
         }
-
-        TinyLogger.LogInfo(st.getState(), " Flaw: %s", f);
-
-        List<SearchNode> children = new LinkedList<>();
-
-        final Object flawsHash = Flaws.hash(flaws);
-
-        // compute all valid children
-        for(int resolverID=0 ; resolverID < resolvers.size() ; resolverID++) {
-            SearchNode next = new SearchNode(st);
-            final int currentResolver = resolverID;
-            next.addOperation(s -> {
-                List<Flaw> fs = s.getFlaws(options.flawFinders, flawComparator(s));
-                assert Flaws.hash(fs).equals(flawsHash) : "There is a problem with the generated flaws.";
-
-                Flaw selectedFlaw = fs.get(0);
-                List<Resolver> possibleResolvers = selectedFlaw.getResolvers(s, this);
-                Collections.sort(possibleResolvers);
-                Resolver res;
-                try {
-                    res = possibleResolvers.get(currentResolver);
-                } catch (IndexOutOfBoundsException e) {
-                    // apparently we tried to access a resolver that did not exists, either a
-                    // resolver disapeared or the flaw is not the one we expected
-                    throw new FlawOrderingAnomaly(flaws, 0, currentResolver);
-                }
-                if(!applyResolver(s, res, false))
-                    s.setDeadEnd();
-                else {
-                    s.checkConsistency();
-                    if(s.isConsistent() && options.useFastForward)
-                        fastForward(s, 10);
-                }
-                s.checkConsistency();
-            });
-
-            boolean success = next.getState().isConsistent();
-            String hrComment = "";
-
-            if(!success)
-                hrComment = "Non consistent resolver application or error while fast-forwarding.";
-
-            if(options.displaySearch) {
-                searchView.addNode(next);
-                searchView.setProperty(next, SearchView.LAST_APPLIED_RESOLVER, Printer.p(st.getState(), resolvers.get(currentResolver)));
-                searchView.setProperty(next, SearchView.COMMENT, hrComment);
-            }
-            if (success) {
-                children.add(next);
-                numGeneratedStates++;
-            } else {
-                TinyLogger.LogInfo(st.getState(), "     Dead-end reached for state: %s", next.getID());
-                if (options.displaySearch)
-                    searchView.setDeadEnd(next);
-                //inconsistent state, doing nothing
-            }
-        }
-        st.setExpanded();
-        return children;
     }
 
     /**

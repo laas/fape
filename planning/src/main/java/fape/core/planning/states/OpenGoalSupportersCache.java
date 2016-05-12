@@ -113,7 +113,7 @@ class OpenGoalSupportersCache implements StateExtension {
 
         HierarchicalEffects effs = container.pl.preprocessor.getHierarchicalEffects();
 
-        Stream<FutureTaskSupport> taskSupports = container.getOpenTasks().stream()
+        Stream<FutureTaskSupport> taskSupports = container.getOpenTasks().stream() //TODO: only consider possible decompositions
                 .filter(t -> effs.canIndirectlySupport(og, t, container))
                 .filter(t -> container.getHierarchicalConstraints().isValidTaskSupport(t,og))
                 .map(t -> new FutureTaskSupport(og, t));
@@ -124,6 +124,7 @@ class OpenGoalSupportersCache implements StateExtension {
                         container.pb.abstractActions().stream()
                                 .filter(act -> !act.mustBeMotivated())
                                 .filter(act -> effs.canSupport(og, act, container))
+                                .filter(act -> container.addableTemplates == null || container.addableTemplates.contains(act))
                                 .map(act -> new FutureActionSupport(og, act));
 
         Stream<SupportingTimeline> timelineSupport = container.getExtension(CausalNetworkExt.class)

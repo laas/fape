@@ -19,14 +19,13 @@ import java.util.stream.Stream;
 
 public class HierarchicalEffects {
 
-    @Value public class StatementPointer {
+    @Value private class StatementPointer {
         final AbstractAction act;
         final LStatementRef ref;
         final boolean isTransition;
     }
 
-    @Value
-    private class Effect {
+    @Value private class Effect {
         @Value class Fluent {
             final Function func;
             final List<VarPlaceHolder> args;
@@ -38,9 +37,9 @@ public class HierarchicalEffects {
         final Fluent f;
         final List<StatementPointer> origin;
 
-        public Effect(int delayFromStart, int delayToEnd,
-                      Function func, List<VarPlaceHolder> args, VarPlaceHolder value,
-                      List<StatementPointer> origin) {
+        Effect(int delayFromStart, int delayToEnd,
+               Function func, List<VarPlaceHolder> args, VarPlaceHolder value,
+               List<StatementPointer> origin) {
             this.delayFromStart = delayFromStart;
             this.delayToEnd = delayToEnd;
             this.f = new Fluent(func, args, value);
@@ -296,5 +295,15 @@ public class HierarchicalEffects {
                 .filter(effect -> effect.f.func == og.stateVariable.func())
                 .map(effect -> DomainList.from(effect.f, st))
                 .anyMatch(domainList -> domainList.compatible(dl));
+    }
+
+    private HashMap<Function,Boolean> _hasAssignmentInAction = new HashMap<>();
+
+    public boolean hasAssignmentsInAction(Function func) {
+        return _hasAssignmentInAction.computeIfAbsent(func, f ->
+                pb.abstractActions().stream().flatMap(a -> effectsOf(a).stream())
+                        .filter(effect -> effect.f.func == f)
+                        .flatMap(effect -> effect.origin.stream())
+                        .anyMatch(statementPointer -> !statementPointer.isTransition));
     }
 }

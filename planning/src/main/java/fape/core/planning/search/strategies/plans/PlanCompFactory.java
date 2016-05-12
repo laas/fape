@@ -44,6 +44,9 @@ public class PlanCompFactory {
                 case "minspan":
                     compList.add(new MinSpanTreeComp());
                     break;
+                case "makespan":
+                    compList.add(new MakespanComp());
+                    break;
                 default:
                     if(compID.startsWith("tsp-"))
                         compList.add(new Htsp(Htsp.DistanceEvaluationMethod.valueOf(compID.replace("tsp-",""))));
