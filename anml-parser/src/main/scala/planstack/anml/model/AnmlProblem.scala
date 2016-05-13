@@ -139,13 +139,15 @@ class AnmlProblem extends TemporalInterval {
       val f = new File(filename)
       f.getName.split("\\.").toList match {
         case base :: num :: "pb" :: "anml" :: Nil =>
-          addAnml(ANMLFactory.parseAnmlFromFile(new File(f.getParentFile, base+".dom.anml").getAbsolutePath))
+          val domainFile = new File(f.getParentFile, base+".dom.anml")
+          addAnml(ANMLFactory.parseAnmlFromFiles(List(domainFile.getAbsolutePath, filename)))
         case _ =>
           throw new ANMLException("Error: file name does not follow the convention: "+filename+"."+
            "It should be in the form domainName.xxx.pb.anml and have an associated domainName.dom.anml file.")
       }
+    } else {
+      addAnml(ANMLFactory.parseAnmlFromFile(filename))
     }
-    addAnml(ANMLFactory.parseAnmlFromFile(filename))
   }
 
   /**

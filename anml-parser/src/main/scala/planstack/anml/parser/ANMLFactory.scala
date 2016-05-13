@@ -32,6 +32,17 @@ object ANMLFactory {
 
   def lines(in:String) = in.replaceAll("""//[^\n]*""", "")
 
+  def parseAnmlFromFiles(files: List[String]) = {
+    val anmlString =
+      files.foldLeft("")((acc,curFile) => {
+        val reader = scala.io.Source.fromFile(curFile)
+        val fileContent = reader.mkString
+        reader.close()
+        acc+"\n"+fileContent
+      })
+    parseAnmlString(anmlString)
+  }
+
   def parseAnmlFromFile(file:String) : ParseResult = {
     val reader = scala.io.Source.fromFile(file)
     val anmlString = reader.mkString
@@ -41,7 +52,7 @@ object ANMLFactory {
   }
 
   def parseAnmlString(anmlString:String) : ParseResult = {
-    val commentFree = withoutComments(anmlString)
+    val commentFree = withoutComments(anmlString+"\n")
 
     parseAll(anml, commentFree) match {
       case Success(res, _) => new ParseResult(res)
