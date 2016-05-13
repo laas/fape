@@ -135,53 +135,51 @@ action openpassdoor (robots r, doors d) {
   };
 };
 
+action gothrough(robots r, places from, places to, doors d) {
+  motivated;
+  connect(d, from, to);
+  :decomposition { // r empty handed
+    [start] r.grasp == empty;
+    [all] openpassdoor(r,d);
+  };
+  :decomposition { // r not empty handed
+    constant robots helper;
+    [start] r.grasp != empty;
+    [start] helper.busy == false;
+    [all] h: gethelp(helper,d);
+    [start(h),end(h)] contains passthru(r,d);
+  };
+};
+
+// additional fluent to make sure the goto method terminates
+fluent boolean visited(robots r, places p);
+forall(robots r, places p) { [start] visited(r, p) := false; };
+
 action goto (robots r, places from, places to) {
   motivated ;
   [start] r.loc == from ;
+
+  // those make sure we do not visit the same place twice with the same goto
+  [start-1,start] visited(r,from) == false :-> true;
+  [end,end+1] visited(r,from) == true :-> false;
+  
   :decomposition {
     from == to;
   };
   :decomposition {
-    adjacent(from, to);
-    [all] move(r, from, to);
-  };
-  :decomposition { //r empty handed
-    constant doors d;
-    connect(d, from, to);
-    [start] r.grasp == empty ;
-    [all] openpassdoor(r, d);
-  };
-  :decomposition { // r not empty handed
-    constant doors d;
-    constant objects o;
-    constant robots helper ;
-    connect(d, from, to);
-    [start] {
-      r.grasp == o ;
-      helper.busy == false;};//choose the helper ?
-    o != empty ;
-    [all] contains {
-    s0: gethelp(helper, d);
-    s1 : passthru(r, d);} ;
-    start(s0) <= start(s1) ;
-    end(s1) <= end(s0);    
-  };
-  :decomposition { // simple recursion
     constant places next ;
     adjacent(from, next) ;
-    [all] contains { 
-    s1 : move(r, from, next);
-    s2 : goto(r, next, to);};
-    end(s1) <= start(s2);
+    [all] ordered( 
+		  move(r, from, next),
+		  goto(r, next, to));
   };
-  :decomposition { // double recursion
+  :decomposition {
     constant places next ;
     constant doors d;
     connect(d, from, next) ;
-    [all] contains {
-    s1 : goto(r, from, next);
-    s2 : goto(r, next, to);};
-    end(s1) <= start(s2);
+    [all] ordered(
+		  gothrough(r, from, next, d),
+		  goto(r, next, to));
   };
 };
 
