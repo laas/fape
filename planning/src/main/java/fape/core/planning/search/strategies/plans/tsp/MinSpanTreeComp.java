@@ -27,6 +27,6 @@ public class MinSpanTreeComp extends PartialPlanComparator {
 
     @Override
     public float hc(State st) {
-        return getExt(st).getCostToGo();
+        return getExt(st).getCostToGo() + st.tdb.getConsumers().size() + st.getAllThreats().size();
     }
 }

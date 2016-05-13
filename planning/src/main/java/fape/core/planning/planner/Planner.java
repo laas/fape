@@ -249,6 +249,10 @@ public class Planner {
             if (options.displaySearch)
                 searchView.setCurrentFocus(st);
 
+            if(TinyLogger.logging) {
+                TinyLogger.LogInfo(Printer.temporalDatabaseManager(st.getState()));
+            }
+
             assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
 
             if (st.getDepth() == 0 && st.getState().addableActions != null) {
