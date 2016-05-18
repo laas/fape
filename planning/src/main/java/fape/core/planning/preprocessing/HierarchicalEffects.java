@@ -226,10 +226,8 @@ public class HierarchicalEffects {
 
     /** This method recursively populates the set of subtasks with all subtasks of t (including t). */
     private void populateSubtasksOf(Subtask t, Set<Subtask> allsubtasks) {
-        for(Subtask prev : allsubtasks) {
-            if(t.taskName.equals(prev.taskName)
-                    && t.args.equals(prev.args)
-                    && prev.delayFromStart >= t.delayFromStart) {
+        for(Subtask prev : new ArrayList<>(allsubtasks)) {
+            if(t.taskName.equals(prev.taskName) && t.args.equals(prev.args)) {
                 allsubtasks.remove(prev);
                 Subtask merged = new Subtask(
                         Math.min(t.delayFromStart, prev.delayFromStart),
@@ -237,7 +235,8 @@ public class HierarchicalEffects {
                         t.taskName,
                         t.args);
                 allsubtasks.add(merged);
-                return;
+                if(prev.delayFromStart <= t.delayFromStart)
+                    return; // previous was already better
             }
         }
         allsubtasks.add(t);

@@ -135,53 +135,6 @@ action openpassdoor (robots r, doors d) {
   };
 };
 
-action gothrough(robots r, places from, places to, doors d) {
-  motivated;
-  connect(d, from, to);
-  :decomposition { // r empty handed
-    [start] r.grasp == empty;
-    [all] openpassdoor(r,d);
-  };
-  :decomposition { // r not empty handed
-    constant robots helper;
-    [start] r.grasp != empty;
-    [start] helper.busy == false;
-    [all] h: gethelp(helper,d);
-    [start(h),end(h)] contains passthru(r,d);
-  };
-};
-
-// additional fluent to make sure the goto method terminates
-fluent boolean visited(robots r, places p);
-forall(robots r, places p) { [start] visited(r, p) := false; };
-
-action goto (robots r, places from, places to) {
-  motivated ;
-  [start] r.loc == from ;
-
-  // those make sure we do not visit the same place twice with the same goto
-  [start-1,start] visited(r,from) == false :-> true;
-  [end,end+1] visited(r,from) == true :-> false;
-  
-  :decomposition {
-    from == to;
-  };
-  :decomposition {
-    constant places next ;
-    adjacent(from, next) ;
-    [all] ordered( 
-		  move(r, from, next),
-		  goto(r, next, to));
-  };
-  :decomposition {
-    constant places next ;
-    constant doors d;
-    connect(d, from, next) ;
-    [all] ordered(
-		  gothrough(r, from, next, d),
-		  goto(r, next, to));
-  };
-};
 
 // r helps another robot
 action gethelp (robots r, doors d) {
@@ -209,6 +162,54 @@ action gethelp (robots r, doors d) {
     end(s1) <= start(s2);
   };
 };
+
+action gothrough(robots r, places from, places to, doors d) {
+  motivated;
+  connect(d, from, to);
+  :decomposition { // r empty handed
+    [start] r.grasp == empty;
+    [all] openpassdoor(r,d);
+  };
+  :decomposition { // r not empty handed
+    constant robots helper;
+    [start] r.grasp != empty;
+    [start] helper.busy == false;
+    [all] h: gethelp(helper,d);
+    [start(h),end(h)] contains passthru(r,d);
+  };
+};
+
+// additional fluent to make sure the goto method terminates
+fluent boolean visited(robots r, places p);
+forall(robots r, places p) { [start] visited(r, p) := false; };
+
+action goto (robots r, places from, places to) {
+  motivated ;
+  [start] r.loc == from ;
+
+  // those make sure we do not visit the same place twice with the same goto
+  [all] visited(r,from) == false :-> false;
+  
+  :decomposition {
+    from == to;
+  };
+  :decomposition {
+    constant places next ;
+    adjacent(from, next) ;
+    [all] ordered( 
+		  move(r, from, next),
+		  goto(r, next, to));
+  };
+  :decomposition {
+    constant places next ;
+    constant doors d;
+    connect(d, from, next) ;
+    [all] ordered(
+		  gothrough(r, from, next, d),
+		  goto(r, next, to));
+  };
+};
+
   
 action fetch (objects o, rooms p) {
   motivated ;
