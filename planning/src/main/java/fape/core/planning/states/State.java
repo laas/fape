@@ -214,6 +214,10 @@ public class State implements Reporter {
     @SuppressWarnings("rawtypes")
     public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
 
+    public void notify(Handler.StateLifeTime stateLifeTime) {
+        for(StateExtension ext : extensions)
+            ext.notify(stateLifeTime);
+    }
 
     /**
      * Returns True if the state is consistent (ie. stn and bindings

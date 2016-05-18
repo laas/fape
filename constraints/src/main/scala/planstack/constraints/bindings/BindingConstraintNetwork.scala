@@ -88,6 +88,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   protected[bindings] def allVars = variables
 
   def domID(v: VarRef) : DomID = domIds(v.id)
+  def rawDomainByID(id: DomID) = domains(id)
 
   private def allDomIds = vars.indices.filterNot(unusedDomainIds.contains)
 
@@ -127,8 +128,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   }
 
   private def domainChanged(id: DomID, causedByExtended: Option[Constraint]): Unit = {
-    if(domains(id).size() == 0)
+    if(domains(id).size() == 0) {
       hasEmptyDomains = true
+      throw new InconsistentBindingConstraintNetwork(vars(id).toList.asJava)
+    }
 
     if(domains(id).size() == 1) {
       // check difference constraints
@@ -139,9 +142,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
            if domains(o).contains(uniqueValue))
       {
         domains(o) = domains(o).remove(uniqueValue)
-
-        if (domains(o).isEmpty)
-          hasEmptyDomains = true
 
         domainChanged(o, None)
       }
@@ -248,8 +248,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     restrictDomain(v, intValuesAsDomain(toValues))
 
   def addSeparationConstraint(a: VarRef, b: VarRef): Unit = {
-    if(domID(a) == domID(b))
+    if(domID(a) == domID(b)) {
       hasEmptyDomains = true
+      throw new InconsistentBindingConstraintNetwork(List(a, b).asJava)
+    }
 
     different(domID(a))(domID(b)) = true
     different(domID(b))(domID(a)) = true
@@ -273,26 +275,6 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def checkConstraint(constraint: Constraint): Unit = {
     constraint.propagate(this)
-  }
-
-  private def checkExtendedConstraint(c: NAryConstraint): Unit = {
-    val domainsIDs = c.vars.map(v => domID(v))
-
-    // process this constraint // TODO check if there is anything new since last time
-    val ext = c.allowedTuple
-    val initialDomains = domainsIDs.map(id => domains(id).values()).toArray
-    assert(initialDomains.nonEmpty, "Domain of constraint "+ext.name+" is empty")
-    val restrictedDomains = ext.restrictedDomains(initialDomains)
-
-    for(i <- initialDomains.indices) {
-      if(initialDomains(i).size() > restrictedDomains(i).size()) {
-        domains(domainsIDs(i)) = new Domain(restrictedDomains(i))
-        if(domains(domainsIDs(i)).isEmpty)
-          hasEmptyDomains = true
-
-        domainChanged(domainsIDs(i), causedByExtended = Some(c))
-      }
-    }
   }
 
   def domainAsString(v: VarRef): String =

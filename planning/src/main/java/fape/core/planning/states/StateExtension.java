@@ -1,5 +1,6 @@
 package fape.core.planning.states;
 
+import fape.core.planning.search.Handler;
 import fape.core.planning.timelines.Timeline;
 
 /**
@@ -16,4 +17,6 @@ public interface StateExtension {
     default void timelineAdded(Timeline tl) {}
     default void timelineRemoved(Timeline tl) {}
     default void timelineExtended(Timeline tl) {}
+
+    default void notify(Handler.StateLifeTime stateLifeTime) {}
 }

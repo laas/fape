@@ -244,7 +244,7 @@ public class SearchView {
         try {
             h.append(planner.stateComparator().reportOnState(st.getState()));
             h.append(String.format(" g: %s, h: %s", planner.stateComparator().g(st), planner.stateComparator().h(st)));
-        } catch (Exception e) {} // just to make sure the planner does not crash because of the view
+        } catch (Throwable e) {} // just to make sure the planner does not crash because of the view
 
         n.setString(LABEL, label);
         n.setString(NODE_STATUS, "inqueue");

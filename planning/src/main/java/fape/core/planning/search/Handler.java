@@ -17,7 +17,8 @@ public abstract class Handler {
 
     /** Represent all possible points in a State life time at which a handler can be executed. */
     public enum StateLifeTime {
-        SELECTION // when a state is selected from the queue as the next one to be expanded
+        SELECTION, // when a state is selected from the queue as the next one to be expanded
+        PRE_QUEUE_INSERTION // signal sent just before inserting a state to the queue
     }
 
     /**

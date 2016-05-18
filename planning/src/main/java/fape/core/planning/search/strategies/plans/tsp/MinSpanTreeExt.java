@@ -6,6 +6,7 @@ import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.*;
+import fape.core.planning.search.Handler;
 import fape.core.planning.states.CausalNetworkExt;
 import fape.core.planning.states.CausalNetworkExt.*;
 import fape.core.planning.states.State;
@@ -42,6 +43,15 @@ public class MinSpanTreeExt implements StateExtension {
     private int numChangesInPartialPlan = -1;
     private int numAdditionalChanges = -1;
 
+    public void notify(Handler.StateLifeTime stateLifeTime) {
+        switch (stateLifeTime) {
+            case PRE_QUEUE_INSERTION:
+                computeHeuristic();
+                break;
+            default:
+        }
+    }
+
     private void computeHeuristic() {
         if(numAdditionalChanges == -1) {
             numChangesInPartialPlan = st.tdb.getTimelinesStream().mapToInt(tl -> tl.numChanges()).sum();
@@ -51,7 +61,7 @@ public class MinSpanTreeExt implements StateExtension {
     }
 
     public int getCostToGo() {
-        computeHeuristic();
+        assert numAdditionalChanges != -1;
         return numAdditionalChanges;
     }
 
@@ -130,7 +140,7 @@ public class MinSpanTreeExt implements StateExtension {
                 additionalChanges += d;
                 numOpenGoals++;
             } catch (NoSolutionException e) {
-                throw new UnachievableGoalException(og);
+//                throw new UnachievableGoalException(og);
             }
         }
 
