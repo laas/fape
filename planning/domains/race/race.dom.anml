@@ -399,7 +399,7 @@ LEFT_ARM.owner := PR2;
 
 instance CoffeeJug coffeeJug1;
 instance MilkPot milkPot1;
-instance SugarPot sigarPot1,sugarPot2;
+instance SugarPot sugarPot1,sugarPot2;
 
 instance NavArea floorAreaTamsRestaurant1;
 instance PlArea placingAreaEastRightCounter1, placingAreaWestLeftTable1, placingAreaEastLeftTable1, placingAreaWestRightTable1, placingAreaEastRightTable1, placingAreaNorthLeftTable2, placingAreaNorthRightTable2, placingAreaSouthLeftTable2, placingAreaSouthRightTable2, placingAreaEastRightCounterOS1;
