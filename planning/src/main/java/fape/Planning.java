@@ -16,6 +16,7 @@ import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +25,13 @@ public class Planning {
 
     public static boolean quiet = false;
     public static boolean verbose = false;
+
+    final private static List<String> flat_plan_sel = Collections.singletonList("soca");
+    final private static List<String> hier_plan_sel = Arrays.asList("dfs","ord-dec","soca");
+    final private static List<String> flat_flaw_sel = Arrays.asList("hier","ogf","abs","lcf","eogf");
+    final private static List<String> hier_flaw_sel = Arrays.asList("earliest", "threats","hier-fifo","ogf","abs","lcf");
+    final private static float flat_epsilon = 0.3f;
+    final private static float hier_epsilon = 0f;
 
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
@@ -80,9 +88,9 @@ public class Planning {
                                 .setStringParser(JSAP.FLOAT_PARSER)
                                 .setShortFlag('e')
                                 .setLongFlag("ae")
-                                .setDefault("0.3")
                                 .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
-                                "If set to 0, search is a standard A*."),
+                                "If set to 0, search is a standard A*. The default is "+hier_epsilon+" for entirely hierarchical " +
+                                "domains and "+flat_epsilon+" for others."),
                         new QualifiedSwitch("action-insertion")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('i')
@@ -121,7 +129,6 @@ public class Planning {
                                 .setLongFlag("plan-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("soca")
                                 .setHelp("A comma separated list of plan selectors, ordered by priority." +
                                 "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
                                 "with the highest priority is expanded next. The main options are: \n" +
@@ -132,14 +139,15 @@ public class Planning {
                                 "If more than one selector is given, the " +
                                 "second is used to break ties  of the first one, the third to break ties of both " +
                                 "the first and second, etc. Plan selectors can be found in the package " +
-                                "\"fape.core.planning.search.strategies.plans\".\n"),
+                                "\"fape.core.planning.search.strategies.plans\".\n" +
+                                "The default is "+hier_plan_sel+" for entirely hierarachical domains and "+flat_plan_sel+" " +
+                                "for others."),
                         new FlaggedOption("flaw-selection")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('f')
                                 .setLongFlag("flaw-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("hier,ogf,abs,lcf,eogf")
                                 .setHelp("Ordered list of flaw selectors. Each flaw selector assigns a priority to each " +
                                 "flaw. The first selector has the highest weight, the last has the least weight." +
                                 "The flaw with highest priority is selected to be solved. A (non-exaustive) of flaw selectors:\n" +
@@ -150,7 +158,8 @@ public class Planning {
                                 "- 'abs': Gives higher priority to flaws high in the abstraction hierarchy of the problem.\n" +
                                 "- 'lcf': Least Commiting First, select the flaw with the least number of resolvers\n" +
                                 "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n" +
-                                "- 'hier-fifo': always selects the unrefined task that has been pending for the longest time.\n"),
+                                "- 'hier-fifo': always selects the unrefined task that has been pending for the longest time.\n" +
+                                "The default is "+hier_flaw_sel+" for entirely hierarchical domains and "+flat_flaw_sel+" for others."),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')
@@ -236,12 +245,41 @@ public class Planning {
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
+
+                final AnmlProblem pb = new AnmlProblem();
+                try {
+                    pb.extendWithAnmlFile(anmlFile);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Problem with ANML file: " + anmlFile);
+                    System.err.println((new File(anmlFile)).getAbsolutePath());
+                    return;
+                }
+
+
                 // read default conf from file and add command line options on top
                 Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
 
+
+
                 // creates the planner that will be tested for this problem
-                String[] planStrat = config.getStringArray("plan-selection");
-                String[] flawStrat = config.getStringArray("flaw-selection");
+                List<String> planStrat =
+                        config.specified("plan-selection") ?
+                                Arrays.asList(config.getStringArray("plan-selection")) :
+                                pb.allActionsAreMotivated() ?
+                                        hier_plan_sel : flat_plan_sel;
+                List<String> flawStrat =
+                        config.specified("flaw-selection") ?
+                                Arrays.asList(config.getStringArray("flaw-selection")) :
+                                pb.allActionsAreMotivated() ?
+                                        hier_flaw_sel : flat_flaw_sel;
+
+                if(!quiet) {
+                    System.out.println(pb.allActionsAreMotivated() ?
+                            "Problem is entirely hierarchical (all actions are motivated)": "Non-hierarchical problem (some actions are not motivated)");
+                    System.out.println("Plan selection strategy: "+planStrat);
+                    System.out.println("Flaw selection strategy: "+flawStrat);
+                }
 
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
@@ -254,9 +292,13 @@ public class Planning {
 
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
-                options.useAEpsilon = config.getFloat("a-epsilon") > 0;
+                final float e = config.specified("a-epsilon") ?
+                        config.getFloat("a-epsilon") :
+                        pb.allActionsAreMotivated() ?
+                                hier_epsilon : flat_epsilon;
+                options.useAEpsilon = e > 0;
                 if(options.useAEpsilon) {
-                    options.epsilon = config.getFloat("a-epsilon");
+                    options.epsilon = e;
                 }
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
@@ -299,18 +341,6 @@ public class Planning {
                     options.handlers.add(new MutexesHandler());
                 }
 
-                final AnmlProblem pb = new AnmlProblem();
-                try {
-                    pb.extendWithAnmlFile(anmlFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Problem with ANML file: " + anmlFile);
-                    System.err.println((new File(anmlFile)).getAbsolutePath());
-                    return;
-                }
-                if(Planner.debugging)
-                    System.out.println(pb.allActionsAreMotivated() ?
-                            "Problem is entirely hierarchical (all actions are motivated)": "Non-hierarchical problem (some actions are not motivated)");
                 final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
                 final Planner planner = new Planner(iniState, options);
 
@@ -320,9 +350,9 @@ public class Planning {
                     planningStart = System.currentTimeMillis();
                     sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
                     failure = sol == null;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    System.err.println("Planning finished for " + anmlFile + " with failure: "+ex);
                     continue;
                 }
                 long end = System.currentTimeMillis();
@@ -356,7 +386,7 @@ public class Planning {
 
                 final String reachStr = config.getString("reachability-graph");
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
-                final String aeStr = config.getFloat("a-epsilon") > 0 ? "ae" : "no-ae";
+                final String aeStr = e > 0 ? "ae" : "no-ae";
 
                 writer.write(
                         i + ", "

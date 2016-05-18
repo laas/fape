@@ -10,7 +10,7 @@ import java.util.List;
 
 public class PlanCompFactory {
 
-    public static SeqPlanComparator get(Planner planner, String... comparators) {
+    public static SeqPlanComparator get(Planner planner, List<String> comparators) {
         List<PartialPlanComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {

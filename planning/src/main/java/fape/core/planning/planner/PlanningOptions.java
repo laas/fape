@@ -13,7 +13,7 @@ public class PlanningOptions {
 
     public enum ActionInsertionStrategy { DOWNWARD_ONLY, UP_OR_DOWN }
 
-    public PlanningOptions(String[] planSelStrategies, String[] flawSelStrategies) {
+    public PlanningOptions(List<String> planSelStrategies, List<String> flawSelStrategies) {
         this.planSelStrategies = planSelStrategies;
         this.flawSelStrategies = flawSelStrategies;
     }
@@ -38,12 +38,12 @@ public class PlanningOptions {
     /**
      * Used to build comparators for flaws. Default to a least commiting first.
      */
-    public String[] flawSelStrategies;
+    public List<String> flawSelStrategies;
 
     /**
      * Used to build comparators for partial plans.
      */
-    public String[] planSelStrategies;
+    public List<String> planSelStrategies;
 
     /**
      * If true, the planner will solve trivial flaws (with one resolver) before adding the plan

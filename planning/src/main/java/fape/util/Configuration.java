@@ -51,6 +51,10 @@ public class Configuration {
         }
     }
 
+    public boolean specified(String id) {
+        return userDefined.userSpecified(id) || defaultConf.userSpecified(id);
+    }
+
     public boolean getBoolean(String id) {
         if(userDefined.userSpecified(id))
             return userDefined.getBoolean(id);

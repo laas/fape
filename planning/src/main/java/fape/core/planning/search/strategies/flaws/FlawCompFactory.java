@@ -22,7 +22,7 @@ public class FlawCompFactory {
      * @param comparators A sequence of string describing the strategy.
      * @return A comparator for flaws issued from the state.
      */
-    public static FlawComparator get(State st, Planner planner, String... comparators) {
+    public static FlawComparator get(State st, Planner planner, List<String> comparators) {
         List<FlawComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {
