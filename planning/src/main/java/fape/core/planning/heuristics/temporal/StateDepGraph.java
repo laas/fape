@@ -107,7 +107,7 @@ public class StateDepGraph implements DependencyGraph {
     }
 
 
-    public IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
+    IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
 
         if(dbgLvlDij > 3) {
             // used when debugging to make sure bellman ford and dijkstra yield the same results
@@ -370,7 +370,7 @@ public class StateDepGraph implements DependencyGraph {
     /**
      * More involved implementation of a propagator based on the Dijkstra algorithm.
      */
-    public class Dijkstra implements Propagator {
+    private class Dijkstra implements Propagator {
 
         final int MAX_ITERATION = planner.options.depGraphMaxIters;
         int currentIteration = 0;
@@ -413,7 +413,7 @@ public class StateDepGraph implements DependencyGraph {
             }
         }
 
-        public Dijkstra(Optional<StateDepGraph> ancestorGraph) {
+        private Dijkstra(Optional<StateDepGraph> ancestorGraph) {
             if(dbgLvlDij >= 2) System.out.println("\n------------------------------------\n");
 
             if(ancestorGraph.isPresent()) {
@@ -455,7 +455,7 @@ public class StateDepGraph implements DependencyGraph {
                 for(TempFluent.DGFluent f : initFluents.keySet())
                     optimisticValues.putIfAbsent(f, 0);
 
-                pendingForActivation = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
+                pendingForActivation = new IR2IntMap<>(core.store.getIntRep(Node.class));
                 for(Node n : optimisticValues.keys()) {
                     if(n instanceof ActionNode) { // action node
                         ActionNode a = (ActionNode) n;
@@ -502,7 +502,7 @@ public class StateDepGraph implements DependencyGraph {
 
                 // remove all late nides
                 // first determine the cut threshold (all nodes later than that will be deleted)
-                List<Integer> easOrdered = new ArrayList<Integer>(q.getCosts().values());
+                List<Integer> easOrdered = new ArrayList<>(q.getCosts().values());
                 Collections.sort(easOrdered);
                 int prevValue = 0; int cut_threshold = Integer.MAX_VALUE;
                 for(int val : easOrdered) {
@@ -533,7 +533,7 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         private void incrementalDijkstra() {
-            IRSet<Node> settled = new IRSet<Node>(core.store.getIntRep(Node.class));
+            IRSet<Node> settled = new IRSet<>(core.store.getIntRep(Node.class));
             while(!q.isEmpty()) {
                 Node n = q.poll();
                 settled.add(n);

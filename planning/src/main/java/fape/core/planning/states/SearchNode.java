@@ -51,13 +51,13 @@ public class SearchNode {
     private final SearchNode parent;
 
     /** Operations to apply to the parent's state to get a complete state. */
-    List<Consumer<State>> operations = new ArrayList<>();
+    private List<Consumer<State>> operations = new ArrayList<>();
 
     /**
      * Index of the the next operation to apply to state (all operations below this
      * index were already applied
      */
-    int nextOperation = 0;
+    private int nextOperation = 0;
 
     public void setExpanded() {
         State s = state.get();
@@ -68,9 +68,9 @@ public class SearchNode {
     }
 
     /** List of 'h', 'g', 'hc' heuristic values */
-    List<Float> hs = new ArrayList<>();
-    List<Float> gs = new ArrayList<>();
-    List<Float> hcs = new ArrayList<>();
+    private List<Float> hs = new ArrayList<>();
+    private List<Float> gs = new ArrayList<>();
+    private List<Float> hcs = new ArrayList<>();
 
     public float getH(int heuristicID) { return hs.get(heuristicID); }
     public boolean isRecordedH(int heuristicID) { return hs.size() > heuristicID && hs.get(heuristicID) != Integer.MIN_VALUE; }
@@ -139,8 +139,6 @@ public class SearchNode {
     }
 
     public int getID() {
-//        if(forgettableState != null && forgettableState.get() != null)
-//            assert forgettableState.get().mID == this.mID; // this can cause a failure if the GC is invoked between those two lines
         return this.mID;
     }
 

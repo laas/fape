@@ -4,9 +4,7 @@ import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.Threat;
 import fape.core.planning.timelines.Timeline;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 class ThreatsCache implements StateExtension {
 

@@ -17,7 +17,7 @@ public class EarliestFirst implements FlawComparator {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    private int priority(Flaw f) {
+    private float priority(Flaw f) {
         if(f instanceof UnrefinedTask)
             return st.getEarliestStartTime(((UnrefinedTask) f).task.start());
         else if(f instanceof UnsupportedTimeline)
@@ -33,6 +33,6 @@ public class EarliestFirst implements FlawComparator {
 
     @Override
     public int compare(Flaw f1, Flaw f2) {
-        return priority(f1) - priority(f2);
+        return (int) Math.signum(priority(f1) - priority(f2));
     }
 }

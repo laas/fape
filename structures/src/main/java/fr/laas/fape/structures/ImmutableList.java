@@ -8,7 +8,7 @@ import java.util.*;
  */
 public class ImmutableList<T> implements List<T> {
 
-    final T[] arr;
+    private  final T[] arr;
     private int hashCode;
     public ImmutableList(Collection<T> coll) {
         arr = (T[]) new Object[coll.size()];
@@ -110,7 +110,7 @@ public class ImmutableList<T> implements List<T> {
     }
 
     @Override
-    public T get(int i) {
+    public final T get(int i) {
         return arr[i];
     }
 

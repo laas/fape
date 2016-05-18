@@ -73,6 +73,9 @@ public class Printer {
             return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
         else if(o instanceof ExistingTaskSupporter)
             return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
+        else if(o instanceof FutureTaskSupport) {
+            return "FutureTaskSupport: "+taskCondition(st, ((FutureTaskSupport) o).getTask());
+        }
         else
             return o.toString();
     }
