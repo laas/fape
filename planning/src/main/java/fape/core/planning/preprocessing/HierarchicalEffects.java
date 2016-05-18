@@ -77,10 +77,10 @@ public class HierarchicalEffects {
                     mapping.put(taskVars.get(i), new LVarArg(t.jArgs().get(i)));
             }
             java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
-              if(v.isVar())
-                  return mapping.get(v.asVar());
-              else
-                  return v;
+                if(v.isVar())
+                    return mapping.get(v.asVar());
+                else
+                    return v;
             };
             return new Effect(
                     delayFromStart + a.minDelay(a.start(), t.start()).lb(),
@@ -91,21 +91,30 @@ public class HierarchicalEffects {
                     origin);
         }
 
-        Effect withoutVars() {
+        Effect asEffectOfSubtask(AbstractAction a, Subtask t) {
+            assert a.taskName().equals(t.taskName);
             java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
-              if(v.isVar())
-                  return new TypePlaceHolder(v.asType());
-              else
-                  return v;
+                if(v.isVar() && a.args().contains(v.asVar()))
+                    return t.args.get(a.args().indexOf(v.asVar()));
+                else if(v.isVar())
+                    return new TypePlaceHolder(v.asType());
+                else
+                    return v;
             };
             return new Effect(
-                    delayFromStart,
-                    delayToEnd,
+                    delayFromStart + t.delayFromStart,
+                    delayToEnd + t.delayToEnd,
                     f.func,
                     f.args.stream().map(trans).collect(Collectors.toList()),
                     trans.apply(f.value),
                     origin);
         }
+    }
+    @Value private class Subtask {
+        final int delayFromStart;
+        final int delayToEnd;
+        final String taskName;
+        final List<VarPlaceHolder> args;
     }
     private interface VarPlaceHolder {
         boolean isVar();
@@ -139,10 +148,10 @@ public class HierarchicalEffects {
     private final AnmlProblem pb;
     private Map<String, List<Effect>> tasksEffects = new HashMap<>();
     private Map<AbstractAction, List<Effect>> actionEffects = new HashMap<>();
-    private Set<String> pendingTasks = new HashSet<>();
-    private Set<String> recTasks = new HashSet<>();
+    private Map<AbstractAction, List<Effect>> directActionEffects = new HashMap<>();
+    private Map<String, List<Subtask>> subtasks = new HashMap<>();
 
-    public HierarchicalEffects(AnmlProblem pb) {
+    HierarchicalEffects(AnmlProblem pb) {
         this.pb = pb;
     }
 
@@ -157,14 +166,18 @@ public class HierarchicalEffects {
         return reduced;
     }
 
-    private List<Effect> effectsOf(AbstractAction a) {
+    private List<LVarRef> argsOfTask(String t) { return pb.actionsByTask().get(t).get(0).args(); }
+    private List<AbstractAction> methodsOfTask(String t) { return pb.actionsByTask().get(t); }
+
+    /** Returns the effects that appear in the body of this action (regardless of its subtasks. */
+    private List<Effect> directEffectsOf(AbstractAction a) {
         java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
             if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
                 return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
             else
                 return new LVarArg(v);
         };
-        if (!actionEffects.containsKey(a)) {
+        if (!directActionEffects.containsKey(a)) {
             List<Effect> directEffects = a.jLogStatements().stream()
                     .filter(AbstractLogStatement::hasEffectAtEnd)
                     .map(s -> new Effect(
@@ -176,40 +189,93 @@ public class HierarchicalEffects {
                             Collections.singletonList(new StatementPointer(a, s.id(), s.hasConditionAtStart()))))
                     .collect(Collectors.toList());
 
+            directActionEffects.put(a, regrouped(directEffects));
+        }
+
+        return directActionEffects.get(a);
+    }
+
+    /** Union of the direct effects of all methods for this task */
+    private List<Effect> directEffectsOf(Subtask t) {
+        return methodsOfTask(t.taskName).stream()
+                .flatMap(a -> directEffectsOf(a).stream().map(e -> e.asEffectOfSubtask(a, t)))
+                .collect(Collectors.toList());
+    }
+
+    /** all effects that can be introduced in the plan by completly decomposing this task */
+    private List<Effect> effectsOf(String task) {
+        if(!tasksEffects.containsKey(task)) {
+            tasksEffects.put(task,
+                    subtasksOf(task).stream()
+                            .flatMap(sub -> directEffectsOf(sub).stream())
+                            .collect(Collectors.toList()));
+        }
+        return tasksEffects.get(task);
+    }
+
+    /** All subtasks of t, including t */
+    private Collection<Subtask> subtasksOf(String task) {
+        if(!this.subtasks.containsKey(task)) {
+            HashSet<Subtask> subtasks = new HashSet<>();
+            Subtask t = new Subtask(0, 0, task, argsOfTask(task).stream().map(LVarArg::new).collect(Collectors.toList()));
+            populateSubtasksOf(t, subtasks);
+            this.subtasks.put(task, subtasks.stream().collect(Collectors.toList()));
+        }
+        return this.subtasks.get(task);
+    }
+
+    /** This method recursively populates the set of subtasks with all subtasks of t (including t). */
+    private void populateSubtasksOf(Subtask t, Set<Subtask> allsubtasks) {
+        for(Subtask prev : allsubtasks) {
+            if(t.taskName.equals(prev.taskName)
+                    && t.args.equals(prev.args)
+                    && prev.delayFromStart >= t.delayFromStart) {
+                allsubtasks.remove(prev);
+                Subtask merged = new Subtask(
+                        Math.min(t.delayFromStart, prev.delayFromStart),
+                        Math.min(t.delayToEnd, prev.delayToEnd),
+                        t.taskName,
+                        t.args);
+                allsubtasks.add(merged);
+                return;
+            }
+        }
+        allsubtasks.add(t);
+
+        for(AbstractAction a : methodsOfTask(t.taskName)) {
+            java.util.function.Function<LVarRef,VarPlaceHolder> trans = v -> {
+                if(a.args().contains(v))
+                    return t.args.get(a.args().indexOf(v));
+                else if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
+                    return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
+                else
+                    return new TypePlaceHolder(v.getType());
+            };
+            for(AbstractTask at : a.jSubTasks()) {
+                Subtask sub = new Subtask(
+                        a.minDelay(a.start(), at.start()).lb(),
+                        a.minDelay(at.end(), a.end()).lb(),
+                        at.name(),
+                        at.jArgs().stream().map(trans).collect(Collectors.toList())
+                );
+                populateSubtasksOf(sub, allsubtasks);
+            }
+        }
+    }
+
+    private List<Effect> effectsOf(AbstractAction a) {
+        if(!actionEffects.containsKey(a)) {
             List<Effect> undirEffects = a.jSubTasks().stream()
                     .flatMap(t -> effectsOf(t.name()).stream().map(e -> e.asEffectBySubtask(a, t)))
                     .collect(Collectors.toList());
 
-            List<Effect> effects = new ArrayList<>(directEffects);
+            List<Effect> effects = new ArrayList<>(directEffectsOf(a));
             effects.addAll(undirEffects);
-
 
             actionEffects.put(a, regrouped(effects));
         }
 
         return actionEffects.get(a);
-    }
-
-    private List<Effect> effectsOf(String task) {
-        if(!tasksEffects.containsKey(task)) {
-            if(pendingTasks.contains(task)) {
-                recTasks.add(task);
-                return Collections.emptyList();
-            } else {
-                pendingTasks.add(task);
-                List<Effect> effs = pb.actionsByTask().get(task).stream()
-                        .flatMap(a -> effectsOf(a).stream())
-                        .map(e -> e.asEffectOfTask(task))
-                        .collect(Collectors.toList());
-                if (recTasks.contains(task)) {
-                    // this task is recursive, remove any vars to make sure to do not miss any effect
-                    tasksEffects.put(task, regrouped(effs.stream().map(Effect::withoutVars).collect(Collectors.toList())));
-                } else {
-                    tasksEffects.put(task, regrouped(effs));
-                }
-            }
-        }
-        return tasksEffects.get(task);
     }
 
     @Value private static class DomainList {
