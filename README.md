@@ -49,11 +49,13 @@ Example ANML planning problems are available in `planning/domains`.
 
 ## Precompiled version
 
-You can download a precompiled version of fape at:
-https://homepages.laas.fr/abitmonn/fape/fape-12.jar
+You can find precompiled version of fape at:
+https://github.com/athy/fape/releases
 
+Just download the `fape.jar` file associated to a release or pre-release.
 All dependencies are included in this jar and you can run it with:
 
-    java -ea -jar fape-12.jar [options] path/to/problem.anml
+    java -ea -jar fape.jar [options] path/to/problem.anml
 
+Note that java 8 is required.
 
