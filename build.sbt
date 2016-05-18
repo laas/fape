@@ -33,8 +33,8 @@ lazy val graphs = Project("graphs", file("graphs"))
      .settings(commonSettings: _*)
 
 lazy val constraints = Project("constraints", file("constraints"))
-     .aggregate(graphs, anml)
-     .dependsOn(graphs, anml)
+     .aggregate(graphs, anml, structures)
+     .dependsOn(graphs, anml, structures)
      .settings(commonSettings: _*)
 
 lazy val anml = Project("anml-parser", file("anml-parser"))
