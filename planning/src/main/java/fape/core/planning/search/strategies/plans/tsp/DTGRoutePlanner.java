@@ -31,7 +31,7 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
             }
 
             for(GAssignment ass : pp.getDTG(sv).getAssignments(st.addableActions)) {
-                Fluent f = pp.getFluent(sv, ass.to);
+                Fluent f = pp.getFluent(sv, ass.endValue());
                 if(!q.contains(f)) {
                     q.insert(f, baseTime + 1);
                     predecessors.put(f, ass);
@@ -50,8 +50,8 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
             } else {
                 DTG dtg = pp.getDTG(cur.sv);
                 for(GTransition trans : dtg.outTransitions(cur.value, st.addableActions)) {
-                    assert cur == pp.getFluent(trans.sv, trans.from);
-                    Fluent succ = pp.getFluent(trans.sv, trans.to);
+                    assert cur == pp.getFluent(trans.sv, trans.startValue());
+                    Fluent succ = pp.getFluent(trans.sv, trans.endValue());
                     if(!q.hasCost(succ)) { // never inserted
                         q.insert(succ, q.getCost(cur)+1);
                         predecessors.put(succ, trans);
@@ -71,7 +71,7 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
                 else {
                     preds.addFirst(predecessors.get(cur));
                     if(predecessors.get(cur) instanceof GTransition)
-                        cur = pp.getFluent(cur.sv, ((GTransition) predecessors.get(cur)).from);
+                        cur = pp.getFluent(cur.sv, ((GTransition) predecessors.get(cur)).startValue());
                     else
                         cur = null;
                 }
@@ -82,7 +82,7 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
             return new Result(sol, q.getCost(sol), partialState -> {
                 for(GLogStatement pred : preds) {
                     if(pred instanceof GTransition) {
-                        InstanceRef endValue = ((GTransition) pred).to;
+                        InstanceRef endValue = ((GTransition) pred).endValue();
                         partialState.setValue(pred.sv, endValue, partialState.latestLabel(pred.sv).getUntil() +pred.minDuration, 0);
                     }
                 }

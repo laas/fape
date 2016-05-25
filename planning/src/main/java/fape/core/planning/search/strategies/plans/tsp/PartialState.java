@@ -40,18 +40,18 @@ public class PartialState {
         Label prev = labels.get(statement.sv).getLast();
 
         if(statement instanceof GAssignment) {
-            setValue(statement.sv, ((GAssignment) statement).to, prev.until+statement.minDuration, 0);
+            setValue(statement.sv, statement.endValue(), prev.until+statement.minDuration, 0);
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
         } else if(statement instanceof GPersistence) {
-            assert prev.getVal() == ((GPersistence) statement).value;
+            assert prev.getVal() == statement.startValue();
             int start = Math.max(g.earliest, prev.getSince());
-            setValue(statement.sv, ((GPersistence) statement).value, start, statement.minDuration);
+            setValue(statement.sv, statement.endValue(), start, statement.minDuration);
             g.setEarliest(start);
         } else {
             assert statement instanceof GTransition;
-            assert ((GTransition) statement).from == prev.getVal();
+            assert statement.startValue() == prev.getVal();
             int start = Math.max(prev.until,g.getEarliest());
-            setValue(statement.sv, ((GTransition) statement).to, start +statement.minDuration, 0);
+            setValue(statement.sv, statement.endValue(), start +statement.minDuration, 0);
             g.setEarliest(Math.max(prev.getUntil(), g.getEarliest()));
         }
     }

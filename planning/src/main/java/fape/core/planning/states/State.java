@@ -875,7 +875,9 @@ public class State implements Reporter {
                 assert s.endValue() instanceof InstanceRef;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
                 return fluents.stream()
-                        .map(f -> new GAction.GAssignment(f.sv, f.value, minDur, null, Optional.empty()))
+                        .map(f -> new GAction.GAssignment(
+                                pl.preprocessor.getFluent(f.sv, f.value),
+                                minDur, null, Optional.empty()))
                         .collect(Collectors.toSet());
             } else if(s.isChange()) {
                 assert s instanceof Persistence;
@@ -884,14 +886,19 @@ public class State implements Reporter {
 
                 return fluents.stream()
                         .flatMap(f -> startValues.stream()
-                                .map(startVal -> new GAction.GTransition(f.sv, startVal, f.value, minDur, null, Optional.empty())))
+                                .map(startVal -> new GAction.GTransition(
+                                        pl.preprocessor.getFluent(f.sv, startVal),
+                                        pl.preprocessor.getFluent(f.sv, f.value),
+                                        minDur, null, Optional.empty())))
                         .collect(Collectors.toSet());
             } else {
                 assert s instanceof Persistence;
                 Collection<Fluent> fluents = DisjunctiveFluent.fluentsOf(s.sv(), s.endValue(), this, pl);
 
                 return fluents.stream()
-                        .map(f -> new GAction.GPersistence(f.sv, f.value, minDur, null, Optional.empty()))
+                        .map(f -> new GAction.GPersistence(
+                                pl.preprocessor.getFluent(f.sv, f.value),
+                                minDur, null, Optional.empty()))
                         .collect(Collectors.toSet());
             }
         } else { // statement was added as part of an action or a decomposition
