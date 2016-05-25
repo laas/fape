@@ -29,8 +29,7 @@ public class GAction implements Identifiable {
 
     public static abstract class GLogStatement {
         public final GStateVariable sv;
-        @Getter
-        public final int minDuration;
+        @Getter public final int minDuration;
         public final AbstractLogStatement original;
         public final Optional<GAction> container;
         public GLogStatement(GStateVariable sv, int minDuration,
@@ -49,44 +48,51 @@ public class GAction implements Identifiable {
         public boolean isAssignement() { return this instanceof GAssignment; };
         abstract public InstanceRef endValue();
         abstract public InstanceRef startValue();
+        abstract public Fluent getStartFluent();
+        abstract public Fluent getEndFluent();
         public AbsTP start() { return original.start(); }
         public AbsTP end() { return original.end(); }
     }
     public static class GTransition extends GLogStatement {
-        public final InstanceRef from ;
-        public final InstanceRef to;
-        public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to,
+        @Getter private final Fluent startFluent;
+        @Getter private final Fluent endFluent;
+        public GTransition(Fluent startFluent, Fluent endFluent,
                            int minDuration, AbstractLogStatement original, Optional<GAction> container) {
-            super(sv, minDuration, original, container);
-            this.from = from;
-            this.to = to;
+            super(startFluent.sv, minDuration, original, container);
+            assert startFluent.sv.equals(endFluent.sv);
+            this.startFluent = startFluent;
+            this.endFluent = endFluent;
         }
         @Override public final boolean isChange() { return true; }
-        @Override public String toString() { return sv.toString()+"="+from+"->"+to; }
-        @Override public InstanceRef startValue() { return from; }
-        @Override public InstanceRef endValue() { return to; }
+        @Override public String toString() { return sv.toString()+"="+ startValue() +"->"+ endValue(); }
+        @Override public InstanceRef startValue() { return startFluent.value; }
+        @Override public InstanceRef endValue() { return endFluent.value; }
     }
     public static final class GAssignment extends GLogStatement {
-        public final InstanceRef to;
-        public GAssignment(GStateVariable sv, InstanceRef to, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
-            super(sv, minDuration, original, container);
-            this.to = to;
+        @Getter public final Fluent fluent;
+        public GAssignment(Fluent value, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(value.sv, minDuration, original, container);
+            this.fluent = value;
         }
         @Override public final boolean isChange() { return true; }
-        @Override public String toString() { return sv.toString()+":="+to; }
+        @Override public String toString() { return sv.toString()+":="+endValue(); }
         @Override public InstanceRef startValue() { throw new FAPEException("Assignments define no start value."); }
-        @Override public InstanceRef endValue() { return to; }
+        @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { throw new FAPEException("Assignments define no start value."); }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
     public static final class GPersistence extends GLogStatement {
-        public final InstanceRef value;
-        public GPersistence(GStateVariable sv, InstanceRef value, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
-            super(sv, minDuration, original, container);
-            this.value = value;
+        public final Fluent fluent;
+        public GPersistence(Fluent f, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(f.sv, minDuration, original, container);
+            this.fluent = f;
         }
         @Override public final boolean isChange() { return false; }
-        @Override public String toString() { return sv.toString()+"=="+value; }
-        @Override public InstanceRef startValue() { return value; }
-        @Override public InstanceRef endValue() { return value; }
+        @Override public String toString() { return sv.toString()+"=="+endValue(); }
+        @Override public InstanceRef startValue() { return fluent.value; }
+        @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { return fluent; }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
@@ -192,8 +198,8 @@ public class GAction implements Identifiable {
             if(as instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) as;
                 GLogStatement gls = new GTransition(
-                        sv(t.sv(), pb, planner),
-                        valueOf(t.from(), pb), valueOf(t.to(), pb),
+                        fluent(t.sv(), t.from(), planner),
+                        fluent(t.sv(), t.to(), planner),
                         minDuration(t.start(), t.end()),
                         t, Optional.of(this));
                 gStatements.add(new Pair<>(t.id(), gls));
@@ -205,8 +211,7 @@ public class GAction implements Identifiable {
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
                 GLogStatement gls = new GPersistence(
-                        sv(p.sv(), pb, planner),
-                        valueOf(p.value(), pb),
+                        fluent(p.sv(), p.value(), planner),
                         minDuration(p.start(), p.end()),
                         p,
                         Optional.of(this));
@@ -215,8 +220,7 @@ public class GAction implements Identifiable {
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
                 GLogStatement gls = new GAssignment(
-                        sv(a.sv(), pb, planner),
-                        valueOf(a.value(), pb),
+                        fluent(a.sv(), a.value(), planner),
                         minDuration(a.start(), a.end()),
                         a,
                         Optional.of(this));

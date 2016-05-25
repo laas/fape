@@ -23,7 +23,7 @@ public class DTG {
 
     public void extendWith(GAction.GTransition trans, GAction container) {
         assert trans.sv == sv;
-        outGoingTransitions.get(trans.from).add(Pair.pair(trans, container));
+        outGoingTransitions.get(trans.startValue()).add(Pair.pair(trans, container));
     }
 
     public void extendWith(GAction.GAssignment ass, GAction container) {
