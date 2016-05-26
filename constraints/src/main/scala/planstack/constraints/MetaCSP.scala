@@ -157,7 +157,19 @@ class MetaCSP[ID](
     try {
       for (pendings <- varsToConstraints.values; pending <- pendings) pending match {
         case req: PendingRequirement[VarRef, TPRef, ID] =>
-          ???
+          assert(req.value.allVariables.size == 1)
+          // returns the value to appear on the constraint if the variable was to take this value
+          def valueWithBinding(varBinding: Int) =
+            req.value.trans({ case Variable(varRef, _, _) => IntExpression.lit(varBinding) }).get
+
+          val minDuration = stn.getMinDelay(req.from, req.to)
+          val oldDomain =  bindings.domainOfIntVar(req.value.allVariables.head)
+          val newDom = bindings.domainOfIntVar(req.value.allVariables.head).asScala
+            .filter(v => {
+              val max = valueWithBinding(v)
+              max - minDuration >= 0})
+          stn.enforceMaxDelay(req.from, req.to, newDom.max)
+          bindings.restrictIntDomain(req.value.allVariables.head, newDom.asJava)
         case cont: PendingContingency[VarRef, TPRef, ID] =>
 //          val minDuration = stn.getMinDelay(cont.from, cont.to)
 //          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
