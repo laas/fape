@@ -52,7 +52,7 @@ public class SeqPlanComparator extends PartialPlanComparator {
     public double h(State st) {
         double v = 0;
         for(PartialPlanComparator pc : comparators)
-            v = 1000000 * v + pc.g(st);
+            v = 1000000 * v + pc.h(st);
         return v;
     }
 
@@ -60,7 +60,7 @@ public class SeqPlanComparator extends PartialPlanComparator {
     public double hc(State st) {
         double v = 0;
         for(PartialPlanComparator pc : comparators)
-            v = 1000000 * v + pc.h(st);
+            v = 1000000 * v + pc.hc(st);
         return v;
     }
 }
