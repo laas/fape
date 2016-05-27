@@ -131,6 +131,11 @@ public class GAction implements Identifiable {
         }
         throw new FAPEException("Unable to find statement with ref: "+ref);
     }
+
+    public int getNumStatements() {
+        return gStatements.size();
+    }
+
     public Collection<GLogStatement> getStatements() {
         return gStatements.stream().map(p -> p.value2).collect(Collectors.toList());
     }
