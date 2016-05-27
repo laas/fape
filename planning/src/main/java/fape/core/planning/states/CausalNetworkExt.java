@@ -152,8 +152,6 @@ public class CausalNetworkExt implements StateExtension {
 
             Set<Event> toRemove = new HashSet<>();
             for(Event pis : potentialSupporters.get(tlID)) {
-
-
                 if(!tlMan.containsTimelineWithID(pis.supporterID)) {
                     toRemove.add(pis);
                     continue;
@@ -185,7 +183,7 @@ public class CausalNetworkExt implements StateExtension {
                             .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyThreatening(sup, tl, tlMan.getTimeline(i)))
                             .collect(Collectors.toList());
                     List<Integer> toAddToInitialList = additionsToConsider
-                            .filter(i -> tlMan.containsTimelineWithID(i) && !possiblyThreatening(sup, tl, tlMan.getTimeline(i)))
+                            .filter(i -> tlMan.containsTimelineWithID(i) && possiblyThreatening(sup, tl, tlMan.getTimeline(i)))
                             .collect(Collectors.toList());
 
                     ISet<Integer> updatedList = initialList.withoutAll(toRemoveFromInitialList).withAll(toAddToInitialList);
