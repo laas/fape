@@ -242,8 +242,8 @@ public class SearchView {
         h.append(" num-unbound: "); h.append(st.getState().getUnboundVariables().size());
         h.append("\n");
         try {
-            h.append(planner.stateComparator().reportOnState(st.getState()));
-            h.append(String.format(" g: %s, h: %s", planner.stateComparator().g(st), planner.stateComparator().h(st)));
+            h.append(planner.heuristicComputer().reportOnState(st.getState()));
+            h.append(String.format(" g: %s, h: %s", planner.heuristicComputer().g(st), planner.heuristicComputer().h(st)));
         } catch (Throwable e) {} // just to make sure the planner does not crash because of the view
 
         n.setString(LABEL, label);

@@ -9,29 +9,29 @@ public class MinSpanTreeComp extends PartialPlanComparator {
         return "minspan";
     }
 
-    private MinSpanTreeExt getExt(State st) {
-        if(!st.hasExtension(MinSpanTreeExt.class))
-            st.addExtension(new MinSpanTreeExt(st, true));
-        return st.getExtension(MinSpanTreeExt.class);
+    private MinSpanTreeExtFull getExt(State st) {
+        if(!st.hasExtension(MinSpanTreeExtFull.class))
+            st.addExtension(new MinSpanTreeExtFull(st, true));
+        return st.getExtension(MinSpanTreeExtFull.class);
     }
 
     @Override
-    public float g(State st) {
+    public double g(State st) {
         return getExt(st).getCurrentCost();
     }
 
     @Override
-    public float h(State st) {
+    public double h(State st) {
         return hc(st);
     }
 
     @Override
-    public float hc(State st) {
-        return getExt(st).getCostToGo() + st.tdb.getConsumers().size() + st.getAllThreats().size();
+    public double hc(State st) {
+        return getExt(st).getCostToGo();// + st.tdb.getConsumers().size() + st.getAllThreats().size();
     }
 
     @Override
     public String reportOnState(State st) {
-        return shortName()+" g:"+g(st)+" h:"+h(st)+" hc: "+hc(st)+" = "+getExt(st).getCostToGo()+" + "+ st.tdb.getConsumers().size()+" + "+st.getAllThreats().size();
+        return shortName()+"f: "+(g(st)+h(st))+" g:"+g(st)+" h:"+h(st)+" hc: "+hc(st)+" = "+getExt(st).getCostToGo()+" + "+ st.tdb.getConsumers().size()+" + "+st.getAllThreats().size();
     }
 }

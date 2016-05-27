@@ -7,7 +7,7 @@ import static fape.core.planning.search.strategies.plans.tsp.Htsp.*;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
-import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.*;
@@ -19,7 +19,7 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
     public Result getPlan(Collection<Fluent> targets, PartialState ps, State st) {
         Preprocessor pp = st.pl.preprocessor;
 
-        DijkstraQueue<Fluent> q = new DijkstraQueue<>(pp.store.getIntRep(Fluent.class));
+        IDijkstraQueue<Fluent> q = new IDijkstraQueue<>(pp.store.getIntRep(Fluent.class));
         Map<Fluent, GLogStatement> predecessors = new HashMap<>();
 
         for(GStateVariable sv : pp.store.getInstances(GStateVariable.class)) {

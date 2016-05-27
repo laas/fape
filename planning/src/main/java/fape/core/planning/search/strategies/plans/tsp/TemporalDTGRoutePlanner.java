@@ -6,7 +6,7 @@ import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.*;
 import fape.core.planning.states.State;
-import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.Collection;
@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import static fape.core.planning.grounding.GAction.*;
 import static fape.core.planning.search.strategies.plans.tsp.Htsp.*;
 
 public class TemporalDTGRoutePlanner implements TSPRoutePlanner {
@@ -24,7 +23,7 @@ public class TemporalDTGRoutePlanner implements TSPRoutePlanner {
     public Result getPlan(Collection<Fluent> targets, PartialState ps, State st) {
         Preprocessor pp = st.pl.preprocessor;
 
-        DijkstraQueue<Node> q = new DijkstraQueue<>(pp.store.getIntRep(Node.class));
+        IDijkstraQueue<Node> q = new IDijkstraQueue<>(pp.store.getIntRep(Node.class));
         Map<Node, Change> predecessors = new HashMap<>();
 
         for(GStateVariable sv : pp.store.getInstances(GStateVariable.class)) {

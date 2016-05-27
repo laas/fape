@@ -7,6 +7,7 @@ import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
+import fape.core.planning.search.strategies.plans.tsp.MinSpanTreeExtFull;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -611,7 +612,6 @@ public class State implements Reporter {
         supportConstraints.removeIf(p -> p.value1 == cc.mID);
         supportConstraints.add(new Pair<>(cc.mID, act));
     }
-
 
     public void timelineAdded(Timeline a) {
         for(StateExtension ext : extensions)

@@ -17,17 +17,17 @@ public class DepthFirst extends PartialPlanComparator {
     }
 
     @Override
-    public float g(State st) {
+    public double g(State st) {
         return 10000f - st.getDepth();
     }
 
     @Override
-    public float h(State st) {
+    public double h(State st) {
         return 0f;
     }
 
     @Override
-    public float hc(State st) {
+    public double hc(State st) {
         return 0;
     }
 }

@@ -22,7 +22,6 @@ import fape.util.TinyLogger;
 import fape.util.Utils;
 import fr.laas.fape.exceptions.InconsistencyException;
 import planstack.anml.model.AnmlProblem;
-import planstack.anml.model.concrete.Action;
 import planstack.constraints.stnu.Controllability;
 
 import java.util.*;
@@ -42,7 +41,7 @@ public class Planner {
         this.pb = initialState.pb;
         this.controllability = initialState.controllability;
         this.dtg = new LiftedDTG(this.pb);
-        queue = new PriorityQueue<>(100, this.stateComparator());
+        queue = new PriorityQueue<>(100, this.heuristicComputer().comparator(options));
         SearchNode root = new SearchNode(initialState);
 
         root.addOperation(s -> {
@@ -163,7 +162,7 @@ public class Planner {
         return FlawCompFactory.get(st, this, options.flawSelStrategies);
     }
 
-    private SeqPlanComparator stateComparator = null;
+    private SeqPlanComparator heuristic = null;
 
     /**
      * The comparator used to order the queue. THe first state in the queue
@@ -171,10 +170,11 @@ public class Planner {
      *
      * @return The comparator to use for ordering the queue.
      */
-    public final SeqPlanComparator stateComparator() {
-        if(stateComparator == null)
-            stateComparator = PlanCompFactory.get(this, options.planSelStrategies);
-        return stateComparator;
+    public final SeqPlanComparator heuristicComputer() {
+        if(heuristic == null) {
+            heuristic = PlanCompFactory.get(this, options.planSelStrategies);
+        }
+        return heuristic;
     }
 
     /**
@@ -429,7 +429,7 @@ public class Planner {
         assert !incrementalDeepening : "Incremental Deepening is not supported in A-Epsilon search.";
 
         // stores the admissible children of the last expanded node.
-        PriorityQueue<SearchNode> AX = new PriorityQueue<SearchNode>(10, stateComparator());
+        PriorityQueue<SearchNode> AX = new PriorityQueue<SearchNode>(10, heuristicComputer().comparator(options));
 
 
         if (queue.isEmpty()) {
@@ -437,7 +437,7 @@ public class Planner {
             TinyLogger.LogInfo("Initially empty queue.");
             return null;
         }
-        float fThreshold = (1f + options.epsilon) * f(queue.peek());
+        double fThreshold = (1f + options.epsilon) * f(queue.peek());
 
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
@@ -502,9 +502,9 @@ public class Planner {
         }
     }
 
-    public float h(SearchNode st){ return stateComparator().h(st); }
-    public float g(SearchNode st){ return stateComparator().g(st); }
-    public float f(SearchNode st) { return g(st) + h(st); }
+    public double h(SearchNode st){ return options.w * heuristic.h(st); }
+    public double g(SearchNode st){ return heuristic.g(st); }
+    public double f(SearchNode st) { return g(st) + h(st); }
 
     private ChartWindow chartWindow = null;
     public void drawState(State st) {

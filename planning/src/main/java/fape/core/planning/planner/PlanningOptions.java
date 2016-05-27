@@ -79,5 +79,5 @@ public class PlanningOptions {
 
     public boolean displaySearch = true;
 
-
+    public float w = 1f;
 }

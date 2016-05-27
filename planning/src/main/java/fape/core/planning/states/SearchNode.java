@@ -68,31 +68,21 @@ public class SearchNode {
     }
 
     /** List of 'h', 'g', 'hc' heuristic values */
-    private List<Float> hs = new ArrayList<>();
-    private List<Float> gs = new ArrayList<>();
-    private List<Float> hcs = new ArrayList<>();
+    private double h = -1;
+    private double g = -1;
+    private double hc = -1;
 
-    public float getH(int heuristicID) { return hs.get(heuristicID); }
-    public boolean isRecordedH(int heuristicID) { return hs.size() > heuristicID && hs.get(heuristicID) != Integer.MIN_VALUE; }
-    public void setH(int heuristicID, float value) {
-        while(hs.size() <= heuristicID)
-            hs.add(Float.MIN_VALUE);
-        hs.set(heuristicID, value);
-    }
-    public float getG(int heuristicID) { return gs.get(heuristicID); }
-    public boolean isRecordedG(int heuristicID) { return gs.size() > heuristicID && gs.get(heuristicID) != Integer.MIN_VALUE; }
-    public void setG(int heuristicID, float value) {
-        while(gs.size() <= heuristicID)
-            gs.add(Float.MIN_VALUE);
-        gs.set(heuristicID, value);
-    }
-    public float getHC(int heuristicID) { return hcs.get(heuristicID); }
-    public boolean isRecordedHC(int heuristicID) { return hcs.size() > heuristicID && hcs.get(heuristicID) != Integer.MIN_VALUE; }
-    public void setHC(int heuristicID, float value) {
-        while(hcs.size() <= heuristicID)
-            hcs.add(Float.MIN_VALUE);
-        hcs.set(heuristicID, value);
-    }
+    public double getH() { return h; }
+    public boolean isRecordedH() { return h >= 0; }
+    public void setH(double value) { h = value; }
+
+    public double getG() { return g; }
+    public boolean isRecordedG() { return g >= 0; }
+    public void setG(double value) { g = value; }
+
+    public double getHC() { return hc; }
+    public boolean isRecordedHC() { return hc >= 0; }
+    public void setHC(double value) { hc = value; }
 
     /**
      * Returns the base state from which the complete state can be built.

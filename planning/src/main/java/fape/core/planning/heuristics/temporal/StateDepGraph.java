@@ -5,7 +5,7 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.planner.Planner;
 import fape.util.IteratorConcat;
-import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
 
@@ -394,7 +394,7 @@ public class StateDepGraph implements DependencyGraph {
         private boolean shouldIgnore(MaxEdge e) { return e.delay < 0 || core.getFluentsWithIncomingNegEdge().contains(e.fluent);  }
         private Iterable<MaxEdge> ignoredEdges() { return core.getEdgesToIgnoreInDijkstra(); }
 
-        DijkstraQueue<Node> q = new DijkstraQueue<>(core.store.getIntRep(Node.class));
+        IDijkstraQueue<Node> q = new IDijkstraQueue<>(core.store.getIntRep(Node.class));
 
         private void enqueue(Node n, int cost, Node pred) {
             if(!optimisticValues.containsKey(n))
