@@ -4,7 +4,6 @@ import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
 import fape.core.planning.grounding.GStateVariable;
 import fape.core.planning.preprocessing.Preprocessor;
-import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.*;
 import fape.core.planning.search.Handler;
 import fape.core.planning.states.CausalNetworkExt;
@@ -13,10 +12,9 @@ import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.NoSolutionException;
-import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import fr.laas.fape.structures.IRSet;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.statements.LogStatement;
 import fape.core.planning.grounding.GAction.*;
@@ -158,7 +156,7 @@ public class MinSpanTreeExt implements StateExtension {
         Preprocessor pp = st.pl.preprocessor;
         Set<GStateVariable> svs = targets.stream().map(f -> f.sv).collect(Collectors.toSet());
 
-        DijkstraQueue<Node> q = new DijkstraQueue<>(pp.store.getIntRep(Node.class));
+        IDijkstraQueue<Node> q = new IDijkstraQueue<>(pp.store.getIntRep(Node.class));
 
         for(Fluent f : targets) {
             if(potentialSupporters.contains(f))

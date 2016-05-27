@@ -1,56 +1,55 @@
 package fr.laas.fape.structures;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
-public class DijkstraQueue<E> {
+public class IDijkstraQueue<E extends Identifiable> {
 
+    private final IntRep<E> rep;
     private int currentSize; // Number of elements in heap
-    private Map<E,Integer> costs;
-    private Map<E,Integer> costsToGo;
-    private final Map<E,Integer> positions;
-    private final Map<E,E> predecessors;
+    private IR2IntMap<E> costs;
+    private final IR2IntMap<E> positions;
 
-    private E[] array; // The heap array
+    private int[] array; // The heap array
 
     /**
      * Construct the binary heap.
      */
-    public DijkstraQueue() {
+    public IDijkstraQueue(IntRep<E> rep) {
+        this.rep = rep;
         this.currentSize = 0;
-        this.array = (E[]) new Object[50];
+        this.array = new int[50];
         Arrays.fill(this.array, -1);
-        this.costs = new HashMap<>();
-        this.costsToGo = new HashMap<>();
-        this.positions = new HashMap<>();
-        this.predecessors = new HashMap<>();
+        this.costs = new IR2IntMap<E>(rep);
+        this.positions = new IR2IntMap<E>(rep);
     }
 
-    private DijkstraQueue(DijkstraQueue<E> q) {
+    private IDijkstraQueue(IDijkstraQueue<E> q) {
+        rep = q.rep;
         currentSize = q.currentSize;
         array = Arrays.copyOf(q.array, q.array.length);
-        costs = new HashMap<>(q.costs);
-        costsToGo = new HashMap<>(q.costsToGo);
-        positions = new HashMap<>(q.positions);
-        predecessors = new HashMap<>(q.predecessors);
+        costs = q.costs.clone();
+        positions = q.positions.clone();
     }
 
-    private int compare(E e1, E e2) {
-        int c1 = e1 == null ? -1 : costs.get(e1) + costsToGo.get(e1);
-        int c2 = e2 == null ? -1 : costs.get(e2) + costsToGo.get(e2);
-        return c1 - c2;
+    public void initCosts(IR2IntMap<E> costs) {
+        assert this.costs.isEmpty();
+        this.costs = costs.clone();
+    }
+    public IR2IntMap<E> getCosts() { return this.costs; }
+
+    private int compare(int id1, int id2) {
+        return costs.get(id1) - costs.get(id2);
     }
 
     // Sets an element in the array
-    private void arraySet(int index, E value) {
+    private void arraySet(int index, int valueID) {
         if(index >= array.length) {
-            E[] oldArray = array;
+            int[] oldArray = array;
             this.array = Arrays.copyOf(oldArray, Math.max(oldArray.length*2, index + 1));
             Arrays.fill(this.array, oldArray.length, array.length, -1);
         }
-        array[index] = value;
-        positions.put(value, index);
+        array[index] = valueID;
+        positions.put(valueID, index);
     }
 
     public boolean isEmpty() { return this.currentSize == 0; }
@@ -67,43 +66,25 @@ public class DijkstraQueue<E> {
      *
      * @param x the item to insert.
      */
-    public final void insert(E x, int cost, int costToGo, E predecessor) {
+    public final void insert(E x, int cost) {
         assert !contains(x);
         int index = this.currentSize++;
-        this.costs.put(x, cost);
-        this.costsToGo.put(x, costToGo);
-        this.arraySet(index, x);
+        this.costs.put(x.getID(), cost);
+        this.arraySet(index, x.getID());
         this.percolateUp(index);
-        if(predecessor != null)
-            this.predecessors.put(x, predecessor);
     }
 
-    public final void update(E x, int cost, int costToGo, E predecessor) {
+    public final void update(E x, int cost) {
         assert contains(x);
-        this.costs.put(x, cost);
-        this.costsToGo.put(x, costToGo);
-        int index = positions.get(x);
+        this.costs.put(x.getID(), cost);
+        int index = positions.get(x.getID());
         percolateDown(index);
         percolateUp(index);
-        if(predecessor != null)
-            this.predecessors.put(x, predecessor);
     }
 
-    public final void putIfBetter(E x, int cost, int costToGo, E predecessor) {
-        if(hasCost(x) && getCost(x) < cost) {
-            return;
-        } else if(contains(x)) {
-            update(x, cost, costToGo, predecessor);
-        } else {
-            insert(x, cost, costToGo, predecessor);
-        }
-    }
-
-    public boolean contains(E x) { return positions.containsKey(x); }
-    public boolean hasCost(E x) { return costs.containsKey(x); }
-    public int getCost(E x) { return costs.get(x); }
-    public int getCostToGo(E x) { return costsToGo.get(x); }
-    public E getPredecessor(E x) { return predecessors.get(x); }
+    public boolean contains(E x) { return positions.containsKey(x.getID()); }
+    public boolean hasCost(E x) { return costs.containsKey(x.getID()); }
+    public int getCost(E x) { return costs.get(x.getID()); }
 
     /**
      * Internal method to percolate up in the heap.
@@ -111,10 +92,10 @@ public class DijkstraQueue<E> {
      * @param index the index at which the percolate begins.
      */
     private void percolateUp(int index) {
-        E x = this.array[index];
+        int x = this.array[index];
 
         for (; index > 0 && compare(x, array[index_parent(index)]) < 0; index = index_parent(index)) {
-            E moving_val = array[index_parent(index)];
+            int moving_val = array[index_parent(index)];
             this.arraySet(index, moving_val);
         }
 
@@ -131,10 +112,10 @@ public class DijkstraQueue<E> {
         int iright = ileft + 1;
 
         if (ileft < this.currentSize) {
-            E current = array[index];
-            E left = array[ileft];
+            int current = array[index];
+            int left = array[ileft];
             boolean hasRight = iright < this.currentSize;
-            E right = (hasRight) ? array[iright] : null;
+            int right = (hasRight) ? array[iright] : -1;
 
             if (!hasRight || compare(left, right) < 0) {
                 // Left is smaller
@@ -160,7 +141,7 @@ public class DijkstraQueue<E> {
      * @return the smallest item.
      * @throws Exception if empty.
      */
-    private E findMin() {
+    private int findMin() {
         assert !isEmpty() : "Heap is empty";
         return array[0];
     }
@@ -173,30 +154,30 @@ public class DijkstraQueue<E> {
      */
     public E poll() {
         assert !isEmpty() : "Heap is empty.";
-        E minItem = findMin();
-        E lastItem = array[--this.currentSize];
+        int minItem = findMin();
+        int lastItem = array[--this.currentSize];
         arraySet(0, lastItem);
         percolateDown(0);
         positions.remove(minItem);
-        return minItem;
+        return rep.fromInt(minItem);
     }
 
 
     public void cleanup(E x) {
         if(contains(x))
-            removeAllTraces(x);
+            removeAllTraces(x.getID());
         else if(hasCost(x))
-            costs.remove(x);
+            costs.remove(x.getID());
     }
 
-    private void removeAllTraces(E e) {
-        int index = positions.get(e);
-        E lastItem = array[--this.currentSize];
+    private void removeAllTraces(int id) {
+        int index = positions.get(id);
+        int lastItem = array[--this.currentSize];
         arraySet(index, lastItem);
         percolateDown(index);
         percolateUp(index);
-        positions.remove(e);
-        costs.remove(e);
+        positions.remove(id);
+        costs.remove(id);
     }
 
     /**
@@ -208,7 +189,7 @@ public class DijkstraQueue<E> {
         System.out.println();
 
         for (int i = 0; i < this.currentSize; i++) {
-            System.out.println(costs.get(array[i])+" "+ array[i].toString());
+            System.out.println(costs.get(array[i])+" "+ rep.fromInt(array[i]).toString());
         }
 
         System.out.println();
@@ -221,15 +202,15 @@ public class DijkstraQueue<E> {
      */
     public void printSorted() {
 
-        DijkstraQueue<E> copy = new DijkstraQueue<>(this);
+        IDijkstraQueue<E> copy = new IDijkstraQueue<>(this);
 
         System.out.println();
         System.out.println("========  Sorted HEAP  (size = " + this.currentSize + ")  ========");
         System.out.println();
 
         while (!copy.isEmpty()) {
-            E next = copy.findMin();
-            System.out.println(costs.get(next)+" "+next);
+            int next = copy.findMin();
+            System.out.println(costs.get(next)+" "+rep.fromInt(next));
         }
 
         System.out.println();

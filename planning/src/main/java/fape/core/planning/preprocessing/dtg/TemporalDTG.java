@@ -44,7 +44,9 @@ public class TemporalDTG {
         public boolean isUndefined() { return fluent == null; }
 
         public GStateVariable getStateVariable() { return getFluent().sv; }
+        @Deprecated
         public List<Change> inChanges() { return getChangesTo(this); }
+        public Iterable<Change> inChanges(Set<GAction> validActions) { return getChangesTo(this, validActions); }
 
         public int getMinDelayTo(Node target) {
             return getMinimalDelay(this, target);
@@ -80,22 +82,6 @@ public class TemporalDTG {
         public abstract GAction getContainer();
         public abstract boolean isTransition();
         public  GStateVariable getStateVariable() { return getStatement().getStateVariable(); }
-
-        private Set<GStateVariable> affectedStateVariables = null;
-
-        /** Returns a set of state variables that will be affected by taking this change.
-         * Those state variable will be the target of change statement (assignment or transition)
-         * prior or concurrently to the end of this change. */
-        public final Set<GStateVariable> affected() {
-            if(affectedStateVariables == null)
-                affectedStateVariables = getContainer().getStatements().stream()
-                        .filter(GLogStatement::isChange)
-                        .filter(s2 -> s2.getStateVariable() != getTo().getStateVariable())
-                        .filter(s2 -> getContainer().minDuration(s2.start(), getStatement().end()) >= 0)
-                        .map(GLogStatement::getStateVariable)
-                        .collect(Collectors.toSet());
-            return affectedStateVariables;
-        }
     }
 
     @AllArgsConstructor @Getter
@@ -178,6 +164,13 @@ public class TemporalDTG {
     public Iterable<Change> getChangesFrom(Node n, Set<GAction> validActions) {
         assert postProcessed;
         return outTransitions.get(n).stream()
+                .filter(ch -> validActions.contains(ch.getContainer()))
+                ::iterator;
+    }
+
+    public Iterable<Change> getChangesTo(Node n, Set<GAction> validActions) {
+        assert postProcessed;
+        return inTransitions.get(n).stream()
                 .filter(ch -> validActions.contains(ch.getContainer()))
                 ::iterator;
     }

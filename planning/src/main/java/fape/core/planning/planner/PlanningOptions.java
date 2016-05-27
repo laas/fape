@@ -79,5 +79,10 @@ public class PlanningOptions {
 
     public boolean displaySearch = true;
 
+    /** the weight of weighted A*:  f = g + w * h */
+    public float heuristicWeight = 1f;
 
+    /** Ratio of the time the planner should pursue an interesting solution in depth first manner vs the
+     * time it should push back the frontier by exploring least cost nodes */
+    public float depthShallowRatio = 1f;
 }

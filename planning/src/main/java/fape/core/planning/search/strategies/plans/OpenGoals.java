@@ -25,17 +25,17 @@ public class OpenGoals extends PartialPlanComparator {
     }
 
     @Override
-    public float g(State st) {
+    public double g(State st) {
         return 0;
     }
 
     @Override
-    public float h(State st) {
+    public double h(State st) {
         return numOpenGoals(st);
     }
 
     @Override
-    public float hc(State st) {
+    public double hc(State st) {
         return numOpenGoals(st);
     }
 }

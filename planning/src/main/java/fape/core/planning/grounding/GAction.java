@@ -48,6 +48,8 @@ public class GAction implements Identifiable {
         public boolean isAssignement() { return this instanceof GAssignment; };
         abstract public InstanceRef endValue();
         abstract public InstanceRef startValue();
+        abstract public Fluent getStartFluent();
+        abstract public Fluent getEndFluent();
         public AbsTP start() { return original.start(); }
         public AbsTP end() { return original.end(); }
     }
@@ -76,6 +78,8 @@ public class GAction implements Identifiable {
         @Override public String toString() { return sv.toString()+":="+endValue(); }
         @Override public InstanceRef startValue() { throw new FAPEException("Assignments define no start value."); }
         @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { throw new FAPEException("Assignments define no start value."); }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
     public static final class GPersistence extends GLogStatement {
         public final Fluent fluent;
@@ -87,6 +91,8 @@ public class GAction implements Identifiable {
         @Override public String toString() { return sv.toString()+"=="+endValue(); }
         @Override public InstanceRef startValue() { return fluent.value; }
         @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { return fluent; }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
@@ -125,6 +131,11 @@ public class GAction implements Identifiable {
         }
         throw new FAPEException("Unable to find statement with ref: "+ref);
     }
+
+    public int getNumStatements() {
+        return gStatements.size();
+    }
+
     public Collection<GLogStatement> getStatements() {
         return gStatements.stream().map(p -> p.value2).collect(Collectors.toList());
     }

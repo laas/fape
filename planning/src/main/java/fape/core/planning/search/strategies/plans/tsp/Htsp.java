@@ -41,9 +41,9 @@ public class Htsp extends PartialPlanComparator {
     }
 
 
-    public Map<Integer,Integer> makespans = new HashMap<>();
-    public Map<Integer,Integer> additionalCosts = new HashMap<>();
-    public Map<Integer,Integer> existingCosts = new HashMap<>();
+    private Map<Integer,Integer> makespans = new HashMap<>();
+    private Map<Integer,Integer> additionalCosts = new HashMap<>();
+    private Map<Integer,Integer> existingCosts = new HashMap<>();
 
     @Override
     public String shortName() {
@@ -54,16 +54,12 @@ public class Htsp extends PartialPlanComparator {
     public String reportOnState(State st) {
         return "g: "+g(st)+"hc: "+hc(st)+"  makespan: "+makespans.get(st.mID);
     }
-    @Override
-    public int compare(SearchNode s1, SearchNode s2) {
-        return (int) (f(s1) - f(s2));
-    }
 
     @Override
-    public float g(State st) { hc(st); return existingCosts.get(st.mID); }
+    public double g(State st) { hc(st); return existingCosts.get(st.mID); }
 
     @Override
-    public float h(State st) { return hc(st); }
+    public double h(State st) { return hc(st); }
 
     private Pair<GLogStatement, DisjunctiveGoal> best(Collection<Pair<GLogStatement, DisjunctiveGoal>> candidates) {
         if (candidates.stream().anyMatch(x -> x.value1 instanceof GPersistence))
@@ -78,7 +74,7 @@ public class Htsp extends PartialPlanComparator {
     private boolean firstTime = true;
 
 //    @Override
-    public float hc(State st) {
+    public double hc(State st) {
 
 //        if(firstTime) {
 //            for (GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {

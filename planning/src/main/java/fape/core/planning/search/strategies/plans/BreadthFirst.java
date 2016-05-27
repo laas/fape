@@ -17,17 +17,17 @@ public class BreadthFirst extends PartialPlanComparator {
     }
 
     @Override
-    public float g(State st) {
+    public double g(State st) {
         return st.getDepth();
     }
 
     @Override
-    public float h(State st) {
+    public double h(State st) {
         return 0;
     }
 
     @Override
-    public float hc(State st) {
+    public double hc(State st) {
         return 0;
     }
 }

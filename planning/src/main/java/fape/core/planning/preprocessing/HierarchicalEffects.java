@@ -1,13 +1,17 @@
 package fape.core.planning.preprocessing;
 
+import fape.core.planning.grounding.Fluent;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
+import fape.util.Utils;
 import lombok.Value;
 import planstack.anml.model.*;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.abs.AbstractTask;
 import planstack.anml.model.abs.statements.AbstractLogStatement;
+import planstack.anml.model.abs.statements.AbstractPersistence;
+import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.Task;
 import planstack.anml.model.concrete.VarRef;
@@ -25,7 +29,7 @@ public class HierarchicalEffects {
         final boolean isTransition;
     }
 
-    @Value private class Effect {
+    @Value private class TemporalFluent {
         @Value class Fluent {
             final Function func;
             final List<VarPlaceHolder> args;
@@ -37,9 +41,9 @@ public class HierarchicalEffects {
         final Fluent f;
         final List<StatementPointer> origin;
 
-        Effect(int delayFromStart, int delayToEnd,
-               Function func, List<VarPlaceHolder> args, VarPlaceHolder value,
-               List<StatementPointer> origin) {
+        TemporalFluent(int delayFromStart, int delayToEnd,
+                       Function func, List<VarPlaceHolder> args, VarPlaceHolder value,
+                       List<StatementPointer> origin) {
             this.delayFromStart = delayFromStart;
             this.delayToEnd = delayToEnd;
             this.f = new Fluent(func, args, value);
@@ -48,25 +52,7 @@ public class HierarchicalEffects {
 
         @Override public String toString() { return "Eff(~>"+delayFromStart+" "+delayToEnd+"<~ "+f.func.name()+f.args+"="+f.value; }
 
-        Effect asEffectOfTask(String t) {
-            List<LVarRef> vars = pb.actionsByTask().get(t).get(0).args();
-            // function that only keep a variable if it appears in the arguments of the task
-            java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
-              if(!v.isVar() || vars.contains(v.asVar()))
-                  return v;
-              else
-                  return new TypePlaceHolder(v.asType());
-            };
-            return new Effect(
-                    delayFromStart,
-                    delayToEnd,
-                    f.func,
-                    f.args.stream().map(trans).collect(Collectors.toList()),
-                    trans.apply(f.value),
-                    origin);
-        }
-
-        Effect asEffectBySubtask(AbstractAction a, AbstractTask t) {
+        TemporalFluent asEffectBySubtask(AbstractAction a, AbstractTask t) {
             Map<LVarRef,VarPlaceHolder> mapping = new HashMap<>();
             List<LVarRef> taskVars = pb.actionsByTask().get(t.name()).get(0).args();
             for(int i=0 ; i<taskVars.size() ; i++) {
@@ -82,7 +68,7 @@ public class HierarchicalEffects {
                 else
                     return v;
             };
-            return new Effect(
+            return new TemporalFluent(
                     delayFromStart + a.minDelay(a.start(), t.start()).lb(),
                     delayToEnd + a.minDelay(t.end(), a.end()).lb(),
                     f.func,
@@ -91,7 +77,7 @@ public class HierarchicalEffects {
                     origin);
         }
 
-        Effect asEffectOfSubtask(AbstractAction a, Subtask t) {
+        TemporalFluent asEffectOfSubtask(AbstractAction a, Subtask t) {
             assert a.taskName().equals(t.taskName);
             java.util.function.Function<VarPlaceHolder,VarPlaceHolder> trans = (v) -> {
                 if(v.isVar() && a.args().contains(v.asVar()))
@@ -101,7 +87,7 @@ public class HierarchicalEffects {
                 else
                     return v;
             };
-            return new Effect(
+            return new TemporalFluent(
                     delayFromStart + t.delayFromStart,
                     delayToEnd + t.delayToEnd,
                     f.func,
@@ -146,22 +132,26 @@ public class HierarchicalEffects {
     }
 
     private final AnmlProblem pb;
-    private Map<String, List<Effect>> tasksEffects = new HashMap<>();
-    private Map<AbstractAction, List<Effect>> actionEffects = new HashMap<>();
-    private Map<AbstractAction, List<Effect>> directActionEffects = new HashMap<>();
+    private Map<String, List<TemporalFluent>> tasksEffects = new HashMap<>();
+    private Map<AbstractAction, List<TemporalFluent>> actionEffects = new HashMap<>();
+    private Map<AbstractAction, List<TemporalFluent>> directActionEffects = new HashMap<>();
+    private Map<AbstractAction, List<TemporalFluent>> directActionConditions = new HashMap<>();
     private Map<String, List<Subtask>> subtasks = new HashMap<>();
 
     HierarchicalEffects(AnmlProblem pb) {
         this.pb = pb;
+        for(AbstractAction a : pb.abstractActions()) {
+            directConditionsOf(a);
+        }
     }
 
-    private List<Effect> regrouped(List<Effect> effects) {
-        Map<Effect.Fluent, List<Effect>> grouped = effects.stream().collect(Collectors.groupingBy(Effect::getF));
-        List<Effect> reduced = grouped.keySet().stream().map(f -> {
+    private List<TemporalFluent> regrouped(List<TemporalFluent> effects) {
+        Map<TemporalFluent.Fluent, List<TemporalFluent>> grouped = effects.stream().collect(Collectors.groupingBy(TemporalFluent::getF));
+        List<TemporalFluent> reduced = grouped.keySet().stream().map(f -> {
             int minFromStart = grouped.get(f).stream().map(e -> e.delayFromStart).min(Integer::compare).get();
             int minToEnd = grouped.get(f).stream().map(e -> e.delayToEnd).min(Integer::compare).get();
             List<StatementPointer> origins = grouped.get(f).stream().flatMap(e -> e.getOrigin().stream()).collect(Collectors.toList());
-            return new Effect(minFromStart, minToEnd, f.func, f.args, f.value, origins);
+            return new TemporalFluent(minFromStart, minToEnd, f.func, f.args, f.value, origins);
         }).collect(Collectors.toList());
         return reduced;
     }
@@ -170,7 +160,7 @@ public class HierarchicalEffects {
     private List<AbstractAction> methodsOfTask(String t) { return pb.actionsByTask().get(t); }
 
     /** Returns the effects that appear in the body of this action (regardless of its subtasks. */
-    private List<Effect> directEffectsOf(AbstractAction a) {
+    private List<TemporalFluent> directEffectsOf(AbstractAction a) {
         java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
             if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
                 return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
@@ -178,9 +168,9 @@ public class HierarchicalEffects {
                 return new LVarArg(v);
         };
         if (!directActionEffects.containsKey(a)) {
-            List<Effect> directEffects = a.jLogStatements().stream()
+            List<TemporalFluent> directEffects = a.jLogStatements().stream()
                     .filter(AbstractLogStatement::hasEffectAtEnd)
-                    .map(s -> new Effect(
+                    .map(s -> new TemporalFluent(
                             a.minDelay(a.start(), s.end()).lb(),
                             a.minDelay(s.end(), a.end()).lb(),
                             s.sv().func(),
@@ -195,15 +185,75 @@ public class HierarchicalEffects {
         return directActionEffects.get(a);
     }
 
+    private List<TemporalFluent> directConditionsOf(AbstractAction a) {
+        java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
+            if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
+                return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
+            else
+                return new LVarArg(v);
+        };
+        if (!directActionConditions.containsKey(a)) {
+            List<TemporalFluent> effectFluents = a.jLogStatements().stream()
+                    .filter(AbstractLogStatement::hasEffectAtEnd)
+                    .map(s -> new TemporalFluent(
+                            a.minDelay(a.start(), s.end()).lb(),
+                            a.minDelay(s.end(), a.end()).lb(),
+                            s.sv().func(),
+                            s.sv().jArgs().stream().map(asPlaceHolder).collect(Collectors.toList()),
+                            asPlaceHolder.apply(s.effectValue()),
+                            Collections.singletonList(new StatementPointer(a, s.id(), s.hasConditionAtStart()))))
+                    .collect(Collectors.toList());
+
+            List<TemporalFluent> conditionFluents = a.jLogStatements().stream()
+                    .filter(AbstractLogStatement::hasConditionAtStart)
+                    .map(s -> {
+                        AbsTP endTP = s.hasEffectAtEnd() ? s.start() : s.end();
+                        return new TemporalFluent(
+                                a.minDelay(a.start(), s.start()).lb(),
+                                a.minDelay(endTP, a.end()).lb(),
+                                s.sv().func(),
+                                s.sv().jArgs().stream().map(asPlaceHolder).collect(Collectors.toList()),
+                                asPlaceHolder.apply(s.conditionValue()),
+                                Collections.singletonList(new StatementPointer(a, s.id(), s.hasConditionAtStart())));
+                    })
+                    .collect(Collectors.toList());
+
+            List<TemporalFluent> allFluents = new ArrayList<>(effectFluents);
+            allFluents.addAll(conditionFluents);
+
+            directActionConditions.put(a, regrouped(allFluents));
+        }
+
+        return directActionConditions.get(a);
+    }
+
+    private List<TemporalFluent> intersect(List<List<TemporalFluent>> fluentsSet) {
+        List<List<TemporalFluent>> combs = Utils.allCombinations(fluentsSet);
+        List<List<TemporalFluent>> validCombs = combs.stream().map(l -> l.stream())
+                .filter(fs -> fs.allMatch(f -> f.f.func == fs.findFirst().get().f.func))
+                .map(s -> s.collect(Collectors.toList()))
+                .collect(Collectors.toList());
+
+        return null;
+    }
+
+    public void conditionsOf(AbstractAction a) {
+
+    }
+
+    private List<TemporalFluent> directConditionsOf(String task) {
+        return null;
+    }
+
     /** Union of the direct effects of all methods for this task */
-    private List<Effect> directEffectsOf(Subtask t) {
+    private List<TemporalFluent> directEffectsOf(Subtask t) {
         return methodsOfTask(t.taskName).stream()
                 .flatMap(a -> directEffectsOf(a).stream().map(e -> e.asEffectOfSubtask(a, t)))
                 .collect(Collectors.toList());
     }
 
     /** all effects that can be introduced in the plan by completly decomposing this task */
-    private List<Effect> effectsOf(String task) {
+    private List<TemporalFluent> effectsOf(String task) {
         if(!tasksEffects.containsKey(task)) {
             tasksEffects.put(task,
                     subtasksOf(task).stream()
@@ -262,13 +312,13 @@ public class HierarchicalEffects {
         }
     }
 
-    private List<Effect> effectsOf(AbstractAction a) {
+    private List<TemporalFluent> effectsOf(AbstractAction a) {
         if(!actionEffects.containsKey(a)) {
-            List<Effect> undirEffects = a.jSubTasks().stream()
+            List<TemporalFluent> undirEffects = a.jSubTasks().stream()
                     .flatMap(t -> effectsOf(t.name()).stream().map(e -> e.asEffectBySubtask(a, t)))
                     .collect(Collectors.toList());
 
-            List<Effect> effects = new ArrayList<>(directEffectsOf(a));
+            List<TemporalFluent> effects = new ArrayList<>(directEffectsOf(a));
             effects.addAll(undirEffects);
 
             actionEffects.put(a, regrouped(effects));
@@ -315,14 +365,14 @@ public class HierarchicalEffects {
                     Stream.of(asDomain(value, st)))
                     .collect(Collectors.toList()));
         }
-        private static DomainList from(Effect.Fluent f, Map<LVarRef,VarRef> bindings, State st) {
+        private static DomainList from(TemporalFluent.Fluent f, Map<LVarRef,VarRef> bindings, State st) {
             return new DomainList(
                     Stream.concat(
                             f.getArgs().stream().map(v -> asDomain(v, bindings, st)),
                             Stream.of(asDomain(f.getValue(), bindings, st)))
                             .collect(Collectors.toList()));
         }
-        private static DomainList from(Effect.Fluent f, State st) {
+        private static DomainList from(TemporalFluent.Fluent f, State st) {
             return new DomainList(
                     Stream.concat(
                             f.getArgs().stream().map(v -> asDomainFromLocalVars(v, st)),

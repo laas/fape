@@ -28,7 +28,7 @@ public class NumUnboundVariables extends PartialPlanComparator {
         return "Unbound: num-unbound: "+ st.getUnboundVariables().size();
     }
 
-    @Override public float g(State st) { return 0; }
-    @Override public float h(State st) { return st.getUnboundVariables().size(); }
-    @Override public float hc(State st) { return h(st); }
+    @Override public double g(State st) { return 0; }
+    @Override public double h(State st) { return st.getUnboundVariables().size(); }
+    @Override public double hc(State st) { return h(st); }
 }
