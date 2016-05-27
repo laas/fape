@@ -22,9 +22,11 @@ import fr.laas.fape.structures.IDijkstraQueue;
 import fr.laas.fape.structures.IRSet;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.statements.LogStatement;
 
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -183,14 +185,29 @@ public class MinSpanTreeExtFull implements StateExtension {
             int ret = distToFinalNode(startNodes);
             minPreviousCost.put(og, ret);
         }
+        currentCost = 0; // num statements in state
         for(Timeline tl : st.getTimelines()) {
-            int localCost = 0;
-            int pastChanges = 0;
-            for(ChainComponent cc : tl.chain) {
-                currentCost += cc.size() * (pastChanges+1);
-                additionalCost += cc.size() * minPreviousCost.getOrDefault(tl,0);
-                if(cc.change)
-                    pastChanges++;
+            for (ChainComponent cc : tl.chain) {
+                currentCost += cc.size();
+            }
+        }
+        List<List<Pair<ParameterizedStateVariable,Integer>>> costsPerFunction =
+                minPreviousCost.entrySet().stream()
+                        .collect(Collectors.groupingBy(e -> e.getKey().stateVariable.func())).entrySet().stream()
+                        .map(e -> e.getValue())
+                        .map(s -> s.stream().map(e -> new Pair<>(e.getKey().stateVariable, e.getValue()))
+                                .sorted((e1,e2) -> e2.getValue2().compareTo(e1.getValue2()))
+                                .collect(Collectors.toList()))
+                        .collect(Collectors.toList());
+        for(List<Pair<ParameterizedStateVariable,Integer>> l : costsPerFunction) {
+            Set<ParameterizedStateVariable> accountedFor = new HashSet<>();
+            for(Pair<ParameterizedStateVariable,Integer> p : l) {
+                if(accountedFor.stream().allMatch(sv -> !st.unifiable(sv, p.getValue1()))) {
+                    accountedFor.add(p.getValue1());
+                    additionalCost += p.getValue2();
+                    if(dbgLvl >= 1)
+                        System.out.println("++ "+Printer.stateVariable(st,p.getValue1())+"  "+p.getValue2());
+                }
             }
         }
     }
@@ -211,11 +228,11 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
             int curCost = q.getCost(cur);
             TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
-            for(Change c : dtg.getBaseNode(cur.f.value).inChanges()) {
+            for(Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
                 if(c.isTransition()) {
-                    q.putIfBetter(new DijNode(c.getFrom().getFluent(), cur.tl), curCost+1, cur);
+                    q.putIfBetter(new DijNode(c.getFrom().getFluent(), cur.tl), curCost+ c.getContainer().getStatements().size(), cur);
                 } else {
-                    q.putIfBetter(new DijNode(null,cur.tl), curCost+1, cur);
+                    q.putIfBetter(new DijNode(null,cur.tl), curCost+ c.getContainer().getStatements().size(), cur);
                 }
             }
             for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
@@ -224,11 +241,11 @@ public class MinSpanTreeExtFull implements StateExtension {
                     //only consider those that are end of a chain of causal links
                     for(TimelineDTG.Node n : timelineDTGs.get(sup).produced(e.getChangeNumber(), cur.f)) {
                         if(n.leftmost() instanceof TimelineDTG.FinalNode) {
-                            q.putIfBetter(new DijNode(null,sup), curCost+sup.numChanges(), cur);
+                            q.putIfBetter(new DijNode(null,sup), curCost+1, cur);
                         } else {
                             assert n.leftmost() instanceof TimelineDTG.UnsupportedNode;
                             Fluent f = ((TimelineDTG.UnsupportedNode) n.leftmost()).getF();
-                            q.putIfBetter(new DijNode(f,  sup), curCost+sup.numChanges(), cur);
+                            q.putIfBetter(new DijNode(f,  sup), curCost+1, cur);
                         }
                     }
                 }
@@ -257,50 +274,6 @@ public class MinSpanTreeExtFull implements StateExtension {
         }
         boolean isTerminal() { return f == null; }
         @Override public String toString() { return "["+f+", "+tl.mID+"]"; }
-    }
-
-    private int minDist(Collection<Fluent> potentialSupporters, Collection<Fluent> targets) throws NoSolutionException {
-        Preprocessor pp = st.pl.preprocessor;
-        Set<GStateVariable> svs = targets.stream().map(f -> f.sv).collect(Collectors.toSet());
-
-        IDijkstraQueue<Node> q = new IDijkstraQueue<>(pp.store.getIntRep(Node.class));
-
-        for(Fluent f : targets) {
-            if(potentialSupporters.contains(f))
-                return 0;
-            q.insert(pp.getTemporalDTG(f.sv).getBaseNode(f.value), 0);
-        }
-        int cost = Integer.MAX_VALUE;
-        int solutionAt = Integer.MAX_VALUE;
-        while(!q.isEmpty() && cost == Integer.MAX_VALUE) {
-            Node cur = q.poll();
-            if(potentialSupporters.contains(cur.getFluent())) {
-                cost = q.getCost(cur);
-            } else if(q.getCost(cur) == solutionAt) {
-                cost = solutionAt;
-            } else {
-                int c = q.getCost(cur);
-                for(Change ch : cur.inChanges()) {
-                    int costOfChange = useNumChangesInAction ?
-                            (int) ch.getContainer().getStatements().stream().filter(s -> s.isChange()).count() : 1;
-                    if(ch.isTransition()) {
-                        if(q.hasCost(ch.getFrom())) {
-                            if(q.getCost(ch.getFrom()) > c+costOfChange)
-                                q.update(ch.getFrom(), c+costOfChange);
-                        } else {
-                            q.insert(ch.getFrom(), c+costOfChange);
-                        }
-                    } else {
-                        // we have an assignment, hence there is a solution with an additional cost of 1
-                        solutionAt = c + costOfChange;
-                    }
-                }
-            }
-        }
-        cost = Math.min(cost, solutionAt);
-        if(cost == Integer.MAX_VALUE)
-            throw new NoSolutionException();
-        return cost;
     }
 
     private HashSet<GLogStatement> getGrounded(LogStatement s) {
