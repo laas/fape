@@ -33,7 +33,7 @@ public abstract class PartialPlanComparator implements Heuristic {
 
     public final Comparator<SearchNode> comparator(PlanningOptions options) {
         return new Comparator<SearchNode>() {
-            private double f(SearchNode sn) { return g(sn) + options.w * h(sn); }
+            private double f(SearchNode sn) { return g(sn) + options.heuristicWeight * h(sn); }
             @Override
             public int compare(SearchNode st1, SearchNode st2) {
                 int ret = (int) Math.signum(f(st1) - f(st2));
