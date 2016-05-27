@@ -1,6 +1,5 @@
 package fape.core.planning.search.strategies.plans.tsp;
 
-import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction.GLogStatement;
 import fape.core.planning.planner.Planner;
@@ -77,60 +76,47 @@ public class MinSpanTreeExtFull implements StateExtension {
 
     private class TimelineDTG {
         Timeline tl;
-        List<Map<Fluent,Collection<Node>>> producedByChange = new ArrayList<>();
-
-        abstract class Node {
-            public abstract Node getLeftmost();
-        }
-        @Getter class ProducedNode extends Node {
-            final Fluent f;
-            final LogStatement producingStatement;
-            final Node previous;
-            final Node leftmost;
-            ProducedNode(Fluent f, LogStatement producingStatement, Node previous) {
-                this.f = f;
-                this.producingStatement = producingStatement;
-                this.previous = previous;
-                this.leftmost = previous.getLeftmost();
-            }
-            @Override public Node getLeftmost() { return leftmost; }
-        }
-        @AllArgsConstructor @Getter class UnsupportedNode extends Node {
-            final Fluent f;
-            @Override public Node getLeftmost() { return this; }
-        }
-        class FinalNode extends Node {
-            @Override public Node getLeftmost() { return this; }
-        }
+        List<Map<Fluent,Set<Fluent>>> precedingFluents = new ArrayList<>();
 
         TimelineDTG(Timeline tl) {
             this.tl = tl;
             assert !tl.hasSinglePersistence();
             for(int i=0; i< tl.numChanges() ; i++) {
-                producedByChange.add(new HashMap<>());
+                precedingFluents.add(new HashMap<>());
                 LogStatement e = tl.getEvent(i);
                 for(GLogStatement ge : st.getGroundStatements(e)) {
-                    producedByChange.get(i).computeIfAbsent(ge.getEndFluent(), (f) -> new HashSet<>());
                     if (!e.needsSupport()) {
-                        Node n = new ProducedNode(ge.getEndFluent(), e, new FinalNode());
-                        producedByChange.get(i).get(ge.getEndFluent()).add(n);
-                    } else if(i == 0) {
-                        // first change
-                        Node n = new ProducedNode(ge.getEndFluent(), e, new UnsupportedNode(ge.getStartFluent()));
-                        producedByChange.get(i).get(ge.getEndFluent()).add(n);
-                    } else {
-                        //find nodes
-                        for(Node prev : produced(i-1, ge.getStartFluent())) {
-                            Node n = new ProducedNode(ge.getEndFluent(), e, prev);
-                            producedByChange.get(i).get(ge.getEndFluent()).add(n);
+                        assert i == 0;
+                        if(this.precedingFluents.get(i).containsKey(ge.getEndFluent())) {
+                            assert precedingFluents.get(i).get(ge.getEndFluent()) == null;
+                        } else {
+                            precedingFluents.get(i).put(ge.getEndFluent(), null);
                         }
+                    } else {
+                        if(i > 0 && !precedingFluents.get(i-1).containsKey(ge.getStartFluent()))
+                            continue; // there is no path to this fluent
+                        this.precedingFluents.get(i).computeIfAbsent(ge.getEndFluent(), x -> new HashSet<>());
+                        this.precedingFluents.get(i).get(ge.getEndFluent()).add(ge.getStartFluent());
                     }
                 }
             }
         }
 
-        private Collection<Node> produced(int level, Fluent f) {
-            return producedByChange.get(level).computeIfAbsent(f, x -> Collections.emptyList());
+        Collection<Fluent> leftMostsFrom(int level, Collection<Fluent> sources) {
+            assert tl.isConsumer();
+            Set<Fluent> previousFluents = sources.stream()
+                    .filter(f-> precedingFluents.get(level).containsKey(f))
+                    .flatMap(f -> precedingFluents.get(level).get(f).stream())
+                    .collect(Collectors.toSet());
+            if(level == 0) {
+                return previousFluents;
+            } else {
+                return leftMostsFrom(level-1, previousFluents);
+            }
+        }
+
+        boolean canSupportAtEnd(Fluent f) {
+            return precedingFluents.get(precedingFluents.size()-1).containsKey(f);
         }
     }
 
@@ -155,21 +141,20 @@ public class MinSpanTreeExtFull implements StateExtension {
             Set<Pair<DijNode,Integer>> startNodes = new HashSet<>();
 
             for(Fluent f : startFluents(og.getFirst().getFirst())) {
-                startNodes.add(new Pair<>(new DijNode(f, og),0));
-                for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(og)) {
-                    Timeline sup = st.getTimeline(e.supporterID);
-                    if(e.getChangeNumber() < sup.numChanges()-1) {
-                        // not last change
-                        for(TimelineDTG.Node n : timelineDTGs.get(sup).produced(e.getChangeNumber(), f).stream()
-                                .map(TimelineDTG.Node::getLeftmost).collect(Collectors.toList())) {
-                            if(n instanceof TimelineDTG.FinalNode) {
-                                startNodes.add(new Pair<>(new DijNode(null, sup), e.getChangeNumber()+1));
-                            } else {
-                                assert n instanceof TimelineDTG.UnsupportedNode;
-                                startNodes.add(new Pair<>(new DijNode(((TimelineDTG.UnsupportedNode) n).f, sup),e.getChangeNumber()+1));
-                            }
+                startNodes.add(new Pair<>(new DijNode(f, og), 0));
+            }
+            for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(og)) {
+                Timeline sup = st.getTimeline(e.supporterID);
+                if(e.getChangeNumber() < sup.numChanges()-1) {
+                    if(sup.isConsumer()) {
+                        // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
+                        Collection<Fluent> supStartFluents = timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), startFluents(og.getFirst().getFirst()));
+                        for(Fluent f : supStartFluents) {
+                            startNodes.add(new Pair<>(new DijNode(f, sup), 1));
                         }
-
+                    } else {
+                        // this is a terminal node, add it to the queue
+                        startNodes.add(new Pair<>(new DijNode(null, sup), 1));
                     }
                 }
             }
@@ -185,28 +170,26 @@ public class MinSpanTreeExtFull implements StateExtension {
                 currentCost += cc.size();
             }
         }
-        List<List<Pair<ParameterizedStateVariable,Integer>>> costsPerFunction =
+        // list of (sv, cost) sorted by descending cost
+        List<Pair<ParameterizedStateVariable,Integer>> costsPerStateVariable =
                 minPreviousCost.entrySet().stream()
-                        .collect(Collectors.groupingBy(e -> e.getKey().stateVariable.func())).entrySet().stream()
-                        .map(e -> e.getValue())
-                        .map(s -> s.stream().map(e -> new Pair<>(e.getKey().stateVariable, e.getValue()))
-                                .sorted((e1,e2) -> e2.getValue2().compareTo(e1.getValue2()))
-                                .collect(Collectors.toList()))
+                        .map(e -> new Pair<>(e.getKey().stateVariable, e.getValue()))
+                        .sorted((e1,e2) -> e2.getValue2().compareTo(e1.getValue2()))
                         .collect(Collectors.toList());
-        for(List<Pair<ParameterizedStateVariable,Integer>> l : costsPerFunction) {
-            Set<ParameterizedStateVariable> accountedFor = new HashSet<>();
-            for(Pair<ParameterizedStateVariable,Integer> p : l) {
-                if(accountedFor.stream().allMatch(sv -> !st.unifiable(sv, p.getValue1()))) {
-                    accountedFor.add(p.getValue1());
-                    additionalCost += p.getValue2();
-                    if(dbgLvl >= 1)
-                        System.out.println("++ "+Printer.stateVariable(st,p.getValue1())+"  "+p.getValue2());
-                }
+
+        // greedily find a set non overlapping state variables whose sum of costs is maximal
+        Set<ParameterizedStateVariable> accountedFor = new HashSet<>();
+        for(Pair<ParameterizedStateVariable,Integer> p : costsPerStateVariable) {
+            if(accountedFor.stream().allMatch(sv -> !st.unifiable(sv, p.getValue1()))) {
+                accountedFor.add(p.getValue1());
+                additionalCost += p.getValue2();
+                if(dbgLvl >= 1)
+                    System.out.println("++ "+Printer.stateVariable(st,p.getValue1())+"  "+p.getValue2());
             }
         }
     }
 
-
+    /** Estimate the minimal number of statements that must be added to the plan to support on of those nodes */
     private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) {
         int numIter = 0;
         DijkstraQueue<DijNode> q = new DijkstraQueue<>();
@@ -233,16 +216,13 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
             for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
                 Timeline sup = st.getTimeline(e.supporterID);
-                if(e.getChangeNumber() == sup.numChanges()-1) {
-                    //only consider those that are end of a chain of causal links
-                    for(TimelineDTG.Node n : timelineDTGs.get(sup).produced(e.getChangeNumber(), cur.f)) {
-                        if(n.getLeftmost() instanceof TimelineDTG.FinalNode) {
-                            q.putIfBetter(new DijNode(null,sup), curCost+1, 0, cur);
-                        } else {
-                            assert n.getLeftmost() instanceof TimelineDTG.UnsupportedNode;
-                            Fluent f = ((TimelineDTG.UnsupportedNode) n.getLeftmost()).getF();
-                            q.putIfBetter(new DijNode(f,  sup), curCost+1, 1, cur);
+                if(e.getChangeNumber() == sup.numChanges()-1 && timelineDTGs.get(sup).canSupportAtEnd(cur.f)) {
+                    if(sup.isConsumer()) {
+                        for(Fluent left : timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), Collections.singleton(cur.f))) {
+                            q.putIfBetter(new DijNode(left,  sup), curCost+1, 1, cur);
                         }
+                    } else {
+                        q.putIfBetter(new DijNode(null,sup), curCost+1, 0, cur);
                     }
                 }
 
@@ -284,17 +264,9 @@ public class MinSpanTreeExtFull implements StateExtension {
     private Fluent startFluent(GLogStatement s) {
         return st.pl.preprocessor.getFluent(s.sv, s.startValue());
     }
-    private Fluent endFluent(GLogStatement s) {
-        return st.pl.preprocessor.getFluent(s.sv, s.endValue());
-    }
     private Set<Fluent> startFluents(LogStatement s) {
         IRSet<Fluent> fs =new IRSet<>(st.pl.preprocessor.store.getIntRep(Fluent.class));
         getGrounded(s).stream().forEach(gs -> fs.add(startFluent(gs)));
-        return fs;
-    }
-    private Set<Fluent> endFluents(LogStatement s) {
-        IRSet<Fluent> fs =new IRSet<>(st.pl.preprocessor.store.getIntRep(Fluent.class));
-        getGrounded(s).stream().forEach(gs -> fs.add(endFluent(gs)));
         return fs;
     }
 }

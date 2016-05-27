@@ -33,7 +33,8 @@ public class SOCA extends PartialPlanComparator {
     @Override
     public double h(State s) {
         return threatFinder.getFlaws(s, planner).size() * 3 +
-                    s.tdb.getConsumers().size()*3;
+                s.tdb.getConsumers().size()*3 +
+                s.taskNet.getNumOpenTasks() *3;
     }
 
     @Override
