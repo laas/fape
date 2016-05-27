@@ -1,7 +1,9 @@
 package fape.core.planning.search.strategies.plans.tsp;
 
+import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction.GLogStatement;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.Change;
 import fape.core.planning.search.Handler;
@@ -78,7 +80,6 @@ public class MinSpanTreeExtFull implements StateExtension {
         List<Map<Fluent,Collection<Node>>> producedByChange = new ArrayList<>();
 
         abstract class Node {
-            public abstract boolean matches(Fluent f);
             public abstract Node getLeftmost();
         }
         @Getter class ProducedNode extends Node {
@@ -92,16 +93,13 @@ public class MinSpanTreeExtFull implements StateExtension {
                 this.previous = previous;
                 this.leftmost = previous.getLeftmost();
             }
-            @Override public boolean matches(Fluent f) { return f.equals(this.f); }
             @Override public Node getLeftmost() { return leftmost; }
         }
         @AllArgsConstructor @Getter class UnsupportedNode extends Node {
             final Fluent f;
-            @Override public boolean matches(Fluent f) { return f.equals(this.f); }
             @Override public Node getLeftmost() { return this; }
         }
         class FinalNode extends Node {
-            @Override public boolean matches(Fluent f) { return false; }
             @Override public Node getLeftmost() { return this; }
         }
 
@@ -143,14 +141,6 @@ public class MinSpanTreeExtFull implements StateExtension {
 
             timelineDTGs.put(tl, new TimelineDTG(tl));
         }
-    }
-
-    private boolean support(Event e, Timeline og) {
-        Set<Fluent> supporters = endFluents(e.getStatement());
-        for(Fluent f : startFluents(og.getFirst().getFirst()))
-            if(supporters.contains(f))
-                return true;
-        return false;
     }
 
     private void computeDistance() {
@@ -218,13 +208,15 @@ public class MinSpanTreeExtFull implements StateExtension {
 
 
     private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) {
+        int numIter = 0;
         DijkstraQueue<DijNode> q = new DijkstraQueue<>();
         for(Pair<DijNode,Integer> p : startNodes) {
-            q.putIfBetter(p.getValue1(), p.getValue2(), null);
+            q.putIfBetter(p.getValue1(), p.getValue2(), 1, null);
         }
 
         DijNode sol = null;
         while(!q.isEmpty() && sol == null) {
+            numIter++;
             DijNode cur = q.poll();
             if(cur.isTerminal()) {
                 sol = cur;
@@ -234,9 +226,9 @@ public class MinSpanTreeExtFull implements StateExtension {
             TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
             for(Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
                 if(c.isTransition()) {
-                    q.putIfBetter(new DijNode(c.getFrom().getFluent(), cur.tl), curCost+ c.getContainer().getNumStatements(), cur);
+                    q.putIfBetter(new DijNode(c.getFrom().getFluent(), cur.tl), curCost+ c.getContainer().getNumStatements(), 1, cur);
                 } else {
-                    q.putIfBetter(new DijNode(null,cur.tl), curCost+ c.getContainer().getNumStatements(), cur);
+                    q.putIfBetter(new DijNode(null,cur.tl), curCost+ c.getContainer().getNumStatements(), 0, cur);
                 }
             }
             for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
@@ -245,17 +237,19 @@ public class MinSpanTreeExtFull implements StateExtension {
                     //only consider those that are end of a chain of causal links
                     for(TimelineDTG.Node n : timelineDTGs.get(sup).produced(e.getChangeNumber(), cur.f)) {
                         if(n.getLeftmost() instanceof TimelineDTG.FinalNode) {
-                            q.putIfBetter(new DijNode(null,sup), curCost+1, cur);
+                            q.putIfBetter(new DijNode(null,sup), curCost+1, 0, cur);
                         } else {
                             assert n.getLeftmost() instanceof TimelineDTG.UnsupportedNode;
                             Fluent f = ((TimelineDTG.UnsupportedNode) n.getLeftmost()).getF();
-                            q.putIfBetter(new DijNode(f,  sup), curCost+1, cur);
+                            q.putIfBetter(new DijNode(f,  sup), curCost+1, 1, cur);
                         }
                     }
                 }
 
             }
         }
+        if(Planner.debugging && numIter >= 1000)
+            System.out.println("Warning: More than 1000 iterations in computation of critical path heuristic");
 
         if(dbgLvl >= 2) {
             DijNode c = sol;

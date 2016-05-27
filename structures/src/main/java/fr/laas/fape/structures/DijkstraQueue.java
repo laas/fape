@@ -8,6 +8,7 @@ public class DijkstraQueue<E> {
 
     private int currentSize; // Number of elements in heap
     private Map<E,Integer> costs;
+    private Map<E,Integer> costsToGo;
     private final Map<E,Integer> positions;
     private final Map<E,E> predecessors;
 
@@ -21,6 +22,7 @@ public class DijkstraQueue<E> {
         this.array = (E[]) new Object[50];
         Arrays.fill(this.array, -1);
         this.costs = new HashMap<>();
+        this.costsToGo = new HashMap<>();
         this.positions = new HashMap<>();
         this.predecessors = new HashMap<>();
     }
@@ -29,20 +31,15 @@ public class DijkstraQueue<E> {
         currentSize = q.currentSize;
         array = Arrays.copyOf(q.array, q.array.length);
         costs = new HashMap<>(q.costs);
+        costsToGo = new HashMap<>(q.costsToGo);
         positions = new HashMap<>(q.positions);
         predecessors = new HashMap<>(q.predecessors);
     }
 
-    public void initCosts(IR2IntMap<E> costs) {
-        assert this.costs.isEmpty();
-        this.costs = costs.clone();
-    }
-    public Map<E,Integer> getCosts() { return this.costs; }
-
     private int compare(E e1, E e2) {
-        int c1 = e1 == null ? -1 : costs.get(e1);
-        int c2 = e2 == null ? -1 : costs.get(e2);
-        return costs.get(e1) - costs.get(e2);
+        int c1 = e1 == null ? -1 : costs.get(e1) + costsToGo.get(e1);
+        int c2 = e2 == null ? -1 : costs.get(e2) + costsToGo.get(e2);
+        return c1 - c2;
     }
 
     // Sets an element in the array
@@ -70,19 +67,21 @@ public class DijkstraQueue<E> {
      *
      * @param x the item to insert.
      */
-    public final void insert(E x, int cost, E predecessor) {
+    public final void insert(E x, int cost, int costToGo, E predecessor) {
         assert !contains(x);
         int index = this.currentSize++;
         this.costs.put(x, cost);
+        this.costsToGo.put(x, costToGo);
         this.arraySet(index, x);
         this.percolateUp(index);
         if(predecessor != null)
             this.predecessors.put(x, predecessor);
     }
 
-    public final void update(E x, int cost, E predecessor) {
+    public final void update(E x, int cost, int costToGo, E predecessor) {
         assert contains(x);
         this.costs.put(x, cost);
+        this.costsToGo.put(x, costToGo);
         int index = positions.get(x);
         percolateDown(index);
         percolateUp(index);
@@ -90,19 +89,20 @@ public class DijkstraQueue<E> {
             this.predecessors.put(x, predecessor);
     }
 
-    public final void putIfBetter(E x, int cost, E predecessor) {
+    public final void putIfBetter(E x, int cost, int costToGo, E predecessor) {
         if(hasCost(x) && getCost(x) < cost) {
             return;
         } else if(contains(x)) {
-            update(x, cost, predecessor);
+            update(x, cost, costToGo, predecessor);
         } else {
-            insert(x, cost, predecessor);
+            insert(x, cost, costToGo, predecessor);
         }
     }
 
     public boolean contains(E x) { return positions.containsKey(x); }
     public boolean hasCost(E x) { return costs.containsKey(x); }
     public int getCost(E x) { return costs.get(x); }
+    public int getCostToGo(E x) { return costsToGo.get(x); }
     public E getPredecessor(E x) { return predecessors.get(x); }
 
     /**
