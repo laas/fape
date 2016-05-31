@@ -13,6 +13,7 @@ import fape.core.planning.states.State;
 import fape.core.planning.states.StateExtension;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import fape.exceptions.NoSolutionException;
 import fape.util.Pair;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IRSet;
@@ -138,31 +139,35 @@ public class MinSpanTreeExtFull implements StateExtension {
         this.currentCost = 0;
 
         for(Timeline og : st.tdb.getConsumers()) {
-            Set<Pair<DijNode,Integer>> startNodes = new HashSet<>();
+            try {
+                Set<Pair<DijNode, Integer>> startNodes = new HashSet<>();
 
-            for(Fluent f : startFluents(og.getFirst().getFirst())) {
-                startNodes.add(new Pair<>(new DijNode(f, og), 0));
-            }
-            for(Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(og)) {
-                Timeline sup = st.getTimeline(e.supporterID);
-                if(e.getChangeNumber() < sup.numChanges()-1) {
-                    if(sup.isConsumer()) {
-                        // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
-                        Collection<Fluent> supStartFluents = timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), startFluents(og.getFirst().getFirst()));
-                        for(Fluent f : supStartFluents) {
-                            startNodes.add(new Pair<>(new DijNode(f, sup), 1));
+                for (Fluent f : startFluents(og.getFirst().getFirst())) {
+                    startNodes.add(new Pair<>(new DijNode(f, og), 0));
+                }
+                for (Event e : st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(og)) {
+                    Timeline sup = st.getTimeline(e.supporterID);
+                    if (e.getChangeNumber() < sup.numChanges() - 1) {
+                        if (sup.isConsumer()) {
+                            // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
+                            Collection<Fluent> supStartFluents = timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), startFluents(og.getFirst().getFirst()));
+                            for (Fluent f : supStartFluents) {
+                                startNodes.add(new Pair<>(new DijNode(f, sup), 1));
+                            }
+                        } else {
+                            // this is a terminal node, add it to the queue
+                            startNodes.add(new Pair<>(new DijNode(null, sup), 1));
                         }
-                    } else {
-                        // this is a terminal node, add it to the queue
-                        startNodes.add(new Pair<>(new DijNode(null, sup), 1));
                     }
                 }
-            }
-            if(dbgLvl >= 2)
-                System.out.println(Printer.inlineTemporalDatabase(st, og));
+                if (dbgLvl >= 2)
+                    System.out.println(Printer.inlineTemporalDatabase(st, og));
 
-            int ret = distToFinalNode(startNodes);
-            minPreviousCost.put(og, ret);
+                int ret = distToFinalNode(startNodes);
+                minPreviousCost.put(og, ret);
+            } catch (NoSolutionException e) {
+                throw new UnachievableGoalException(og);
+            }
         }
         currentCost = 0; // num statements in state
         for(Timeline tl : st.getTimelines()) {
@@ -190,7 +195,7 @@ public class MinSpanTreeExtFull implements StateExtension {
     }
 
     /** Estimate the minimal number of statements that must be added to the plan to support on of those nodes */
-    private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) {
+    private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) throws NoSolutionException {
         int numIter = 0;
         DijkstraQueue<DijNode> q = new DijkstraQueue<>();
         for(Pair<DijNode,Integer> p : startNodes) {
@@ -239,7 +244,10 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
             System.out.println("\nDist: " + q.getCost(sol) + "\n");
         }
-        return q.getCost(sol);
+        if(sol == null)
+            throw new NoSolutionException("");
+        else
+            return q.getCost(sol);
     }
 
     @Value private class DijNode {
