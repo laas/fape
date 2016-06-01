@@ -210,14 +210,20 @@ public class State implements Reporter {
         assert extensions.stream().allMatch(e -> e.getClass() != ext.getClass())
                 : "Already an extension with the same class: " + ext;
         extensions.add(ext);
+        // replay old signals
+        for(Handler.StateLifeTime signal : pastSignals)
+            ext.notify(signal);
     }
     public Stream<StateExtension> extensions() { return extensions.stream(); }
     @SuppressWarnings("rawtypes")
     public boolean hasExtension(Class clazz) { return extensions().anyMatch(ext -> ext.getClass() == clazz); }
 
+    private List<Handler.StateLifeTime> pastSignals = new ArrayList<>(2);
     public void notify(Handler.StateLifeTime stateLifeTime) {
-        for(StateExtension ext : extensions)
+        for(StateExtension ext : extensions) {
             ext.notify(stateLifeTime);
+        }
+        pastSignals.add(stateLifeTime);
     }
 
     /**
