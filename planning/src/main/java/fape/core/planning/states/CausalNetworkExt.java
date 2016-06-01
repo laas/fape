@@ -10,6 +10,7 @@ import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.ISet;
+import scala.Function1;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -28,6 +29,7 @@ public class CausalNetworkExt implements StateExtension {
         public final int supporterID;
         public final int changeNumber;
         public final LogStatement statement;
+        public final int consumerID;
     }
     private Timeline timelineOf(Event e) { return container.getTimeline(e.getSupporterID()); }
     private ChainComponent componentOf(Event e) { return timelineOf(e).getChangeNumber(e.getChangeNumber()); }
@@ -43,7 +45,8 @@ public class CausalNetworkExt implements StateExtension {
     private final Set<Integer> addedTimelines;
     private final List<Integer> removedTimelines;
 
-    private final Map<Event, ISet<Integer>> possiblyThreateningTimelines;
+    private final Map<Event, ISet<Integer>> possiblyInterferingTimelines;
+    private final Map<Event, ISet<Integer>> intermediateSteps;
 
     CausalNetworkExt(State container) {
         this.container = container;
@@ -52,7 +55,8 @@ public class CausalNetworkExt implements StateExtension {
         extendedTimelines = new ArrayList<>();
         removedTimelines = new ArrayList<>();
         addedTimelines = new HashSet<>(container.tdb.getTimelinesStream().map(t -> t.mID).collect(Collectors.toList()));
-        possiblyThreateningTimelines = new HashMap<>();
+        possiblyInterferingTimelines = new HashMap<>();
+        intermediateSteps = new HashMap<>();
     }
 
     private CausalNetworkExt(CausalNetworkExt toCopy, State container) {
@@ -62,7 +66,8 @@ public class CausalNetworkExt implements StateExtension {
         extendedTimelines = new ArrayList<>(toCopy.extendedTimelines);
         addedTimelines = new HashSet<>(toCopy.addedTimelines);
         removedTimelines = new ArrayList<>(toCopy.removedTimelines);
-        possiblyThreateningTimelines = new HashMap<>(toCopy.possiblyThreateningTimelines);
+        possiblyInterferingTimelines = new HashMap<>(toCopy.possiblyInterferingTimelines);
+        intermediateSteps = new HashMap<>(toCopy.intermediateSteps);
     }
 
     @Override
@@ -101,7 +106,7 @@ public class CausalNetworkExt implements StateExtension {
                 for(int i=0 ; i<sup.numChanges() ; i++) {
                     if (mightIndirectlySupport(sup, i, tl)) {
                         LogStatement ls = sup.getChangeNumber(i).getFirst();
-                        Event pis = new Event(sup.mID, i, ls);
+                        Event pis = new Event(sup.mID, i, ls, tlID);
                         potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                     }
                 }
@@ -129,7 +134,7 @@ public class CausalNetworkExt implements StateExtension {
                             for (int i = 0; i < sup.numChanges(); i++) {
                                 if (mightIndirectlySupport(sup, i, tl)) {
                                     LogStatement ls = sup.getChangeNumber(i).getFirst();
-                                    Event pis = new Event(sup.mID, i, ls);
+                                    Event pis = new Event(sup.mID, i, ls, tlID);
                                     potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                                 }
                             }
@@ -143,7 +148,7 @@ public class CausalNetworkExt implements StateExtension {
                             for (int i = lastProcessedChange.get(sup.mID)+1; i < sup.numChanges(); i++) {
                                 if (mightIndirectlySupport(sup, i, tl)) {
                                     LogStatement ls = sup.getChangeNumber(i).getFirst();
-                                    Event pis = new Event(sup.mID, i, ls);
+                                    Event pis = new Event(sup.mID, i, ls, tlID);
                                     potentialSupporters.put(tlID, potentialSupporters.get(tlID).with(pis));
                                 }
                             }
@@ -172,22 +177,25 @@ public class CausalNetworkExt implements StateExtension {
                 // when possible infer temporal constraints on the earliest appearance of the open goal
                 if(container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
                     // update potential threats
-                    ISet<Integer> initialList = possiblyThreateningTimelines.containsKey(pis) ?
-                            possiblyThreateningTimelines.get(pis) :
+                    ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
+                            possiblyInterferingTimelines.get(pis) :
                             new ISet<>();
-                    Stream<Integer> additionsToConsider = possiblyThreateningTimelines.containsKey(pis) ?
+                    Stream<Integer> additionsToConsider = possiblyInterferingTimelines.containsKey(pis) ?
                             addedTimelines.stream() :
                             tlMan.getTimelinesStream().map(x -> x.mID);
 
                     List<Integer> toRemoveFromInitialList = initialList.stream()
-                            .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyThreatening(sup, tl, tlMan.getTimeline(i)))
+                            .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
                             .collect(Collectors.toList());
                     List<Integer> toAddToInitialList = additionsToConsider
-                            .filter(i -> tlMan.containsTimelineWithID(i) && possiblyThreatening(sup, tl, tlMan.getTimeline(i)))
+                            .filter(i -> tlMan.containsTimelineWithID(i) && possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
                             .collect(Collectors.toList());
 
-                    ISet<Integer> updatedList = initialList.withoutAll(toRemoveFromInitialList).withAll(toAddToInitialList);
-                    possiblyThreateningTimelines.put(pis, updatedList);
+                    ISet<Integer> updatedList = initialList
+                            .withoutAll(toRemoveFromInitialList)
+                            .withAll(toAddToInitialList)
+                            .filter((Predicate<Integer>) id -> id != pis.supporterID && id != tlID);
+                    possiblyInterferingTimelines.put(pis, updatedList);
 
                     for (int threatID : updatedList) {
                         Timeline threat = tlMan.getTimeline(threatID);
@@ -196,11 +204,23 @@ public class CausalNetworkExt implements StateExtension {
                             break;
                         }
                     }
+
+                    intermediateSteps.put(pis, new ISet<>());
+                    for (int threatID : updatedList) {
+                        Timeline inter = tlMan.getTimeline(threatID);
+                        if (necessarilyIntermediateStep(sup, tl, inter)) {
+                            intermediateSteps.put(pis, intermediateSteps.get(pis).with(inter.mID));
+//                            System.out.println("coucou"+container.domainOf(sup.getGlobalSupportValue())+
+//                            "   "+container.domainOf(inter.getGlobalConsumeValue())+
+//                            "   "+container.domainOf(tl.getGlobalConsumeValue()));
+                        }
+                    }
                 }
             }
 
             for(Event pis : toRemove) {
-                possiblyThreateningTimelines.remove(pis);
+                possiblyInterferingTimelines.remove(pis);
+                intermediateSteps.remove(pis);
             }
             potentialSupporters.put(tlID, potentialSupporters.get(tlID).withoutAll(toRemove));
 
@@ -272,6 +292,27 @@ public class CausalNetworkExt implements StateExtension {
         return true;
     }
 
+    private boolean possiblyInterfering(Timeline supporter, Timeline consumer, Timeline threat) {
+        if(threat.hasSinglePersistence())
+            return possiblyIntermediateStep(supporter, consumer, threat);
+        else
+            return possiblyThreatening(supporter, consumer, threat);
+    }
+
+    private boolean possiblyIntermediateStep(Timeline supporter, Timeline consumer, Timeline threat) {
+        if(!threat.hasSinglePersistence())
+            return false;
+        if(!container.unifiable(supporter, threat))
+            return false;
+        if(!container.unifiable(consumer, threat))
+            return false;
+        if(!container.canAllBeBefore(supporter.getSupportTimePoint(), threat.getFirstTimePoints()))
+            return false;
+        if(!container.canAllBeBefore(threat.getLastTimePoints(), consumer.getFirstTimePoints()))
+            return false;
+        return true;
+    }
+
     private boolean possiblyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
         if(threat.hasSinglePersistence())
             return false;
@@ -289,13 +330,26 @@ public class CausalNetworkExt implements StateExtension {
     private boolean necessarilyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
         if(threat.hasSinglePersistence())
             return false;
-        if(container.unified(supporter, threat) || !container.unified(consumer, threat))
+        if(!(container.unified(supporter, threat) || container.unified(consumer, threat)))
             return false;
 
         // check if [start(supporter),end(consumer)] must overlap [start(threat),end(threat)]
-        boolean mustOverlap = !container.canAllBeBefore(supporter.getFirstChangeTimePoint(), threat.getLastTimePoints()) &&
-                !container.canAllBeBefore(threat.getFirstChangeTimePoint(), consumer.getLastTimePoints());
-        return mustOverlap;
+
+        boolean left = !container.canAllBeBefore(threat.getLastTimePoints(), supporter.getFirstChangeTimePoint());
+        boolean right = !container.canAllBeBefore(consumer.getLastTimePoints(), threat.getFirstChangeTimePoint());
+        return left && right;
+    }
+
+    private boolean necessarilyIntermediateStep(Timeline supporter, Timeline consumer, Timeline threat) {
+        if (!threat.hasSinglePersistence())
+            return false;
+        if (!(container.unified(supporter, threat) || container.unified(consumer, threat)))
+            return false;
+
+        // check if [start(supporter),end(consumer)] must overlap [start(threat),end(threat)]
+        boolean left = !container.canAllBeBefore(threat.getLastTimePoints(), supporter.getLastTimePoints());
+        boolean right = !container.canAllBeBefore(consumer.getFirstTimePoints(), threat.getFirstTimePoints());
+        return left && right;
     }
 
     private boolean mightIndirectlySupport(Timeline potentialSupporter, int changeNumber, Timeline consumer) {
@@ -330,8 +384,10 @@ public class CausalNetworkExt implements StateExtension {
     @Override
     public void timelineRemoved(Timeline tl) {
         if(potentialSupporters.containsKey(tl.mID)) {
-            for (Event e : potentialSupporters.get(tl.mID))
-                possiblyThreateningTimelines.remove(e);
+            for (Event e : potentialSupporters.get(tl.mID)) {
+                possiblyInterferingTimelines.remove(e);
+                intermediateSteps.remove(e);
+            }
             potentialSupporters.remove(tl.mID);
         }
         removedTimelines.add(tl.mID);
