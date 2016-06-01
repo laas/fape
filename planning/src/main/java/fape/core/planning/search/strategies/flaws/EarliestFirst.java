@@ -14,7 +14,7 @@ public class EarliestFirst implements FlawComparator {
 
     @Override
     public String shortName() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return  "earliest";
     }
 
     private float priority(Flaw f) {

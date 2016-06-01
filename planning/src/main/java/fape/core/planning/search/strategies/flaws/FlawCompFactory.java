@@ -56,6 +56,9 @@ public class FlawCompFactory {
                 case "earliest":
                     compList.add(new EarliestFirst(st));
                     break;
+                case "minspan":
+                    compList.add(new MinSpanFailFirst(st));
+                    break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);
             }
