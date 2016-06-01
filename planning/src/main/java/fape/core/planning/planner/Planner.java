@@ -439,9 +439,8 @@ public class Planner {
         }
         double fThreshold = (1f + options.epsilon) * f(queue.peek());
 
-        boolean wasPreviousDepth = false;
-        long startDepth = 0; //System.nanoTime();
-        long mustShallowExpandUntil = 0;
+        int numStatesExploredInDepth = 0;
+        int numStatesToExploreInBest = 0;
         while (true) {
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
@@ -456,19 +455,17 @@ public class Planner {
             }
 
             SearchNode current;
-            if(AX.isEmpty() || System.nanoTime() < mustShallowExpandUntil) {
-                if(wasPreviousDepth) {
+            if(AX.isEmpty() || numStatesToExploreInBest > 0) {
+                if(numStatesExploredInDepth > 0) {
+                    numStatesToExploreInBest = Math.round(numStatesExploredInDepth / options.depthShallowRatio);
                     // we should keep expanding least-cost nodes for
-                    mustShallowExpandUntil = System.nanoTime() + (long) ((System.nanoTime() - startDepth) / options.depthShallowRatio);
-                    wasPreviousDepth = false;
+                    numStatesExploredInDepth = 0;
                 }
                 // get best in open
                 current = queue.poll();
+                numStatesToExploreInBest--;
             } else {
-                if(!wasPreviousDepth) {
-                    startDepth = System.nanoTime();
-                    wasPreviousDepth = true;
-                }
+                numStatesExploredInDepth++;
                 // still interesting states (below threshold) in the successors of the previously expanded state
                 current = AX.poll();
                 queue.remove(current);
