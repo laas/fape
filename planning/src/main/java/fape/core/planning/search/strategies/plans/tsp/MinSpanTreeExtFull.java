@@ -39,9 +39,24 @@ public class MinSpanTreeExtFull implements StateExtension {
 
     private final HashMap<LogStatement, HashSet<GLogStatement>> groundStatements = new HashMap<>();
 
+    public final Map<Timeline,List<Integer>> allCosts;
+
+    public MinSpanTreeExtFull(State st, boolean useNumChangesInAction) {
+        assert st.getDepth() == 0;
+        this.st = st;
+        this.useNumChangesInAction = useNumChangesInAction;
+        allCosts = new HashMap<>();
+    }
+
+    public MinSpanTreeExtFull(State st, MinSpanTreeExtFull toCopy) {
+        this.st = st;
+        this.useNumChangesInAction = toCopy.useNumChangesInAction;
+        this.allCosts = new HashMap<>(toCopy.allCosts);
+    }
+
     @Override
     public StateExtension clone(State st) {
-        return new MinSpanTreeExtFull(st, useNumChangesInAction);
+        return new MinSpanTreeExtFull(st, this);
     }
 
     private int additionalCost = -1;
@@ -56,21 +71,24 @@ public class MinSpanTreeExtFull implements StateExtension {
         }
     }
 
+    public boolean hasBeenProcessed() { return additionalCost != -1; }
+
     private void computeHeuristic() {
         if(additionalCost == -1) {
+            allCosts.clear();
             processTimelines();
             computeDistance();
         }
     }
 
     public int getCostToGo() {
-        computeHeuristic();
+        assert hasBeenProcessed();
         assert additionalCost != -1;
         return additionalCost;
     }
 
     public int getCurrentCost() {
-        computeHeuristic();
+        assert hasBeenProcessed();
         assert additionalCost != -1;
         return currentCost;
     }
@@ -182,16 +200,26 @@ public class MinSpanTreeExtFull implements StateExtension {
                         .sorted((e1,e2) -> e2.getValue2().compareTo(e1.getValue2()))
                         .collect(Collectors.toList());
 
-        // greedily find a set non overlapping state variables whose sum of costs is maximal
-        Set<ParameterizedStateVariable> accountedFor = new HashSet<>();
-        for(Pair<ParameterizedStateVariable,Integer> p : costsPerStateVariable) {
-            if(accountedFor.stream().allMatch(sv -> !st.unifiable(sv, p.getValue1()))) {
-                accountedFor.add(p.getValue1());
+        if(MinSpanTreeComp.USE_SUM) {
+            for (Pair<ParameterizedStateVariable, Integer> p : costsPerStateVariable) {
                 additionalCost += p.getValue2();
-                if(dbgLvl >= 1)
-                    System.out.println("++ "+Printer.stateVariable(st,p.getValue1())+"  "+p.getValue2());
+            }
+        } else {
+            // greedily find a set non overlapping state variables whose sum of costs is maximal
+            Set<ParameterizedStateVariable> accountedFor = new HashSet<>();
+            for (Pair<ParameterizedStateVariable, Integer> p : costsPerStateVariable) {
+                if (accountedFor.stream().allMatch(sv -> !st.unifiable(sv, p.getValue1()))) {
+                    accountedFor.add(p.getValue1());
+                    additionalCost += p.getValue2();
+                    if (dbgLvl >= 1)
+                        System.out.println("++ " + Printer.stateVariable(st, p.getValue1()) + "  " + p.getValue2());
+                }
             }
         }
+        for(Timeline tl : st.getTimelines())
+            allCosts.computeIfAbsent(tl, (x) -> Collections.emptyList());
+//        System.out.println();
+//        allCosts.entrySet().stream().forEach(x -> System.out.println(x));
     }
 
     /** Estimate the minimal number of statements that must be added to the plan to support on of those nodes */
@@ -236,18 +264,21 @@ public class MinSpanTreeExtFull implements StateExtension {
         if(Planner.debugging && numIter >= 1000)
             System.out.println("Warning: More than 1000 iterations in computation of critical path heuristic");
 
-        if(dbgLvl >= 2) {
-            DijNode c = sol;
-            while (q.getPredecessor(c) != null) {
-                System.out.print(c + " ");
-                c = q.getPredecessor(c);
-            }
-            System.out.println("\nDist: " + q.getCost(sol) + "\n");
-        }
         if(sol == null)
             throw new NoSolutionException("");
-        else
+        else {
+            if(dbgLvl >= 2) {
+                System.out.println(q.getPathTo(sol));
+                System.out.println("\nDist: " + q.getCost(sol) + "\n");
+            }
+            final int cost = q.getCost(sol);
+            q.getPathTo(sol).stream().map(n -> n.getTl()).distinct().forEach(
+                    tl -> allCosts.computeIfAbsent(tl, (x) -> new ArrayList<Integer>()).add(cost)
+            );
+
             return q.getCost(sol);
+        }
+
     }
 
     @Value private class DijNode {
