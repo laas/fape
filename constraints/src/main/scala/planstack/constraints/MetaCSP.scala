@@ -164,12 +164,18 @@ class MetaCSP[ID](
 
           val minDuration = stn.getMinDelay(req.from, req.to)
           val oldDomain =  bindings.domainOfIntVar(req.value.allVariables.head)
+
+          // only keep values in the domain that will not result in a negative cycle
           val newDom = bindings.domainOfIntVar(req.value.allVariables.head).asScala
             .filter(v => {
               val max = valueWithBinding(v)
               max - minDuration >= 0})
-          stn.enforceMaxDelay(req.from, req.to, newDom.max)
           bindings.restrictIntDomain(req.value.allVariables.head, newDom.asJava)
+
+          // enforce the least constraining value in the domain
+          val newMax = newDom.map(x => valueWithBinding(x)).max
+          stn.enforceMaxDelay(req.from, req.to, newMax)
+
         case cont: PendingContingency[VarRef, TPRef, ID] =>
 //          val minDuration = stn.getMinDelay(cont.from, cont.to)
 //          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
