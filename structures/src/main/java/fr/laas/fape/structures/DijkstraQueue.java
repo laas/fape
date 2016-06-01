@@ -1,8 +1,6 @@
 package fr.laas.fape.structures;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class DijkstraQueue<E> {
 
@@ -104,6 +102,11 @@ public class DijkstraQueue<E> {
     public int getCost(E x) { return costs.get(x); }
     public int getCostToGo(E x) { return costsToGo.get(x); }
     public E getPredecessor(E x) { return predecessors.get(x); }
+    public List<E> getPathTo(E x) {
+        List<E> l = predecessors.containsKey(x) ? getPathTo(predecessors.get(x)) : new ArrayList<>();
+        l.add(x);
+        return l;
+    }
 
     /**
      * Internal method to percolate up in the heap.
