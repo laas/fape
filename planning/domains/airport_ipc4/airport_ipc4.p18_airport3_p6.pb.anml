@@ -1,0 +1,2931 @@
+instance airplane airplane_cfbeg, airplane_daewh, airplane_dfboy, airplane_wurst, airplane_horst, airplane_holgi;
+instance airplanetype medium;
+instance direction north, south;
+instance segment seg_09thresh_0_100, seg_09help_0_100, seg_09_0_150, seg_a_09_0_100, seg_rwy_0_1300, seg_27thresh_0_100, seg_27help_0_100, seg_27_0_150, seg_b_27_0_100, seg_n1_n2_0_100, seg_n1_a_0_100, seg_n2_n3_1_0_86, seg_n2_n3_0_85, seg_n3_n_0_100, seg_n_n4_0_100, seg_n_c_0_100, seg_n4_n5_1_0_85, seg_n4_n5_0_86, seg_n5_n6_0_100, seg_n6_b_0_100, seg_c_c2_0_100, seg_c2_c3_0_100, seg_c3_c4_0_50, seg_c3_c_a01_0_100, seg_c3_c_b01_0_100, seg_c4_c5_0_50, seg_c5_c6_0_50, seg_c5_c_a02_0_100, seg_c5_c_b02_0_100, seg_c6_c7_0_100, seg_a01_0_100, seg_a02_0_100, seg_b01_0_100, seg_b02_0_100, seg_n2_n3_2_0_86, seg_n2_n3_3_0_86, seg_n2_n3_4_0_85, seg_n2_n3_5_0_86, seg_n2_n3_6_0_86, seg_n4_n5_2_0_86, seg_n4_n5_3_0_86, seg_n4_n5_4_0_85, seg_n4_n5_5_0_86, seg_n4_n5_6_0_86;
+
+[start] at_segment(airplane_cfbeg) := seg_n4_n5_1_0_85;
+[start] at_segment(airplane_daewh) := seg_a02_0_100;
+[start] at_segment(airplane_dfboy) := seg_b02_0_100;
+[start] at_segment(airplane_wurst) := seg_a01_0_100;
+[start] at_segment(airplane_horst) := seg_b01_0_100;
+[start] at_segment(airplane_holgi) := seg_rwy_0_1300;
+[start] blocking(seg_n4_n5_1_0_85) := airplane_cfbeg;
+[start] blocking(seg_a02_0_100) := airplane_daewh;
+[start] blocking(seg_b02_0_100) := airplane_dfboy;
+[start] blocking(seg_a01_0_100) := airplane_wurst;
+[start] blocking(seg_b01_0_100) := airplane_horst;
+[start] blocking(seg_rwy_0_1300) := airplane_holgi;
+[start] blocking(seg_n4_n5_2_0_86) := airplane_cfbeg;
+[start] blocking(seg_09_0_150) := airplane_holgi;
+[start] facing(airplane_cfbeg) := north;
+[start] facing(airplane_daewh) := south;
+[start] facing(airplane_dfboy) := south;
+[start] facing(airplane_wurst) := south;
+[start] facing(airplane_horst) := south;
+[start] facing(airplane_holgi) := south;
+[start] status(airplane_cfbeg) := moving;
+[start] status(airplane_holgi) := moving;
+[start] status(airplane_daewh) := pushing;
+[start] status(airplane_dfboy) := pushing;
+[start] status(airplane_wurst) := pushing;
+[start] status(airplane_horst) := pushing;
+is_start_runway(seg_27_0_150, north) := true;
+is_start_runway(seg_09_0_150, south) := true;
+startup_duration(airplane_cfbeg) := 12000;
+startup_duration(airplane_daewh) := 12000;
+startup_duration(airplane_dfboy) := 12000;
+startup_duration(airplane_wurst) := 12000;
+startup_duration(airplane_horst) := 12000;
+startup_duration(airplane_holgi) := 12000;
+
+[start] blocking(seg_09thresh_0_100) := none;
+[start] blocking(seg_09help_0_100) := none;
+[start] blocking(seg_a_09_0_100) := none;
+[start] blocking(seg_27thresh_0_100) := none;
+[start] blocking(seg_27help_0_100) := none;
+[start] blocking(seg_27_0_150) := none;
+[start] blocking(seg_b_27_0_100) := none;
+[start] blocking(seg_n1_n2_0_100) := none;
+[start] blocking(seg_n1_a_0_100) := none;
+[start] blocking(seg_n2_n3_1_0_86) := none;
+[start] blocking(seg_n2_n3_0_85) := none;
+[start] blocking(seg_n3_n_0_100) := none;
+[start] blocking(seg_n_n4_0_100) := none;
+[start] blocking(seg_n_c_0_100) := none;
+[start] blocking(seg_n4_n5_0_86) := none;
+[start] blocking(seg_n5_n6_0_100) := none;
+[start] blocking(seg_n6_b_0_100) := none;
+[start] blocking(seg_c_c2_0_100) := none;
+[start] blocking(seg_c2_c3_0_100) := none;
+[start] blocking(seg_c3_c4_0_50) := none;
+[start] blocking(seg_c3_c_a01_0_100) := none;
+[start] blocking(seg_c3_c_b01_0_100) := none;
+[start] blocking(seg_c4_c5_0_50) := none;
+[start] blocking(seg_c5_c6_0_50) := none;
+[start] blocking(seg_c5_c_a02_0_100) := none;
+[start] blocking(seg_c5_c_b02_0_100) := none;
+[start] blocking(seg_c6_c7_0_100) := none;
+[start] blocking(seg_n2_n3_2_0_86) := none;
+[start] blocking(seg_n2_n3_3_0_86) := none;
+[start] blocking(seg_n2_n3_4_0_85) := none;
+[start] blocking(seg_n2_n3_5_0_86) := none;
+[start] blocking(seg_n2_n3_6_0_86) := none;
+[start] blocking(seg_n4_n5_3_0_86) := none;
+[start] blocking(seg_n4_n5_4_0_85) := none;
+[start] blocking(seg_n4_n5_5_0_86) := none;
+[start] blocking(seg_n4_n5_6_0_86) := none;
+
+action move__seg_n2_n3_3_0_86__seg_n2_n3_2_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_3_0_86 :-> seg_n2_n3_2_0_86;
+
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+  [all] blocking(seg_n2_n3_2_0_86) == none :-> a;
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> a;
+};
+        
+action move__seg_c4_c5_0_50__seg_c5_c_a02_0_100__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c4_c5_0_50 :-> seg_c5_c_a02_0_100;
+
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c4_c5_0_50) == a :-> a;
+};
+        
+action move__seg_c4_c5_0_50__seg_c3_c4_0_50__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c4_c5_0_50 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c4_c5_0_50) == a :-> a;
+};
+        
+action move__seg_b_27_0_100__seg_n6_b_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_b_27_0_100 :-> seg_n6_b_0_100;
+
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_27help_0_100) == a :-> none;
+  [all] blocking(seg_n6_b_0_100) == none :-> a;
+  [all] blocking(seg_b_27_0_100) == a :-> a;
+};
+        
+action move__seg_b01_0_100__seg_c3_c_b01_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_b01_0_100 :-> seg_c3_c_b01_0_100;
+
+  
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_b01_0_100) == a :-> a;
+};
+        
+action move__seg_27_0_150__seg_b_27_0_100__south__north(airplane a) {
+  // 150.0
+  duration := 500;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_27_0_150 :-> seg_b_27_0_100;
+
+  [all] blocking(seg_09_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+  [all] blocking(seg_27help_0_100) == none :-> a;
+  [all] blocking(seg_b_27_0_100) == none :-> a;
+  [all] blocking(seg_27_0_150) == a :-> a;
+};
+        
+action move__seg_n4_n5_2_0_86__seg_n4_n5_1_0_85__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_2_0_86 :-> seg_n4_n5_1_0_85;
+
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_1_0_85) == none :-> a;
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> a;
+};
+        
+action move__seg_a01_0_100__seg_c3_c_a01_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_a01_0_100 :-> seg_c3_c_a01_0_100;
+
+  
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_a01_0_100) == a :-> a;
+};
+        
+action move__seg_09_0_150__seg_rwy_0_1300__south__south(airplane a) {
+  // 150.0
+  duration := 500;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_09_0_150 :-> seg_rwy_0_1300;
+
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == none :-> a;
+  [all] blocking(seg_09_0_150) == a :-> a;
+};
+        
+action move__seg_c5_c6_0_50__seg_c4_c5_0_50__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c5_c6_0_50 :-> seg_c4_c5_0_50;
+
+  [all] blocking(seg_c6_c7_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == a :-> a;
+};
+        
+action move__seg_n6_b_0_100__seg_n5_n6_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n6_b_0_100 :-> seg_n5_n6_0_100;
+
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+  [all] blocking(seg_n5_n6_0_100) == none :-> a;
+  [all] blocking(seg_n6_b_0_100) == a :-> a;
+};
+        
+action move__seg_c5_c_a02_0_100__seg_c5_c6_0_50__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_c5_c_a02_0_100 :-> seg_c5_c6_0_50;
+
+  [all] blocking(seg_a02_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> a;
+};
+        
+action move__seg_n_c_0_100__seg_c_c2_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_n_c_0_100 :-> seg_c_c2_0_100;
+
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_c_c2_0_100) == none :-> a;
+  [all] blocking(seg_n_c_0_100) == a :-> a;
+};
+        
+action move__seg_c2_c3_0_100__seg_c3_c_b01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c2_c3_0_100 :-> seg_c3_c_b01_0_100;
+
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c2_c3_0_100) == a :-> a;
+};
+        
+action move__seg_n4_n5_6_0_86__seg_n4_n5_5_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_6_0_86 :-> seg_n4_n5_5_0_86;
+
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_5_0_86) == none :-> a;
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> a;
+};
+        
+action move__seg_c5_c6_0_50__seg_c6_c7_0_100__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c5_c6_0_50 :-> seg_c6_c7_0_100;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c6_c7_0_100) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == a :-> a;
+};
+        
+action move__seg_n2_n3_0_85__seg_n2_n3_6_0_86__north__north(airplane a) {
+  // 85.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_0_85 :-> seg_n2_n3_6_0_86;
+
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n2_n3_6_0_86) == none :-> a;
+  [all] blocking(seg_n2_n3_0_85) == a :-> a;
+};
+        
+action move__seg_n1_a_0_100__seg_a_09_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_n1_a_0_100 :-> seg_a_09_0_100;
+
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+  [all] blocking(seg_a_09_0_100) == none :-> a;
+  [all] blocking(seg_n1_a_0_100) == a :-> a;
+};
+        
+action move__seg_c3_c_b01_0_100__seg_b01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c3_c_b01_0_100 :-> seg_b01_0_100;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_b01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> a;
+};
+        
+action move__seg_c5_c_b02_0_100__seg_b02_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c5_c_b02_0_100 :-> seg_b02_0_100;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_b02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> a;
+};
+        
+action move__seg_n2_n3_6_0_86__seg_n2_n3_5_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_6_0_86 :-> seg_n2_n3_5_0_86;
+
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+  [all] blocking(seg_n2_n3_5_0_86) == none :-> a;
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> a;
+};
+        
+action move__seg_n4_n5_3_0_86__seg_n4_n5_2_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_3_0_86 :-> seg_n4_n5_2_0_86;
+
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+  [all] blocking(seg_n4_n5_2_0_86) == none :-> a;
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> a;
+};
+        
+action move__seg_c3_c_b01_0_100__seg_c3_c4_0_50__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_c3_c_b01_0_100 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_b01_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> a;
+};
+        
+action move__seg_n4_n5_0_86__seg_n4_n5_6_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_0_86 :-> seg_n4_n5_6_0_86;
+
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+  [all] blocking(seg_n4_n5_6_0_86) == none :-> a;
+  [all] blocking(seg_n4_n5_0_86) == a :-> a;
+};
+        
+action move__seg_rwy_0_1300__seg_27_0_150__south__south(airplane a) {
+  // 1300.0
+  duration := 4300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_rwy_0_1300 :-> seg_27_0_150;
+
+  
+  [all] blocking(seg_27_0_150) == none :-> a;
+  [all] blocking(seg_09_0_150) == a :-> a;
+  [all] blocking(seg_rwy_0_1300) == a :-> a;
+};
+        
+action move__seg_b02_0_100__seg_c5_c_b02_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_b02_0_100 :-> seg_c5_c_b02_0_100;
+
+  
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_b02_0_100) == a :-> a;
+};
+        
+action move__seg_c3_c4_0_50__seg_c4_c5_0_50__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c3_c4_0_50 :-> seg_c4_c5_0_50;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == a :-> a;
+};
+        
+action move__seg_c5_c_a02_0_100__seg_a02_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c5_c_a02_0_100 :-> seg_a02_0_100;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> a;
+};
+        
+action move__seg_n2_n3_2_0_86__seg_n2_n3_1_0_86__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_2_0_86 :-> seg_n2_n3_1_0_86;
+
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_1_0_86) == none :-> a;
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> a;
+};
+        
+action move__seg_c3_c4_0_50__seg_c2_c3_0_100__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c3_c4_0_50 :-> seg_c2_c3_0_100;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == a :-> a;
+};
+        
+action move__seg_n2_n3_5_0_86__seg_n2_n3_4_0_85__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_5_0_86 :-> seg_n2_n3_4_0_85;
+
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_4_0_85) == none :-> a;
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> a;
+};
+        
+action move__seg_c3_c_a01_0_100__seg_c3_c4_0_50__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_c3_c_a01_0_100 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_a01_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> a;
+};
+        
+action move__seg_c2_c3_0_100__seg_c3_c_a01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c2_c3_0_100 :-> seg_c3_c_a01_0_100;
+
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c2_c3_0_100) == a :-> a;
+};
+        
+action move__seg_c5_c_b02_0_100__seg_c5_c6_0_50__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_c5_c_b02_0_100 :-> seg_c5_c6_0_50;
+
+  [all] blocking(seg_b02_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> a;
+};
+        
+action move__seg_n2_n3_1_0_86__seg_n1_n2_0_100__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_1_0_86 :-> seg_n1_n2_0_100;
+
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+  [all] blocking(seg_n1_n2_0_100) == none :-> a;
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> a;
+};
+        
+action move__seg_a_09_0_100__seg_09_0_150__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_a_09_0_100 :-> seg_09_0_150;
+
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+  [all] blocking(seg_09_0_150) == none :-> a;
+  [all] blocking(seg_a_09_0_100) == a :-> a;
+};
+        
+action move__seg_a02_0_100__seg_c5_c_a02_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_a02_0_100 :-> seg_c5_c_a02_0_100;
+
+  
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_a02_0_100) == a :-> a;
+};
+        
+action move__seg_c3_c_a01_0_100__seg_a01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c3_c_a01_0_100 :-> seg_a01_0_100;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> a;
+};
+        
+action move__seg_c_c2_0_100__seg_c2_c3_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c_c2_0_100 :-> seg_c2_c3_0_100;
+
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c_c2_0_100) == a :-> a;
+};
+        
+action move__seg_c_c2_0_100__seg_n_c_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c_c2_0_100 :-> seg_n_c_0_100;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == none :-> a;
+  [all] blocking(seg_c_c2_0_100) == a :-> a;
+};
+        
+action move__seg_c2_c3_0_100__seg_c3_c4_0_50__south__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c2_c3_0_100 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c2_c3_0_100) == a :-> a;
+};
+        
+action move__seg_n1_n2_0_100__seg_n1_a_0_100__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_n1_n2_0_100 :-> seg_n1_a_0_100;
+
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+  [all] blocking(seg_n1_a_0_100) == none :-> a;
+  [all] blocking(seg_n1_n2_0_100) == a :-> a;
+};
+        
+action move__seg_c2_c3_0_100__seg_c_c2_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c2_c3_0_100 :-> seg_c_c2_0_100;
+
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c_c2_0_100) == none :-> a;
+  [all] blocking(seg_c2_c3_0_100) == a :-> a;
+};
+        
+action move__seg_n4_n5_4_0_85__seg_n4_n5_3_0_86__north__north(airplane a) {
+  // 85.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_4_0_85 :-> seg_n4_n5_3_0_86;
+
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_3_0_86) == none :-> a;
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> a;
+};
+        
+action move__seg_n4_n5_1_0_85__seg_n_n4_0_100__north__north(airplane a) {
+  // 85.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_1_0_85 :-> seg_n_n4_0_100;
+
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == none :-> a;
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> a;
+};
+        
+action move__seg_n2_n3_4_0_85__seg_n2_n3_3_0_86__north__north(airplane a) {
+  // 85.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n2_n3_4_0_85 :-> seg_n2_n3_3_0_86;
+
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_3_0_86) == none :-> a;
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> a;
+};
+        
+action move__seg_n_c_0_100__seg_n3_n_0_100__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n_c_0_100 :-> seg_n3_n_0_100;
+
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == none :-> a;
+  [all] blocking(seg_n3_n_0_100) == none :-> a;
+  [all] blocking(seg_n_c_0_100) == a :-> a;
+};
+        
+action move__seg_c4_c5_0_50__seg_c5_c_b02_0_100__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_c4_c5_0_50 :-> seg_c5_c_b02_0_100;
+
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c4_c5_0_50) == a :-> a;
+};
+        
+action move__seg_c6_c7_0_100__seg_c5_c6_0_50__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c6_c7_0_100 :-> seg_c5_c6_0_50;
+
+  
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c6_c7_0_100) == a :-> a;
+};
+        
+action move__seg_n3_n_0_100__seg_n2_n3_0_85__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n3_n_0_100 :-> seg_n2_n3_0_85;
+
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+  [all] blocking(seg_n2_n3_0_85) == none :-> a;
+  [all] blocking(seg_n3_n_0_100) == a :-> a;
+};
+        
+action move__seg_n_n4_0_100__seg_n_c_0_100__north__south(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_n_n4_0_100 :-> seg_n_c_0_100;
+
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+  [all] blocking(seg_n3_n_0_100) == none :-> a;
+  [all] blocking(seg_n_c_0_100) == none :-> a;
+  [all] blocking(seg_n_n4_0_100) == a :-> a;
+};
+        
+action move__seg_n5_n6_0_100__seg_n4_n5_0_86__north__north(airplane a) {
+  // 100.0
+  duration := 300;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n5_n6_0_100 :-> seg_n4_n5_0_86;
+
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+  [all] blocking(seg_n4_n5_0_86) == none :-> a;
+  [all] blocking(seg_n5_n6_0_100) == a :-> a;
+};
+        
+action move__seg_n4_n5_5_0_86__seg_n4_n5_4_0_85__north__north(airplane a) {
+  // 86.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_n4_n5_5_0_86 :-> seg_n4_n5_4_0_85;
+
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_4_0_85) == none :-> a;
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> a;
+};
+        
+action pushback__seg_c3_c_b01_0_100__seg_c3_c4_0_50__south__north(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_c3_c_b01_0_100 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == a :-> a;
+};
+        
+action pushback__seg_c3_c4_0_50__seg_c4_c5_0_50__north__north(airplane a) {
+  // 50.0
+  duration := 1000;
+  [all] status(a) == pushing;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c3_c4_0_50 :-> seg_c4_c5_0_50;
+
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c4_c5_0_50) == a :-> a;
+};
+        
+action pushback__seg_c5_c_b02_0_100__seg_c5_c6_0_50__south__north(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_c5_c_b02_0_100 :-> seg_c5_c6_0_50;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c6_c7_0_100) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == a :-> a;
+};
+        
+action pushback__seg_c5_c_a02_0_100__seg_c5_c6_0_50__south__north(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_c5_c_a02_0_100 :-> seg_c5_c6_0_50;
+
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c6_c7_0_100) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == a :-> a;
+};
+        
+action pushback__seg_c3_c_a01_0_100__seg_c3_c4_0_50__south__north(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_c3_c_a01_0_100 :-> seg_c3_c4_0_50;
+
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == a :-> a;
+};
+        
+action pushback__seg_c5_c6_0_50__seg_c6_c7_0_100__north__north(airplane a) {
+  // 50.0
+  duration := 1000;
+  [all] status(a) == pushing;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_c5_c6_0_50 :-> seg_c6_c7_0_100;
+
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  
+  [all] blocking(seg_c6_c7_0_100) == a :-> a;
+};
+        
+action pushback__seg_a01_0_100__seg_c3_c_a01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_a01_0_100 :-> seg_c3_c_a01_0_100;
+
+  [all] blocking(seg_a01_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> a;
+};
+        
+action pushback__seg_a02_0_100__seg_c5_c_a02_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_a02_0_100 :-> seg_c5_c_a02_0_100;
+
+  [all] blocking(seg_a02_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> a;
+};
+        
+action pushback__seg_b02_0_100__seg_c5_c_b02_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_b02_0_100 :-> seg_c5_c_b02_0_100;
+
+  [all] blocking(seg_b02_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> a;
+  [all] blocking(seg_c5_c6_0_50) == none :-> a;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> a;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> a;
+};
+        
+action pushback__seg_b01_0_100__seg_c3_c_b01_0_100__south__south(airplane a) {
+  // 100.0
+  duration := 2000;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_b01_0_100 :-> seg_c3_c_b01_0_100;
+
+  [all] blocking(seg_b01_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> a;
+  [all] blocking(seg_c3_c4_0_50) == none :-> a;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> a;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> a;
+};
+        
+action ini__pushback__seg_b02_0_100__seg_c5_c_b02_0_100__south__south__airplane_dfboy() {
+  // 100.0
+  duration := 2000;
+  [all] status(airplane_dfboy) == pushing;
+  [all] facing(airplane_dfboy) == south :-> south;
+  [all] at_segment(airplane_dfboy) == seg_b02_0_100 :-> seg_c5_c_b02_0_100;
+
+  [all] blocking(seg_b02_0_100) == airplane_dfboy :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> airplane_dfboy;
+  [all] blocking(seg_c5_c6_0_50) == none :-> airplane_dfboy;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> airplane_dfboy;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> airplane_dfboy;
+  
+};
+            
+action ini__pushback__seg_a01_0_100__seg_c3_c_a01_0_100__south__south__airplane_wurst() {
+  // 100.0
+  duration := 2000;
+  [all] status(airplane_wurst) == pushing;
+  [all] facing(airplane_wurst) == south :-> south;
+  [all] at_segment(airplane_wurst) == seg_a01_0_100 :-> seg_c3_c_a01_0_100;
+
+  [all] blocking(seg_a01_0_100) == airplane_wurst :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> airplane_wurst;
+  [all] blocking(seg_c3_c4_0_50) == none :-> airplane_wurst;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> airplane_wurst;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> airplane_wurst;
+  
+};
+            
+action ini__pushback__seg_a02_0_100__seg_c5_c_a02_0_100__south__south__airplane_daewh() {
+  // 100.0
+  duration := 2000;
+  [all] status(airplane_daewh) == pushing;
+  [all] facing(airplane_daewh) == south :-> south;
+  [all] at_segment(airplane_daewh) == seg_a02_0_100 :-> seg_c5_c_a02_0_100;
+
+  [all] blocking(seg_a02_0_100) == airplane_daewh :-> none;
+  [all] blocking(seg_c4_c5_0_50) == none :-> airplane_daewh;
+  [all] blocking(seg_c5_c6_0_50) == none :-> airplane_daewh;
+  [all] blocking(seg_c5_c_b02_0_100) == none :-> airplane_daewh;
+  [all] blocking(seg_c5_c_a02_0_100) == none :-> airplane_daewh;
+  
+};
+            
+action ini__pushback__seg_b01_0_100__seg_c3_c_b01_0_100__south__south__airplane_horst() {
+  // 100.0
+  duration := 2000;
+  [all] status(airplane_horst) == pushing;
+  [all] facing(airplane_horst) == south :-> south;
+  [all] at_segment(airplane_horst) == seg_b01_0_100 :-> seg_c3_c_b01_0_100;
+
+  [all] blocking(seg_b01_0_100) == airplane_horst :-> none;
+  [all] blocking(seg_c2_c3_0_100) == none :-> airplane_horst;
+  [all] blocking(seg_c3_c4_0_50) == none :-> airplane_horst;
+  [all] blocking(seg_c3_c_a01_0_100) == none :-> airplane_horst;
+  [all] blocking(seg_c3_c_b01_0_100) == none :-> airplane_horst;
+  
+};
+            
+action park__seg_n2_n3_2_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_2_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+};
+         
+action park__seg_n4_n5_1_0_85__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_1_0_85;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_1_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+};
+         
+action park__seg_n2_n3_4_0_85__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_4_0_85;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+};
+         
+action park__seg_c5_c_b02_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c_b02_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+};
+         
+action park__seg_n1_a_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n1_a_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n1_a_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+};
+         
+action park__seg_b01_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b01_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+};
+         
+action park__seg_c3_c4_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c4_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+};
+         
+action park__seg_09help_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09help_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09help_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n4_n5_2_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_2_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+};
+         
+action park__seg_c6_c7_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c6_c7_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c6_c7_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n3_n_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n3_n_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n3_n_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+};
+         
+action park__seg_n4_n5_2_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_2_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+};
+         
+action park__seg_n2_n3_5_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_5_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+};
+         
+action park__seg_n_c_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n_c_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n_c_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_1_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_1_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_1_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_0_85__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_0_85;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+};
+         
+action park__seg_c3_c_b01_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c_b01_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b01_0_100) == a :-> none;
+};
+         
+action park__seg_b02_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b02_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action park__seg_n1_a_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n1_a_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n1_a_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+};
+         
+action park__seg_c5_c_a02_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c_a02_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action park__seg_c2_c3_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c2_c3_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c2_c3_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_2_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_2_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+};
+         
+action park__seg_c5_c6_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c6_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c6_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c6_c7_0_100) == a :-> none;
+};
+         
+action park__seg_a01_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a01_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a01_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n5_n6_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n5_n6_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n5_n6_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+};
+         
+action park__seg_c3_c4_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c4_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_6_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_6_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+};
+         
+action park__seg_n2_n3_3_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_3_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+};
+         
+action park__seg_27_0_150__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27_0_150;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+};
+         
+action park__seg_c_c2_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c_c2_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c_c2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+};
+         
+action park__seg_n6_b_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n6_b_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n6_b_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+};
+         
+action park__seg_27_0_150__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27_0_150;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+};
+         
+action park__seg_n2_n3_0_85__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_0_85;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+};
+         
+action park__seg_a01_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a01_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_4_0_85__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_4_0_85;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+};
+         
+action park__seg_n_n4_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n_n4_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n_n4_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_3_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_3_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+};
+         
+action park__seg_c5_c_b02_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c_b02_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b02_0_100) == a :-> none;
+};
+         
+action park__seg_09_0_150__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09_0_150;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+};
+         
+action park__seg_b_27_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b_27_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b_27_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_27help_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_3_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_3_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+};
+         
+action park__seg_27thresh_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27thresh_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27thresh_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n4_n5_6_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_6_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+};
+         
+action park__seg_b_27_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b_27_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b_27_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+};
+         
+action park__seg_c6_c7_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c6_c7_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c6_c7_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+};
+         
+action park__seg_n2_n3_1_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_1_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_1_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+};
+         
+action park__seg_c5_c6_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c6_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c6_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action park__seg_27help_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27help_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27help_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n3_n_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n3_n_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n3_n_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+};
+         
+action park__seg_n2_n3_6_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_6_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+};
+         
+action park__seg_n5_n6_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n5_n6_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n5_n6_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_6_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_6_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+};
+         
+action park__seg_c3_c_a01_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c_a01_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a01_0_100) == a :-> none;
+};
+         
+action park__seg_n6_b_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n6_b_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n6_b_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+};
+         
+action park__seg_c3_c_b01_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c_b01_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_1_0_85__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_1_0_85;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_1_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+};
+         
+action park__seg_n4_n5_4_0_85__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_4_0_85;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+};
+         
+action park__seg_n4_n5_4_0_85__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_4_0_85;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+};
+         
+action park__seg_n1_n2_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n1_n2_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n1_n2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+};
+         
+action park__seg_c4_c5_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c4_c5_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c4_c5_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action park__seg_b02_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b02_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b02_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n1_n2_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n1_n2_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n1_n2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+};
+         
+action park__seg_09thresh_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09thresh_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09thresh_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n2_n3_5_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n2_n3_5_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n2_n3_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+};
+         
+action park__seg_27help_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27help_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27help_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n4_n5_3_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_3_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+};
+         
+action park__seg_c3_c_a01_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c3_c_a01_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c3_c_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action park__seg_c5_c_a02_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c5_c_a02_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c5_c_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a02_0_100) == a :-> none;
+};
+         
+action park__seg_a02_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a02_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+};
+         
+action park__seg_rwy_0_1300__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwy_0_1300;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwy_0_1300) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09_0_150) == a :-> none;
+};
+         
+action park__seg_c4_c5_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c4_c5_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c4_c5_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+};
+         
+action park__seg_09_0_150__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09_0_150;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+};
+         
+action park__seg_n_c_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n_c_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n_c_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+};
+         
+action park__seg_rwy_0_1300__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwy_0_1300;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwy_0_1300) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+};
+         
+action park__seg_27thresh_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_27thresh_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_27thresh_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_a02_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a02_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a02_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_n4_n5_5_0_86__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_5_0_86;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+};
+         
+action park__seg_n4_n5_5_0_86__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n4_n5_5_0_86;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n4_n5_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+};
+         
+action park__seg_09help_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09help_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09help_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_c_c2_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c_c2_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c_c2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+};
+         
+action park__seg_b01_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_b01_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_b01_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_c2_c3_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_c2_c3_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_c2_c3_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action park__seg_09thresh_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_09thresh_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_09thresh_0_100) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_a_09_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a_09_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a_09_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09help_0_100) == a :-> none;
+  [all] blocking(seg_09_0_150) == a :-> none;
+};
+         
+action park__seg_a_09_0_100__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_a_09_0_100;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_a_09_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+};
+         
+action park__seg_n_n4_0_100__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_n_n4_0_100;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_n_n4_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_2_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_2_0_86, north);
+  [all] at_segment(a) == seg_n2_n3_2_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_1_0_85__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_1_0_85, north);
+  [all] at_segment(a) == seg_n4_n5_1_0_85;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_1_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_4_0_85__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_4_0_85, north);
+  [all] at_segment(a) == seg_n2_n3_4_0_85;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+};
+         
+action takeoff__seg_c5_c_b02_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c_b02_0_100, south);
+  [all] at_segment(a) == seg_c5_c_b02_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n1_a_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n1_a_0_100, south);
+  [all] at_segment(a) == seg_n1_a_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n1_a_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+};
+         
+action takeoff__seg_b01_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b01_0_100, south);
+  [all] at_segment(a) == seg_b01_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_b01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_0_86, south);
+  [all] at_segment(a) == seg_n4_n5_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c3_c4_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c4_0_50, north);
+  [all] at_segment(a) == seg_c3_c4_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_09help_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09help_0_100, north);
+  [all] at_segment(a) == seg_09help_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09help_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09help_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_2_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_2_0_86, north);
+  [all] at_segment(a) == seg_n4_n5_2_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c6_c7_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c6_c7_0_100, north);
+  [all] at_segment(a) == seg_c6_c7_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c6_c7_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c6_c7_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n3_n_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n3_n_0_100, south);
+  [all] at_segment(a) == seg_n3_n_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n3_n_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_2_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_2_0_86, south);
+  [all] at_segment(a) == seg_n4_n5_2_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_5_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_5_0_86, south);
+  [all] at_segment(a) == seg_n2_n3_5_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n_c_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n_c_0_100, south);
+  [all] at_segment(a) == seg_n_c_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n_c_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_1_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_1_0_86, south);
+  [all] at_segment(a) == seg_n2_n3_1_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_1_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_0_85__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_0_85, north);
+  [all] at_segment(a) == seg_n2_n3_0_85;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+};
+         
+action takeoff__seg_c3_c_b01_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c_b01_0_100, north);
+  [all] at_segment(a) == seg_c3_c_b01_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_b02_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b02_0_100, south);
+  [all] at_segment(a) == seg_b02_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_b02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n1_a_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n1_a_0_100, north);
+  [all] at_segment(a) == seg_n1_a_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n1_a_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c5_c_a02_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c_a02_0_100, south);
+  [all] at_segment(a) == seg_c5_c_a02_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c2_c3_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c2_c3_0_100, south);
+  [all] at_segment(a) == seg_c2_c3_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c2_c3_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_2_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_2_0_86, south);
+  [all] at_segment(a) == seg_n2_n3_2_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_2_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c5_c6_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c6_0_50, north);
+  [all] at_segment(a) == seg_c5_c6_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c6_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c6_c7_0_100) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+};
+         
+action takeoff__seg_a01_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a01_0_100, north);
+  [all] at_segment(a) == seg_a01_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n5_n6_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n5_n6_0_100, south);
+  [all] at_segment(a) == seg_n5_n6_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n5_n6_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c3_c4_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c4_0_50, south);
+  [all] at_segment(a) == seg_c3_c4_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_6_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_6_0_86, north);
+  [all] at_segment(a) == seg_n2_n3_6_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_3_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_3_0_86, north);
+  [all] at_segment(a) == seg_n2_n3_3_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+};
+         
+action takeoff__seg_27_0_150__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27_0_150, north);
+  [all] at_segment(a) == seg_27_0_150;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+  [all] blocking(seg_27_0_150) == a :-> none;
+};
+         
+action takeoff__seg_c_c2_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c_c2_0_100, north);
+  [all] at_segment(a) == seg_c_c2_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c_c2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n6_b_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n6_b_0_100, south);
+  [all] at_segment(a) == seg_n6_b_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n6_b_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+};
+         
+action takeoff__seg_27_0_150__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27_0_150, south);
+  [all] at_segment(a) == seg_27_0_150;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+  [all] blocking(seg_27_0_150) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_0_85__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_0_85, south);
+  [all] at_segment(a) == seg_n2_n3_0_85;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_0_85) == a :-> none;
+};
+         
+action takeoff__seg_a01_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a01_0_100, south);
+  [all] at_segment(a) == seg_a01_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_a01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_4_0_85__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_4_0_85, south);
+  [all] at_segment(a) == seg_n2_n3_4_0_85;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_4_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n_n4_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n_n4_0_100, south);
+  [all] at_segment(a) == seg_n_n4_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n_n4_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_0_86, north);
+  [all] at_segment(a) == seg_n4_n5_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_3_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_3_0_86, south);
+  [all] at_segment(a) == seg_n4_n5_3_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_2_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c5_c_b02_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c_b02_0_100, north);
+  [all] at_segment(a) == seg_c5_c_b02_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_09_0_150__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09_0_150, south);
+  [all] at_segment(a) == seg_09_0_150;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+  [all] blocking(seg_09_0_150) == a :-> none;
+};
+         
+action takeoff__seg_b_27_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b_27_0_100, north);
+  [all] at_segment(a) == seg_b_27_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b_27_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_27help_0_100) == a :-> none;
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_3_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_3_0_86, south);
+  [all] at_segment(a) == seg_n2_n3_3_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_3_0_86) == a :-> none;
+};
+         
+action takeoff__seg_27thresh_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27thresh_0_100, north);
+  [all] at_segment(a) == seg_27thresh_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27thresh_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27thresh_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_6_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_6_0_86, north);
+  [all] at_segment(a) == seg_n4_n5_6_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+};
+         
+action takeoff__seg_b_27_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b_27_0_100, south);
+  [all] at_segment(a) == seg_b_27_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b_27_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c6_c7_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c6_c7_0_100, south);
+  [all] at_segment(a) == seg_c6_c7_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c6_c7_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c6_c7_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_1_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_1_0_86, north);
+  [all] at_segment(a) == seg_n2_n3_1_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_1_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_2_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c5_c6_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c6_0_50, south);
+  [all] at_segment(a) == seg_c5_c6_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c6_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+};
+         
+action takeoff__seg_27help_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27help_0_100, north);
+  [all] at_segment(a) == seg_27help_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27help_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27help_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n3_n_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n3_n_0_100, north);
+  [all] at_segment(a) == seg_n3_n_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n3_n_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+  [all] blocking(seg_n3_n_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_6_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_6_0_86, south);
+  [all] at_segment(a) == seg_n2_n3_6_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n5_n6_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n5_n6_0_100, north);
+  [all] at_segment(a) == seg_n5_n6_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n5_n6_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+  [all] blocking(seg_n5_n6_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_6_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_6_0_86, south);
+  [all] at_segment(a) == seg_n4_n5_6_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_6_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c3_c_a01_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c_a01_0_100, north);
+  [all] at_segment(a) == seg_c3_c_a01_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n6_b_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n6_b_0_100, north);
+  [all] at_segment(a) == seg_n6_b_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n6_b_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b_27_0_100) == a :-> none;
+  [all] blocking(seg_n6_b_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c3_c_b01_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c_b01_0_100, south);
+  [all] at_segment(a) == seg_c3_c_b01_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_1_0_85__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_1_0_85, south);
+  [all] at_segment(a) == seg_n4_n5_1_0_85;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_1_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_4_0_85__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_4_0_85, south);
+  [all] at_segment(a) == seg_n4_n5_4_0_85;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_4_0_85__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_4_0_85, north);
+  [all] at_segment(a) == seg_n4_n5_4_0_85;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_4_0_85) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+};
+         
+action takeoff__seg_n1_n2_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n1_n2_0_100, north);
+  [all] at_segment(a) == seg_n1_n2_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n1_n2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_1_0_86) == a :-> none;
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c4_c5_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c4_c5_0_50, north);
+  [all] at_segment(a) == seg_c4_c5_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c4_c5_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c6_0_50) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_b02_0_100) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+};
+         
+action takeoff__seg_b02_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b02_0_100, north);
+  [all] at_segment(a) == seg_b02_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n1_n2_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n1_n2_0_100, south);
+  [all] at_segment(a) == seg_n1_n2_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n1_n2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+  [all] blocking(seg_n1_n2_0_100) == a :-> none;
+};
+         
+action takeoff__seg_09thresh_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09thresh_0_100, south);
+  [all] at_segment(a) == seg_09thresh_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09thresh_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09thresh_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n2_n3_5_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n2_n3_5_0_86, north);
+  [all] at_segment(a) == seg_n2_n3_5_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n2_n3_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n2_n3_6_0_86) == a :-> none;
+  [all] blocking(seg_n2_n3_5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_27help_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27help_0_100, south);
+  [all] at_segment(a) == seg_27help_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27help_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27help_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_3_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_3_0_86, north);
+  [all] at_segment(a) == seg_n4_n5_3_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_3_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+  [all] blocking(seg_n4_n5_3_0_86) == a :-> none;
+};
+         
+action takeoff__seg_c3_c_a01_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c3_c_a01_0_100, south);
+  [all] at_segment(a) == seg_c3_c_a01_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c3_c_a01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c5_c_a02_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c5_c_a02_0_100, north);
+  [all] at_segment(a) == seg_c5_c_a02_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c5_c_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a02_0_100) == a :-> none;
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_a02_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a02_0_100, south);
+  [all] at_segment(a) == seg_a02_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c5_c_a02_0_100) == a :-> none;
+  [all] blocking(seg_a02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_rwy_0_1300__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwy_0_1300, south);
+  [all] at_segment(a) == seg_rwy_0_1300;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwy_0_1300) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+};
+         
+action takeoff__seg_c4_c5_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c4_c5_0_50, south);
+  [all] at_segment(a) == seg_c4_c5_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c4_c5_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c4_c5_0_50) == a :-> none;
+};
+         
+action takeoff__seg_09_0_150__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09_0_150, north);
+  [all] at_segment(a) == seg_09_0_150;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09_0_150) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+  [all] blocking(seg_09_0_150) == a :-> none;
+};
+         
+action takeoff__seg_n_c_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n_c_0_100, north);
+  [all] at_segment(a) == seg_n_c_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n_c_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+};
+         
+action takeoff__seg_rwy_0_1300__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwy_0_1300, north);
+  [all] at_segment(a) == seg_rwy_0_1300;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwy_0_1300) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27_0_150) == a :-> none;
+  [all] blocking(seg_rwy_0_1300) == a :-> none;
+};
+         
+action takeoff__seg_27thresh_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_27thresh_0_100, south);
+  [all] at_segment(a) == seg_27thresh_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_27thresh_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_27thresh_0_100) == a :-> none;
+};
+         
+action takeoff__seg_a02_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a02_0_100, north);
+  [all] at_segment(a) == seg_a02_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a02_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_a02_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_5_0_86__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_5_0_86, south);
+  [all] at_segment(a) == seg_n4_n5_5_0_86;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_4_0_85) == a :-> none;
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_n4_n5_5_0_86__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n4_n5_5_0_86, north);
+  [all] at_segment(a) == seg_n4_n5_5_0_86;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n4_n5_5_0_86) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_6_0_86) == a :-> none;
+  [all] blocking(seg_n4_n5_5_0_86) == a :-> none;
+};
+         
+action takeoff__seg_09help_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09help_0_100, south);
+  [all] at_segment(a) == seg_09help_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09help_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09help_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c_c2_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c_c2_0_100, south);
+  [all] at_segment(a) == seg_c_c2_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c_c2_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n_c_0_100) == a :-> none;
+  [all] blocking(seg_c_c2_0_100) == a :-> none;
+};
+         
+action takeoff__seg_b01_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_b01_0_100, north);
+  [all] at_segment(a) == seg_b01_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_b01_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_b01_0_100) == a :-> none;
+};
+         
+action takeoff__seg_c2_c3_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_c2_c3_0_100, north);
+  [all] at_segment(a) == seg_c2_c3_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_c2_c3_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_c3_c4_0_50) == a :-> none;
+  [all] blocking(seg_c3_c_a01_0_100) == a :-> none;
+  [all] blocking(seg_c3_c_b01_0_100) == a :-> none;
+  [all] blocking(seg_c2_c3_0_100) == a :-> none;
+};
+         
+action takeoff__seg_09thresh_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_09thresh_0_100, north);
+  [all] at_segment(a) == seg_09thresh_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_09thresh_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09thresh_0_100) == a :-> none;
+};
+         
+action takeoff__seg_a_09_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a_09_0_100, north);
+  [all] at_segment(a) == seg_a_09_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a_09_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_09help_0_100) == a :-> none;
+  [all] blocking(seg_09_0_150) == a :-> none;
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+};
+         
+action takeoff__seg_a_09_0_100__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_a_09_0_100, south);
+  [all] at_segment(a) == seg_a_09_0_100;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_a_09_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n1_a_0_100) == a :-> none;
+  [all] blocking(seg_a_09_0_100) == a :-> none;
+};
+         
+action takeoff__seg_n_n4_0_100__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_n_n4_0_100, north);
+  [all] at_segment(a) == seg_n_n4_0_100;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_n_n4_0_100) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_n4_n5_1_0_85) == a :-> none;
+  [all] blocking(seg_n_n4_0_100) == a :-> none;
+};
+         [end] is_parked(airplane_cfbeg, seg_a01_0_100) == true;
+[end] airborne(airplane_daewh, seg_09_0_150) == true;
+[end] airborne(airplane_dfboy, seg_09_0_150) == true;
+[end] airborne(airplane_wurst, seg_09_0_150) == true;
+[end] airborne(airplane_horst, seg_09_0_150) == true;
+[end] is_parked(airplane_holgi, seg_b02_0_100) == true;

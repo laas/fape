@@ -1,0 +1,57 @@
+ 
+type direction;
+type mode;
+type powerable;
+type satellite < powerable with {
+    variable direction pointing;
+    variable powerable powered;
+};
+
+predicate have_image(direction d, mode m);
+
+type instrument < powerable with {
+    constant satellite on_board;
+    constant boolean supports(mode m);
+    predicate power_on();
+    predicate calibrated();
+    constant boolean calibration_target(direction d);
+};
+
+action turn_to(satellite s, direction d_new, direction d_prev) {
+    duration := 500;
+    d_new != d_prev;
+    [all] s.pointing == d_prev :-> d_new;
+};
+
+action switch_on(instrument i, satellite s) {
+    duration := 200;
+    i.on_board == s;
+    [all] s.powered == s :-> i;
+    [start] i.calibrated := false;
+};
+
+
+action switch_off(instrument i, satellite s) {
+    duration := 100;
+    i.on_board == s;
+    [all] s.powered == i :-> s;
+};
+
+action calibrate(satellite s, instrument i, direction d) {
+    duration := 500;
+    i.on_board == s;
+    i.calibration_target(d);
+    [all] s.pointing == d;
+    [all] s.powered == i;
+    [all] i.calibrated == false :-> true;
+};
+
+action take_image(satellite s, direction d, instrument i, mode m) {
+    duration := 700;
+    i.on_board == s;
+    i.supports(m);
+    [all] i.calibrated == true;
+    [all] s.powered == i;
+    [all] s.pointing == d;
+    [end] have_image(d, m) := true;
+};

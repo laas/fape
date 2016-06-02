@@ -1,0 +1,213 @@
+// -*-c++-*-
+
+type waypoint;
+type camera with {
+    constant boolean on_board(rover r);
+    constant boolean supports(mode m);
+    predicate calibrated(rover r);
+};
+type objective;
+
+type rover with {
+    variable waypoint at;
+    constant boolean equipped_for_soil_analysis;
+    constant boolean equipped_for_rock_analysis;
+    constant boolean equipped_for_imaging;
+    constant boolean can_traverse(waypoint x, waypoint z);
+    predicate have_soil_analysis(waypoint p);
+    predicate have_rock_analysis(waypoint p);
+    predicate have_image(objective o, mode m);
+    variable boolean empty;
+    variable boolean available;
+};
+
+type store with {
+    variable boolean empty;
+    constant rover store_of;
+};
+
+type lander with {
+    constant waypoint at_lander;
+    variable boolean channel_free;
+};
+
+type mode;
+
+constant boolean visible(waypoint x, waypoint y);
+constant boolean visible_from(objective o, waypoint p);
+predicate calibration_target(camera c, objective o);
+predicate at_soil_sample(waypoint p);
+predicate at_rock_sample(waypoint p);
+
+predicate communicated_soil_data(waypoint p);
+predicate communicated_rock_data(waypoint p);
+predicate communicated_image_data(objective o, mode m);
+
+action navigate(rover x, waypoint y, waypoint z) {
+  duration :in [10,13];
+    x.can_traverse(y, z) == true;
+    visible(y, z) == true;
+    [all] {
+        x.available == true;
+        x.at == y :-> z;
+    };
+};
+
+action sample_soil(rover x, waypoint p) {
+  motivated;
+  constant store s;
+  duration :in [5,7];
+  x.equipped_for_soil_analysis == true;
+  s.store_of == x;
+  [all] {
+    x.at == p;
+    at_soil_sample(p) == true :-> false;
+    s.empty == true :-> false;
+  };
+  [end] x.have_soil_analysis(p) := true;
+};
+
+action sample_rock(rover x, waypoint p) {
+  motivated;
+  duration :in [5,7];
+  constant store s;
+  x.equipped_for_rock_analysis == true;
+  s.store_of == x;
+  [all] {
+    x.at == p;
+    at_rock_sample(p) == true :-> false;
+    s.empty == true :-> false;
+  };
+  [end] x.have_rock_analysis(p) := true;
+};
+
+action drop(rover x) {
+  motivated;
+  duration := 3;
+  constant store y;
+  y.store_of == x;
+  [all] y.empty == false :-> true;
+};
+
+action calibrate(rover r, camera i, objective t, waypoint w) {
+  duration := 3;
+  camera.on_board(i, r) == true;
+  r.equipped_for_imaging == true;
+  visible_from(t, w) == true;
+  [all] {
+    calibration_target(i, t) == true;
+    r.at == w;
+  };
+  [end] camera.calibrated(i, r) := true;
+};
+
+action take_image(rover r, objective o,  mode m) {
+  motivated;
+  duration :in [2,3];
+  constant camera i;
+  constant waypoint p;
+  i.on_board(r) == true;
+  r.equipped_for_imaging() == true;
+  i.supports(m) == true;
+  visible_from(o, p) == true;
+  [all] {
+    camera.calibrated(i, r) == true :-> false;
+    r.at() == p;
+  };
+  [end] r.have_image(o, m) := true;
+};
+
+action communicate_soil_data(rover r, waypoint p) {
+  motivated;
+  duration := 5;
+  constant lander l;
+  constant waypoint x;
+  constant waypoint y;
+  visible(x, y) == true;
+  l.at_lander == y;
+  [all] {
+    l.channel_free() == true :-> true;
+    r.available() == true :-> true;
+    r.at == x;
+    r.have_soil_analysis(p) == true;
+  };
+  [end] communicated_soil_data(p) := true;
+};
+
+action communicate_image_data(rover r, objective o, mode m) {
+  motivated;
+  duration := 5;
+  constant lander l;
+  constant waypoint x;
+  constant waypoint y;
+  visible(x, y) == true;
+  l.at_lander == y;
+  [all] {
+    l.channel_free() == true :-> true;
+    r.available() == true :-> true;
+    r.at == x;
+    r.have_image(o, m) == true;
+  };
+  [end] communicated_image_data(o, m) := true;
+};
+
+action communicate_rock_data(rover r, waypoint p) {
+  motivated;
+  duration := 5;
+  constant lander l;
+  constant waypoint x;
+  constant waypoint y;
+  visible(x, y) == true;
+  l.at_lander == y;
+  [all] {
+    l.channel_free() == true :-> true;
+    r.available() == true :-> true;
+    r.at == x;
+    r.have_rock_analysis(p) == true;
+  };
+  [end] communicated_rock_data(p) := true;
+};
+
+action get_image(objective o, mode m) {
+  motivated;
+  constant rover r;
+
+  [start,t1]  ti: take_image(r, o, m);
+  [t2,end]  cid: communicate_image_data(r,o,m);
+  t1 < t2 + 0;
+};
+
+action get_soil_analysis(waypoint target) {
+  motivated;
+  constant rover r;
+  r.equipped_for_soil_analysis;
+
+  [start,t1] sample_soil(r,target);
+  [t2,t3] communicate_soil_data(r,target);
+  [t4, end] drop(r);
+  t1 < t2 +0;
+  t3 < t4 +0;
+};
+
+action get_rock_analysis(waypoint target) {
+  motivated;
+  constant rover r;
+  r.equipped_for_rock_analysis;
+
+  [start,t1] sample_rock(r,target);
+
+  [t2,t3] communicate_rock_data(r, target);
+  [t4,end] drop(r);
+  t1 < t2+0;
+  t1 < t4+0;
+};
+
+/*
+action get_rock_analysis(waypoint target) {
+  motivated;
+  constant rover r;
+  [all] contains ss: sample_rock(r,_,target);
+  [end(ss), end] contains communicate_rock_data(r, _, target, _, _);
+  [end(ss), end] contains drop(r,_);
+};
+*/

@@ -1,0 +1,74 @@
+ 
+type direction;
+type mode;
+type powerable;
+type antenna;
+type satellite < powerable with {
+    variable direction pointing;
+    variable powerable powered;
+};
+
+predicate have_image(direction d, mode m);
+predicate sent_image(direction d, mode m);
+
+predicate visible(antenna a, satellite s);
+predicate available(antenna a);
+
+constant integer [1,99999] slew_time(direction a, direction b);
+constant integer [1,99999] calibration_time(instrument a, direction d);
+constant integer [1,99999] send_time(direction d, mode m);
+
+type instrument < powerable with {
+    constant satellite on_board;
+    constant boolean supports(mode m);
+    predicate power_on();
+    predicate calibrated();
+    constant boolean calibration_target(direction d);
+};
+
+action turn_to(satellite s, direction d_new, direction d_prev) {
+    duration := slew_time(d_prev, d_new);
+    d_new != d_prev;
+    [all] s.pointing == d_prev :-> d_new;
+};
+
+action switch_on(instrument i, satellite s) {
+    duration := 2;
+    i.on_board == s;
+    [all] s.powered == s :-> i;
+    [start] i.calibrated := false;
+};
+
+
+action switch_off(instrument i, satellite s) {
+    duration := 1;
+    i.on_board == s;
+    [all] s.powered == i :-> s;
+};
+
+action calibrate(satellite s, instrument i, direction d) {
+    duration := calibration_time(i, d);
+    i.on_board == s;
+    i.calibration_target(d);
+    [all] s.pointing == d;
+    [all] s.powered == i;
+    [all] i.calibrated == false :-> true;
+};
+
+action take_image(satellite s, direction d, instrument i, mode m) {
+    duration := 7;
+    i.on_board == s;
+    i.supports(m);
+    [all] i.calibrated == true;
+    [all] s.powered == i;
+    [all] s.pointing == d;
+    [end] have_image(d, m) := true;
+};
+
+action send_image(satellite s, antenna a, direction d, mode m) {
+    duration := send_time(d,m);
+    [all] have_image(d,m) == true;
+    [all] visible(a,s) == true;
+    [all] available(a) == true :-> true;
+    [end] sent_image(d,m) := true;
+};

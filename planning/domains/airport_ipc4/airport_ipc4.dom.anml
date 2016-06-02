@@ -1,0 +1,56 @@
+
+type occupant;
+type airplane < occupant;
+type segment;
+type direction;
+type airplanetype;
+
+type airplane_status;
+instance airplane_status moving, pushing, parked, flying;
+
+instance occupant none;
+
+function segment at_segment(airplane p);
+function direction facing(airplane p);
+function occupant blocking(segment s);
+predicate airborne(airplane p, segment s);
+predicate is_parked(airplane p, segment s);
+function airplane_status status(airplane p);
+
+
+constant integer startup_duration(airplane a);
+constant boolean is_start_runway(segment s, direction d);
+
+
+action startup(airplane a) {
+  duration := startup_duration(a);
+  [all] status(a) == pushing :-> moving;
+};
+
+
+
+
+// action move(airplane a, direction d1, segment s1, segment s2, direction d2) {
+//   duration := length(s1) / 30;
+//   s1 != s2;
+//   can_move(s1, s2, d1);
+//   move_dir(s1, s2, d2);
+//   [all] is_moving(a) == true;
+//   [all] facing(a) == d1 :-> d2;
+//   [all] at_segment(a) == s1 :-> s2;
+//   forall(segment s) {
+//     when s == s1 or s == s2 {
+//     }
+//     when is_blocked(s, s2, d2) and is_blocked(s,s1,d1) {
+//       [all] blocking(s) == a :-> a;
+//     }
+//     when is_blocked(s, s2, d2) {
+//       [all] blocking(s) == none :-> a;
+//     }
+//     when is_blocked(s, s1, d1) {
+//       [all] blocking(s) == a :-> none;
+//     }
+//   };
+// };
+
+

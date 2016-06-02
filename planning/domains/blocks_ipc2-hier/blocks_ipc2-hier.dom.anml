@@ -1,0 +1,51 @@
+
+type Location; 
+type Block < Location;
+
+predicate clear(Block b);
+predicate handempty();
+function Location on(Block b);
+
+instance Location TABLE, HAND;
+
+
+action pickup(Block b) {
+  duration := 5;
+  [all] clear(b) == true;
+  [all] on(b) == TABLE :-> HAND;
+  [all] handempty == true :-> false;
+};
+
+action putdown(Block b) {
+  duration := 5;  
+  [all] clear(b) == true;
+  [all] on(b) == HAND :-> TABLE;
+  [all] handempty == false :-> true;
+};
+
+action stack(Block b, Block c) {
+  motivated;
+  duration := 5;  
+  [all] on(b) == HAND :-> c;
+  [all] handempty == false :-> true;
+  [all] clear(c) == true :-> false;
+  [all] clear(b) == true;
+};
+
+action unstack(Block b, Block c) {
+  duration := 5;  
+  [all] on(b) == c :-> HAND;
+  [all] handempty == true :-> false;
+  [all] clear(b) == true;
+  [all] clear(c) == false :-> true;
+};
+
+action DoStack(Block a, Block b) {
+  motivated;
+  :decomposition {
+    [all] on(a) == b;
+  };
+  :decomposition {
+    [all] stack(a,b);
+  };
+};

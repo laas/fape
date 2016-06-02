@@ -1,0 +1,224 @@
+
+type room;
+type nil;
+instance nil NIL;
+
+type door with {
+  fluent (nil or robot) knob_turned;
+  fluent boolean open;
+};
+  
+type object with {
+  fluent (room or gripper) loc;
+};
+
+type gripper with {
+  constant robot owner;
+  fluent boolean free;
+};
+
+type robot with {
+  fluent room loc;
+  constant gripper lgripper;
+  constant gripper rgripper;
+};
+
+constant boolean connected(room r1, room r2, door d);
+
+forall(door d) {
+  [start] {
+    d.knob_turned := NIL;
+  };
+};
+
+action turn_doorknob(robot r, room from, room to, door d, gripper g) {
+  motivated;
+  duration := 3000;
+  connected(from, to, d);
+  g.owner == r;
+  [all] g.free == true :-> true;
+  [all] r.loc == from;
+  [start,start+1] d.knob_turned == NIL :-> r;
+  [start+1,end-1] d.knob_turned == r;
+  [end-1,end] d.knob_turned == r :-> NIL;
+};
+
+action open_door(robot r, room from, room to, door d, gripper g) {
+  motivated;
+  duration := 2000;
+  connected(from, to, d);
+  g.owner == r;
+  [all] d.knob_turned == r;
+  [all] r.loc == from;
+  [all] d.open == false :-> true;
+};
+
+action move(robot r, room from, room to, door d) {
+  motivated;
+  duration := 1000;
+  connected(from, to, d);
+  [all] d.open == true;
+  [all] r.loc == from :-> to;
+};
+
+action pick(robot bot, object o, room r, gripper g) {
+  motivated;
+  duration := 1000;
+  g.owner == bot;
+  [start,start+1] bot.loc == r;  // from PDDL model, robot can move immediately after starting a pick
+  [all] g.free == true :-> false;
+  [all] o.loc == r :-> g;
+};
+
+action drop(robot bot, object o, room r, gripper g) {
+  motivated;
+  duration := 1000;
+  g.owner == bot;
+  [start,start+1] bot.loc == r;  // from PDDL model, robot can move immediately after starting a drop
+  [all] g.free == false :-> true;
+  [all] o.loc == g :-> r;
+};
+
+action turn_and_open(robot r, room from, room to, door d, gripper g) {
+  motivated;
+  connected(from, to, d);
+  [all] r.loc == from;
+  [all] t: turn_doorknob(r, from, to, d, g);
+  [all] contains op: open_door(r, from, to, d, g);
+  [start, start(op)] d.open == false;
+  [end(op),end] d.open == true;
+};
+action m_open_door(robot r, room from, room to, door d) {
+  motivated;
+  connected(from, to, d);
+  [all] r.loc == from;
+  :decomposition {
+    [all] d.open == true;
+  };
+  :decomposition {
+    [start] d.open == false;
+    constant gripper g;
+    g.owner == r;
+    [start] g.free == true;
+    [all] turn_and_open(r, from, to, d, g);
+  };
+  :decomposition {
+    [start] r.lgripper.free == false;
+    [start] r.rgripper.free == false;
+    constant object o;
+    [start] o.loc == r.rgripper;
+    [start] d.open == false;
+    [all] ordered(
+      d: drop(r, o, from, r.rgripper),
+      o: turn_and_open(r, from, to, d, r.rgripper),
+      p: pick(r, o, from, r.rgripper));
+    
+  };
+};
+
+fluent boolean visited(robot bot, room r);
+forall(robot bot, room r) {
+  [start] visited(bot, r) := false;
+};
+
+constant boolean up(room r1, room r2);
+
+action goUpTo(robot r, room target) {
+  motivated;
+  :decomposition {
+    [all] r.loc == target;
+  };
+  :decomposition {
+    end >= start +1000; // at least one move action
+    constant room start_room;
+    constant room next;
+    constant door d;
+    up(start_room,target);
+    up(start_room,next);
+    start_room != target;
+    [start] r.loc == start_room;
+    connected(start_room, next, d);
+    [start+1,end] ordered(
+      m_open_door(r, start_room, next, d),
+      m: move(r, start_room, next, d),
+      g: goUpTo(r, target));
+  };
+};
+
+action goDownTo(robot r, room target) {
+  motivated;
+  :decomposition {
+    [all] r.loc == target;
+  };
+  :decomposition {
+    end >= start +1000; // at least one move action
+    constant room start_room;
+    start_room != target;
+    constant room next;
+    constant door d;
+    up(target, start_room);
+    up(next, start_room);
+    [start] r.loc == start_room;
+    connected(start_room, next, d);
+    [start+1,end] ordered(
+      m_open_door(r, start_room, next, d),
+      m: move(r, start_room, next, d),
+      g: goDownTo(r, target));
+  };
+};
+
+action goto(robot r, room target) {
+  motivated;
+  :decomposition {
+    [all] r.loc == target;
+    [all] visited(r,target) == false :-> false;
+  };
+  :decomposition {
+    end >= start +1000; // at least one move action
+    constant room start_room;
+    up(start_room,target);
+    start_room != target;
+    [start] r.loc == start_room;
+    [all] goUpTo(r, target);
+  };
+  :decomposition {
+    end >= start +1000; // at least one move action
+    constant room start_room;
+    up(target,start_room);
+    start_room != target;
+    [start] r.loc == start_room;
+    [all] goDownTo(r, target);
+  };
+};
+
+fluent boolean busy(gripper g);
+forall(gripper g) {
+  [start] busy(g) := false;
+};
+fluent boolean nav_lock(robot r);
+forall(robot r) {
+  [start] nav_lock(r) := false;
+};
+
+action bring_object(object o, room target) {
+  motivated;
+  :decomposition {
+    [all] o.loc == target;
+  };
+  :decomposition {
+    constant gripper g;
+    constant room start_room;
+    start_room != target;
+    [start-1] g.free == true;  // the "-1" is a nasty trick to push the planner to choose a gripper (and the associated robot early on)
+    [start] o.loc == start_room;
+    [all] ordered(
+      g1: goto(g.owner, start_room),
+      p: pick(g.owner, o, start_room, g),
+      g2: goto(g.owner, target),
+      d: drop(g.owner, o, target, g));
+
+    [start(g1),end(p)] nav_lock(g.owner) == false :-> false;
+    [start(g2),end(d)] nav_lock(g.owner) == false :-> false;
+  };
+};
+

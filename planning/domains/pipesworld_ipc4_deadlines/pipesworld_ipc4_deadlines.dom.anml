@@ -1,0 +1,125 @@
+
+
+type atom_location;
+type pipe < atom_location;
+type area < atom_location;
+type product;
+type batch_atom;
+
+type pipe_status;
+instance pipe_status normal, push_updating, pop_updating;
+
+instance product lco, gasoleo, rat_a, oca1, oc1b;
+
+constant integer dur(pipe p);
+constant integer half_dur(pipe p);
+
+constant boolean unitary(pipe p);
+constant product product_of(batch_atom a);
+
+constant boolean connects(area from, area to, pipe p);
+
+constant boolean may_interface(product p1, product p2);
+
+function pipe_status status(pipe p);
+function batch_atom first(pipe p);
+function batch_atom last(pipe p);
+predicate follows(batch_atom a1, batch_atom a1);
+function atom_location at(batch_atom a);
+
+
+
+
+action push_start(pipe p, batch_atom atom_in, area from, area to,
+                  batch_atom first_batch, product prod_atom_in, product prod_first_batch) {
+  duration := half_dur(p);
+  
+  connects(from, to, p);
+  product_of(atom_in) == prod_atom_in;
+  product_of(first_batch) == prod_first_batch;
+  may_interface(prod_first_batch, prod_atom_in);
+  unitary(p) == false;
+
+  [all] at(atom_in) == from :-> p;
+  [all] first(p) == first_batch :-> atom_in;
+  [end] follows(first_batch, atom_in) := true; //TODO
+  [all] status(p) == normal :-> push_updating;
+};
+
+action push_end(pipe p, batch_atom last_batch, area from, area to,
+                  batch_atom next_last_batch) {
+  duration := half_dur(p);
+  
+  connects(from, to, p);
+  unitary(p) == false;
+
+  [all] at(last_batch) == p :-> to;
+  [all] last(p) == last_batch :-> next_last_batch;
+  [all] follows(last_batch, next_last_batch) == true :-> false;
+  [all] status(p) == push_updating :-> normal;
+};
+
+action pop_start(pipe p, batch_atom atom_in, area from, area to,
+                  batch_atom last_batch, product prod_atom_in, product prod_last_batch) {
+  duration := half_dur(p);
+  
+  connects(from, to, p);
+  product_of(atom_in) == prod_atom_in;
+  product_of(last_batch) == prod_last_batch;
+  may_interface(prod_last_batch, prod_atom_in);
+  unitary(p) == false;
+
+  [all] at(atom_in) == to :-> p;
+  [all] last(p) == last_batch :-> atom_in;
+  [end] follows(atom_in, last_batch) := true; //TODO
+  [all] status(p) == normal :-> pop_updating;
+};
+
+action pop_end(pipe p, batch_atom first_batch, area from, area to,
+                  batch_atom next_first_batch) {
+  duration := half_dur(p);
+  
+  connects(from, to, p);
+  unitary(p) == false;
+
+  [all] at(first_batch) == p :-> from;
+  [all] first(p) == first_batch :-> next_first_batch;
+  [all] follows(next_first_batch, first_batch) == true :-> false;
+  [all] status(p) == pop_updating :-> normal;
+};
+
+
+action push_unitary(pipe p, batch_atom atom_in, area from, area to,
+                  batch_atom first_batch, product prod_atom_in, product prod_first_batch) {
+  duration := dur(p);
+  
+  connects(from, to, p);
+  product_of(atom_in) == prod_atom_in;
+  product_of(first_batch) == prod_first_batch;
+  may_interface(prod_first_batch, prod_atom_in);
+  unitary(p) == true;
+
+  [all] at(atom_in) == from :-> p;
+  [all] at(first_batch) == p :-> to;
+  [all] first(p) == first_batch :-> atom_in;
+  [all] last(p) == first_batch :-> atom_in;
+  [all] status(p) == normal :-> normal;
+};
+
+action pop_unitary(pipe p, batch_atom atom_in, area from, area to,
+                  batch_atom first_batch, product prod_atom_in, product prod_first_batch) {
+  duration := dur(p);
+  
+  connects(from, to, p);
+  product_of(atom_in) == prod_atom_in;
+  product_of(first_batch) == prod_first_batch;
+  may_interface(prod_first_batch, prod_atom_in);
+  unitary(p) == true;
+
+  [all] at(atom_in) == to :-> p;
+  [all] at(first_batch) == p :-> from;
+  [all] first(p) == first_batch :-> atom_in;
+  [all] last(p) == first_batch :-> atom_in;
+  [all] status(p) == normal :-> normal;
+};
+
