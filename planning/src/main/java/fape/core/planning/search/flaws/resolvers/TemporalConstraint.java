@@ -1,27 +1,32 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.TPRef;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Enforces a temporal constraints between two time points.
  */
-public class TemporalConstraint extends Resolver {
+public class TemporalConstraint implements Resolver {
 
-    public final TPRef first, second;
-    public final int min, max;
+    private final List<TPRef> firsts, seconds;
+    private final int min, max;
 
-    public TemporalConstraint(TPRef first, TPRef second, int min, int max) {
-        this.first = first;
-        this.second = second;
+    public TemporalConstraint(List<TPRef> firsts, List<TPRef> seconds, int min, int max) {
+        this.firsts = firsts;
+        this.seconds = seconds;
         this.min = min;
         this.max = max;
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
-        st.enforceConstraint(first, second, min, max);
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
+        for(TPRef first : firsts)
+            for(TPRef second : seconds)
+                st.enforceConstraint(first, second, min, max);
         return true;
     }
 
@@ -29,10 +34,14 @@ public class TemporalConstraint extends Resolver {
     public int compareWithSameClass(Resolver e) {
         assert e instanceof TemporalConstraint;
         TemporalConstraint o = (TemporalConstraint) e;
-        if(first != o.first)
-            return first.id() - o.first.id();
-        if(second != o.second)
-            return second.id() - o.second.id();
+        for(TPRef first : firsts)
+            for(TPRef ofirst : o.firsts)
+                if(first != ofirst)
+                    return first.id() - ofirst.id();
+        for(TPRef second : seconds)
+            for(TPRef osecond : o.seconds)
+                if(second != osecond)
+                    return second.id() - osecond.id();
         if(min != o.min)
             return min - o.min;
 

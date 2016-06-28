@@ -1,11 +1,12 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.concrete.statements.LogStatement;
 
-public class SupportingTimeline extends Resolver {
+public class SupportingTimeline implements Resolver {
 
     /** Database that will support the consumer */
     public final int supporterID;
@@ -17,7 +18,7 @@ public class SupportingTimeline extends Resolver {
     public final int supportingComponent;
 
     /** Database that needs to be supported */
-    public final int consumerID;
+    private final int consumerID;
 
     public SupportingTimeline(int supporterID, int supportingChangeNumber, Timeline consumer) {
         this.supporterID = supporterID;
@@ -26,11 +27,12 @@ public class SupportingTimeline extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         final Timeline supporter = st.getTimeline(supporterID);
         final Timeline consumer = st.getTimeline(consumerID);
         assert supporter != null;
         assert consumer != null;
+        assert supporter != consumer : "Error: a resolver was generated that supports a timeline with itself.";
 
         ChainComponent precedingComponent = supporter.getChangeNumber(supportingComponent);
 
@@ -38,7 +40,6 @@ public class SupportingTimeline extends Resolver {
         // we concatenate the two timelines
 
         assert precedingComponent != null && precedingComponent.change;
-        planner.causalLinkAdded(st, precedingComponent.getFirst(), consumer.getFirst().getFirst());
 
         // database concatenation
         st.insertTimelineAfter(supporter, consumer, precedingComponent);

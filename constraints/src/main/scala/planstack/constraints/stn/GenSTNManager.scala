@@ -62,6 +62,8 @@ abstract class GenSTNManager[TPRef,ID] {
   /** Returns True if u can be strictly before v */
   final def canBeStrictlyBefore(u:TPRef, v:TPRef) : Boolean = isConstraintPossible(v, u, -1)
 
+  final def isDelayPossible(from:TPRef, to:TPRef, delay:Int) = isConstraintPossible(to, from, -delay)
+
   protected def isConstraintPossible(u:TPRef, v:TPRef, w:Int) : Boolean
 
   /** Returns the minimal time from the start of the STN to u */

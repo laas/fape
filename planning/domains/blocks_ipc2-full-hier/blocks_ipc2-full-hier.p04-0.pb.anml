@@ -1,0 +1,16 @@
+instance Block d, b, a, c;
+[start] clear(c) := true;
+[start] clear(a) := true;
+[start] clear(b) := true;
+[start] clear(d) := true;
+[start] on(c) := TABLE;
+[start] on(a) := TABLE;
+[start] on(b) := TABLE;
+[start] on(d) := TABLE;
+[start] handempty := true;
+[end] on(d) == c;
+[all] contains DoStack(d, c);
+[end] on(c) == b;
+[all] contains DoStack(c, b);
+[end] on(b) == a;
+[all] contains DoStack(b, a);

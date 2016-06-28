@@ -1,26 +1,28 @@
 package fape.core.planning.heuristics.temporal;
 
+import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.util.IteratorConcat;
-import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
 
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class StateDepGraph implements DependencyGraph {
 
-    static final int dbgLvl = 0;
-    static final int dbgLvlDij = 0;
+    static int dbgLvl = 0;
+    static int dbgLvlDij = 0;
 
     /** Edges and nodes common to all graphs **/
     public DepGraphCore core;
 
     /** Planner by which this graph is used */
-    public final APlanner planner;
+    public final Planner planner;
 
     /** Timed initial litterals **/
     public final FactAction facts;
@@ -46,7 +48,7 @@ public class StateDepGraph implements DependencyGraph {
      * It is currently only used and set by the dijkstra propagator. **/
     private IR2IntMap<Node> predecessors = null;
 
-    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, APlanner planner) {
+    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, Planner planner) {
         this.core = core;
         this.planner = planner;
 
@@ -105,7 +107,7 @@ public class StateDepGraph implements DependencyGraph {
     }
 
 
-    public IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
+    IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
 
         if(dbgLvlDij > 3) {
             // used when debugging to make sure bellman ford and dijkstra yield the same results
@@ -142,10 +144,10 @@ public class StateDepGraph implements DependencyGraph {
         addableActs = new IRSet<>(core.store.getIntRep(GAction.class));
         fluentsEAs = new IR2IntMap<>(core.store.getIntRep(Fluent.class));
         for(Node n : earliestAppearances.keys()) {
-            if (n instanceof RAct) {
-                addableActs.add(((RAct) n).getAct());
-            } else if(n instanceof TempFluent.SVFluent) {
+            if(n instanceof TempFluent.SVFluent) {
                 fluentsEAs.put(((TempFluent.SVFluent) n).fluent, earliestAppearances.get(n));
+            } else if(n instanceof TempFluent.ActionPossible) {
+                addableActs.add(((TempFluent.ActionPossible) n).action);
             }
         }
 
@@ -157,15 +159,40 @@ public class StateDepGraph implements DependencyGraph {
         }
 
         // if this was the first propagation, we recreate a core graph containing only possible nodes
-        if(!ancestorGraph.isPresent()) {
+        if(!core.wasReduced) {
             List<RAct> feasibles = earliestAppearances.keySet().stream()
                     .filter(n -> n instanceof RAct)
                     .map(n -> (RAct) n)
                     .collect(Collectors.toList());
             DepGraphCore prevCore = core;
-            core = new DepGraphCore(feasibles, core.store);
+            core = new DepGraphCore(feasibles, true, core.store);
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
+            if(Planner.debugging) {
+                System.out.println(String.format("Initially %d ground actions. Reachability analysis reduced them to %d.",
+                        prevCore.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof TempFluent.ActionPossible)
+                                .map(a -> ((TempFluent.ActionPossible) a).action)
+                                .collect(Collectors.toSet())
+                                .size(),
+                        core.getDefaultEarliestApprearances().keySet().stream()
+                                .filter(node -> node instanceof TempFluent.ActionPossible)
+                                .map(a -> ((TempFluent.ActionPossible) a).action)
+                                .collect(Collectors.toSet())
+                                .size()
+                ));
+                String tmpDir = System.getProperty("java.io.tmpdir");
+                String outFile = tmpDir + "/ground-instances.txt";
+                System.out.println("Writing all ground action instances to: "+outFile);
+                try {
+                    PrintWriter pw = new PrintWriter(outFile, "UTF-8");
+                    feasibles.stream().map(f -> f.act).collect(Collectors.toSet()).forEach(a -> pw.println(a.toString()));
+                    pw.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
         }
 
         if(dbgLvl >= 2) printActions();
@@ -343,7 +370,7 @@ public class StateDepGraph implements DependencyGraph {
     /**
      * More involved implementation of a propagator based on the Dijkstra algorithm.
      */
-    public class Dijkstra implements Propagator {
+    private class Dijkstra implements Propagator {
 
         final int MAX_ITERATION = planner.options.depGraphMaxIters;
         int currentIteration = 0;
@@ -367,7 +394,7 @@ public class StateDepGraph implements DependencyGraph {
         private boolean shouldIgnore(MaxEdge e) { return e.delay < 0 || core.getFluentsWithIncomingNegEdge().contains(e.fluent);  }
         private Iterable<MaxEdge> ignoredEdges() { return core.getEdgesToIgnoreInDijkstra(); }
 
-        DijkstraQueue<Node> q = new DijkstraQueue<>(core.store.getIntRep(Node.class));
+        IDijkstraQueue<Node> q = new IDijkstraQueue<>(core.store.getIntRep(Node.class));
 
         private void enqueue(Node n, int cost, Node pred) {
             if(!optimisticValues.containsKey(n))
@@ -386,7 +413,7 @@ public class StateDepGraph implements DependencyGraph {
             }
         }
 
-        public Dijkstra(Optional<StateDepGraph> ancestorGraph) {
+        private Dijkstra(Optional<StateDepGraph> ancestorGraph) {
             if(dbgLvlDij >= 2) System.out.println("\n------------------------------------\n");
 
             if(ancestorGraph.isPresent()) {
@@ -428,7 +455,7 @@ public class StateDepGraph implements DependencyGraph {
                 for(TempFluent.DGFluent f : initFluents.keySet())
                     optimisticValues.putIfAbsent(f, 0);
 
-                pendingForActivation = new IR2IntMap<Node>(core.store.getIntRep(Node.class));
+                pendingForActivation = new IR2IntMap<>(core.store.getIntRep(Node.class));
                 for(Node n : optimisticValues.keys()) {
                     if(n instanceof ActionNode) { // action node
                         ActionNode a = (ActionNode) n;
@@ -446,6 +473,8 @@ public class StateDepGraph implements DependencyGraph {
             }
 
             while(!q.isEmpty() && (currentIteration++ < MAX_ITERATION)) {
+                if(dbgLvlDij >= 2)
+                    System.out.println("Iteration: "+currentIteration);
                 // run a dijkstra algorithm to extract everything from the queue
                 // this run is limited to positive edges.
                 if (!firstPropagationFinished) {
@@ -473,7 +502,7 @@ public class StateDepGraph implements DependencyGraph {
 
                 // remove all late nides
                 // first determine the cut threshold (all nodes later than that will be deleted)
-                List<Integer> easOrdered = new ArrayList<Integer>(q.getCosts().values());
+                List<Integer> easOrdered = new ArrayList<>(q.getCosts().values());
                 Collections.sort(easOrdered);
                 int prevValue = 0; int cut_threshold = Integer.MAX_VALUE;
                 for(int val : easOrdered) {
@@ -486,19 +515,25 @@ public class StateDepGraph implements DependencyGraph {
                 // delete all nodes after the cut threshold. Some nodes might be delayed due to these deletions,
                 // in which case they are put back in the queue (done inside delete(.))
                 if(cut_threshold != Integer.MAX_VALUE) {
-                    if(dbgLvlDij > 2) System.out.println("Start cutting from: "+cut_threshold+", (dmax = "+dmax+")");
+                    if(dbgLvlDij >= 2) System.out.println("Start cutting from: "+cut_threshold+", (dmax = "+dmax+")");
                     for(Node n : q.getCosts().keys()) {
                         if(possible(n) && cost(n) > cut_threshold) {
                             delete(n);
                         }
                     }
-                    if(dbgLvlDij > 2) System.out.println("End cutting from");
+                    if(dbgLvlDij >= 2) System.out.println("End cutting from");
                 }
+            }
+
+            if(currentIteration > 500 && (Planner.debugging || !Planning.quiet)) {
+                System.out.println("Warning: Reachability analysis took "+currentIteration+" iterations to converge. " +
+                        "You might want that you model has consistent durations or " +
+                        "limit the number of iterations of reachability analysis.");
             }
         }
 
         private void incrementalDijkstra() {
-            IRSet<Node> settled = new IRSet<Node>(core.store.getIntRep(Node.class));
+            IRSet<Node> settled = new IRSet<>(core.store.getIntRep(Node.class));
             while(!q.isEmpty()) {
                 Node n = q.poll();
                 settled.add(n);

@@ -1,6 +1,6 @@
 package fape.core.planning.timelines;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 import fape.util.Reporter;
@@ -10,16 +10,14 @@ import planstack.anml.model.concrete.statements.Persistence;
 import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
 
-    /**
-     * All temporal timelines.
-     */
-//    private List<Timeline> vars = new LinkedList<>();
+    /** All timelines, indexed by their ID */
     private Timeline[] timelines;
     private final State listener;
 
@@ -33,7 +31,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         this.timelines = Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
         this.nextTimelineID = toCopy.nextTimelineID;
 
-        if(APlanner.debugging) {
+        if(Planner.debugging) {
             for (Timeline a : consumers) assert hasTimeline(a);
             for (Timeline a : timelines) if (a != null && a.isConsumer()) assert consumers.contains(a);
         }
@@ -65,7 +63,11 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         return tl;
     }
 
-
+    public Collection<FluentHolding> getAllCausalLinks() {
+        return StreamSupport.stream(getTimelines().spliterator(), false)
+                .flatMap(tl -> tl.getCausalLinks().stream())
+                .collect(Collectors.toList());
+    }
 
     public void addTimeline(Timeline tl) {
         assert !hasTimeline(tl);
@@ -374,6 +376,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
     }
 
     public Iterable<Timeline> getTimelines() { return this; }
+    public Stream<Timeline> getTimelinesStream() { return StreamSupport.stream(getTimelines().spliterator(), false); }
 
     public Stream<LogStatement> allStatements() {
         return StreamSupport.stream(getTimelines().spliterator(), false).flatMap(Timeline::allStatements);

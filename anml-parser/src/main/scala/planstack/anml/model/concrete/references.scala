@@ -14,6 +14,7 @@ object GlobalRef {
   val NullID : Int = -1
 }
 
+import planstack.anml.model.Type
 import planstack.anml.model.concrete.GlobalRef._
 
 /** Global reference to an anml object.
@@ -53,10 +54,13 @@ object EmptyActRef extends ActRef(NullID)
 
 /** Reference to a concrete variable (those typically appear as parameters of state variables and in
   * binding constraints).
+ *
   * @param id Unique id of the reference.
   */
-class VarRef(id:Int, val typ :String) extends GlobalRef(id) { //TODO: this should be typed
-  def this(typ :String, refCounter: RefCounter) = this(refCounter.nextVar(), typ)
+class VarRef(id:Int, val typ :Type) extends GlobalRef(id) {
+  def this(typ :Type, refCounter: RefCounter) = this(refCounter.nextVar(), typ)
+
+  def getType = typ
 }
 
 /** Reference to a problem instance that takes the form of a variable.
@@ -67,16 +71,17 @@ class VarRef(id:Int, val typ :String) extends GlobalRef(id) { //TODO: this shoul
   * @param id Unique id of the reference.
   * @param instance Name of the instance.
   */
-class InstanceRef(id:Int, val instance:String, typ :String) extends VarRef(id, typ) {
-  def this(instance :String, typ :String, refCounter: RefCounter) = this(refCounter.nextVar(), instance, typ)
+class InstanceRef(id:Int, val instance:String, typ :Type) extends VarRef(id, typ) {
+  def this(instance :String, typ :Type, refCounter: RefCounter) = this(refCounter.nextVar(), instance, typ)
 
   override def toString = instance
 }
 
-class EmptyVarRef(typ :String) extends VarRef(NullID, typ)
+class EmptyVarRef(typ :Type) extends VarRef(NullID, typ)
 
 /** Reference to a time-point: an temporal variable typically denoting the start or end time of an action
   * and that appears in Simple Temporal Problems.
+ *
   * @param id Unique id of the reference.
   */
 class TPRef(id:Int) extends GlobalRef(id) {

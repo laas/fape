@@ -11,7 +11,9 @@ import java.util.List;
 
 public class PlanningOptions {
 
-    public PlanningOptions(String[] planSelStrategies, String[] flawSelStrategies) {
+    public enum ActionInsertionStrategy { DOWNWARD_ONLY, UP_OR_DOWN }
+
+    public PlanningOptions(List<String> planSelStrategies, List<String> flawSelStrategies) {
         this.planSelStrategies = planSelStrategies;
         this.flawSelStrategies = flawSelStrategies;
     }
@@ -23,7 +25,7 @@ public class PlanningOptions {
      */
     public final List<FlawFinder> flawFinders = new ArrayList<>(Arrays.asList(
             new OpenGoalFinder(),
-            new UnsupportedTaskConditionFinder(),
+            new UnrefinedTaskFinder(),
             new UnmotivatedActionFinder(),
             new AllThreatFinder(),
             new UnboundVariableFinder()
@@ -36,18 +38,20 @@ public class PlanningOptions {
     /**
      * Used to build comparators for flaws. Default to a least commiting first.
      */
-    public String[] flawSelStrategies;
+    public List<String> flawSelStrategies;
 
     /**
      * Used to build comparators for partial plans.
      */
-    public String[] planSelStrategies;
+    public List<String> planSelStrategies;
 
     /**
      * If true, the planner will solve trivial flaws (with one resolver) before adding the plan
      * to the queue
      */
     public boolean useFastForward = false;
+
+    public ActionInsertionStrategy actionInsertionStrategy = ActionInsertionStrategy.DOWNWARD_ONLY;
 
     /**
      * If set to true, the choice of the flaw to solve next will be done on the command line.
@@ -61,7 +65,7 @@ public class PlanningOptions {
      * In this case, the resolver will not be included (this is beneficial in a least commitment strategy
      * where choice of the flaw is based on the number of its resolvers).
      */
-    public boolean checkUnsolvableThreatsForOpenGoalsResolvers = false;
+    public boolean checkUnsolvableThreatsForOpenGoalsResolvers = true;
 
     /**
      * If true, the planner will use A-Epsilon for search
@@ -69,13 +73,16 @@ public class PlanningOptions {
     public boolean useAEpsilon = false;
     public float epsilon = 0.3f;
 
-    /** If set to true, the planner will use planning graphs to assess the reachibility of goals. */
-    public boolean usePlanningGraphReachability = false;
     /** Which type of dependency graph to build */
     public String depGraphStyle = "base";
     public int depGraphMaxIters = Integer.MAX_VALUE;
 
     public boolean displaySearch = true;
 
+    /** the weight of weighted A*:  f = g + w * h */
+    public float heuristicWeight = 1f;
 
+    /** Ratio of the time the planner should pursue an interesting solution in depth first manner vs the
+     * time it should push back the frontier by exploring least cost nodes */
+    public float depthShallowRatio = 1f;
 }

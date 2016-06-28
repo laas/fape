@@ -1,7 +1,7 @@
 package planstack.anml.model.concrete
 
 import planstack.anml.model.abs.AbstractTask
-import planstack.anml.model.{AnmlProblem, Context}
+import planstack.anml.model.{TMethods, TInteger, AnmlProblem, Context}
 
 import scala.collection.JavaConversions._
 
@@ -17,8 +17,8 @@ class Task(val name: String, val args :java.util.List[VarRef], val parent:Option
   override val start : TPRef = new TPRef(refCounter)
   override val end : TPRef = new TPRef(refCounter)
 
-  val groundSupportersVar = new VarRef("integer", refCounter)
-  val methodSupportersVar = new VarRef("Methods", refCounter)
+  val groundSupportersVar = new VarRef(TInteger, refCounter)
+  val methodSupportersVar = new VarRef(TMethods, refCounter)
 
   override def toString = name+args.toString
 }

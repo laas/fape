@@ -1,6 +1,6 @@
 package fape.core.planning.grounding;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -21,7 +21,7 @@ import java.util.*;
 public class GroundProblem {
 
     public final AnmlProblem liftedPb;
-    public final APlanner planner;
+    public final Planner planner;
 
     public final List<GAction> gActions;
 
@@ -67,19 +67,38 @@ public class GroundProblem {
         }
     }
 
+    /** Return all fluents achieved by a statement together with the timepoint at
+     * which they are achieved. */
     public List<TempFluents> tempsFluents(State st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
                 for(ChainComponent cc : db.chain) {
                     if (cc.change) {
-                        // those values can be used for persistences but not for transitions.
-                        st.fluents.add(new TempFluents(DisjunctiveFluent.fluentsOf(db.stateVariable, cc.getSupportValue(), st, planner), cc.getSupportTimePoint()));
+                        st.fluents.add(new TempFluents(DisjunctiveFluent.fluentsOf(
+                                db.stateVariable,
+                                cc.getSupportValue(), st, planner),
+                                cc.getSupportTimePoint()));
                     }
                 }
             }
         }
         return st.fluents;
+    }
+
+    /** Returns all fluents that are achieved (result of a transition or assignment) and not involved in any causal link). */
+    public List<TempFluents> tempsFluentsThatCanSupportATransition(State st) {
+        if(st.fluentsWithChange == null) {
+            st.fluentsWithChange = new LinkedList<>();
+            for(Timeline db : st.getTimelines()) {
+                if(!db.hasSinglePersistence())
+                    st.fluentsWithChange.add(new TempFluents(DisjunctiveFluent.fluentsOf(
+                            db.stateVariable,
+                            db.getGlobalSupportValue(), st, planner),
+                            db.getSupportTimePoint()));
+            }
+        }
+        return st.fluentsWithChange;
     }
 
     public Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
@@ -98,7 +117,7 @@ public class GroundProblem {
         return fluents;
     }
 
-    public GroundProblem(AnmlProblem liftedPb, APlanner planner) {
+    public GroundProblem(AnmlProblem liftedPb, Planner planner) {
         this.liftedPb = liftedPb;
         this.gActions = new LinkedList<>();
         this.planner = planner;

@@ -42,6 +42,7 @@ k4.attached := d4;
 //problem
 
 [start] {
+
    // this is to allow for moving piles  
  p11.ondock := d1;
  p12.ondock := d1;
@@ -49,6 +50,15 @@ k4.attached := d4;
  p22.ondock := d2;
  p3.ondock := d3;
  p4.ondock := d4;
+
+
+ p11.available := true;
+ p12.available := true;
+ p21.available := true;
+ p22.available := true;
+ p3.available := true;
+ p4.available := true;
+
   
  k1.grip := empty;
  k2.grip := empty;

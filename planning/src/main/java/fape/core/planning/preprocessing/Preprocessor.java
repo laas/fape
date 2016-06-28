@@ -4,56 +4,58 @@ import fape.core.inference.HLeveledReasoner;
 import fape.core.planning.grounding.*;
 import fape.core.planning.heuristics.DefaultIntRepresentation;
 import fape.core.planning.heuristics.IntRepresentation;
-import fape.core.planning.heuristics.relaxed.DTGImpl;
 import fape.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
 import fape.core.planning.heuristics.temporal.GStore;
 import fape.core.planning.heuristics.temporal.RAct;
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.planninggraph.FeasibilityReasoner;
-import fape.core.planning.planninggraph.GroundDTGs;
+import fape.core.planning.planner.Planner;
+import fape.core.planning.search.strategies.plans.tsp.DTG;
+import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.states.State;
 import fape.util.EffSet;
+import fape.util.Pair;
+import fr.laas.fape.structures.IRSet;
 import planstack.anml.model.Function;
 import planstack.anml.model.abs.AbstractAction;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Preprocessor {
 
-    final APlanner planner;
-    final State initialState;
+    private final Planner planner;
+    private final State initialState;
 
     public int nextGActionID = 0;
 
     public final GStore store = new GStore();
 
-    private FeasibilityReasoner fr;
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
+    private IRSet<Fluent> allFluents;
+    private IRSet<GStateVariable> allStateVariables;
     private Collection<RAct> relaxedActions;
-    private GroundDTGs dtgs;
+    private Map<GStateVariable, DTG> dtgs;
+    private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
-    HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
+    private HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
+    private Map<GStateVariable, Set<GAction>> actionUsingStateVariable;
+    private HierarchicalEffects hierarchicalEffects;
 
-    Boolean isHierarchical = null;
+    private Boolean isHierarchical = null;
 
-    public Preprocessor(APlanner container, State initialState) {
+    public int nextTemporalDTGNodeID = 0;
+
+    public Map<Pair<Fluent, Set<GStateVariable>>, Set<AbstractAction>> authorizedSupportersCache = new HashMap<>();
+
+    public Preprocessor(Planner container, State initialState) {
         this.planner = container;
         this.initialState = initialState;
     }
 
-    public FeasibilityReasoner getFeasibilityReasoner() {
-        if(fr == null) {
-            fr = new FeasibilityReasoner(planner, initialState);
-        }
-
-        return fr;
+    public TaskDecompositionsReasoner getTaskDecompositionsReasoner() {
+        return new TaskDecompositionsReasoner(planner.pb);
     }
 
     public GroundProblem getGroundProblem() {
@@ -71,10 +73,43 @@ public class Preprocessor {
 
     public EffSet<GAction> getAllActions() {
         if(allActions == null) {
-            allActions = new EffSet<GAction>(groundActionIntRepresentation());
+            allActions = new EffSet<>(groundActionIntRepresentation());
             allActions.addAll(getGroundProblem().allActions());
         }
         return allActions;
+    }
+
+    public void restrictPossibleActions(EffSet<GAction> actions) {
+        assert allActions != null;
+        allActions = actions.clone();
+    }
+
+    public HierarchicalEffects getHierarchicalEffects() {
+        if(hierarchicalEffects == null) {
+            hierarchicalEffects = new HierarchicalEffects(planner.pb);
+        }
+        return hierarchicalEffects;
+    }
+
+    public boolean fluentsInitialized() { return allFluents != null; }
+
+    public void setPossibleFluents(IRSet<Fluent> fluents) {
+        assert !fluentsInitialized() : "Possible fluents were already set.";
+        allFluents = fluents;
+        allStateVariables = new IRSet<>(store.getIntRep(GStateVariable.class));
+        for(Fluent f : fluents) {
+            allStateVariables.add(f.sv);
+        }
+    }
+
+    public IRSet<Fluent> getAllFluents() {
+        assert fluentsInitialized() : "Possible fluents have not been initialized yet;";
+        return allFluents;
+    }
+
+    public IRSet<GStateVariable> getAllStateVariables() {
+        assert allStateVariables != null : "State variable were nt initialized.";
+        return allStateVariables;
     }
 
     public GAction getGroundAction(int groundActionID) {
@@ -104,11 +139,62 @@ public class Preprocessor {
         };
     }
 
-    public DTGImpl getDTG(GStateVariable groundStateVariable) {
-        if(dtgs == null) {
-            dtgs = new GroundDTGs(getAllActions(), planner.pb, planner);
+    public Set<GAction> getActionsInvolving(GStateVariable sv) {
+        if(actionUsingStateVariable == null) {
+            actionUsingStateVariable = new HashMap<>();
+            for(GAction ga : getAllActions()) {
+                for(GAction.GLogStatement statement : ga.getStatements()) {
+                    actionUsingStateVariable.putIfAbsent(statement.getStateVariable(), new HashSet<>());
+                    actionUsingStateVariable.get(statement.getStateVariable()).add(ga);
+                }
+            }
         }
-        return dtgs.getDTGOf(groundStateVariable);
+        if(!actionUsingStateVariable.containsKey(sv))
+            return Collections.emptySet();
+        else
+            return actionUsingStateVariable.get(sv);
+    }
+
+    /** Generates a DTG for the given state variables that contains all node but no edges */
+    private DTG initDTGForStateVariable(GStateVariable missingSV) {
+        return new DTG(missingSV, missingSV.f.valueType().jInstances());
+    }
+
+    public DTG getDTG(GStateVariable gStateVariable) {
+        if (dtgs == null) {
+            dtgs = new HashMap<>();
+
+            // Create all DTG and populate their edges with the
+            // transitions and assignment in the actions.
+            for(GAction ga : getAllActions()) {
+                for(GAction.GLogStatement s : ga.gStatements.stream().map(p -> p.value2).collect(Collectors.toList())) {
+                    if(!dtgs.containsKey(s.sv)) {
+                        dtgs.put(s.sv, initDTGForStateVariable(s.sv));
+                    }
+                    if(s instanceof GAction.GAssignment)
+                        dtgs.get(s.sv).extendWith((GAction.GAssignment) s, ga);
+                    else if(s instanceof GAction.GTransition)
+                        dtgs.get(s.sv).extendWith((GAction.GTransition) s, ga);
+                }
+            }
+        }
+
+        if(!dtgs.containsKey(gStateVariable))
+            // State variable probably does not appear in any action, just give it an empty DTG
+            dtgs.put(gStateVariable, initDTGForStateVariable(gStateVariable));
+
+        return dtgs.get(gStateVariable);
+    }
+
+    public TemporalDTG getTemporalDTG(GStateVariable sv) {
+        if(!temporalDTGs.containsKey(sv)) {
+            TemporalDTG dtg = new TemporalDTG(sv, sv.f.valueType().jInstances(), planner);
+            for(GAction ga : getActionsInvolving(sv))
+                dtg.extendWith(ga);
+            dtg.postProcess();
+            temporalDTGs.put(sv, dtg);
+        }
+        return temporalDTGs.get(sv);
     }
 
     public boolean isHierarchical() {
@@ -128,11 +214,6 @@ public class Preprocessor {
         return isHierarchical;
     }
 
-    @Deprecated
-    public EffSet<GAction> getAllPossibleActionFromState(State st) {
-        return getFeasibilityReasoner().getAllActions(st);
-    }
-
     public HLeveledReasoner<GAction, Fluent> getRestrictedCausalReasoner(EffSet<GAction> allowedActions) {
         if(baseCausalReasoner == null) {
             baseCausalReasoner = new HLeveledReasoner<>(this.groundActionIntRepresentation(), this.fluentIntRepresentation());
@@ -141,11 +222,6 @@ public class Preprocessor {
             }
         }
         return baseCausalReasoner.cloneWithRestriction(allowedActions);
-    }
-
-    public HLeveledReasoner<GAction, Fluent> getLeveledCausalReasoner(State st) {
-
-        return getRestrictedCausalReasoner(getAllPossibleActionFromState(st));
     }
 
     HLeveledReasoner<GAction, GTask> baseDecomposabilityReasoner = null;
@@ -169,7 +245,7 @@ public class Preprocessor {
         if(baseDerivabilityReasoner == null) {
             baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
             for (GAction ga : getAllActions()) {
-                if (ga.abs.motivated()) {
+                if (ga.abs.mustBeMotivated()) {
                     GTask[] condition = new GTask[1];
                     condition[0] = ga.task;
                     baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);

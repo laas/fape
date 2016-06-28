@@ -1,0 +1,15 @@
+
+
+function integer [0,10] battery();
+
+
+action charge() {
+  [all] battery :produce 5;
+
+};
+
+action discharge() {
+  [all] battery :consume 4;
+};
+
+[end] battery > 5;

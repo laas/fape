@@ -1,6 +1,6 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import fape.exceptions.FAPEException;
 
@@ -22,7 +22,7 @@ public class FlawCompFactory {
      * @param comparators A sequence of string describing the strategy.
      * @return A comparator for flaws issued from the state.
      */
-    public static FlawComparator get(State st, APlanner planner,  String... comparators) {
+    public static FlawComparator get(State st, Planner planner, List<String> comparators) {
         List<FlawComparator> compList = new LinkedList<>();
         for (String compID : comparators) {
             switch (compID) {
@@ -32,11 +32,11 @@ public class FlawCompFactory {
                 case "lcf":
                     compList.add(new LeastCommitingFirst(st, planner));
                     break;
-                case "rfp":
-                    compList.add(new ResourceFlawPreference());
-                    break;
-                case "hf":
+                case "hier":
                     compList.add(new HierarchicalFirstComp(st, planner));
+                    break;
+                case "hier-fifo":
+                    compList.add(new HierFIFO(st, planner));
                     break;
                 case "ogf":
                     compList.add(new OpenGoalFirst());
@@ -49,6 +49,15 @@ public class FlawCompFactory {
                     break;
                 case "threats":
                     compList.add(new ThreatsFirst());
+                    break;
+                case "unbound":
+                    compList.add(new UnboundFirst());
+                    break;
+                case "earliest":
+                    compList.add(new EarliestFirst(st));
+                    break;
+                case "minspan":
+                    compList.add(new MinSpanFailFirst(st));
                     break;
                 default:
                     throw new FAPEException("Unrecognized flaw comparator option: " + compID);

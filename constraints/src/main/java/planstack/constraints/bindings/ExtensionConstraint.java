@@ -10,6 +10,8 @@ import java.util.*;
  */
 public class ExtensionConstraint {
 
+    final String name;
+
     /** A set of n-tuples of values { <a1,b1,c1>,<a2,b2,c2> }.
      * If a tuple of variable <A,B,C> are constrained this, their final value must match one of those
      * tuples of values.
@@ -20,7 +22,8 @@ public class ExtensionConstraint {
 
     public final boolean isLastVarInteger;
 
-    public ExtensionConstraint(boolean isLastVarInteger, int numVariables) {
+    public ExtensionConstraint(String name, boolean isLastVarInteger, int numVariables) {
+        this.name = name;
         this.isLastVarInteger = isLastVarInteger;
         this.numVariables = numVariables;
     }

@@ -43,7 +43,7 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
-  val instantiationVar : VarRef = new VarRef("integer", refCounter)
+  val instantiationVar : VarRef = new VarRef(TInteger, refCounter)
 
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
@@ -107,34 +107,6 @@ class Action(
   lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") +")"
-}
-
-/** Expresses either the min or max duration of an action. */
-sealed trait Duration {
-  def d : Int = -1
-  def sv : ParameterizedStateVariable = null
-
-  def isFunction = sv != null
-  def isConstant = sv == null
-}
-
-object Duration {
-  def apply(abs:AbstractDuration, context:Context) : Duration = {
-    if(abs.isConstant)
-      new IntDuration(abs.constantDur)
-    else
-      new FuncDuration(abs.func.bind(context))
-  }
-}
-
-/** A constant duration. Does not deepend on any parameters. */
-class IntDuration(override val d : Int) extends Duration
-
-/** A constant duration depending on some parameters.
-  * This is represented by a *constant* parameterized state variable.
-  */
-class FuncDuration(override val sv : ParameterizedStateVariable) extends Duration {
-  require(sv.func.isConstant, "Function used as duration is not constant: "+sv)
 }
 
 
@@ -223,7 +195,7 @@ object Action {
     val act = new Action(abs, context, id, parentAction, refCounter)
 
     val ctgTimepoints = act.temporalConstraints
-      .filter(tc => tc.isInstanceOf[ParameterizedContingentConstraint] || tc.isInstanceOf[ContingentConstraint])
+      .filter(tc => tc.isInstanceOf[ContingentConstraint])
       .map(tc => tc.dst)
       .toSet
 
@@ -278,7 +250,7 @@ object Action {
     */
   def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction, refCounter: RefCounter) : Action = {
 
-    val act = newAction(pb, abs, abs.args.map(x => new VarRef(abs.context.getType(x), refCounter)), new LActRef(), refCounter, None, Some(pb.context))
+    val act = newAction(pb, abs, abs.args.map(x => new VarRef(x.getType, refCounter)), new LActRef(), refCounter, None, Some(pb.context))
 
     // for all created vars, make sure those are present in [[StateModifier#vars]]
     for(localArg <- abs.args) {

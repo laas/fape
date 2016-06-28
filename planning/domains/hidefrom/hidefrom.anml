@@ -40,11 +40,9 @@ action Go(Agent a, NavLocation l1, NavLocation l2) {
 
 action Pick(Agent a, Item i, NavLocation l) {
   duration :in [10,13];
-    [all] {
-        a.loc == l;
-        thinks_at(a, i) := a;
-        at(i) == l:-> a;
-    };
+    [all] a.loc == l;
+    [end] thinks_at(a, i) := a;
+    [all] at(i) == l:-> a;
 
     // the other agent, constraint to be different of a
     constant Agent other_agent;
@@ -62,7 +60,7 @@ action Pick(Agent a, Item i, NavLocation l) {
         // agetn is here ofr at least 1 second during the pick,
         // it seen and its belief is updated
         [all] contains other_agent.loc == l;
-        [all] thinks_at(other_agent, i) := a;
+        [end] thinks_at(other_agent, i) := a;
     };
 };
 
@@ -71,18 +69,16 @@ action Pick(Agent a, Item i, NavLocation l) {
 
 action Drop(Agent a, Item i, NavLocation l) {
   duration :in [7,10];
-    [all] {
-        a.loc == l;
-        thinks_at(a, i) := l;
-        at(i) == a :-> l;
-    };
+    [all] a.loc == l;
+    [end] thinks_at(a, i) := l;
+    [all] at(i) == a :-> l;
 
     constant Agent other_agent;
     other_agent != a;
   
     :decomposition{
         [all] contains other_agent.loc == l;
-        [all] thinks_at(other_agent, i) := l;
+        [end] thinks_at(other_agent, i) := l;
     };
     :decomposition{
         constant NavLocation other_pos;

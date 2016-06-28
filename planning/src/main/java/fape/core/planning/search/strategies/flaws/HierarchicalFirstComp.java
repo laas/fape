@@ -1,38 +1,43 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
+import fape.core.planning.search.flaws.flaws.Threat;
 import fape.core.planning.search.flaws.flaws.UnmotivatedAction;
-import fape.core.planning.search.flaws.flaws.UnsupportedTaskCond;
+import fape.core.planning.search.flaws.flaws.UnrefinedTask;
 import fape.core.planning.states.State;
 
 public class HierarchicalFirstComp implements FlawComparator {
 
     public final State st;
-    public final APlanner planner;
+    public final Planner planner;
+    public final boolean threatsFirst;
 
-    public HierarchicalFirstComp(State st, APlanner planner) {
+    public HierarchicalFirstComp(State st, Planner planner) {
         this.st = st;
         this.planner = planner;
+        threatsFirst = st.pb.allActionsAreMotivated();
     }
 
     @Override
     public String shortName() {
-        return "hf";
+        return "hier";
     }
 
-    private int priority(Flaw flaw) {
-        if(flaw instanceof UnsupportedTaskCond)
-            return 3;
+    private double priority(Flaw flaw) {
+        if(threatsFirst && flaw instanceof Threat)
+            return 0.;
+        else if(flaw instanceof UnrefinedTask)
+            return 1. + ((double) st.getEarliestStartTime(((UnrefinedTask) flaw).task.start())) / ((double) st.getEarliestStartTime(st.pb.end())+1);
         else if(flaw instanceof UnmotivatedAction)
-            return 4;
+            return 4.;
         else
-            return 5;
+            return 5.;
     }
 
 
     @Override
     public int compare(Flaw o1, Flaw o2) {
-        return priority(o1) - priority(o2);
+        return (int) Math.signum(priority(o1) - priority(o2));
     }
 }

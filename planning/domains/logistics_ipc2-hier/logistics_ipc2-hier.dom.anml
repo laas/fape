@@ -1,0 +1,118 @@
+ 
+type object;
+type physobj < object;
+type place < object;
+type city < object;
+type location < place;
+type airport < place;
+type package < physobj;
+type vehicle < physobj;
+type truck < vehicle;
+type airplane < vehicle;
+
+constant city incity(place p);
+function object at(physobj obj);
+
+action load_truck(package pkg, truck trk, place loc) {
+  motivated;
+  duration := 20;
+  [all] at(trk) == loc;
+  [all] at(pkg) == loc :-> trk;
+};
+
+action load_airplane(package pkg, airplane plane, airport loc) {
+  motivated;
+  duration := 25;
+  [all] at(plane) == loc;
+  [all] at(pkg) == loc :-> plane;
+};
+
+action unload_truck(package pkg, truck trk, place loc) {
+  motivated;
+  duration := 15;
+  [all] at(trk) == loc;
+  [all] at(pkg) == trk :-> loc;
+};
+
+action unload_plane(package pkg, airplane plane, airport loc) {
+  motivated;
+  duration := 20;
+  [all] at(plane) == loc;
+  [all] at(pkg) == plane :-> loc;
+};
+
+action fly(airplane plane, airport loc1, airport loc2) {
+  duration := 60;
+  loc1 != loc2;
+  [all] at(plane) == loc1 :-> loc2;
+};
+
+action drive(truck trk, place p1, place p2) {
+  duration := 10;
+  p1 != p2;
+  incity(p1) == incity(p2);
+  [all] at(trk) == p1 :-> p2;
+};
+
+
+action PlaneTransport(package pkg, airport cur, airport dest) {
+  motivated;
+  [start] at(pkg) == cur;
+  :decomposition{
+    cur == dest;
+    end = start +1;
+  };
+  :decomposition{
+    constant airplane plane;
+    [all] contains lp : load_airplane(pkg, plane, cur);
+    [end(lp), end] contains up : unload_plane(pkg, plane, dest);
+    start = start(lp);
+    end = end(up);
+  };
+};
+    
+
+action TruckTransport(package pkg, place cur, place dest) {
+   motivated;
+
+   [start] at(pkg) == cur;
+
+   :decomposition{
+     cur == dest;
+     end = start+1;
+   };
+   :decomposition{
+     cur != dest;
+     constant truck trk; 
+     [all] contains lt : load_truck(pkg, trk, cur);
+     [end(lt), end] contains ut : unload_truck(pkg, trk, dest);
+     start = start(lt);
+     end = end(ut);
+   };
+     
+};
+
+action Transport(package pkg, place loc) {
+  motivated;
+  constant place init;
+  [start] at(pkg) == init;
+
+  :decomposition{ init == loc; };
+  :decomposition{
+    init != loc;
+    incity(init) == incity(loc);
+    [all] TruckTransport(pkg, init, loc);
+  };
+  :decomposition{
+    incity(init) != incity(loc);
+    constant airport ap1;
+    constant airport ap2;
+    incity(ap1) == incity(init);
+    incity(ap2) == incity(loc);
+    [all] contains tt1 : TruckTransport(pkg, init, ap1);
+    [end(tt1), end] contains pt : PlaneTransport(pkg, ap1, ap2);
+    [end(pt), end] contains tt2 : TruckTransport(pkg, ap2, loc);
+    start = start(tt1);
+    end = end(tt2);
+  };
+};

@@ -42,34 +42,6 @@ instance Pile noPile; // when a container is not in a pile
 constant boolean adjacent(Dock d, Road r);
 
 
-action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
-    constant Crane k1;
-    constant Crane k2;
-    [all] contains {
-      id1 : unstack(k1, c, p1);
-      id2 : putdown(k1, c, r);
-      id3 : pickup(k2, c, r);
-      id4 : stack(k2, c, p2);
-    };
-    start = start(id1);
-    end(id1) < start(id2);
-    end(id2) < start(id3);
-    end(id3) < start(id4);
-    end = end(id4);
-};
-
-action absTranferFromRobot(Container c, Robot r, Pile p2) {
-    constant Crane k1;
-    constant Crane k2;
-    [all] contains {
-      id1 : pickup(k2, c, r);
-      id2 : stack(k2, c, p2);
-    };
-    start = start(id1);
-    end(id1) < start(id2);
-    end = end(id2);
-};
-
 action leave(Robot r, Dock d, Road w){
     [all] r.loc == d :-> w;
     [all] d.empty == false :-> true;
@@ -140,6 +112,33 @@ action unstack(Crane k, Container c, Pile p) {
 };
 
 
+action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
+    constant Crane k1;
+    constant Crane k2;
+    [all] contains {
+      id1 : unstack(k1, c, p1);
+      id2 : putdown(k1, c, r);
+      id3 : pickup(k2, c, r);
+      id4 : stack(k2, c, p2);
+    };
+    start = start(id1);
+    end(id1) < start(id2);
+    end(id2) < start(id3);
+    end(id3) < start(id4);
+    end = end(id4);
+};
+
+action absTranferFromRobot(Container c, Robot r, Pile p2) {
+    constant Crane k1;
+    constant Crane k2;
+    [all] contains {
+      id1 : pickup(k2, c, r);
+      id2 : stack(k2, c, p2);
+    };
+    start = start(id1);
+    end(id1) < start(id2);
+    end = end(id2);
+};
 
 
 

@@ -1,8 +1,10 @@
 package fape.core.planning.states;
 
 import fape.core.planning.search.flaws.flaws.*;
+import fape.core.planning.search.flaws.flaws.mutexes.MutexThreat;
 import fape.core.planning.search.flaws.resolvers.*;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
+import fape.core.planning.timelines.FluentHolding;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.exceptions.FAPEException;
@@ -39,17 +41,23 @@ public class Printer {
             return temporalDatabase(st, (Timeline) o);
         else if(o instanceof Reporter)
             return ((Reporter) o).report();
+        else if(o instanceof FluentHolding)
+            return fluent(st, ((FluentHolding) o).getSv(), ((FluentHolding) o).getValue());
+
         // Flaws
         else if(o instanceof Threat)
             return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
-        else if(o instanceof UnsupportedTaskCond)
-            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnsupportedTaskCond) o).task);
+        else if(o instanceof UnrefinedTask)
+            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnrefinedTask) o).task);
         else if(o instanceof UnsupportedTimeline)
             return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
             return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
+        else if(o instanceof MutexThreat)
+            return "MutexThreat: "+fluent(st, ((MutexThreat) o).getCl1().getSv(), ((MutexThreat) o).getCl1().getValue())+" <-> "+
+                    fluent(st, ((MutexThreat) o).getCl2().getSv(), ((MutexThreat) o).getCl2().getValue());
 
         // Resolvers
         else if(o instanceof TemporalSeparation)
@@ -65,6 +73,9 @@ public class Printer {
             return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
         else if(o instanceof ExistingTaskSupporter)
             return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
+        else if(o instanceof FutureTaskSupport) {
+            return "FutureTaskSupport: "+taskCondition(st, ((FutureTaskSupport) o).getTask());
+        }
         else
             return o.toString();
     }
@@ -198,6 +209,10 @@ public class Printer {
         return ret + ")";
     }
 
+    public static String fluent(State st, ParameterizedStateVariable sv, VarRef value) {
+        return stateVariable(st, sv)+"="+variable(st, value);
+    }
+
     public static String groundStateVariable(State st, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
         for(VarRef arg : sv.args()) {
@@ -243,9 +258,9 @@ public class Printer {
                         } else if(s instanceof Transition) {
                             line.add("== " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
                         }
-                        Action act = st.getActionContaining(s);
-                        if(act != null)
-                            line.add("  From: "+action(st, act));
+                        Optional<Action> act = st.getActionContaining(s);
+                        if(act.isPresent())
+                            line.add("  From: "+action(st, act.get()));
                         else
                             line.add("  From: problem definition");
 
@@ -387,6 +402,6 @@ public class Printer {
     }
 
     public static String constraints(State st) {
-        return st.csp.bindings().Report();
+        return st.csp.bindings().report();
     }
 }

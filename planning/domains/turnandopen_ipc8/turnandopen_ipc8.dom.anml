@@ -1,0 +1,79 @@
+
+type room;
+type nil;
+instance nil NIL;
+
+type door with {
+  fluent (nil or robot) knob_turned;
+  fluent boolean open;
+};
+  
+type object with {
+  fluent (room or gripper) loc;
+};
+
+type gripper with {
+  constant robot owner;
+  fluent boolean free;
+};
+
+type robot with {
+  fluent room loc;
+  constant gripper lgripper;
+  constant gripper rgripper;
+};
+
+constant boolean connected(room r1, room r2, door d);
+
+forall(door d) {
+  [start] {
+    d.knob_turned := NIL;
+  };
+};
+
+action turn_doorknob(robot r, room from, room to, door d, gripper g) {
+  motivated;
+  duration := 3000;
+  connected(from, to, d);
+  g.owner == r;
+  [all] g.free == true :-> true;
+  [all] r.loc == from;
+  [start,start+1] d.knob_turned == NIL :-> r;
+  [start+1,end-1] d.knob_turned == r;
+  [end-1,end] d.knob_turned == r :-> NIL;
+};
+
+action open_door(robot r, room from, room to, door d, gripper g) {
+  duration := 2000;
+  connected(from, to, d);
+  g.owner == r;
+  [all] d.knob_turned == r;
+  [all] r.loc == from;
+  [all] d.open == false :-> true;
+  [ts,te] turn_doorknob(r, from, to, d, g);
+  ts < start;
+  end < te;
+};
+
+action move(robot r, room from, room to, door d) {
+  duration := 1000;
+  connected(from, to, d);
+//  [all] d.open == true;
+  [all] r.loc == from :-> to;
+};
+
+action pick(robot bot, object o, room r, gripper g) {
+  duration := 1000;
+  g.owner == bot;
+  [start,start+1] bot.loc == r;  // from PDDL model, robot can move immediately after starting a pick
+  [all] g.free == true :-> false;
+  [all] o.loc == r :-> g;
+};
+
+action drop(robot bot, object o, room r, gripper g) {
+  duration := 1000;
+  g.owner == bot;
+  [start,start+1] bot.loc == r;  // from PDDL model, robot can move immediately after starting a drop
+  [all] g.free == false :-> true;
+  [all] o.loc == g :-> r;
+};

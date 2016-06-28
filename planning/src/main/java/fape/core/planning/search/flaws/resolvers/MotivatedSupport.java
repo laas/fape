@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.LActRef;
 import planstack.anml.model.abs.AbstractAction;
@@ -15,7 +15,7 @@ import planstack.anml.model.concrete.Task;
  * If no existing action is given, a new one will be instantiated from "abs" and will be inserted in
  * the plan.
  */
-public class MotivatedSupport extends Resolver {
+public class MotivatedSupport implements Resolver {
 
     /**
      *  null if no action needs to be inserted.
@@ -32,10 +32,10 @@ public class MotivatedSupport extends Resolver {
      * ID of the action condition we want for support.
      * It might be in the main action or in one of its decomposition if decID != -1
      */
-    public final LActRef actRef;
+    private final LActRef actRef;
 
     /** The motivated action that should be supported. */
-    public final Action toSupport;
+    private final Action toSupport;
 
     public MotivatedSupport(Action toSupport, Action act, LActRef actRef) {
         assert act != null;
@@ -62,7 +62,7 @@ public class MotivatedSupport extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         assert toSupport.mustBeMotivated();
 
         // action that will be decomposed. Either it is already in the plan or we add it now

@@ -1,0 +1,59 @@
+
+type location_or_truck;
+type location < location_or_truck;
+type locatable;
+type driver with {
+  variable location_or_truck at;
+};
+
+type truck < location_or_truck with {
+  variable location at;
+  variable boolean empty;
+};
+
+type obj with {
+  variable location_or_truck at;
+};
+
+constant boolean path(location from, location to);
+constant boolean link(location from, location to);
+
+
+action load_truck(obj o, truck t, location l) {
+  duration := 2;
+  [all] t.at == l;
+  [all] o.at == l :-> t;
+};
+
+action unload_truck(obj o, truck t, location l) {
+  duration := 2;
+  [all] t.at == l;
+  [all] o.at == t :-> l;
+};
+
+action board(driver d, truck t, location l) {
+  duration := 1;
+  [all] t.at == l;
+  [all] d.at == l :-> t;
+  [all] t.empty == true :-> false;
+};
+
+action disembark(driver d, truck t, location l) {
+  duration := 1;
+  [all] t.at == l;
+  [all] d.at == t :-> l;
+  [all] t.empty == false :-> true;
+};
+
+action drive(truck t, location from, location to, driver d) {
+  duration := 10;
+  link(from, to) == true;
+  [all] d.at == t;
+  [all] t.at == from :-> to;
+};
+
+action walk(driver d, location from, location to) {
+  duration := 20;
+  path(from, to) == true;
+  [all] d.at == from :-> to;
+};

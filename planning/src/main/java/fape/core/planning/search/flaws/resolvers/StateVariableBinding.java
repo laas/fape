@@ -11,14 +11,14 @@
 
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.ParameterizedStateVariable;
 
 /**
  * Unifies both state variables. This is done in unifying all their parameters.
  */
-public class StateVariableBinding extends Resolver {
+public class StateVariableBinding implements Resolver {
 
     public final ParameterizedStateVariable a, b;
 
@@ -28,7 +28,7 @@ public class StateVariableBinding extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         st.addUnificationConstraint(a, b);
         return true;
     }

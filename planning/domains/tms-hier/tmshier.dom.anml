@@ -45,20 +45,20 @@ action treat(Piece p){
 	[end-1,end] p.treated == false :-> true;
 };
 
-action makeStructure(Piece p1, Piece p2){
-	motivated;
-	p1!=p2;
-
-	[all] contains bakeAndTreatPiece(p1);
-	[all] contains bakeAndTreatPiece(p2);
-};
-
 action bakeAndTreatPiece(Piece p) {
     motivated;
     constant Kiln uk;
     [all] contains f : fire(uk);
     [start(f),end(f)] contains b : bake(uk,p);
     [start(b), end(b)] contains treat(p);
+};
+
+action makeStructure(Piece p1, Piece p2){
+	motivated;
+	p1!=p2;
+
+	[all] contains bakeAndTreatPiece(p1);
+	[all] contains bakeAndTreatPiece(p2);
 };
 
 action bakeStructure(Piece p1, Piece p2, Kiln k){

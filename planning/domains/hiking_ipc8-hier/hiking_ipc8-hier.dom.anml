@@ -1,0 +1,199 @@
+//-*-c++-*-
+
+
+type car with {
+    variable place loc;
+};
+type tent with {
+    variable place loc;
+    predicate up();
+};
+type person with {
+    variable place loc;
+};
+
+type couple;
+
+constant boolean partners(person a, person b, couple c);
+constant boolean next(place a, place b);
+predicate walked(couple c, place p);
+
+type place;
+
+action put_down(person p, tent t, place l) {
+    motivated;
+    [all] {
+        p.loc == l;
+        t.loc == l;
+        t.up == true :-> false;
+    };
+};
+
+action put_up(person p, tent t, place l) {
+    motivated;
+    
+    [all] {
+        p.loc == l;
+        t.loc == l;
+        t.up == false :-> true;
+    };
+};
+
+action drive(person p, car c, place from, place to) {
+    motivated;
+    [all] {
+        p.loc == from :-> to;
+        c.loc == from :-> to;
+    };
+};
+
+action drive_tent(person p, car c, tent t, place from, place to) {
+    motivated;
+    [all] {
+        t.up == false;
+        p.loc == from :-> to;
+        c.loc == from :-> to;
+        t.loc == from :-> to;
+    };
+};
+
+action drive_passenger(person p, car c, person passenger, place from, place to) {
+    motivated;
+    [all] {
+        p.loc == from :-> to;
+        c.loc == from :-> to;
+        passenger.loc == from :-> to;
+    };
+};
+
+action drive_tent_passenger(person p, car c, tent t, person passenger, place from, place to) {
+    motivated;
+    [all] {
+        t.up == false;
+        p.loc == from :-> to;
+        c.loc == from :-> to;
+        t.loc == from :-> to;
+        passenger.loc == from :-> to;
+    };
+};
+
+action walk_together(person p1, person p2, place from, place to) {
+    motivated;
+    constant couple c;
+    constant tent t;
+    partners(p1, p2, c);
+    next(from, to);
+    [end] walked(c, to) := true;
+    [end] t.up == true;
+    [end] t.loc == to;
+    [all] {
+        p1.loc == from :-> to;
+        p2.loc == from :-> to;
+        walked(c, from) == true;
+    };
+};
+
+action fold_tent(person p, tent t, place l) {
+  motivated;
+  [all] p.loc == l;
+  [all] t.loc == l;
+  :decomposition {
+    [all] t.up == false;
+  };
+  :decomposition {
+    [start] t.up == true;
+    [all] put_down(p, t, l);
+  };
+};
+
+fluent boolean busy(tent t);
+forall(tent t) { [start] busy(t) := false; };
+
+action tent_to_next(person p1, person p2, tent t, place from, place to) {
+    motivated;
+    next(from, to);
+    constant couple c;
+    partners(p1,p2,c);
+    [all] busy(t) == false :-> false;
+
+    :decomposition {
+      [all] t.loc == to;
+      [all] t.up == true;
+    };
+    :decomposition { // ideally would need symetry breaking between the cars (e.g. c1 > c2)
+      constant car c1;
+      constant car c2;
+      c1 != c2;
+      [start] c1.loc == from;
+      [start] c2.loc == from;
+      [all] ordered(
+		    fold_tent(p1, t, from),	     
+		    unordered(
+			      drive_tent(p1, c1, t, from, to),
+			      drive(p2, c2, from, to)),
+		    put_up(p1, t, to),
+		    drive_passenger(p1, c1, p2, to, from));
+    };
+    :decomposition {
+      constant car c1;
+      constant car c2;
+      c1 != c2;
+      constant place c2Loc;
+      c2Loc != from;
+      c2Loc != to;
+      [start] c1.loc == from;
+      [start] c2.loc == c2Loc;
+      [all] ordered(
+		    fold_tent(p1,t,from),
+		    drive_tent_passenger(p1, c1, t, p2, from, c2Loc),
+		    unordered(
+			      drive_tent(p1, c1, t, c2Loc, to),
+			      drive(p2, c2, c2Loc, to)),
+		    put_up(p1, t, to),
+		    drive_passenger(p1, c1, p2, to, from));
+    };
+};
+
+action one_step(couple c, place from, place target) {
+  motivated;
+  constant person p1;
+  constant person p2;
+  constant tent t;
+  partners(p1, p2, c);
+  
+  [all] ordered(
+		tent_to_next(p1,p2,t,from,target),
+		walk_together(p1,p2,from,target));
+};
+
+action HikeFromTo(couple c, place from, place target) {
+  motivated;
+  constant person p1;
+  constant person p2;
+  partners(p1, p2, c);
+
+  [start] p1.loc == from;
+  [start] p2.loc == from;
+  
+  :decomposition {
+    from == target;
+    [start] walked(c,target) == true;
+  };
+  :decomposition {
+    from != target;
+    constant place next;
+    next(from, next);
+    [all] ordered(
+      one_step(c, from, next),
+      HikeFromTo(c, next, target));
+  };
+};
+
+action Hike(couple c, place target) {
+  motivated;
+  :decomposition {
+    constant place from;
+    [all] HikeFromTo(c, from, target);
+  };
+};
+

@@ -2,12 +2,13 @@ package fape;
 
 import com.martiansoftware.jsap.*;
 import fape.core.planning.heuristics.temporal.DGHandler;
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.planner.PlannerFactory;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
+import fape.core.planning.search.flaws.flaws.mutexes.MutexesHandler;
 import fape.core.planning.states.Printer;
 import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
 import fape.util.Configuration;
 import fape.util.TinyLogger;
 import fape.util.Utils;
@@ -22,9 +23,19 @@ import java.util.List;
 
 public class Planning {
 
+    public static boolean quiet = false;
+    public static boolean verbose = false;
+
+    final private static List<String> flat_plan_sel = Collections.singletonList("soca");
+    final private static List<String> hier_plan_sel = Arrays.asList("dfs","ord-dec","soca");
+    final private static List<String> flat_flaw_sel = Arrays.asList("hier","ogf","abs","lcf","eogf");
+    final private static List<String> hier_flaw_sel = Arrays.asList("earliest", "threats","hier-fifo","ogf","abs","lcf");
+    final private static float flat_epsilon = 0.3f;
+    final private static float hier_epsilon = 0f;
+
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
-                "FAPE planners",
+                "FAPE",
                 "Solves ANML problems",
                 new Parameter[]{
                         new Switch("verbose", 'v', "verbose", "Requests verbose output. Every search node will be displayed."),
@@ -36,13 +47,7 @@ public class Planning {
                         new Switch("dispatchable", JSAP.NO_SHORTFLAG, "dispatchable", "[experimental] FAPE will build a dispatchable Plan. "+
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
-                        new FlaggedOption("plannerID")
-                                .setStringParser(JSAP.STRING_PARSER)
-                                .setLongFlag("planner")
-                                .setDefault("fape")
-                                .setHelp("Defines which planner implementation to use. Possible values are:\n"
-                                        + "  - topdown: Traditional top-down HTN planning (lacks completeness for ANML).\n"
-                                        + "  - fape: Complete planner that allows going either down or up in action hierarchies.\n"),
+                        new Switch("mutex", 'm', "mutex", "[experimental] Use mutex for temporal reasoning as in CPT."),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -73,34 +78,40 @@ public class Planning {
                                         "might never be expanded. On the other hand, it can result in a better heuristic information because states in " +
                                         "the queue are as advanced as possible. Also the total number of states in the queue is often reduces which means less" +
                                         " heuristics have to be computed."),
+                        new FlaggedOption("threats-early-check")
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
+                                .setLongFlag("threats-early-check")
+                                .setDefault("true")
+                                .setHelp("If true, the planner will check if a resolver will necessarily result in a threat. " +
+                                "This allows an early filtering of resolvers."),
                         new FlaggedOption("a-epsilon")
                                 .setStringParser(JSAP.FLOAT_PARSER)
                                 .setShortFlag('e')
                                 .setLongFlag("ae")
-                                .setDefault("0.3")
                                 .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
-                                "If set to 0, search is a standard A*."),
-                        new FlaggedOption("reachability")
-                                .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag('r')
-                                .setLongFlag("reachability")
-                                .setDefault("true")
-                                .setHelp("Planner will make a reachability analysis of each expanded node. This check mainly" +
-                                        "consists in an analysis on a ground version of the problem, checking both causal and" +
-                                        "hierarchical properties of a partial plan."),
-                        new QualifiedSwitch("dependency-graph")
+                                "If set to 0, search is a standard A*. The default is "+hier_epsilon+" for entirely hierarchical " +
+                                "domains and "+flat_epsilon+" for others."),
+                        new QualifiedSwitch("action-insertion")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setShortFlag('i')
+                                .setLongFlag("action-insertion")
+                                .setDefault("dec")
+                                .setHelp("Defines which strategy to use for action insertion. \"dec\" will systematically decompose " +
+                                "the existing task network and only consider inserting action that are not task dependent. " +
+                                "\"local\" will insert actions locally as supporters for open goals before linking them to the task network."),
+                        new QualifiedSwitch("reachability-graph")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('g')
-                                .setLongFlag("dep-graph")
-                                .setDefault("none")
-                                .setHelp("[experimental] Planner will use dependency graphs to preform reachability analysis " +
+                                .setLongFlag("reach-graph")
+                                .setDefault("full")
+                                .setHelp("Planner will use dependency graphs to preform reachability analysis " +
                                 "and compute admissible temporal heuristics. Possible parameters are `full` (complete model)," +
                                 " `popf` (model with no negative edges), `base` (model with complex actions) and `maxiterXX`" +
                                 " (same as full but the number of iterations is limited to XX). This option is currently not " +
                                 "compatible with the 'reachability' option and the 'rplan' plan selector."),
                         new FlaggedOption("multi-supports")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
-                                .setShortFlag('m')
+                                .setShortFlag(JSAP.NO_SHORTFLAG)
                                 .setLongFlag("multi-supports")
                                 .setDefault("false")
                                 .setHelp("[experimental] Allow an action to support mutliple tasks"),
@@ -118,33 +129,37 @@ public class Planning {
                                 .setLongFlag("plan-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("rplan,soca")
                                 .setHelp("A comma separated list of plan selectors, ordered by priority." +
                                 "Plan selectors assign a priority to each partial plans in the queue. The partial plan " +
                                 "with the highest priority is expanded next. The main options are: \n" +
-                                " - \"rplan\": evaluates the remaining search effort by building a relaxed plan\n" +
                                 " - \"soca\" that simply compare the number of flaws and actions is the partial plans\n" +
                                 " - \"dfs\": Deepest partial plan extracted first.\n" +
                                 " - \"bfs\": Shallowest partial plan extracted first.\n" +
+                                " - \"ord-dec\": Tries method in the order they are defined (should be combined with dfs)\n" +
                                 "If more than one selector is given, the " +
                                 "second is used to break ties  of the first one, the third to break ties of both " +
                                 "the first and second, etc. Plan selectors can be found in the package " +
-                                "\"fape.core.planning.search.strategies.plans\".\n"),
+                                "\"fape.core.planning.search.strategies.plans\".\n" +
+                                "The default is "+hier_plan_sel+" for entirely hierarachical domains and "+flat_plan_sel+" " +
+                                "for others."),
                         new FlaggedOption("flaw-selection")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('f')
                                 .setLongFlag("flaw-selection")
                                 .setList(true)
                                 .setListSeparator(',')
-                                .setDefault("hf,ogf,abs,lcf,eogf")
                                 .setHelp("Ordered list of flaw selectors. Each flaw selector assigns a priority to each " +
                                 "flaw. The first selector has the highest weight, the last has the least weight." +
                                 "The flaw with highest priority is selected to be solved. A (non-exaustive) of flaw selectors:\n" +
-                                "- 'hf': Hierarchical flaws first.\n" +
+                                "- 'hier': For hierarchical planning: the planner will first select unrefined tasks by increasing earliest appearance," +
+                                " then unmotivated dependent actions. In the case where all actions are task dependent (i.e. fully hierarchical domain)," +
+                                " threats are given the highest priority.\n" +
                                 "- 'ogf': Open goal flaws first.\n" +
                                 "- 'abs': Gives higher priority to flaws high in the abstraction hierarchy of the problem.\n" +
                                 "- 'lcf': Least Commiting First, select the flaw with the least number of resolvers\n" +
-                                "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n"),
+                                "- 'eogf': Gives higher priority to open goals that are close to the time origin.\n" +
+                                "- 'hier-fifo': always selects the unrefined task that has been pending for the longest time.\n" +
+                                "The default is "+hier_flaw_sel+" for entirely hierarchical domains and "+flat_flaw_sel+" for others."),
                         new FlaggedOption("output")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('o')
@@ -172,7 +187,6 @@ public class Planning {
                 }
         );
     }
-
     public static String getAssociatedConfigFile(String anmlFile) {
         assert anmlFile.endsWith(".anml") : anmlFile+" is not a valid problem file.";
         File f = new File(anmlFile);
@@ -197,7 +211,9 @@ public class Planning {
         }
 
         TinyLogger.logging = commandLineConfig.getBoolean("verbose");
-        APlanner.debugging = commandLineConfig.getBoolean("debug");
+        Planning.quiet = commandLineConfig.getBoolean("quiet");
+        Planning.verbose = commandLineConfig.getBoolean("verbose");
+        Planner.debugging = commandLineConfig.getBoolean("debug");
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
@@ -205,12 +221,8 @@ public class Planning {
         for (String path : configFiles) {
             File f = new File(path);
             if (f.isDirectory()) {
-                File[] anmls = f.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File fi) {
-                        return fi.getName().endsWith(".anml") && !fi.getName().endsWith(".dom.anml");
-                    }
-                });
+                // all files ending with ".anml" except those ending with ".dom.anml"
+                File[] anmls = f.listFiles((File fi) -> fi.getName().endsWith(".anml") && !fi.getName().endsWith(".dom.anml"));
                 for (File anmlFile : anmls) {
                     if(anmlFile.getName().endsWith(".anml") && !anmlFile.getName().endsWith(".dom.anml"))
                     anmlFiles.add(anmlFile.getPath());
@@ -224,25 +236,55 @@ public class Planning {
         Collections.sort(anmlFiles);
 
         // output format
-        writer.write("iter, planner, runtime, planning-time, anml-file, opened-states, generated-states, " +
+        writer.write("iter, runtime, planning-time, anml-file, opened-states, generated-states, " +
                 "fast-forwarded, sol-depth, flaw-sel, plan-sel, reachability, fast-forward, ae\n");
+
+        boolean allSolved = true;
 
         final int repetitions = commandLineConfig.getInt("repetitions");
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
+
+                final AnmlProblem pb = new AnmlProblem();
+                try {
+                    pb.extendWithAnmlFile(anmlFile);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("Problem with ANML file: " + anmlFile);
+                    System.err.println((new File(anmlFile)).getAbsolutePath());
+                    return;
+                }
+
+
                 // read default conf from file and add command line options on top
                 Configuration config = new Configuration(commandLineConfig, getAssociatedConfigFile(anmlFile));
 
+
+
                 // creates the planner that will be tested for this problem
-                String[] planStrat = config.getStringArray("plan-selection");
-                String[] flawStrat = config.getStringArray("flaw-selection");
-                String plannerID = config.getString("plannerID");
+                List<String> planStrat =
+                        config.specified("plan-selection") ?
+                                Arrays.asList(config.getStringArray("plan-selection")) :
+                                pb.allActionsAreMotivated() ?
+                                        hier_plan_sel : flat_plan_sel;
+                List<String> flawStrat =
+                        config.specified("flaw-selection") ?
+                                Arrays.asList(config.getStringArray("flaw-selection")) :
+                                pb.allActionsAreMotivated() ?
+                                        hier_flaw_sel : flat_flaw_sel;
+
+                if(!quiet) {
+                    System.out.println(pb.allActionsAreMotivated() ?
+                            "Problem is entirely hierarchical (all actions are motivated)": "Non-hierarchical problem (some actions are not motivated)");
+                    System.out.println("Plan selection strategy: "+planStrat);
+                    System.out.println("Flaw selection strategy: "+flawStrat);
+                }
 
                 final int maxtime = config.getInt("max-time");
                 final int maxDepth = config.getInt("max-depth");
                 final boolean incrementalDeepening = config.getBoolean("inc-deep");
-                long planningStart = 0;
+                long planningStart;
 
                 System.gc(); // clean up previous runs to avoid impact on performance measure
 
@@ -250,20 +292,35 @@ public class Planning {
 
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
-                options.useAEpsilon = config.getFloat("a-epsilon") > 0;
+                final float e = config.specified("a-epsilon") ?
+                        config.getFloat("a-epsilon") :
+                        pb.allActionsAreMotivated() ?
+                                hier_epsilon : flat_epsilon;
+                options.useAEpsilon = e > 0;
                 if(options.useAEpsilon) {
-                    options.epsilon = config.getFloat("a-epsilon");
+                    options.epsilon = e;
                 }
-                options.usePlanningGraphReachability = config.getBoolean("reachability") || Arrays.asList(planStrat).contains("rplan");
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
+                options.checkUnsolvableThreatsForOpenGoalsResolvers = config.getBoolean("threats-early-check");
 
                 if(config.getBoolean("needed-observations"))
                     options.flawFinders.add(new NeededObservationsFinder());
 
-                if(config.getBoolean("dependency-graph") && !config.getString("dependency-graph").equals("none")) {
+                switch(config.getString("action-insertion")) {
+                    case "local":
+                        options.actionInsertionStrategy = PlanningOptions.ActionInsertionStrategy.UP_OR_DOWN;
+                        break;
+                    case "dec":
+                        options.actionInsertionStrategy = PlanningOptions.ActionInsertionStrategy.DOWNWARD_ONLY;
+                        break;
+                    default:
+                        throw new FAPEException("Invalid option for action insertion: "+config.getString("action-insertion"));
+                }
+
+                if(config.getBoolean("reachability-graph") && !config.getString("reachability-graph").equals("none")) {
                     options.handlers.add(new DGHandler());
-                    String degGraphOption = config.getString("dependency-graph");
+                    String degGraphOption = config.getString("reachability-graph");
                     switch (degGraphOption) {
                         case "full":
                             options.depGraphStyle = "full";
@@ -275,24 +332,17 @@ public class Planning {
                             options.depGraphStyle = "base";
                             break;
                         default:
-                            assert degGraphOption.startsWith("maxiter") : "Invalid parameter for the dependency graph option.";
+                            assert degGraphOption.startsWith("maxiter") : "Invalid parameter for the dependency graph option: "+degGraphOption;
                             options.depGraphStyle = "full";
                             options.depGraphMaxIters = Integer.parseInt(degGraphOption.replaceFirst("maxiter", ""));
                     }
                 }
-
-                final AnmlProblem pb = new AnmlProblem();
-                try {
-                    pb.extendWithAnmlFile(anmlFile);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Problem with ANML file: " + anmlFile);
-                    System.err.println((new File(anmlFile)).getAbsolutePath());
-                    return;
+                if(config.getBoolean("mutex")) {
+                    options.handlers.add(new MutexesHandler());
                 }
+
                 final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
-                final APlanner planner = PlannerFactory.getPlannerFromInitialState(plannerID, iniState, options);
+                final Planner planner = new Planner(iniState, options);
 
                 boolean failure;
                 State sol;
@@ -300,9 +350,9 @@ public class Planning {
                     planningStart = System.currentTimeMillis();
                     sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
                     failure = sol == null;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Planning finished for " + anmlFile + " with failure: "+e);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    System.err.println("Planning finished for " + anmlFile + " with failure: "+ex);
                     continue;
                 }
                 long end = System.currentTimeMillis();
@@ -310,9 +360,10 @@ public class Planning {
                 String time;
                 String planningTime = Float.toString((end - planningStart) / 1000f);
                 if (failure) {
-                    if(planner.planState == APlanner.EPlanState.TIMEOUT)
+                    allSolved = false;
+                    if(planner.planState == Planner.EPlanState.TIMEOUT)
                         time = "TIMEOUT";
-                    else if(planner.planState == APlanner.EPlanState.INFEASIBLE)
+                    else if(planner.planState == Planner.EPlanState.INFEASIBLE)
                         time = "INFEASIBLE";
                     else
                         time = "UNKNOWN PROBLEM";
@@ -323,24 +374,29 @@ public class Planning {
                 }
 
                 if (!failure && !config.getBoolean("quiet")) {
+                    System.out.println("Expanded states: "+planner.numExpandedStates);
+                    System.out.println("Generated states: "+planner.numGeneratedStates);
+                    System.out.println("Fast-Forwarded states: "+planner.numFastForwardedStates);
+                    System.out.println("Makespan: "+sol.getMakespan());
+                    System.out.println("Num actions: "+sol.getAllActions().size());
+                    System.out.println();
                     System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
                 }
 
-                final String reachStr = config.getBoolean("reachability") ? "reach" : "no-reach";
+                final String reachStr = config.getString("reachability-graph");
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
-                final String aeStr = config.getFloat("a-epsilon") > 0 ? "ae" : "no-ae";
+                final String aeStr = e > 0 ? "ae" : "no-ae";
 
                 writer.write(
                         i + ", "
-                                + planner.shortName() + ", "
                                 + time + ", "
                                 + planningTime + ", "
                                 + anmlFile + ", "
-                                + planner.expandedStates + ", "
-                                + planner.GeneratedStates + ", "
-                                + planner.numFastForwarded + ", "
-                                + (failure ? "-" : sol.depth) + ", "
+                                + planner.numExpandedStates + ", "
+                                + planner.numGeneratedStates + ", "
+                                + planner.numFastForwardedStates + ", "
+                                + (failure ? "-" : sol.getDepth()) + ", "
                                 + Utils.print(planner.options.flawSelStrategies, ":") + ", "
                                 + Utils.print(planner.options.planSelStrategies, ":") + ", "
                                 + reachStr + ", "
@@ -353,5 +409,8 @@ public class Planning {
         }
         if (!commandLineConfig.getString("output").equals("stdout"))
             writer.close();
+
+        if(!allSolved && !commandLineConfig.getBoolean("display-search"))
+            System.exit(1);
     }
 }

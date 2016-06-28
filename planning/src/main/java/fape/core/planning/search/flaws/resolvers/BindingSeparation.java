@@ -1,13 +1,13 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.VarRef;
 
 /**
  * Simply adds a difference constraint between the two variables.
  */
-public class BindingSeparation extends Resolver {
+public class BindingSeparation implements Resolver {
 
     public final VarRef a, b;
 
@@ -17,7 +17,7 @@ public class BindingSeparation extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         st.addSeparationConstraint(a, b);
 
         return true;

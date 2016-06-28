@@ -22,35 +22,34 @@ import java.util.List;
 
 public class TaskNetworkManager implements Reporter {
 
-    final UnlabeledDigraph<TNNode> network;
+    private final UnlabeledDigraph<TNNode> network;
 
-    private int numActions;
     private int numRoots;
     private int numOpenTasks;
     private int numUnmotivatedActions;
+    private final List<Action> actions;
+
 
     public TaskNetworkManager() {
         network = GraphFactory.getSimpleUnlabeledDigraph();
-        numActions = 0;
         numRoots = 0;
         numOpenTasks = 0;
         numUnmotivatedActions = 0;
+        actions = new ArrayList<>();
     }
 
-    public TaskNetworkManager(TaskNetworkManager base) {
+    private TaskNetworkManager(TaskNetworkManager base) {
         this.network = base.network.cc();
-        this.numActions = base.numActions;
         this.numRoots = base.numRoots;
         this.numOpenTasks = base.numOpenTasks;
         this.numUnmotivatedActions = base.numUnmotivatedActions;
+        actions = new ArrayList<>(base.actions);
     }
 
     private List<Task> openTasks = null;
-    private List<Action> undecomposed = null;
 
     private void clearCache() {
         openTasks = null;
-        undecomposed = null;
     }
 
     /**
@@ -58,7 +57,7 @@ public class TaskNetworkManager implements Reporter {
      * @return The number of actions in the task network (all actions are considered).
      */
     public int getNumActions() {
-        return numActions;
+        return actions.size();
     }
 
     /**
@@ -209,7 +208,8 @@ public class TaskNetworkManager implements Reporter {
      */
     public void insert(Action a) {
         network.addVertex(new TNNode(a));
-        numActions++;
+        actions.add(a);
+        assert actions.get(a.id().id()) == a : "ID of actions are regular.";
 
         if(a.hasParent()) {
             network.addEdge(new TNNode(a.parent()), new TNNode(a));
@@ -242,6 +242,22 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(ac));
         numOpenTasks++;
         clearCache();
+    }
+
+    public boolean isDescendantOf(Action child, TNNode potentialAncestor) {
+        return isDescendantOf(new TNNode(child), potentialAncestor);
+    }
+
+    public boolean isDescendantOf(Task child, TNNode potentialAncestor) {
+        return isDescendantOf(new TNNode(child), potentialAncestor);
+    }
+
+    public boolean isDescendantOf(Action child, Task potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
+    }
+
+    public boolean isDescendantOf(Task child, Task potentialAncestor) {
+        return isDescendantOf(new TNNode(child), new TNNode(potentialAncestor));
     }
 
     public boolean isDescendantOf(Action child, Action potentialAncestor) {
@@ -300,7 +316,6 @@ public class TaskNetworkManager implements Reporter {
             if(network.parents(cur).nonEmpty()) {
                 assert network.parents(cur).size() == 1;
                 cur = network.parents(cur).head();
-
             } else {
                 cur = null;
             }
@@ -329,33 +344,23 @@ public class TaskNetworkManager implements Reporter {
     }
 
     /**
-     * O(n).
+     * O(1).
      * @return All actions of the task network.
      */
     public List<Action> getAllActions() {
-        List<Action> allActions = new LinkedList<>();
-        for(TNNode n : network.jVertices()) {
-            if(n.isAction()) {
-                allActions.add(n.asAction());
-            }
-        }
-        assert allActions.size() == numActions : "Error: wrong number of action.";
-        return allActions;
+        return actions;
     }
 
     /**
-     * O(n)
+     * O(1)
      *
      * @param id Id of the action
      * @return the action with the given id
      */
     public Action getAction(ActRef id) {
-        for(Action a : getAllActions()) {
-            if(id.equals(a.id())) {
-                return a;
-            }
-        }
-        throw new FAPEException("No action with id: "+id);
+        Action a = actions.get(id.id());
+        assert a.id().equals(id);
+        return a;
     }
 
     /**

@@ -8,12 +8,17 @@ import lombok.Value;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.LVarRef;
 import planstack.anml.model.abs.time.AbsTP;
+import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.InstanceRef;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.IntLiteral;
+import planstack.anml.pending.LStateVariable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Value public class TempFluent {
@@ -27,22 +32,37 @@ import java.util.stream.Collectors;
             } else if(template instanceof DeleteFreeActionsFactory.SVFluentTemplate) {
                 DeleteFreeActionsFactory.SVFluentTemplate ft = (DeleteFreeActionsFactory.SVFluentTemplate) template;
                 List<InstanceRef> args = new ArrayList<>();
-                for(LVarRef lArg : ft.sv.jArgs())
+                for (LVarRef lArg : ft.sv.jArgs())
                     args.add(container.valueOf(lArg, pb));
                 GStateVariable sv = store.getGStateVariable(ft.sv.func(), args);
                 Fluent f = store.getFluent(sv, container.valueOf(ft.value, pb));
                 return (SVFluent) store.get(SVFluent.class, Collections.singletonList(f));
-            } else {
+            } else if(template instanceof DeleteFreeActionsFactory.SVFluentWithChangeTemplate) {
+                DeleteFreeActionsFactory.SVFluentWithChangeTemplate ft = (DeleteFreeActionsFactory.SVFluentWithChangeTemplate) template;
+                List<InstanceRef> args = new ArrayList<>();
+                for(LVarRef lArg : ft.sv.jArgs())
+                    args.add(container.valueOf(lArg, pb));
+                GStateVariable sv = store.getGStateVariable(ft.sv.func(), args);
+                Fluent f = store.getFluent(sv, container.valueOf(ft.value, pb));
+                return (SVFluentWithChange) store.get(SVFluentWithChange.class, Collections.singletonList(f));
+            } else if(template instanceof DeleteFreeActionsFactory.TaskFluentTemplate){
                 DeleteFreeActionsFactory.TaskFluentTemplate tft = (DeleteFreeActionsFactory.TaskFluentTemplate) template;
                 List<InstanceRef> args = new ArrayList<>();
                 for(LVarRef lArg : tft.args)
                     args.add(container.valueOf(lArg, pb));
                 return (TaskPropFluent) store.get(TaskPropFluent.class, Arrays.asList(tft.prop, store.getTask(tft.taskName, args)));
+            } else if(template instanceof DeleteFreeActionsFactory.ActionPossibleTemplate) {
+                return (ActionPossible) store.get(ActionPossible.class, Collections.singletonList(container));
+            } else {
+                throw new FAPEException("Unsupported template: "+template);
             }
         }
 
-        public static DGFluent from(fape.core.planning.grounding.Fluent f, GStore store) {
+        public static DGFluent getBasicFluent(fape.core.planning.grounding.Fluent f, GStore store) {
             return (SVFluent) store.get(SVFluent.class, Collections.singletonList(f));
+        }
+        public static DGFluent getFluentWithChange(fape.core.planning.grounding.Fluent f, GStore store) {
+            return (SVFluentWithChange) store.get(SVFluentWithChange.class, Collections.singletonList(f));
         }
         public static DGFluent from(GTask task, AnmlProblem pb, GStore store) {
             return (DGFluent) store.get(TaskPropFluent.class, Arrays.asList("task", task));
@@ -54,11 +74,24 @@ import java.util.stream.Collectors;
         public final AbsTP tp;
         @ValueConstructor @Deprecated
         public ActEndFluent(GAction act, AbsTP tp) { this.act = act; this.tp = tp; }
+
+        @Override
+        public String toString() { return "Subaction-startable: "+act.toString()+"__"+tp; }
     }
+    /** A fluent that is part of a causal link (can only support persistences) */
     @Ident(DependencyGraph.Node.class) public static class SVFluent extends DGFluent {
         public final Fluent fluent;
         @ValueConstructor @Deprecated
         public SVFluent(Fluent f) { this.fluent = f; }
+
+        @Override
+        public String toString() { return fluent.toString(); }
+    }
+    /** a fluent that is not part of any causal link (can support either persistences or transitions */
+    @Ident(DependencyGraph.Node.class) public static class SVFluentWithChange extends DGFluent {
+        public final Fluent fluent;
+        @ValueConstructor @Deprecated
+        public SVFluentWithChange(Fluent f) { this.fluent = f; }
 
         @Override
         public String toString() { return fluent.toString(); }
@@ -71,26 +104,21 @@ import java.util.stream.Collectors;
         public String toString() { return proposition+"("+task+")"; }
     }
 
+    @Ident(DependencyGraph.Node.class)
+    public static class ActionPossible extends DGFluent {
+        public final GAction action;
+        @ValueConstructor @Deprecated
+        public ActionPossible(GAction action) { this.action = action; }
+    }
+
     public final int time;
     public final DGFluent fluent;
 
     @Override public String toString() { return time+": "+fluent; }
 
     public static TempFluent from(DeleteFreeActionsFactory.TempFluentTemplate template, GAction container, GroundProblem pb, GStore store) {
-        int time;
-        if(template.time instanceof DeleteFreeActionsFactory.IntTime) {
-            time = ((DeleteFreeActionsFactory.IntTime) template.time).getValue();
-        } else if(template.time instanceof DeleteFreeActionsFactory.ParameterizedTime) {
-            List<InstanceRef> params = ((DeleteFreeActionsFactory.ParameterizedTime) template.time).args.stream()
-                    .map(v -> container.valueOf(v, pb.liftedPb))
-                    .collect(Collectors.toList());
-            time = pb.intInvariants.get(new GroundProblem.IntegerInvariantKey(((DeleteFreeActionsFactory.ParameterizedTime) template.time).f, params));
-        } else {
-            throw new FAPEException("Unsupported time template: "+template.time);
-        }
-
+        int time = container.evaluate(template.time);
         DGFluent fluent = DGFluent.from(template.fluent, container, pb.liftedPb, store);
-
         return new TempFluent(time, fluent);
     }
 }

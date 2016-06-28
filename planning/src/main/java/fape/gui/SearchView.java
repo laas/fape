@@ -1,7 +1,7 @@
 package fape.gui;
 
-import fape.core.planning.planner.APlanner;
-import fape.core.planning.states.State;
+import fape.core.planning.planner.Planner;
+import fape.core.planning.states.SearchNode;
 import fape.drawing.TimedCanvas;
 import fape.drawing.gui.ChartWindow;
 import prefuse.Visualization;
@@ -49,14 +49,14 @@ public class SearchView {
     final Node root;
     final static String ACTIVITY_ON_FOCUS_CHANGE = "filter";
 
-    final APlanner planner;
+    final Planner planner;
 
     boolean skipDrawing = false;
     boolean followCurrentNode = true;
 
     ChartWindow actionsChartWindow = null;
 
-    public SearchView(APlanner planner) {
+    public SearchView(Planner planner) {
         this.planner = planner;
         Table nodeData = new Table();
         Table edgeData = new Table(0,1);
@@ -165,29 +165,29 @@ public class SearchView {
         frame.setVisible(true);
     }
 
-    public void setDeadEnd(State st) {
-        assert nodes.containsKey(st.mID);
-        nodes.get(st.mID).setString(NODE_STATUS, "deadend");
+    public void setDeadEnd(SearchNode st) {
+        assert nodes.containsKey(st.getID());
+        nodes.get(st.getID()).setString(NODE_STATUS, "deadend");
     }
 
-    public void setSolution(State st) {
-        assert nodes.containsKey(st.mID);
-        nodes.get(st.mID).setString(NODE_STATUS, "solution");
+    public void setSolution(SearchNode st) {
+        assert nodes.containsKey(st.getID());
+        nodes.get(st.getID()).setString(NODE_STATUS, "solution");
         tview.updated();
     }
 
-    public void setProperty(State st, String propertyID, String value) {
-        assert nodes.containsKey(st.mID);
-        Node item = nodes.get(st.mID);
+    public void setProperty(SearchNode st, String propertyID, String value) {
+        assert nodes.containsKey(st.getID());
+        Node item = nodes.get(st.getID());
         assert item.canGetString(propertyID);
         item.setString(propertyID, value);
     }
 
-    public void setCurrentFocus(State st) {
-        assert nodes.containsKey(st.mID);
-        nodes.get(st.mID).setString(NODE_STATUS, "expanded");
+    public void setCurrentFocus(SearchNode st) {
+        assert nodes.containsKey(st.getID());
+        nodes.get(st.getID()).setString(NODE_STATUS, "expanded");
         if(followCurrentNode) {
-            VisualItem v = tview.getVisualItem(nodes.get(st.mID));
+            VisualItem v = tview.getVisualItem(nodes.get(st.getID()));
             TupleSet ts = tview.vis().getFocusGroup(Visualization.FOCUS_ITEMS);
             ts.setTuple(v);
         } else {
@@ -225,28 +225,26 @@ public class SearchView {
         return n;
     }
 
-    public void addNode(State st, State parent) {
-        String label = Integer.valueOf(st.mID).toString();
+    public void addNode(SearchNode st) {
+        String label = Integer.valueOf(st.getID()).toString();
         Node n;
-        if(parent != null)
-            n = addNode(st.mID, parent.mID);
+        if(st.getParent() != null)
+            n = addNode(st.getID(), st.getParent().getID());
         else
-            n = addNode(st.mID, -1);
+            n = addNode(st.getID(), -1);
 
         StringBuilder h = new StringBuilder();
-        h.append("num-actions: "); h.append(st.getNumActions());
-        h.append(" num-open-goals: "); h.append(st.tdb.getConsumers().size());
-        h.append(" num-threats: "); h.append(st.getAllThreats().size());
-        h.append(" num-opentasks: "); h.append(st.getOpenTasks().size());
-        h.append(" num-unmotivated: "); h.append(st.getUnmotivatedActions().size());
-        h.append(" num-unbound: "); h.append(st.getUnboundVariables().size());
+        h.append("num-actions: "); h.append(st.getState().getNumActions());
+        h.append(" num-open-goals: "); h.append(st.getState().tdb.getConsumers().size());
+        h.append(" num-threats: "); h.append(st.getState().getAllThreats().size());
+        h.append(" num-opentasks: "); h.append(st.getState().getOpenTasks().size());
+        h.append(" num-unmotivated: "); h.append(st.getState().getUnmotivatedActions().size());
+        h.append(" num-unbound: "); h.append(st.getState().getUnboundVariables().size());
         h.append("\n");
         try {
-            h.append(planner.stateComparator().reportOnState(st));
-            if (planner.definesHeuristicsValues()) {
-                h.append(String.format(" g: %s, h: %s, f: %s", planner.g(st), planner.h(st), planner.f(st)));
-            }
-        } catch (Exception e) {} // just to make sure the planner does not crash because of the view
+            h.append(planner.heuristicComputer().reportOnState(st.getState()));
+            h.append(String.format(" g: %s, h: %s", planner.heuristicComputer().g(st), planner.heuristicComputer().h(st)));
+        } catch (Throwable e) {} // just to make sure the planner does not crash because of the view
 
         n.setString(LABEL, label);
         n.setString(NODE_STATUS, "inqueue");
@@ -254,6 +252,6 @@ public class SearchView {
         n.setString(SELECTED_FLAW, "???");
         n.setString(LAST_APPLIED_RESOLVER, "???");
         n.setString(COMMENT, "");
-        n.set(ACTIONS_CANVAS, st.getCanvasOfActions());
+        n.set(ACTIONS_CANVAS, st.getState().getCanvasOfActions());
     }
 }

@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.states.State;
@@ -28,7 +28,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
     @Override
-    public List<Flaw> getFlaws(State st, APlanner planner) {
+    public List<Flaw> getFlaws(State st, Planner planner) {
         Stream<TPRef> actionEnds = st.getAllActions().stream().map(Action::end);
         Stream<TPRef> contingents = st.csp.stn().timepoints().stream().filter(TPRef::isContingent);
 
@@ -56,7 +56,7 @@ public class NeededObservationsFinder implements FlawFinder {
         public final Set<TPRef> observed;
 
         @Override
-        public StateExtension clone() { return new SecuredObservations(new HashSet<>(observed)); }
+        public StateExtension clone(State st) { return new SecuredObservations(new HashSet<>(observed)); }
     }
 
 
@@ -90,7 +90,7 @@ public class NeededObservationsFinder implements FlawFinder {
         }
 
         @Override
-        public List<Resolver> getResolvers(State st, APlanner planner) {
+        public List<Resolver> getResolvers(State st, Planner planner) {
             return possibleObservationsSets.stream().map(NeededObsResolver::new).collect(Collectors.toList());
         }
 
@@ -99,19 +99,19 @@ public class NeededObservationsFinder implements FlawFinder {
             throw new FAPEException("There should not be two needed observations flaws on the same state.");
         }
 
-        @AllArgsConstructor public final class NeededObsResolver extends Resolver {
+        @AllArgsConstructor final class NeededObsResolver implements Resolver {
             public final Set<TPRef> toObserve;
 
 
             @Override
-            public boolean apply(State st, APlanner planner) {
+            public boolean apply(State st, Planner planner, boolean isFastForwarding) {
                 Chronicle ch = new BaseChronicle(st.pb);
                 List<Pair<TPRef,TPRef>> precedences = new ArrayList<>();
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);
                 toObserve.stream().forEach(tp -> {
                     assert obsLoc.containsKey(tp) : "Timepoint cannot be observed?";
-                    VarRef observerVar = new VarRef("Agent", st.refCounter);
-                    st.csp.bindings().AddVariable(observerVar, st.pb.instances().instancesOfType("Agent"));
+                    VarRef observerVar = new VarRef(st.pb.instances().asType("Agent"), st.refCounter);
+                    st.csp.bindings().addVariable(observerVar);
                     ParameterizedStateVariable sv = new ParameterizedStateVariable(obsFunc, new VarRef[]{observerVar});
                     Persistence p = new Persistence(sv, obsLoc.get(tp), st.pb.chronicles().element(), st.refCounter);
                     ch.statements().add(p);
@@ -124,7 +124,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 st.applyChronicle(ch);
                 for(Pair<TPRef,TPRef> prec : precedences) {
                     st.enforceBefore(prec.value1, prec.value2);
-                    st.isConsistent();
+                    st.checkConsistency();
 //                    System.out.println(prec.value1 + " : " + st.getEarliestStartTime(prec.value1) + "  " + st.getLatestStartTime(prec.value1));
 //                    System.out.println(prec.value2+" : "+st.getEarliestStartTime(prec.value2)+"  "+st.getLatestStartTime(prec.value2));
                 }

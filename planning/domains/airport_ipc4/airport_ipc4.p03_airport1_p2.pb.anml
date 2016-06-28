@@ -1,0 +1,1017 @@
+instance airplane airplane_cfbeg, airplane_daewh;
+instance airplanetype medium;
+instance direction north, south;
+instance segment seg_pp_0_60, seg_ppdoor_0_40, seg_tww1_0_200, seg_twe1_0_200, seg_tww2_0_50, seg_tww3_0_50, seg_tww4_0_50, seg_rww_0_50, seg_rwtw1_0_10, seg_rw_0_400, seg_rwe_0_50, seg_twe4_0_50, seg_rwte1_0_10, seg_twe3_0_50, seg_twe2_0_50, seg_rwte2_0_10, seg_rwtw2_0_10;
+
+[start] at_segment(airplane_cfbeg) := seg_rw_0_400;
+[start] at_segment(airplane_daewh) := seg_pp_0_60;
+[start] blocking(seg_rw_0_400) := airplane_cfbeg;
+[start] blocking(seg_pp_0_60) := airplane_daewh;
+[start] blocking(seg_rwe_0_50) := airplane_cfbeg;
+[start] facing(airplane_cfbeg) := south;
+[start] facing(airplane_daewh) := south;
+[start] status(airplane_cfbeg) := moving;
+[start] status(airplane_daewh) := pushing;
+is_start_runway(seg_rww_0_50, north) := true;
+is_start_runway(seg_rwe_0_50, south) := true;
+startup_duration(airplane_cfbeg) := 12000;
+startup_duration(airplane_daewh) := 12000;
+
+[start] blocking(seg_ppdoor_0_40) := none;
+[start] blocking(seg_tww1_0_200) := none;
+[start] blocking(seg_twe1_0_200) := none;
+[start] blocking(seg_tww2_0_50) := none;
+[start] blocking(seg_tww3_0_50) := none;
+[start] blocking(seg_tww4_0_50) := none;
+[start] blocking(seg_rww_0_50) := none;
+[start] blocking(seg_rwtw1_0_10) := none;
+[start] blocking(seg_twe4_0_50) := none;
+[start] blocking(seg_rwte1_0_10) := none;
+[start] blocking(seg_twe3_0_50) := none;
+[start] blocking(seg_twe2_0_50) := none;
+[start] blocking(seg_rwte2_0_10) := none;
+[start] blocking(seg_rwtw2_0_10) := none;
+
+action move__seg_tww4_0_50__seg_tww3_0_50__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_tww4_0_50 :-> seg_tww3_0_50;
+
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rwtw1_0_10) == a :-> none;
+  [all] blocking(seg_tww3_0_50) == none :-> a;
+  [all] blocking(seg_tww4_0_50) == a :-> a;
+};
+        
+action move__seg_rww_0_50__seg_tww4_0_50__south__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_rww_0_50 :-> seg_tww4_0_50;
+
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+  [all] blocking(seg_rwtw1_0_10) == none :-> a;
+  [all] blocking(seg_tww4_0_50) == none :-> a;
+  [all] blocking(seg_rww_0_50) == a :-> a;
+};
+        
+action move__seg_rw_0_400__seg_rww_0_50__south__south(airplane a) {
+  // 400.0
+  duration := 1300;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_rw_0_400 :-> seg_rww_0_50;
+
+  
+  [all] blocking(seg_rww_0_50) == none :-> a;
+  [all] blocking(seg_rwe_0_50) == a :-> a;
+  [all] blocking(seg_rw_0_400) == a :-> a;
+};
+        
+action move__seg_rwe_0_50__seg_rw_0_400__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_rwe_0_50 :-> seg_rw_0_400;
+
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == none :-> a;
+  [all] blocking(seg_rwe_0_50) == a :-> a;
+};
+        
+action move__seg_pp_0_60__seg_ppdoor_0_40__north__north(airplane a) {
+  // 60.0
+  duration := 200;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_pp_0_60 :-> seg_ppdoor_0_40;
+
+  
+  [all] blocking(seg_ppdoor_0_40) == none :-> a;
+  [all] blocking(seg_pp_0_60) == a :-> a;
+};
+        
+action move__seg_twe3_0_50__seg_twe4_0_50__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_twe3_0_50 :-> seg_twe4_0_50;
+
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+  [all] blocking(seg_twe4_0_50) == none :-> a;
+  [all] blocking(seg_twe3_0_50) == a :-> a;
+};
+        
+action move__seg_ppdoor_0_40__seg_pp_0_60__south__south(airplane a) {
+  // 40.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_ppdoor_0_40 :-> seg_pp_0_60;
+
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_pp_0_60) == none :-> a;
+  [all] blocking(seg_ppdoor_0_40) == a :-> a;
+};
+        
+action move__seg_ppdoor_0_40__seg_tww1_0_200__north__south(airplane a) {
+  // 40.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_ppdoor_0_40 :-> seg_tww1_0_200;
+
+  [all] blocking(seg_pp_0_60) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == none :-> a;
+  [all] blocking(seg_tww1_0_200) == none :-> a;
+  [all] blocking(seg_ppdoor_0_40) == a :-> a;
+};
+        
+action move__seg_tww1_0_200__seg_twe1_0_200__north__south(airplane a) {
+  // 200.0
+  duration := 600;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_tww1_0_200 :-> seg_twe1_0_200;
+
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+  [all] blocking(seg_ppdoor_0_40) == none :-> a;
+  [all] blocking(seg_twe1_0_200) == none :-> a;
+  [all] blocking(seg_tww1_0_200) == a :-> a;
+};
+        
+action move__seg_twe4_0_50__seg_rwe_0_50__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_twe4_0_50 :-> seg_rwe_0_50;
+
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+  [all] blocking(seg_rwe_0_50) == none :-> a;
+  [all] blocking(seg_twe4_0_50) == a :-> a;
+};
+        
+action move__seg_tww2_0_50__seg_tww1_0_200__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_tww2_0_50 :-> seg_tww1_0_200;
+
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == none :-> a;
+  [all] blocking(seg_tww2_0_50) == a :-> a;
+};
+        
+action move__seg_twe1_0_200__seg_twe2_0_50__south__south(airplane a) {
+  // 200.0
+  duration := 600;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_twe1_0_200 :-> seg_twe2_0_50;
+
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_twe2_0_50) == none :-> a;
+  [all] blocking(seg_twe1_0_200) == a :-> a;
+};
+        
+action move__seg_tww1_0_200__seg_ppdoor_0_40__north__south(airplane a) {
+  // 200.0
+  duration := 600;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> south;
+  [all] at_segment(a) == seg_tww1_0_200 :-> seg_ppdoor_0_40;
+
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == none :-> a;
+  [all] blocking(seg_ppdoor_0_40) == none :-> a;
+  [all] blocking(seg_tww1_0_200) == a :-> a;
+};
+        
+action move__seg_tww3_0_50__seg_tww2_0_50__north__north(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == north :-> north;
+  [all] at_segment(a) == seg_tww3_0_50 :-> seg_tww2_0_50;
+
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+  [all] blocking(seg_tww2_0_50) == none :-> a;
+  [all] blocking(seg_tww3_0_50) == a :-> a;
+};
+        
+action move__seg_twe2_0_50__seg_twe3_0_50__south__south(airplane a) {
+  // 50.0
+  duration := 100;
+  [all] status(a) == moving;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_twe2_0_50 :-> seg_twe3_0_50;
+
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_twe3_0_50) == none :-> a;
+  [all] blocking(seg_twe2_0_50) == a :-> a;
+};
+        
+action pushback__seg_pp_0_60__seg_ppdoor_0_40__south__south(airplane a) {
+  // 60.0
+  duration := 1200;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> south;
+  [all] at_segment(a) == seg_pp_0_60 :-> seg_ppdoor_0_40;
+
+  [all] blocking(seg_pp_0_60) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == none :-> a;
+  [all] blocking(seg_twe1_0_200) == none :-> a;
+  [all] blocking(seg_ppdoor_0_40) == a :-> a;
+};
+        
+action pushback__seg_ppdoor_0_40__seg_tww1_0_200__south__north(airplane a) {
+  // 40.0
+  duration := 800;
+  [all] status(a) == pushing;
+  [all] facing(a) == south :-> north;
+  [all] at_segment(a) == seg_ppdoor_0_40 :-> seg_tww1_0_200;
+
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_tww2_0_50) == none :-> a;
+  [all] blocking(seg_tww1_0_200) == a :-> a;
+};
+        
+action ini__pushback__seg_pp_0_60__seg_ppdoor_0_40__south__south__airplane_daewh() {
+  // 60.0
+  duration := 1200;
+  [all] status(airplane_daewh) == pushing;
+  [all] facing(airplane_daewh) == south :-> south;
+  [all] at_segment(airplane_daewh) == seg_pp_0_60 :-> seg_ppdoor_0_40;
+
+  [all] blocking(seg_pp_0_60) == airplane_daewh :-> none;
+  [all] blocking(seg_tww1_0_200) == none :-> airplane_daewh;
+  [all] blocking(seg_twe1_0_200) == none :-> airplane_daewh;
+  [all] blocking(seg_ppdoor_0_40) == none :-> airplane_daewh;
+  
+};
+            
+action park__seg_tww2_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww2_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+};
+         
+action park__seg_twe3_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe3_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+};
+         
+action park__seg_rwte1_0_10__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwte1_0_10;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwte1_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_pp_0_60__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_pp_0_60;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_pp_0_60) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_tww3_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww3_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+};
+         
+action park__seg_rwe_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwe_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwe_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+};
+         
+action park__seg_twe1_0_200__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe1_0_200;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+};
+         
+action park__seg_rwte2_0_10__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwte2_0_10;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwte2_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_tww4_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww4_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+};
+         
+action park__seg_twe2_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe2_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+};
+         
+action park__seg_tww1_0_200__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww1_0_200;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+};
+         
+action park__seg_rwtw2_0_10__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwtw2_0_10;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwtw2_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_ppdoor_0_40__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_ppdoor_0_40;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_ppdoor_0_40) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_pp_0_60) == a :-> none;
+};
+         
+action park__seg_twe3_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe3_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+};
+         
+action park__seg_tww2_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww2_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+};
+         
+action park__seg_tww3_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww3_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+};
+         
+action park__seg_twe2_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe2_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+};
+         
+action park__seg_rww_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rww_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rww_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+};
+         
+action park__seg_rwtw2_0_10__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwtw2_0_10;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwtw2_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_twe4_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe4_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte1_0_10) == a :-> none;
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+};
+         
+action park__seg_rwtw1_0_10__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwtw1_0_10;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwtw1_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_pp_0_60__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_pp_0_60;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_pp_0_60) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+};
+         
+action park__seg_ppdoor_0_40__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_ppdoor_0_40;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_ppdoor_0_40) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+};
+         
+action park__seg_twe4_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe4_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+};
+         
+action park__seg_rwte2_0_10__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwte2_0_10;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwte2_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_rww_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rww_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rww_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+};
+         
+action park__seg_rwe_0_50__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwe_0_50;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwe_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+};
+         
+action park__seg_twe1_0_200__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_twe1_0_200;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_twe1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+};
+         
+action park__seg_rwtw1_0_10__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwtw1_0_10;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwtw1_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_tww4_0_50__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww4_0_50;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rwtw1_0_10) == a :-> none;
+};
+         
+action park__seg_rw_0_400__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rw_0_400;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rw_0_400) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+};
+         
+action park__seg_rw_0_400__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rw_0_400;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rw_0_400) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+};
+         
+action park__seg_rwte1_0_10__north(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_rwte1_0_10;
+  [all] facing(a) == north;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_rwte1_0_10) := true;
+  // release all blocks except on the current one
+  
+};
+         
+action park__seg_tww1_0_200__south(airplane a) {
+  duration := 4000;
+  [all] at_segment(a) == seg_tww1_0_200;
+  [all] facing(a) == south;
+  [all] status(a) == moving :-> parked;
+  [end] is_parked(a, seg_tww1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+};
+         
+action takeoff__seg_tww2_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww2_0_50, north);
+  [all] at_segment(a) == seg_tww2_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+};
+         
+action takeoff__seg_twe3_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe3_0_50, north);
+  [all] at_segment(a) == seg_twe3_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwte1_0_10__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwte1_0_10, south);
+  [all] at_segment(a) == seg_rwte1_0_10;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwte1_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte1_0_10) == a :-> none;
+};
+         
+action takeoff__seg_pp_0_60__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_pp_0_60, north);
+  [all] at_segment(a) == seg_pp_0_60;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_pp_0_60) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_pp_0_60) == a :-> none;
+};
+         
+action takeoff__seg_tww3_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww3_0_50, north);
+  [all] at_segment(a) == seg_tww3_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwe_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwe_0_50, north);
+  [all] at_segment(a) == seg_rwe_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwe_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+};
+         
+action takeoff__seg_twe1_0_200__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe1_0_200, south);
+  [all] at_segment(a) == seg_twe1_0_200;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+};
+         
+action takeoff__seg_rwte2_0_10__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwte2_0_10, south);
+  [all] at_segment(a) == seg_rwte2_0_10;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwte2_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte2_0_10) == a :-> none;
+};
+         
+action takeoff__seg_tww4_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww4_0_50, south);
+  [all] at_segment(a) == seg_tww4_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_twe2_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe2_0_50, south);
+  [all] at_segment(a) == seg_twe2_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+};
+         
+action takeoff__seg_tww1_0_200__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww1_0_200, north);
+  [all] at_segment(a) == seg_tww1_0_200;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+};
+         
+action takeoff__seg_rwtw2_0_10__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwtw2_0_10, south);
+  [all] at_segment(a) == seg_rwtw2_0_10;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwtw2_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwtw2_0_10) == a :-> none;
+};
+         
+action takeoff__seg_ppdoor_0_40__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_ppdoor_0_40, north);
+  [all] at_segment(a) == seg_ppdoor_0_40;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_ppdoor_0_40) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_pp_0_60) == a :-> none;
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+};
+         
+action takeoff__seg_twe3_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe3_0_50, south);
+  [all] at_segment(a) == seg_twe3_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+};
+         
+action takeoff__seg_tww2_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww2_0_50, south);
+  [all] at_segment(a) == seg_tww2_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+};
+         
+action takeoff__seg_tww3_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww3_0_50, south);
+  [all] at_segment(a) == seg_tww3_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww3_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww2_0_50) == a :-> none;
+  [all] blocking(seg_tww3_0_50) == a :-> none;
+};
+         
+action takeoff__seg_twe2_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe2_0_50, north);
+  [all] at_segment(a) == seg_twe2_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe2_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rww_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rww_0_50, south);
+  [all] at_segment(a) == seg_rww_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rww_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+  [all] blocking(seg_rww_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwtw2_0_10__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwtw2_0_10, north);
+  [all] at_segment(a) == seg_rwtw2_0_10;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwtw2_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwtw2_0_10) == a :-> none;
+};
+         
+action takeoff__seg_twe4_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe4_0_50, north);
+  [all] at_segment(a) == seg_twe4_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte1_0_10) == a :-> none;
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwtw1_0_10__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwtw1_0_10, north);
+  [all] at_segment(a) == seg_rwtw1_0_10;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwtw1_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwtw1_0_10) == a :-> none;
+};
+         
+action takeoff__seg_pp_0_60__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_pp_0_60, south);
+  [all] at_segment(a) == seg_pp_0_60;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_pp_0_60) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_pp_0_60) == a :-> none;
+};
+         
+action takeoff__seg_ppdoor_0_40__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_ppdoor_0_40, south);
+  [all] at_segment(a) == seg_ppdoor_0_40;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_ppdoor_0_40) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+};
+         
+action takeoff__seg_twe4_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe4_0_50, south);
+  [all] at_segment(a) == seg_twe4_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe3_0_50) == a :-> none;
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwte2_0_10__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwte2_0_10, north);
+  [all] at_segment(a) == seg_rwte2_0_10;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwte2_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte2_0_10) == a :-> none;
+};
+         
+action takeoff__seg_rww_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rww_0_50, north);
+  [all] at_segment(a) == seg_rww_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rww_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+  [all] blocking(seg_rww_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rwe_0_50__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwe_0_50, south);
+  [all] at_segment(a) == seg_rwe_0_50;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwe_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe4_0_50) == a :-> none;
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+};
+         
+action takeoff__seg_twe1_0_200__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_twe1_0_200, north);
+  [all] at_segment(a) == seg_twe1_0_200;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_twe1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_twe2_0_50) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+};
+         
+action takeoff__seg_rwtw1_0_10__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwtw1_0_10, south);
+  [all] at_segment(a) == seg_rwtw1_0_10;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwtw1_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwtw1_0_10) == a :-> none;
+};
+         
+action takeoff__seg_tww4_0_50__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww4_0_50, north);
+  [all] at_segment(a) == seg_tww4_0_50;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww4_0_50) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rwtw1_0_10) == a :-> none;
+  [all] blocking(seg_tww4_0_50) == a :-> none;
+};
+         
+action takeoff__seg_rw_0_400__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rw_0_400, north);
+  [all] at_segment(a) == seg_rw_0_400;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rw_0_400) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rww_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+};
+         
+action takeoff__seg_rw_0_400__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rw_0_400, south);
+  [all] at_segment(a) == seg_rw_0_400;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rw_0_400) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwe_0_50) == a :-> none;
+  [all] blocking(seg_rw_0_400) == a :-> none;
+};
+         
+action takeoff__seg_rwte1_0_10__north(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_rwte1_0_10, north);
+  [all] at_segment(a) == seg_rwte1_0_10;
+  [all] facing(a) == north;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_rwte1_0_10) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_rwte1_0_10) == a :-> none;
+};
+         
+action takeoff__seg_tww1_0_200__south(airplane a) {
+  duration := 3000;
+  is_start_runway(seg_tww1_0_200, south);
+  [all] at_segment(a) == seg_tww1_0_200;
+  [all] facing(a) == south;
+  [end] status(a) := flying;
+  [end] airborne(a, seg_tww1_0_200) := true;
+  // release all blocks except on the current one
+  [all] blocking(seg_ppdoor_0_40) == a :-> none;
+  [all] blocking(seg_twe1_0_200) == a :-> none;
+  [all] blocking(seg_tww1_0_200) == a :-> none;
+};
+         [end] is_parked(airplane_cfbeg, seg_pp_0_60) == true;
+[end] airborne(airplane_daewh, seg_rwe_0_50) == true;

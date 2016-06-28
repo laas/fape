@@ -31,25 +31,25 @@ public class FullSTN<ID> extends ISTN<ID> {
     }
 
     /** lower bound on time relations */
-    protected int edge_a[];
+    private int edge_a[];
     /** upper bound on time relations */
-    protected int edge_b[];
+    private int edge_b[];
     /** value of the last increment of the number of edges in the network */
-    protected int last_inc;
+    private int last_inc;
     /** current capacity of the network (in number of time points) */
-    protected int capacity;
+    private int capacity;
     /** id of the latest time point inserted */
-    protected int top;
+    private int top;
 
-    protected IList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
-    protected ISet<Integer> emptySpots;
+    private IList<Tuple4<Integer,Integer,Integer,ID>> allConstraints;
+    private ISet<Integer> emptySpots;
 
     private boolean consistent;
 
     /** -infinity */
-    protected static final int inf = -2000000000;
+    private static final int inf = -2000000000;
     /** +infinity */
-    protected static final int sup = 2000000000;
+    private static final int sup = 2000000000;
 
     /**
      * constructs new network (intended to run once per Finder invokation)
@@ -62,7 +62,7 @@ public class FullSTN<ID> extends ISTN<ID> {
         init(initial_capacity);
     }
 
-    protected void init(int capacity) {
+    private void init(int capacity) {
         allConstraints = new IList<>();
         emptySpots = new ISet<>();
         top = 0;
@@ -80,7 +80,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * copy-constructor, prealocates space for new edges, if needed
      * @param s
      */
-    protected FullSTN(FullSTN<ID> s){
+    private FullSTN(FullSTN<ID> s){
         this.allConstraints = s.allConstraints;
         this.emptySpots = s.emptySpots;
         this.capacity = s.capacity;
@@ -128,7 +128,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param var2 time point
      * @param value time
      */
-    protected void sa(int var1, int var2, int value){
+    private void sa(int var1, int var2, int value){
         if(var1 < var2) sb(var2,var1, - value);
         else edge_a[pos(var1, var2)] = value;
     }
@@ -141,7 +141,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param var2 time point
      * @param value time
      */
-    protected void sb(int var1, int var2, int value){
+    private void sb(int var1, int var2, int value){
         if(var1 < var2) sa(var2,var1, - value);
         else edge_b[pos(var1, var2)] = value;
     }
@@ -150,7 +150,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * adds new time point into the network. In fact adds only edges and sets them to (inf,sup)
      * @return id of the newly inserted time point
      */
-    protected int add_v(){
+    private int add_v(){
         if(top >= capacity)
         {
             last_inc += 100;
@@ -177,7 +177,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param b upper bound on tim
      * @return true if consistent
      */
-    protected boolean edge_consistent(int v1, int v2, int a, int b){
+    private boolean edge_consistent(int v1, int v2, int a, int b){
         //non-empty intersection
         return (Math.max(minDelay(v1, v2),a) <= Math.min(maxDelay(v1, v2), b));
     }
@@ -201,10 +201,10 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param a lower bound on time
      * @param b upper bound on tim
      */
-    protected void propagate(int v1, int v2, int a, int b){
+    private void propagate(int v1, int v2, int a, int b){
         if(!consistent || !edge_consistent(v1, v2, a, b)) {
             consistent = false;
-            return;
+            throw new InconsistentTemporalNetwork();
         }
 
         int I_top = 0, J_top = 0, I[] = new int[top], J[] = new int[top], aa, bb, i,j,k;
@@ -300,9 +300,9 @@ public class FullSTN<ID> extends ISTN<ID> {
         for(Tuple4<Integer,Integer,Integer,ID> cons : allConstraints) {
             Tuple5<Object, Object, Object, ElemStatus, Option<ID>> current;
             if(cons._4() != null)
-                current = new Tuple5<>((Object) cons._1(), (Object) cons._2(), (Object) cons._3(), ElemStatus.CONTROLLABLE, (Option<ID>) new Some<>(cons._4()));
+                current = new Tuple5<>(cons._1(), cons._2(), cons._3(), ElemStatus.CONTROLLABLE, new Some<>(cons._4()));
             else
-                current = new Tuple5<>((Object) cons._1(), (Object) cons._2(), (Object) cons._3(), ElemStatus.CONTROLLABLE, (Option<ID>) None$.empty());
+                current = new Tuple5<>(cons._1(), cons._2(), cons._3(), ElemStatus.CONTROLLABLE, None$.empty());
             list = list.with(current);
         }
         return list;
@@ -315,14 +315,14 @@ public class FullSTN<ID> extends ISTN<ID> {
 
     @Override
     public boolean addConstraint(int u, int v, int w) {
-        allConstraints = allConstraints.with(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, null));
+        allConstraints = allConstraints.with(new Tuple4<>(u, v, w, null));
         propagate(u, v, inf, w);
         return consistent();
     }
 
     @Override
     public boolean addConstraintWithID(int u, int v, int w, ID o) {
-        allConstraints = allConstraints.with(new Tuple4<Integer, Integer, Integer, ID>(u, v, w, o));
+        allConstraints = allConstraints.with(new Tuple4<>(u, v, w, o));
         propagate(u, v, inf, w);
         return consistent();
     }

@@ -23,8 +23,8 @@ constant integer treatTime(Piece p);
 action fire(Kiln k){
 	duration := fireTime(k);
   	[all] energy == true;
-    	[start] k.ready := true ;
-    	[start+1,end-1] k.ready == true; 
+        [start,start+1] k.ready == false :-> true ;
+        [start+1,end-1] k.ready == true; 
 	[end-1,end] k.ready == true :-> false;
 };
 

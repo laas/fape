@@ -1,8 +1,9 @@
 package fape.core.planning.search.strategies.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.State;
+import fape.exceptions.FAPEException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -17,10 +18,10 @@ import java.util.List;
 public class SeqFlawComparator implements FlawComparator {
 
     final List<FlawComparator> comparators;
-    final APlanner planner;
+    final Planner planner;
     final State st;
 
-    public SeqFlawComparator(State st, APlanner planner, List<FlawComparator> comparators) {
+    public SeqFlawComparator(State st, Planner planner, List<FlawComparator> comparators) {
         this.comparators = new LinkedList<>(comparators);
         this.comparators.add(new TieBreaker());
         this.st = st;
@@ -48,8 +49,8 @@ public class SeqFlawComparator implements FlawComparator {
                 return res;
             }
         }
-        // no resolver could rank those flaws.
-        return 0;
+        // Flaws must be totally ordered to make sure we can rebuild a State.
+        throw new FAPEException("Unable to totally order those flaws: "+f1+" "+f2);
     }
 
     @Override

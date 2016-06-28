@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.resolvers;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.states.State;
 import planstack.anml.model.concrete.Action;
 import planstack.anml.model.concrete.Task;
@@ -8,7 +8,7 @@ import planstack.anml.model.concrete.Task;
 /**
  * Mark an action (already in the plan) as supporting an action condition.
  */
-public class ExistingTaskSupporter extends Resolver {
+public class ExistingTaskSupporter implements Resolver {
 
     /** Unsupported task */
     public final Task task;
@@ -22,7 +22,7 @@ public class ExistingTaskSupporter extends Resolver {
     }
 
     @Override
-    public boolean apply(State st, APlanner planner) {
+    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         assert task.args().size() == act.args().size();
         assert task.name().equals(act.taskName());
 
@@ -32,6 +32,9 @@ public class ExistingTaskSupporter extends Resolver {
         }
         //enforce equality of time points and add support to task network
         st.addSupport(task, act);
+
+        if(!isFastForwarding)
+            st.setLastDecompositionNumber(act.abs().decID());
 
         return true;
     }

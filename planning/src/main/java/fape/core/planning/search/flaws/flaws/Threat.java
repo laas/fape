@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.flaws;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.resolvers.BindingSeparation;
 import fape.core.planning.search.flaws.resolvers.Resolver;
 import fape.core.planning.search.flaws.resolvers.TemporalSeparation;
@@ -21,7 +21,7 @@ public class Threat extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, APlanner planner) {
+    public List<Resolver> getResolvers(State st, Planner planner) {
         if(resolvers != null)
             return resolvers;
 

@@ -5,6 +5,7 @@ import planstack.anml.model.abs.time.AbsTP
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser
+import planstack.anml.pending.{IntExpression, Invert, IntLiteral, IntExpression$}
 
 abstract class AbstractConstraint {
   def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : Constraint
@@ -12,15 +13,14 @@ abstract class AbstractConstraint {
 
 abstract class AbstractTemporalConstraint extends AbstractConstraint {
 
-  override final def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : TemporalConstraint = this match {
-    case AbstractMinDelay(from, to, minDelay) =>
-      new MinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay)
-    case AbstractParameterizedMinDelay(from, to, minDelay, trans) =>
-      new ParameterizedMinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay.bind(context), trans)
-    case AbstractParameterizedExactDelay(from, to, delay, trans) =>
-      new ParameterizedExactDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), delay.bind(context), trans)
-    case AbstractContingentConstraint(from, to, min, max) =>
-      new ContingentConstraint(TimepointRef(pb,context,from, refCounter), TimepointRef(pb,context,to, refCounter), min, max)
+  override final def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : TemporalConstraint = {
+    val trans = (lvar: LVarRef) => context.getGlobalVar(lvar)
+    this match {
+      case AbstractMinDelay(from, to, minDelay) =>
+        new MinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay.bind(trans))
+      case AbstractContingentConstraint(from, to, min, max) =>
+        new ContingentConstraint(TimepointRef(pb,context,from, refCounter), TimepointRef(pb,context,to, refCounter), min.bind(trans), max.bind(trans))
+    }
   }
 
   def from : AbsTP
@@ -28,66 +28,44 @@ abstract class AbstractTemporalConstraint extends AbstractConstraint {
   def isParameterized : Boolean
 }
 
-case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:Integer)
+case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:IntExpression)
   extends AbstractTemporalConstraint
 {
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
-  override def isParameterized = false
+  override def isParameterized = minDelay.isParameterized
 }
 
-case class AbstractParameterizedMinDelay(from :AbsTP, to :AbsTP, minDelay :AbstractParameterizedStateVariable, trans: (Int => Int))
-  extends AbstractTemporalConstraint
-{
-  override def toString = "%s + %s <= %s".format(from, minDelay, to)
-  override def isParameterized = true
-}
-
-case class AbstractParameterizedExactDelay(from :AbsTP, to :AbsTP, delay :AbstractParameterizedStateVariable, trans: (Int => Int))
-  extends AbstractTemporalConstraint
-{
-  override def toString = "%s + %s = %s".format(from, delay, to)
-  override def isParameterized = true
-}
-
-case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :Int, max:Int)
+case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :IntExpression, max:IntExpression)
   extends AbstractTemporalConstraint
 {
   override def toString = s"$from == [$min, $max] ==> $to"
-  override def isParameterized = true
+  override def isParameterized = min.isParameterized || max.isParameterized
 }
 
-case class AbstractParameterizedContingentConstraint(from :AbsTP,
-                                                     to :AbsTP,
-                                                     min :ParameterizedStateVariable,
-                                                     max:ParameterizedStateVariable,
-                                                     minTrans: (Int => Int),
-                                                     maxTrans: (Int => Int))
-  extends AbstractTemporalConstraint
-{
-  override def toString = s"$from == [f1($min), f2($max)] ==> $to"
-  override def isParameterized = true
-}
 
 object AbstractMaxDelay {
-  def apply(from:AbsTP, to:AbsTP, maxDelay:Int) =
-    new AbstractMinDelay(to, from, -maxDelay)
+  def apply(from:AbsTP, to:AbsTP, maxDelay:IntExpression) =
+    new AbstractMinDelay(to, from, IntExpression.minus(maxDelay))
 }
 
 object AbstractExactDelay {
-  def apply(from:AbsTP, to:AbsTP, delay:Int) =
+  def apply(from:AbsTP, to:AbsTP, delay:IntExpression) =
     List(AbstractMinDelay(from, to, delay), AbstractMaxDelay(from,to,delay))
 }
 
 object AbstractTemporalConstraint {
   private implicit def atr(tp: planstack.anml.parser.TimepointRef) = AbsTP(tp)
 
+  def minDelay(tp1: AbsTP, tp2: AbsTP, d: Int) = AbstractMinDelay(tp1,tp2, IntExpression.lit(d))
+  def maxDelay(tp1: AbsTP, tp2: AbsTP, d: Int) = AbstractMinDelay(tp2,tp1, IntExpression.lit(-d))
+
   def apply(parsed: parser.TemporalConstraint) : List[AbstractTemporalConstraint] = parsed match {
     case parser.ReqTemporalConstraint(tp1, "=", tp2, d) =>
-      List(AbstractMinDelay(tp2,tp1,d), AbstractMaxDelay(tp2,tp1,d))
+      List(minDelay(tp2,tp1,d), maxDelay(tp2,tp1,d))
     case parser.ReqTemporalConstraint(tp1, "<", tp2, d) =>
-      List(AbstractMaxDelay(tp2, tp1, d-1))
-    case parser.ContingentConstraint(src,dst,min,max) =>
-      List(AbstractContingentConstraint(src,dst,min,max))
+      List(maxDelay(tp2, tp1, d-1))
+    case parser.ContingentConstraint(src, dst, min, max) =>
+      List(AbstractContingentConstraint(src, dst, IntExpression.lit(min), IntExpression.lit(max)))
   }
 }
 
@@ -114,7 +92,7 @@ class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, 
 class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val value : Int, id:LStatementRef)
   extends AbstractBindingConstraint
 {
-  require(sv.func.isConstant && sv.func.valueType == "integer")
+  require(sv.func.isConstant && sv.func.valueType.isNumeric)
 
   override def toString = "%s := %s".format(sv, value)
 
@@ -160,4 +138,13 @@ class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVar
 
   override def bind(context: Context, pb: AnmlProblem) =
     new VarInequalityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
+}
+
+class AbstractInConstraint(val leftVar : LVarRef, val rightVars : Set[LVarRef], id:LStatementRef)
+  extends AbstractBindingConstraint
+{
+  override def toString = "%s in %s".format(leftVar, rightVars)
+
+  override def bind(context: Context, pb: AnmlProblem) =
+    new InConstraint(context.getGlobalVar(leftVar), rightVars.map(v => context.getGlobalVar(v)))
 }

@@ -3,54 +3,96 @@ package fape.core.planning.grounding;
 import fape.core.inference.HReasoner;
 import fape.core.inference.Predicate;
 import fape.core.inference.Term;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.exceptions.FAPEException;
 import fape.exceptions.NotValidGroundAction;
 import fape.util.Pair;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.Identifiable;
+import lombok.Getter;
 import planstack.anml.model.*;
 import planstack.anml.model.abs.*;
-import planstack.anml.model.abs.statements.AbstractAssignment;
-import planstack.anml.model.abs.statements.AbstractPersistence;
-import planstack.anml.model.abs.statements.AbstractStatement;
-import planstack.anml.model.abs.statements.AbstractTransition;
+import planstack.anml.model.abs.statements.*;
+import planstack.anml.model.abs.time.AbsTP;
 import planstack.anml.model.concrete.InstanceRef;
 import planstack.anml.model.concrete.VarRef;
+import planstack.anml.pending.IntExpression;
+import planstack.anml.pending.LStateVariable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Ident(GAction.class)
 public class GAction implements Identifiable {
 
+
+
     public static abstract class GLogStatement {
         public final GStateVariable sv;
-        public GLogStatement(GStateVariable sv) {
+        @Getter public final int minDuration;
+        public final AbstractLogStatement original;
+        public final Optional<GAction> container;
+        public GLogStatement(GStateVariable sv, int minDuration,
+                             AbstractLogStatement original,
+                             Optional<GAction> container) {
             this.sv = sv;
+            this.minDuration = minDuration;
+            this.original = original;
+            this.container = container;
+            assert minDuration >= 0;
         }
+        public final GStateVariable getStateVariable() { return sv; }
+        abstract public boolean isChange();
+        public boolean isTransition() { return this instanceof GTransition; };
+        public boolean isPersistence() { return this instanceof GPersistence; };
+        public boolean isAssignement() { return this instanceof GAssignment; };
+        abstract public InstanceRef endValue();
+        abstract public InstanceRef startValue();
+        abstract public Fluent getStartFluent();
+        abstract public Fluent getEndFluent();
+        public AbsTP start() { return original.start(); }
+        public AbsTP end() { return original.end(); }
     }
     public static class GTransition extends GLogStatement {
-        public final InstanceRef from ;
-        public final InstanceRef to;
-        public GTransition(GStateVariable sv, InstanceRef from, InstanceRef to) {
-            super(sv);
-            this.from = from;
-            this.to = to;
+        @Getter private final Fluent startFluent;
+        @Getter private final Fluent endFluent;
+        public GTransition(Fluent startFluent, Fluent endFluent,
+                           int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(startFluent.sv, minDuration, original, container);
+            assert startFluent.sv.equals(endFluent.sv);
+            this.startFluent = startFluent;
+            this.endFluent = endFluent;
         }
+        @Override public final boolean isChange() { return true; }
+        @Override public String toString() { return sv.toString()+"="+ startValue() +"->"+ endValue(); }
+        @Override public InstanceRef startValue() { return startFluent.value; }
+        @Override public InstanceRef endValue() { return endFluent.value; }
     }
-    public static final class GAssignement extends GLogStatement {
-        public final InstanceRef to;
-        public GAssignement(GStateVariable sv, InstanceRef to) {
-            super(sv);
-            this.to = to;
+    public static final class GAssignment extends GLogStatement {
+        @Getter public final Fluent fluent;
+        public GAssignment(Fluent value, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(value.sv, minDuration, original, container);
+            this.fluent = value;
         }
+        @Override public final boolean isChange() { return true; }
+        @Override public String toString() { return sv.toString()+":="+endValue(); }
+        @Override public InstanceRef startValue() { throw new FAPEException("Assignments define no start value."); }
+        @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { throw new FAPEException("Assignments define no start value."); }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
     public static final class GPersistence extends GLogStatement {
-        public final InstanceRef value;
-        public GPersistence(GStateVariable sv, InstanceRef value) {
-            super(sv);
-            this.value = value;
+        public final Fluent fluent;
+        public GPersistence(Fluent f, int minDuration, AbstractLogStatement original, Optional<GAction> container) {
+            super(f.sv, minDuration, original, container);
+            this.fluent = f;
         }
+        @Override public final boolean isChange() { return false; }
+        @Override public String toString() { return sv.toString()+"=="+endValue(); }
+        @Override public InstanceRef startValue() { return fluent.value; }
+        @Override public InstanceRef endValue() { return fluent.value; }
+        @Override public Fluent getStartFluent() { return fluent; }
+        @Override public Fluent getEndFluent() { return fluent; }
     }
 
     public final List<Fluent> pre = new LinkedList<>();
@@ -66,6 +108,8 @@ public class GAction implements Identifiable {
     protected final InstanceRef[] values;
 
     public final ArrayList<GTask> subTasks;
+    public final GroundProblem ggpb;
+
 
     public final int id;
 
@@ -88,6 +132,14 @@ public class GAction implements Identifiable {
         throw new FAPEException("Unable to find statement with ref: "+ref);
     }
 
+    public int getNumStatements() {
+        return gStatements.size();
+    }
+
+    public Collection<GLogStatement> getStatements() {
+        return gStatements.stream().map(p -> p.value2).collect(Collectors.toList());
+    }
+
     @Override
     public void setID(int i) {
         throw new FAPEException("Can't modify the ID of a GAction");
@@ -108,14 +160,10 @@ public class GAction implements Identifiable {
         else return false;
     }
 
-    public String baseName() { return abs.name(); }
+    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, Planner planner) throws NotValidGroundAction {
 
-    @Deprecated
-    public String decomposedName() { return abs.name(); }
-
-    public GAction(AbstractAction abs, Map<LVarRef, InstanceRef> bindings, GroundProblem gPb, APlanner planner) throws NotValidGroundAction {
-
-        AnmlProblem pb = gPb.liftedPb;
+        this.ggpb = gPb;
+        AnmlProblem pb = ggpb.liftedPb;
         this.abs = abs;
 
         assert bindings.size() == abs.allVars().length : "Some variables seem to be missing.";
@@ -154,25 +202,55 @@ public class GAction implements Identifiable {
         for(AbstractStatement as : abs.jStatements()) {
             if(as instanceof AbstractTransition) {
                 AbstractTransition t = (AbstractTransition) as;
-                gStatements.add(new Pair<>(
-                        t.id(),
-                        (GLogStatement) new GTransition(sv(t.sv(), pb, planner), valueOf(t.from(), pb), valueOf(t.to(), pb))));
-                pre.add(fluent(t.sv(), t.from(), bindings, planner));
-                if(!fluent(t.sv(), t.from(), bindings, planner).equals(fluent(t.sv(), t.to(), bindings, planner))) {
-                    add.add(fluent(t.sv(), t.to(), bindings, planner));
+                GLogStatement gls = new GTransition(
+                        fluent(t.sv(), t.from(), planner),
+                        fluent(t.sv(), t.to(), planner),
+                        minDuration(t.start(), t.end()),
+                        t, Optional.of(this));
+                gStatements.add(new Pair<>(t.id(), gls));
+                pre.add(fluent(t.sv(), t.from(), planner));
+                if(!fluent(t.sv(), t.from(), planner).equals(fluent(t.sv(), t.to(), planner))) {
+                    add.add(fluent(t.sv(), t.to(), planner));
                 }
+
             } else if(as instanceof AbstractPersistence) {
                 AbstractPersistence p = (AbstractPersistence) as;
-                gStatements.add(new Pair<>(
-                        p.id(),
-                        (GLogStatement) new GPersistence(sv(p.sv(), pb, planner), valueOf(p.value(), pb))));
-                pre.add(fluent(p.sv(), p.value(), bindings, planner));
+                GLogStatement gls = new GPersistence(
+                        fluent(p.sv(), p.value(), planner),
+                        minDuration(p.start(), p.end()),
+                        p,
+                        Optional.of(this));
+                gStatements.add(new Pair<>(p.id(), gls));
+                pre.add(fluent(p.sv(), p.value(), planner));
             } else if(as instanceof AbstractAssignment) {
                 AbstractAssignment a = (AbstractAssignment) as;
-                gStatements.add(new Pair<>(
-                        a.id(),
-                        (GLogStatement) new GAssignement(sv(a.sv(), pb, planner), valueOf(a.value(), pb))));
-                add.add(fluent(a.sv(), a.value(), bindings, planner));
+                GLogStatement gls = new GAssignment(
+                        fluent(a.sv(), a.value(), planner),
+                        minDuration(a.start(), a.end()),
+                        a,
+                        Optional.of(this));
+                gStatements.add(new Pair<>(a.id(), gls));
+                add.add(fluent(a.sv(), a.value(), planner));
+            }
+        }
+
+        for(Pair<LStatementRef,GLogStatement> p : gStatements) {
+            GStateVariable sv = p.value2.sv;
+            if(p.value2.isChange()) {
+                AbsTP start = abs.getLogStatement(p.value1).start();
+                AbsTP end = abs.getLogStatement(p.value1).end();
+                for(Pair<LStatementRef,GLogStatement> p2 : gStatements) {
+                    if(p == p2)
+                        continue;
+                    if(sv != p2.value2.sv)
+                        continue;
+                    AbsTP start2 = abs.getLogStatement(p2.value1).start();
+                    AbsTP end2 = abs.getLogStatement(p2.value1).end();
+                    if(abs.stn().strictlyBetween(start2, start, end) ||
+                            abs.stn().strictlyBetween(end2, start, end) ||
+                            (abs.stn().beforeOrConcurrent(start2, start) && abs.stn().beforeOrConcurrent(end, end2)))
+                        throw new NotValidGroundAction("Two conflicting statements on the same state variable.");
+                }
             }
         }
 
@@ -188,7 +266,33 @@ public class GAction implements Identifiable {
         this.additions = new int[add.size()];
         for(int i=0 ; i<add.size() ; i++)
             this.additions[i] = add.get(i).getID();
+    }
 
+    public int minDuration(AbsTP from, AbsTP to) {
+        return evaluate(abs.minDelay(from,to));
+    }
+    public int maxDuration(AbsTP from, AbsTP to) {
+        return this.evaluate(abs.maxDelay(from, to));
+    }
+
+    public int evaluate(IntExpression e) {
+        java.util.function.Function<IntExpression,IntExpression> t = expr -> {
+                if(expr instanceof LStateVariable) {
+                    List<InstanceRef> params = ((LStateVariable) expr).lsv().jArgs().stream()
+                            .map(v -> valueOf(v, ggpb.liftedPb))
+                            .collect(Collectors.toList());
+                    GroundProblem.IntegerInvariantKey o = new GroundProblem.IntegerInvariantKey(((LStateVariable) expr).lsv().func(), params);
+                    if(!ggpb.intInvariants.containsKey(o))
+                        throw new NotValidGroundAction("Some of its duration depends on an undefined constant.");
+                    int realValue = ggpb.intInvariants.get(o);
+                    return IntExpression.lit(realValue);
+                } else {
+                    return expr;
+                }
+            };
+        IntExpression binded = e.jTrans(t);
+        assert binded.isKnown();
+        return binded.get();
     }
 
     @Override
@@ -229,19 +333,43 @@ public class GAction implements Identifiable {
         return (InstanceRef) pb.context().getDefinition(v);
     }
 
-    public GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb, APlanner planner) {
+    private GStateVariable sv(AbstractParameterizedStateVariable sv, AnmlProblem pb, Planner planner) {
         InstanceRef[] svParams = new InstanceRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), pb);
         return planner.preprocessor.store.getGStateVariable(sv.func(), Arrays.asList(svParams));
     }
 
-    public Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Map<LVarRef, InstanceRef> vars, APlanner planner) {
+    private Fluent fluent(AbstractParameterizedStateVariable sv, LVarRef value, Planner planner) {
         VarRef[] svParams = new VarRef[sv.jArgs().size()];
         for(int i=0 ; i<svParams.length ; i++)
             svParams[i] = valueOf(sv.jArgs().get(i), planner.pb);
         GStateVariable gsv = planner.preprocessor.getStateVariable(sv.func(), svParams);
         return planner.preprocessor.getFluent(gsv, valueOf(value, planner.pb));
+    }
+
+    public Map<Fluent, List<Fluent>> concurrentChanges(Planner planner) {
+        Map<Fluent, List<Fluent>> m = new HashMap<>();
+        for(AbstractFluent af : abs.concurrentChanges().keySet()) {
+            Fluent f = fluent(af.sv(), af.value(), planner);
+            List<Fluent> conc = abs.concurrentChanges().get(af).stream()
+                    .map(abs -> fluent(abs.sv(), abs.value(), planner))
+                    .collect(Collectors.toList());
+            m.put(f, conc);
+        }
+        return m;
+    }
+
+    public List<GLogStatement> conditionsAt(AbsTP tp, Planner planner) {
+        return abs.getConditionsAt(tp).stream()
+                .map(p -> statementWithRef(p._2.id()))
+                .collect(Collectors.toList());
+    }
+
+    public List<GLogStatement> changesStartingAt(AbsTP tp, Planner planner) {
+        return abs.getChangesStartingFrom(tp).stream()
+                .map(p -> statementWithRef(p.id()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -271,10 +399,7 @@ public class GAction implements Identifiable {
                 varSet.add((InstanceRef) context.getDefinition(ref));
             } else {
                 // get the type of the argument and add all possible values to the argument list.
-                List<String> instanceSet = pb.instances().instancesOfType(context.getType(ref));
-                for (String instance : instanceSet) {
-                    varSet.add(pb.instances().referenceOf(instance));
-                }
+                varSet.addAll(ref.getType().jInstances());
             }
             possibleValues.add(varSet);
         }
@@ -372,17 +497,23 @@ public class GAction implements Identifiable {
                         best = partialBindings;
                     }
                 }
+                assert best != null;
                 if(vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
                     // merge this equality into the best looking PartialBindings
                     best.addEquality(c.leftVar(), c.rightVar());
-                } else if(!vars.contains(c.leftVar())) {
+                } else if(!vars.contains(c.leftVar()) && vars.contains(c.rightVar())) {
                     InstanceRef value = pb.instance(c.leftVar().id());
                     best.bind(c.rightVar(), value);
-                } else if(!vars.contains(c.rightVar())) {
+                } else if(vars.contains(c.leftVar()) && !vars.contains(c.rightVar())) {
                     InstanceRef value = pb.instance(c.rightVar().id());
                     best.bind(c.leftVar(), value);
                 } else {
-                    throw new FAPEException("Equality constraint between two constaint: "+s+" in action "+aa.name());
+                    System.out.println("Warning: equality constraint on two constants: "+c);
+                    InstanceRef leftVal = pb.instance(c.leftVar().id());
+                    InstanceRef rightVal = pb.instance(c.rightVar().id());
+                    if(leftVal != rightVal) // two different cosntant required to be equal
+                        return Collections.emptyList();
+//                    throw new FAPEException("Equality constraint between two constants: "+s+" in action "+aa.name());
                 }
             }
         }
@@ -409,7 +540,7 @@ public class GAction implements Identifiable {
         return paramsLists;
     }
 
-    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa, APlanner planner) {
+    public static List<GAction> groundActions(GroundProblem gPb, AbstractAction aa, Planner planner) {
         // all ground actions corresponding to aa
         List<GAction> actions = new LinkedList<>();
 
@@ -426,7 +557,7 @@ public class GAction implements Identifiable {
         return actions;
     }
 
-    private GTask initTask(AnmlProblem pb, APlanner planner) {
+    private GTask initTask(AnmlProblem pb, Planner planner) {
         List<InstanceRef> args = new LinkedList<>();
         for(LVarRef v : abs.args()) {
             args.add(valueOf(v, pb));
@@ -434,11 +565,11 @@ public class GAction implements Identifiable {
         return planner.preprocessor.store.getTask(abs.taskName(), args);
     }
 
-    public ArrayList<GTask> getActionRefs() {
+    public ArrayList<GTask> getSubtasks() {
         return subTasks;
     }
 
-    public ArrayList<GTask> initSubTasks(AnmlProblem pb, APlanner planner) {
+    public ArrayList<GTask> initSubTasks(AnmlProblem pb, Planner planner) {
         List<AbstractTask> refs = this.abs.jSubTasks();
         ArrayList<GTask> ret = new ArrayList<>();
 
@@ -470,10 +601,10 @@ public class GAction implements Identifiable {
 
         // decomposable(a) :- supported(a), feasible(subtask1), feasible(subtask2), ...
         Predicate decomposable = new Predicate(Predicate.PredicateName.DECOMPOSABLE, this);
-        Term[] subtasks = new Term[getActionRefs().size()+1];
+        Term[] subtasks = new Term[getSubtasks().size()+1];
         subtasks[0] = sup;
         for(int i=1 ; i<subtasks.length ; i++) {
-            subtasks[i] = new Predicate(Predicate.PredicateName.FEASIBLE, getActionRefs().get(i-1));
+            subtasks[i] = new Predicate(Predicate.PredicateName.FEASIBLE, getSubtasks().get(i-1));
         }
         r.addHornClause(decomposable, subtasks);
 

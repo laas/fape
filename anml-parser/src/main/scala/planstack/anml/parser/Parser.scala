@@ -12,6 +12,7 @@ sealed trait TypeContent
 
 
 
+case class ForAll(args: List[Argument], content:List[DecompositionContent]) extends AnmlBlock with ActionContent with DecompositionContent
 
 case class TemporalStatement(annotation:Option[TemporalAnnotation], statement:Statement) extends AnmlBlock with ActionContent with DecompositionContent
 
@@ -37,7 +38,8 @@ sealed abstract class Statement(id:String)
 case class SingleTermStatement(val term : Expr, val id:String) extends Statement(id)
 case class TwoTermsStatement(left:Expr, op:Operator, right:Expr, id:String) extends Statement(id)
 case class ThreeTermsStatement(left:Expr, op1:Operator, middle:Expr, op2:Operator, right:Expr, id:String) extends Statement(id)
-
+case class OrderedStatements(statements: List[Statement], id: String) extends Statement(id)
+case class UnorderedStatements(statements: List[Statement], id: String) extends Statement(id)
 
 
 
@@ -66,23 +68,46 @@ case class ExactDuration(dur : Expr) extends Duration {
 
 case class UncertainDuration(minDur : Expr, maxDur : Expr) extends Duration
 
+sealed trait PType
+case class PSimpleType(name: String) extends PType
+case class PDisjunctiveType(types: Set[PSimpleType]) extends PType
 
-case class Argument(tipe:String, name:String)
+case class Argument(tipe:PType, name:String)
 
 case class Decomposition(content:Seq[DecompositionContent]) extends ActionContent
 
 sealed trait Expr {
   def functionName : String
+  def asANML : String
+}
+
+case class Word(w:String) extends Expr {
+  def functionName = w
+  def asANML = w.toString
+}
+case class ChainedExpr(left:Expr, right:Expr) extends Expr {
+  require(!right.isInstanceOf[ChainedExpr])
+  def functionName = s"$left.$right"
+  def asANML = s"${left.asANML}.${right.asANML}"
 }
 case class VarExpr(variable:String) extends Expr {
   override def functionName = variable
+  def asANML = variable.toString
 }
-case class FuncExpr(svExpr:List[String], args:List[VarExpr]) extends Expr {
-  override def functionName = svExpr.mkString(".")
+case class FuncExpr(funcExpr:Expr, args:List[Expr]) extends Expr {
+  override def functionName = funcExpr.functionName
+  def asANML = s"${funcExpr.asANML}(${args.map(_.asANML).mkString(",")})"
+}
+
+case class SetExpr(parts: Set[Expr]) extends Expr {
+  override def functionName: String = ???
+
+  override def asANML: String = "{"+parts.map(_.asANML).mkString(", ")+"}"
 }
 
 case class NumExpr(value : Float) extends Expr {
   override def functionName = value.toString
+  def asANML = value.toString
 }
 
 trait TemporalConstraint extends DecompositionContent with ActionContent with AnmlBlock
@@ -93,22 +118,22 @@ case class ReqTemporalConstraint(tp1:TimepointRef, operator:String, tp2:Timepoin
 }
 case class ContingentConstraint(src:TimepointRef, dst:TimepointRef, min:Int, max:Int) extends TemporalConstraint
 
-class Function(val name:String, val args:List[Argument], val tipe:String, val isConstant:Boolean) extends AnmlBlock with TypeContent
+class Function(val name:String, val args:List[Argument], val tipe:PType, val isConstant:Boolean) extends AnmlBlock with TypeContent
 
 case class SymFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean)
   extends Function(name, args, tipe, isConstant)
 {
-  assert(tipe != "integer" && tipe != "float", "Symbolic function with a numeric type: "+this)
+  assert(tipe.toString != "integer" && tipe.toString != "float", "Symbolic function with a numeric type: "+this)
 }
 
 class NumFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean,
     val resourceType:Option[String])
   extends Function(name, args, tipe, isConstant)
@@ -122,37 +147,40 @@ class NumFunction(
 case class IntFunction(
     override val name:String,
     override val args:List[Argument],
-    override val tipe:String,
+    override val tipe:PType,
     override val isConstant:Boolean,
     minValue:Int,
     maxValue:Int,
     override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe == "integer", "The type of this int function is not an integer: "+this)
+  assert(tipe match {
+    case PSimpleType("integer") => true
+    case _ => false
+  }, "The type of this int function is not an integer: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in integer function: "+this)
 }
 
 case class FloatFunction(
                           override val name:String,
                           override val args:List[Argument],
-                          override val tipe:String,
+                          override val tipe:PType,
                           override val isConstant:Boolean,
                           minValue:Float,
                           maxValue:Float,
                           override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe == "float", "The type of this float function is not a float: "+this)
+  assert(tipe.toString == "float", "The type of this float function is not a float: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
 }
 
-class Constant(override val name :String, override val tipe:String)
+class Constant(override val name :String, override val tipe:PType)
   extends Function(name, Nil, tipe, true) with DecompositionContent with ActionContent
 
-case class Type(name:String, parent:String, content:List[TypeContent]) extends AnmlBlock
+case class TypeDecl(name:PSimpleType, parent:Option[PSimpleType], content:List[TypeContent]) extends AnmlBlock
 
-case class Instance(tipe:String, name:String) extends AnmlBlock
+case class Instance(tipe:PSimpleType, name:String) extends AnmlBlock
 
 object AnmlParser extends JavaTokenParsers {
 
@@ -188,8 +216,7 @@ object AnmlParser extends JavaTokenParsers {
     ident ^^ (kw => Timepoint(kw))
 
   lazy val statement : Parser[Statement] = (
-      statementWithoutID
-    | ident~":"~statementWithoutID ^^ {
+     word~":"~statementWithoutID ^^ {
         case id~":"~s => s match {
           case SingleTermStatement(e, "") => SingleTermStatement(e, id)
           case TwoTermsStatement(e1, o, e2, "") => TwoTermsStatement(e1, o, e2, id)
@@ -200,9 +227,11 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   lazy val statementWithoutID : Parser[Statement] = (
-      expr<~";" ^^ (e => new SingleTermStatement(e, ""))
-    | expr~op~expr<~";" ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
-    | expr~op~expr~op~expr<~";" ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
+      literal~op~literal~op~literal ^^ { case e1~o1~e2~o2~e3 => new ThreeTermsStatement(e1, o1, e2, o2, e3, "") }
+    | literal~op~literal ^^ { case e1~o~e2 => new TwoTermsStatement(e1, o, e2, "") }
+    | literal ^^ (e => new SingleTermStatement(e, ""))
+    | "ordered"~"("~>rep1sep(statement,",")<~")" ^^ (l => new OrderedStatements(l, ""))
+    | "unordered"~"("~>rep1sep(statement,",")<~")" ^^ (l => new UnorderedStatements(l, ""))
     )
 
   /** Temporal constraint between two time points. It is of the form:
@@ -226,23 +255,31 @@ object AnmlParser extends JavaTokenParsers {
     case "-"~num => - num.toInt
   }
 
-  lazy val expr : Parser[Expr] = (
+  lazy val unchainedLiteral : Parser[Expr] = (
       decimalNumber ^^ { x => NumExpr(x.toFloat) }
     | "-"~>decimalNumber ^^ { x => NumExpr(-x.toFloat) }
-    | repsep(word,".")~opt(refArgs) ^^ {
-        case List(variable) ~ None => VarExpr(variable)
-        case svExpr~None => FuncExpr(svExpr, Nil)
-        case svExpr~Some(args) => FuncExpr(svExpr, args)
+    | word~opt(refArgs) ^^ {
+        case f~None => VarExpr(f)
+        case f~Some(args) => FuncExpr(VarExpr(f), args)
+      }
+    | "{"~>rep1sep(literal, ",")<~"}" ^^ {
+        case l => SetExpr(l.toSet)
       }
   )
+
+  lazy val literal : Parser[Expr] =
+    rep1sep(unchainedLiteral,".") ^^ {
+      case List(variable) => variable
+      case l => l.tail.foldLeft(l.head)((acc,cur) => ChainedExpr(acc, cur))
+    }
 
   /** a var expr is a single word such as x, prettyLongName, ... */
   lazy val varExpr : Parser[VarExpr] =
     word ^^ (x => VarExpr(x))
 
   /** List of variable expression such as (x, y, z) */
-  lazy val refArgs : Parser[List[VarExpr]] =
-    "("~>repsep(varExpr, ",")<~")"
+  lazy val refArgs : Parser[List[Expr]] =
+    "("~>repsep(literal, ",")<~")"
 
   lazy val action : Parser[Action] =
     "action"~>word~"("~repsep(argument, ",")~")"~actionBody ^^
@@ -258,10 +295,10 @@ object AnmlParser extends JavaTokenParsers {
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
       | "motivated"~";" ^^^ List(Motivated)
-      | "constant"~>(word|kwType)~word<~";" ^^ {
+      | "constant"~>typ~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe)) }
-      | "duration"~":="~>expr<~";" ^^ (x => List(ExactDuration(x)))
-      | "duration"~":in"~"["~>expr~","~expr<~"]"~";" ^^ {
+      | "duration"~":="~>literal<~";" ^^ (x => List(ExactDuration(x)))
+      | "duration"~":in"~"["~>literal~","~literal<~"]"~";" ^^ {
         case min~","~max => List(UncertainDuration(min, max))
       }
     )
@@ -274,24 +311,26 @@ object AnmlParser extends JavaTokenParsers {
   lazy val decompositionContent : Parser[List[DecompositionContent]] = (
     tempConstraint ^^ (x => List(x))
       | temporalStatements
-      | "constant"~>(word|kwType)~word<~";" ^^ {
+      | "constant"~>typ~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe))
     })
 
 
   lazy val argument : Parser[Argument] = (
-    tipe~word ^^ { case tipe~name => new Argument(tipe, name)}
+    typ~word ^^ { case tipe~name => new Argument(tipe, name)}
       | failure("Argument malformed.")
     )
 
   lazy val temporalStatements : Parser[List[TemporalStatement]] = (
       annotation~statements ^^ { case annot~statements => statements.map(new TemporalStatement(Some(annot), _))}
-    | statement ^^ { case s:Statement => List(new TemporalStatement(None, s))}
+    | statementSemi ^^ { case s:Statement => List(new TemporalStatement(None, s))}
   )
 
+  lazy val statementSemi : Parser[Statement] = statement<~";"
+
   lazy val statements : Parser[List[Statement]] = (
-    "{"~>rep(statement)<~"}"<~";"
-      | statement ^^ (x => List(x)))
+    "{"~>rep(statementSemi)<~"}"<~";"
+      | statementSemi ^^ (x => List(x)))
 
   lazy val block : Parser[List[AnmlBlock]] = (
     action ^^ (a => List(a))
@@ -300,7 +339,13 @@ object AnmlParser extends JavaTokenParsers {
       | functionDecl ^^ (func => List(func))
       | typeDecl ^^ (t => List(t))
       | instanceDecl
+      | forallBlock ^^ (t => List(t))
     )
+
+  lazy val forallBlock : Parser[ForAll] =
+    "forall"~"("~>rep1sep(argument,",")~")"~"{"~decompositionContent<~"}"~";" ^^ {
+      case args~")"~"{"~content => ForAll(args, content)
+    }
 
   lazy val anml : Parser[List[AnmlBlock]] = rep(block) ^^ (blockLists => blockLists.flatten)
 
@@ -309,16 +354,16 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val functionDecl : Parser[Function] = numFunctionDecl | symFunctionDecl
 
-  lazy val anySymType : Parser[String] = symType | word
-
   lazy val symFunctionDecl : Parser[SymFunction] = (
-    "constant"~>anySymType~word~opt(argList)<~";" ^^ {
+    "constant"~>typ~word~opt(argList)<~";" ^^ {
       case t~name~Some(args) => SymFunction(name, args, t, isConstant=true)
       case t~name~None => SymFunction(name, Nil, t, isConstant=true)
     }
+      | "fluent"~>anySymType~word~opt(argList)<~";" ^^ {
+        case t~name~optArgs => SymFunction(name, optArgs.getOrElse(Nil), t, isConstant = false) }
       | "variable"~>anySymType~word<~";" ^^ {case t~name => SymFunction(name, List(), t, isConstant=false)}
       | "function"~>anySymType~word~argList<~";" ^^ {case t~name~args => SymFunction(name, args, t, isConstant=false)}
-      | "predicate"~>anySymType~argList<~";" ^^ {case name~args => SymFunction(name, args, "boolean", isConstant=false)}
+      | "predicate"~>word~argList<~";" ^^ {case name~args => SymFunction(name, args, PSimpleType("boolean"), isConstant=false)}
     )
 
   lazy val numFunctionDecl : Parser[NumFunction] = integerFunctionDecl | floatFunctionDecl
@@ -347,7 +392,7 @@ object AnmlParser extends JavaTokenParsers {
           case None => List()
           case Some(arguments) => arguments
         }
-        new FloatFunction(name, args, "float", fType == "constant", constraints._1, constraints._2, resourceType)
+        new FloatFunction(name, args, PSimpleType("float"), fType == "constant", constraints._1, constraints._2, resourceType)
       }
     }
 
@@ -365,26 +410,39 @@ object AnmlParser extends JavaTokenParsers {
           case None => List()
           case Some(arguments) => arguments
         }
-        new IntFunction(name, args, "integer", fType == "constant", constraints._1, constraints._2, resourceType)
+        new IntFunction(name, args, PSimpleType("integer"), fType == "constant", constraints._1, constraints._2, resourceType)
       }
     }
 
 
-  lazy val tipe : Parser[String] =
-    kwType | word | failure("Unable to parse type")
+  lazy val simpleSymType : Parser[PSimpleType] =
+    (symType | word) ^^ { case t => PSimpleType(t)} |
+      failure("Unable to parse type")
 
-  lazy val typeDecl : Parser[Type] = (
-    "type"~>tipe~"<"~tipe~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => Type(name, parent, content)}
-      | "type"~>tipe~"with"~typeBody<~";" ^^ {case name~"with"~content => Type(name, "", content)}
-      | "type"~>tipe~"<"~tipe<~";" ^^ {case name~"<"~parent => Type(name, parent, List())}
-      | "type"~>tipe<~";" ^^ (name => Type(name, "", List()))
+  lazy val anySymType : Parser[PType] =
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l.toSet) } |
+      simpleType
+
+  lazy val simpleType : Parser[PSimpleType] =
+    (kwType | word) ^^ { case t => PSimpleType(t)} |
+      failure("Unable to parse type")
+
+  lazy val typ : Parser[PType] =
+    "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l.toSet) } |
+    simpleType
+
+  lazy val typeDecl : Parser[TypeDecl] = (
+    "type"~>simpleType~"<"~simpleType~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => TypeDecl(name, Some(parent), content)}
+      | "type"~>simpleType~"with"~typeBody<~";" ^^ {case name~"with"~content => TypeDecl(name, None, content)}
+      | "type"~>simpleType~"<"~simpleType<~";" ^^ {case name~"<"~parent => TypeDecl(name, Some(parent), List())}
+      | "type"~>simpleType<~";" ^^ (name => TypeDecl(name, None, List()))
       | failure("Not a valid type declaration")
     )
 
   lazy val typeBody : Parser[List[TypeContent]] = "{"~>rep(functionDecl)<~"}"
 
   lazy val instanceDecl : Parser[List[Instance]] =
-    "instance"~>tipe~repsep(word,",")<~";" ^^ {
+    "instance"~>simpleType~repsep(word,",")<~";" ^^ {
       case tipe~names => names.map(Instance(tipe, _))
     }
 
@@ -392,21 +450,21 @@ object AnmlParser extends JavaTokenParsers {
   lazy val kwType : Parser[String] = numType | symType
 
   /** predefined symbolic types: boolean, object */
-  lazy val symType : Parser[String] = "boolean"// | "object"
+  lazy val symType : Parser[String] = "boolean\\b".r// | "object"
 
   /** Predefined numeric types: float and integer */
-  lazy val numType : Parser[String] = "float" | "integer"
+  lazy val numType : Parser[String] = "float\\b".r | "integer\\b".r
 
-  lazy val kwTempAnnot : Parser[String] = "start" | "end"
+  lazy val kwTempAnnot : Parser[String] = "start\\b".r | "end\\b".r
 
-  lazy val keywords = (kwType | kwTempAnnot | "motivated" | "duration")
+  lazy val keywords = (kwType | kwTempAnnot | "motivated\\b".r | "duration\\b".r | "ordered\\b".r | "unordered\\b".r)
 
   lazy val word = not(keywords) ~> ident
 //  lazy val word = ident
 
   lazy val op : Parser[Operator] = opString ^^ { case op:String => Operator(op) }
   private def opString : Parser[String] =
-    "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!="
+    "==" | ":=" | ":->" | ":produce" | ":consume" | ":use" | "<" | "<=" | ">=" | ">" | "!=" | "in\\b".r
 
 }
 

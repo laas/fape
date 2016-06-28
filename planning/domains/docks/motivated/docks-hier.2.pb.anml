@@ -1,0 +1,13 @@
+// problem for the dock-worker example.
+// Look at docks.dom.anml for the domain specification
+
+
+//[end] c1.pile == p2;
+//[end] c2.pile == p2;
+//[end] c3.pile == p12;
+
+[all] contains {
+//  transfer(c1,p2);
+  transfer(c2,p2);
+  transfer(c3,p12);
+};

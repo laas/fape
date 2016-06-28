@@ -1,6 +1,10 @@
 package planstack.anml.model
 
+import java.util
+
+import planstack.anml.model.abs.DefaultMod
 import planstack.anml.model.concrete.VarRef
+import planstack.anml.parser.VarExpr
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -18,6 +22,12 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   def isResource = func.isInstanceOf[NumFunction]
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+
+  override def hashCode() = func.hashCode() + 59 * args.hashCode()
+  override def equals(o: Any) : Boolean = o match {
+    case sv: AbstractParameterizedStateVariable => func == sv.func && args == sv.args
+    case _ => false
+  }
 }
 
 /** A state variable parameterized with variables.
@@ -32,35 +42,26 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
   def arg(i: Int) : VarRef = args(i)
 
   override def toString = "%s(%s)".format(func.name, args.mkString(", "))
+  override lazy val hashCode = func.hashCode() + 59 * util.Arrays.asList(args).hashCode()
+  override def equals(o: Any) = o match {
+    case sv: ParameterizedStateVariable =>
+      func == sv.func && args.indices.forall(i => args(i) == sv.args(i))
+    case _ => false
+  }
 }
 
 object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
-    // get a normalized version of the expression
-    val func:parser.FuncExpr = expr match {
-      case parser.FuncExpr(nameParts, argList) => {
-        if(pb.functions.isDefined(nameParts.mkString("."))) {
-          parser.FuncExpr(nameParts, argList)
-        } else {
-          assert(nameParts.tail.length == 1, "Does not seem to be a valid function: "+expr)
-          val headType = context.getType(new LVarRef(nameParts.head))
-          parser.FuncExpr(pb.instances.getQualifiedFunction(headType,nameParts.tail.head), parser.VarExpr(nameParts.head)::argList)
-        }
-      }
-      case parser.VarExpr(x) => {
-        if(pb.functions.isDefined(x)) {
-          // it is a function with no arguments
-          parser.FuncExpr(List(x), Nil)
-        } else {
-          throw new ANMLException("This VarExpr does not refer to any existing function: "+expr)
-        }
-      }
-      case parser.NumExpr(_) => throw new ANMLException("Cannot build a state variable from a numeric expression: "+expr)
+    context.simplify(expr,DefaultMod) match {
+      case f: EFunction =>
+        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+      case EVariable(_,_,Some(f)) =>
+        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+      case x =>
+        throw new ANMLException("Cannot build a state variable from: " + x)
     }
-    new AbstractParameterizedStateVariable(pb.functions.get(func.functionName), func.args.map(e => new LVarRef(e.variable)))
   }
-
 }
 
 

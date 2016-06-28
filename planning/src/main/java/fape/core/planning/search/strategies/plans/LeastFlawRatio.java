@@ -8,7 +8,7 @@ import fape.core.planning.states.State;
  *
  * Evaluation function: (num open leaves + num consumers) / numActions.
  */
-public class LeastFlawRatio implements PartialPlanComparator {
+public class LeastFlawRatio extends PartialPlanComparator {
     @Override
     public String shortName() {
         return "lfr";
@@ -24,7 +24,17 @@ public class LeastFlawRatio implements PartialPlanComparator {
     }
 
     @Override
-    public int compare(State state, State state2) {
-        return (int) (eval(state) - eval(state2));
+    public double g(State st) {
+        return 0;
+    }
+
+    @Override
+    public double h(State st) {
+        return eval(st);
+    }
+
+    @Override
+    public double hc(State st) {
+        return eval(st);
     }
 }

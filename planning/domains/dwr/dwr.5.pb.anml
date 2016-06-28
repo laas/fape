@@ -79,22 +79,30 @@ k4.attached := d4;
  p3.top := empty;
  p4.top := empty;
 
- p3.ondock := d3;
- p4.ondock := d4;
-
+ p3.available := true;
+ p4.available := true;
 };
 
-action dockpile(piles p, docks d){
+p11.ondock := d1;
+p12.ondock := d1;
+p21.ondock := d2;
+p22.ondock := d2;
+p3.ondock := d3;
+p4.ondock := d4;
+
+action dockpile(piles p){
   motivated;
-  [start] p.ondock :=d;
-  [end] p.ondock := away ;
+  [start] p.available := true;
+  [end] p.available := false ;
 };
 
-[5, 20] dockpile (p11, d1) ;
-[5, 20] dockpile (p12, d1) ;
+[5, 20] dockpile (p11) ;
+[5, 20] dockpile (p12) ;
 
-[10, 25] dockpile (p21, d2) ;
-[10, 25] dockpile (p22, d2) ;
+
+[10, 25] dockpile (p21) ;
+[10, 25] dockpile (p22) ;
+
 
 /* this is simpler but much less general
 [5]{

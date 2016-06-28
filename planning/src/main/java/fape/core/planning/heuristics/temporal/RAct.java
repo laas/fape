@@ -1,7 +1,7 @@
 package fape.core.planning.heuristics.temporal;
 
 import fape.core.planning.grounding.GAction;
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.ValueConstructor;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class RAct extends DepGraphCore.ActionNode {
 
 
 
-    public static RAct from(DeleteFreeActionsFactory.RActTemplate template, GAction base, APlanner pl) {
+    public static RAct from(DeleteFreeActionsFactory.RActTemplate template, GAction base, Planner pl) {
         assert template.abs == base.abs;
 
         List<TempFluent> conditions = template.conditions.stream()

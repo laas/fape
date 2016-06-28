@@ -17,9 +17,9 @@ public class TieBreaker implements FlawComparator {
             return -1;
         if(f2 instanceof UnsupportedTimeline && !(f1 instanceof UnsupportedTimeline))
             return 1;
-        if(f1 instanceof UnsupportedTaskCond && !(f2 instanceof UnsupportedTaskCond))
+        if(f1 instanceof UnrefinedTask && !(f2 instanceof UnrefinedTask))
             return -1;
-        if(f2 instanceof UnsupportedTaskCond && !(f1 instanceof UnsupportedTaskCond))
+        if(f2 instanceof UnrefinedTask && !(f1 instanceof UnrefinedTask))
             return 1;
         if(f1 instanceof UnmotivatedAction && !(f2 instanceof UnmotivatedAction))
             return -1;
@@ -28,10 +28,6 @@ public class TieBreaker implements FlawComparator {
         if(f1 instanceof Threat && !(f2 instanceof Threat))
             return -1;
         if(f2 instanceof Threat && !(f1 instanceof Threat))
-            return 1;
-        if(f1 instanceof ResourceFlaw && !(f2 instanceof ResourceFlaw))
-            return -1;
-        if(f2 instanceof ResourceFlaw && !(f1 instanceof ResourceFlaw))
             return 1;
         if(f1 instanceof UnboundVariable && !(f2 instanceof UnboundVariable))
             return -1;

@@ -1,0 +1,24 @@
+//the environment is defined in the domain file
+
+[start] {
+  PR2.right_arm.posture := ArmTuckedPosture;
+  PR2.right_arm.free := true;
+  PR2.left_arm.posture := ArmTuckedPosture;
+  PR2.left_arm.free := true;
+  PR2.torso := TorsoUpPosture;
+  PR2.loc := floorAreaTamsRestaurant1;
+
+  coffeeJug1.loc := placingAreaEastRightCounter1;
+  milkPot1.loc := placingAreaEastRightCounter1;
+  // sugarPot1.loc :=  placingAreaEastRightCounterOS1; // commented in original problem
+  sugarPot2.loc := placingAreaWestRightTable1;
+};
+
+
+move_object(PR2, coffeeJug1, placingAreaNorthLeftTable2);
+//move_object(PR2, milkPot1, placingAreaNorthLeftTable2);
+move_object(PR2, sugarPot2, placingAreaNorthLeftTable2);
+
+
+
+

@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.states.State;
 
@@ -23,5 +23,5 @@ public interface FlawFinder {
      *                problem knowledge (typically coming from preprocessing).
      * @return All flaws this finder found.
      */
-    List<Flaw> getFlaws(State st, APlanner planner);
+    List<Flaw> getFlaws(State st, Planner planner);
 }

@@ -4,7 +4,7 @@ import fape.core.planning.states.State;
 
 import java.util.HashMap;
 
-public class Threats implements PartialPlanComparator {
+public class Threats extends PartialPlanComparator {
 
     HashMap<Integer, Integer> numThreats = new HashMap<>();
 
@@ -25,7 +25,17 @@ public class Threats implements PartialPlanComparator {
     }
 
     @Override
-    public int compare(State state, State t1) {
-        return numThreats(t1) - numThreats(state);
+    public double g(State st) {
+        return 0;
+    }
+
+    @Override
+    public double h(State st) {
+        return numThreats(st);
+    }
+
+    @Override
+    public double hc(State st) {
+        return numThreats(st);
     }
 }

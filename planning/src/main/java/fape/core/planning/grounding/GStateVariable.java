@@ -7,6 +7,7 @@ import planstack.anml.model.Function;
 import planstack.anml.model.concrete.InstanceRef;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Ident(GStateVariable.class)
 public class GStateVariable extends AbsIdentifiable {
@@ -22,6 +23,6 @@ public class GStateVariable extends AbsIdentifiable {
 
     @Override
     public String toString() {
-        return f.name() + params;
+        return f.name() +"("+String.join(",",params.stream().map(InstanceRef::toString).collect(Collectors.toList()))+")";
     }
 }

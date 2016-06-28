@@ -75,7 +75,7 @@ abstract class STN[ID](val g : LabeledDigraph[Int,Int],
    */
   protected def getWeight(u:Int, v:Int) = {
     val edges = g.edges(u,v)
-    if(edges.length == 0)
+    if(edges.isEmpty)
       Weight.InfWeight
     else // first edge _must_ be the one with the minimum weight
       new Weight(edges.head.l)

@@ -8,10 +8,8 @@ import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.IList;
 import planstack.structures.Pair;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -162,6 +160,10 @@ public class Timeline {
         throw new FAPEException("Problem: finding change number "+changeNumber+" in timeline "+this);
     }
 
+    public LogStatement getEvent(int numEvent) {
+        return getChangeNumber(numEvent).getFirst();
+    }
+
     public String Report() {
         String ret = "";
         //ret += "{\n";
@@ -189,7 +191,7 @@ public class Timeline {
     /**
      * Returns the index of the chain component cc.
      */
-    public int indexOf(ChainComponent cc) {
+    int indexOf(ChainComponent cc) {
         for(int ct = 0; ct < chain.length; ct++) {
             if (chain[ct].equals(cc)) {
                 return ct;
@@ -201,20 +203,13 @@ public class Timeline {
     /**
      * Returns the index of the chain component containing s.
      */
-    public int indexOfContainer(LogStatement s) {
+    int indexOfContainer(LogStatement s) {
         for(int ct = 0; ct < chain.length; ct++) {
             if (chain[ct].contains(s)) {
                 return ct;
             }
         }
         throw new FAPEException("This statement is not present in the database.");
-    }
-
-    /**
-     * @return
-     */
-    public Timeline deepCopy() {
-        return this;
     }
 
     /**
@@ -269,6 +264,18 @@ public class Timeline {
         return chain[0].getConsumeTimePoint();
     }
 
+    /** Returns a group of timepoints that must be before any change statement occuring after this component */
+    public List<TPRef> timepointsPrecedingNextChange(ChainComponent cc) {
+        if(!cc.change) {
+            return cc.getEndTimepoints();
+        } else if(isLastComponent(cc) || getFollowingComponent(cc).change) {
+            return cc.getEndTimepoints();
+        } else {
+            // its a change that supports some persistences
+            return getFollowingComponent(cc).getEndTimepoints();
+        }
+    }
+
     /**
      * @return The last component of the database containing a change (i.e. an
      * assignment or a transition). It returns null if no such element exists.
@@ -302,6 +309,19 @@ public class Timeline {
         return chain[position];
     }
 
+    public boolean isLastComponent(ChainComponent cc) {
+        return getLast() == cc;
+    }
+
+    public ChainComponent getFollowingComponent(ChainComponent cc) {
+        assert !isLastComponent(cc);
+        for(int i=0 ; i<size() ; i++) {
+            if(get(i) == cc)
+                return get(i+1);
+        }
+        throw new FAPEException("No such component in this timeline");
+    }
+
     /**
      * @return True if there is only persistences
      */
@@ -317,10 +337,6 @@ public class Timeline {
         return chain[chain.length-1].getSupportValue();
     }
 
-    /**
-     *
-     * @return
-     */
     public VarRef getGlobalConsumeValue() {
         return chain[0].getConsumeValue();
     }
@@ -379,6 +395,28 @@ public class Timeline {
         }
 
         return cls;
+    }
+
+    public List<FluentHolding> getCausalLinks() {
+        List<FluentHolding> ret = new ArrayList<>();
+        if(hasSinglePersistence()) {
+            ret.add(new FluentHolding(stateVariable, getGlobalConsumeValue(), getConsumeTimePoint(), getLastTimePoints()));
+        } else {
+            for (int i = 0; i < numChanges(); i++) {
+                ChainComponent cc = getChangeNumber(i);
+                if (i + 1 < numChanges()) {
+                    TPRef endCausalLink = getChangeNumber(i + 1).getConsumeTimePoint();
+                    List<TPRef> endTimes = Collections.singletonList(endCausalLink);
+                    FluentHolding cl = new FluentHolding(stateVariable, cc.getSupportValue(), cc.getSupportTimePoint(), endTimes);
+                    ret.add(cl);
+                } else if (indexOf(cc) < chain.length - 1) {
+                    List<TPRef> endTimes = Arrays.asList(chain[indexOf(cc) + 1].statements).stream().map(s -> s.end()).collect(Collectors.toList());
+                    FluentHolding cl = new FluentHolding(stateVariable, cc.getSupportValue(), cc.getSupportTimePoint(), endTimes);
+                    ret.add(cl);
+                }
+            }
+        }
+        return ret;
     }
 
     public Stream<LogStatement> allStatements() {

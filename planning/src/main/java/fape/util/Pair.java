@@ -1,6 +1,8 @@
 package fape.util;
 
-public class Pair<T, V> {
+import lombok.Data;
+
+@Data public class Pair<T, V> {
 
     public T value1;
     public V value2;
@@ -15,5 +17,5 @@ public class Pair<T, V> {
         return "["+value1 + ","+value2+"]";
     }
     
-    
+    public static <T,V> Pair<T,V> pair(T v1, V v2) { return new Pair<>(v1,v2); }
 }

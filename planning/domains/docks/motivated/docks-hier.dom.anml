@@ -1,0 +1,214 @@
+// -*-c++-*-
+
+type ContainerPosition; // Container, Robots & Cranes
+type RobotLoc; // Docks & Roads
+
+
+type Container < ContainerPosition with {
+    variable ContainerPosition pos;
+    variable Pile pile;
+};
+
+type Robot < ContainerPosition with {
+    variable RobotLoc loc;
+    predicate empty();
+//    variable Container cargo;
+};
+
+type Crane < ContainerPosition with {
+//    variable Container grip;
+    predicate empty();
+    constant Dock attached;
+};
+
+type Pile with {
+    variable Container top;
+    variable boolean empty;
+    constant Dock attached;
+};
+
+type Dock < RobotLoc with {
+    predicate empty();
+//    variable Robot content;
+};
+
+type Road < RobotLoc;
+
+instance Container pallet; // nil container
+instance Pile noPile; // when a container is not in a pile
+
+
+
+constant boolean adjacent(Dock d, Road r);
+
+action transfer(Container c, Pile p2) {
+  motivated;
+  :decomposition {
+    constant Pile p1;
+    constant Robot r;
+    [all] absTransfer(c,p1,p2,r);
+  };
+  :decomposition {
+    constant Robot r;
+    [all] absTransferFromRobot(c,r,p2);
+  };
+};
+
+action absTransfer(Container c, Pile p1, Pile p2, Robot r) {
+  motivated;
+    constant Crane k1;
+    constant Crane k2;
+    [all] contains {
+      id1 : unstack(k1, c, p1);
+      id2 : putdown(k1, c, r);
+      id3 : pickup(k2, c, r);
+      id4 : stack(k2, c, p2);
+    };
+    start = start(id1);
+    end(id1) < start(id2);
+    end(id2) < start(id3);
+    end(id3) < start(id4);
+    end = end(id4);
+};
+
+action absTransferFromRobot(Container c, Robot r, Pile p2) {
+  motivated;
+    constant Crane k1;
+    constant Crane k2;
+    [all] contains {
+      id1 : pickup(k2, c, r);
+      id2 : stack(k2, c, p2);
+    };
+    start = start(id1);
+    end(id1) < start(id2);
+    end = end(id2);
+};
+
+action leave(Robot r, Dock d, Road w){
+    [all] r.loc == d :-> w;
+    [all] d.empty == false :-> true;
+    adjacent(d,w);
+};
+
+action enter(Robot r, Dock d, Road w) {
+    [all] r.loc == w :-> d;
+    [all] d.empty == true :-> false;
+    adjacent(d,w);
+};
+
+action navigate(Robot r, Road w1, Road w2) {
+    [all] r.loc == w1 :-> w2;
+};
+
+action pickup(Crane k, Container c, Robot r) {
+    motivated;
+    c != pallet;
+    
+    [all] k.empty == true :-> false;
+    [all] c.pos == r :-> k;
+    [all] r.empty == false :-> true;
+    constant Dock dock;
+    k.attached == dock;
+    [all] r.loc == dock;
+};
+
+action putdown(Crane k, Container c, Robot r) {
+    motivated;
+    c != pallet;
+    
+    [all] k.empty == false :-> true;
+    [all] c.pos == k :-> r;
+    [all] r.empty == true :-> false;
+    constant Dock d;
+    k.attached == d;
+    [all] r.loc == d;
+};
+
+action stack(Crane k, Container c, Pile p) {
+    motivated;
+    c != pallet;
+    
+    constant Container prevTop;
+    
+    [all] p.top == prevTop :-> c;
+    [all] k.empty == false :-> true;
+    [all] c.pos == k :-> prevTop;
+    [all] c.pile == noPile :-> p;
+    
+    constant Dock d;
+    k.attached == p.attached;
+};
+
+action unstack(Crane k, Container c, Pile p) {
+    motivated;
+    c != pallet;
+    constant Container under;
+    
+    [all] p.top == c :-> under;
+    [all] k.empty == true :-> false;
+    [all] c.pos == under :-> k;
+    [all] c.pile == p :-> noPile;
+
+    constant Dock d;
+    k.attached == p.attached;
+};
+
+
+
+
+
+/** INSTANCES **/
+
+instance Robot r1, r2, r3;
+instance Dock d1, d2, d3;
+instance Crane k1, k2, k31;
+instance Container c1, c2, c3;
+instance Road w;
+instance Pile p11, p12, p2, p31;
+
+adjacent(d1, w) := true;
+adjacent(d2, w) := true;
+adjacent(d3, w) := true;
+k1.attached := d1;
+k2.attached := d2;
+k31.attached := d3;
+p11.attached := d1;
+p12.attached := d1;
+p2.attached := d2;
+p31.attached := d3;
+
+/** STATE **/
+
+[start] {
+  k1.empty := true;
+  k2.empty := true;
+  k31.empty := true;
+
+  d1.empty := false; // has r1
+  d2.empty := true;
+  d3.empty := true;
+    
+  r1.loc := d1;
+  r2.loc := w;
+  r2.empty := true;
+  r3.loc := w;
+  r3.empty := true;
+    
+  c1.pos := r1;
+  c1.pile := noPile;
+
+  c2.pos := pallet;
+  c2.pile := p11;
+  p11.top := c2;
+
+  c3.pos := pallet;
+  c3.pile := p31;
+  p31.top := c3;
+    
+  r1.empty := false;
+
+  p12.top := pallet;
+  p2.top := pallet;
+};
+
+

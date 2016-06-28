@@ -23,7 +23,8 @@ type cranes < piles_robots_cranes with {
 
 type piles < piles_robots_cranes with {
   variable containers top ;
-  variable docks ondock ;
+  constant docks ondock ;
+  variable boolean available ;
 };
 
 type containers with {
@@ -70,8 +71,9 @@ action stack(cranes k, containers c, piles p){
   constant docks d;
   constant containers prevtop ;
   k.attached == d ;
+  p.ondock == d ;
   [all] {
-    p.ondock == d ;
+    p.available == true ;
     k.grip == c :-> empty ;
     c.in == k :-> p ;
     c.on == empty :-> prevtop ;
@@ -84,8 +86,9 @@ action unstack(cranes k, containers c, piles p){
   constant docks d;
   constant containers nextop ;
   k.attached == d ;
+  p.ondock == d ;
   [all] {
-    p.ondock == d ;
+    p.available == true ;
     k.grip == empty :-> c ;
     c.in == p :-> k ;
     c.on == nextop :-> empty ;
@@ -126,10 +129,12 @@ action load (containers c, robots r, piles p){
     constant cranes k;
     constant docks d;
     k.attached == d;
+    p.ondock == d ;
     [start] p.top == c ;
     [all] {
       r.loc == d ;
-      p.ondock == d ;};
+      p.available == true ;
+    };
     [all] contains{
     s1 : unstack(k, c, p) ;
     s2 : put(k, c, r) ;};
@@ -144,10 +149,12 @@ action unload (containers c, robots r, piles p){
     constant cranes k ;
     constant docks d;
     k.attached == d;
+    p.ondock == d ;
     [start] c.in == r ;
     [all] {
       r.loc == d ;
-      p.ondock == d ;};
+      p.available == true ;
+    };
     [all] contains {
     s1 : take(k, c, r) ;
     s2 : stack(k, c, p) ;};
@@ -171,13 +178,15 @@ action uncover (containers c, piles p){
     p != otherp ;
     c != prevtop ;
     k.attached == d  ;
-    [all] {
-      p.ondock == d ;
-      otherp.ondock ==d ;};
+    p.ondock == d ;
+    otherp.ondock ==d ;
+    [all] p.available == true ;
+    [all]  otherp.available == true ;
     [all] contains {
     s1 : unstack(k,prevtop,p) ;
     s2: stack(k,prevtop,otherp);
-    s3:	uncover(c,p) ;};
+    s3:	uncover(c,p) ;
+    };
     end(s1) <= start(s2);
     end(s2) <= start(s3);
   };
@@ -207,16 +216,17 @@ action goto (robots r, docks to){
   constant waypoints wa ;
   constant waypoints wb ;
   [start] r.loc == from ;
-  :decomposition {from == to ;
+  :decomposition {
+    from == to ;
   };
   :decomposition {
-    from !=to ;
+    from != to ;
     adjacent(from, wa) ;
     adjacent(to, wb) ;
     [all] contains {
-    s1 : leave(r, from, wa) ;
-    s2: navigate(r, wa, wb) ;
-    s3 : enter(r, to, wb) ;};
+      s1 : leave(r, from, wa) ;
+      s2: navigate(r, wa, wb) ;
+      s3 : enter(r, to, wb) ;};
     end(s1) <= start(s2);
     end(s2) <= start(s3);
   };
@@ -233,16 +243,17 @@ action bring (containers c, piles p){
   :decomposition {
     constant cranes k ;
     constant docks d;
-    [start] c.in == otherp ;
     otherp != p ;
-    [all] {
-      p.ondock == d ;
-      otherp.ondock == d ; };
     k.attached == d ;
+    p.ondock == d ;
+    otherp.ondock == d ;
+    [start] c.in == otherp ;
+    [all] p.available == true ;
+    [all] otherp.available == true ;
     [all] contains {
-    s1 : uncover(c, otherp) ;
-    s2 : unstack(k, c, otherp) ;
-    s3: stack(k, c, p) ;};
+      s1 : uncover(c, otherp) ;
+      s2 : unstack(k, c, otherp) ;
+      s3: stack(k, c, p) ;};
     end(s1) <= start(s2);
     end(s2) <= start(s3);
   };
@@ -250,11 +261,14 @@ action bring (containers c, piles p){
     constant robots r;
     constant docks from ;
     constant docks to ;
+    from != to ;
+    p.ondock == to;
+    otherp.ondock == from ;
     [start] c.in == otherp ;
     [all] {
-      p.ondock == to;
-      otherp.ondock == from ;};
-    from != to ;
+      p.available == true;
+      otherp.available == true;
+    };
     [all] contains {
     s1 : goto(r, from);
     s2 : uncover(c, otherp);

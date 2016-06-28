@@ -1,6 +1,6 @@
 package fape.core.planning.search.flaws.finders;
 
-import fape.core.planning.planner.APlanner;
+import fape.core.planning.planner.Planner;
 import fape.core.planning.search.flaws.flaws.Flaw;
 import fape.core.planning.search.flaws.flaws.UnboundVariable;
 import fape.core.planning.states.State;
@@ -11,10 +11,10 @@ import java.util.List;
 
 public class UnboundVariableFinder implements FlawFinder {
     @Override
-    public List<Flaw> getFlaws(State st, APlanner planner) {
+    public List<Flaw> getFlaws(State st, Planner planner) {
         List<Flaw> flaws = new LinkedList<>();
         for (VarRef v : st.getUnboundVariables()) {
-            assert !st.typeOf(v).equals("integer");
+            assert !v.getType().isNumeric();
             flaws.add(new UnboundVariable(v));
         }
         return flaws;
