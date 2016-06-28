@@ -93,8 +93,8 @@ action dockpile(piles p, docks d){
 [5, 20] dockpile (p11, d1) ;
 [5, 20] dockpile (p12, d1) ;
 
-[10, 25] dockpile (p21, d1) ;
-[10, 25] dockpile (p22, d1) ;
+[10, 25] dockpile (p21, d2) ;
+[10, 25] dockpile (p22, d2) ;
 
 /* this is simpler but much less general
 [5]{
