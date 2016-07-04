@@ -265,21 +265,20 @@ action bring (containers c, piles p){
     p.ondock == to;
     otherp.ondock == from ;
     [start] c.in == otherp ;
-    [all] {
-      p.available == true;
-      otherp.available == true;
-    };
     [all] contains {
-    s1 : goto(r, from);
-    s2 : uncover(c, otherp);
-    s3 :load(c, r, otherp);
-    s4 : goto(r, to);
-    s5 : unload(c, r, p) ;};
+      s1 : goto(r, from);
+      s2 : uncover(c, otherp);
+      s3 :load(c, r, otherp);
+      s4 : goto(r, to);
+      s5 : unload(c, r, p) ;};
     end(s1) <= start(s3);
     end(s2) <= start(s3);
     end(s3) <= start(s4);
     end(s4) <= start(s5);
-    }; 
+    [start(s5),end] p.available == true;
+    [start(s2),end(s3)] otherp.available == true;
+    };
+   
 };
 
 
