@@ -2,6 +2,7 @@ package fape.core.planning.search.strategies.plans.tsp;
 
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction.GLogStatement;
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.dtg.TemporalDTG;
 import fape.core.planning.preprocessing.dtg.TemporalDTG.Change;
@@ -30,10 +31,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MinSpanTreeExtFull implements StateExtension {
 
+    private final boolean USE_SUM = GlobalOptions.getBooleanOption("heur-additive-pending-cost");
     private int dbgLvl = 0;
 
     final State st;
-    final boolean useNumChangesInAction;
     private final Map<Timeline,TimelineDTG> timelineDTGs = new HashMap<>();
     private final Map<Timeline, Integer> minPreviousCost = new HashMap<>();
 
@@ -41,16 +42,13 @@ public class MinSpanTreeExtFull implements StateExtension {
 
     public final Map<Timeline,List<Integer>> allCosts;
 
-    public MinSpanTreeExtFull(State st, boolean useNumChangesInAction) {
-        assert st.getDepth() == 0;
+    public MinSpanTreeExtFull(State st) {
         this.st = st;
-        this.useNumChangesInAction = useNumChangesInAction;
         allCosts = new HashMap<>();
     }
 
     public MinSpanTreeExtFull(State st, MinSpanTreeExtFull toCopy) {
         this.st = st;
-        this.useNumChangesInAction = toCopy.useNumChangesInAction;
         this.allCosts = new HashMap<>(toCopy.allCosts);
     }
 
@@ -200,7 +198,7 @@ public class MinSpanTreeExtFull implements StateExtension {
                         .sorted((e1,e2) -> e2.getValue2().compareTo(e1.getValue2()))
                         .collect(Collectors.toList());
 
-        if(MinSpanTreeComp.USE_SUM) {
+        if(USE_SUM) {
             for (Pair<ParameterizedStateVariable, Integer> p : costsPerStateVariable) {
                 additionalCost += p.getValue2();
             }

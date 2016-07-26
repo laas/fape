@@ -23,7 +23,7 @@ public class MinSpanFailFirst implements FlawComparator {
 
     private MinSpanTreeExtFull getExt() {
         if(!st.hasExtension(MinSpanTreeExtFull.class))
-            st.addExtension(new MinSpanTreeExtFull(st, true));
+            st.addExtension(new MinSpanTreeExtFull(st));
         return st.getExtension(MinSpanTreeExtFull.class);
     }
 

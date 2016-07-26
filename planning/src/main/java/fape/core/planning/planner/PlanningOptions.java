@@ -4,10 +4,7 @@ import fape.core.planning.preprocessing.PreprocessorHandler;
 import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class PlanningOptions {
 
@@ -71,7 +68,7 @@ public class PlanningOptions {
      * If true, the planner will use A-Epsilon for search
      */
     public boolean useAEpsilon = false;
-    public float epsilon = 0.3f;
+    public final float epsilon = GlobalOptions.getFloatOption("search-epsilon");
 
     /** Which type of dependency graph to build */
     public String depGraphStyle = "base";
@@ -80,9 +77,9 @@ public class PlanningOptions {
     public boolean displaySearch = true;
 
     /** the weight of weighted A*:  f = g + w * h */
-    public float heuristicWeight = 1f;
+    public float heuristicWeight = GlobalOptions.getFloatOption("heur-h-weight");
 
     /** Ratio of the time the planner should pursue an interesting solution in depth first manner vs the
      * time it should push back the frontier by exploring least cost nodes */
-    public float depthShallowRatio = 1f;
+    public float depthShallowRatio = GlobalOptions.getFloatOption("heur-depth-shallow-ratio");
 }

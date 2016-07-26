@@ -2,6 +2,7 @@ package fape;
 
 import com.martiansoftware.jsap.*;
 import fape.core.planning.heuristics.temporal.DGHandler;
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.planner.Planner;
 import fape.core.planning.planner.PlanningOptions;
 import fape.core.planning.search.flaws.finders.NeededObservationsFinder;
@@ -26,12 +27,12 @@ public class Planning {
     public static boolean quiet = false;
     public static boolean verbose = false;
 
-    final private static List<String> flat_plan_sel = Collections.singletonList("soca");
+    final private static List<String> flat_plan_sel = Collections.singletonList("minspan");
     final private static List<String> hier_plan_sel = Arrays.asList("dfs","ord-dec","soca");
     final private static List<String> flat_flaw_sel = Arrays.asList("hier","ogf","abs","lcf","eogf");
     final private static List<String> hier_flaw_sel = Arrays.asList("earliest", "threats","hier-fifo","ogf","abs","lcf");
-    final private static float flat_epsilon = 0.3f;
-    final private static float hier_epsilon = 0f;
+    final private static boolean flat_epsilon = false;
+    final private static boolean hier_epsilon = true;
 
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
@@ -85,11 +86,11 @@ public class Planning {
                                 .setHelp("If true, the planner will check if a resolver will necessarily result in a threat. " +
                                 "This allows an early filtering of resolvers."),
                         new FlaggedOption("a-epsilon")
-                                .setStringParser(JSAP.FLOAT_PARSER)
+                                .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag('e')
                                 .setLongFlag("ae")
-                                .setHelp("The planner will use an A-Epsilon search with the given epsilon value. " +
-                                "If set to 0, search is a standard A*. The default is "+hier_epsilon+" for entirely hierarchical " +
+                                .setHelp("The planner will use an A-Epsilon search. " +
+                                "The default is "+hier_epsilon+" for entirely hierarchical " +
                                 "domains and "+flat_epsilon+" for others."),
                         new QualifiedSwitch("action-insertion")
                                 .setStringParser(JSAP.STRING_PARSER)
@@ -175,6 +176,12 @@ public class Planning {
                                         "Setting this option to true will make the planner assume that a contingent event is observable " +
                                         "only if an agent is in the area where this event occurs. Consequently modification to the plan might " +
                                         "be required to make sure the plan is dynamically controllable."),
+                        new FlaggedOption("bind")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setLongFlag("bind")
+                                .setList(true)
+                                .setListSeparator(',')
+                                .setHelp("bind a hidden parameter to a given value. For instance '--bind key1=xxx,key2=3.7"),
                         new UnflaggedOption("anml-file")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setRequired(isAnmlFileRequired)
@@ -217,6 +224,11 @@ public class Planning {
 
         String[] configFiles = commandLineConfig.getStringArray("anml-file");
         List<String> anmlFiles = new LinkedList<>();
+
+        Arrays.stream(commandLineConfig.getStringArray("bind")).forEach(kv -> {
+            String[] arr = kv.split("=");
+            GlobalOptions.setOption(arr[0], arr[1]);
+        });
 
         for (String path : configFiles) {
             File f = new File(path);
@@ -292,14 +304,12 @@ public class Planning {
 
                 PlanningOptions options = new PlanningOptions(planStrat, flawStrat);
                 options.useFastForward = config.getBoolean("fast-forward");
-                final float e = config.specified("a-epsilon") ?
-                        config.getFloat("a-epsilon") :
+
+                options.useAEpsilon = config.specified("a-epsilon") ?
+                        config.getBoolean("a-epsilon") :
                         pb.allActionsAreMotivated() ?
                                 hier_epsilon : flat_epsilon;
-                options.useAEpsilon = e > 0;
-                if(options.useAEpsilon) {
-                    options.epsilon = e;
-                }
+
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
                 options.checkUnsolvableThreatsForOpenGoalsResolvers = config.getBoolean("threats-early-check");
@@ -386,7 +396,7 @@ public class Planning {
 
                 final String reachStr = config.getString("reachability-graph");
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
-                final String aeStr = e > 0 ? "ae" : "no-ae";
+                final String aeStr = options.useAEpsilon ? "ae" : "no-ae";
 
                 writer.write(
                         i + ", "
