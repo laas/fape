@@ -471,43 +471,45 @@ public class Planner {
                 queue.remove(current);
             }
 
-            // let all handlers know that this state was selected for expansion
-            for(Handler h : options.handlers)
-                h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
+            try {
+                // let all handlers know that this state was selected for expansion
+                for(Handler h : options.handlers)
+                    h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
 
-            if(!current.getState().isConsistent()) {
+                if(!current.getState().isConsistent())
+                    throw new InconsistencyException();
+
+                if (current.getState().isSolution(options.flawFinders)) {
+                    // this is a solution state
+                    if(options.displaySearch)
+                        searchView.setSolution(current);
+
+                    this.planState = EPlanState.CONSISTENT;
+                    TinyLogger.LogInfo("Plan found:");
+                    TinyLogger.LogInfo(current.getState());
+                    return current.getState();
+                } else if(current.getDepth() < maxDepth) {
+                    // expand the state
+                    List<SearchNode> children = expand(current);
+                    AX.clear();
+                    for(SearchNode child : children) {
+                        queue.add(child);
+                        // add admissible children to AX for next iteration
+                        if(f(child) < fThreshold) {
+                            AX.add(child);
+                        }
+                    }
+                }
+                // update the threshold, since our heuristic is not admissible, we do not take
+                // the max of fthreshold and (1+e)*f(best in open)
+                if(!queue.isEmpty())
+                    fThreshold = (1f + options.epsilon) * f(queue.peek());
+            } catch (InconsistencyException e) {
                 if(options.displaySearch)
                     searchView.setDeadEnd(current);
                 TinyLogger.LogInfo("\nCurrent state: ["+current.getID()+"]");
                 TinyLogger.LogInfo("  Non consistent");
-                continue;
             }
-
-            if (current.getState().isSolution(options.flawFinders)) {
-                // this is a solution state
-                if(options.displaySearch)
-                    searchView.setSolution(current);
-
-                this.planState = EPlanState.CONSISTENT;
-                TinyLogger.LogInfo("Plan found:");
-                TinyLogger.LogInfo(current.getState());
-                return current.getState();
-            } else if(current.getDepth() < maxDepth) {
-                // expand the state
-                List<SearchNode> children = expand(current);
-                AX.clear();
-                for(SearchNode child : children) {
-                    queue.add(child);
-                    // add admissible children to AX for next iteration
-                    if(f(child) < fThreshold) {
-                        AX.add(child);
-                    }
-                }
-            }
-            // update the threshold, since our heuristic is not admissible, we do not take
-            // the max of fthreshold and (1+e)*f(best in open)
-            if(!queue.isEmpty())
-                fThreshold = (1f + options.epsilon) * f(queue.peek());
         }
     }
 
