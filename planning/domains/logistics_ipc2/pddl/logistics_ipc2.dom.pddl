@@ -2,7 +2,7 @@
 ;;
 
 (define (domain logistics)
-  (:requirements :strips :typing) 
+  (:requirements :strips :typing :durative-actions) 
   (:types truck
           airplane - vehicle
           package
@@ -17,37 +17,51 @@
 		(at ?obj - physobj ?loc - place)
 		(in ?pkg - package ?veh - vehicle))
   
-(:action LOAD-TRUCK
+(:durative-action LOAD-TRUCK
    :parameters    (?pkg - package ?truck - truck ?loc - place)
-   :precondition  (and (at ?truck ?loc) (at ?pkg ?loc))
-   :effect        (and (not (at ?pkg ?loc)) (in ?pkg ?truck)))
+   :duration (= ?duration 10)
+   :condition  (and (over all (at ?truck ?loc))
+   	       	    (at start(at ?pkg ?loc)))
+   :effect     (and (at start (not (at ?pkg ?loc)))
+   	       	    (at end (in ?pkg ?truck))))
 
-(:action LOAD-AIRPLANE
+(:durative-action LOAD-AIRPLANE
   :parameters   (?pkg - package ?airplane - airplane ?loc - place)
-  :precondition (and (at ?pkg ?loc) (at ?airplane ?loc))
-  :effect       (and (not (at ?pkg ?loc)) (in ?pkg ?airplane)))
+   :duration (= ?duration 15)
+  :condition    (and (at start (at ?pkg ?loc))
+  		     (over all (at ?airplane ?loc)))
+  :effect       (and (at start (not (at ?pkg ?loc)))
+  		     (at end (in ?pkg ?airplane))))
 
-(:action UNLOAD-TRUCK
+(:durative-action UNLOAD-TRUCK
   :parameters   (?pkg - package ?truck - truck ?loc - place)
-  :precondition (and (at ?truck ?loc) (in ?pkg ?truck))
-  :effect       (and (not (in ?pkg ?truck)) (at ?pkg ?loc)))
+   :duration (= ?duration 9)
+  :condition    (and (over all (at ?truck ?loc))
+  		     (at start (in ?pkg ?truck)))
+  :effect       (and (at start (not (in ?pkg ?truck)))
+  		     (at end (at ?pkg ?loc))))
 
-(:action UNLOAD-AIRPLANE
+(:durative-action UNLOAD-AIRPLANE
   :parameters    (?pkg - package ?airplane - airplane ?loc - place)
-  :precondition  (and (in ?pkg ?airplane) (at ?airplane ?loc))
-  :effect        (and (not (in ?pkg ?airplane)) (at ?pkg ?loc)))
+   :duration (= ?duration 12)
+  :condition     (and (at start (in ?pkg ?airplane))
+  		      (over all (at ?airplane ?loc)))
+  :effect        (and (at start (not (in ?pkg ?airplane)))
+  		      (at end (at ?pkg ?loc))))
 
-(:action DRIVE-TRUCK
-  :parameters (?truck - truck ?loc-from - place ?loc-to - place ?city - city)
-  :precondition
-   (and (at ?truck ?loc-from) (in-city ?loc-from ?city) (in-city ?loc-to ?city))
-  :effect
-   (and (not (at ?truck ?loc-from)) (at ?truck ?loc-to)))
+(:durative-action DRIVE-TRUCK
+  :parameters 	 (?truck - truck ?loc-from - place ?loc-to - place ?city - city)
+   :duration (= ?duration 20)
+  :condition     (and (at start (at ?truck ?loc-from))
+  		      (over all (in-city ?loc-from ?city))
+		      (over all (in-city ?loc-to ?city)))
+  :effect        (and (at start (not (at ?truck ?loc-from)))
+  		      (at end (at ?truck ?loc-to))))
 
-(:action FLY-AIRPLANE
-  :parameters (?airplane - airplane ?loc-from - airport ?loc-to - airport)
-  :precondition
-   (at ?airplane ?loc-from)
-  :effect
-   (and (not (at ?airplane ?loc-from)) (at ?airplane ?loc-to)))
+(:durative-action FLY-AIRPLANE
+  :parameters	 (?airplane - airplane ?loc-from - airport ?loc-to - airport)
+  :duration (= ?duration 40)
+  :condition     (at start (at ?airplane ?loc-from))
+  :effect        (and (at start (not (at ?airplane ?loc-from)))
+  		      (at end (at ?airplane ?loc-to))))
 )

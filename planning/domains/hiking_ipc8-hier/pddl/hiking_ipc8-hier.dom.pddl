@@ -7,7 +7,7 @@
 ;  the software or its performance.
 
 (define (domain hiking)
-  (:requirements :strips :equality :typing)
+  (:requirements :strips :equality :typing :durative-actions)
   (:types car tent person couple place )
   (:predicates 
               (at_tent ?x1 - tent ?x2 - place)
@@ -20,64 +20,103 @@
               (next ?x1 - place ?x2 - place)
 )
 
-  (:action put_down
+  (:durative-action put_down
          :parameters ( ?x1 - person ?x2 - place ?x3 - tent)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_tent ?x3 ?x2)(up ?x3))
-         :effect (and (down ?x3)(not (up ?x3))
+	 :duration (= ?duration 1)
+         :condition (and (over all (at_person ?x1 ?x2))
+	 	    	 (over all (at_tent ?x3 ?x2))
+			 (at start (up ?x3)))
+         :effect (and (at end (down ?x3))
+	 	      (at start (not (up ?x3))))
 )
-)
-  (:action put_up
+  (:durative-action put_up
          :parameters ( ?x1 - person ?x2 - place ?x3 - tent)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_tent ?x3 ?x2)(down ?x3))
-         :effect (and (up ?x3)(not (down ?x3))
+ 	 :duration (= ?duration 1)
+         :condition (and (over all (at_person ?x1 ?x2))
+	 	    	 (over all (at_tent ?x3 ?x2))
+			 (at start (down ?x3)))
+         :effect (and (at end (up ?x3))
+	 	      (at start (not (down ?x3))))
 )
-)
-  (:action drive_passenger
+
+  (:durative-action drive_passenger
          :parameters ( ?x1 - person ?x2 - place ?x3 - place ?x4 - car ?x5 - person)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_car ?x4 ?x2)(at_person ?x5 ?x2)(not (= ?x1 ?x5)))
-         :effect (and (at_person ?x1 ?x3)(not (at_person ?x1 ?x2))
-(at_car ?x4 ?x3)(not (at_car ?x4 ?x2))
-(at_person ?x5 ?x3)(not (at_person ?x5 ?x2))
+ 	 :duration (= ?duration 1)
+         :condition (and (at start (at_person ?x1 ?x2))
+	 	       	    (at start (at_car ?x4 ?x2))
+			    (at start (at_person ?x5 ?x2))
+			    (over all (not (= ?x1 ?x5))))
+         :effect (and (at end (at_person ?x1 ?x3))
+	 	      (at start (not (at_person ?x1 ?x2)))
+		      (at end (at_car ?x4 ?x3))
+		      (at start (not (at_car ?x4 ?x2)))
+		      (at end (at_person ?x5 ?x3))
+		      (at start (not (at_person ?x5 ?x2))))
 )
-)
-  (:action drive
+
+  (:durative-action drive
          :parameters ( ?x1 - person ?x2 - place ?x3 - place ?x4 - car)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_car ?x4 ?x2))
-         :effect (and (at_person ?x1 ?x3)(not (at_person ?x1 ?x2))
-(at_car ?x4 ?x3)(not (at_car ?x4 ?x2))
+ 	 :duration (= ?duration 1)
+         :condition (and (at start (at_person ?x1 ?x2))
+	 	    	 (at start (at_car ?x4 ?x2)))
+         :effect (and (at end (at_person ?x1 ?x3))
+	 	      (at start (not (at_person ?x1 ?x2)))
+		      (at end (at_car ?x4 ?x3))
+		      (at start (not (at_car ?x4 ?x2))))
 )
-)
-  (:action drive_tent
+
+  (:durative-action drive_tent
          :parameters ( ?x1 - person ?x2 - place ?x3 - place ?x4 - car ?x5 - tent)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_car ?x4 ?x2)(at_tent ?x5 ?x2)(down ?x5))
-         :effect (and (at_person ?x1 ?x3)(not (at_person ?x1 ?x2))
-(at_car ?x4 ?x3)(not (at_car ?x4 ?x2))
-(at_tent ?x5 ?x3)(not (at_tent ?x5 ?x2))
+ 	 :duration (= ?duration 1)
+         :condition (and (at start (at_person ?x1 ?x2))
+	 	    	 (at start (at_car ?x4 ?x2))
+			 (at start (at_tent ?x5 ?x2))
+ 			 (at start (down ?x5))
+			 (over all (down ?x5)))
+         :effect (and (at end (at_person ?x1 ?x3))
+	 	      (at start (not (at_person ?x1 ?x2)))
+		      (at end (at_car ?x4 ?x3))
+		      (at start (not (at_car ?x4 ?x2)))
+		      (at end (at_tent ?x5 ?x3))
+		      (at start (not (at_tent ?x5 ?x2))))
 )
-)
-  (:action drive_tent_passenger
+
+  (:durative-action drive_tent_passenger
          :parameters ( ?x1 - person ?x2 - place ?x3 - place ?x4 - car ?x5 - tent ?x6 - person)
-         :precondition (and 
-(at_person ?x1 ?x2)(at_car ?x4 ?x2)(at_tent ?x5 ?x2)(down ?x5)(at_person ?x6 ?x2)(not (= ?x1 ?x6)))
-         :effect (and (at_person ?x1 ?x3)(not (at_person ?x1 ?x2))
-(at_car ?x4 ?x3)(not (at_car ?x4 ?x2))
-(at_tent ?x5 ?x3)(not (at_tent ?x5 ?x2))
-(at_person ?x6 ?x3)(not (at_person ?x6 ?x2))
+	 :duration (= ?duration 1)
+	 :condition (and (at start (at_person ?x1 ?x2))
+	 	    	 (at start (at_car ?x4 ?x2))
+			 (at start (at_tent ?x5 ?x2))
+			 (at start (down ?x5))
+			 (at start (at_person ?x6 ?x2))
+			 (over all (not (= ?x1 ?x6))))
+         :effect (and (at end (at_person ?x1 ?x3))
+	 	      (at start (not (at_person ?x1 ?x2)))
+		      (at end (at_car ?x4 ?x3))
+		      (at start (not (at_car ?x4 ?x2)))
+		      (at end (at_tent ?x5 ?x3))
+		      (at start (not (at_tent ?x5 ?x2)))
+		      (at end (at_person ?x6 ?x3))
+		      (at start (not (at_person ?x6 ?x2))))
 )
-)
-  (:action walk_together
+
+  (:durative-action walk_together
          :parameters ( ?x1 - tent ?x2 - place ?x3 - person ?x4 - place ?x5 - person ?x6 - couple)
-         :precondition (and 
-(at_tent ?x1 ?x2)(up ?x1)(at_person ?x3 ?x4)(next ?x4 ?x2)(at_person ?x5 ?x4)(not (= ?x3 ?x5))(walked ?x6 ?x4)(partners ?x6 ?x3 ?x5))
-         :effect (and (at_person ?x3 ?x2)(not (at_person ?x3 ?x4))
-(at_person ?x5 ?x2)(not (at_person ?x5 ?x4))
-(walked ?x6 ?x2)(not (walked ?x6 ?x4))
-)
+	 :duration (= ?duration 1)
+         :condition (and (at end (at_tent ?x1 ?x2))
+	 	    	 (at end (up ?x1))
+			 (at start (at_person ?x3 ?x4))
+			 (over all (next ?x4 ?x2))
+			 (at start (at_person ?x5 ?x4))
+			 (over all (not (= ?x3 ?x5)))
+			 (at start (walked ?x6 ?x4))
+			 (over all (partners ?x6 ?x3 ?x5)))
+         :effect (and (at end (at_person ?x3 ?x2))
+	 	      (at start (not (at_person ?x3 ?x4)))
+		      (at end (at_person ?x5 ?x2))
+		      (at start (not (at_person ?x5 ?x4)))
+		      (at end (walked ?x6 ?x2))
+		      (at start (not (walked ?x6 ?x4))))
 )
 
 )

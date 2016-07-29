@@ -3,7 +3,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (domain BLOCKS)
-  (:requirements :strips :typing)
+  (:requirements :strips :typing :durative-actions)
   (:types block)
   (:predicates (on ?x - block ?y - block)
 	       (ontable ?x - block)
@@ -12,38 +12,49 @@
 	       (holding ?x - block)
 	       )
 
-  (:action pick-up
+  (:durative-action pick-up
 	     :parameters (?x - block)
-	     :precondition (and (clear ?x) (ontable ?x) (handempty))
+	     :duration (= ?duration 1)
+	     :condition (and (at start (clear ?x))
+	     		   	(at start (ontable ?x))
+				(at start (handempty)))
 	     :effect
-	     (and (not (ontable ?x))
-		   (not (clear ?x))
-		   (not (handempty))
-		   (holding ?x)))
+	     (and (at start (not (ontable ?x)))
+		  (at start (not (clear ?x)))
+		  (at start (not (handempty)))
+		  (at end (holding ?x))))
 
-  (:action put-down
+  (:durative-action put-down
 	     :parameters (?x - block)
-	     :precondition (holding ?x)
+	     :duration (= ?duration 1)
+	     :condition (at start (holding ?x))
 	     :effect
-	     (and (not (holding ?x))
-		   (clear ?x)
-		   (handempty)
-		   (ontable ?x)))
-  (:action stack
+	     (and (at start (not (holding ?x)))
+		  (at end (clear ?x))
+	 	  (at end (handempty))
+		  (at end (ontable ?x))))
+		  
+  (:durative-action stack
 	     :parameters (?x - block ?y - block)
-	     :precondition (and (holding ?x) (clear ?y))
+	     :duration (= ?duration 1)
+	     :condition (and (at start (holding ?x))
+	     		   	(at start (clear ?y)))
 	     :effect
-	     (and (not (holding ?x))
-		   (not (clear ?y))
-		   (clear ?x)
-		   (handempty)
-		   (on ?x ?y)))
-  (:action unstack
+	     (and  (at start (not (holding ?x)))
+		   (at start (not (clear ?y)))
+		   (at end (clear ?x))
+		   (at end (handempty))
+		   (at end (on ?x ?y))))
+		   
+  (:durative-action unstack
 	     :parameters (?x - block ?y - block)
-	     :precondition (and (on ?x ?y) (clear ?x) (handempty))
+	     :duration (= ?duration 1)
+	     :condition (and (at start (on ?x ?y))
+	     		   	(at start (clear ?x))
+				(at start (handempty)))
 	     :effect
-	     (and (holding ?x)
-		   (clear ?y)
-		   (not (clear ?x))
-		   (not (handempty))
-		   (not (on ?x ?y)))))
+	     (and  (at end (holding ?x))
+		   (at end (clear ?y))
+		   (at start (not (clear ?x)))
+		   (at start (not (handempty)))
+		   (at start (not (on ?x ?y))))))
