@@ -99,8 +99,10 @@ action dockpile(piles p){
 [5, 20] dockpile (p11) ;
 [5, 20] dockpile (p12) ;
 
+
 [10, 25] dockpile (p21) ;
 [10, 25] dockpile (p22) ;
+
 
 /* this is simpler but much less general
 [5]{
