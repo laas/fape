@@ -1,0 +1,154 @@
+(Problem
+
+(ArgumentSymbols
+ r1 r2
+ d1 d2 d3 d4
+ k1 k2 k3 k4
+ c11 c12 c21 c22
+ w1 w2 w3 w4 w5 w6
+ p11 p12 p21 p22 p3 p4
+ empty free true
+ n)
+
+(Instances Robot r1 r2)
+(Instances Dock d1 d2 d3 d4)
+(Instances Crane k1 k2 k3 k4)
+(Instances Container c11 c12 c21 c22)
+(Instances Waypoint w1 w2 w3 w4 w5 w6)
+(Instances Pile p11 p12 p21 p22 p3 p4)
+
+# static fluents:
+
+(Fluent adj0 adjacent(d1 w1))
+(Fluent adj1 adjacent(d2 w2))
+(Fluent adj2 adjacent(d3 w3))
+(Fluent adj3 adjacent(d4 w4))
+(Constraint Release[0,0](adj0))
+(Constraint Release[0,0](adj1))
+(Constraint Release[0,0](adj2))
+(Constraint Release[0,0](adj3))
+
+(Fluent con0 connected(w1 w5))
+(Fluent con1 connected(w5 w1))
+(Fluent con2 connected(w2 w5))
+(Fluent con3 connected(w5 w2))
+(Fluent con4 connected(w3 w6))
+(Fluent con5 connected(w6 w3))
+(Fluent con6 connected(w4 w6))
+(Fluent con7 connected(w6 w4))
+(Fluent con8 connected(w5 w6))
+(Fluent con9 connected(w6 w5))
+(Constraint Release[0,0](con0))
+(Constraint Release[0,0](con1))
+(Constraint Release[0,0](con2))
+(Constraint Release[0,0](con3))
+(Constraint Release[0,0](con4))
+(Constraint Release[0,0](con5))
+(Constraint Release[0,0](con6))
+(Constraint Release[0,0](con7))
+(Constraint Release[0,0](con8))
+(Constraint Release[0,0](con9))
+
+(Fluent kat1 k_attached(k1 d1))
+(Fluent kat2 k_attached(k2 d2))
+(Fluent kat3 k_attached(k3 d3))
+(Fluent kat4 k_attached(k4 d4))
+(Constraint Release[0,0](kat1))
+(Constraint Release[0,0](kat2))
+(Constraint Release[0,0](kat3))
+(Constraint Release[0,0](kat4))
+
+(Fluent pon11 p_ondock(p11 d1))
+(Fluent pon12 p_ondock(p12 d1))
+(Fluent pon21 p_ondock(p21 d2))
+(Fluent pon22 p_ondock(p22 d2))
+(Fluent pon3 p_ondock(p3 d3))
+(Fluent pon4 p_ondock(p4 d4))
+(Constraint Release[0,0](pon11))
+(Constraint Release[0,0](pon12))
+(Constraint Release[0,0](pon21))
+(Constraint Release[0,0](pon22))
+(Constraint Release[0,0](pon3))
+(Constraint Release[0,0](pon4))
+
+# initial situation:
+
+(Fluent pav11 p_available(p11 true))
+(Fluent pav12 p_available(p12 true))
+(Fluent pav21 p_available(p21 true))
+(Fluent pav22 p_available(p22 true))
+(Fluent pav3 p_available(p3 true))
+(Fluent pav4 p_available(p4 true))
+(Constraint Release[0,0](pav11))
+(Constraint Release[0,0](pav12))
+(Constraint Release[0,0](pav21))
+(Constraint Release[0,0](pav22))
+(Constraint Release[0,0](pav3))
+(Constraint Release[0,0](pav4))
+
+(Fluent kg1 k_grip(k1 empty))
+(Fluent kg2 k_grip(k2 empty))
+(Fluent kg3 k_grip(k3 empty))
+(Fluent kg4 k_grip(k4 empty))
+(Constraint Release[0,0](kg1))
+(Constraint Release[0,0](kg2))
+(Constraint Release[0,0](kg3))
+(Constraint Release[0,0](kg4))
+
+(Fluent docc1 d_occupant(d1 free))
+(Fluent docc2 d_occupant(d2 free))
+(Fluent docc3 d_occupant(d3 r1))
+(Fluent docc4 d_occupant(d4 r2))
+(Constraint Release[0,0](docc1))
+(Constraint Release[0,0](docc2))
+(Constraint Release[0,0](docc3))
+(Constraint Release[0,0](docc4))
+
+(Fluent rloc1 r_loc(r1 d3))
+(Fluent rloc2 r_loc(r2 d4))
+(Constraint Release[0,0](rloc1))
+(Constraint Release[0,0](rloc2))
+
+(Fluent rfr1 r_freight(r1 empty))
+(Fluent rfr2 r_freight(r2 empty))
+(Constraint Release[0,0](rfr1))
+(Constraint Release[0,0](rfr2))
+
+(Fluent co11 c_on(c11 empty))
+(Fluent co12 c_on(c12 c11))
+(Fluent co21 c_on(c21 empty))
+(Fluent co22 c_on(c22 c21))
+(Constraint Release[0,0](co11))
+(Constraint Release[0,0](co12))
+(Constraint Release[0,0](co21))
+(Constraint Release[0,0](co22))
+
+(Fluent ci11 c_in(c11 p12))
+(Fluent ci12 c_in(c12 p12))
+(Fluent ci21 c_in(c21 p22))
+(Fluent ci22 c_in(c22 p22))
+(Constraint Release[0,0](ci11))
+(Constraint Release[0,0](ci12))
+(Constraint Release[0,0](ci21))
+(Constraint Release[0,0](ci22))
+
+(Fluent pt11 p_top(p11 empty))
+(Fluent pt12 p_top(p12 c12))
+(Fluent pt21 p_top(p21 empty))
+(Fluent pt22 p_top(p22 c22))
+(Fluent pt3 p_top(p3 empty))
+(Fluent pt4 p_top(p4 empty))
+(Constraint Release[0,0](pt11))
+(Constraint Release[0,0](pt12))
+(Constraint Release[0,0](pt21))
+(Constraint Release[0,0](pt22))
+(Constraint Release[0,0](pt3))
+(Constraint Release[0,0](pt4))
+
+
+# tasks
+(Task t0 bring(c11 p4))
+(Task t1 bring(c21 p3))
+#(Ordering t0 t1)
+
+)
