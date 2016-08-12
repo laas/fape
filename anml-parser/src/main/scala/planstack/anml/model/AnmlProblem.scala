@@ -68,7 +68,7 @@ class AnmlProblem extends TemporalInterval {
   /** Context that all variables and and action that appear in the problem scope.
     * Those typically contain instances of the problem and predefined ANML literals (such as true, false, ...)
     */
-  val context = new Context(this, None)
+  val context = new Context(this, "problem", None)
   context.setInterval(this)
 
   /** All abstract actions appearing in the problem */
@@ -202,7 +202,7 @@ class AnmlProblem extends TemporalInterval {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val newVar = new VarRef(instances.asType(funcDecl.tipe), refCounter)
+        val newVar = new VarRef(instances.asType(funcDecl.tipe), refCounter, Label(chronicle.getLabel,funcDecl.name))
         context.addVar(LVarRef(funcDecl.name, instances.asType(funcDecl.tipe)), newVar)
         chronicle.vars += newVar
       } else {
@@ -315,7 +315,7 @@ class AnmlProblem extends TemporalInterval {
 
     // this context is declared locally to avoid polluting the problem's context
     // they have the same interval so start/end map to the ones of the problem
-    val localContext = new Context(this, Some(this.context))
+    val localContext = new Context(this, chron.getLabel, Some(this.context))
     localContext.setInterval(this.context.interval)
 
     // first process variable definitions to make them available (in local context)
@@ -323,7 +323,7 @@ class AnmlProblem extends TemporalInterval {
     blocks.filter(_.isInstanceOf[parser.Function]) foreach {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
-        val newVar = new VarRef(instances.asType(func.tipe), refCounter)
+        val newVar = new VarRef(instances.asType(func.tipe), refCounter, Label(chron.getLabel,func.name))
         localContext.addVar(LVarRef(func.name, instances.asType(func.tipe)), newVar)
         chron.vars += newVar
 

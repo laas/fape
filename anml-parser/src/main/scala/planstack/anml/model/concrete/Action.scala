@@ -36,6 +36,7 @@ class Action(
   extends Chronicle with TemporalInterval {
 
   assert(context.interval == null)
+  def getLabel = context.label
   context.setInterval(this)
 
   override val start : TPRef = new TPRef(refCounter)
@@ -43,7 +44,7 @@ class Action(
 
   val statements = new util.LinkedList[Statement]()
 
-  val instantiationVar : VarRef = new VarRef(TInteger, refCounter)
+  val instantiationVar : VarRef = new VarRef(TInteger, refCounter, Label(getLabel,"instantiation_var"))
 
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
@@ -190,8 +191,8 @@ object Action {
 
     // creates pair (localVar, globalVar) as defined by the ActionRef
     val argPairs = for(i <- 0 until abs.args.length) yield (abs.args(i), args(i))
-    val context = abs.context.buildContext(pb, Some(parentContext), refCounter, argPairs.toMap)
     val id = new ActRef(refCounter)
+    val context = abs.context.buildContext(pb, "act"+id.id, Some(parentContext), refCounter, argPairs.toMap)
     val act = new Action(abs, context, id, parentAction, refCounter)
 
     val ctgTimepoints = act.temporalConstraints
@@ -250,7 +251,7 @@ object Action {
     */
   def getNewStandaloneAction(pb:AnmlProblem, abs:AbstractAction, refCounter: RefCounter) : Action = {
 
-    val act = newAction(pb, abs, abs.args.map(x => new VarRef(x.getType, refCounter)), new LActRef(), refCounter, None, Some(pb.context))
+    val act = newAction(pb, abs, abs.args.map(x => new VarRef(x.getType, refCounter, Label("action_arg",x.id))), new LActRef(), refCounter, None, Some(pb.context)) //TODO: fix with real context
 
     // for all created vars, make sure those are present in [[StateModifier#vars]]
     for(localArg <- abs.args) {

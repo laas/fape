@@ -14,11 +14,13 @@ import scala.collection.JavaConversions._
   */
 class Task(val name: String, val args :java.util.List[VarRef], val parent:Option[Action], refCounter: RefCounter) extends TemporalInterval {
 
+  def getLabel: String = System.identityHashCode(this).toString
+
   override val start : TPRef = new TPRef(refCounter)
   override val end : TPRef = new TPRef(refCounter)
 
-  val groundSupportersVar = new VarRef(TInteger, refCounter)
-  val methodSupportersVar = new VarRef(TMethods, refCounter)
+  val groundSupportersVar = new VarRef(TInteger, refCounter, Label(getLabel,"ground-supporters"))
+  val methodSupportersVar = new VarRef(TMethods, refCounter, Label(getLabel,"method-supporters"))
 
   override def toString = name+args.toString
 }

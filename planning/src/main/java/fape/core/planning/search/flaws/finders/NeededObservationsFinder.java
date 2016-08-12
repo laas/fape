@@ -110,7 +110,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);
                 toObserve.stream().forEach(tp -> {
                     assert obsLoc.containsKey(tp) : "Timepoint cannot be observed?";
-                    VarRef observerVar = new VarRef(st.pb.instances().asType("Agent"), st.refCounter);
+                    VarRef observerVar = new VarRef(st.pb.instances().asType("Agent"), st.refCounter, new Label("needed-obs",""));
                     st.csp.bindings().addVariable(observerVar);
                     ParameterizedStateVariable sv = new ParameterizedStateVariable(obsFunc, new VarRef[]{observerVar});
                     Persistence p = new Persistence(sv, obsLoc.get(tp), st.pb.chronicles().element(), st.refCounter);

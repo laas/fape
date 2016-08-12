@@ -447,7 +447,7 @@ public class State implements Reporter {
      * @param mod Modifier in which the constraint appears.
      * @param bc BindingConstraint to be enforced.
      */
-    public void apply(Chronicle mod, BindingConstraint bc) {
+    public void apply(Chronicle chronicle, BindingConstraint bc) {
         if (bc instanceof AssignmentConstraint) {
             AssignmentConstraint c = (AssignmentConstraint) bc;
             List<String> values = new LinkedList<>();
@@ -475,7 +475,7 @@ public class State implements Reporter {
             // c.sv == tmp and tmp != c.variable
             InequalityConstraint c = (InequalityConstraint) bc;
             List<VarRef> variables = new LinkedList<>(Arrays.asList(c.sv().args()));
-            VarRef tmp = new VarRef(c.sv().func().valueType(), refCounter);
+            VarRef tmp = new VarRef(c.sv().func().valueType(), refCounter, new Label(chronicle.getLabel(),""));
             csp.bindings().addVariable(tmp);
             variables.add(tmp);
             csp.bindings().addNAryConstraint(variables, c.sv().func().name());
@@ -1013,7 +1013,7 @@ public class State implements Reporter {
         assert sv.func().isConstant();
         if(!stateVarsToVariables.containsKey(sv)) {
             assert sv.func().valueType().isNumeric() : "Temporal constraint involving the non-integer function: " + sv.func();
-            VarRef variable = new VarRef(sv.func().valueType(), refCounter);
+            VarRef variable = new VarRef(sv.func().valueType(), refCounter, new Label("",sv.toString()));
             csp.bindings().addIntVariable(variable);
             List<VarRef> variablesOfNAryConst = new ArrayList<>(Arrays.asList(sv.args()));
             variablesOfNAryConst.add(variable);

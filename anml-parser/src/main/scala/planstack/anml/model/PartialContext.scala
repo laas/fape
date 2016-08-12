@@ -48,16 +48,14 @@ class PartialContext(pb: AnmlProblem, val parentContext:Option[AbstractContext])
    * @param newVars map of (localVar -> globalVar) to be added to the context)
    * @return
    */
-  def buildContext(pb:AnmlProblem, parent:Option[Context], refCounter: RefCounter, newVars:Map[LVarRef, VarRef] = Map()) = {
-    val context = new Context(pb, parent)
+  def buildContext(pb:AnmlProblem, label:String, parent:Option[Context], refCounter: RefCounter, newVars:Map[LVarRef, VarRef] = Map()) = {
+    val context = new Context(pb, label, parent)
 
     for((local, global) <- variables) {
       if(global.isEmpty && newVars.contains(local)) {
         context.addVar(local, newVars(local))
       } else if(global.isEmpty) {
-        val globalVar = new VarRef(global.typ, refCounter)
-        context.addVar(local, globalVar)
-        context.addVarToCreate(globalVar)
+        context.addUndefinedVar(local, refCounter)
       } else {
         context.addVar(local, global)
       }

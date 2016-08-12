@@ -28,6 +28,8 @@ import scala.collection.JavaConversions._
   */
 trait Chronicle {
 
+  def getLabel : String
+
   /** A temporal interval in which the chronicle is applied. For instance, if this chronicle refers to
     * an action, the container would refer to the [start, end] interval of this action.
     * ANML temporal annotations such as [start] refer to this temporal interval.
@@ -163,6 +165,8 @@ class TemporalObjects(val timepoints: IList[Pair[TPRef, String]],
                       val constraints: IList[MinDelayConstraint])
 
 class BaseChronicle(val container: TemporalInterval) extends Chronicle {
+
+  def getLabel = "chronicle"+System.identityHashCode(this)
 
   val statements = new util.LinkedList[Statement]()
   val bindingConstraints = new util.LinkedList[BindingConstraint]()

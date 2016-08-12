@@ -447,6 +447,7 @@ class UnorderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGro
   */
 class Context(
     pb:AnmlProblem,
+    val label: String,
     val parentContext:Option[Context],
     val varsToCreate :ListBuffer[VarRef] = ListBuffer())
   extends AbstractContext(pb) {
@@ -458,7 +459,7 @@ class Context(
   def addVarToCreate(globalVar:VarRef) = varsToCreate += globalVar
 
   override def addUndefinedVar(v: LVarRef, refCounter: RefCounter): Unit = {
-    val globalVar = new VarRef(v.getType, refCounter)
+    val globalVar = new VarRef(v.getType, refCounter, Label(label,v.id))
     addVar(v, globalVar)
     addVarToCreate(globalVar)
   }

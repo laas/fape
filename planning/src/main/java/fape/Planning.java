@@ -13,6 +13,7 @@ import fape.exceptions.FAPEException;
 import fape.util.Configuration;
 import fape.util.TinyLogger;
 import fape.util.Utils;
+import fr.laas.fape.exceptions.InconsistencyException;
 import planstack.anml.model.AnmlProblem;
 import planstack.constraints.stnu.Controllability;
 
@@ -350,10 +351,17 @@ public class Planning {
                 if(config.getBoolean("mutex")) {
                     options.handlers.add(new MutexesHandler());
                 }
-
-                final State iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
-                final Planner planner = new Planner(iniState, options);
-
+                State iniState = null;
+                Planner planner = null;
+                try {
+                    iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
+                    planner = new Planner(iniState, options);
+                } catch (InconsistencyException e) {
+                    System.out.println("Inconsistency in the problem definition");
+                    e.printStackTrace();
+                    e.getCause().printStackTrace();
+                    System.exit(1);
+                }
                 boolean failure;
                 State sol;
                 try {

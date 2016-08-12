@@ -52,13 +52,17 @@ class ActRef(id:Int) extends GlobalRef(id) {
 
 object EmptyActRef extends ActRef(NullID)
 
+case class Label(context:String, localLabel: String) {
+  override def toString = context+"."+(if(localLabel.isEmpty) "??" else localLabel)
+}
+
 /** Reference to a concrete variable (those typically appear as parameters of state variables and in
   * binding constraints).
- *
+  *
   * @param id Unique id of the reference.
   */
-class VarRef(id:Int, val typ :Type) extends GlobalRef(id) {
-  def this(typ :Type, refCounter: RefCounter) = this(refCounter.nextVar(), typ)
+class VarRef(id:Int, val typ :Type, val label:Label) extends GlobalRef(id) {
+  def this(typ :Type, refCounter: RefCounter, label: Label) = this(refCounter.nextVar(), typ, label)
 
   def getType = typ
 }
@@ -71,13 +75,13 @@ class VarRef(id:Int, val typ :Type) extends GlobalRef(id) {
   * @param id Unique id of the reference.
   * @param instance Name of the instance.
   */
-class InstanceRef(id:Int, val instance:String, typ :Type) extends VarRef(id, typ) {
+class InstanceRef(id:Int, val instance:String, typ :Type) extends VarRef(id, typ, Label("problem",instance)) {
   def this(instance :String, typ :Type, refCounter: RefCounter) = this(refCounter.nextVar(), instance, typ)
 
   override def toString = instance
 }
 
-class EmptyVarRef(typ :Type) extends VarRef(NullID, typ)
+class EmptyVarRef(typ :Type) extends VarRef(NullID, typ, Label("??","EMPTY_VAR_REF"))
 
 /** Reference to a time-point: an temporal variable typically denoting the start or end time of an action
   * and that appears in Simple Temporal Problems.

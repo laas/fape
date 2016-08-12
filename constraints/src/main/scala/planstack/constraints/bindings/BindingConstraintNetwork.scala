@@ -130,7 +130,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   private def domainChanged(id: DomID, causedByExtended: Option[Constraint]): Unit = {
     if(domains(id).size() == 0) {
       hasEmptyDomains = true
-      throw new InconsistentBindingConstraintNetwork(vars(id).toList.asJava)
+      throw new VarWithEmptyDomain(vars(id).toList.asJava)
     }
 
     if(domains(id).size() == 1) {
@@ -143,7 +143,13 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       {
         domains(o) = domains(o).remove(uniqueValue)
 
-        domainChanged(o, None)
+        try {
+          domainChanged(o, None)
+        } catch {
+          case e:InconsistentBindingConstraintNetwork =>
+            vars(id).map(_.label)
+            throw new InconsistentConstraintPropagation(vars(id).map(_.label).mkString("==")+" != "+vars(o).map(_.label).mkString("=="), e)
+        }
       }
     }
 
@@ -250,7 +256,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   def addSeparationConstraint(a: VarRef, b: VarRef): Unit = {
     if(domID(a) == domID(b)) {
       hasEmptyDomains = true
-      throw new InconsistentBindingConstraintNetwork(List(a, b).asJava)
+      throw new VarWithEmptyDomain(List(a, b).asJava)
     }
 
     different(domID(a))(domID(b)) = true
