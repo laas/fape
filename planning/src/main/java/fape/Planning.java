@@ -32,8 +32,8 @@ public class Planning {
     final private static List<String> hier_plan_sel = Arrays.asList("dfs","ord-dec","soca");
     final private static List<String> flat_flaw_sel = Arrays.asList("hier","ogf","abs","lcf","eogf");
     final private static List<String> hier_flaw_sel = Arrays.asList("earliest", "threats","hier-fifo","ogf","abs","lcf");
-    final private static boolean flat_epsilon = false;
-    final private static boolean hier_epsilon = true;
+    final private static boolean flat_use_epsilon = true;
+    final private static boolean hier_use_epsilon = false;
 
     public static SimpleJSAP getCommandLineParser(boolean isAnmlFileRequired) throws JSAPException {
         return new SimpleJSAP(
@@ -91,8 +91,8 @@ public class Planning {
                                 .setShortFlag('e')
                                 .setLongFlag("ae")
                                 .setHelp("The planner will use an A-Epsilon search. " +
-                                "The default is "+hier_epsilon+" for entirely hierarchical " +
-                                "domains and "+flat_epsilon+" for others."),
+                                "The default is "+ hier_use_epsilon +" for entirely hierarchical " +
+                                "domains and "+ flat_use_epsilon +" for others."),
                         new QualifiedSwitch("action-insertion")
                                 .setStringParser(JSAP.STRING_PARSER)
                                 .setShortFlag('i')
@@ -309,7 +309,7 @@ public class Planning {
                 options.useAEpsilon = config.specified("a-epsilon") ?
                         config.getBoolean("a-epsilon") :
                         pb.allActionsAreMotivated() ?
-                                hier_epsilon : flat_epsilon;
+                                hier_use_epsilon : flat_use_epsilon;
 
                 options.displaySearch = config.getBoolean("display-search");
                 options.actionsSupportMultipleTasks = config.getBoolean("multi-supports");
