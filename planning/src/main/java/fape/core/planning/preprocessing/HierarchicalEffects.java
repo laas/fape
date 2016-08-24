@@ -1,6 +1,7 @@
 package fape.core.planning.preprocessing;
 
 import fape.core.planning.grounding.Fluent;
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.Utils;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class HierarchicalEffects {
+    private final boolean CHECK_DELAY_FROM_TASK_TO_OG = GlobalOptions.getBooleanOption("check-delay-from-task-to-og");
 
     @Value private class StatementPointer {
         final AbstractAction act;
@@ -394,7 +396,7 @@ public class HierarchicalEffects {
         }
         return effectsOf(t.name()).stream()
                 .filter(effect -> effect.f.func == og.stateVariable.func())
-                .filter(effect -> st.csp.stn().isDelayPossible(t.start(), og.getConsumeTimePoint(), effect.delayFromStart))
+                .filter(effect -> st.csp.stn().isDelayPossible(t.start(), og.getConsumeTimePoint(), effect.delayFromStart) || !CHECK_DELAY_FROM_TASK_TO_OG)
                 .map(effect -> DomainList.from(effect.f, bindings, st))
                 .anyMatch(domainList -> domainList.compatible(dl));
     }

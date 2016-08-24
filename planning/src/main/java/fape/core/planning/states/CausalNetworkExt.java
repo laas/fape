@@ -1,5 +1,6 @@
 package fape.core.planning.states;
 
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
 import fape.core.planning.timelines.TimelinesManager;
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CausalNetworkExt implements StateExtension {
+    // for evaluation purposes, setting it two false will only keep the most basic evaluation modes
+    public final boolean USE_CAUSAL_NETWORK = GlobalOptions.getBooleanOption("use-causal-network");
 
     @Value @EqualsAndHashCode(callSuper = false)
     private class NoCompatibleTimelineForOpenGoal extends InconsistencyException {
@@ -164,8 +167,10 @@ public class CausalNetworkExt implements StateExtension {
 
                 // if this event can not be separated (temporally or logically) from the open goal,
                 // then it is the only possible supporter
-                if(!canBeSeparated(pis, tlMan.getTimeline(tlID))) {
-                    toRemove.addAll(potentialSupporters.get(tlID).filter((Predicate<Event>) (e -> e != pis)).asJava());
+                if(USE_CAUSAL_NETWORK) {
+                    if (!canBeSeparated(pis, tlMan.getTimeline(tlID))) {
+                        toRemove.addAll(potentialSupporters.get(tlID).filter((Predicate<Event>) (e -> e != pis)).asJava());
+                    }
                 }
 
                 Timeline sup = tlMan.getTimeline(pis.supporterID);
@@ -175,7 +180,7 @@ public class CausalNetworkExt implements StateExtension {
                 }
 
                 // when possible infer temporal constraints on the earliest appearance of the open goal
-                if(container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
+                if(USE_CAUSAL_NETWORK && container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
                     // update potential threats
                     ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
                             possiblyInterferingTimelines.get(pis) :
@@ -328,6 +333,9 @@ public class CausalNetworkExt implements StateExtension {
     }
 
     private boolean necessarilyThreatening(Timeline supporter, Timeline consumer, Timeline threat) {
+        if(!USE_CAUSAL_NETWORK)
+            return false;
+
         if(threat.hasSinglePersistence())
             return false;
         if(!(container.unified(supporter, threat) || container.unified(consumer, threat)))

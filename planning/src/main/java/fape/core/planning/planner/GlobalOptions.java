@@ -28,7 +28,10 @@ public class GlobalOptions {
             new Option("heur-h-weight", "real", "1", "Weight of the heuristic function in weighted A*"),
             new Option("heur-weight-unrefined-tasks", "real", "0", ""),
             new Option("heur-weight-unbinded-variables", "real", "0", ""),
-            new Option("search-epsilon", "real", "0.3", "Epsilon value of the A-Epsilon algorithm.")
+            new Option("search-epsilon", "real", "0.3", "Epsilon value of the A-Epsilon algorithm."),
+            new Option("use-causal-network", "boolean", "true", ""),
+            new Option("use-decomposition-variables", "boolean", "true", ""),
+            new Option("check-delay-from-task-to-og", "boolean", "true", "")
     ).stream().collect(Collectors.toMap(Option::getKey, Function.identity()));
 
     static Map<String,String> overriddenValues = new HashMap<>();

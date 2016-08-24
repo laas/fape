@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class HierarchicalConstraints implements StateExtension {
-
     private final Map<Integer, TNNode> timelineSupportConstraints;
     private final State st;
     private final Map<Task, Set<AbstractAction>> possibleRefinements;

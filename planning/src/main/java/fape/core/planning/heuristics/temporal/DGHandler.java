@@ -2,6 +2,7 @@ package fape.core.planning.heuristics.temporal;
 
 
 import fape.core.planning.grounding.*;
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.planner.Planner;
 import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
@@ -20,6 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DGHandler extends fape.core.planning.search.Handler {
+    public final boolean USE_DECOMPOSITION_VARIABLES = GlobalOptions.getBooleanOption("use-decomposition-variables");
 
     @Override
     public void stateBindedToPlanner(State st, Planner pl) {
@@ -119,7 +121,8 @@ public class DGHandler extends fape.core.planning.search.Handler {
         variables.addAll(task.args());
         variables.add(task.methodSupportersVar());
         variables.add(task.groundSupportersVar());
-        st.addValuesSetConstraint(variables, task.name());
+        if(USE_DECOMPOSITION_VARIABLES)
+            st.addValuesSetConstraint(variables, task.name());
     }
 
     @Override
