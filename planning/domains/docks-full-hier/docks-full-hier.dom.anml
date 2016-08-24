@@ -1,0 +1,287 @@
+// -*-c++-*-
+
+//*** types ***
+
+type piles_robots_cranes ;
+
+type sites;
+type waypoints < sites ; 
+
+type docks < sites with {
+  variable robots occupant ;
+};
+
+type robots < piles_robots_cranes with {
+  variable sites loc ;
+  variable containers freight ;
+};
+
+type cranes < piles_robots_cranes with {
+  variable containers grip ;
+  constant docks attached ;
+};
+
+type piles < piles_robots_cranes with {
+  variable containers top ;
+  constant docks ondock ;
+  variable boolean available ;
+};
+
+type containers with {
+  variable piles_robots_cranes in ;
+  variable containers on ;
+};
+  
+constant boolean adjacent(docks d, waypoints w);
+constant boolean connected(waypoints wa, waypoints wb);
+
+// adjacent and connected are relations, attached is an unvarying function
+
+instance containers empty ; // to denote an empty pile, robot or crane
+instance robots free ; // to denote a free dock
+
+//*** primitives ***
+
+action leave (robots r, docks d, waypoints w){
+  motivated ;
+  adjacent(d, w) ;
+  [all] {
+    r.loc == d :-> w ;
+    d.occupant == r :-> free ;} ;
+};
+
+action enter (robots r, docks d, waypoints w){
+  motivated ;
+  adjacent(d, w) ;
+  [all] {
+    r.loc == w :-> d ;
+    d.occupant == free :-> r ;} ;
+};
+
+action move(robots r, waypoints wa, waypoints wb){
+  motivated ;
+ duration :in [1, 2];
+  connected(wa, wb) ;
+  [all] r.loc == wa :-> wb ;  
+};
+
+// k holding c stacks it on top of p
+action stack(cranes k, containers c, piles p){
+  motivated ;
+  constant docks d;
+  constant containers prevtop ;
+  k.attached == d ;
+  p.ondock == d ;
+  [all] {
+    p.available == true ;
+    k.grip == c :-> empty ;
+    c.in == k :-> p ;
+    c.on == empty :-> prevtop ;
+    p.top == prevtop :-> c ;} ;
+};
+
+// k empty unstack c from the top of p 
+action unstack(cranes k, containers c, piles p){
+  motivated ;
+  constant docks d;
+  constant containers nextop ;
+  k.attached == d ;
+  p.ondock == d ;
+  [all] {
+    p.available == true ;
+    k.grip == empty :-> c ;
+    c.in == p :-> k ;
+    c.on == nextop :-> empty ;
+    p.top == c :-> nextop ;} ;
+};
+
+
+// k holding c puts in on r which was empty
+action put(cranes k, containers c, robots r){
+  motivated ;
+  constant docks d;
+  k.attached == d;
+  [all] {
+    k.grip == c :-> empty ;
+    r.freight == empty :-> c ;
+    c.in == k :-> r ;
+    r.loc == d ;} ;
+};
+
+// k empty takes c from r
+action take(cranes k, containers c, robots r){
+  motivated ;
+  constant docks d;
+  k.attached == d;
+  [all] {
+    k.grip == empty :-> c ;
+    r.freight == c :-> empty ;
+    c.in == r :-> k ;
+    r.loc == d ;} ;
+};
+
+//*** tasks ***
+
+//c on top of p is put on r
+action load (containers c, robots r, piles p){
+  motivated ;
+  :decomposition {
+    constant cranes k;
+    constant docks d;
+    k.attached == d;
+    p.ondock == d ;
+    [start] p.top == c ;
+    [all] {
+      r.loc == d ;
+      p.available == true ;
+    };
+    [all] contains{
+    s1 : unstack(k, c, p) ;
+    s2 : put(k, c, r) ;};
+    end(s1) <= start(s2);
+  };
+};
+
+//c on r is stacked on top of p
+action unload (containers c, robots r, piles p){
+  motivated ;
+  :decomposition {
+    constant cranes k ;
+    constant docks d;
+    k.attached == d;
+    p.ondock == d ;
+    [start] c.in == r ;
+    [all] {
+      r.loc == d ;
+      p.available == true ;
+    };
+    [all] contains {
+    s1 : take(k, c, r) ;
+    s2 : stack(k, c, p) ;};
+    end(s1) <= start(s2);
+  }; 
+};
+
+//c in p is made at the top of p
+action uncover (containers c, piles p){
+  motivated ;
+  [start] c.in == p ;
+  :decomposition {
+    [all] p.top == c ;
+  };
+  :decomposition {
+    constant containers prevtop ;
+    constant cranes k ;
+    constant docks d;
+    constant piles otherp ;
+    [start] p.top == prevtop ;
+    p != otherp ;
+    c != prevtop ;
+    k.attached == d  ;
+    p.ondock == d ;
+    otherp.ondock ==d ;
+    [all] p.available == true ;
+    [all]  otherp.available == true ;
+    [all] contains {
+    s1 : unstack(k,prevtop,p) ;
+    s2: stack(k,prevtop,otherp);
+    s3:	uncover(c,p) ;
+    };
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+};
+
+// r navigates between two waypoints
+action navigate (robots r, waypoints wa, waypoints wb){
+  motivated ;
+  :decomposition {
+    connected(wa, wb) ;
+    [all] move(r, wa, wb) ;
+  };
+  :decomposition {
+    constant waypoints wc ;
+    connected(wa, wc);
+    [all] contains {
+    s1 : move(r, wa, wc);
+    s2 : navigate(r, wc, wb) ;};
+    end(s1) <= start(s2);
+  };
+};
+
+// r goes to dock to
+action goto (robots r, docks to){
+  motivated ;
+  constant  docks from;
+  constant waypoints wa ;
+  constant waypoints wb ;
+  [start] r.loc == from ;
+  :decomposition {
+    from == to ;
+  };
+  :decomposition {
+    from != to ;
+    adjacent(from, wa) ;
+    adjacent(to, wb) ;
+    [all] contains {
+      s1 : leave(r, from, wa) ;
+      s2: navigate(r, wa, wb) ;
+      s3 : enter(r, to, wb) ;};
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+};
+
+
+// brings c to pile p
+action bring (containers c, piles p){
+  motivated ;
+  constant piles otherp;
+  :decomposition {
+    [all] c.in == p ;
+  };
+  :decomposition {
+    constant cranes k ;
+    constant docks d;
+    otherp != p ;
+    k.attached == d ;
+    p.ondock == d ;
+    otherp.ondock == d ;
+    [start] c.in == otherp ;
+    [all] p.available == true ;
+    [all] otherp.available == true ;
+    [all] contains {
+      s1 : uncover(c, otherp) ;
+      s2 : unstack(k, c, otherp) ;
+      s3: stack(k, c, p) ;};
+    end(s1) <= start(s2);
+    end(s2) <= start(s3);
+  };
+  :decomposition {
+    constant robots r;
+    constant docks from ;
+    constant docks to ;
+    from != to ;
+    p.ondock == to;
+    otherp.ondock == from ;
+    [start] c.in == otherp ;
+    [all] {
+      p.available == true;
+      otherp.available == true;
+    };
+    [all] contains {
+    s1 : goto(r, from);
+    s2 : uncover(c, otherp);
+    s3 :load(c, r, otherp);
+    s4 : goto(r, to);
+    s5 : unload(c, r, p) ;};
+    end(s1) <= start(s3);
+    end(s2) <= start(s3);
+    end(s3) <= start(s4);
+    end(s4) <= start(s5);
+    }; 
+};
+
+
+
+
