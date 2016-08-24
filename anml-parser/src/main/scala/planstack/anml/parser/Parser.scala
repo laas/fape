@@ -171,7 +171,10 @@ case class FloatFunction(
                           override val resourceType:Option[String])
   extends NumFunction(name, args, tipe, isConstant, resourceType)
 {
-  assert(tipe.toString == "float", "The type of this float function is not a float: "+this)
+  assert(tipe match {
+    case PSimpleType("float") => true
+    case _ => false
+  }, "The type of this float function is not a float: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
 }
 
