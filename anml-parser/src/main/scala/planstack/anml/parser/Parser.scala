@@ -357,8 +357,8 @@ object AnmlParser extends JavaTokenParsers {
     "::("~>observationConditions<~")"
 
   lazy val observationConditions : Parser[ObservationConditionsAnnotation] =
-    "observation_conditions"~"("~>rawTimepoint~")"~"{"~decompositionContent<~"}" ^^ {
-      case tp~")"~"{"~content => ObservationConditionsAnnotation(tp, content)
+    "observation_conditions"~"("~>rawTimepoint~")"~"{"~rep(decompositionContent)<~"}" ^^ {
+      case tp~")"~"{"~content => ObservationConditionsAnnotation(tp, content.flatten)
     }
 
   lazy val forallBlock : Parser[ForAll] =

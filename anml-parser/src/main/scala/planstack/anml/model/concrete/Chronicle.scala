@@ -67,10 +67,11 @@ class Chronicle(val interval: TemporalInterval) {
     */
   val instances = new util.LinkedList[String]()
 
-
   val temporalConstraints = new util.LinkedList[TemporalConstraint]()
 
-  val annotations = new util.LinkedList[ChronicleAnnotation]()
+  val annotations : util.List[ChronicleAnnotation] = new util.LinkedList[ChronicleAnnotation]()
+
+  def isEmpty = statements.isEmpty && tasks.isEmpty && bindingConstraints.isEmpty && vars.isEmpty && instances.isEmpty && annotations.isEmpty
 
   def addAllStatements(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
     for(absStatement <- absStatements) {
@@ -111,6 +112,15 @@ class Chronicle(val interval: TemporalInterval) {
     }
   }
 
+  def initTemporalObjectsBasic(optSTNU: Option[AbstractSTNU], pb: AnmlProblem, context: Context, refCounter: RefCounter): Unit = {
+    val intervals : List[TemporalInterval] = interval :: tasks.toList.asInstanceOf[List[TemporalInterval]] ++ statements.toList.asInstanceOf[List[TemporalInterval]]
+    val timepoints = (intervals.flatMap(int => List(int.start, int.end)) ++ temporalConstraints.flatMap(tc => List(tc.src, tc.dst))).toSet
+    for(tp <- timepoints if tp.isOfUndefinedType)
+      tp.setStructural()
+    this.flexibleTimepoints = new IList[TPRef](timepoints)
+    this.anchoredTimepoints = new IList[AnchoredTimepoint]()
+  }
+
   def initTemporalObjects(optSTNU: Option[AbstractSTNU], pb: AnmlProblem, context: Context, refCounter: RefCounter) {
     assert(flexibleTimepoints == null)
     assert(anchoredTimepoints == null)
@@ -149,7 +159,7 @@ class Chronicle(val interval: TemporalInterval) {
 
         val (flexs, constraints, anchored) = stn.minimalRepresentation(interval.start :: interval.end :: contingents.toList)
 
-        timepoints.foreach(tp =>
+        timepoints.filter(_.isOfUndefinedType).foreach(tp =>
           if(contingents.contains(tp)) tp.setContingent()
           else if(flexs.contains(tp)) tp.setStructural()
           else tp.setVirtual()

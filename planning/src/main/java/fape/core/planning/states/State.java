@@ -213,6 +213,11 @@ public class State implements Reporter {
         // replay old signals
         for(Handler.StateLifeTime signal : pastSignals)
             ext.notify(signal);
+
+        for(Chronicle c : pb.chronicles())
+            ext.chronicleMerged(c);
+        for(Action a : getAllActions())
+            ext.chronicleMerged(a.chronicle());
     }
     public Stream<StateExtension> extensions() { return extensions.stream(); }
     @SuppressWarnings("rawtypes")

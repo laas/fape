@@ -11,19 +11,17 @@ import planstack.anml.model.concrete._
 import planstack.anml.pending.IntExpression
 import planstack.structures.IList
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConverters._
 
 class AbstractChronicle(
                          private val statements: List[AbstractStatement],
                          private val constraints: List[AbstractConstraint],
                          private val variableDeclarations: List[EVariable],
                          val constantDeclarations: List[(EVariable,InstanceRef)],
+                         val annotations: List[AbstractChronicleAnnotation],
                          val optSTNU: Option[AbstractSTNU]
                        )
 {
-  def this(s: List[AbstractStatement], c:List[AbstractConstraint], v: List[EVariable], d: List[(EVariable,InstanceRef)]) =
-    this(s, c, v, d, None)
-
   lazy val (implicitConstraints, implicitVariables) = {
     val funcVars = ((statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)) collect {case x:EConstantFunction => x}).toSet
 
@@ -40,30 +38,41 @@ class AbstractChronicle(
   lazy val allVariables = (variableDeclarations ++ funcVars).toSet
 
   def withStatements(otherStatements: AbstractStatement*) = withStatementsSeq(otherStatements.toList)
-  def withStatementsSeq(otherStatements: Seq[AbstractStatement]) =
-    new AbstractChronicle(statements ++ otherStatements, constraints, variableDeclarations, constantDeclarations, None)
+  def withStatementsSeq(otherStatements: Seq[AbstractStatement]) = {
+    assert(optSTNU.isEmpty)
+    new AbstractChronicle(statements ++ otherStatements, constraints, variableDeclarations, constantDeclarations, annotations, None)
+  }
 
   def withConstraints(otherConstraints: AbstractConstraint*) = withConstraintsSeq(otherConstraints.toList)
-  def withConstraintsSeq(otherConstraints: Seq[AbstractConstraint]) =
-    new AbstractChronicle(statements, constraints ++ otherConstraints, variableDeclarations, constantDeclarations, None)
+  def withConstraintsSeq(otherConstraints: Seq[AbstractConstraint]) = {
+    assert(optSTNU.isEmpty)
+    new AbstractChronicle(statements, constraints ++ otherConstraints, variableDeclarations, constantDeclarations, annotations, None)
+  }
 
   def withVariableDeclarations(vars: Seq[EVariable]) =
-    new AbstractChronicle(statements, constraints, variableDeclarations ++ vars, constantDeclarations, None)
+    new AbstractChronicle(statements, constraints, variableDeclarations ++ vars, constantDeclarations, annotations, None)
 
-  def withConstantDeclarations(instances: Seq[(EVariable,InstanceRef)]) =
-    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations ++ instances, None)
+  def withConstantDeclarations(instances: Seq[(EVariable,InstanceRef)]) = {
+    assert(optSTNU.isEmpty)
+    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations ++ instances, annotations, None)
+  }
+
+  def +(annotation: AbstractChronicleAnnotation) =
+    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, annotation :: annotations, None)
 
   private def withSTNU(stnu: AbstractSTNU) =
-    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, Some(stnu))
+    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, annotations, Some(stnu))
 
   def +(absChron: AbstractChronicle) = union(absChron)
 
-  def union(absChron: AbstractChronicle) : AbstractChronicle = {
+  def union(o: AbstractChronicle) : AbstractChronicle = {
+    assert(optSTNU.isEmpty && o.optSTNU.isEmpty)
     new AbstractChronicle(
-      statements ++ absChron.statements,
-      constraints ++ absChron.constraints,
-      variableDeclarations ++ absChron.variableDeclarations,
-      constantDeclarations ++ absChron.constantDeclarations,
+      statements ++ o.statements,
+      constraints ++ o.constraints,
+      variableDeclarations ++ o.variableDeclarations,
+      constantDeclarations ++ o.constantDeclarations,
+      annotations ++ o.annotations,
       None
     )
   }
@@ -78,6 +87,7 @@ class AbstractChronicle(
     true
   }
 
+  /** Transform this chronicle into an equivalent one where temporal constraints are minimzed */
   def withMinimizedTemporalConstraints(dispatchablePoints: List[AbsTP]) : AbstractChronicle = {
     if(optSTNU.nonEmpty)
       return this
@@ -119,10 +129,10 @@ class AbstractChronicle(
 
     val minimalConstraints = otherConsts ++ newconstraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, IntExpression.minus(stnCst.label)))
 
-    new AbstractChronicle(statements, minimalConstraints, variableDeclarations, constantDeclarations, Some(stnu))
+    new AbstractChronicle(statements, minimalConstraints, variableDeclarations, constantDeclarations, annotations, Some(stnu))
   }
 
-  def getInstance(context: Context, temporalContext: TemporalInterval, pb: AnmlProblem, refCounter: RefCounter) : Chronicle = {
+  def getInstance(context: Context, temporalContext: TemporalInterval, pb: AnmlProblem, refCounter: RefCounter, optimizeTimepoints: Boolean = true) : Chronicle = {
     val chronicle = new Chronicle(temporalContext)
 
     for((local,global) <- constantDeclarations) {
@@ -146,7 +156,11 @@ class AbstractChronicle(
     chronicle.addAllStatements(getStatements, context, pb, refCounter)
     chronicle.addAllConstraints(allConstraints, context, pb, refCounter)
 
-    chronicle.initTemporalObjects(optSTNU, pb, context, refCounter)
+    if(optimizeTimepoints)
+      chronicle.initTemporalObjects(optSTNU, pb, context, refCounter)
+    else
+      chronicle.initTemporalObjectsBasic(optSTNU, pb, context, refCounter)
+    chronicle.annotations.addAll(annotations.map(_.getInstance(context, temporalContext, pb, refCounter)).asJava)
     chronicle
   }
 
@@ -155,7 +169,7 @@ class AbstractChronicle(
 
 }
 
-object EmptyAbstractChronicle extends AbstractChronicle(Nil, Nil, Nil, Nil, None)
+object EmptyAbstractChronicle extends AbstractChronicle(Nil, Nil, Nil, Nil, Nil, None)
 
 class AbstractSTNU(val dispatchablePoints: Set[AbsTP],
                    val contingentPoints: Set[AbsTP],

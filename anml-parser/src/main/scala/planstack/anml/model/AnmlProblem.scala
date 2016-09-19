@@ -263,18 +263,18 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
             })
         }
       }
-//
-//      blocks collect { case parser.ObservationConditionsAnnotation(tpName, content) =>
-//        val tp = AbsTP(tp)
-//        var conditions = new AbstractChronicle()
-//        content collect {
-//          case ts: parser.TemporalStatement =>
-//            val p@(statements, constraints) = StatementsFactory(ts, this.context, refCounter)
-//            conditions = conditions.union(new AbstractChronicle(statements, constraints))
-//          case x => throw new ANMLException(s"The use of \"$x\" is not supported insode an ObservationConditions annotation")
-//        }
-////        chronicle.annotations.add(new AbstractObservationConditionsAnnotation(new TPRef(tp), ))
-//      }
+    }
+
+    blocks collect { case parser.ObservationConditionsAnnotation(tpName, content) =>
+      var conditions : AbstractChronicle = EmptyAbstractChronicle
+      val tp = AbsTP(tpName)
+      content collect {
+        case ts: parser.TemporalStatement =>
+          val ac = StatementsFactory(ts, this.context, refCounter)
+          conditions += ac
+        case x => throw new ANMLException(s"The use of '$x' is not supported inside an ObservationConditions annotation")
+      }
+      chron += new AbstractObservationConditionsAnnotation(tp, conditions)
     }
 //
 //    for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {

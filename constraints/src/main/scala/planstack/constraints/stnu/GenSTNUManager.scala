@@ -87,10 +87,11 @@ abstract class GenSTNUManager[ID]
   }
 
   private def record(tp:TPRef): Int = {
-    assert(!hasTimePoint(tp), "Time point is already recorded: "+tp)
-    ensureSpaceFor(tp)
-    id(tp.id) = stn.addVar()
-    add(tp)
+    if(!hasTimePoint(tp)) {
+      ensureSpaceFor(tp)
+      id(tp.id) = stn.addVar()
+      add(tp)
+    }
     id(tp.id)
   }
 

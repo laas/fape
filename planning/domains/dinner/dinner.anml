@@ -1,0 +1,63 @@
+type Person;
+instance Person wife, me;
+
+type Location;
+instance Location work, car, home, kitchen;
+
+fluent boolean dinner_ready;
+
+predicate should_notify_when_leaving(Person notified, Person notifier, Location l);
+
+fluent Location loc(Person a);
+
+/** Action to cook dinner, with uncontrollable duration between 25 and 30 minutes */
+action cook(Person p) {
+  duration :in [25,30];
+  [all] loc(p) == kitchen;
+  [end] dinner_ready := true;
+  [end] dinner_warm := true;
+  [end+5] dinner_warm := false;
+  ::(observation_conditions(end) { /* none: always observable */ })
+};
+
+/** Ask "receiver" to text "sender" when leaving locaion "l" */
+action text_me_when_you_leave(Person sender, Person receiver, Location l) {
+  duration := 1;
+  sender != receiver;
+  [all] loc(receiver) == l;	
+  [end] should_notify_when_leaving(sender,receiver,l) := true;
+};
+
+
+
+/*** (Uncontrollable) Schedule of Wife ****/
+
+wife_working :in start+ [10,20];
+// wife_working ==[30,60]==> wife_driving
+wife_driving :in wife_working + [30,60];
+// wife_driving ==[35,40]==> wife_home
+wife_home :in wife_driving + [35,40];
+
+[wife_working] loc(wife) := work;
+[wife_driving] loc(wife) := car;
+[wife_home] loc(wife) := home;
+
+::(observation_conditions(wife_driving) {
+  [wife_driving] should_notify_when_leaving(me,wife,work) == true;
+})
+::(observation_conditions(wife_home) { /* always observable */ })
+
+
+[start] loc(me) := kitchen;
+[start] dinner_ready := false;
+
+
+/******* Goal: dinner be ready and warm at most 5 minutes after wife gets home *****/
+
+[t-1] dinner_ready == false;
+[t] dinner_ready == true;
+
+wife_home -5 <= t;
+t <= wife_home+5;
+
+

@@ -2,6 +2,7 @@ package fape.core.planning.states;
 
 import fape.core.planning.search.Handler;
 import fape.core.planning.timelines.Timeline;
+import planstack.anml.model.concrete.Chronicle;
 
 /**
  * Represents information that can be attached to a state.
@@ -17,6 +18,8 @@ public interface StateExtension {
     default void timelineAdded(Timeline tl) {}
     default void timelineRemoved(Timeline tl) {}
     default void timelineExtended(Timeline tl) {}
+
+    default void chronicleMerged(Chronicle c) {}
 
     default void notify(Handler.StateLifeTime stateLifeTime) {}
 }
