@@ -45,6 +45,10 @@ instance TorsoPosture TorsoDownPosture, TorsoMiddlePosture, TorsoUpPosture;
 // an object on 'pl' can be manipulated from 'man' and 'man' can be accessed from 'pre'
 constant boolean connected(PlArea pl, ManArea man, PreArea pre);
 
+
+
+/*** Primitive actions ***/
+
 action move_base(Robot r, Area to) {
   motivated;
   end >= start+5000;
@@ -142,6 +146,7 @@ action observe_objects_on_area(Robot r, PlArea pl) {
 
 
 
+/**** High Level Actions ****/
 
 action adapt_torso(Robot r, TorsoPosture pose) {
   motivated;

@@ -105,7 +105,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
             @Override
             public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-                Chronicle ch = new BaseChronicle(st.pb);
+                Chronicle ch = new Chronicle(st.pb);
                 List<Pair<TPRef,TPRef>> precedences = new ArrayList<>();
                 SecuredObservations obs = st.getExtension(SecuredObservations.class);
                 toObserve.stream().forEach(tp -> {
@@ -120,7 +120,7 @@ public class NeededObservationsFinder implements FlawFinder {
                     obs.observed.add(tp);
                 });
 
-                ch.initTemporalObjects();
+//                ch.initTemporalObjects(); FIXME with new version
                 st.applyChronicle(ch);
                 for(Pair<TPRef,TPRef> prec : precedences) {
                     st.enforceBefore(prec.value1, prec.value2);

@@ -10,7 +10,7 @@ import planstack.anml.{ANMLException, parser}
 import scala.collection.JavaConversions._
 
 
-class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRef]) {
+class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRef]) extends VarContainer {
 
   /** Produces a new ParameterizedStateVariable whose parameters refer to global variables (as defined in `context` */
   def bind(context:Context) : ParameterizedStateVariable =
@@ -28,6 +28,8 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
     case sv: AbstractParameterizedStateVariable => func == sv.func && args == sv.args
     case _ => false
   }
+
+  override def getAllVars: Set[LVarRef] = args.flatMap(a => a.getAllVars).toSet
 }
 
 /** A state variable parameterized with variables.
@@ -55,9 +57,7 @@ object AbstractParameterizedStateVariable {
   def apply(pb:AnmlProblem, context:AbstractContext, expr:parser.Expr) : AbstractParameterizedStateVariable = {
     context.simplify(expr,DefaultMod) match {
       case f: EFunction =>
-        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
-      case EVariable(_,_,Some(f)) =>
-        new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+        new AbstractParameterizedStateVariable(f.func, f.args)
       case x =>
         throw new ANMLException("Cannot build a state variable from: " + x)
     }

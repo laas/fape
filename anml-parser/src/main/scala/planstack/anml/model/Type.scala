@@ -31,6 +31,7 @@ trait Type {
   override def toString = name
 }
 
+
 trait NumericType extends Type {
   override def isNumeric = true
 }
@@ -43,11 +44,24 @@ object TMethods extends Type {
   def isNumeric = false
 }
 
-class SimpleType(val name:String, val parent:Option[SimpleType]) extends Type {
+
+object AnyType extends SimpleType("AnyType", None) {
+}
+
+class SimpleType(val name:String, val parentOpt:Option[SimpleType]) extends Type {
+  val topLevel = false
+
   private val _methods = mutable.Set[String]()
   private val _instances = mutable.Set[InstanceRef]()
   private val _children = mutable.Set[SimpleType]()
   private val _supertypes = mutable.Set[Type]()
+
+  def parent = parentOpt match {
+    case Some(p) => Some(p)
+    case None if name == "AnyType" => None
+    case _ => Some(AnyType)
+  }
+
   parent.foreach(p => {
     p.addDirectSubType(this)
     addSuperType(p)

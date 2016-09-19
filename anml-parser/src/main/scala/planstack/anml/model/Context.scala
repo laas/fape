@@ -1,10 +1,10 @@
 package planstack.anml.model
 
-import planstack.anml.model.abs.time.{IntervalEnd, IntervalStart, AbstractTemporalAnnotation}
-import planstack.anml.model.abs.{AbstractExactDelay, AbstractMinDelay, AbstractConstraint, Mod}
-import planstack.anml.model.abs.statements.{AbstractAssignment, AbstractTransition, AbstractStatement}
+import planstack.anml.model.abs.time.{AbstractTemporalAnnotation, IntervalEnd, IntervalStart}
+import planstack.anml.model.abs._
+import planstack.anml.model.abs.statements.{AbstractAssignment, AbstractStatement, AbstractTransition}
 import planstack.anml.pending.IntExpression
-import planstack.anml.{UnrecognizedExpression, VariableNotFound, ANMLException}
+import planstack.anml.{ANMLException, UnrecognizedExpression, VariableNotFound}
 import planstack.anml.model.concrete.{Action => CAction}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.statements.Statement
@@ -55,51 +55,56 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
   }
 
-  def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : LVarRef = {
+  def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : LVarRef = { //TODO: should be useless
     var i = 0
     while(nameToLocalVar.contains("locVar_"+i)) {
       i += 1
     }
-    val v = new LVarRef("locVar_"+i, typ)
-    addUndefinedVar(v, refCounter)
+    val v = EVariable("locVar_"+i, typ)
+    addUndefinedVar(v)
     v
   }
 
-  def addUndefinedVar(name:LVarRef, refCounter: RefCounter)
+  def addUndefinedVar(name: EVariable)
 
   def bindVarToConstant(name:LVarRef, const:InstanceRef)
 
   /**
-   * @param localName Name of the local variable to look up
+   * @param localVar Name of the local variable to look up
    * @return a pair (type, globalName) of the local variable
    */
-  protected def getDefinition(localName:LVarRef) : VarRef = {
-    if(variables.contains(localName)) {
-      variables(localName)
+  protected def getDefinition(localVar:LVarRef) : VarRef = {
+    assert(contains(localVar), s"Unknown local var $localVar")
+    if(variables.contains(localVar)) {
+      variables(localVar)
     } else {
-      parentContext match {
-        case None => throw new ANMLException("Unable to find local var: "+localName)
-        case Some(parent) => parent.getDefinition(localName)
+      (parentContext,localVar) match {
+        // Function vars are only checked in the local context, otherwise it could create problems
+        // because of nested variables overloading each others
+        case (Some(parent),_:EVariable) => parent.getDefinition(localVar)
+        case _ => throw new ANMLException("Unable to find local var: "+localVar)
       }
     }
   }
 
   /** Checks if the local variable is defined in this context or its parent context. */
-  def contains(localName:LVarRef) : Boolean = {
-    if(variables.contains(localName)) {
+  def contains(localVar:LVarRef) : Boolean = {
+    if(variables.contains(localVar)) {
       true
     } else {
-      parentContext match {
-        case None => false
-        case Some(parent) => parent.contains(localName)
+      (parentContext,localVar) match {
+        // Function vars are only checked in the local context, otherwise it could create problems
+        // because of nested variables overloading each others
+        case (Some(parent),_:EVariable) => parent.contains(localVar)
+        case _ => false
       }
     }
   }
 
-  def getType(localVarName: String) : Type = nameToLocalVar(localVarName).getType
+  def getType(localVarName: String) : Type = nameToLocalVar(localVarName).typ
 
   /** Looks up the global reference associated to this local variable.
-    * 
+    *
     * @param localRef Reference to the local variable to look up.
     * @return The global variable reference associated with this local variable. Throws an ANMLException if this
     *         local variable is not defined.
@@ -138,7 +143,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   }
 
   def addVar(localName:LVarRef, globalName:VarRef) {
-    assert(!variables.contains(localName), "Error: Context already contains local variable: "+localName)
+    assert(!variables.contains(localName) || variables(localName).isEmpty, "Error: Context already contains local variable: "+localName)
     nameToLocalVar.put(localName.id, localName)
     variables.put(localName, globalName)
   }
@@ -191,29 +196,29 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     tasks(localID) = globalDef
   }
 
-  val bindings : mutable.Map[EFunction,EVariable] = mutable.Map()
-  private var nextBindingID = 0
-  def bindingOf(f:EFunction, refCounter: RefCounter): EVariable = {
-    assert(f.isConstant)
-    assert(!f.func.valueType.isNumeric)
-    if(!bindings.contains(f)) {
-      bindings.put(f, EVariable("__binding_var__"+nextBindingID, f.func.valueType, Some(f)))
-      addUndefinedVar(new LVarRef("__binding_var__"+nextBindingID, f.func.valueType), refCounter)
-      nextBindingID += 1
-    }
-    bindings(f)
-  }
+//  val bindings : mutable.Map[EFunction,EVariable] = mutable.Map()
+//  private var nextBindingID = 0
+//  def bindingOf(f:EFunction, refCounter: RefCounter): EVariable = {
+//    assert(f.isConstant)
+//    assert(!f.func.valueType.isNumeric)
+//    if(!bindings.contains(f)) {
+//      bindings.put(f, EVariable("__binding_var__"+nextBindingID, f.func.valueType, Some(f)))
+//      addUndefinedVar(new LVarRef("__binding_var__"+nextBindingID, f.func.valueType), refCounter)
+//      nextBindingID += 1
+//    }
+//    bindings(f)
+//  }
 
   import planstack.anml.parser
   def simplify(e: parser.Expr, mod:Mod) : E = try {
-    val simple = e match {
-      case VarExpr(preModName) if hasLocalVar(mod.varNameMod(preModName)) =>
-        val name = mod.varNameMod(preModName)
-        EVariable(name, getLocalVar(name).getType, None)
+    val simple : E = e match {
       case VarExpr(name) if pb.functions.isDefined(name) =>
-        EFunction(pb.functions.get(name), Nil)
+        EFunction.build(pb.functions.get(name), Nil)
+      case VarExpr(preModName) =>
+        val name = mod.varNameMod(preModName)
+        getLocalVar(name).asInstanceOf[EVar]
       case FuncExpr(VarExpr(fName), args) if pb.functions.isDefined(fName) =>
-        EFunction(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
+        EFunction.build(pb.functions.get(fName), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
       case t@FuncExpr(VarExpr(tName), args) if pb.tasks.contains(tName) =>
         assert(args.size == pb.tasks(tName).size, s"Task `${t.asANML}` has the wrong number of arguments.")
         val simpleArgs = args.map(arg => simplifyToVar(simplify(arg,mod),mod))
@@ -224,32 +229,32 @@ abstract class AbstractContext(val pb:AnmlProblem) {
       case ChainedExpr(VarExpr(typ), second) if pb.instances.containsType(typ) =>
         second match {
           case VarExpr(sec) =>
-            EFunction(pb.functions.get(s"$typ.$sec"), Nil)
+            EFunction.build(pb.functions.get(s"$typ.$sec"), Nil)
           case FuncExpr(sec,args) =>
-            EFunction(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
+            EFunction.build(pb.functions.get(s"$typ.${sec.functionName}"), args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
           case x =>
             sys.error("Second part of a chained expression should always be a func or a variable: "+x)
       }
       case ChainedExpr(left, right) =>
         val sleft = simplify(left,mod)
         (sleft, right) match {
-          case (v@EVariable(_,typ, _), FuncExpr(fe, args)) =>
-            val f = pb.functions.get(typ.getQualifiedFunction(fe.functionName))
-            EFunction(f, v :: args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
-          case (v@EVariable(_,typ, _), VarExpr(fname)) =>
-            val f = pb.functions.get(typ.getQualifiedFunction(fname))
-            EFunction(f, List(v))
+          case (v:EVar, FuncExpr(fe, args)) =>
+            val f = pb.functions.get(v.typ.getQualifiedFunction(fe.functionName))
+            EFunction.build(f, v :: args.map(arg => simplifyToVar(simplify(arg,mod),mod)))
+          case (v:EVar, VarExpr(fname)) =>
+            val f = pb.functions.get(v.typ.getQualifiedFunction(fname))
+            EFunction.build(f, List(v))
           case x =>
             throw new ANMLException("Left part of chained expr was not reduced to variable: "+left)
         }
       case NumExpr(value) =>
         ENumber(value.toInt)
       case SetExpr(vals) =>
-        ESet(vals.map(v => simplifyToVar(simplify(v,mod),mod)))
+        EVarSet(vals.map(v => simplifyToVar(simplify(v,mod),mod)))
       case x => sys.error(s"Unrecognized expression: ${x.asANML}  --  $x")
     }
     simple match {
-      case f:EFunction if f.isConstant => simplifyToVar(f,mod)
+      case f:ETimedFunction if f.isConstant => simplifyToVar(f,mod)
       case x => x
     }
   } catch {
@@ -258,15 +263,17 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 
   }
 
-  private def simplifyToVar(e: E, mod: Mod) : EVariable = e match {
+  private def simplifyToVar(e: E, mod: Mod) : EVar = e match {
     case v:EVariable => v
-    case f:EFunction if f.isConstant && !f.func.valueType.isNumeric =>
-      bindingOf(f, pb.refCounter)
-    case EFunction(f, args) if f.isConstant && f.valueType.isNumeric && !args.forall(a => a.expr.isEmpty) =>
+    case f:EConstantFunction if !f.func.valueType.isNumeric =>
+      f
+    case EConstantFunction(f, args) if f.valueType.isNumeric && !args.forall(a => a.simpleVariable) =>
       sys.error("Functions are not accepted as parameters of integer functions.")
-    case ef@EFunction(f, args) if f.isConstant && f.valueType.isNumeric => // TODO this is a hack to make sure actions never end up with integer variables
-      EVariable("xxxxxxxx"+{nextBindingID+=1;nextBindingID-1}, TInteger, Some(ef))
-    case f:EFunction if !f.isConstant => throw new ANMLException("Trying to use "+f+" as a constant function.")
+    case ef@EConstantFunction(f, args) if f.valueType.isNumeric =>
+      // TODO this is a hack to make sure actions never end up with integer variables
+      //  EVariable("xxxxxxxx"+{nextBindingID+=1;nextBindingID-1}, TInteger, Some(ef))
+      ef
+    case f:ETimedFunction if !f.isConstant => throw new ANMLException("Trying to use "+f+" as a constant function.")
     case x => throw new ANMLException("Unrecognized expression: "+x)
   }
 
@@ -275,11 +282,9 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     def trans(id:String) = mod.idModifier(id)
     s match {
       case parser.SingleTermStatement(e, id) => simplify(e, mod) match {
-        case f:EFunction =>
-          assert(f.func.valueType.name == "boolean")
-          EBiStatement(f, "==", EVariable("true", f.func.valueType, None), mod.idModifier(id))
-        case v@EVariable(_,t:SimpleType,_) if t.name == "boolean" =>
-          EBiStatement(v, "==", EVariable("true", t, None), mod.idModifier(id))
+        case v:EVar =>
+          assert(v.getType.name == "boolean")
+          EBiStatement(v, "==", EVariable("true", v.getType), mod.idModifier(id))
         case t:ETask =>
           EUnStatement(t, mod.idModifier(id))
         case x => sys.error("Problem: "+x)
@@ -301,13 +306,48 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 }
 
 trait E
-case class EVariable(name:String, typ:Type, expr:Option[EFunction]) extends E
-case class EFunction(func:Function, args:List[EVariable]) extends E {
+trait EVar extends E with LVarRef with VarContainer {
+  def typ: Type
+  def simpleVariable : Boolean
+}
+case class EVariable(name:String, typ:Type) extends EVar {
+  def simpleVariable = true
+  override def id: String = name
+  override def getAllVars: Set[LVarRef] = Set(this)
+  override def asANML: String = name
+  override def toString = asANML
+}
+
+trait EFunction extends E {
+  def func:Function
+  def args:List[EVar]
+}
+object EFunction {
+  def build(func:Function, args:List[EVar]) = func.isConstant match {
+    case true => EConstantFunction(func, args)
+    case false => ETimedFunction(func, args)
+  }
+}
+
+case class EConstantFunction(func:Function, args:List[EVar]) extends EVar with EFunction {
+  require(isConstant)
+  def isConstant = func.isConstant
+  def simpleVariable = false
+  def id = asANML
+  override def typ: Type = func.valueType
+  override def getAllVars: Set[LVarRef] = args.flatMap(a => a.getAllVars).toSet + this
+  override def asANML: String = s"${func.name}(${args.map(_.asANML).mkString(",")})"
+  override def toString = asANML
+}
+
+case class ETimedFunction(func:Function, args:List[EVar]) extends EFunction{
+  require(!isConstant)
+  def typ = func.valueType
   def isConstant = func.isConstant
 }
 case class ENumber(n:Int) extends E
-case class ETask(name:String, args:List[EVariable]) extends E
-case class ESet(parts: Set[EVariable]) extends E
+case class ETask(name:String, args:List[EVar]) extends E
+case class EVarSet(parts: Set[EVar]) extends E
 case class Timepoint()
 
 trait EStatement {
@@ -319,33 +359,32 @@ case class EBiStatement(e1:E, op:String, e2:E, id:String) extends EStatement
 case class ETriStatement(e1:E, op:String, e2:E, op2:String, e3:E, id:String) extends EStatement
 
 abstract class EStatementGroup {
-  type StatementsConstraints = (List[AbstractStatement],List[AbstractConstraint])
   def firsts : List[EStatement]
   def lasts : List[EStatement]
   def statements : List[EStatement]
-  def process(f : (EStatement => StatementsConstraints)) : AbsStatementGroup
+  def process(f : (EStatement => AbstractChronicle)) : AbsStatementGroup
 }
 class ESingletonGroup(val statement: EStatement) extends EStatementGroup {
   override def firsts: List[EStatement] = List(statement)
   override def lasts: List[EStatement] = List(statement)
   override def statements: List[EStatement] = List(statement)
-  override def process(f: (EStatement) => StatementsConstraints): AbsStatementGroup = {
-    val (ss,cs) = f(statement)
-    new LeafGroup(ss,cs)
+  override def process(f: (EStatement) => AbstractChronicle): AbsStatementGroup = {
+    val ac = f(statement)
+    new LeafGroup(ac.getStatements,ac.allConstraints)
   }
 }
 class EOrderedStatementGroup(parts: List[EStatementGroup]) extends EStatementGroup {
   override def firsts: List[EStatement] = parts.head.firsts
   override def lasts: List[EStatement] = parts.last.lasts
   override def statements: List[EStatement] = parts.flatMap(_.statements)
-  override def process(f: (EStatement) => (List[AbstractStatement], List[AbstractConstraint])): AbsStatementGroup =
+  override def process(f: (EStatement) => AbstractChronicle): AbsStatementGroup =
     new OrderedGroup(parts.map(_.process(f)))
 }
 class EUnorderedStatementGroup(parts: List[EStatementGroup]) extends EStatementGroup {
   override def firsts: List[EStatement] = parts.flatMap(_.firsts)
   override def lasts: List[EStatement] = parts.flatMap(_.lasts)
   override def statements: List[EStatement] = parts.flatMap(_.statements)
-  override def process(f: (EStatement) => (List[AbstractStatement], List[AbstractConstraint])): AbsStatementGroup =
+  override def process(f: (EStatement) => AbstractChronicle): AbsStatementGroup =
   new UnorderedGroup(parts.map(_.process(f)))
 }
 
@@ -442,34 +481,24 @@ class UnorderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGro
   *  - varsToCreate: `{(Location, any_)}`
   *
   * @param parentContext An optional parent context. If given it has to be a [[planstack.anml.model.Context]] (ie fully defined).
-  * @param varsToCreate All (Type, VarRef) pair that need to be created such that every global variable mentionned in this context
-  *                     exists in the state.
   */
 class Context(
     pb:AnmlProblem,
     val label: String,
     val parentContext:Option[Context],
-    val varsToCreate :ListBuffer[VarRef] = ListBuffer())
+    val interval: TemporalInterval)
   extends AbstractContext(pb) {
 
-  var interval :TemporalInterval = null
-
-  def setInterval(interval : TemporalInterval) { this.interval = interval}
-
-  def addVarToCreate(globalVar:VarRef) = varsToCreate += globalVar
-
-  override def addUndefinedVar(v: LVarRef, refCounter: RefCounter): Unit = {
-    val globalVar = new VarRef(v.getType, refCounter, Label(label,v.id))
-    addVar(v, globalVar)
-    addVarToCreate(globalVar)
+  override def addUndefinedVar(v: EVariable): Unit = {
+    assert(!variables.contains(v), "Local variable already defined: "+v)
+    assert(!nameToLocalVar.contains(v.name), "Local variable already recorded: "+v)
+    nameToLocalVar. += ((v.name, v))
   }
 
   def bindVarToConstant(name:LVarRef, const:InstanceRef): Unit = {
     assert(variables.contains(name))
     val previousGlobal = variables(name)
-    varsToCreate -= previousGlobal
     variables.put(name, const)
-
   }
 }
 

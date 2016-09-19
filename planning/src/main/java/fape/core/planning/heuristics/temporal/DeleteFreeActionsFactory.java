@@ -125,7 +125,7 @@ public class DeleteFreeActionsFactory {
         if(act.flexibleTimepoints().contains(tp))
             return 0;
         else {
-            for(AbstractAction.AnchoredTimepoint anchored : act.anchoredTimepoints()) {
+            for(ActAnchoredTimepoint anchored : act.anchoredTimepoints()) {
                 if(anchored.timepoint().equals(tp))
                     return anchored.delay();
             }
@@ -137,7 +137,7 @@ public class DeleteFreeActionsFactory {
         if(act.flexibleTimepoints().contains(tp))
             return tp;
         else {
-            for(AbstractAction.AnchoredTimepoint anchored : act.anchoredTimepoints()) {
+            for(ActAnchoredTimepoint anchored : act.anchoredTimepoints()) {
                 if(anchored.timepoint().equals(tp))
                     return anchored.anchor();
             }

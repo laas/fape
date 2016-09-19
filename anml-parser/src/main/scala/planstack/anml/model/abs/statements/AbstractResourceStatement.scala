@@ -2,7 +2,7 @@ package planstack.anml.model.abs.statements
 
 import planstack.anml.model.concrete.statements._
 import planstack.anml.model.concrete.{Chronicle, RefCounter}
-import planstack.anml.model.{AbstractParameterizedStateVariable, AnmlProblem, Context, LStatementRef}
+import planstack.anml.model._
 
 /** An abstract ANML resource Statement.
   *
@@ -40,6 +40,8 @@ abstract class AbstractResourceStatement(val sv:AbstractParameterizedStateVariab
       case _:AbstractRequireResource => new RequireResource(variable, operator, param, container, refCounter)
     }
   }
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars
 }
 
 class AbstractProduceResource(sv:AbstractParameterizedStateVariable, param:Float, id:LStatementRef) extends AbstractResourceStatement(sv, param, id) {

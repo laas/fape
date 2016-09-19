@@ -5,8 +5,9 @@ import java.{util => ju}
 
 import planstack.anml.model.abs._
 import planstack.anml.model.abs.statements.AbstractStatement
+import planstack.anml.model.abs.time.AbsTP
 import planstack.anml.model.concrete._
-import planstack.anml.parser.{PSimpleType, TypeDecl, ANMLFactory, ParseResult}
+import planstack.anml.parser.{ANMLFactory, PSimpleType, ParseResult, TypeDecl}
 import planstack.anml.{ANMLException, parser}
 
 import scala.collection.JavaConversions._
@@ -40,8 +41,9 @@ import scala.collection.mutable.ArrayBuffer
   * Every time an `addAnml(...)` method it called, the problem's components are updated accordingly and a new
   * [[planstack.anml.model.concrete.Chronicle]] is added to represent the changes in the problems.
   */
-class AnmlProblem extends TemporalInterval {
+class AnmlProblem extends TemporalInterval with ChronicleContainer {
 
+  def label = "Problem"
   val refCounter = new RefCounter()
 
   /**
@@ -68,8 +70,7 @@ class AnmlProblem extends TemporalInterval {
   /** Context that all variables and and action that appear in the problem scope.
     * Those typically contain instances of the problem and predefined ANML literals (such as true, false, ...)
     */
-  val context = new Context(this, "problem", None)
-  context.setInterval(this)
+  val context = new Context(this, "problem", None, this)
 
   /** All abstract actions appearing in the problem */
   val abstractActions = new ju.LinkedList[AbstractAction]()
@@ -90,16 +91,13 @@ class AnmlProblem extends TemporalInterval {
 
   // create an initial chronicle containing the predefined instances (true and false)
   {
-    val initialChronicle = new BaseChronicle(this)
+    val abstractChronicle = EmptyAbstractChronicle.withConstantDeclarations(instances.allInstances.map(
+      i => (EVariable(i, instances.typeOf(i)), instances.referenceOf(i))
+    ).toSeq)
 
-    // add predefined instance to context and to StateModifier
-    for(name <- instances.allInstances) {
-      initialChronicle.instances += name
-      context.addVar(new LVarRef(name, instances.typeOf(name)), instances.referenceOf(name))
-    }
-
-    initialChronicle.initTemporalObjects()
-    chronicles += initialChronicle
+    val c = abstractChronicle.getInstance(context, this, this, refCounter)
+    c.container = Some(this)
+    chronicles += c
   }
 
   /**
@@ -178,7 +176,8 @@ class AnmlProblem extends TemporalInterval {
   private def addAnmlBlocks(blocks:Seq[parser.AnmlBlock]) {
 
     // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
-    val chronicle = new BaseChronicle(this)
+    var chron : AbstractChronicle = EmptyAbstractChronicle
+
     // add all type declarations to the instance manager.
     blocks.filter(_.isInstanceOf[parser.TypeDecl]) foreach {
       case TypeDecl(PSimpleType(name), None, _) => instances.addType(name, "")
@@ -188,11 +187,13 @@ class AnmlProblem extends TemporalInterval {
     // add all instance declaration to the instance manager and to the chronicle
     blocks collect {
       case parser.Instance(PSimpleType(typeName), name) =>
+
         instances.addInstance(name, typeName, refCounter)
-        chronicle.instances += name
         // all instances are added to the context
         val inst = instance(name)
-        context.addVar(new LVarRef(name, inst.getType), inst)
+        val locVar = EVariable(name, inst.getType)
+        context.addVar(locVar,inst)
+        chron = chron.withConstantDeclarations((locVar, inst) :: Nil)
     }
 
     // add all functions to the function manager
@@ -202,9 +203,9 @@ class AnmlProblem extends TemporalInterval {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val newVar = new VarRef(instances.asType(funcDecl.tipe), refCounter, Label(chronicle.getLabel,funcDecl.name))
-        context.addVar(LVarRef(funcDecl.name, instances.asType(funcDecl.tipe)), newVar)
-        chronicle.vars += newVar
+        val locVar = EVariable(funcDecl.name, instances.asType(funcDecl.tipe))
+        context.addUndefinedVar(locVar)
+        chron = chron.withVariableDeclarations(locVar :: Nil)
       } else {
         // either non-constant or with arguments
         functions.addFunction(funcDecl)
@@ -234,17 +235,12 @@ class AnmlProblem extends TemporalInterval {
       actionsByTask += ((task, abs.asJava))
     }
 
-    val absStatements = ArrayBuffer[AbstractStatement]()
-    val absConstraints = ArrayBuffer[AbstractConstraint]()
-
     blocks collect { case tempStatement: parser.TemporalStatement =>
-      val (statement, constraints) = StatementsFactory(tempStatement, this.context, refCounter, DefaultMod)
-      absStatements ++= statement
-      absConstraints ++= constraints
+      chron += StatementsFactory(tempStatement, this.context, refCounter, DefaultMod)
     }
 
     blocks collect { case constraint: parser.TemporalConstraint =>
-      absConstraints ++= AbstractTemporalConstraint(constraint)
+      chron = chron.withConstraintsSeq(AbstractTemporalConstraint(constraint))
     }
 
     blocks collect { case parser.ForAll(args, content) =>
@@ -261,31 +257,34 @@ class AnmlProblem extends TemporalInterval {
         val transformationMap : Map[String,String] = binding.toMap
         content collect {
           case ts: parser.TemporalStatement =>
-            val p@(statement, constraints) =StatementsFactory(ts, this.context, refCounter, new Mod {
+            chron += StatementsFactory(ts, this.context, refCounter, new Mod {
               def varNameMod(name:String) = transformationMap.getOrElse(name, name)
               def idModifier(s:String) = DefaultMod.idModifier(s)
             })
-            absStatements ++= statement
-            absConstraints ++= constraints
         }
       }
-
-
+//
+//      blocks collect { case parser.ObservationConditionsAnnotation(tpName, content) =>
+//        val tp = AbsTP(tp)
+//        var conditions = new AbstractChronicle()
+//        content collect {
+//          case ts: parser.TemporalStatement =>
+//            val p@(statements, constraints) = StatementsFactory(ts, this.context, refCounter)
+//            conditions = conditions.union(new AbstractChronicle(statements, constraints))
+//          case x => throw new ANMLException(s"The use of \"$x\" is not supported insode an ObservationConditions annotation")
+//        }
+////        chronicle.annotations.add(new AbstractObservationConditionsAnnotation(new TPRef(tp), ))
+//      }
     }
+//
+//    for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
+//      val sv = new AbstractParameterizedStateVariable(function.func, function.args)
+//      absConstraints += new AbstractEqualityConstraint(sv, variable, LStatementRef(""))
+//    }
 
-    for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
-      val sv = new AbstractParameterizedStateVariable(function.func, function.args.map(a => context.getLocalVar(a.name)))
-      absConstraints += new AbstractEqualityConstraint(sv, context.getLocalVar(variable.name), LStatementRef(""))
-    }
-
-    for(v <- context.varsToCreate)
-      chronicle.vars += v
-
-    chronicle.addAllStatements(absStatements, context, this, refCounter)
-    chronicle.addAllConstraints(absConstraints, context, this, refCounter)
-
-    chronicle.initTemporalObjects()
-    chronicles += chronicle
+    val c = chron.getInstance(context, this, this, refCounter)
+    c.container = Some(this)
+    chronicles += c
   }
 
   /**
@@ -311,12 +310,11 @@ class AnmlProblem extends TemporalInterval {
     getChronicle(ANMLFactory.parseAnmlString(anml).blocks)
 
   private def getChronicle(blocks:Seq[parser.AnmlBlock]) : Chronicle = {
-    val chron = new BaseChronicle(this)
+    val chron = new Chronicle(this)
 
     // this context is declared locally to avoid polluting the problem's context
     // they have the same interval so start/end map to the ones of the problem
-    val localContext = new Context(this, chron.getLabel, Some(this.context))
-    localContext.setInterval(this.context.interval)
+    val localContext = new Context(this, chron.getLabel, Some(this.context), this.context.interval)
 
     // first process variable definitions to make them available (in local context)
     // to all other statements
@@ -324,7 +322,7 @@ class AnmlProblem extends TemporalInterval {
       // this is a variable that we should be able to use locally
       case func: parser.Function if func.args.isEmpty && func.isConstant =>
         val newVar = new VarRef(instances.asType(func.tipe), refCounter, Label(chron.getLabel,func.name))
-        localContext.addVar(LVarRef(func.name, instances.asType(func.tipe)), newVar)
+        localContext.addVar(EVariable(func.name, instances.asType(func.tipe)), newVar)
         chron.vars += newVar
 
       // complete function definition, would change the problem.
@@ -332,29 +330,24 @@ class AnmlProblem extends TemporalInterval {
         throw new ANMLException("Declaration of functions is not allowed as it would modify the problem.")
     }
 
-    val statements = ArrayBuffer[AbstractStatement]()
-    val constraints = ArrayBuffer[AbstractConstraint]()
+    var absChronicle : AbstractChronicle = EmptyAbstractChronicle
 
     blocks.filter(!_.isInstanceOf[parser.Function]) foreach {
       case ts: parser.TemporalStatement =>
-        val (stats, csts) = StatementsFactory(ts, localContext, refCounter, DefaultMod)
-        statements ++= stats
-        constraints ++= csts
+        val ac = StatementsFactory(ts, localContext, refCounter, DefaultMod)
+        absChronicle += ac
 
       case tc: parser.TemporalConstraint =>
-        constraints ++= AbstractTemporalConstraint(tc)
+        absChronicle = absChronicle.withConstraintsSeq(AbstractTemporalConstraint(tc))
 
       case block =>
         throw new ANMLException("Cannot integrate the following block into the chronicle as it would "+
           "change the problem definition: "+block)
     }
-    assert(context.varsToCreate.isEmpty)
-    chron.addAllStatements(statements, localContext, this, refCounter)
-    chron.addAllConstraints(constraints, localContext, this, refCounter)
 
-
-    chron
+    absChronicle.getInstance(context, this, this, refCounter)
   }
+
 
   def instance(instanceName: String) : InstanceRef = instances.referenceOf(instanceName)
 

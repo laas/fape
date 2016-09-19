@@ -44,16 +44,27 @@ object LActRef {
 }
 
 /** Local reference to a variable */
-class LVarRef(id:T, val typ: Type) extends LocalRef(id) {
-//  def this(typ:String) = this(getNext, typ:String)
+trait LVarRef extends VarContainer {
+  def id : String
+  def typ : Type
   def getType = typ
+  def asANML : String
 }
 
-object LVarRef {
-  def apply(id:T, typ:Type) =
-    if(id == NullID) new LVarRef(getNext, typ)
-    else new LVarRef(id,typ)
+trait VarContainer {
+  def getAllVars: Set[LVarRef]
 }
+
+//class LVarRef(id:T, val typ: Type) extends LocalRef(id) {
+////  def this(typ:String) = this(getNext, typ:String)
+//  def getType = typ
+//}
+//
+//object LVarRef {
+//  def apply(id:T, typ:Type) =
+//    if(id == NullID) new LVarRef(getNext, typ)
+//    else new LVarRef(id,typ)
+//}
 
 /** Local reference to a statement */
 class LStatementRef(id:T) extends LocalRef(id) {

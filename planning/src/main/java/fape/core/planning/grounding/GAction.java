@@ -394,12 +394,12 @@ public class GAction implements Identifiable {
         for(LVarRef ref : aa.allVars()) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
-            if(!context.getDefinition(ref).isEmpty()) {
-                assert (context.getDefinition(ref) instanceof InstanceRef) : "ERRROR: "+context.getDefinition(ref);
-                varSet.add((InstanceRef) context.getDefinition(ref));
-            } else {
+            if(ref instanceof EConstantFunction || ! context.hasGlobalVar(ref)) {
                 // get the type of the argument and add all possible values to the argument list.
                 varSet.addAll(ref.getType().jInstances());
+            } else {
+                assert (context.getDefinition(ref) instanceof InstanceRef) : "ERRROR: "+context.getDefinition(ref);
+                varSet.add((InstanceRef) context.getDefinition(ref));
             }
             possibleValues.add(varSet);
         }

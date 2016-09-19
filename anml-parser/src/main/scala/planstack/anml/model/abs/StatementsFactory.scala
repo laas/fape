@@ -31,71 +31,71 @@ object StatementsFactory {
    * Transforms an annotated statement into its corresponding statement and the temporal constraints that applies
    * to its time-points (derived from the annotation).
    */
-  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : (List[AbstractStatement],List[AbstractConstraint]) = {
-    val  sg = StatementsFactory(annotatedStatement.statement, context, refCounter, mod)
+  def apply(annotatedStatement : parser.TemporalStatement, context:AbstractContext, refCounter: RefCounter, mod: Mod = DefaultMod) : AbstractChronicle = {
+    val  sg = StatementsFactory(annotatedStatement.statement, context, refCounter, mod) //TODO
 
     annotatedStatement.annotation match {
       case None =>
         assert(sg.statements.collect({ case s:AbstractLogStatement => s}).forall(s => !s.sv.func.isConstant))
         if(sg.statements.exists(_.isInstanceOf[AbstractLogStatement]))
           println("Warning: log statement with no temporal annotation: "+sg.statements)
-        (sg.statements, sg.constraints)
+        EmptyAbstractChronicle.withStatementsSeq(sg.statements).withConstraintsSeq(sg.constraints)
       case Some(parsedAnnot) => {
         val annot = AbstractTemporalAnnotation(parsedAnnot)
         assert(sg.statements.nonEmpty, "Temporal annotation on something that is not a statement or a task: "+sg)
         val newConstraints = sg.getTemporalConstraints(annot)
-        (sg.statements, newConstraints ::: sg.constraints)
+        EmptyAbstractChronicle.withStatementsSeq(sg.statements).withConstraintsSeq(newConstraints ::: sg.constraints)
       }
     }
   }
 
   def apply(statement : parser.Statement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : AbsStatementGroup = {
-    def asSv(f:EFunction) = new AbstractParameterizedStateVariable(f.func, f.args.map(a => context.getLocalVar(a.name)))
+    def asSv(f:EFunction) = new AbstractParameterizedStateVariable(f.func, f.args)
     def asVar(v:EVariable) = context.getLocalVar(v.name)
     def asRef(id:String) = LStatementRef(id)
     val eGroup = context.simplifyStatement(statement, mod)
-    def trans(e:EStatement) : (List[AbstractStatement], List[AbstractConstraint]) = e match {
-      case ETriStatement(f:EFunction, "==", v1:EVariable, ":->", v2:EVariable, id) =>
-        (new AbstractTransition(asSv(f), asVar(v1), asVar(v2), asRef(id)) :: Nil,
-          Nil)
+    val EMPTY = EmptyAbstractChronicle
+    def trans(e:EStatement) : AbstractChronicle = e match {
+      case ETriStatement(f:ETimedFunction, "==", v1:EVariable, ":->", v2:EVariable, id) =>
+        EMPTY.withStatements(new AbstractTransition(asSv(f), asVar(v1), asVar(v2), asRef(id)))
 
-      case EBiStatement(vleft@EVariable(_,_,Some(f)), ":=", value:EVariable, id) =>
-        assert(context.hasGlobalVar(asVar(value)), s"$value is not defined yet when assigned to $f")
-        assert(context.getGlobalVar(asVar(value)).isInstanceOf[InstanceRef], s"$value is not recognied as a constant symbol when assigned to $f")
-        context.bindVarToConstant(asVar(vleft), context.getGlobalVar(asVar(value)).asInstanceOf[InstanceRef])
-        (Nil, List(new AbstractAssignmentConstraint(asSv(f), asVar(value), asRef(id))))
+      case EBiStatement(vleft: EConstantFunction, ":=", value:EVariable, id) =>
+        assert(context.hasGlobalVar(asVar(value)), s"$value is not defined yet when assigned to $vleft")
+        assert(context.getGlobalVar(asVar(value)).isInstanceOf[InstanceRef], s"$value is not recognied as a constant symbol when assigned to $vleft")
+        EMPTY.withConstraints(new AbstractAssignmentConstraint(asSv(vleft), asVar(value), asRef(id)))
+          .withConstraints(new AbstractVarEqualityConstraint(vleft, value, asRef(id)))
 
-      case EBiStatement(vleft@EVariable(_,_,Some(f)), ":=", ENumber(value), id) =>
-        (Nil, List(new AbstractIntAssignmentConstraint(asSv(f), value, asRef(id))))
+      case EBiStatement(vleft :EConstantFunction, ":=", ENumber(value), id) =>
+        EMPTY.withConstraints(new AbstractIntAssignmentConstraint(asSv(vleft), value, asRef(id)))
 
-      case EBiStatement(vleft:EVariable, "==", vright:EVariable, id) =>
-        (Nil, List(new AbstractVarEqualityConstraint(asVar(vleft), asVar(vright), asRef(id))))
+      case EBiStatement(vleft:EVar, "==", vright:EVar, id) =>
+        EMPTY.withConstraints(new AbstractVarEqualityConstraint(vleft, vright, asRef(id)))
 
-      case EBiStatement(vleft:EVariable, "!=", vright:EVariable, id) =>
-        (Nil, List(new AbstractVarInequalityConstraint(asVar(vleft), asVar(vright), asRef(id))))
+      case EBiStatement(vleft:EVar, "!=", vright:EVar, id) =>
+        EMPTY.withConstraints(new AbstractVarInequalityConstraint(vleft, vright, asRef(id)))
 
-      case EBiStatement(f:EFunction, ":=", value:EVariable, id) =>
+      case EBiStatement(f:ETimedFunction, ":=", value:EVariable, id) =>
         assert(!f.func.isConstant)
-        (List(new AbstractAssignment(asSv(f), asVar(value), asRef(id))), Nil)
+        EMPTY.withStatements(new AbstractAssignment(asSv(f), asVar(value), asRef(id)))
 
-      case EBiStatement(f:EFunction, "==", value:EVariable, id) =>
-        (List(new AbstractPersistence(asSv(f), asVar(value), asRef(id))), Nil)
+      case EBiStatement(f:ETimedFunction, "==", value:EVariable, id) =>
+        EMPTY.withStatements(new AbstractPersistence(asSv(f), asVar(value), asRef(id)))
 
-      case EBiStatement(f:EFunction, "!=", value:EVariable, id) =>
+      case EBiStatement(f:ETimedFunction, "!=", value:EVariable, id) =>
         val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
-        (List(new AbstractPersistence(asSv(f), intermediateVar, asRef(id))),
-          List(new AbstractVarInequalityConstraint(intermediateVar, asVar(value), LStatementRef(""))))
+        EMPTY.withStatements(new AbstractPersistence(asSv(f), intermediateVar, asRef(id)))
+          .withConstraints(new AbstractVarInequalityConstraint(intermediateVar, asVar(value), LStatementRef("")))
 
       case EUnStatement(ETask(t, args), id) =>
-        (List(new AbstractTask("t-"+t, args.map(arg => asVar(arg)), LActRef(id))), Nil)
+        EMPTY.withStatements(new AbstractTask("t-"+t, args, LActRef(id)))
 
-      case EBiStatement(v1:EVariable, "in", right@ESet(vars), id) =>
-        (Nil, List(new AbstractInConstraint(asVar(v1), vars.map(asVar), asRef(id))))
+      case EBiStatement(v1:EVariable, "in", right@EVarSet(vars), id) =>
+        EMPTY.withConstraints(new AbstractInConstraint(v1, vars.map(x => x), asRef(id)))
 
-      case EBiStatement(f:EFunction, "in", right@ESet(vars), id) =>
+      case EBiStatement(f:ETimedFunction, "in", right@EVarSet(vars), id) =>
         val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
-        (List(new AbstractPersistence(asSv(f), intermediateVar, asRef(id))),
-          List(new AbstractInConstraint(intermediateVar, vars.map(asVar), asRef(id))))
+        EMPTY.withStatements(new AbstractPersistence(asSv(f), intermediateVar, asRef(id)))
+          .withConstraints(new AbstractInConstraint(intermediateVar, vars.map(x => x), asRef(id)))
 
       case x => sys.error("Unmatched: "+x)
     }

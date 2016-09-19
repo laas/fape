@@ -7,7 +7,7 @@ import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser
 import planstack.anml.pending.{IntExpression, Invert, IntLiteral, IntExpression$}
 
-abstract class AbstractConstraint {
+abstract class AbstractConstraint extends VarContainer {
   def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : Constraint
 }
 
@@ -33,6 +33,8 @@ case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:IntExpression)
 {
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
   override def isParameterized = minDelay.isParameterized
+
+  override def getAllVars: Set[LVarRef] = Set()
 }
 
 case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :IntExpression, max:IntExpression)
@@ -40,6 +42,8 @@ case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :IntExpressi
 {
   override def toString = s"$from == [$min, $max] ==> $to"
   override def isParameterized = min.isParameterized || max.isParameterized
+
+  override def getAllVars: Set[LVarRef] = Set()
 }
 
 
@@ -87,6 +91,8 @@ class AbstractAssignmentConstraint(val sv : AbstractParameterizedStateVariable, 
 
   override def bind(context: Context, pb: AnmlProblem) =
     new AssignmentConstraint(sv.bind(context), context.getGlobalVar(variable))
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ variable.getAllVars
 }
 
 class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariable, val value : Int, id:LStatementRef)
@@ -98,6 +104,8 @@ class AbstractIntAssignmentConstraint(val sv : AbstractParameterizedStateVariabl
 
   override def bind(context: Context, pb: AnmlProblem) =
     new IntegerAssignmentConstraint(sv.bind(context), value)
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars
 }
 
 class AbstractEqualityConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
@@ -109,6 +117,8 @@ class AbstractEqualityConstraint(val sv : AbstractParameterizedStateVariable, va
 
   override def bind(context: Context, pb: AnmlProblem) =
     new EqualityConstraint(sv.bind(context), context.getGlobalVar(variable))
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ variable.getAllVars
 }
 
 class AbstractVarEqualityConstraint(val leftVar : LVarRef, val rightVar : LVarRef, id:LStatementRef)
@@ -118,6 +128,8 @@ class AbstractVarEqualityConstraint(val leftVar : LVarRef, val rightVar : LVarRe
 
   override def bind(context: Context, pb: AnmlProblem) =
     new VarEqualityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
+
+  override def getAllVars: Set[LVarRef] = leftVar.getAllVars ++ rightVar.getAllVars
 }
 
 class AbstractInequalityConstraint(val sv : AbstractParameterizedStateVariable, val variable : LVarRef, id:LStatementRef)
@@ -129,6 +141,8 @@ class AbstractInequalityConstraint(val sv : AbstractParameterizedStateVariable, 
 
   override def bind(context: Context, pb: AnmlProblem) =
     new InequalityConstraint(sv.bind(context), context.getGlobalVar(variable))
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ variable.getAllVars
 }
 
 class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVarRef, id:LStatementRef)
@@ -138,6 +152,8 @@ class AbstractVarInequalityConstraint(val leftVar : LVarRef, val rightVar : LVar
 
   override def bind(context: Context, pb: AnmlProblem) =
     new VarInequalityConstraint(context.getGlobalVar(leftVar), context.getGlobalVar(rightVar))
+
+  override def getAllVars: Set[LVarRef] = leftVar.getAllVars ++ rightVar.getAllVars
 }
 
 class AbstractInConstraint(val leftVar : LVarRef, val rightVars : Set[LVarRef], id:LStatementRef)
@@ -147,4 +163,6 @@ class AbstractInConstraint(val leftVar : LVarRef, val rightVars : Set[LVarRef], 
 
   override def bind(context: Context, pb: AnmlProblem) =
     new InConstraint(context.getGlobalVar(leftVar), rightVars.map(v => context.getGlobalVar(v)))
+
+  override def getAllVars: Set[LVarRef] = leftVar.getAllVars ++ rightVars.flatMap(a => a.getAllVars)
 }

@@ -10,7 +10,7 @@ import planstack.anml.pending.{IntExpression, IntLiteral}
 
 abstract trait ChronicleComponent
 
-abstract class AbstractStatement(val id:LocalRef) {
+abstract class AbstractStatement(val id:LocalRef) extends VarContainer {
   /**
    * Produces the corresponding concrete statement, by replacing all local variables
    * by the global ones defined in Context
@@ -79,6 +79,8 @@ class AbstractAssignment(sv:AbstractParameterizedStateVariable, val value:LVarRe
   override def conditionValue: LVarRef = throw new ANMLException("Assignments have conditions at start")
   override def effectValue: LVarRef = value
   override def hasEffectAtEnd: Boolean = true
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ value.getAllVars
 }
 
 class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef, val to:LVarRef, id:LStatementRef)
@@ -93,6 +95,8 @@ class AbstractTransition(sv:AbstractParameterizedStateVariable, val from:LVarRef
   override def conditionValue: LVarRef = from
   override def effectValue: LVarRef = to
   override def hasEffectAtEnd: Boolean = true
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ from.getAllVars ++ to.getAllVars
 }
 
 class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarRef, id:LStatementRef)
@@ -107,5 +111,7 @@ class AbstractPersistence(sv:AbstractParameterizedStateVariable, val value:LVarR
   override def conditionValue: LVarRef = value
   override def effectValue: LVarRef = throw new ANMLException("Persistences have no effects at end")
   override def hasEffectAtEnd: Boolean = false
+
+  override def getAllVars: Set[LVarRef] = sv.getAllVars ++ value.getAllVars
 }
 

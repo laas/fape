@@ -185,9 +185,13 @@ case class TypeDecl(name:PSimpleType, parent:Option[PSimpleType], content:List[T
 
 case class Instance(tipe:PSimpleType, name:String) extends AnmlBlock
 
+
+trait Annotation extends AnmlBlock with ActionContent
+case class ObservationConditionsAnnotation(tp:Timepoint, conditions:List[DecompositionContent]) extends Annotation
+
 object AnmlParser extends JavaTokenParsers {
 
-  lazy val annotation : Parser[TemporalAnnotation] = (
+  lazy val temporalAnnotation : Parser[TemporalAnnotation] = (
     annotationBase<~"contains" ^^ { case TemporalAnnotation(start, end, _) => TemporalAnnotation(start, end, "contains")}
       | annotationBase
     )
@@ -216,6 +220,9 @@ object AnmlParser extends JavaTokenParsers {
 
   lazy val timepointRef : Parser[TimepointRef] =
     kwTempAnnot~"("~word<~")" ^^ { case kw~"("~id => ExtractedTimepoint(kw, id) } |
+      rawTimepoint
+
+  lazy val rawTimepoint : Parser[Timepoint] =
     ident ^^ (kw => Timepoint(kw))
 
   lazy val statement : Parser[Statement] = (
@@ -325,7 +332,7 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   lazy val temporalStatements : Parser[List[TemporalStatement]] = (
-      annotation~statements ^^ { case annot~statements => statements.map(new TemporalStatement(Some(annot), _))}
+      temporalAnnotation~statements ^^ { case annot~statements => statements.map(new TemporalStatement(Some(annot), _))}
     | statementSemi ^^ { case s:Statement => List(new TemporalStatement(None, s))}
   )
 
@@ -343,7 +350,16 @@ object AnmlParser extends JavaTokenParsers {
       | typeDecl ^^ (t => List(t))
       | instanceDecl
       | forallBlock ^^ (t => List(t))
+      | annotation ^^ (t => List(t))
     )
+
+  lazy val annotation : Parser[Annotation] =
+    "::("~>observationConditions<~")"
+
+  lazy val observationConditions : Parser[ObservationConditionsAnnotation] =
+    "observation_conditions"~"("~>rawTimepoint~")"~"{"~decompositionContent<~"}" ^^ {
+      case tp~")"~"{"~content => ObservationConditionsAnnotation(tp, content)
+    }
 
   lazy val forallBlock : Parser[ForAll] =
     "forall"~"("~>rep1sep(argument,",")~")"~"{"~decompositionContent<~"}"~";" ^^ {

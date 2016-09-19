@@ -24,17 +24,6 @@ public class Factory {
     }
 
     /**
-     * Creates a new action with some predefined arguments.
-     * @param pb Problem in which the action appears.
-     * @param abs AbstractAction to make concrete.
-     * @param parameters List of parameters.
-     * @return A concrete action with the given parameters.
-     */
-    public static Action getInstantiatedAction(AnmlProblem pb, AbstractAction abs, List<VarRef> parameters, RefCounter refCounter) {
-        return Action$.MODULE$.jNewAction(pb, abs, parameters, new LActRef(), refCounter, null, null);
-    }
-
-    /**
      * Creates a new action with some predefined arguments and an identifier.
      * Do not define an identifier yourself unless you know what you're doing.
      * @param pb Problem in which the action appears.

@@ -23,10 +23,10 @@ public class SupportingTaskDecomposition implements Resolver {
     @Override
     public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         // create a new action with the same args as the condition
-        Action act = Factory.getInstantiatedAction(st.pb, abs, task.args(), st.refCounter);
+        Action act = Factory.getStandaloneAction(st.pb, abs, st.refCounter);
         st.insert(act);
 
-        // enforce equality of time points and add support to task network
+        // enforce equality of time points and arguments and add support to task network
         st.addSupport(task, act);
 
         // make sure this open goal can only be solved by a statement from this action or one of its child

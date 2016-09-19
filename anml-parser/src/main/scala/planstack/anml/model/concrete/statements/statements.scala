@@ -19,7 +19,6 @@ import planstack.anml.model.concrete._
 abstract class Statement(val sv:ParameterizedStateVariable, val container: Chronicle)
   extends TemporalInterval
 
-
 /** Logical statement that refers to binding constraints on state variables values.
   *
   * More specifically, a logical statement is one of:

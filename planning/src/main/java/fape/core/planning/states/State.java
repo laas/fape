@@ -7,7 +7,6 @@ import fape.core.planning.search.Handler;
 import fape.core.planning.search.flaws.finders.FlawFinder;
 import fape.core.planning.search.flaws.flaws.*;
 import fape.core.planning.search.flaws.resolvers.Resolver;
-import fape.core.planning.search.strategies.plans.tsp.MinSpanTreeExtFull;
 import fape.core.planning.tasknetworks.TaskNetworkManager;
 import fape.core.planning.timelines.ChainComponent;
 import fape.core.planning.timelines.Timeline;
@@ -24,6 +23,7 @@ import fr.laas.fape.structures.IRSet;
 import lombok.Getter;
 import lombok.Setter;
 import planstack.anml.model.AnmlProblem;
+import planstack.anml.model.ChronicleContainer;
 import planstack.anml.model.LStatementRef;
 import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.abs.AbstractAction;
@@ -277,8 +277,9 @@ public class State implements Reporter {
      * was found.
      */
     public Optional<Action> getActionContaining(LogStatement s) {
-        if(s.container() instanceof Action) {
-            Action a = (Action) s.container();
+        assert s.container().container().nonEmpty() : "The chronicle containing the statement \""+s+"\" is not attached";
+        if(s.container().container().get() instanceof Action) {
+            Action a = (Action) s.container().container().get();
             assert a.contains(s);
             assert getAllActions().contains(a);
             return Optional.of(a);
@@ -394,7 +395,7 @@ public class State implements Reporter {
     public void insert(Action act) {
         taskNet.insert(act);
 
-        apply(act);
+        apply(act.chronicle());
 
         // make sure that this action is executed after earliest execution.
         // this constraint is flagged with the start of the action time point which can be used for removal
@@ -444,7 +445,6 @@ public class State implements Reporter {
      * Enforce a binding constraint in the state.
      *
      * Those have effect on the constraint network only.
-     * @param mod Modifier in which the constraint appears.
      * @param bc BindingConstraint to be enforced.
      */
     public void apply(Chronicle chronicle, BindingConstraint bc) {
@@ -546,7 +546,7 @@ public class State implements Reporter {
     }
 
     public void applyChronicle(Chronicle chron) {
-        assert chron instanceof BaseChronicle : "Other chronicles should have specialized methods.";
+        assert chron instanceof Chronicle : "Other chronicles should have specialized methods.";
 
         apply(chron);
     }
@@ -600,8 +600,9 @@ public class State implements Reporter {
             csp.stn().enforceBefore(t.start(), t.end());
             enforceBefore(pb.start(), t.start());
 
-            if(mod instanceof Action)
-                taskNet.insert(t, (Action) mod);
+            assert mod.container().nonEmpty() : "A chronicle is not attached";
+            if(mod.container().get() instanceof Action)
+                taskNet.insert(t, (Action) mod.container().get());
             else
                 taskNet.insert(t);
 
@@ -939,8 +940,13 @@ public class State implements Reporter {
      * the support link in the task network.
      */
     public void addSupport(Task task, Action act) {
+        assert task.name().equals(act.taskName());
         csp.stn().enforceConstraint(task.start(), act.start(), 0, 0);
         csp.stn().enforceConstraint(task.end(), act.end(), 0, 0);
+
+        for(int i=0 ; i<task.args().size() ; i++) {
+            csp.bindings().AddUnificationConstraint(task.args().get(i), act.args().get(i));
+        }
 
         taskNet.addSupport(task, act);
         for(Handler h : getHandlers())

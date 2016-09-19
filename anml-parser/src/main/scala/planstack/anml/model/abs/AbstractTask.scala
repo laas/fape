@@ -22,5 +22,7 @@ class AbstractTask(val name:String, val args:List[LVarRef], val localId:LActRef)
   override def bind(context:Context, pb:AnmlProblem, container: Chronicle, refCounter: RefCounter) = throw new UnsupportedOperationException
 
   override def toString = name+"("+args.mkString(",")+")"
+
+  override def getAllVars: Set[LVarRef] = args.flatMap(_.getAllVars).toSet
 }
 

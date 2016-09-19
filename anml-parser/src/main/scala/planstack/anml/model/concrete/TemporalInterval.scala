@@ -11,7 +11,7 @@ package planstack.anml.model.concrete
 trait TemporalInterval {
 
   /** Time-point referring to the start of the temporal interval. */
-  def start :TPRef
+  val start :TPRef
 
   /** Time-point referring to the end of the temporal interval. */
   val end :TPRef
