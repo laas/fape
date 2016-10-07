@@ -87,8 +87,9 @@ class Chronicle(val interval: TemporalInterval) {
           context.addStatement(s.id, binded)
 
         case s:AbstractTask =>
-          val parent = this match {
-              case x: Action => Some(x)
+          val parent =
+            this.container match {
+              case Some(x: Action) => Some(x)
               case _ => None
             }
           tasks += Task(pb, s, context, parent, refCounter)
