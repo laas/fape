@@ -15,8 +15,6 @@ action cook(Person p) {
   duration :in [25,30];
   [all] loc(p) == kitchen;
   [end] dinner_ready := true;
-  [end] dinner_warm := true;
-  [end+5] dinner_warm := false;
   ::(observation_conditions(end) { /* none: always observable */ })
 };
 
@@ -32,9 +30,12 @@ action text_me_when_you_leave(Person sender, Person receiver, Location l) {
 
 /*** (Uncontrollable) Schedule of Wife ****/
 
+// start ==[10,20]==> wife_working
 wife_working :in start+ [10,20];
+
 // wife_working ==[30,60]==> wife_driving
 wife_driving :in wife_working + [30,60];
+
 // wife_driving ==[35,40]==> wife_home
 wife_home :in wife_driving + [35,40];
 
@@ -42,21 +43,24 @@ wife_home :in wife_driving + [35,40];
 [wife_driving] loc(wife) := car;
 [wife_home] loc(wife) := home;
 
+
 ::(observation_conditions(wife_driving) {
   [wife_driving] should_notify_when_leaving(me,wife,work) == true;
 })
-::(observation_conditions(wife_home) { /* always observable */ })
+::(observation_conditions(wife_home) { /* none: always observable */ })
 
+
+/*** Initial state ***/
 
 [start] loc(me) := kitchen;
 [start] dinner_ready := false;
 
 
-/******* Goal: dinner be ready and warm at most 5 minutes after wife gets home *****/
+/*** Goal: dinner be ready at most 5 minutes after wife gets home
+     and no earlier than 5 minutes before ***/
 
 [t-1] dinner_ready == false;
 [t] dinner_ready == true;
-
 wife_home -5 <= t;
 t <= wife_home+5;
 
