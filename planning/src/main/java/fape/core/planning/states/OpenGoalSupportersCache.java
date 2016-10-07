@@ -122,7 +122,7 @@ class OpenGoalSupportersCache implements StateExtension {
                 container.getHierarchicalConstraints().isConstrained(og) ?
                         Stream.empty() :
                         container.pb.abstractActions().stream()
-                                .filter(act -> !act.mustBeMotivated())
+                                .filter(act -> !act.isTaskDependent())
                                 .filter(act -> effs.canSupport(og, act, container))
                                 .filter(act -> container.addableTemplates == null || container.addableTemplates.contains(act))
                                 .map(act -> new FutureActionSupport(og, act));

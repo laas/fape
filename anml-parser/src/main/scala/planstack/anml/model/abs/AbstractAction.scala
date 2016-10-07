@@ -20,25 +20,22 @@ import scala.collection.mutable.ArrayBuffer
   *
   * Hence all components of an action refer either to local references (such as an argument of the action) or problem
   * instances (defined in the ANML problem).
-  *
-  * @param baseName Name of the task this action supports
-  * @param decID index (starting at 1) of the decomposition this action was issued from. If decID == 0, then there was no decompositions.
-  * @param mArgs
-  * @param context
   */
-class AbstractAction(val baseName:String, val taskName:String, val decID:Int, private val mArgs:List[LVarRef], val context:PartialContext, val chron: AbstractChronicle)  {
+class AbstractAction(val baseName: String,
+                     val taskName: String,
+                     val decID: Int,
+                     private val mArgs: List[LVarRef],
+                     private val taskDependent: Boolean,
+                     val context:PartialContext,
+                     val chron: AbstractChronicle)  {
 
-
-
-  /** True if the action was defined with the motivated keyword. False otherwise. */
-  private var motivated = false
 
   val name =
     if(decID == 0) baseName
     else "m"+decID+"-"+baseName
 
   /** True if the action was defined with the motivated keyword. False otherwise. */
-  def mustBeMotivated = motivated
+  def isTaskDependent = taskDependent
 
   /** Arguments in the form of local references containing the name of the argument */
   def args = seqAsJavaList(mArgs)
@@ -189,7 +186,7 @@ object AbstractAction {
 
         val actContext = new PartialContext(pb, Some(pb.context))
         var actChronicle : AbstractChronicle = EmptyAbstractChronicle
-        var mustBeMotivated = false
+        var isTaskDependent = false
 
         actChronicle = actChronicle.withVariableDeclarations(args)
         args.foreach(arg => actContext.addUndefinedVar(arg))
@@ -209,7 +206,7 @@ object AbstractAction {
           case tempConstraint: parser.TemporalConstraint =>
             actChronicle = actChronicle.withConstraintsSeq(AbstractTemporalConstraint(tempConstraint))
           case parser.Motivated =>
-            mustBeMotivated = true
+            isTaskDependent = true
           case parser.ExactDuration(e) =>
             val dur = AbstractDuration(e, actContext, pb)
             actChronicle = actChronicle.withConstraintsSeq(AbstractExactDelay(actionStart, actionEnd, dur))
@@ -250,7 +247,7 @@ object AbstractAction {
 
         actChronicle = actChronicle.withMinimizedTemporalConstraints(Nil)
 
-        val action = new AbstractAction(baseName, taskName, decID, args, actContext, actChronicle)
+        val action = new AbstractAction(baseName, taskName, decID, args, isTaskDependent, actContext, actChronicle)
         action
       }
       assert(!pb.tasksMinDurations.contains(acts.head.taskName))

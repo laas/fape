@@ -608,7 +608,7 @@ public class GAction implements Identifiable {
         }
         r.addHornClause(decomposable, subtasks);
 
-        if(!abs.mustBeMotivated())
+        if(!abs.isTaskDependent())
             // not motivated: derivable(a) :- decomposable(a)
             r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE, this), decomposable);
 

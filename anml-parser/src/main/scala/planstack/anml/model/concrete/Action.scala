@@ -60,7 +60,7 @@ class Action(
   def status = mStatus
 
   /** Returns true if the action was defined with the `motivated` keyword. False otherwise. */
-  def mustBeMotivated = abs.mustBeMotivated
+  def mustBeMotivated = abs.isTaskDependent
 
   /** Assigns a new status to the action.
     * Allowed transitions are

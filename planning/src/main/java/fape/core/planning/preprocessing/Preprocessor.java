@@ -205,7 +205,7 @@ public class Preprocessor {
                     isHierarchical = true;
                     break;
                 }
-                if(ga.abs.mustBeMotivated()) {
+                if(ga.abs.isTaskDependent()) {
                     isHierarchical = true;
                     break;
                 }
@@ -245,7 +245,7 @@ public class Preprocessor {
         if(baseDerivabilityReasoner == null) {
             baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
             for (GAction ga : getAllActions()) {
-                if (ga.abs.mustBeMotivated()) {
+                if (ga.abs.isTaskDependent()) {
                     GTask[] condition = new GTask[1];
                     condition[0] = ga.task;
                     baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);

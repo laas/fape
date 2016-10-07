@@ -75,7 +75,7 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
   /** All abstract actions appearing in the problem */
   val abstractActions = new ju.LinkedList[AbstractAction]()
 
-  lazy val allActionsAreMotivated = abstractActions.asScala.forall(aa => aa.mustBeMotivated)
+  lazy val allActionsAreMotivated = abstractActions.asScala.forall(aa => aa.isTaskDependent)
 
   val actionsByTask = mutable.Map[String, ju.List[AbstractAction]]().asJava
   /** contains all tasks name together with their number of arguments */
