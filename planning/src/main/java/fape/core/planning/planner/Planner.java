@@ -437,79 +437,87 @@ public class Planner {
             TinyLogger.LogInfo("Initially empty queue.");
             return null;
         }
-        double fThreshold = (1f + options.epsilon) * f(queue.peek());
+        try {
+            double fThreshold = (1f + options.epsilon) * f(queue.peek());
 
-        int numStatesExploredInDepth = 0;
-        int numStatesToExploreInBest = 0;
-        while (true) {
-            if (System.currentTimeMillis() > deadLine) {
-                TinyLogger.LogInfo("Timeout.");
-                this.planState = EPlanState.TIMEOUT;
-                return null;
-            }
-
-            if (queue.isEmpty()) {
-                this.planState = EPlanState.INFEASIBLE;
-                TinyLogger.LogInfo("Empty queue.");
-                return null;
-            }
-
-            SearchNode current;
-            if(AX.isEmpty() || numStatesToExploreInBest > 0) {
-                if(numStatesExploredInDepth > 0) {
-                    numStatesToExploreInBest = Math.round(numStatesExploredInDepth / options.depthShallowRatio);
-                    // we should keep expanding least-cost nodes for
-                    numStatesExploredInDepth = 0;
+            int numStatesExploredInDepth = 0;
+            int numStatesToExploreInBest = 0;
+            while (true) {
+                if (System.currentTimeMillis() > deadLine) {
+                    TinyLogger.LogInfo("Timeout.");
+                    this.planState = EPlanState.TIMEOUT;
+                    return null;
                 }
-                // get best in open
-                current = queue.poll();
-                numStatesToExploreInBest--;
-            } else {
-                numStatesExploredInDepth++;
-                // still interesting states (below threshold) in the successors of the previously expanded state
-                current = AX.poll();
-                queue.remove(current);
-            }
 
-            try {
-                // let all handlers know that this state was selected for expansion
-                for(Handler h : options.handlers)
-                    h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
+                if (queue.isEmpty()) {
+                    this.planState = EPlanState.INFEASIBLE;
+                    TinyLogger.LogInfo("Empty queue.");
+                    return null;
+                }
 
-                if(!current.getState().isConsistent())
-                    throw new InconsistencyException();
+                SearchNode current;
+                if (AX.isEmpty() || numStatesToExploreInBest > 0) {
+                    if (numStatesExploredInDepth > 0) {
+                        numStatesToExploreInBest = Math.round(numStatesExploredInDepth / options.depthShallowRatio);
+                        // we should keep expanding least-cost nodes for
+                        numStatesExploredInDepth = 0;
+                    }
+                    // get best in open
+                    current = queue.poll();
+                    numStatesToExploreInBest--;
+                } else {
+                    numStatesExploredInDepth++;
+                    // still interesting states (below threshold) in the successors of the previously expanded state
+                    current = AX.poll();
+                    queue.remove(current);
+                }
 
-                if (current.getState().isSolution(options.flawFinders)) {
-                    // this is a solution state
-                    if(options.displaySearch)
-                        searchView.setSolution(current);
+                try {
+                    // let all handlers know that this state was selected for expansion
+                    for (Handler h : options.handlers)
+                        h.addOperation(current, Handler.StateLifeTime.SELECTION, this);
 
-                    this.planState = EPlanState.CONSISTENT;
-                    TinyLogger.LogInfo("Plan found:");
-                    TinyLogger.LogInfo(current.getState());
-                    return current.getState();
-                } else if(current.getDepth() < maxDepth) {
-                    // expand the state
-                    List<SearchNode> children = expand(current);
-                    AX.clear();
-                    for(SearchNode child : children) {
-                        queue.add(child);
-                        // add admissible children to AX for next iteration
-                        if(f(child) < fThreshold) {
-                            AX.add(child);
+                    if (!current.getState().isConsistent())
+                        throw new InconsistencyException();
+
+                    if (current.getState().isSolution(options.flawFinders)) {
+                        // this is a solution state
+                        if (options.displaySearch)
+                            searchView.setSolution(current);
+
+                        this.planState = EPlanState.CONSISTENT;
+                        TinyLogger.LogInfo("Plan found:");
+                        TinyLogger.LogInfo(current.getState());
+                        return current.getState();
+                    } else if (current.getDepth() < maxDepth) {
+                        // expand the state
+                        List<SearchNode> children = expand(current);
+                        AX.clear();
+                        for (SearchNode child : children) {
+                            queue.add(child);
+                            // add admissible children to AX for next iteration
+                            if (f(child) < fThreshold) {
+                                AX.add(child);
+                            }
                         }
                     }
+                    // update the threshold, since our heuristic is not admissible, we do not take
+                    // the max of fthreshold and (1+e)*f(best in open)
+                    if (!queue.isEmpty())
+                        fThreshold = (1f + options.epsilon) * f(queue.peek());
+                } catch (InconsistencyException e) {
+                    if (options.displaySearch)
+                        searchView.setDeadEnd(current);
+                    TinyLogger.LogInfo("\nCurrent state: [" + current.getID() + "]");
+                    TinyLogger.LogInfo("  Non consistent");
                 }
-                // update the threshold, since our heuristic is not admissible, we do not take
-                // the max of fthreshold and (1+e)*f(best in open)
-                if(!queue.isEmpty())
-                    fThreshold = (1f + options.epsilon) * f(queue.peek());
-            } catch (InconsistencyException e) {
-                if(options.displaySearch)
-                    searchView.setDeadEnd(current);
-                TinyLogger.LogInfo("\nCurrent state: ["+current.getID()+"]");
-                TinyLogger.LogInfo("  Non consistent");
             }
+        } catch (InconsistencyException e) {
+            // should only occur in the first state of the queue
+            assert queue.size() == 1 : "An inconsistency exception leaked from search";
+            this.planState = EPlanState.INFEASIBLE;
+            TinyLogger.LogInfo("Problem not solvable from initial state");
+            return null;
         }
     }
 
