@@ -15,6 +15,7 @@ object GlobalRef {
 }
 
 import planstack.anml.model.Type
+import planstack.anml.model.abs.time.TimepointType
 import planstack.anml.model.concrete.GlobalRef._
 
 /** Global reference to an anml object.
@@ -91,6 +92,8 @@ class EmptyVarRef(typ :Type) extends VarRef(NullID, typ, Label("??","EMPTY_VAR_R
 class TPRef(id:Int) extends GlobalRef(id) {
   /** Creates a new reference with a unique (not given yet) ID) */
   def this(refCounter: RefCounter) = this(refCounter.nextTP())
+
+  val genre = new TimepointType
 
   private var typ = 0
   final def isVirtual = typ == 1

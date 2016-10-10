@@ -103,10 +103,10 @@ class Chronicle(val interval: TemporalInterval) {
     for(absConstraint <- absConstraints) {
       absConstraint match {
         case s:AbstractTemporalConstraint =>
-          temporalConstraints += s.bind(context, pb, refCounter)
+          temporalConstraints ++= s.bind(context, pb, refCounter)
 
         case s:AbstractBindingConstraint =>
-          bindingConstraints += s.bind(context, pb, refCounter)
+          bindingConstraints ++= s.bind(context, pb, refCounter)
 
         case _ => throw new ANMLException("unsupported yet:" + absConstraint)
       }

@@ -95,11 +95,10 @@ class AbstractChronicle(
     // minimize all temporal constraints and split timepoints between flexible and rigid (a rigid timepoint a a fixed delay wrt to a flexible)
     val simpleTempConst = constraints collect { case minDelay:AbstractMinDelay => minDelay }
     val otherConsts = constraints.filterNot(s => s.isInstanceOf[AbstractMinDelay])
-    val timepoints = (statements.flatMap(s => List(s.start, s.end)) ++
-      List(ContainerStart, ContainerEnd) ++
-      constraints.filter(s => s.isInstanceOf[AbstractTemporalConstraint])
-        .map(_.asInstanceOf[AbstractTemporalConstraint])
-        .flatMap(c => List(c.from, c.to))).distinct
+    val timepoints = (statements.flatMap(s => List(s.start, s.end))
+      ++ List(ContainerStart, ContainerEnd)
+      ++ constraints.collect { case x: AbstractTemporalConstraint => x }.flatMap(c => c.timepoints)
+      ).distinct
 
     // find all contingent timepoints
     val contingents = constraints.collect {

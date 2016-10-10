@@ -173,7 +173,7 @@ object AbstractAction {
       val taskName = "t-"+baseName
       val args = act.args.map(a => EVariable(a.name, t (a.tipe)))
 
-      val decompositions = act.content.filter(_.isInstanceOf[parser.Decomposition]).map(_.asInstanceOf[parser.Decomposition])
+      val decompositions = act.content.collect{ case x:parser.Decomposition => x }
       val content = act.content.filterNot(_.isInstanceOf[parser.Decomposition])
 
       val decIdsAndStatements: Seq[(Int, Seq[parser.DecompositionContent])] = decompositions.size match {
@@ -182,8 +182,6 @@ object AbstractAction {
       }
 
       val acts = for ((decID, additionalStatements) <- decIdsAndStatements) yield {
-
-
         val actContext = new PartialContext(pb, Some(pb.context))
         var actChronicle : AbstractChronicle = EmptyAbstractChronicle
         var isTaskDependent = false
@@ -195,6 +193,13 @@ object AbstractAction {
 
         val actionStart = ContainerStart
         val actionEnd = ContainerEnd
+        if(decompositions.nonEmpty) {
+          allConstraints += new AbstractTimepointType(actionStart, TimepointTypeEnum.DISPATCHABLE_BY_DEFAULT)
+          allConstraints += new AbstractTimepointType(actionEnd, TimepointTypeEnum.DISPATCHABLE_BY_DEFAULT)
+        }else {
+          allConstraints += new AbstractTimepointType(actionStart, TimepointTypeEnum.STRUCTURAL_BY_DEFAULT)
+          allConstraints += new AbstractTimepointType(actionEnd, TimepointTypeEnum.STRUCTURAL_BY_DEFAULT)
+        }
 
         allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
 

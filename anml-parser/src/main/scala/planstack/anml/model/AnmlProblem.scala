@@ -5,7 +5,7 @@ import java.{util => ju}
 
 import planstack.anml.model.abs._
 import planstack.anml.model.abs.statements.AbstractStatement
-import planstack.anml.model.abs.time.AbsTP
+import planstack.anml.model.abs.time.{AbsTP, ContainerEnd, ContainerStart, TimepointTypeEnum}
 import planstack.anml.model.concrete._
 import planstack.anml.parser.{ANMLFactory, PSimpleType, ParseResult, TypeDecl}
 import planstack.anml.{ANMLException, parser}
@@ -91,9 +91,12 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
 
   // create an initial chronicle containing the predefined instances (true and false)
   {
-    val abstractChronicle = EmptyAbstractChronicle.withConstantDeclarations(instances.allInstances.map(
-      i => (EVariable(i, instances.typeOf(i)), instances.referenceOf(i))
-    ).toSeq)
+    val abstractChronicle = EmptyAbstractChronicle
+      .withConstantDeclarations(instances.allInstances.map(i => (EVariable(i, instances.typeOf(i)), instances.referenceOf(i))).toSeq)
+      .withConstraints(new AbstractMinDelay(ContainerStart,ContainerEnd, 0))
+      .withConstraints(new AbstractTimepointType(ContainerStart,TimepointTypeEnum.DISPATCHABLE))
+      .withConstraints(new AbstractTimepointType(ContainerEnd,TimepointTypeEnum.DISPATCHABLE))
+
 
     val c = abstractChronicle.getInstance(context, this, this, refCounter)
     c.container = Some(this)

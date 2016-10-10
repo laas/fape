@@ -4,8 +4,9 @@ import planstack.anml.model.LocalRef
 import planstack.anml.{ANMLException, parser}
 
 
-
-abstract class AbsTP
+abstract class AbsTP {
+  val genre = new TimepointType
+}
 
 case object TimeOrigin extends AbsTP
 case object ContainerStart extends AbsTP {

@@ -1,40 +1,49 @@
 package planstack.anml.model.abs
 
 import planstack.anml.model._
-import planstack.anml.model.abs.time.AbsTP
+import planstack.anml.model.abs.time.{AbsTP, TimepointTypeEnum}
 import planstack.anml.model.concrete._
 import planstack.anml.model.concrete.time.TimepointRef
 import planstack.anml.parser
-import planstack.anml.pending.{IntExpression, Invert, IntLiteral, IntExpression$}
+import planstack.anml.pending.{IntExpression, IntExpression$, IntLiteral, Invert}
 
 abstract class AbstractConstraint extends VarContainer {
-  def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : Constraint
+  def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : List[Constraint]
 }
 
 abstract class AbstractTemporalConstraint extends AbstractConstraint {
-
-  override final def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : TemporalConstraint = {
-    val trans = (lvar: LVarRef) => context.getGlobalVar(lvar)
-    this match {
-      case AbstractMinDelay(from, to, minDelay) =>
-        new MinDelayConstraint(TimepointRef(pb, context, from, refCounter), TimepointRef(pb, context, to, refCounter), minDelay.bind(trans))
-      case AbstractContingentConstraint(from, to, min, max) =>
-        new ContingentConstraint(TimepointRef(pb,context,from, refCounter), TimepointRef(pb,context,to, refCounter), min.bind(trans), max.bind(trans))
-    }
-  }
-
-  def from : AbsTP
-  def to : AbsTP
+  def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : List[TemporalConstraint]
+  def timepoints : Set[AbsTP]
   def isParameterized : Boolean
+}
+
+case class AbstractTimepointType(tp:AbsTP, genre: TimepointTypeEnum) extends AbstractTemporalConstraint {
+  override def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : List[TemporalConstraint] = {
+    val concreteTP = TimepointRef(pb, context, tp, refCounter)
+    concreteTP.genre.setType(genre)
+    Nil
+  }
+  def isParameterized = false
+  override def timepoints: Set[AbsTP] = Set(tp)
+  override def getAllVars: Set[LVarRef] = Set()
 }
 
 case class AbstractMinDelay(from:AbsTP, to:AbsTP, minDelay:IntExpression)
   extends AbstractTemporalConstraint
 {
+  def this(from: AbsTP, to: AbsTP, minDelay: Int) = this(from, to, IntExpression.lit(minDelay))
   override def toString = "%s + %s <= %s".format(from, minDelay, to)
   override def isParameterized = minDelay.isParameterized
 
   override def getAllVars: Set[LVarRef] = Set()
+  override def timepoints: Set[AbsTP] = Set(from,to)
+
+  override def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : List[TemporalConstraint] = {
+    val trans = (lvar: LVarRef) => context.getGlobalVar(lvar)
+    val fromConcrete = TimepointRef(pb, context, from, refCounter)
+    val toConcrete = TimepointRef(pb, context, to, refCounter)
+    new MinDelayConstraint(fromConcrete, toConcrete, minDelay.bind(trans)) :: Nil
+  }
 }
 
 case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :IntExpression, max:IntExpression)
@@ -44,6 +53,17 @@ case class AbstractContingentConstraint(from :AbsTP, to :AbsTP, min :IntExpressi
   override def isParameterized = min.isParameterized || max.isParameterized
 
   override def getAllVars: Set[LVarRef] = Set()
+  override def timepoints: Set[AbsTP] = Set(from,to)
+
+  override def bind(context: Context, pb :AnmlProblem, refCounter: RefCounter) : List[TemporalConstraint] = {
+    val trans = (lvar: LVarRef) => context.getGlobalVar(lvar)
+    val fromConcrete = TimepointRef(pb, context, from, refCounter)
+    val toConcrete = TimepointRef(pb, context, to, refCounter)
+    assert(!fromConcrete.genre.isNecessarilyStructural, "Structural timepoint at the source of a contingent link")
+    fromConcrete.genre.setType(TimepointTypeEnum.DISPATCHABLE_BY_DEFAULT)
+    toConcrete.genre.setType(TimepointTypeEnum.CONTINGENT)
+    new ContingentConstraint(fromConcrete, toConcrete, min.bind(trans), max.bind(trans)) :: Nil
+  }
 }
 
 
@@ -77,7 +97,7 @@ object AbstractTemporalConstraint {
 abstract class AbstractBindingConstraint
   extends AbstractConstraint
 {
-  override def bind(context: Context, pb: AnmlProblem, refCounter: RefCounter): BindingConstraint = bind(context, pb)
+  override def bind(context: Context, pb: AnmlProblem, refCounter: RefCounter): List[BindingConstraint]= bind(context, pb) :: Nil
 
   def bind(context: Context, pb: AnmlProblem) : BindingConstraint
 }
