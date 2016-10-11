@@ -1,6 +1,7 @@
 package fape.core.planning.heuristics.temporal;
 
 
+import fape.Planning;
 import fape.core.planning.grounding.*;
 import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.planner.Planner;
@@ -8,6 +9,7 @@ import fape.core.planning.preprocessing.Preprocessor;
 import fape.core.planning.states.State;
 import fape.core.planning.timelines.Timeline;
 import fape.util.EffSet;
+import fape.util.TinyLogger;
 import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.IntRep;
 import planstack.anml.model.LVarRef;
@@ -21,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DGHandler extends fape.core.planning.search.Handler {
-    public final boolean USE_DECOMPOSITION_VARIABLES = GlobalOptions.getBooleanOption("use-decomposition-variables");
+    private final boolean USE_DECOMPOSITION_VARIABLES = GlobalOptions.getBooleanOption("use-decomposition-variables");
 
     @Override
     public void stateBindedToPlanner(State st, Planner pl) {
@@ -64,7 +66,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
             st.csp.bindings().addAllowedTupleToNAryConstraint(ga.abs.taskName(), argValues, ga.id);
         }
 
-        // notify ourself of the presence of any actions and tasks in the plan
+        // notify ourselves of the presence of any actions and tasks in the plan
         for (Action a : st.getAllActions())
             actionInserted(a, st, pl);
         for (Task t : st.getOpenTasks())
@@ -181,7 +183,7 @@ public class DGHandler extends fape.core.planning.search.Handler {
         }
 
         // unsupporting actions // TODO: shouldn't those be in the graph as well
-        IRSet<GAction> unsupporting = new IRSet<GAction>(gactsRep);
+        IRSet<GAction> unsupporting = new IRSet<>(gactsRep);
         for(Action a : st.getAllActions())
             if(!st.taskNet.isSupporting(a))
                 unsupporting.addAll(st.getGroundActions(a));
@@ -202,28 +204,28 @@ public class DGHandler extends fape.core.planning.search.Handler {
 
         // all actions that might be attached: (i) those that are open;
         // and (ii) those that can be inserted
-        IRSet<GAction> attachable = new IRSet<GAction>(gactsRep);
+        IRSet<GAction> attachable = new IRSet<>(gactsRep);
         for(Task t : st.getOpenTasks()) {
-            IRSet<GAction> supporters = new IRSet<GAction>(gactsRep, st.csp.bindings().rawDomain(t.groundSupportersVar()).toBitSet());
+            IRSet<GAction> supporters = new IRSet<>(gactsRep, st.csp.bindings().rawDomain(t.groundSupportersVar()).toBitSet());
             attachable.addAll(supporters);
         }
         for(GAction ga : graph.addableActs)
             if(addableTasks.contains(ga.task))
                 attachable.add(ga);
-        // retricted task-dependent and unattached actions to the set of attachable actions
+        // task-dependent and unattached actions restricted to the set of attachable actions
         Domain unattachedDomain = new Domain(attachable.toBitSet());
         for(Action a : st.getUnmotivatedActions())
             st.csp.bindings().restrictDomain(a.instantiationVar(), unattachedDomain);
 
         // populate the addable actions information in the state. This info is used to filter out resolvers
-        st.addableActions = new EffSet<GAction>(pl.preprocessor.groundActionIntRepresentation());
+        st.addableActions = new EffSet<>(pl.preprocessor.groundActionIntRepresentation());
         st.addableActions.addAll(graph.addableActs);
         st.addableTemplates = new HashSet<>();
         for(GAction ga : graph.addableActs)
             st.addableTemplates.add(ga.abs);
 
 
-
+        int initialMakespan = Integer.MIN_VALUE;
         // declare state a dead end if an open goal is not feasible
         for(Timeline og : st.tdb.getConsumers()) {
             int latest = st.getLatestStartTime(og.getConsumeTimePoint());
@@ -248,8 +250,14 @@ public class DGHandler extends fape.core.planning.search.Handler {
             else if(earliest < optimisticEarliestTime)
                 // push back in time we had a too optimistic value
                 st.enforceDelay(st.pb.start(), og.getConsumeTimePoint(), optimisticEarliestTime);
+            initialMakespan = Math.max(initialMakespan, optimisticEarliestTime);
+        }
+        if(!Planning.quiet && isFirstPass && GlobalOptions.getBooleanOption("reachability-instrumentation")) {
+            System.out.println("Initial Makespan: "+initialMakespan);
         }
 
         st.checkConsistency();
+        isFirstPass = false;
     }
+    private boolean isFirstPass = true;
 }

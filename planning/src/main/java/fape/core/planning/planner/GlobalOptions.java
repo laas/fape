@@ -31,10 +31,11 @@ public class GlobalOptions {
             new Option("search-epsilon", "real", "0.3", "Epsilon value of the A-Epsilon algorithm."),
             new Option("use-causal-network", "boolean", "true", ""),
             new Option("use-decomposition-variables", "boolean", "true", ""),
-            new Option("check-delay-from-task-to-og", "boolean", "true", "")
+            new Option("check-delay-from-task-to-og", "boolean", "true", ""),
+            new Option("reachability-instrumentation", "boolean", "true", "")
     ).stream().collect(Collectors.toMap(Option::getKey, Function.identity()));
 
-    static Map<String,String> overriddenValues = new HashMap<>();
+    private static Map<String,String> overriddenValues = new HashMap<>();
 
     public static void setOption(String key, String value) {
         assert opts.containsKey(key) : "Unknown option: "+key;

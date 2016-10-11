@@ -3,6 +3,7 @@ package fape.core.planning.heuristics.temporal;
 import fape.Planning;
 import fape.core.planning.grounding.Fluent;
 import fape.core.planning.grounding.GAction;
+import fape.core.planning.planner.GlobalOptions;
 import fape.core.planning.planner.Planner;
 import fape.util.IteratorConcat;
 import fr.laas.fape.structures.IDijkstraQueue;
@@ -138,6 +139,9 @@ public class StateDepGraph implements DependencyGraph {
             Dijkstra dij = new Dijkstra(ancestorGraph);
             earliestAppearances = dij.getEarliestAppearances();
             predecessors = dij.labelsPred;
+            if(!Planning.quiet && !core.wasReduced && GlobalOptions.getBooleanOption("reachability-instrumentation")) {
+                System.out.println("Number of iterations for initial reachability propagation: "+(dij.currentIteration-1));
+            }
         }
 
         // extract results as more general ground object (the representation here is slightly different)
@@ -191,6 +195,22 @@ public class StateDepGraph implements DependencyGraph {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+
+            if(!Planning.quiet && GlobalOptions.getBooleanOption("reachability-instrumentation")) {
+                int possible = core.getDefaultEarliestApprearances().keySet().stream()
+                        .filter(node -> node instanceof TempFluent.ActionPossible)
+                        .map(a -> ((TempFluent.ActionPossible) a).action)
+                        .collect(Collectors.toSet())
+                        .size();
+                int initiallyPossible =
+                        prevCore.getDefaultEarliestApprearances().keySet().stream()
+                        .filter(node -> node instanceof TempFluent.ActionPossible)
+                        .map(a -> ((TempFluent.ActionPossible) a).action)
+                        .collect(Collectors.toSet())
+                        .size();
+                System.out.println(String.format("Possible actions %d / %d (%f percent)",
+                        possible, initiallyPossible, ((float) possible) /((float) initiallyPossible) *100));
 
             }
         }
@@ -238,7 +258,7 @@ public class StateDepGraph implements DependencyGraph {
      *  This implementation is quite slow but serves as a reference implementation on which the results
      *  of more complex implementations can be verified.
      **/
-    class BellmanFord implements Propagator {
+    private class BellmanFord implements Propagator {
         final IRSet<Node> possible;
         final IR2IntMap<Node> eas;
 
