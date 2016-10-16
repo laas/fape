@@ -27,7 +27,6 @@
 	     (calibration_target ?i - camera ?o - objective)
 	     (on_board ?i - camera ?r - rover)
 	     (channel_free ?l - lander)
-
 )
 
 	
@@ -45,7 +44,7 @@
 (:durative-action sample_soil
 :parameters (?x - rover ?s - store ?p - waypoint)
 :duration (= ?duration 6)
-:condition (and (at start (at ?x ?p))
+:condition (and (over all (at ?x ?p))
 	   	(over all (at_soil_sample ?p))
 		(over all (equipped_for_soil_analysis ?x))
 		(over all (store_of ?s ?x))
@@ -59,7 +58,7 @@
 (:durative-action sample_rock
 :parameters (?x - rover ?s - store ?p - waypoint)
 :duration (= ?duration 5)
-:condition (and (at start (at ?x ?p))
+:condition (and (over all (at ?x ?p))
 	   	(at start (at_rock_sample ?p))
 		(over all (equipped_for_rock_analysis ?x))
 		(over all (store_of ?s ?x))
