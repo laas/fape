@@ -246,7 +246,7 @@ public class Planner {
                 searchView.setCurrentFocus(st);
 
             if(TinyLogger.logging) {
-                TinyLogger.LogInfo(Printer.temporalDatabaseManager(st.getState()));
+                TinyLogger.LogInfo(Printer.timelines(st.getState()));
             }
 
             assert st.getState().isConsistent() : "Expand was given an inconsistent state.";
@@ -267,7 +267,7 @@ public class Planner {
             Flaw f;
             if (options.chooseFlawManually) {
                 System.out.print("STATE :" + st.getID() + "\n");
-                System.out.println(Printer.temporalDatabaseManager(st.getState()));
+                System.out.println(Printer.timelines(st.getState()));
                 for (int i = 0; i < flaws.size(); i++)
                     System.out.println("[" + i + "] " + Printer.p(st.getState(), flaws.get(i)));
                 int choosen = Utils.readInt();

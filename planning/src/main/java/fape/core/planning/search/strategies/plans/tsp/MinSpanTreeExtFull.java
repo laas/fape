@@ -18,8 +18,6 @@ import fape.exceptions.NoSolutionException;
 import fape.util.Pair;
 import fr.laas.fape.structures.DijkstraQueue;
 import fr.laas.fape.structures.IRSet;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import planstack.anml.model.ParameterizedStateVariable;
@@ -177,7 +175,7 @@ public class MinSpanTreeExtFull implements StateExtension {
                     }
                 }
                 if (dbgLvl >= 2)
-                    System.out.println(Printer.inlineTemporalDatabase(st, og));
+                    System.out.println(Printer.inlineTimeline(st, og));
 
                 int ret = distToFinalNode(startNodes);
                 minPreviousCost.put(og, ret);

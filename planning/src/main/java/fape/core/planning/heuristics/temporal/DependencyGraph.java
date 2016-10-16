@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface DependencyGraph {
 
-    static boolean isInfty(int num) { return num > 99999; }
+    static boolean isInfty(int num) { return num > 9999999; }
 
     @Ident(Node.class)
     abstract class Node extends AbsIdentifiable {}

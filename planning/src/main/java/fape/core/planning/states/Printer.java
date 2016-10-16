@@ -18,6 +18,7 @@ import planstack.anml.model.concrete.statements.Transition;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Contains functions to produce human-readable string from planning objects.
@@ -38,7 +39,7 @@ public class Printer {
         else if(o instanceof ParameterizedStateVariable)
             return stateVariable(st, (ParameterizedStateVariable) o);
         else if(o instanceof Timeline)
-            return temporalDatabase(st, (Timeline) o);
+            return timeline(st, (Timeline) o);
         else if(o instanceof Reporter)
             return ((Reporter) o).report();
         else if(o instanceof FluentHolding)
@@ -46,13 +47,13 @@ public class Printer {
 
         // Flaws
         else if(o instanceof Threat)
-            return "Threat: "+inlineTemporalDatabase(st, ((Threat) o).db1)+" && "+inlineTemporalDatabase(st, ((Threat) o).db2);
+            return "Threat: "+ inlineTimeline(st, ((Threat) o).db1)+" && "+ inlineTimeline(st, ((Threat) o).db2);
         else if(o instanceof UnboundVariable)
             return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
         else if(o instanceof UnrefinedTask)
             return "UnsupportedTaskCondition: "+taskCondition(st, ((UnrefinedTask) o).task);
         else if(o instanceof UnsupportedTimeline)
-            return "Unsupported: "+inlineTemporalDatabase(st, ((UnsupportedTimeline) o).consumer);
+            return "Unsupported: "+ inlineTimeline(st, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
             return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
         else if(o instanceof MutexThreat)
@@ -61,10 +62,10 @@ public class Printer {
 
         // Resolvers
         else if(o instanceof TemporalSeparation)
-            return "TemporalSeparation: "+inlineTemporalDatabase(st, ((TemporalSeparation) o).firstDbID)+" && "
-                    +inlineTemporalDatabase(st, ((TemporalSeparation) o).secondDbID);
+            return "TemporalSeparation: "+ inlineTimeline(st, ((TemporalSeparation) o).firstDbID)+" && "
+                    + inlineTimeline(st, ((TemporalSeparation) o).secondDbID);
         else if(o instanceof SupportingTimeline)
-            return "SupportingDatabase: "+inlineTemporalDatabase(st, st.tdb.getTimeline(((SupportingTimeline) o).supporterID));
+            return "SupportingDatabase: "+ inlineTimeline(st, st.tdb.getTimeline(((SupportingTimeline) o).supporterID));
         else if(o instanceof VarBinding)
             return "VarBinding: "+((VarBinding) o).var.id()+"="+((VarBinding) o).value;
         else if(o instanceof BindingSeparation)
@@ -203,9 +204,7 @@ public class Printer {
 
     public static String stateVariable(State st, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
-        for(VarRef arg : sv.args()) {
-            ret += variable(st, arg);
-        }
+        ret += String.join(", ", Stream.of(sv.args()).map(v -> variable(st, v)).collect(Collectors.toSet()));
         return ret + ")";
     }
 
@@ -221,7 +220,7 @@ public class Printer {
         return ret + ")";
     }
 
-    public static String temporalDatabaseManager(final State st) {
+    public static String timelines(final State st) {
         HashMap<String, List<Timeline>> groupedDBs = new HashMap<>();
         for(Timeline tdb : st.getTimelines()) {
             if(!groupedDBs.containsKey(stateVariable(st, tdb.stateVariable))) {
@@ -274,7 +273,7 @@ public class Printer {
         return tableAsString(table,1);
     }
 
-    public static String temporalDatabase(State st, Timeline db) {
+    public static String timeline(State st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append("  id:"+db.mID+"\n");
@@ -299,11 +298,11 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String inlineTemporalDatabase(State st, int dbID) {
-        return inlineTemporalDatabase(st, st.getTimeline(dbID));
+    public static String inlineTimeline(State st, int dbID) {
+        return inlineTimeline(st, st.getTimeline(dbID));
     }
 
-    public static String inlineTemporalDatabase(State st, Timeline db) {
+    public static String inlineTimeline(State st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append(":"+db.mID+"  ");

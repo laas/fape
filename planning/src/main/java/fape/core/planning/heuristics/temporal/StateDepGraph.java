@@ -220,7 +220,7 @@ public class StateDepGraph implements DependencyGraph {
         return earliestAppearances;
     }
 
-    /** Recursively display a nodes and its incoming edges. **/
+    /** Recursively display a node and its incoming edges. **/
     private void displayRec(Node n, int depth, int maxDepth) {
         if(depth > maxDepth)
             return;
@@ -241,7 +241,6 @@ public class StateDepGraph implements DependencyGraph {
             }
         }
     }
-
 
     interface Propagator {
         IR2IntMap<Node> getEarliestAppearances();

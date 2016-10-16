@@ -398,7 +398,7 @@ public class Planning {
                     System.out.println("Makespan: "+sol.getMakespan());
                     System.out.println("Num actions: "+sol.getAllActions().size());
                     System.out.println();
-                    System.out.println("=== Timelines === \n" + Printer.temporalDatabaseManager(sol));
+                    System.out.println("=== Timelines === \n" + Printer.timelines(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
                 }
 

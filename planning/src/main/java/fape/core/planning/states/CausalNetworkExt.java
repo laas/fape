@@ -11,7 +11,6 @@ import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.TPRef;
 import planstack.anml.model.concrete.statements.LogStatement;
 import planstack.structures.ISet;
-import scala.Function1;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -416,14 +415,14 @@ public class CausalNetworkExt implements StateExtension {
         StringBuilder sb = new StringBuilder();
         for(int tlID : potentialSupporters.keySet()) {
             if(!tdb.containsTimelineWithID(tlID)) continue;
-            sb.append(Printer.inlineTemporalDatabase(container, tlID));
+            sb.append(Printer.inlineTimeline(container, tlID));
             sb.append("\n");
             for(Event pis : potentialSupporters.get(tlID)) {
                 if(!tdb.containsTimelineWithID(pis.supporterID)) continue;
                 sb.append("  (");
                 sb.append(pis.changeNumber);
                 sb.append(")  ");
-                sb.append(Printer.inlineTemporalDatabase(container, pis.supporterID));
+                sb.append(Printer.inlineTimeline(container, pis.supporterID));
                 sb.append("\n");
             }
         }
