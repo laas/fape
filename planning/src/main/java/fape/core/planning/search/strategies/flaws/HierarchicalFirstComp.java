@@ -28,7 +28,7 @@ public class HierarchicalFirstComp implements FlawComparator {
         if(threatsFirst && flaw instanceof Threat)
             return 0.;
         else if(flaw instanceof UnrefinedTask)
-            return 1. + ((double) st.getEarliestStartTime(((UnrefinedTask) flaw).task.start())) / ((double) st.getEarliestStartTime(st.pb.end())+1);
+            return 1. + ((double) st.getEarliestStartTime(((UnrefinedTask) flaw).task.start())) / Integer.MAX_VALUE; // ((double) st.getEarliestStartTime(st.pb.end()) + 1);
         else if(flaw instanceof UnmotivatedAction)
             return 4.;
         else
