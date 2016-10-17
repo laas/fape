@@ -3,7 +3,7 @@ package planstack.constraints.stn
 import scala.collection.mutable
 import Math._
 
-import planstack.anml.model.concrete.{ContingentConstraint, TPRef}
+import planstack.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import planstack.constraints.stnu.InconsistentTemporalNetwork
 
 object StnWithStructurals {
@@ -15,39 +15,72 @@ object StnWithStructurals {
 import StnWithStructurals._
 
 class StnWithStructurals(val nonRigidIndexes: mutable.Map[TPRef,Int],
-                         var dist: Array[Array[Int]],
+                         val timepointByIndex: mutable.ArrayBuffer[TPRef],
+                         var dist: DistanceMatrix,
                          val rigidRelations: RigidRelations,
-                         val contingentLinks: mutable.Seq[ContingentConstraint]
-                        ) {
+                         val contingentLinks: mutable.ArrayBuffer[ContingentConstraint]
+                        )
+  extends DistanceMatrixListener {
 
 
-  implicit def toIndex(tp:TPRef) : Int = tpIndexes(tp)
+  private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
 
-  def isKnown(tp: TPRef) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
-
-
+  private def isKnown(tp: TPRef) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
+  private def recordTimepoint(tp: TPRef): Int = {
+    assert(!isKnown(tp))
+    val id = dist.createNewNode()
+    nonRigidIndexes.put(tp, id)
+    if(timepointByIndex.size == id)
+      timepointByIndex.append(tp)
+    else {
+      assert(timepointByIndex(id) == null)
+      timepointByIndex(id) = tp
+    }
+    id
+  }
 
   def addMinDelay(from:TPRef, to:TPRef, minDelay:Int) =
     addEdge(to, from, -minDelay)
 
-  def addEdge(src:TPRef, dst :TPRef, t:Int): Unit = {
-    dist(src)(dst) = Math.min(dist(src)(dst), t)
+  def addMaxDelay(from: TPRef, to: TPRef, maxDelay: Int) =
+    addMinDelay(to, from, -maxDelay)
+
+  private def addEdge(src:TPRef, dst :TPRef, t:Int): Unit = {
+    if(!isKnown(src))
+      recordTimepoint(src)
+    if(!isKnown(dst))
+      recordTimepoint(dst)
   }
 
+  def addConstraint(c: TemporalConstraint): Unit = {
+    c match {
+      case req: MinDelayConstraint if req.minDelay.isKnown=>
+        addMinDelay(req.src, req.dst, req.minDelay.get)
+      case cont: ContingentConstraint if cont.min.isKnown && cont.max.isKnown =>
+        addMinDelay(cont.src, cont.dst, cont.min.get)
+        addMaxDelay(cont.src, cont.dst, cont.max.get)
+        contingentLinks.append(cont)
+      case _ =>
+        throw new RuntimeException("Constraint: "+c+" is not properly supported")
+    }
+  }
 
-
-  private def rigidAwareDist(a:TPRef, b:TPRef) : Int =
-    rigidAwareDist(toIndex(a), toIndex(b))
-
-  private def rigidAwareDist(a:Int, b:Int) : Int = {
-    val (aRef:Int, aRefToA:Int) =
-      if(rigids.contains(a)) (rigids(a).reference, rigids(a).distFromRef(a))
-      else (a, 0)
-    val (bRef:Int, bRefToB) =
-      if(rigids.contains(b)) (rigids(b).reference, rigids(b).distFromRef(b))
+  private def rigidAwareDist(a:TPRef, b:TPRef) : Int = {
+    val (aRef:TPRef, aToRef:Int) =
+      if(rigidRelations.isAnchored(a))
+        (rigidRelations._anchorOf(a), rigidRelations.distToAnchor(a))
+      else
+        (a, 0)
+    val (bRef:TPRef, refToB) =
+      if(rigidRelations.isAnchored(b))
+        (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
       else (b, 0)
 
-    return bRefToB - aRefToA + dist(aRef)(bRef)
+    aToRef + distanceBetweenNonRigid(aRef, bRef) + refToB
+  }
+
+  private def distanceBetweenNonRigid(a: TPRef, b: TPRef) = {
+    dist.getDistance(toIndex(a), toIndex(b))
   }
 
   def concurrent(tp1: TPRef, tp2: TPRef) = rigidAwareDist(tp1,tp2) == rigidAwareDist(tp2,tp1)
@@ -59,83 +92,35 @@ class StnWithStructurals(val nonRigidIndexes: mutable.Map[TPRef,Int],
   def between(tp: TPRef, min:TPRef, max:TPRef) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
   def strictlyBetween(tp: TPRef, min:TPRef, max:TPRef) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
 
-  /** Check whether two timepoints are rigidly constrained.
-    * If this is the case, the will be added to the relevant rigid set
-    * and removed from the distance matrix. */
-  private def checkRigid(t1: Int, t2: Int): Unit = {
-    if(t1 == t2)
+  override def distanceUpdated(a: Int, b: Int): Unit = {
+    // check if the network is now inconsistent
+    if(dist.getDistance(a,b) + dist.getDistance(b,a) < 0)
+      throw new InconsistentTemporalNetwork
+
+    if(a == b)
       return
-//    val d12 = dist(t1)(t2)
-//    val d21 = dist(t2)(t1)
-//    if(d12 == -d21) {
-//      // we have a rigid relation
-//      if(rigids.contains(t1) && rigids.contains(t2)) {
-//        val rs1 = rigids(t1)
-//        val rs2 = rigids(t2)
-//        assert(rs1 != rs2, "Timepoints were already in the same rigid set")
-//        rs1.merge(rs2, d12)
-//        references.remove(rs2.reference)
-//        enforceNewRigid(rs2.reference)
-//      } else if(!rigids.contains(t1) && !rigids.contains(t2)) {
-//        val rs = new RigidSet(t1)
-//        rs.addRigidRelation(t1, t2, d12)
-//        references.add(t1)
-//        enforceNewRigid(t2)
-//      } else if(rigids.contains(t1)){
-//        val rs = rigids(t1)
-//        rs.addRigidRelation(t1,t2,d12)
-//        enforceNewRigid(t2)
-//      } else {
-//        assert(rigids.contains(t2))
-//        val rs = rigids(t2)
-//        rs.addRigidRelation(t1,t2,d12)
-//        enforceNewRigid(t1)
-//      }
-//    }
-  }
 
-  /** Returns false for any timepoint that was pruned out of the dist array because it was rigid */
-  private def isActive(tp:Int) = !rigids.contains(tp) || references.contains(tp)
+    val tpA = timepointByIndex(a)
+    val tpB = timepointByIndex(b)
+    assert(!rigidRelations.isAnchored(tpA))
+    assert(!rigidRelations.isAnchored(tpB))
 
-  /** Redirect all constraints involving a rigid time point to point
-    * to its reference */
-  def enforceNewRigid(tp: Int): Unit = {
-    assert(!references.contains(tp))
-    assert(rigids.contains(tp))
-    val rs = rigids(tp)
-    val ref = rs.reference
-    val refToTp = rs.distFromRef(tp)
-    for(i <- dist.indices if isActive(i)) {
-      dist(ref)(i) = Math.min(dist(ref)(i), refToTp + dist(tp)(i))
-      dist(i)(ref) = Math.min(dist(i)(ref), -refToTp + dist(i)(tp))
-//      dist(i)(tp) = null TODO
-//      dist(tp)(i) = null // sabotage to make sure we get a null pointer exception we try to access those outdated fields
-    }
-  }
+    // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
+    // the distance matrix
+    if(dist.getDistance(a,b) == -dist.getDistance(b,a)) {
+      if(tpA.genre.isStructural || tpB.genre.isStructural) {
+        // record rigid relation
+        rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(a, b))
 
-  /**
-    * Makes a complete propagation using the floyd-warshall algorithm.
-    * Online, this method: (i) infers bounds (lb and ub) on the variables
-    * appearing on the distance matrix that must hold for the STN to be
-    * consistent, (ii) detects "rigig" timpoint that have a fixed distance to a
-    * reference timpoint. Those timepoints are compiled out of the distance matrix
-    * to avoid useless propagation.
-    */
-  def floydWarshall(): Unit = {
-    for(k <- 0 until size if isActive(k)) {
-      for(i <- 0 until size if isActive(i) && isActive(k)) {
-        for(j <- 0 until size if isActive(i) && isActive(j) && isActive(k)) {
-          if(dist(i)(j) > dist(i)(k) + dist(k)(j)) {
-            dist(i)(j) = dist(i)(k) + dist(k)(j)
-            if(dist(i)(j) + dist(j)(i) < 0)
-              throw new InconsistentTemporalNetwork()
-
-            checkRigid(i, j)
-          }
-        }
+        val (anchored, anchor) =
+          if(rigidRelations.isAnchored(tpA)) (tpA, tpB)
+          else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
+          else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
+        // remove the anchored timepoint from distance matrix
+        dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
+        timepointByIndex(toIndex(anchored)) = null
+        nonRigidIndexes.remove(anchored)
       }
     }
-    //    println(lbs)
-    //    println(ubs)
   }
 }

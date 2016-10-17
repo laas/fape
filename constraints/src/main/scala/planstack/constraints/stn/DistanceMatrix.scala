@@ -2,6 +2,7 @@ package planstack.constraints.stn
 
 import java.util
 
+import planstack.anml.model.concrete.AnchoredTimepoint
 import planstack.constraints.stnu.InconsistentTemporalNetwork
 
 import scala.collection.mutable
@@ -21,15 +22,26 @@ object DistanceMatrix {
   }
 }
 
+trait DistanceMatrixListener {
+  def distanceUpdated(a: Int, b: Int)
+}
+
 import DistanceMatrix._
 
 class DistanceMatrix(
                       var dists: Array[Array[Int]],
                       val emptySpots: mutable.Set[Int],
-                      val defaultValue: Int = -INF
+                      val defaultValue: Int
                     ) {
 
-  def getNewNode(): Int = {
+  val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
+
+  private final def isActive(tp: Int) = {
+    assert(tp < dists.size)
+    !emptySpots.contains(tp)
+  }
+
+  def createNewNode(): Int = {
     if(emptySpots.isEmpty) {
       // grow matrix
       val prevLength = dists.length
@@ -54,7 +66,7 @@ class DistanceMatrix(
   /**
     * Removes a node from the network. Note that all constraints previously inferred will stay in the matrix
     */
-  def eraseNode(n: Int): Unit = {
+  private def eraseNode(n: Int): Unit = {
     util.Arrays.fill(dists(n), defaultValue)
     for(i <- dists.indices)
       dists(i)(n) = defaultValue
@@ -92,5 +104,29 @@ class DistanceMatrix(
     }
   }
 
-  private final def updated(a: Int, b: Int)
+  def compileAwayRigid(anchoredTimepoint: Int, anchor: Int): Unit = {
+    assert(anchoredTimepoint != anchor)
+    assert(dists(anchor)(anchoredTimepoint) == -dists(anchoredTimepoint)(anchor), "Trying to compile a non rigid relation")
+    for(i <- dists.indices) {
+      if(isActive(i) && dists(i)(anchor) < plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))) {
+        dists(i)(anchor) = plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))
+        updated(i, anchor)
+      }
+      if(isActive(i) && dists(anchor)(i) < plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))) {
+        dists(anchor)(i) = plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))
+        updated(anchor, i)
+      }
+    }
+    eraseNode(anchoredTimepoint)
+  }
+
+  def getDistance(a: Int, b: Int): Int = {
+    assert(!emptySpots.contains(a) && !emptySpots.contains(b))
+    dists(a)(b)
+  }
+
+  private final def updated(a: Int, b: Int): Unit = {
+    for(list <- listeners)
+      list.distanceUpdated(a, b)
+  }
 }
