@@ -53,8 +53,8 @@ lazy val structures = Project("structures", file("structures"))
 packSettings
 
 packMain := Map(
-  "fape" -> "fape.Planning",
-  "fape-server" -> "fape.Server"
+  "fape" -> "fr.laas.fape.planning.Planning",
+  "fape-server" -> "fr.laas.fape.planning.Server"
 )
 
 packJvmOpts := Map(

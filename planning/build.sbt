@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
 )
 
 
-mainClass := Some("fape.Planning")
+mainClass := Some("fr.laas.fape.planning.Planning")
 
 exportJars := true
 

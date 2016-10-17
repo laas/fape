@@ -160,7 +160,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         return new IR2IntMap<K>(this);
     }
 
-    @Override @Deprecated // this might be very slow
+    @Override // this might be very slow
     @SuppressWarnings("unchecked")
     public Set<K> keySet() {
         HashSet<K> keys = new HashSet<>();
