@@ -1,5 +1,6 @@
 package fape.core.planning.preprocessing;
 
+import fape.util.TinyLogger;
 import planstack.anml.model.AnmlProblem;
 import planstack.anml.model.Function;
 import planstack.anml.model.LVarRef;
@@ -65,6 +66,11 @@ public class AbstractionHierarchy {
                     // add constraints ft1 -> ft2
                     dag.addEdge(ft1, ft2);
                 }
+            }
+        }
+        for(Function fn : pb.functions().getAll()) {
+            if(!fn.isConstant() && !dag.contains(fn)) {
+                dag.addVertex(fn);
             }
         }
 
