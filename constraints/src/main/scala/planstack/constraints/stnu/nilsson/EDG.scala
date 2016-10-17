@@ -1,6 +1,7 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.nilsson
 
 import planstack.constraints.stn.Weight
+import planstack.constraints.stnu.Edge
 import planstack.graph.GraphFactory
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.core.impl.matrix.{FullIntIntDigraph, SimpleLabeledDirectedIIMatrix}

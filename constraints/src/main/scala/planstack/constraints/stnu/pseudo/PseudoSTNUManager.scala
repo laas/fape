@@ -1,8 +1,9 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.pseudo
 
 import planstack.anml.model.concrete.TPRef
 import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus._
+import planstack.constraints.stnu.{Constraint, FullSTN, GenSTNUManager}
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 

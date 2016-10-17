@@ -1,6 +1,6 @@
-package planstack.constraints.experimental
+package planstack.constraints.stnu.morris
 
-import planstack.constraints.experimental.DCMorris.{Lower, Upper, Req, Edge}
+import planstack.constraints.stnu.morris.DCMorris.{Edge, Lower, Req, Upper}
 
 import scala.util.parsing.combinator.JavaTokenParsers
 

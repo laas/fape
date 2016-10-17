@@ -1,6 +1,7 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
+import planstack.constraints.stnu.nilsson.EDG
 
 class ConcreteEDGForTesting[ID] extends EDG[ID](checkCycles = true) {
   val start = addVar()

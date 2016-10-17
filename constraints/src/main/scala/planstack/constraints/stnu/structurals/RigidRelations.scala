@@ -1,4 +1,4 @@
-package planstack.constraints.stn
+package planstack.constraints.stnu.structurals
 
 import planstack.anml.model.concrete.TPRef
 

@@ -9,12 +9,8 @@ import fape.exceptions.FAPEException;
 import fape.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Value;
-import planstack.anml.model.Function;
-import planstack.anml.model.ParameterizedStateVariable;
 import planstack.anml.model.concrete.*;
-import planstack.anml.model.concrete.statements.LogStatement;
-import planstack.anml.model.concrete.statements.Persistence;
-import planstack.constraints.experimental.PartialObservability;
+import planstack.constraints.stnu.morris.PartialObservability;
 
 import java.util.*;
 import java.util.stream.Collectors;

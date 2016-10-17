@@ -1,22 +1,24 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.pseudo
 
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.stn.{ISTN, STNIncBellmanFord}
+import planstack.constraints.stn.CoreSTN
+import planstack.constraints.stn.bellmanford.CoreSTNIncBellmanFord
 import planstack.constraints.stnu.ElemStatus._
+import planstack.constraints.stnu.{Constraint, Controllability, GenSTNUManager}
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
 
 import scala.language.implicitConversions
 
-class MinimalSTNUManager[ID](val stn:ISTN[ID],
-                                   _tps: Array[TPRef],
-                                   _ids : Array[Int],
-                                   _rawConstraints : List[Constraint[ID]],
-                                   _start : Option[TPRef],
-                                   _end : Option[TPRef])
+class MinimalSTNUManager[ID](val stn:CoreSTN[ID],
+                             _tps: Array[TPRef],
+                             _ids : Array[Int],
+                             _rawConstraints : List[Constraint[ID]],
+                             _start : Option[TPRef],
+                             _end : Option[TPRef])
   extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
-  def this() = this(new STNIncBellmanFord[ID](), Array(), Array(), List(), None, None)
+  def this() = this(new CoreSTNIncBellmanFord[ID](), Array(), Array(), List(), None, None)
 
   /** Makes an independent clone of this STN. */
   override def deepCopy(): MinimalSTNUManager[ID] =

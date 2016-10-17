@@ -1,5 +1,6 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.nilsson
 
+import planstack.constraints.stnu._
 import planstack.graph.GraphFactory
 import planstack.graph.core.LabeledDigraph
 import planstack.graph.printers.NodeEdgePrinter
@@ -10,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 
 
 /*** NOT FINISHED. This implementation of EfficientIDC is not finished yet. */
-class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends ISTNU[ID] with EDGListener[ID]
+class EfficientIDC[ID](val edg : EDG[ID], val todo : ListBuffer[Int]) extends CoreSTNU[ID] with EDGListener[ID]
 {
   type E = Edge[ID]
 

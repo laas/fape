@@ -3,7 +3,7 @@ package planstack.constraints.stn
 import planstack.constraints.stnu.ElemStatus
 import planstack.structures.IList
 
-abstract class ISTN[ID] {
+abstract class CoreSTN[ID] {
 
   /** Id of the Start time point. No time points in the STN should happen before this one. */
   def start = 0
@@ -27,6 +27,7 @@ abstract class ISTN[ID] {
 
   /**
    * Return the number of time points in the STN
+ *
    * @return
    */
   def size :Int
@@ -44,6 +45,7 @@ abstract class ISTN[ID] {
 
   /** Adds a constraint to the STN specifying that v - u <= w.
     * The constraint is associated with an ID than can be later used to remove the constraint.
+    *
     * @return True if the STN tightened due to this operation.
     */
   def addConstraintWithID(u:Int, v:Int, w:Int, id:ID) : Boolean
@@ -55,6 +57,7 @@ abstract class ISTN[ID] {
    * Enforces that the time point u must happens before time point v or at the same time
    *
    * Results in the addition of an edge from v to u with weight 0: (v, u, 0)
+ *
    * @param u
    * @param v
    */
@@ -71,6 +74,7 @@ abstract class ISTN[ID] {
    * Enforces that the time point u must happens strictly before time point v
    *
    * Results in the addition of an edge from v to u with weight -1: (v, u, -1)
+ *
    * @param u
    * @param v
    */
@@ -80,6 +84,7 @@ abstract class ISTN[ID] {
 
   /**
    * Creates a constraint stipulating that v in [u+min, u+max]
+ *
    * @param u
    * @param v
    * @param min
@@ -92,12 +97,14 @@ abstract class ISTN[ID] {
 
   /**
    * Write a dot serialisation of the graph to file
+ *
    * @param file
    */
   def writeToDotFile(file:String)
 
   /**
    * Returns the earliest start time of time point u with respect to the start time point of the STN
+ *
    * @param u
    * @return
    */
@@ -105,6 +112,7 @@ abstract class ISTN[ID] {
 
   /**
    * Returns the latest start time of time point u with respect to the start TP of the STN
+ *
    * @param u
    * @return
    */
@@ -112,6 +120,7 @@ abstract class ISTN[ID] {
 
   /**
    * Makespan of the STN (ie the earliest start of End)
+ *
    * @return
    */
   final def makespan = earliestStart(end)
@@ -120,6 +129,7 @@ abstract class ISTN[ID] {
    * Returns true if the STN resulting in the addition of the constraint v - u <= w is consistent.
    *
    * Note that the default implementation works by propagating constraints on a clone of the current STN.
+ *
    * @param u
    * @param v
    * @param w
@@ -144,8 +154,9 @@ abstract class ISTN[ID] {
 
   /**
    * Returns a complete clone of the STN.
-   * @return
+ *
+    * @return
    */
-  def cc() : ISTN[ID]
+  def cc() : CoreSTN[ID]
 
 }

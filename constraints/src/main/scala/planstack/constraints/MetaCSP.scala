@@ -4,9 +4,10 @@ import java.util
 
 import planstack.anml.model.ParameterizedStateVariable
 import planstack.anml.model.concrete.{RefCounter, TPRef, VarRef}
-import planstack.anml.pending.{LStateVariable, StateVariable, Variable, IntExpression}
+import planstack.anml.pending.{IntExpression, LStateVariable, StateVariable, Variable}
 import planstack.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
-import planstack.constraints.stnu.{GenSTNUManager, MinimalSTNUManager}
+import planstack.constraints.stnu.pseudo.MinimalSTNUManager
+import planstack.constraints.stnu.{CoreSTNU, GenSTNUManager, STNU}
 
 import scala.collection.JavaConverters._
 
@@ -39,7 +40,7 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  */
 class MetaCSP[ID](
                    val bindings: BindingConstraintNetwork,
-                   val stn: GenSTNUManager[ID],
+                   val stn: STNU[ID],
                    protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]]
                  )
   extends IntBindingListener[VarRef]

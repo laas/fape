@@ -1,6 +1,7 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
+import planstack.constraints.stnu.nilsson.{Conditional, Contingent, Requirement, STNULabel}
 import planstack.graph.core.LabeledEdge
 
 class TighteningEDGSuite extends FunSuite {

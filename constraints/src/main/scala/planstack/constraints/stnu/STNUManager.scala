@@ -6,12 +6,12 @@ import planstack.graph.printers.NodeEdgePrinter
 
 import scala.language.implicitConversions
 
-class STNUManager[ID](val stnu : ISTNU[ID],
-                            _tps : Array[TPRef],
-                            _ids : Array[Int],
-                            _rawConstraints : List[Constraint[ID]],
-                            _start : Option[TPRef],
-                            _end : Option[TPRef])
+class STNUManager[ID](val stnu : CoreSTNU[ID],
+                      _tps : Array[TPRef],
+                      _ids : Array[Int],
+                      _rawConstraints : List[Constraint[ID]],
+                      _start : Option[TPRef],
+                      _end : Option[TPRef])
   extends GenSTNUManager[ID](_tps, _ids, _rawConstraints, _start, _end)
 {
   // could use FastIDC as well

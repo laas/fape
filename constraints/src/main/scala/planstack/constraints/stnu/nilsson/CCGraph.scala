@@ -1,4 +1,4 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.nilsson
 
 import planstack.graph.GraphFactory
 import planstack.graph.algorithms.Algos

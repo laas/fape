@@ -1,6 +1,7 @@
 package planstack.constraints.stn
 
 import org.scalatest.FunSuite
+import planstack.constraints.stn.bellmanford.CoreSTNIncBellmanFord
 import planstack.constraints.stnu.FullSTN
 
 class STNSuite extends FunSuite {
@@ -11,7 +12,7 @@ class STNSuite extends FunSuite {
     }
   }
 
-  for(stn <- List(new STNIncBellmanFord[String](), new FullSTN[String](10))) {
+  for(stn <- List(new CoreSTNIncBellmanFord[String](), new FullSTN[String](10))) {
 
     test("[" + stn.getClass.getSimpleName + "] Simple Consistency") {
       val u = stn.addVar()
@@ -74,7 +75,7 @@ class STNSuite extends FunSuite {
   }
 
   test("Edges sorted for STNIncBellmanFord") {
-    val stn = new STNIncBellmanFord[String]()
+    val stn = new CoreSTNIncBellmanFord[String]()
 
     val u = stn.addVar()
     val v = stn.addVar()

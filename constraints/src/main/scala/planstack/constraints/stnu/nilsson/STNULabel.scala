@@ -1,4 +1,4 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.nilsson
 
 class STNULabel[ID](val value : Int) {
 

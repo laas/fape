@@ -1,6 +1,7 @@
 package planstack.constraints.stnu
 
 import org.scalatest.FunSuite
+import planstack.constraints.stnu.nilsson.EDG
 
 class RulesSuite extends FunSuite{
 

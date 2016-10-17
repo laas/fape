@@ -1,8 +1,9 @@
-package planstack.constraints.stnu
+package planstack.constraints.stnu.nilsson
 
 import planstack.constraints.stn.LabeledEdgeWithID
 import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus._
+import planstack.constraints.stnu.{ElemStatus, _}
 import planstack.graph.printers.NodeEdgePrinter
 import planstack.structures.Converters._
 import planstack.structures.IList
@@ -16,7 +17,7 @@ class FastIDC[ID](protected[stnu] var edg : EDG[ID],
                   protected[stnu] var allConstraints : List[Edge[ID]],
                   protected[stnu] var dispatchableVars : Set[Int],
                   protected[stnu] var contingentVars : Set[Int])
-  extends ISTNU[ID] with EDGListener[ID]
+  extends CoreSTNU[ID] with EDGListener[ID]
 {
   type E = Edge[ID]
 

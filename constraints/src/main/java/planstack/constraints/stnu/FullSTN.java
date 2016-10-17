@@ -1,6 +1,6 @@
 package planstack.constraints.stnu;
 
-import planstack.constraints.stn.ISTN;
+import planstack.constraints.stn.CoreSTN;
 import planstack.structures.IList;
 import planstack.structures.ISet;
 import scala.*;
@@ -24,7 +24,7 @@ import java.util.LinkedList;
  * too many points we need to remember for backtracking.
  * @author Filip Dvořák
  */
-public class FullSTN<ID> extends ISTN<ID> {
+public class FullSTN<ID> extends CoreSTN<ID> {
 
     private static int pos(int i, int j) {
         return i*(i-1)/2 + j;
@@ -54,7 +54,7 @@ public class FullSTN<ID> extends ISTN<ID> {
     /**
      * constructs new network (intended to run once per Finder invokation)
      */
-    protected FullSTN(){
+    public FullSTN(){
         init(10);
     }
 
@@ -114,7 +114,7 @@ public class FullSTN<ID> extends ISTN<ID> {
      * @param var2 time point
      * @return lower bound on time between time point var1 and var2
      */
-    protected int maxDelay(int var1, int var2){
+    public int maxDelay(int var1, int var2){
         if(var1 == var2) return 0;
         else if(var1 < var2) return (- minDelay(var2, var1));
         else return edge_b[pos(var1, var2)];

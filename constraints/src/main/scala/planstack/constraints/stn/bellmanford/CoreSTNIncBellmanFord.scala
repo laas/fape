@@ -1,12 +1,13 @@
-package planstack.constraints.stn
+package planstack.constraints.stn.bellmanford
 
 import planstack.constraints.stn.StnPredef._
+import planstack.constraints.stn.{GenCoreSTN, Weight}
 import planstack.graph.core.{LabeledDigraph, LabeledEdge}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class STNIncBellmanFord[ID](
+class CoreSTNIncBellmanFord[ID](
                              val q:mutable.Queue[Tuple2[Int,Int]],
                              val forwardDist:ArrayBuffer[Weight],
                              val backwardDist:ArrayBuffer[Weight],
@@ -14,9 +15,7 @@ class STNIncBellmanFord[ID](
                              notIntegrated : List[LabeledEdge[Int,Int]],
                              emptySpots : Set[Int],
                              sup_consistent:Boolean)
-  extends STN[ID](sup_g, notIntegrated, sup_consistent, emptySpots) {
-
-//  var updatedVars = List[Int]()
+  extends GenCoreSTN[ID](sup_g, notIntegrated, sup_consistent, emptySpots) {
 
   def this() = this(
     new mutable.Queue[Tuple2[Int,Int]],
@@ -125,7 +124,8 @@ class STNIncBellmanFord[ID](
 
   /**
    * A basic implementation of Bellman-Ford that computes all distances from scratch
-   * @return True if the STN is consistent (no negative cycles)
+    *
+    * @return True if the STN is consistent (no negative cycles)
    */
   def recomputeAllDistances() : Boolean = {
     // set all distances to inf except for the origin
@@ -163,8 +163,8 @@ class STNIncBellmanFord[ID](
     consistent
   }
 
-  def cc() : STNIncBellmanFord[ID] = {
-    new STNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc, notIntegrated, emptySpots, consistent)
+  def cc(): CoreSTNIncBellmanFord[ID] = {
+    new CoreSTNIncBellmanFord(q.clone(), forwardDist.clone(), backwardDist.clone(), g.cc, notIntegrated, emptySpots, consistent)
   }
 
   def distancesToString = {

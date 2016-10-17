@@ -1,8 +1,7 @@
-package planstack.constraints.stn
+package planstack.constraints.stnu.structurals
 
 import java.util
 
-import planstack.anml.model.concrete.AnchoredTimepoint
 import planstack.constraints.stnu.InconsistentTemporalNetwork
 
 import scala.collection.mutable
@@ -26,7 +25,7 @@ trait DistanceMatrixListener {
   def distanceUpdated(a: Int, b: Int)
 }
 
-import DistanceMatrix._
+import planstack.constraints.stnu.structurals.DistanceMatrix._
 
 class DistanceMatrix(
                       var dists: Array[Array[Int]],

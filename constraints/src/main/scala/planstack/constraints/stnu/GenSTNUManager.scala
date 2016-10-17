@@ -1,7 +1,7 @@
 package planstack.constraints.stnu
 
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.stn.{GenSTNManager, ISTN}
+import planstack.constraints.stn.{STN, CoreSTN}
 import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus._
 import planstack.structures.Converters._
@@ -21,7 +21,7 @@ abstract class GenSTNUManager[ID]
   var rawConstraints : List[Constraint[ID]],
   var start : Option[TPRef],
   var end : Option[TPRef])
-  extends GenSTNManager[TPRef,ID]
+  extends STNU[ID]
 {
   type Const = Constraint[ID]
 
@@ -38,7 +38,7 @@ abstract class GenSTNUManager[ID]
   final def rm(tp: TPRef) = { id(tp.id) = -2 ; tps(tp.id) = null }//tps.remove(tp.id)
   final def refToReal(tp: TPRef) : (TPRef, Int) = { assert(tp.isAttached) ; tp.attachmentToReal }
 
-  def stn : ISTN[ID]
+  def stn : CoreSTN[ID]
 
   private final def ensureSpaceFor(tp: TPRef): Unit = {
     if(tps.size <= tp.id) {
@@ -52,10 +52,6 @@ abstract class GenSTNUManager[ID]
     }
   }
 
-  final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int): Unit = {
-    enforceContingent(u, v, min, max, None)
-  }
-
   protected def commitContingent(u:Int, v:Int, d:Int, optID:Option[ID])
 
   final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int, optID:Option[ID]) {
@@ -66,10 +62,6 @@ abstract class GenSTNUManager[ID]
     rawConstraints = c1 :: c2 :: rawConstraints
     commit(c1)
     commit(c2)
-  }
-
-  final def enforceContingentWithID(u:TPRef, v:TPRef, min:Int, max:Int, constID:ID) {
-    enforceContingent(u, v, min, max, Some(constID))
   }
 
   final def addDispatchableTimePoint(tp : TPRef) : Int = {
@@ -124,17 +116,10 @@ abstract class GenSTNUManager[ID]
       commit(c)
   }
 
-  /** Set the distance from the global start of the STN to tp to time */
-  final override def setTime(tp: TPRef, time: Int): Unit = {
-    assert(start.nonEmpty, "This stn has no recorded start time point.")
-    addConstraint(start.get, tp, time)
-    addConstraint(tp, start.get, -time)
-  }
-
   protected def commitConstraint(u:Int, v:Int, w:Int, optID:Option[ID])
 
   /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
-  def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) {
+  override def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) {
     assert(hasTimePoint(real), "This virtual time points points to a non-recored TP. Maybe use pendingVirtual.")
     assert(!hasTimePoint(virt), "There is already a time point "+virt)
     ensureSpaceFor(virt)
@@ -146,7 +131,7 @@ abstract class GenSTNUManager[ID]
 
   /** Records a virtual time point that is still partially defined.
     * All constraints on this time point will only be processed when defined with method*/
-  def addPendingVirtualTimePoint(virt: TPRef): Unit = {
+  override def addPendingVirtualTimePoint(virt: TPRef): Unit = {
     assert(!hasTimePoint(virt), "There is already a time point "+virt)
     ensureSpaceFor(virt)
     virt.setVirtual()
@@ -155,7 +140,7 @@ abstract class GenSTNUManager[ID]
   }
 
   /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
-  def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
+  override def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
     assert(hasTimePoint(real), "This virtual time points points to a non-recorded TP. Maybe use pendingVirtual.")
     assert(isPendingVirtual(virt), "This method is only applicable to pending virtual timepoints.")
     virt.attachToReal(real, -dist)
@@ -249,13 +234,8 @@ abstract class GenSTNUManager[ID]
     * (contingent or controllable. */
   final def timepoints : IList[TPRef] = tps.filter(_ != null).toList
 
-  /** Returns the number of timep oints, exclding virtual time points */
+  /** Returns the number of timepoints, excluding virtual time points */
   final def numRealTimePoints = id.size
-
-
-  final def getEndTimePoint: Option[TPRef] = end
-
-  final def getStartTimePoint: Option[TPRef] = start
 
   /** Returns the maximal time from the start of the STN to u */
   override final def getEarliestStartTime(u:TPRef) : Int = {

@@ -11,7 +11,7 @@ class ConstraintRemovalSuite extends FunSuite {
     test("[" + stn.getClass.getSimpleName + "] Simple Removal by constraint IDs") {
       var clone = stn.cc()
 
-      def checkCloneEqSTN(stn1:ISTN[String], stn2:ISTN[String]) {
+      def checkCloneEqSTN(stn1:CoreSTN[String], stn2:CoreSTN[String]) {
         assert(stn1.size == stn2.size)
         assert(stn1.consistent)
         assert(stn2.consistent)

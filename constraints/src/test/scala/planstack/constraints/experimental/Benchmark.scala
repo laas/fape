@@ -1,9 +1,9 @@
 package planstack.constraints.experimental
 
-import java.io.{PrintWriter, File}
+import java.io.{File, PrintWriter}
 import java.util.Locale
 
-import planstack.constraints.experimental.DCMorris.{Node, Upper}
+import planstack.constraints.stnu.morris.{DCMorris, PartialObservability, TemporalNetwork}
 
 import scala.StringBuilder
 import scala.collection.mutable

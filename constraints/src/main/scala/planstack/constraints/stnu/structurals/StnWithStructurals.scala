@@ -1,10 +1,9 @@
-package planstack.constraints.stn
-
-import scala.collection.mutable
-import Math._
+package planstack.constraints.stnu.structurals
 
 import planstack.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import planstack.constraints.stnu.InconsistentTemporalNetwork
+
+import scala.collection.mutable
 
 object StnWithStructurals {
 
@@ -12,7 +11,7 @@ object StnWithStructurals {
   val NIL: Int = 0
 }
 
-import StnWithStructurals._
+import planstack.constraints.stnu.structurals.StnWithStructurals._
 
 class StnWithStructurals(val nonRigidIndexes: mutable.Map[TPRef,Int],
                          val timepointByIndex: mutable.ArrayBuffer[TPRef],

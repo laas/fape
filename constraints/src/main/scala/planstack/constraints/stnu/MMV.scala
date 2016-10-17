@@ -3,6 +3,7 @@ package planstack.constraints.stnu
 import planstack.constraints.stn.LabeledEdgeWithID
 import planstack.constraints.stnu.Controllability._
 import planstack.constraints.stnu.ElemStatus._
+import planstack.constraints.stnu.nilsson._
 import planstack.graph.core.LabeledEdge
 import planstack.graph.core.impl.intindexed.{DirectedMultiLabeledIIAdjList, DirectedSimpleLabeledIIAdjList}
 import planstack.graph.core.impl.matrix.FullIntIntDigraph
@@ -20,7 +21,7 @@ class MMV[ID](var contingents : DirectedSimpleLabeledIIAdjList[Contingent[ID]],
               protected[stnu] var emptySpots : Set[Int],
               protected[stnu] var enabled : Set[Int],
               protected[stnu] var executed : Set[Int])
-  extends ISTNU[ID]
+  extends CoreSTNU[ID]
   with DispatchableSTNU[ID]
 {
   type E = Edge[ID]

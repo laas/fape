@@ -1,5 +1,6 @@
 package planstack.constraints
 
+import planstack.constraints.stnu.nilsson.STNULabel
 import planstack.graph.core.LabeledEdge
 
 package object stnu {

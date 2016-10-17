@@ -1,10 +1,10 @@
-package planstack.constraints.experimental
+package planstack.constraints.stnu.morris
 
 import java.io.{File, PrintWriter}
 
-import DCMorris._
 import planstack.anml.model.concrete.TPRef
-import planstack.constraints.stnu.{ElemStatus, Constraint}
+import planstack.constraints.stnu.morris.DCMorris._
+import planstack.constraints.stnu.{Constraint, ElemStatus}
 
 class TemporalNetwork(
                       /** Controllable timepoints */

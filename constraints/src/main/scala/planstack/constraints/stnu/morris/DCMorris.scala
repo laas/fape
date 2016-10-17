@@ -1,12 +1,11 @@
-package planstack.constraints.experimental
+package planstack.constraints.stnu.morris
 
 import java.util.Optional
-import java.util.concurrent.TimeoutException
 import java.{util => ju}
 
 import planstack.anml.model.concrete.{GlobalRef, TPRef}
-import planstack.constraints.experimental.DCMorris._
-import planstack.constraints.stnu.{Controllability, Constraint, ElemStatus}
+import planstack.constraints.stnu.Constraint
+import planstack.constraints.stnu.morris.DCMorris._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
@@ -350,7 +349,6 @@ object PartialObservability {
 
 /** Utils in order to benchmark the gains of inserting labels to extract needed observations */
 object NeededObsBenchmarking extends App {
-  import PartialObservability._
   val A = 1
   val B = 2
   val C = 3

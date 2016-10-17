@@ -1,12 +1,13 @@
 package planstack.constraints.stnu
 
+import planstack.constraints.stnu.nilsson.{EDG, FastIDC}
 import planstack.graph.core.SimpleLabeledDigraph
 import planstack.structures.Converters._
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
-trait DispatchableSTNU[ID] extends ISTNU[ID] {
+trait DispatchableSTNU[ID] extends CoreSTNU[ID] {
 
 
   /** Mark a controllable var as executed at a given time */
