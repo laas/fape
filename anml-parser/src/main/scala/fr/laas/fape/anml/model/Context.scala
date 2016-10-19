@@ -209,7 +209,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
 //  }
   def simplify(e: Expr, mod:Mod) : E = try {
     val simple : E = e match {
-      case VarExpr(name) if pb.functions.isDefined(name) =>
+      case VarExpr(name) if pb.functions.isDefined(name) && pb.functions.get(name).argTypes.isEmpty =>
         EFunction.build(pb.functions.get(name), Nil)
       case VarExpr(preModName) =>
         val name = mod.varNameMod(preModName)
