@@ -10,6 +10,7 @@ import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.anml.{ANMLException, UnrecognizedExpression, VariableNotFound, parser}
 
 import scala.collection.mutable
+import scala.collection.JavaConversions._
 
 /**
  * A context defines mapping between local references appearing in abstract objects and
@@ -53,7 +54,7 @@ abstract class AbstractContext(val pb:AnmlProblem) {
     standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
   }
 
-  def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : LVarRef = { //TODO: should be useless
+  def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : EVariable = { //TODO: should be useless
     var i = 0
     while(nameToLocalVar.contains("locVar_"+i)) {
       i += 1
@@ -366,7 +367,7 @@ class ESingletonGroup(val statement: EStatement) extends EStatementGroup {
   override def statements: List[EStatement] = List(statement)
   override def process(f: (EStatement) => AbstractChronicle): AbsStatementGroup = {
     val ac = f(statement)
-    new LeafGroup(ac.getStatements,ac.allConstraints)
+    new LeafGroup(ac)
   }
 }
 class EOrderedStatementGroup(parts: List[EStatementGroup]) extends EStatementGroup {
@@ -388,13 +389,19 @@ abstract class AbsStatementGroup {
   def firsts : List[AbstractStatement]
   def lasts : List[AbstractStatement]
   def statements : List[AbstractStatement]
-  def constraints = getStructuralTemporalConstraints ::: baseConstraints
-  def baseConstraints : List[AbstractConstraint]
+  def chronicle : AbstractChronicle
 
-  def getStructuralTemporalConstraints : List[AbstractMinDelay]
+
+}
+class AnnotatedStatementGroup(annot: AbstractTemporalAnnotation, absStatementGroup: AbsStatementGroup) extends AbsStatementGroup {
+  override def firsts: List[AbstractStatement] = absStatementGroup.firsts
+  override def lasts: List[AbstractStatement] = absStatementGroup.lasts
+  override def statements: List[AbstractStatement] = absStatementGroup.statements
+
+  override def chronicle: AbstractChronicle = absStatementGroup.chronicle.withConstraintsSeq(getTemporalConstraints(annot))
 
   /** Produces the temporal constraints by applying the temporal annotation to this statement. */
-  def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractMinDelay] = {
+  private def getTemporalConstraints(annot : AbstractTemporalAnnotation) : List[AbstractMinDelay] = {
     annot match {
       case AbstractTemporalAnnotation(s, e, "is") =>
         assert(firsts.size == 1, s"Cannot apply the temporal annotation $annot on unordered statemers $firsts. " +
@@ -408,7 +415,7 @@ abstract class AbsStatementGroup {
             AbstractExactDelay(s.timepoint, x.start, IntExpression.lit(s.delta))
         }) ++
           (lasts flatMap { x =>
-              AbstractExactDelay(e.timepoint, x.end, IntExpression.lit(e.delta))
+            AbstractExactDelay(e.timepoint, x.end, IntExpression.lit(e.delta))
           })
       case AbstractTemporalAnnotation(s, e, "contains") =>
         (firsts map {
@@ -425,32 +432,35 @@ abstract class AbsStatementGroup {
     }
   }
 }
-class LeafGroup(val statements:List[AbstractStatement], val baseConstraints: List[AbstractConstraint]) extends AbsStatementGroup {
-  override def firsts: List[AbstractStatement] = statements
-  override def lasts: List[AbstractStatement] = statements
-  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = Nil
+class LeafGroup(val chronicle: AbstractChronicle) extends AbsStatementGroup {
+  override def firsts: List[AbstractStatement] = chronicle.getStatements
+  override def lasts: List[AbstractStatement] = chronicle.getStatements
+  override def statements = chronicle.getStatements
 }
+
 class OrderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGroup {
   override def firsts: List[AbstractStatement] = parts.head.firsts
   override def lasts: List[AbstractStatement] = parts.last.lasts
   override def statements: List[AbstractStatement] = parts.flatMap(_.statements)
-  override def baseConstraints: List[AbstractConstraint] = parts.flatMap(_.baseConstraints)
-  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = {
+  private def getStructuralTemporalConstraints: List[AbstractMinDelay] = {
     def constraintsBetween(p1:AbsStatementGroup, p2:AbsStatementGroup) =
       for(e <- p1.lasts ; s <- p2.firsts)
         yield AbstractMinDelay(e.end, s.start, IntExpression.lit(0))
-    val inter = parts.tail.foldLeft[(AbsStatementGroup, List[AbstractMinDelay])]((parts.head, Nil))(
+    parts.tail.foldLeft[(AbsStatementGroup, List[AbstractMinDelay])]((parts.head, Nil))(
       (acc, cur) => (cur, acc._2 ::: constraintsBetween(acc._1,cur)))._2
-    val intra = parts.flatMap(_.getStructuralTemporalConstraints)
-    inter ++ intra
+  }
+  override def chronicle : AbstractChronicle = {
+    parts.foldLeft[AbstractChronicle](EmptyAbstractChronicle)((c, group) => c.union(group.chronicle))
+      .withConstraintsSeq(getStructuralTemporalConstraints)
   }
 }
 class UnorderedGroup(val parts: List[AbsStatementGroup]) extends AbsStatementGroup {
   override def firsts: List[AbstractStatement] = parts.flatMap(_.firsts)
   override def lasts: List[AbstractStatement] = parts.flatMap(_.lasts)
   override def statements: List[AbstractStatement] = parts.flatMap(_.statements)
-  override def baseConstraints: List[AbstractConstraint] = parts.flatMap(_.baseConstraints)
-  override def getStructuralTemporalConstraints: List[AbstractMinDelay] = parts.flatMap(_.getStructuralTemporalConstraints)
+  override def chronicle : AbstractChronicle = {
+    parts.foldLeft[AbstractChronicle](EmptyAbstractChronicle)((c, group) => c.union(group.chronicle))
+  }
 }
 
 

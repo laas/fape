@@ -34,7 +34,6 @@ class AbstractChronicle(
 
   lazy val getStatements =  statements
   lazy val allConstraints = constraints ++ implicitConstraints
-  lazy val allVariables = (variableDeclarations ++ funcVars).toSet
 
   def withStatements(otherStatements: AbstractStatement*) = withStatementsSeq(otherStatements.toList)
   def withStatementsSeq(otherStatements: Seq[AbstractStatement]) = {
@@ -76,9 +75,10 @@ class AbstractChronicle(
     )
   }
 
-  lazy val allVars = statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)
-  lazy val simpleVars = allVars.filter(_.isInstanceOf[EVariable]).map(_.asInstanceOf[EVariable])
-  lazy val funcVars = allVars.filter(_.isInstanceOf[EConstantFunction]).map(_.asInstanceOf[EConstantFunction])
+  lazy val allVariablesToDeclare = (variableDeclarations ++ funcVars).toSet
+  lazy val allVariables = (statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)).distinct
+  lazy val simpleVars = allVariables.collect({ case x:EVariable => x})
+  lazy val funcVars = allVariables.collect({ case x:EConstantFunction => x})
   lazy val check = {
     variableDeclarations.groupBy(v => v.name).values.collect { case g if g.size != 1 =>
       throw new ANMLException("This variable is declared more than once in the same scope: "+g.head.name) }
@@ -142,7 +142,7 @@ class AbstractChronicle(
       chronicle.instances.add(global.instance)
     }
 
-    for(v <- allVariables) {
+    for(v <- allVariablesToDeclare) {
       val newVar = new VarRef(v.getType, refCounter, Label(context.label, v.asANML))
       context.addVar(v, newVar)
       chronicle.vars.add(newVar)

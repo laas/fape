@@ -56,7 +56,7 @@ public class HierarchicalEffects {
             List<LVarRef> taskVars = pb.actionsByTask().get(t.name()).get(0).args();
             for(int i=0 ; i<taskVars.size() ; i++) {
                 LVarRef right = t.jArgs().get(i);
-                if(a.context().hasGlobalVar(right) && a.context().getGlobalVar(right) instanceof InstanceRef)
+                if(a.context().contains(right) && a.context().hasGlobalVar(right) && a.context().getGlobalVar(right) instanceof InstanceRef)
                     mapping.put(taskVars.get(i), new InstanceArg((InstanceRef) a.context().getGlobalVar(right)));
                 else
                     mapping.put(taskVars.get(i), new LVarArg(t.jArgs().get(i)));
@@ -158,10 +158,10 @@ public class HierarchicalEffects {
     private List<LVarRef> argsOfTask(String t) { return pb.actionsByTask().get(t).get(0).args(); }
     private List<AbstractAction> methodsOfTask(String t) { return pb.actionsByTask().get(t); }
 
-    /** Returns the effects that appear in the body of this action (regardless of its subtasks. */
+    /** Returns the effects that appear in the body of this action (regardless of its subtasks). */
     private List<TemporalFluent> directEffectsOf(AbstractAction a) {
         java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
-            if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
+            if(a.context().contains(v) && a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
                 return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
             else
                 return new LVarArg(v);
@@ -186,7 +186,7 @@ public class HierarchicalEffects {
 
     private List<TemporalFluent> directConditionsOf(AbstractAction a) {
         java.util.function.Function<LVarRef,VarPlaceHolder> asPlaceHolder = (v) -> {
-            if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
+            if(a.context().contains(v) && a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
                 return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
             else
                 return new LVarArg(v);
@@ -294,7 +294,7 @@ public class HierarchicalEffects {
             java.util.function.Function<LVarRef,VarPlaceHolder> trans = v -> {
                 if(a.args().contains(v))
                     return t.args.get(a.args().indexOf(v));
-                else if(a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
+                else if(a.context().contains(v) && a.context().hasGlobalVar(v) && a.context().getGlobalVar(v) instanceof InstanceRef)
                     return new InstanceArg((InstanceRef) a.context().getGlobalVar(v));
                 else
                     return new TypePlaceHolder(v.getType());
