@@ -2,7 +2,7 @@ package fr.laas.fape.anml.model.concrete
 
 import fr.laas.fape.anml.ANMLException
 import fr.laas.fape.anml.model.abs.AbstractAction
-import fr.laas.fape.anml.model._
+import fr.laas.fape.anml.model.{Context, _}
 import fr.laas.fape.anml.model.concrete.statements.Statement
 
 import scala.collection.JavaConversions._

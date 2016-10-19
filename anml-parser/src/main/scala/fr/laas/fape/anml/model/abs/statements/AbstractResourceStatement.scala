@@ -2,7 +2,7 @@ package fr.laas.fape.anml.model.abs.statements
 
 import fr.laas.fape.anml.model.concrete.{Chronicle, RefCounter}
 import fr.laas.fape.anml.model.concrete.statements._
-import fr.laas.fape.anml.model._
+import fr.laas.fape.anml.model.{Context, _}
 
 /** An abstract ANML resource Statement.
   *

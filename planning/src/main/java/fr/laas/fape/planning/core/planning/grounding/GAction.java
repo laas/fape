@@ -6,6 +6,7 @@ import fr.laas.fape.anml.model.abs.statements.*;
 import fr.laas.fape.anml.model.abs.time.AbsTP;
 import fr.laas.fape.anml.model.concrete.InstanceRef;
 import fr.laas.fape.anml.model.concrete.VarRef;
+import fr.laas.fape.anml.model.ir.IRConstantExpression;
 import fr.laas.fape.anml.pending.IntExpression;
 import fr.laas.fape.anml.pending.LStateVariable;
 import fr.laas.fape.planning.core.inference.HReasoner;
@@ -395,7 +396,7 @@ public class GAction implements Identifiable {
         for(LVarRef ref : aa.allVars()) {
             vars.add(ref);
             List<InstanceRef> varSet = new LinkedList<>();
-            if(ref instanceof EConstantFunction || ! context.hasGlobalVar(ref)) {
+            if(ref instanceof IRConstantExpression || ! context.hasGlobalVar(ref)) {
                 // get the type of the argument and add all possible values to the argument list.
                 varSet.addAll(ref.getType().jInstances());
             } else {

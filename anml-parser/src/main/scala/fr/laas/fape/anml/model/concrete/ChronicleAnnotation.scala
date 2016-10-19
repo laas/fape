@@ -1,8 +1,7 @@
 package fr.laas.fape.anml.model.concrete
 
-import fr.laas.fape.anml.model.Context
 import fr.laas.fape.anml.model.concrete.time.TimepointRef
-import fr.laas.fape.anml.model.{AnmlProblem, ChronicleContainer}
+import fr.laas.fape.anml.model.{AnmlProblem, ChronicleContainer, Context}
 import fr.laas.fape.anml.model.abs.AbstractChronicle
 import fr.laas.fape.anml.model.abs.time.AbsTP
 

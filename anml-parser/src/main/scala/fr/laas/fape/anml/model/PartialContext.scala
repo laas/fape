@@ -2,11 +2,12 @@ package fr.laas.fape.anml.model
 
 import fr.laas.fape.anml.model.concrete.TemporalInterval
 import fr.laas.fape.anml.model.concrete._
+import fr.laas.fape.anml.model.ir.IRSimpleVar
 
 
 class PartialContext(pb: AnmlProblem, val parentContext:Option[AbstractContext]) extends AbstractContext(pb) {
 
-  def addUndefinedVar(v: EVariable) {
+  def addUndefinedVar(v: IRSimpleVar) {
     assert(!variables.contains(v), "Local variable already defined: "+v)
     assert(!nameToLocalVar.contains(v.name), "Local variable already recorded: "+v)
     nameToLocalVar.put(v.id, v)

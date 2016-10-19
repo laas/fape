@@ -1,7 +1,7 @@
 package fr.laas.fape.anml.model.abs.statements
 
 import fr.laas.fape.anml.ANMLException
-import fr.laas.fape.anml.model._
+import fr.laas.fape.anml.model.{Context, _}
 import fr.laas.fape.anml.model.abs.time.{AbsTP, AbstractTemporalAnnotation, IntervalEnd, IntervalStart}
 import fr.laas.fape.anml.model.abs.{AbstractExactDelay, AbstractMinDelay}
 import fr.laas.fape.anml.model.concrete.statements.{Assignment, LogStatement, Persistence, Transition}

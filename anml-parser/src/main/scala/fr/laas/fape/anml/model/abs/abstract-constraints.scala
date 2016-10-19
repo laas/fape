@@ -2,7 +2,7 @@ package fr.laas.fape.anml.model.abs
 
 import fr.laas.fape.anml
 import fr.laas.fape.anml.parser
-import fr.laas.fape.anml.model._
+import fr.laas.fape.anml.model.{Context, _}
 import fr.laas.fape.anml.model.abs.time.{AbsTP, TimepointTypeEnum}
 import fr.laas.fape.anml.model.concrete.time.TimepointRef
 import fr.laas.fape.anml.parser.TimepointRef

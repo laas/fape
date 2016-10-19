@@ -5,6 +5,7 @@ import java.util
 import fr.laas.fape.anml.ANMLException
 import fr.laas.fape.anml.model.abs.DefaultMod
 import fr.laas.fape.anml.model.concrete.VarRef
+import fr.laas.fape.anml.model.ir.IRFunction
 import fr.laas.fape.anml.parser.Expr
 
 import scala.collection.JavaConversions._
@@ -56,7 +57,7 @@ object AbstractParameterizedStateVariable {
 
   def apply(pb:AnmlProblem, context:AbstractContext, expr:Expr) : AbstractParameterizedStateVariable = {
     context.simplify(expr,DefaultMod) match {
-      case f: EFunction =>
+      case f: IRFunction =>
         new AbstractParameterizedStateVariable(f.func, f.args)
       case x =>
         throw new ANMLException("Cannot build a state variable from: " + x)

@@ -7,6 +7,7 @@ import fr.laas.fape.anml.model._
 import fr.laas.fape.anml.model.abs.statements._
 import fr.laas.fape.anml.model.abs.time.AbstractTemporalAnnotation
 import fr.laas.fape.anml.model.concrete.{InstanceRef, RefCounter}
+import fr.laas.fape.anml.model.ir._
 import fr.laas.fape.anml.parser.NumExpr
 import fr.laas.fape.anml.pending.{IntExpression, IntLiteral}
 import fr.laas.fape.anml.parser
@@ -48,50 +49,50 @@ object StatementsFactory {
     }
   }
 
-  def apply(statement : Statement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : AbsStatementGroup = {
-    def asSv(f:EFunction) = new AbstractParameterizedStateVariable(f.func, f.args)
+  def apply(statement : Statement, context:AbstractContext, refCounter: RefCounter, mod: Mod) : AbstractChronicleGroup = {
+    def asSv(f:IRFunction) = new AbstractParameterizedStateVariable(f.func, f.args)
     def asRef(id:String) = LStatementRef(id)
     val eGroup = context.simplifyStatement(statement, mod)
     val EMPTY = EmptyAbstractChronicle
-    def trans(e:EStatement) : AbstractChronicle = e match {
-      case ETriStatement(f:ETimedFunction, "==", v1:EVar, ":->", v2:EVar, id) =>
+    def trans(e:IRStatement) : AbstractChronicle = e match {
+      case IRTriStatement(f:IRTimedFunction, "==", v1:IRVar, ":->", v2:IRVar, id) =>
         EMPTY.withStatements(new AbstractTransition(asSv(f), v1, v2, asRef(id)))
 
-      case EBiStatement(vleft: EConstantFunction, ":=", value:EVariable, id) =>
+      case IRBiStatement(vleft: IRConstantExpression, ":=", value:IRSimpleVar, id) =>
         assert(context.hasGlobalVar(value), s"$value is not defined yet when assigned to $vleft")
         assert(context.getGlobalVar(value).isInstanceOf[InstanceRef], s"$value is not recognied as a constant symbol when assigned to $vleft")
         EMPTY.withConstraints(new AbstractAssignmentConstraint(asSv(vleft), value, asRef(id)))
           .withConstraints(new AbstractVarEqualityConstraint(vleft, value, asRef(id)))
 
-      case EBiStatement(vleft :EConstantFunction, ":=", ENumber(value), id) =>
+      case IRBiStatement(vleft :IRConstantExpression, ":=", IRNumber(value), id) =>
         EMPTY.withConstraints(new AbstractIntAssignmentConstraint(asSv(vleft), value, asRef(id)))
 
-      case EBiStatement(vleft:EVar, "==", vright:EVar, id) =>
+      case IRBiStatement(vleft:IRVar, "==", vright:IRVar, id) =>
         EMPTY.withConstraints(new AbstractVarEqualityConstraint(vleft, vright, asRef(id)))
 
-      case EBiStatement(vleft:EVar, "!=", vright:EVar, id) =>
+      case IRBiStatement(vleft:IRVar, "!=", vright:IRVar, id) =>
         EMPTY.withConstraints(new AbstractVarInequalityConstraint(vleft, vright, asRef(id)))
 
-      case EBiStatement(f:ETimedFunction, ":=", value:EVar, id) =>
+      case IRBiStatement(f:IRTimedFunction, ":=", value:IRVar, id) =>
         assert(!f.func.isConstant)
         EMPTY.withStatements(new AbstractAssignment(asSv(f), value, asRef(id)))
 
-      case EBiStatement(f:ETimedFunction, "==", value:EVar, id) =>
+      case IRBiStatement(f:IRTimedFunction, "==", value:IRVar, id) =>
         EMPTY.withStatements(new AbstractPersistence(asSv(f), value, asRef(id)))
 
-      case EBiStatement(f:ETimedFunction, "!=", value:EVar, id) =>
+      case IRBiStatement(f:IRTimedFunction, "!=", value:IRVar, id) =>
         val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
         EMPTY.withVariableDeclarations(intermediateVar :: Nil)
           .withStatements(new AbstractPersistence(asSv(f), intermediateVar, asRef(id)))
           .withConstraints(new AbstractVarInequalityConstraint(intermediateVar, value, LStatementRef("")))
 
-      case EUnStatement(ETask(t, args), id) =>
+      case IRUnStatement(IRTask(t, args), id) =>
         EMPTY.withStatements(new AbstractTask("t-"+t, args, LActRef(id)))
 
-      case EBiStatement(v1:EVar, "in", right@EVarSet(vars), id) =>
+      case IRBiStatement(v1:IRVar, "in", right@IRVarSet(vars), id) =>
         EMPTY.withConstraints(new AbstractInConstraint(v1, vars.map(x => x), asRef(id)))
 
-      case EBiStatement(f:ETimedFunction, "in", right@EVarSet(vars), id) =>
+      case IRBiStatement(f:IRTimedFunction, "in", right@IRVarSet(vars), id) =>
         val intermediateVar = context.getNewUndefinedVar(f.func.valueType, refCounter)
         EMPTY.withVariableDeclarations(intermediateVar :: Nil)
           .withStatements(new AbstractPersistence(asSv(f), intermediateVar, asRef(id)))

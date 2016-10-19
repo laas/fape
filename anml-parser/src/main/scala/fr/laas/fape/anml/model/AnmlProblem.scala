@@ -9,6 +9,7 @@ import fr.laas.fape.anml.model.abs.statements.AbstractStatement
 import fr.laas.fape.anml.model.abs.time.{AbsTP, ContainerEnd, ContainerStart, TimepointTypeEnum}
 import fr.laas.fape.anml.model.abs._
 import fr.laas.fape.anml.model.concrete._
+import fr.laas.fape.anml.model.ir.IRSimpleVar
 import fr.laas.fape.anml.parser._
 import fr.laas.fape.anml.parser
 
@@ -94,7 +95,7 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
   // create an initial chronicle containing the predefined instances (true and false)
   {
     val abstractChronicle = EmptyAbstractChronicle
-      .withConstantDeclarations(instances.allInstances.map(i => (EVariable(i, instances.typeOf(i)), instances.referenceOf(i))).toSeq)
+      .withConstantDeclarations(instances.allInstances.map(i => (IRSimpleVar(i, instances.typeOf(i)), instances.referenceOf(i))).toSeq)
       .withConstraints(new AbstractMinDelay(ContainerStart,ContainerEnd, 0))
       .withConstraints(new AbstractTimepointType(ContainerStart,TimepointTypeEnum.DISPATCHABLE))
       .withConstraints(new AbstractTimepointType(ContainerEnd,TimepointTypeEnum.DISPATCHABLE))
@@ -196,7 +197,7 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
         instances.addInstance(name, typeName, refCounter)
         // all instances are added to the context
         val inst = instance(name)
-        val locVar = EVariable(name, inst.getType)
+        val locVar = IRSimpleVar(name, inst.getType)
         context.addVar(locVar,inst)
         chron = chron.withConstantDeclarations((locVar, inst) :: Nil)
     }
@@ -208,7 +209,7 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
 
       if(funcDecl.args.isEmpty && funcDecl.isConstant) {
         // declare as a variable since it as no argument and is constant.
-        val locVar = EVariable(funcDecl.name, instances.asType(funcDecl.tipe))
+        val locVar = IRSimpleVar(funcDecl.name, instances.asType(funcDecl.tipe))
         context.addUndefinedVar(locVar)
         chron = chron.withVariableDeclarations(locVar :: Nil)
       } else {
@@ -327,7 +328,7 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
       // this is a variable that we should be able to use locally
       case func: anml.parser.Function if func.args.isEmpty && func.isConstant =>
         val newVar = new VarRef(instances.asType(func.tipe), refCounter, Label(chron.getLabel,func.name))
-        localContext.addVar(EVariable(func.name, instances.asType(func.tipe)), newVar)
+        localContext.addVar(IRSimpleVar(func.name, instances.asType(func.tipe)), newVar)
         chron.vars += newVar
 
       // complete function definition, would change the problem.

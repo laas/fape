@@ -7,6 +7,7 @@ import fr.laas.fape.anml.parser
 import fr.laas.fape.anml.model.abs.statements._
 import fr.laas.fape.anml.model.abs.time.{AbsTP, ContainerEnd, ContainerStart, TimepointTypeEnum}
 import fr.laas.fape.anml.model.concrete.RefCounter
+import fr.laas.fape.anml.model.ir.IRSimpleVar
 import fr.laas.fape.anml.model.{abs, _}
 import fr.laas.fape.anml.parser._
 import fr.laas.fape.anml.pending.IntExpression
@@ -170,7 +171,7 @@ object AbstractAction {
     try {
       val baseName = act.name
       val taskName = "t-"+baseName
-      val args = act.args.map(a => EVariable(a.name, t (a.tipe)))
+      val args = act.args.map(a => IRSimpleVar(a.name, t (a.tipe)))
 
       val decompositions = act.content.collect{ case x:Decomposition => x }
       val content = act.content.filterNot(_.isInstanceOf[Decomposition])
@@ -219,7 +220,7 @@ object AbstractAction {
             val maxDur = AbstractDuration(max, actContext, pb)
             actChronicle = actChronicle.withConstraints(new AbstractContingentConstraint(actionStart, actionEnd, minDur, maxDur))
           case const: Constant =>
-            val v = EVariable(const.name, t(const.tipe))
+            val v = IRSimpleVar(const.name, t(const.tipe))
             actContext.addUndefinedVar(v)
             actChronicle = actChronicle.withVariableDeclarations(v :: Nil)
           case x =>
@@ -230,7 +231,7 @@ object AbstractAction {
           case constraint: TemporalConstraint =>
             actChronicle = actChronicle.withConstraintsSeq(AbstractTemporalConstraint(constraint))
           case const: Constant => // constant function with no arguments is interpreted as local variable
-            val v = EVariable(const.name, t(const.tipe))
+            val v = IRSimpleVar(const.name, t(const.tipe))
             actContext.addUndefinedVar(v)
             actChronicle = actChronicle.withVariableDeclarations(v :: Nil)
           case statement: TemporalStatement =>

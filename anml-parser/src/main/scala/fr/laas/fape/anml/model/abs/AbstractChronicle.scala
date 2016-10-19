@@ -6,6 +6,7 @@ import fr.laas.fape.anml.model._
 import fr.laas.fape.anml.model.abs.statements._
 import fr.laas.fape.anml.model.abs.time.{AbsTP, ContainerEnd, ContainerStart}
 import fr.laas.fape.anml.model.concrete._
+import fr.laas.fape.anml.model.ir.{IRConstantExpression, IRSimpleVar}
 import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.anml.{ANMLException, FullSTN}
 import planstack.structures.IList
@@ -15,14 +16,14 @@ import scala.collection.JavaConverters._
 class AbstractChronicle(
                          private val statements: List[AbstractStatement],
                          private val constraints: List[AbstractConstraint],
-                         private val variableDeclarations: List[EVariable],
-                         val constantDeclarations: List[(EVariable,InstanceRef)],
+                         private val variableDeclarations: List[IRSimpleVar],
+                         val constantDeclarations: List[(IRSimpleVar,InstanceRef)],
                          val annotations: List[AbstractChronicleAnnotation],
                          val optSTNU: Option[AbstractSTNU]
                        )
 {
   lazy val (implicitConstraints, implicitVariables) = {
-    val funcVars = ((statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)) collect {case x:EConstantFunction => x}).toSet
+    val funcVars = ((statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)) collect {case x:IRConstantExpression => x}).toSet
 
     val additionalConstraints = funcVars.filterNot(v => v.getType.isNumeric)
       .map(v => {
@@ -47,10 +48,10 @@ class AbstractChronicle(
     new AbstractChronicle(statements, constraints ++ otherConstraints, variableDeclarations, constantDeclarations, annotations, None)
   }
 
-  def withVariableDeclarations(vars: Seq[EVariable]) =
+  def withVariableDeclarations(vars: Seq[IRSimpleVar]) =
     new AbstractChronicle(statements, constraints, variableDeclarations ++ vars, constantDeclarations, annotations, None)
 
-  def withConstantDeclarations(instances: Seq[(EVariable,InstanceRef)]) = {
+  def withConstantDeclarations(instances: Seq[(IRSimpleVar,InstanceRef)]) = {
     assert(optSTNU.isEmpty)
     new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations ++ instances, annotations, None)
   }
@@ -77,8 +78,8 @@ class AbstractChronicle(
 
   lazy val allVariablesToDeclare = (variableDeclarations ++ funcVars).toSet
   lazy val allVariables = (statements.flatMap(_.getAllVars) ++ constraints.flatMap(_.getAllVars)).distinct
-  lazy val simpleVars = allVariables.collect({ case x:EVariable => x})
-  lazy val funcVars = allVariables.collect({ case x:EConstantFunction => x})
+  lazy val simpleVars = allVariables.collect({ case x:IRSimpleVar => x})
+  lazy val funcVars = allVariables.collect({ case x:IRConstantExpression => x})
   lazy val check = {
     variableDeclarations.groupBy(v => v.name).values.collect { case g if g.size != 1 =>
       throw new ANMLException("This variable is declared more than once in the same scope: "+g.head.name) }
