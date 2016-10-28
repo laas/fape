@@ -50,6 +50,7 @@ public class Planning {
                                 "This is step mainly involves building a dynamically controllable STNU that is used to check " +
                                 "which actions can be dispatched."),
                         new Switch("mutex", 'm', "mutex", "[experimental] Use mutex for temporal reasoning as in CPT."),
+                        new Switch("reach-test", JSAP.NO_SHORTFLAG, "reach-test", "Deactivate the use of minspan heuristic. This option only meant to be used for benchmarking purpose."),
                         new FlaggedOption("max-time")
                                 .setStringParser(JSAP.INTEGER_PARSER)
                                 .setShortFlag('t')
@@ -281,6 +282,9 @@ public class Planning {
                                 Arrays.asList(config.getStringArray("plan-selection")) :
                                 pb.allActionsAreMotivated() ?
                                         hier_plan_sel : flat_plan_sel;
+                if(config.getBoolean("reach-test") && !pb.allActionsAreMotivated()) {
+                    planStrat = Collections.singletonList("soca");
+                }
                 List<String> flawStrat =
                         config.specified("flaw-selection") ?
                                 Arrays.asList(config.getStringArray("flaw-selection")) :
