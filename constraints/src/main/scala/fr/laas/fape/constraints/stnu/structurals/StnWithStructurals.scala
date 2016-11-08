@@ -1,7 +1,7 @@
 package fr.laas.fape.constraints.stnu.structurals
 
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
-import fr.laas.fape.constraints.stn.STN
+import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
 import fr.laas.fape.constraints.stnu.InconsistentTemporalNetwork
 import fr.laas.fape.constraints.stnu.parser.STNUParser
 import planstack.graph.core.LabeledEdge
@@ -10,6 +10,8 @@ import planstack.graph.printers.NodeEdgePrinter
 import scala.collection.mutable
 
 object StnWithStructurals {
+
+  var debugging = true
 
   val INF: Int = Int.MaxValue /2 -1 // set to avoid overflow on addition of int values
   val NIL: Int = 0
@@ -37,8 +39,6 @@ object StnWithStructurals {
     }
     stn
   }
-
-  class Edge(from: TPRef, to: TPRef, value: Int)
 }
 
 import StnWithStructurals._
@@ -50,11 +50,12 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
                              val contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
                              var optStart: Option[TPRef],
                              var optEnd: Option[TPRef],
+                             var originalEdges: List[DistanceGraphEdge],
                              var consistent: Boolean
                             )
   extends STN[TPRef,ID] with DistanceMatrixListener {
 
-  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, true)
+  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true)
 
   dist.listeners += this
 
@@ -87,6 +88,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     addMinDelay(to, from, -maxDelay)
 
   private def addEdge(a:TPRef, b :TPRef, t:Int): Unit = {
+    originalEdges = new DistanceGraphEdge(a, b, t) :: originalEdges
     if(!isKnown(a))
       recordTimePoint(a)
     if(!isKnown(b))
@@ -94,19 +96,19 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
     val (aRef:TPRef, aToRef:Int) =
       if(rigidRelations.isAnchored(a))
-        (rigidRelations._anchorOf(a), rigidRelations.distToAnchor(a))
+        (rigidRelations._anchorOf(a), rigidRelations.distFromAnchor(a))
       else
         (a, 0)
     val (bRef:TPRef, refToB) =
       if(rigidRelations.isAnchored(b))
-        (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
+        (rigidRelations._anchorOf(b), rigidRelations.distToAnchor(b))
       else (b, 0)
     dist.enforceDist(toIndex(aRef), toIndex(bRef), aToRef + t + refToB)
   }
 
   def addConstraint(c: TemporalConstraint): Unit = {
     c match {
-      case req: MinDelayConstraint if req.minDelay.isKnown=>
+      case req: MinDelayConstraint if req.minDelay.isKnown =>
         addMinDelay(req.src, req.dst, req.minDelay.get)
       case cont: ContingentConstraint if cont.min.isKnown && cont.max.isKnown =>
         addMinDelay(cont.src, cont.dst, cont.min.get)
@@ -128,7 +130,10 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
         (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
       else (b, 0)
 
-    aToRef + distanceBetweenNonRigid(aRef, bRef) + refToB
+    val ret = aToRef + distanceBetweenNonRigid(aRef, bRef) + refToB
+    if(debugging)
+      assert(ret == distanceWithBellmanFord(a, b), "Inconsistent distances in the STN")
+    ret
   }
 
   private def distanceBetweenNonRigid(a: TPRef, b: TPRef) = {
@@ -146,22 +151,30 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def distanceUpdated(a: Int, b: Int): Unit = {
     // check if the network is now inconsistent
-    if(dist.getDistance(a,b) + dist.getDistance(b,a) < 0) {
+    if (dist.getDistance(a, b) + dist.getDistance(b, a) < 0) {
+      if(debugging)
+        assert(!consistencyWithBellmanFord(), "Problem with the consistency of the STN")
       consistent = false
       throw new InconsistentTemporalNetwork
     }
 
-    if(a == b)
+    if (a == b)
       return
 
-    val tpA = timepointByIndex(a) // TODO should go in if block to avoid unnecessary queries
-    val tpB = timepointByIndex(b)
-    assert(!rigidRelations.isAnchored(tpA))
-    assert(!rigidRelations.isAnchored(tpB))
+    if (debugging) {
+      assert(consistencyWithBellmanFord(), "Problem with the consistency of the STN")
+      val dFW = dist.getDistance(a, b)
+      val dBF = distanceWithBellmanFord(timepointByIndex(a), timepointByIndex(b))
+      assert(dFW == dBF, "Inconsistent distances in the STN")
+    }
 
     // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
     // the distance matrix
     if(dist.getDistance(a,b) == -dist.getDistance(b,a)) {
+      val tpA = timepointByIndex(a)
+      val tpB = timepointByIndex(b)
+      assert(!rigidRelations.isAnchored(tpA))
+      assert(!rigidRelations.isAnchored(tpB))
       if(tpA.genre.isStructural || tpB.genre.isStructural) {
         // record rigid relation
         rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(a, b))
@@ -263,4 +276,55 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override protected def addConstraintWithID(u: TPRef, v: TPRef, w: Int, id: ID): Unit =
     addConstraint(u, v, w)
+
+  /**
+    * Computes the max delay between two timepoints using Bellman-Ford on the original edges.
+    * This is very expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
+    */
+  private def distanceWithBellmanFord(from: TPRef, to: TPRef) : Int = {
+    // initialize distances
+    val d = mutable.Map[TPRef,Int]()
+    for(tp <- timepoints)
+      d(tp) = INF
+    d(from) = 0
+
+    // compute distances
+    for(i <- 0 until timepoints.size) {
+      for(e <- originalEdges) {
+        d(e.to) = Math.min(d(e.to), d(e.from) + e.value)
+      }
+    }
+    d(to)
+  }
+
+  /**
+    * Determine whether the STN is consistent using Bellman-Ford on the original edges.
+    * This is very expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
+    */
+  private def consistencyWithBellmanFord(): Boolean = {
+    // when possible, use "end" as the source as it normally linked with all other timepoints
+    val from = optEnd match {
+      case Some(end) => end
+      case None => timepoints.head
+    }
+    val d = mutable.Map[TPRef,Int]()
+    // initialize distances
+    for(tp <- timepoints)
+      d(tp) = INF
+    d(from) = 0
+
+    // compute distances
+    for(i <- 0 until timepoints.size) {
+      for(e <- originalEdges) {
+        d(e.to) = Math.min(d(e.to), d(e.from) + e.value)
+      }
+    }
+
+    // if a distance can still be updated, there is a negative cycle
+    for(e <- originalEdges) {
+      if(d(e.to) > d(e.from) + e.value)
+        return false
+    }
+    true
+  }
 }
