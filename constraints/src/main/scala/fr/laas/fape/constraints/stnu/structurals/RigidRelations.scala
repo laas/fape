@@ -8,7 +8,9 @@ import scala.collection.mutable
 class RigidRelations(val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
                      val _anchorOf: mutable.Map[TPRef,TPRef]) {
 
-  def isAnchored(tp: TPRef) = _anchorOf.contains(tp)
+  def this() = this(mutable.Map(), mutable.Map())
+
+  def isAnchored(tp: TPRef) = { assert(!_anchorOf.contains(tp) || tp.genre.isStructural); _anchorOf.contains(tp) }
   def isAnchor(tp: TPRef) = anchored.contains(tp)
   def anchorOf(tp: TPRef) = _anchorOf(tp)
   def distFromAnchor(tp: TPRef) = anchored(_anchorOf(tp))(tp)
@@ -20,26 +22,40 @@ class RigidRelations(val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
     assert(from != to)
     assert(!isAnchored(from))
     assert(!isAnchored(to))
+    assert(from.genre.isStructural || to.genre.isStructural)
 
     if(isAnchor(from) && isAnchor(to)) { // merge
-      for(tp <- anchored(to).keys) {
-        anchored(from).put(tp, d + distFromAnchor(tp))
-        _anchorOf(tp) = from
+      if(!to.genre.isStructural) {
+        addRigidRelation(to, from, -d)
+      } else {
+        assert(to.genre.isStructural, "About to compile away a non structural timepoint")
+        for (tp <- anchored(to).keys) {
+          anchored(from).put(tp, d + distFromAnchor(tp))
+          _anchorOf(tp) = from
+        }
+        anchored.remove(to)
+        _anchorOf(to) = from
+        anchored(from).put(to, d)
       }
-      anchored.remove(to)
     } else if(isAnchor(from)) {
       assert(!isAnchored(to))
+      assert(to.genre.isStructural, "About to compile away a non structural timepoint")
       // integrate "to" in the anchored set of "from"
       _anchorOf(to) = from
       anchored(from).put(to, d)
     } else if(isAnchor(to)) {
       addRigidRelation(to, from, -d) // reverse to avoid code duplication
     } else {
-      assert(!isAnchored(from) && ! isAnchored(to))
-      // mark "from" as a new anchor and place "to" in its anchored set
-      anchored(from) = mutable.Map[TPRef,Int]()
-      anchored(from).put(to, d)
-      _anchorOf(to) = from
+      if(!to.genre.isStructural) {
+        addRigidRelation(to, from, -d)
+      } else {
+        assert(!isAnchored(from) && !isAnchored(to))
+        assert(to.genre.isStructural, "About to compile away a non structural timepoint")
+        // mark "from" as a new anchor and place "to" in its anchored set
+        anchored(from) = mutable.Map[TPRef, Int]()
+        anchored(from).put(to, d)
+        _anchorOf(to) = from
+      }
     }
   }
 

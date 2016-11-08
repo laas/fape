@@ -79,4 +79,6 @@ trait STN[TPRef,ID] {
   def deepCopy() : STN[TPRef,ID]
 
   def exportToDotFile(filename : String, printer:NodeEdgePrinter[Object,Object,LabeledEdge[Object,Object]])
+
+  def toStringRepresentation : String = ???
 }

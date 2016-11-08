@@ -13,12 +13,15 @@ object DistanceMatrix {
 
   /** addition that will never overflow given that both parameters are in [-INF,INF] */
   final def plus(a:Int, b: Int) = {
-    if(a + b > INF)
+    if(a == INF || b == INF)
       INF
-    else if(a +b < -INF)
-      -INF
-    else
+    else {
+      val total = a+b
+      assert(a+b < INF)
+      assert(a > -INF)
+      assert(b > -INF)
       a + b
+    }
   }
 }
 
@@ -34,6 +37,8 @@ class DistanceMatrix(
                       val defaultValue: Int
                     ) {
 
+  def this() = this(new Array[Array[Int]](0), mutable.Set(), INF)
+
   val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
 
   private final def isActive(tp: Int) = {
@@ -47,11 +52,11 @@ class DistanceMatrix(
       val prevLength = dists.length
       val newLength = prevLength + growthIncrement
       val newDists = util.Arrays.copyOf(dists, newLength)
-      for(i <- 0 to prevLength) {
+      for(i <- 0 until prevLength) {
         newDists(i) = util.Arrays.copyOf(dists(i), newLength)
         util.Arrays.fill(newDists(i), prevLength, newLength, defaultValue)
       }
-      for(i <- prevLength to newLength) {
+      for(i <- prevLength until newLength) {
         newDists(i) = new Array[Int](newLength)
         util.Arrays.fill(newDists(i), defaultValue)
         emptySpots += i
@@ -60,6 +65,7 @@ class DistanceMatrix(
     }
     val newNode = emptySpots.head
     emptySpots -= newNode
+    dists(newNode)(newNode) = 0
     newNode
   }
 
@@ -80,16 +86,17 @@ class DistanceMatrix(
       return // constraint is dominated
 
     dists(a)(b) = d
+    updated(a,b)
 
     val I = mutable.ArrayBuffer[Int]()
     val J = mutable.ArrayBuffer[Int]()
-    for(k <- dists.indices if !emptySpots.contains(k) && k != a && k!= b) {
+    for(k <- dists.indices if !emptySpots.contains(k) && !emptySpots.contains(a) && !emptySpots.contains(b) && k != a && k!= b) {
       if(dists(k)(b) > plus(dists(k)(a), d)) {
         dists(k)(b) = plus(dists(k)(a), d)
         updated(k,b)
         I += k
       }
-      if(dists(a)(k) < plus(d, dists(b)(k))) {
+      if(dists(a)(k) > plus(d, dists(b)(k))) {
         dists(a)(k) = plus(d, dists(b)(k))
         updated(a,k)
         J += k
@@ -108,11 +115,11 @@ class DistanceMatrix(
     assert(anchoredTimepoint != anchor)
     assert(dists(anchor)(anchoredTimepoint) == -dists(anchoredTimepoint)(anchor), "Trying to compile a non rigid relation")
     for(i <- dists.indices) {
-      if(isActive(i) && dists(i)(anchor) < plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))) {
+      if(isActive(i) && dists(i)(anchor) > plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))) {
         dists(i)(anchor) = plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))
         updated(i, anchor)
       }
-      if(isActive(i) && dists(anchor)(i) < plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))) {
+      if(isActive(i) && dists(anchor)(i) > plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))) {
         dists(anchor)(i) = plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))
         updated(anchor, i)
       }
@@ -126,6 +133,7 @@ class DistanceMatrix(
   }
 
   private final def updated(a: Int, b: Int): Unit = {
+    assert(dists(a)(b) < INF)
     for(list <- listeners)
       list.distanceUpdated(a, b)
   }
