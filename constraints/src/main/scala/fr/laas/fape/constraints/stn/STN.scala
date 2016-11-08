@@ -54,7 +54,7 @@ trait STN[TPRef,ID] {
   }
 
   /** Removes all constraints that were recorded with this id */
-  def removeConstraintsWithID(id:ID) : Boolean
+  @Deprecated def removeConstraintsWithID(id:ID) : Boolean
 
   /** Returns True if u can be at the same time or before v */
   final def canBeBefore(u:TPRef, v:TPRef) : Boolean = isConstraintPossible(v, u, 0)

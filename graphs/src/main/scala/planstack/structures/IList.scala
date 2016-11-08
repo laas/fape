@@ -19,7 +19,6 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
 
   def asScala = l
 
-
   def size(): Int = l.size
 
   def withoutAll(p1: util.Collection[_]): IList[T] =
@@ -60,6 +59,9 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
     new IList(p1 :: l)
 
   def get(i: Int): T = l(i)
+
+  /** Returns the first element of the list */
+  def head = l.head
 
   def stream : java.util.stream.Stream[T] = l.asJavaCollection.stream()
 

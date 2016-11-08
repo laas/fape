@@ -1,11 +1,13 @@
 package fr.laas.fape.constraints.stnu.structurals
 
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
+import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
-import fr.laas.fape.constraints.stnu.InconsistentTemporalNetwork
+import fr.laas.fape.constraints.stnu.{Constraint, Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.parser.STNUParser
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+import planstack.structures.IList
 
 import scala.collection.mutable
 
@@ -53,7 +55,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
                              var originalEdges: List[DistanceGraphEdge],
                              var consistent: Boolean
                             )
-  extends STN[TPRef,ID] with DistanceMatrixListener {
+  extends STNU[ID] with DistanceMatrixListener {
 
   def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true)
 
@@ -64,7 +66,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   dist.listeners += this
 
-  def timepoints = nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet
+  def timepoints = new IList[TPRef]((nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList)
 
   private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
 
@@ -145,12 +147,12 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   def concurrent(tp1: TPRef, tp2: TPRef) = rigidAwareDist(tp1,tp2) == rigidAwareDist(tp2,tp1)
 
-  def minDelay(from: TPRef, to:TPRef) = -rigidAwareDist(to, from)
-  def maxDelay(from: TPRef, to: TPRef) = rigidAwareDist(from, to)
-  def beforeOrConcurrent(first: TPRef, second: TPRef) = rigidAwareDist(second, first) <= NIL
-  def strictlyBefore(first: TPRef, second: TPRef) = rigidAwareDist(second, first) < NIL
-  def between(tp: TPRef, min:TPRef, max:TPRef) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
-  def strictlyBetween(tp: TPRef, min:TPRef, max:TPRef) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
+  private def minDelay(from: TPRef, to:TPRef) = -rigidAwareDist(to, from)
+  private def maxDelay(from: TPRef, to: TPRef) = rigidAwareDist(from, to)
+  private def beforeOrConcurrent(first: TPRef, second: TPRef) = rigidAwareDist(second, first) <= NIL
+  private def strictlyBefore(first: TPRef, second: TPRef) = rigidAwareDist(second, first) < NIL
+  private def between(tp: TPRef, min:TPRef, max:TPRef) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
+  private def strictlyBetween(tp: TPRef, min:TPRef, max:TPRef) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
 
   override def distanceUpdated(a: Int, b: Int): Unit = {
     // check if the network is now inconsistent
@@ -191,10 +193,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   /** Makes an independent clone of this STN. */
-  override def deepCopy(): STN[TPRef, ID] = ???
-
-  /** Returns the maximal time from the start of the STN to u */
-  override def getLatestStartTime(u: TPRef): Int = ???
+  override def deepCopy(): StnWithStructurals[ID] = clone()
 
   /** Record this time point as the global start of the STN */
   override def recordTimePointAsStart(tp: TPRef): Int = {
@@ -226,7 +225,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     assert(isKnown(end))
     assert(optEnd.isEmpty || optEnd.get == end)
     optEnd = Some(end)
-    for(tp <- timepoints) {
+    for(tp <- timepoints.asScala) {
       enforceBefore(tp, end)
     }
     optStart match {
@@ -240,7 +239,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     if(debugging) {
       checkCoherenceWrtBellmanFord
     }
-    consistent
+    consistent && contingentLinks.forall(l => isDelayPossible(l.src, l.dst, l.min.lb) && isConstraintPossible(l.src, l.dst, l.max.ub))
   }
 
   /** Removes all constraints that were recorded with this id */
@@ -253,10 +252,6 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     w + rigidAwareDist(v, u) >= 0
 
   override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit = ???
-
-  override def getEndTimePoint: Option[TPRef] = optEnd
-
-  override def getStartTimePoint: Option[TPRef] = optStart
 
   /** Remove a timepoint and all associated constraints from the STN */
   override def removeTimePoint(tp: TPRef): Unit = ???
@@ -278,6 +273,14 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       case None => sys.error("This STN has no start timepoint")
     }
 
+  /** Returns the maximal time from the start of the STN to u */
+  override def getLatestStartTime(u: TPRef): Int =
+    optStart match {
+      case Some(st) => maxDelay(st, u)
+      case None => sys.error("This STN has no start timepoint")
+    }
+
+
   override protected def addConstraintWithID(u: TPRef, v: TPRef, w: Int, id: ID): Unit =
     addConstraint(u, v, w)
 
@@ -288,7 +291,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   private def distancesFromWithBellmanFord(from: TPRef) : Array[Int] = {
     // initialize distances
     val d = new Array[Int](99999)
-    for(tp <- timepoints)
+    for(tp <- timepoints.asScala)
       d(tp.id) = INF
     d(from.id) = 0
 
@@ -331,11 +334,49 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   private def checkCoherenceWrtBellmanFord: Unit = {
-    for(tp <- timepoints) {
+    for(tp <- timepoints.asScala) {
       val d = distancesFromWithBellmanFord(tp)
-      for(to <- timepoints) {
+      for(to <- timepoints.asScala) {
         assert(maxDelay(tp, to) == d(to.id))
       }
     }
   }
+
+  override def enforceContingent(u: TPRef, v: TPRef, min: Int, max: Int, optID: Option[ID]): Unit = {
+    addMinDelay(u, v, min)
+    addMaxDelay(u, v, max)
+    contingentLinks.append(new ContingentConstraint(u, v, IntExpression.lit(min), IntExpression.lit(max)))
+  }
+
+  override def getMaxDelay(u: TPRef, v: TPRef): Int = maxDelay(u, v)
+
+  /** Returns a list of all constraints that were added to the STNU.
+    * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
+  override def constraints: IList[Constraint[ID]] = ???
+
+  override def checksPseudoControllability: Boolean = true
+
+  override def checksDynamicControllability: Boolean = false
+
+  override def controllability: Controllability = Controllability.PSEUDO_CONTROLLABILITY
+
+  /** If there is a contingent constraint [min, max] between those two timepoints, it returns
+    * Some((min, max).
+    * Otherwise, None is returned.
+    */
+  override def contingentDelay(from: TPRef, to: TPRef): Option[(Integer, Integer)] =
+    contingentLinks.find(l => l.src == from && l.dst == to) match {
+      case Some(x) => Some(x.min.lb.asInstanceOf[Integer], x.max.ub.asInstanceOf[Integer])
+      case None => None
+    }
+
+  override def getMinDelay(u: TPRef, v: TPRef): Int = minDelay(u, v)
+
+  override def addContingentTimePoint(tp: TPRef): Int = { assert(tp.genre.isContingent); recordTimePoint(tp) }
+
+  override def addDispatchableTimePoint(tp: TPRef): Int = { assert(tp.genre.isDispatchable); recordTimePoint(tp) }
+
+  override def start: Option[TPRef] = optStart
+
+  override def end: Option[TPRef] = optEnd
 }

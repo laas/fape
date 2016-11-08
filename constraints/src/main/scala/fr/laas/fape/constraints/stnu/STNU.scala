@@ -15,12 +15,12 @@ trait STNU[ID] extends STN[TPRef,ID] {
 
   def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int, optID:Option[ID])
 
-  def enforceContingentWithID(u:TPRef, v:TPRef, min:Int, max:Int, constID:ID) = {
+  final def enforceContingentWithID(u:TPRef, v:TPRef, min:Int, max:Int, constID:ID) = {
     enforceContingent(u, v, min, max, Some(constID))
   }
 
-  def addDispatchableTimePoint(tp : TPRef) : Int
-  def addContingentTimePoint(tp : TPRef) : Int
+  @Deprecated def addDispatchableTimePoint(tp : TPRef) : Int
+  @Deprecated def addContingentTimePoint(tp : TPRef) : Int
 
   def recordTimePoint(tp: TPRef): Int
 
@@ -33,26 +33,21 @@ trait STNU[ID] extends STN[TPRef,ID] {
     addConstraint(tp, start.get, -time)
   }
 
-  protected def commitConstraint(u:Int, v:Int, w:Int, optID:Option[ID])
-
   /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
-  def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) { ??? }
+  @Deprecated def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) { ??? }
 
   /** Records a virtual time point that is still partially defined.
     * All constraints on this time point will only be processed when defined with method*/
-  def addPendingVirtualTimePoint(virt: TPRef): Unit = ???
+  @Deprecated def addPendingVirtualTimePoint(virt: TPRef): Unit = ???
 
   /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
-  def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = ???
+  @Deprecated def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = ???
 
   /** Record this time point as the global start of the STN */
   def recordTimePointAsStart(tp: TPRef): Int
 
   /** Unifies this time point with the global end of the STN */
   def recordTimePointAsEnd(tp: TPRef): Int
-
-  /** Is this constraint possible in the underlying stnu ? */
-  protected def isConstraintPossible(u: Int, v: Int, w: Int): Boolean
 
   def checksPseudoControllability : Boolean
   def checksDynamicControllability : Boolean
@@ -72,23 +67,14 @@ trait STNU[ID] extends STN[TPRef,ID] {
     * (contingent or controllable. */
   def timepoints : IList[TPRef]
 
-  /** Returns the number of timep oints, exclding virtual time points */
-  def numRealTimePoints : Int
-
   final def getEndTimePoint: Option[TPRef] = end
 
   final def getStartTimePoint: Option[TPRef] = start
-
-  /** Returns the earliest time for the time point with id u */
-  protected def earliestStart(u:Int) : Int
-
-  /** Returns the latest time for the time point with id u */
-  protected def latestStart(u:Int) : Int
 
   def getMinDelay(u:TPRef, v:TPRef) : Int
   def getMaxDelay(u: TPRef, v:TPRef) : Int
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  def constraints : IList[Constraint[ID]]
+  @Deprecated def constraints : IList[Constraint[ID]]
 }

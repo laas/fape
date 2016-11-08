@@ -6,6 +6,7 @@ import fr.laas.fape.constraints.stn.CoreSTN
 import planstack.structures.Converters._
 import planstack.structures.IList
 import ElemStatus._
+import fr.laas.fape.constraints.stnu.pseudo.PseudoSTNUManager
 
 case class Constraint[ID](u:TPRef, v:TPRef, d:Int, tipe:ElemStatus, optID:Option[ID]) {
   override def toString =
@@ -33,6 +34,9 @@ abstract class GenSTNUManager[ID]
     assert(tps(timePoint.id) == null)
     assert(id(timePoint.id) != -2, "Make sure you updated the ID of this timepoint.")
     tps(timePoint.id) = timePoint
+    if(end.nonEmpty) {
+      enforceBefore(timePoint, end.get)
+    }
   }
 
   final def rm(tp: TPRef) = { id(tp.id) = -2 ; tps(tp.id) = null }//tps.remove(tp.id)
@@ -234,9 +238,6 @@ abstract class GenSTNUManager[ID]
     * (contingent or controllable. */
   final def timepoints : IList[TPRef] = tps.filter(_ != null).toList
 
-  /** Returns the number of timepoints, excluding virtual time points */
-  final def numRealTimePoints = id.size
-
   /** Returns the maximal time from the start of the STN to u */
   override final def getEarliestStartTime(u:TPRef) : Int = {
     assert(!isPendingVirtual(u), "Timepoint is virtual but has not been unified yet.")
@@ -267,7 +268,6 @@ abstract class GenSTNUManager[ID]
 
   def getMinDelay(u:TPRef, v:TPRef) : Int
   def getMaxDelay(u: TPRef, v:TPRef) : Int
-
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
