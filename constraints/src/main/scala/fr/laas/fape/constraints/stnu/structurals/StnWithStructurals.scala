@@ -199,7 +199,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   override def recordTimePointAsStart(tp: TPRef): Int = {
     if(!isKnown(tp))
       recordTimePoint(tp)
-    setEnd(tp)
+    setStart(tp)
     nonRigidIndexes(tp)
   }
 
