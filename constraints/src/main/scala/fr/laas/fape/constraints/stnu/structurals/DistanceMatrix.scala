@@ -37,6 +37,14 @@ class DistanceMatrix(
 
   def this() = this(new Array[Array[Int]](0), mutable.Set())
 
+  override def clone() : DistanceMatrix = {
+    val newDists = new Array[Array[Int]](dists.length)
+    for(i <- dists.indices if dists(i) != null)
+      newDists(i) = util.Arrays.copyOf(dists(i), dists(i).length)
+    val newEmptySpots = emptySpots.clone()
+    new DistanceMatrix(newDists, newEmptySpots)
+  }
+
   val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
 
   private final def isActive(tp: Int) = {

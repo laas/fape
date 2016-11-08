@@ -57,6 +57,11 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true)
 
+  override def clone() : StnWithStructurals[ID] = new StnWithStructurals[ID](
+    nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
+    optStart, optEnd, originalEdges, consistent
+  )
+
   dist.listeners += this
 
   def timepoints = nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet
@@ -277,8 +282,8 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     addConstraint(u, v, w)
 
   /**
-    * Computes the max delay between two timepoints using Bellman-Ford on the original edges.
-    * This is very expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
+    * Computes the max delay from a given timepoint to all others using Bellman-Ford on the original edges.
+    * This is expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
     */
   private def distancesFromWithBellmanFord(from: TPRef) : Array[Int] = {
     // initialize distances
@@ -297,13 +302,17 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     d
   }
 
+  /**
+    * Computes the max delay between two timepoints using Bellman-Ford on the original edges.
+    * This is expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
+    */
   private def distanceWithBellmanFord(from: TPRef, to: TPRef): Int = {
     distancesFromWithBellmanFord(from)(to.id)
   }
 
   /**
     * Determine whether the STN is consistent using Bellman-Ford on the original edges.
-    * This is very expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
+    * This is expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
     */
   private def consistencyWithBellmanFord(): Boolean = {
     // when possible, use "end" as the source as it normally linked with all other timepoints

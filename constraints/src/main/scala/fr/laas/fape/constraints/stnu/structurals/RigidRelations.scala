@@ -10,6 +10,14 @@ class RigidRelations(val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
 
   def this() = this(mutable.Map(), mutable.Map())
 
+  override def clone() : RigidRelations = {
+    val newAnchored = mutable.Map[TPRef, mutable.Map[TPRef,Int]]()
+    for((tp,map) <- anchored)
+      newAnchored.put(tp, map.clone())
+    val newAnchorOf = _anchorOf.clone()
+    new RigidRelations(newAnchored, newAnchorOf)
+  }
+
   def isAnchored(tp: TPRef) = { assert(!_anchorOf.contains(tp) || tp.genre.isStructural); _anchorOf.contains(tp) }
   def isAnchor(tp: TPRef) = anchored.contains(tp)
   def anchorOf(tp: TPRef) = _anchorOf(tp)
