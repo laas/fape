@@ -193,7 +193,7 @@ object AbstractAction {
 
         val actionStart = ContainerStart
         val actionEnd = ContainerEnd
-        if(decompositions.nonEmpty) {
+        if(decompositions.isEmpty) {
           allConstraints += new AbstractTimepointType(actionStart, TimepointTypeEnum.DISPATCHABLE_BY_DEFAULT)
           allConstraints += new AbstractTimepointType(actionEnd, TimepointTypeEnum.DISPATCHABLE_BY_DEFAULT)
         }else {
@@ -202,7 +202,7 @@ object AbstractAction {
         }
 
         allConstraints += new AbstractMinDelay(actionStart, actionEnd, IntExpression.lit(1))
-
+        actChronicle = actChronicle.withConstraintsSeq(allConstraints)
 
         content foreach {
           case ts: TemporalStatement =>
