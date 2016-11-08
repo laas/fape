@@ -11,15 +11,14 @@ object DistanceMatrix {
   val growthIncrement = 5
   val INF :Int = Integer.MAX_VALUE /2 -1
 
-  /** addition that will never overflow given that both parameters are in [-INF,INF] */
+  /** Addition that will never overflow given that both parameters are in [-INF,INF] */
   final def plus(a:Int, b: Int) = {
+    assert(a <= INF && a > -INF)
+    assert(b <= INF && b > -INF)
     if(a == INF || b == INF)
       INF
     else {
-      val total = a+b
       assert(a+b < INF)
-      assert(a > -INF)
-      assert(b > -INF)
       a + b
     }
   }
@@ -32,12 +31,11 @@ trait DistanceMatrixListener {
 import DistanceMatrix._
 
 class DistanceMatrix(
-                      var dists: Array[Array[Int]],
-                      val emptySpots: mutable.Set[Int],
-                      val defaultValue: Int
+                      private var dists: Array[Array[Int]],
+                      private val emptySpots: mutable.Set[Int]
                     ) {
 
-  def this() = this(new Array[Array[Int]](0), mutable.Set(), INF)
+  def this() = this(new Array[Array[Int]](0), mutable.Set())
 
   val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
 
@@ -46,6 +44,11 @@ class DistanceMatrix(
     !emptySpots.contains(tp)
   }
 
+  /**
+    * Initialize a new node, possibly growing the matrix.
+    * Distances to self is set to 0 and distances to other nodes is set to INF
+    * @return The id of the new node
+    */
   def createNewNode(): Int = {
     if(emptySpots.isEmpty) {
       // grow matrix
@@ -54,11 +57,11 @@ class DistanceMatrix(
       val newDists = util.Arrays.copyOf(dists, newLength)
       for(i <- 0 until prevLength) {
         newDists(i) = util.Arrays.copyOf(dists(i), newLength)
-        util.Arrays.fill(newDists(i), prevLength, newLength, defaultValue)
+        util.Arrays.fill(newDists(i), prevLength, newLength, INF)
       }
       for(i <- prevLength until newLength) {
         newDists(i) = new Array[Int](newLength)
-        util.Arrays.fill(newDists(i), defaultValue)
+        util.Arrays.fill(newDists(i), INF)
         emptySpots += i
       }
       dists = newDists
@@ -73,12 +76,18 @@ class DistanceMatrix(
     * Removes a node from the network. Note that all constraints previously inferred will stay in the matrix
     */
   private def eraseNode(n: Int): Unit = {
-    util.Arrays.fill(dists(n), defaultValue)
+    util.Arrays.fill(dists(n), INF)
     for(i <- dists.indices)
-      dists(i)(n) = defaultValue
+      dists(i)(n) = INF
     emptySpots += n
   }
 
+  /**
+    * Add a new distance in the matrix and propagate to get the minimal network
+    * using an incremental Floyd Warshall algorithm.
+    * All listeners are called backed for each updated edge (given that both the source and the
+    * target are still in the matrix at the time of the callback).
+    */
   def enforceDist(a: Int, b: Int, d: Int): Unit = {
     if(plus(d, dists(b)(a)) < 0)
       throw new InconsistentTemporalNetwork
@@ -86,55 +95,63 @@ class DistanceMatrix(
       return // constraint is dominated
 
     dists(a)(b) = d
-    updated(a,b)
+    val updatedEdges = mutable.ArrayBuffer[(Int,Int)]()
+    updatedEdges += ((a,b))
+    val nodes = dists.indices.filterNot(emptySpots.contains)
 
     val I = mutable.ArrayBuffer[Int]()
     val J = mutable.ArrayBuffer[Int]()
-    for(k <- dists.indices if !emptySpots.contains(k) && !emptySpots.contains(a) && !emptySpots.contains(b) && k != a && k!= b) {
+    for(k <- nodes if k != a && k!= b) {
       if(dists(k)(b) > plus(dists(k)(a), d)) {
         dists(k)(b) = plus(dists(k)(a), d)
-        updated(k,b)
+        updatedEdges += ((k,b))
         I += k
       }
       if(dists(a)(k) > plus(d, dists(b)(k))) {
         dists(a)(k) = plus(d, dists(b)(k))
-        updated(a,k)
+        updatedEdges += ((a,k))
         J += k
       }
     }
-    for(i <- I ; j <- J if i != j && !emptySpots.contains(i) && !emptySpots.contains(j)) {
+    for(i <- I ; j <- J if i != j) {
       if(dists(i)(j) > plus(dists(i)(a), dists(a)(j))) {
         dists(i)(j) = plus(dists(i)(a), dists(a)(j))
-        updated(i,j)
+        updatedEdges += ((i,j))
       }
-
     }
+    for((u,v) <- updatedEdges)
+      updated(u, v)
   }
 
+  /**
+    * Removes a timepoint from the matrix given that it is rigidly constrained to another one.
+    * @param anchoredTimepoint Timepoint to remove
+    * @param anchor Timepoint that serve as an anchor to the remove one.
+    */
   def compileAwayRigid(anchoredTimepoint: Int, anchor: Int): Unit = {
+    assert(isActive(anchoredTimepoint))
+    assert(isActive(anchor))
     assert(anchoredTimepoint != anchor)
     assert(dists(anchor)(anchoredTimepoint) == -dists(anchoredTimepoint)(anchor), "Trying to compile a non rigid relation")
-    for(i <- dists.indices) {
-      if(isActive(i) && dists(i)(anchor) > plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))) {
-        dists(i)(anchor) = plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor))
-        updated(i, anchor)
-      }
-      if(isActive(i) && dists(anchor)(i) > plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))) {
-        dists(anchor)(i) = plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i))
-        updated(anchor, i)
+    if(StnWithStructurals.debugging) { // check that all distances are consistent
+      for (i <- dists.indices if isActive(i)) {
+        assert(dists(i)(anchor) == plus(dists(i)(anchoredTimepoint), dists(anchoredTimepoint)(anchor)))
+        assert(dists(anchor)(i) == plus(dists(anchor)(anchoredTimepoint), dists(anchoredTimepoint)(i)))
       }
     }
     eraseNode(anchoredTimepoint)
   }
 
   def getDistance(a: Int, b: Int): Int = {
-    assert(!emptySpots.contains(a) && !emptySpots.contains(b))
+    assert(isActive(a) && isActive(b))
     dists(a)(b)
   }
 
   private final def updated(a: Int, b: Int): Unit = {
-    assert(dists(a)(b) < INF)
-    for(list <- listeners)
-      list.distanceUpdated(a, b)
+    if(isActive(a) && isActive(b)) {
+      assert(dists(a)(b) < INF)
+      for (list <- listeners)
+        list.distanceUpdated(a, b)
+    }
   }
 }

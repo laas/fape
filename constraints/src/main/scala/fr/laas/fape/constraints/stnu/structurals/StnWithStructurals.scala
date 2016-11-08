@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 object StnWithStructurals {
 
-  var debugging = true
+  var debugging = false
 
   val INF: Int = Int.MaxValue /2 -1 // set to avoid overflow on addition of int values
   val NIL: Int = 0
@@ -130,10 +130,8 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
         (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
       else (b, 0)
 
-    val ret = aToRef + distanceBetweenNonRigid(aRef, bRef) + refToB
-    if(debugging)
-      assert(ret == distanceWithBellmanFord(a, b), "Inconsistent distances in the STN")
-    ret
+    val refAToRefB = distanceBetweenNonRigid(aRef, bRef)
+    DistanceMatrix.plus(aToRef, DistanceMatrix.plus(refAToRefB, refToB))
   }
 
   private def distanceBetweenNonRigid(a: TPRef, b: TPRef) = {
@@ -161,16 +159,10 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     if (a == b)
       return
 
-    if (debugging) {
-      assert(consistencyWithBellmanFord(), "Problem with the consistency of the STN")
-      val dFW = dist.getDistance(a, b)
-      val dBF = distanceWithBellmanFord(timepointByIndex(a), timepointByIndex(b))
-      assert(dFW == dBF, "Inconsistent distances in the STN")
-    }
-
     // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
     // the distance matrix
     if(dist.getDistance(a,b) == -dist.getDistance(b,a)) {
+      val originalDist = dist.getDistance(a, b)
       val tpA = timepointByIndex(a)
       val tpB = timepointByIndex(b)
       assert(!rigidRelations.isAnchored(tpA))
@@ -183,10 +175,12 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
           if(rigidRelations.isAnchored(tpA)) (tpA, tpB)
           else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
           else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
+
         // remove the anchored timepoint from distance matrix
         dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
         timepointByIndex(toIndex(anchored)) = null
         nonRigidIndexes.remove(anchored)
+        assert(originalDist == rigidAwareDist(tpA, tpB))
       }
     }
   }
@@ -237,7 +231,12 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   /** Returns true if the STN is consistent (might trigger a propagation */
-  override def isConsistent(): Boolean = consistent
+  override def isConsistent(): Boolean = {
+    if(debugging) {
+      checkCoherenceWrtBellmanFord
+    }
+    consistent
+  }
 
   /** Removes all constraints that were recorded with this id */
   override def removeConstraintsWithID(id: ID): Boolean = ???
@@ -281,20 +280,25 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     * Computes the max delay between two timepoints using Bellman-Ford on the original edges.
     * This is very expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
     */
-  private def distanceWithBellmanFord(from: TPRef, to: TPRef) : Int = {
+  private def distancesFromWithBellmanFord(from: TPRef) : Array[Int] = {
     // initialize distances
-    val d = mutable.Map[TPRef,Int]()
+    val d = new Array[Int](99999)
     for(tp <- timepoints)
-      d(tp) = INF
-    d(from) = 0
+      d(tp.id) = INF
+    d(from.id) = 0
 
     // compute distances
-    for(i <- 0 until timepoints.size) {
+    val numIters = timepoints.size
+    for(i <- 0 until numIters) {
       for(e <- originalEdges) {
-        d(e.to) = Math.min(d(e.to), d(e.from) + e.value)
+        d(e.to.id) = Math.min(d(e.to.id), DistanceMatrix.plus(d(e.from.id), e.value))
       }
     }
-    d(to)
+    d
+  }
+
+  private def distanceWithBellmanFord(from: TPRef, to: TPRef): Int = {
+    distancesFromWithBellmanFord(from)(to.id)
   }
 
   /**
@@ -307,24 +311,22 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       case Some(end) => end
       case None => timepoints.head
     }
-    val d = mutable.Map[TPRef,Int]()
-    // initialize distances
-    for(tp <- timepoints)
-      d(tp) = INF
-    d(from) = 0
-
-    // compute distances
-    for(i <- 0 until timepoints.size) {
-      for(e <- originalEdges) {
-        d(e.to) = Math.min(d(e.to), d(e.from) + e.value)
-      }
-    }
+  val d = distancesFromWithBellmanFord(from)
 
     // if a distance can still be updated, there is a negative cycle
     for(e <- originalEdges) {
-      if(d(e.to) > d(e.from) + e.value)
+      if(d(e.to.id) > d(e.from.id) + e.value)
         return false
     }
     true
+  }
+
+  private def checkCoherenceWrtBellmanFord: Unit = {
+    for(tp <- timepoints) {
+      val d = distancesFromWithBellmanFord(tp)
+      for(to <- timepoints) {
+        assert(maxDelay(tp, to) == d(to.id))
+      }
+    }
   }
 }
