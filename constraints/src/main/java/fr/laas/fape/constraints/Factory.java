@@ -8,6 +8,7 @@ import fr.laas.fape.constraints.stnu.Controllability;
 import fr.laas.fape.constraints.stnu.pseudo.MinimalSTNUManager;
 import fr.laas.fape.constraints.stnu.pseudo.PseudoSTNUManager;
 import fr.laas.fape.constraints.stnu.STNUManager;
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals;
 import planstack.UniquelyIdentified;
 import scala.collection.immutable.List;
 import scala.collection.immutable.Map$;
@@ -35,7 +36,7 @@ public class Factory {
     public static <ID> MetaCSP<ID> getMetaWithPseudoControllability() {
         return new MetaCSP<>(
                 new BindingConstraintNetwork(),
-                new PseudoSTNUManager<>(),
+                new StnWithStructurals<>(), // new PseudoSTNUManager<>(), // other valid option
                 Map$.MODULE$.<VarRef, List<PendingConstraint<VarRef,TPRef,ID>>>empty());
     }
 
