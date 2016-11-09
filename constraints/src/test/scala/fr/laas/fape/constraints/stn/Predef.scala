@@ -5,6 +5,7 @@ import fr.laas.fape.constraints.stn.bellmanford.CoreSTNIncBellmanFord
 import fr.laas.fape.constraints.stnu.nilsson.FastIDC
 import fr.laas.fape.constraints.stnu.pseudo.{MinimalSTNUManager, PseudoSTNUManager}
 import fr.laas.fape.constraints.stnu._
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
 
 object Predef {
 
@@ -21,8 +22,9 @@ object Predef {
   //new EfficientIDC[ID]
   )
 
-  def getAllSTNUManager[ID] : List[GenSTNUManager[ID]] = List(
+  def getAllSTNUManager[ID] : List[STNU[ID]] = List(
     new MinimalSTNUManager[ID](),
+    new StnWithStructurals[ID](),
     new PseudoSTNUManager[ID](),
     new STNUManager[ID]()
   )

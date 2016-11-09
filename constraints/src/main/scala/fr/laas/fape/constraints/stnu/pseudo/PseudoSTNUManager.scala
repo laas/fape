@@ -1,10 +1,15 @@
 package fr.laas.fape.constraints.stnu.pseudo
 
+import java.io.PrintWriter
+
 import fr.laas.fape.constraints.stnu._
 import Controllability._
 import fr.laas.fape.anml.model.concrete.TPRef
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+
+import scala.collection.mutable
 
 protected class TConstraint[ID](val u:TPRef, val v:TPRef, val min:Int, val max:Int, val optID:Option[ID])
 
@@ -26,7 +31,7 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
 
   override def deepCopy(): PseudoSTNUManager[ID] = new PseudoSTNUManager(this)
 
-  override def isConsistent: Boolean = {
+  override def isConsistent(): Boolean = {
     stn.consistent && contingents.forall(c => stn.isMinDelayPossible(id(c.u.id), id(c.v.id), c.d))
   }
 
@@ -48,8 +53,6 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
     else
       None
   }
-
-
 
   override protected def commitContingent(u: Int, v: Int, d: Int, optID: Option[ID]): Unit =
     // simple commit a controllable constraint, the contingency will be checked in isConsistent
@@ -84,4 +87,78 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
   override def getMinDelay(u: TPRef, v: TPRef): Int = - dist(v, u)
 
   override def getMaxDelay(u: TPRef, v: TPRef): Int = dist(u,v)
+
+  override def toStringRepresentation = {
+    val sb = new StringBuilder
+    sb.append("(define\n")
+
+    sb.append("  (:timepoints\n")
+    for (tp <- tps if tp != null) {
+      if(start.nonEmpty && start.get == tp) sb.append(s"    (start ${tp.id})\n")
+      else if(end.nonEmpty && end.get == tp) sb.append(s"    (end ${tp.id})\n")
+      else if(tp.genre.isStructural) sb.append(s"    (structural ${tp.id})\n")
+      else if(tp.genre.isDispatchable) sb.append(s"    (dispatchable ${tp.id})\n")
+      else if(tp.genre.isContingent) sb.append(s"    (contingent ${tp.id})\n")
+    }
+    sb.append("  )")
+
+    sb.append("  (:constraints\n")
+    val contingentMin = mutable.Map[(TPRef,TPRef),Int]()
+    val contingentMaxs = mutable.Map[(TPRef,TPRef),Int]()
+    for(c <- rawConstraints if c.tipe == ElemStatus.CONTINGENT) {
+      if(c.d <= 0)
+        contingentMin.put((c.v, c.u), -c.d)
+      else
+        contingentMaxs.put((c.u,c.v), c.d)
+    }
+    for((u,v) <- contingentMin.keys) {
+      sb.append(s"    (contingent $u $v ${contingentMin((u,v))} ${contingentMaxs((u,v))})\n")
+    }
+    for(c <- rawConstraints if c.tipe != ElemStatus.CONTINGENT) {
+      sb.append(s"    (min-delay ${c.v} ${c.u} ${-c.d})\n")
+    }
+    for(tp <- tps if tp != null && tp.isVirtual && tp.isAttached) {
+      val (anchor, distToAnchor) = tp.attachmentToReal
+      sb.append(s"    (min-delay $tp $anchor ${-distToAnchor})\n")
+      sb.append(s"    (min-delay $anchor $tp ${distToAnchor})\n")
+    }
+
+    sb.append("  )")
+
+    sb.append(")")
+    sb.toString()
+  }
+
+  /** Checks that an equivalent StnWithStructural is indeed identical */
+  def checkStructural(expectedConsistent: Boolean): Unit = {
+    val stnString = toStringRepresentation
+    try {
+      try {
+        val x = StnWithStructurals.buildFromString(stnString)
+        for (tp <- timepoints.asScala) {
+          for (tp2 <- timepoints.asScala) {
+            var md1 = getMinDelay(tp, tp2)
+            val  md2 = x.getMinDelay(tp, tp2)
+            if (md1 < -99999999 && md2 < -99999999)
+              md1 = md2
+            assert(md1 == md2, "constraints are not equal:" + s"$tp -> $tp2: $md1 / $md2")
+          }
+        }
+      } catch {
+        case e: InconsistentTemporalNetwork =>
+          assert(!expectedConsistent, "Inconsistent that should be consistent")
+      }
+    } catch {
+      case e: AssertionError =>
+        println("Failure with # constraints: "+constraints.size())
+        println(stnString)
+        val tmpDir = System.getProperty("java.io.tmpdir")
+        val outFile = tmpDir + "/stn.txt"
+        System.out.println("Writing problematic STN to: "+outFile)
+        val pw = new PrintWriter(outFile, "UTF-8")
+        pw.write(stnString)
+        pw.close()
+        throw e
+    }
+  }
 }
