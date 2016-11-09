@@ -34,14 +34,14 @@ trait STNU[ID] extends STN[TPRef,ID] {
   }
 
   /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
-  @Deprecated def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int) { ??? }
+  @Deprecated def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int)
 
   /** Records a virtual time point that is still partially defined.
     * All constraints on this time point will only be processed when defined with method*/
-  @Deprecated def addPendingVirtualTimePoint(virt: TPRef): Unit = ???
+  @Deprecated def addPendingVirtualTimePoint(virt: TPRef)
 
   /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
-  @Deprecated def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = ???
+  @Deprecated def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int)
 
   /** Record this time point as the global start of the STN */
   def recordTimePointAsStart(tp: TPRef): Int

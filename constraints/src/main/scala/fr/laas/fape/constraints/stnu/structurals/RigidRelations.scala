@@ -24,6 +24,10 @@ class RigidRelations(val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
   def distFromAnchor(tp: TPRef) = anchored(_anchorOf(tp))(tp)
   def distToAnchor(tp: TPRef) = -distFromAnchor(tp)
 
+  def addAnchor(tp: TPRef): Unit = {
+    anchored(tp) = mutable.Map[TPRef, Int]()
+  }
+
   /** record a new rigid relation between those two timepoints.
     * At least one of them must be in the set already */
   def addRigidRelation(from: TPRef, to: TPRef, d: Int): Unit = {
