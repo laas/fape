@@ -175,21 +175,20 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       val tpB = timepointByIndex(b)
       assert(!rigidRelations.isAnchored(tpA))
       assert(!rigidRelations.isAnchored(tpB))
-      if(tpA.genre.isStructural || tpB.genre.isStructural) {
-        // record rigid relation
-        rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(a, b))
 
-        val (anchored, anchor) =
-          if(rigidRelations.isAnchored(tpA)) (tpA, tpB)
-          else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
-          else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
+      // record rigid relation
+      rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(a, b))
 
-        // remove the anchored timepoint from distance matrix
-        dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
-        timepointByIndex(toIndex(anchored)) = null
-        nonRigidIndexes.remove(anchored)
-        assert(originalDist == rigidAwareDist(tpA, tpB))
-      }
+      val (anchored, anchor) =
+        if(rigidRelations.isAnchored(tpA)) (tpA, tpB)
+        else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
+        else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
+
+      // remove the anchored timepoint from distance matrix
+      dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
+      timepointByIndex(toIndex(anchored)) = null
+      nonRigidIndexes.remove(anchored)
+      assert(originalDist == rigidAwareDist(tpA, tpB))
     }
   }
 
