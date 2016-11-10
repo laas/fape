@@ -552,64 +552,33 @@ public class State implements Reporter {
         }
     }
 
-    public void applyChronicle(Chronicle chron) {
-        assert chron instanceof Chronicle : "Other chronicles should have specialized methods.";
-
-        apply(chron);
-    }
-
-    /**
-     * Applies all modifications stated in a StateModifier in this this State
-     *
-     * @param mod StateModifier to apply
-     */
-    private void apply(Chronicle mod) {
-        for (TPRef tp : mod.flexibleTimepoints()) {
-            if(tp.equals(pb.start()) || tp.equals(pb.end()) || tp.equals(pb.earliestExecution()))
-                continue;
-
-            if(tp.isDispatchable())
-                csp.stn().addDispatchableTimePoint(tp);
-            else if(tp.isContingent())
-                csp.stn().addContingentTimePoint(tp);
-            else if(tp.isStructural())
-                csp.stn().recordTimePoint(tp);
-            else
-                throw new FAPEException("Unknown time point type: " + tp);
-        }
-
+    public void apply(Chronicle chronicle) {
         // for every instance declaration, create a new CSP Var with itself as domain
-        for (String instanceName : mod.instances()) {
+        for (String instanceName : chronicle.instances()) {
             csp.bindings().addPossibleValue(instanceName);
             csp.bindings().addVariable(pb.instances().referenceOf(instanceName), Collections.singletonList(instanceName));
         }
 
         // Declare new variables to the constraint network.
-        for (VarRef var : mod.vars()) {
+        for (VarRef var : chronicle.vars()) {
             csp.bindings().addVariable(var);
         }
 
-        for(BindingConstraint bc : mod.bindingConstraints())
-            apply(mod, bc);
+        for(BindingConstraint bc : chronicle.bindingConstraints())
+            apply(chronicle, bc);
 
-        // last: virtual time points might refer to start/end of nested actions
-        for(AnchoredTimepoint anchored : mod.anchoredTimepoints()) {
-            csp.stn().addVirtualTimePoint(anchored.timepoint(), anchored.anchor(), anchored.delay());
-        }
-
-        // apply all remaining temporal constraints (those not represented with rigid time points)
-        for (TemporalConstraint tc : mod.temporalConstraints()) {
-            apply(mod, tc);
-        }
+        // apply all temporal constraints
+        for (TemporalConstraint tc : chronicle.temporalConstraints())
+            apply(chronicle, tc);
 
         // needs time points to be defined
-        for(Task t : mod.tasks()) {
+        for(Task t : chronicle.tasks()) {
             csp.stn().enforceBefore(t.start(), t.end());
             enforceBefore(pb.start(), t.start());
 
-            assert mod.container().nonEmpty() : "A chronicle is not attached";
-            if(mod.container().get() instanceof Action)
-                taskNet.insert(t, (Action) mod.container().get());
+            assert chronicle.container().nonEmpty() : "A chronicle is not attached";
+            if(chronicle.container().get() instanceof Action)
+                taskNet.insert(t, (Action) chronicle.container().get());
             else
                 taskNet.insert(t);
 
@@ -618,8 +587,8 @@ public class State implements Reporter {
         }
 
         // needs its timepoints to be defined
-        for (Statement ts : mod.statements()) {
-            apply(mod, ts);
+        for (Statement ts : chronicle.statements()) {
+            apply(chronicle, ts);
         }
     }
     public void addSupportConstraint(ChainComponent cc, Action act) {

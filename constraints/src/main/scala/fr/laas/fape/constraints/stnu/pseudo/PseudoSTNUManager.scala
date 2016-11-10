@@ -75,13 +75,7 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
   override protected def earliestStart(u: Int): Int = stn.earliestStart(u)
 
   private def dist(u :TPRef, v:TPRef) : Int = {
-    val (src, addDelay) =
-      if(u.isVirtual) u.attachmentToReal
-      else (u, 0)
-    val (dst, subDelay) =
-      if(v.isVirtual) v.attachmentToReal
-      else (v, 0)
-    (- addDelay) + stn.maxDelay(id(src.id), id(dst.id)) + subDelay
+    stn.maxDelay(id(u.id), id(v.id))
   }
 
   override def getMinDelay(u: TPRef, v: TPRef): Int = - dist(v, u)
@@ -116,11 +110,6 @@ class PseudoSTNUManager[ID](val stn : FullSTN[ID],
     }
     for(c <- rawConstraints if c.tipe != ElemStatus.CONTINGENT) {
       sb.append(s"    (min-delay ${c.v} ${c.u} ${-c.d})\n")
-    }
-    for(tp <- tps if tp != null && tp.isVirtual && tp.isAttached) {
-      val (anchor, distToAnchor) = tp.attachmentToReal
-      sb.append(s"    (min-delay $tp $anchor ${-distToAnchor})\n")
-      sb.append(s"    (min-delay $anchor $tp ${distToAnchor})\n")
     }
 
     sb.append("  )")

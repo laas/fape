@@ -124,15 +124,8 @@ object TemporalNetwork {
     implicit def toInt(tp: TPRef): Node = tp.id
     val tps = constraints.flatMap(c => List(c.u, c.v)).toSet
     val tpsFromInt = tps.map(tp => (tp.id, tp)).toMap
-    val noVirtuals =
-      constraints.map(c =>
-        if(!c.u.isVirtual) c
-        else new Constraint[ID](c.u.attachmentToReal._1, c.v, c.d+c.u.attachmentToReal._2, c.tipe, c.optID)
-      ).map(c =>
-        if(!c.v.isVirtual) c
-        else new Constraint[ID](c.u, c.v.attachmentToReal._1, c.d -c.v.attachmentToReal._2, c.tipe, c.optID))
 
-    val edges = noVirtuals.map(c =>
+    val edges = constraints.map(c =>
       if(c.tipe == ElemStatus.CONTINGENT && c.d <= 0)
         Lower(c.v, c.u, -c.d, c.u, Set())
       else if(c.tipe == ElemStatus.CONTINGENT)
@@ -141,10 +134,9 @@ object TemporalNetwork {
         Req(c.u, c.v, c.d, Set())
     ).toList
 
-    val nonObservable = tps.filter(tp => tp.isContingent && !observable.contains(tp) && !observed.contains(tp))
+    val nonObservable = tps.filter(tp => tp.genre.isContingent && !observable.contains(tp) && !observed.contains(tp))
 
-    val controllables = tps.filter(tp => tp.isDispatchable || tp.isStructural)
-
+    val controllables = tps.filter(tp => tp.genre.isDispatchable || tp.genre.isStructural)
 
     new TemporalNetwork(controllables.map(_.id), observed.map(_.id), nonObservable.map(_.id), observable.map(_.id), edges)
   }

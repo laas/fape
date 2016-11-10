@@ -19,9 +19,6 @@ trait STNU[ID] extends STN[TPRef,ID] {
     enforceContingent(u, v, min, max, Some(constID))
   }
 
-  @Deprecated def addDispatchableTimePoint(tp : TPRef) : Int
-  @Deprecated def addContingentTimePoint(tp : TPRef) : Int
-
   def recordTimePoint(tp: TPRef): Int
 
   def removeTimePoint(tp: TPRef): Unit = ???
@@ -32,16 +29,6 @@ trait STNU[ID] extends STN[TPRef,ID] {
     addConstraint(start.get, tp, time)
     addConstraint(tp, start.get, -time)
   }
-
-  /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
-  @Deprecated def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int)
-
-  /** Records a virtual time point that is still partially defined.
-    * All constraints on this time point will only be processed when defined with method*/
-  @Deprecated def addPendingVirtualTimePoint(virt: TPRef)
-
-  /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
-  @Deprecated def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int)
 
   /** Record this time point as the global start of the STN */
   def recordTimePointAsStart(tp: TPRef): Int

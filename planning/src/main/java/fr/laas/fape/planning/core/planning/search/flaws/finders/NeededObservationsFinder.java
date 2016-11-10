@@ -27,7 +27,7 @@ public class NeededObservationsFinder implements FlawFinder {
 
     @Override
     public List<Flaw> getFlaws(State st, Planner planner) {
-        Stream<TPRef> contingents = st.csp.stn().timepoints().stream().filter(TPRef::isContingent);
+        Stream<TPRef> contingents = st.csp.stn().timepoints().stream().filter(tp -> tp.genre().isContingent());
 
         if(!st.hasExtension(PartialObservabilityExt.class))
             st.addExtension(new PartialObservabilityExt(new HashSet<>(), new HashMap<>()));
@@ -93,7 +93,7 @@ public class NeededObservationsFinder implements FlawFinder {
             public boolean apply(State st, Planner planner, boolean isFastForwarding) {
                 PartialObservabilityExt obs = st.getExtension(PartialObservabilityExt.class);
                 toObserve.stream().forEach(tp -> {
-                    st.applyChronicle(obs.getObservationConditions().get(tp));
+                    st.apply(obs.getObservationConditions().get(tp));
                     obs.observed.add(tp);
                 });
 

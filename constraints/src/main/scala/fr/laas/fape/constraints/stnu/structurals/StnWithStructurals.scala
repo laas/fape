@@ -373,30 +373,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def getMinDelay(u: TPRef, v: TPRef): Int = minDelay(u, v)
 
-  override def addContingentTimePoint(tp: TPRef): Int = { assert(tp.genre.isContingent); recordTimePoint(tp) }
-
-  override def addDispatchableTimePoint(tp: TPRef): Int = { assert(tp.genre.isDispatchable); recordTimePoint(tp) }
-
   override def start: Option[TPRef] = optStart
 
   override def end: Option[TPRef] = optEnd
-
-  /** creates a virtual time point virt with the constraint virt -- [dist,dist] --> real */
-  override def addVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
-    recordTimePoint(virt)
-    addMinDelay(virt, real, dist)
-    addMaxDelay(virt, real, dist)
-  }
-
-  /** Set a constraint virt -- [dist,dist] --> real. virt must have been already recorded as a pending virtual TP */
-  override def setVirtualTimePoint(virt: TPRef, real: TPRef, dist: Int): Unit = {
-    addMinDelay(virt, real, dist)
-    addMaxDelay(virt, real, dist)
-  }
-
-  /** Records a virtual time point that is still partially defined.
-    * All constraints on this time point will only be processed when defined with method */
-  override def addPendingVirtualTimePoint(virt: TPRef): Unit = {
-    recordTimePoint(virt)
-  }
 }

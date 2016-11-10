@@ -88,7 +88,7 @@ class AbstractChronicle(
   }
 
   /** Transform this chronicle into an equivalent one where temporal constraints are minimzed */
-  def withMinimizedTemporalConstraints(dispatchablePoints: List[AbsTP]) : AbstractChronicle = {
+  def withMinialSTN(dispatchablePoints: List[AbsTP]) : AbstractChronicle = {
     if(optSTNU.nonEmpty)
       return this
 
@@ -126,9 +126,7 @@ class AbstractChronicle(
       stn
     )
 
-    val minimalConstraints = otherConsts ++ newconstraints.map(stnCst => new AbstractMinDelay(stnCst.dst, stnCst.src, IntExpression.minus(stnCst.label)))
-
-    new AbstractChronicle(statements, minimalConstraints, variableDeclarations, constantDeclarations, annotations, Some(stnu))
+    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, annotations, Some(stnu))
   }
 
   def getInstance(context: Context, temporalContext: TemporalInterval, pb: AnmlProblem, refCounter: RefCounter, optimizeTimepoints: Boolean = true) : Chronicle = {
@@ -155,10 +153,6 @@ class AbstractChronicle(
     chronicle.addAllStatements(getStatements, context, pb, refCounter)
     chronicle.addAllConstraints(allConstraints, context, pb, refCounter)
 
-    if(optimizeTimepoints)
-      chronicle.initTemporalObjects(optSTNU, pb, context, refCounter)
-    else
-      chronicle.initTemporalObjectsBasic(optSTNU, pb, context, refCounter)
     chronicle.annotations.addAll(annotations.map(_.getInstance(context, temporalContext, pb, refCounter)).asJava)
     chronicle
   }

@@ -95,27 +95,6 @@ class TPRef(id:Int) extends GlobalRef(id) {
   def this(refCounter: RefCounter) = this(refCounter.nextTP())
 
   val genre = new TimepointType
-
-  private var typ = 0
-  final def isVirtual = typ == 1
-  final def isContingent = typ == 2
-  final def isStructural = typ == 4
-  final def isDispatchable = typ == 5
-  final def isOfUndefinedType = typ == 0
-  final def setVirtual() { assert(typ == 0 || typ==1) ; typ = 1 }
-  final def setContingent() { assert(typ == 0 || typ==2) ; typ = 2 }
-  final def setStructural() { assert(typ == 0 || typ==4) ; typ = 4 }
-  final def setDispatchable() { assert(typ == 0 || typ==5) ; typ = 5 }
-
-  private var realTP : TPRef = null
-  private var distToReal : Int = 0
-  final def attachToReal(real: TPRef, dist: Int): Unit = {
-    assert(isVirtual)
-    realTP = real
-    distToReal = dist
-  }
-  final def isAttached : Boolean = { assert(isVirtual, "Only virtual timepoints can be attached.") ; realTP != null }
-  final def attachmentToReal : (TPRef,Int) = { assert(isAttached) ; (realTP, distToReal) }
 }
 
 
