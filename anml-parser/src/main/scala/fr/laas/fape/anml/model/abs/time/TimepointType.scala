@@ -11,7 +11,7 @@ class TimepointType {
   def setType(newType: TimepointTypeEnum): Unit = {
     if(typ == STRUCTURAL_BY_DEFAULT || typ == DISPATCHABLE_BY_DEFAULT)
       typ = newType
-    else if(newType != STRUCTURAL_BY_DEFAULT || newType != DISPATCHABLE_BY_DEFAULT)
+    else if(newType != STRUCTURAL_BY_DEFAULT && newType != DISPATCHABLE_BY_DEFAULT)
       assert(typ == newType, s"Forcing a new type $newType on a type with a (non-default) type $typ")
   }
 
