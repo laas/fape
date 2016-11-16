@@ -305,6 +305,7 @@ object AnmlParser extends JavaTokenParsers {
     temporalStatements
       | decomposition ^^ (x => List(x))
       | tempConstraint ^^ (x => List(x))
+      | annotation ^^ (x => List(x))
       | "motivated"~";" ^^^ List(Motivated)
       | "constant"~>typ~word<~";" ^^ {
       case tipe~name => List(new Constant(name, tipe)) }
