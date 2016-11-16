@@ -4,7 +4,7 @@ import java.util.Optional
 import java.{util => ju}
 
 import DCMorris._
-import fr.laas.fape.anml.model.concrete.{GlobalRef, TPRef}
+import fr.laas.fape.anml.model.concrete.{GlobalRef, TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stnu.Constraint
 
 import scala.collection.JavaConverters._
@@ -84,7 +84,7 @@ class DCMorris {
   }
 
   @throws[NotDC]
-  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node]): Unit = {
+  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[BackpropHist]): Unit = {
     val negReq = inEdges(source).filter(e => e.isInstanceOf[Req] && e.d < 0).map(_.asInstanceOf[Req]).toList
     dcBackprop(source, propagated, callHistory, Right(negReq))
     for(e <- inEdges(source) if e.d < 0 && e.isInstanceOf[Upper])
@@ -92,8 +92,10 @@ class DCMorris {
     propagated += source
   }
 
+  /** Represents an edge "pivot -- dist --> source" implicitly computed by dcBackprop*/
+  case class BackpropHist(pivot: Node, source: Node, dist: Int, projs: Set[Proj])
   @throws[NotDC]
-  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[Node], curEdges: Either[Upper, List[Req]]) : Unit = {
+  def dcBackprop(source: Node, propagated: Buff[Node], callHistory: List[BackpropHist], curEdges: Either[Upper, List[Req]]) : Unit = {
     case class QueueElem(n: Node, dist: Int, projs: Set[Proj])
     def suitable(e: Edge) = (curEdges, e) match  {
       case (Left(Upper(_, _, _, upLbl, _)) ,Lower(_, _, _, downLbl, _)) if upLbl == downLbl => false
@@ -104,7 +106,7 @@ class DCMorris {
 //      println("    dcBackprop: "+source)
 
     val visited = MSet[Node]()
-    assert(!callHistory.contains(source), "This should have been caught earlier")
+    assert(!callHistory.exists(h => h.source == source), "This should have been caught earlier")
 
     if(propagated contains source)
       return ;
@@ -118,7 +120,7 @@ class DCMorris {
       queue += QueueElem(e.from, e.d, e.proj)
 
     while(queue.nonEmpty) {
-      val QueueElem(cur, dist, projs) = queue.dequeue()
+      val q@QueueElem(cur, dist, projs) = queue.dequeue()
       if(!visited.contains(cur)) {
         visited += cur
 
@@ -129,9 +131,13 @@ class DCMorris {
           addEdge(new Req(cur, source, dist, projs))
         } else {
           if(isNegative(cur)) {
-            if(source == cur || callHistory.contains(cur))
+            if(source == cur) {  // negative loop
               throw new NotDC(projs)
-            dcBackprop(cur, propagated, source :: callHistory)
+            } else if (callHistory.exists(h => h.source == cur)) { // negative loop involving an edge previously computed by dcBackprop
+              val previousProjs = callHistory.takeWhile(h => h.source == cur).flatMap(h => h.projs)
+              throw new NotDC(projs ++ previousProjs)
+            }
+            dcBackprop(cur, propagated, BackpropHist(cur, source, dist, projs) :: callHistory)
           }
           for(e <- inEdges(cur) ; if e.d >= 0 && suitable(e))
             queue += QueueElem(e.from, dist + e.d, projs ++ e.proj)
@@ -253,13 +259,14 @@ object PartialObservability {
     val u = upper.d
     val src = lower.from
 
-    edges.filter(e => e != upper && e != lower).map {
+    val newEdges = edges.filter(e => e != upper && e != lower).map {
       case Req(`node`,y,d, projs) => Req(src, y, l+d, projs ++ lower.proj)
       case Req(x,`node`,d, projs) => Req(x, src, d+u, projs ++ upper.proj)
       case Lower(`node`, y, d, lbl, projs) => Lower(src, y, l+d, lbl, projs ++ lower.proj)
       case Upper(x, `node`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upper.proj)
       case e => assert(e.from != node && e.to != node); e
     }
+    newEdges
   }
 
   var useLabelsForFocus : Boolean = true
@@ -292,6 +299,10 @@ object PartialObservability {
         numIterations += 1
         if (numIterations > 5000)
           return Nil // took to long lets say we have no solution
+
+        val tn1 = tn.makeVisible(candidate)
+        val tn2 = tn1.supposeNonObservable
+        val tn3 = tn2.normalForm
 
         val stnu = tn
           .makeVisible(candidate)
@@ -327,18 +338,19 @@ object PartialObservability {
     minSols
   }
 
-  def get[ID](constraints: Seq[Constraint[ID]], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
-    val tn = TemporalNetwork.build(constraints, observed, observable).withoutInvisible
+  def get[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
+    val tnWithInvis = TemporalNetwork.build(constraints, observed, observable)
+    val tn = tnWithInvis.withoutInvisible
 
     // build a map to find timepoint from their IDs
-    val tps = constraints.flatMap(c => List(c.u, c.v)).toSet
+    val tps = constraints.flatMap(c => List(c.src, c.dst)).toSet
     val tpsFromInt = tps.map(tp => (tp.id, tp)).toMap
 
     getMinimalObservationSets(tn)
       .map(sets => sets.map(i => tpsFromInt(i)))
   }
 
-  def getResolvers(constraints: ju.List[Constraint[GlobalRef]], observed: ju.Set[TPRef], observable: ju.Set[TPRef]) : Optional[NeededObservations] = {
+  def getResolvers(constraints: ju.List[TemporalConstraint], observed: ju.Set[TPRef], observable: ju.Set[TPRef]) : Optional[NeededObservations] = {
     val ret = get(constraints.asScala, observed.asScala.toSet, observable.asScala.toSet)
     ret match {
       case x :: Nil if x.isEmpty => Optional.empty()

@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.stnu.morris
 import java.io.{File, PrintWriter}
 
 import DCMorris._
-import fr.laas.fape.anml.model.concrete.TPRef
+import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stnu.{Constraint, ElemStatus}
 
 class TemporalNetwork(
@@ -120,19 +120,17 @@ class TemporalNetwork(
 
 object TemporalNetwork {
 
-  def build[ID](constraints: Seq[Constraint[ID]], observed: Set[TPRef], observable: Set[TPRef]) : TemporalNetwork = {
+  def build[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : TemporalNetwork = {
     implicit def toInt(tp: TPRef): Node = tp.id
-    val tps = constraints.flatMap(c => List(c.u, c.v)).toSet
+    val tps = constraints.flatMap(c => List(c.src, c.dst)).toSet
     val tpsFromInt = tps.map(tp => (tp.id, tp)).toMap
 
-    val edges = constraints.map(c =>
-      if(c.tipe == ElemStatus.CONTINGENT && c.d <= 0)
-        Lower(c.v, c.u, -c.d, c.u, Set())
-      else if(c.tipe == ElemStatus.CONTINGENT)
-        Upper(c.v, c.u, -c.d, c.v, Set())
-      else
-        Req(c.u, c.v, c.d, Set())
-    ).toList
+    val edges = constraints.flatMap(c => c match {
+      case c:ContingentConstraint =>
+        Lower(c.src, c.dst, c.min.get, c.dst, Set()) :: Upper(c.dst, c.src, -c.max.get, c.dst, Set()) :: Nil
+      case c: MinDelayConstraint =>
+        Req(c.dst, c.src, -c.minDelay.get, Set()) :: Nil
+    }).toList
 
     val nonObservable = tps.filter(tp => tp.genre.isContingent && !observable.contains(tp) && !observed.contains(tp))
 
