@@ -6,7 +6,7 @@ import fr.laas.fape.anml.ANMLException
 import fr.laas.fape.anml.parser
 import fr.laas.fape.anml.model.abs.statements._
 import fr.laas.fape.anml.model.abs.time.{AbsTP, ContainerEnd, ContainerStart, TimepointTypeEnum}
-import fr.laas.fape.anml.model.concrete.RefCounter
+import fr.laas.fape.anml.model.concrete.{AbstractObservationConditionsAnnotation, RefCounter}
 import fr.laas.fape.anml.model.ir.IRSimpleVar
 import fr.laas.fape.anml.model.{abs, _}
 import fr.laas.fape.anml.parser._
@@ -223,8 +223,18 @@ object AbstractAction {
             val v = IRSimpleVar(const.name, t(const.tipe))
             actContext.addUndefinedVar(v)
             actChronicle = actChronicle.withVariableDeclarations(v :: Nil)
+          case parser.ObservationConditionsAnnotation(tpName, content) =>
+            var conditions : AbstractChronicle = EmptyAbstractChronicle
+            val tp = AbsTP(tpName)
+            content collect {
+              case ts: TemporalStatement =>
+                val ac = StatementsFactory(ts, actContext, refCounter)
+                conditions += ac
+              case x => throw new ANMLException(s"The use of '$x' is not supported inside an ObservationConditions annotation")
+            }
+            actChronicle += new AbstractObservationConditionsAnnotation(tp, conditions)
           case x =>
-            throw new ANMLException("DUnsupported block in action: "+x)
+            throw new ANMLException("Unsupported block in action: "+x)
         }
 
         additionalStatements foreach {
