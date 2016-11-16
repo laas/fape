@@ -590,6 +590,10 @@ public class State implements Reporter {
         for (Statement ts : chronicle.statements()) {
             apply(chronicle, ts);
         }
+
+        for(StateExtension ext : extensions) {
+            ext.chronicleMerged(chronicle);
+        }
     }
     public void addSupportConstraint(ChainComponent cc, Action act) {
         supportConstraints.removeIf(p -> p.value1 == cc.mID);
