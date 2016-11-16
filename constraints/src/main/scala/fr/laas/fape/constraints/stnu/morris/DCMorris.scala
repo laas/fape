@@ -4,8 +4,8 @@ import java.util.Optional
 import java.{util => ju}
 
 import DCMorris._
-import fr.laas.fape.anml.model.concrete.{GlobalRef, TPRef, TemporalConstraint}
-import fr.laas.fape.constraints.stnu.Constraint
+import fr.laas.fape.anml.model.concrete._
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
@@ -102,9 +102,6 @@ class DCMorris {
       case _ => true
     }
 
-//    if(PartialObservability.debug)
-//      println("    dcBackprop: "+source)
-
     val visited = MSet[Node]()
     assert(!callHistory.exists(h => h.source == source), "This should have been caught earlier")
 
@@ -120,12 +117,9 @@ class DCMorris {
       queue += QueueElem(e.from, e.d, e.proj)
 
     while(queue.nonEmpty) {
-      val q@QueueElem(cur, dist, projs) = queue.dequeue()
+      val QueueElem(cur, dist, projs) = queue.dequeue()
       if(!visited.contains(cur)) {
         visited += cur
-
-//        if(PartialObservability.debug)
-//          println("      pivot: "+cur+"  dist: "+dist)
 
         if(dist >= 0) {
           addEdge(new Req(cur, source, dist, projs))
@@ -213,7 +207,7 @@ object PartialObservability {
           case Req(x,`n`,d, projs) => Req(x, src, d+u, projs ++ upper.proj + MaxProj(n))
           case Lower(`n`, y, d, lbl, projs) => Lower(src, y, l+d, lbl, projs ++ lower.proj + MinProj(n))
           case Upper(x, `n`, d, lbl, projs) => Upper(x, src, u+d, lbl, projs ++ upper.proj + MaxProj(n))
-          case e => assert(e.from != n && e.to != n); e
+          case x => assert(x.from != n && x.to != n); x
         }
         // place the edge in the appropriate queue
         sortEdge(newEdge)
@@ -221,7 +215,7 @@ object PartialObservability {
     }
     finalEdges.toList
   }
-/* Simpler but less efficient version of the above method
+  /* Simpler but less efficient version of the above method
   def makePossiblyObservable(edges: List[Edge], nodes: List[Node]) : List[Edge] = nodes match {
     case Nil => edges
     case h::tail => makePossiblyObservable(makePossiblyObservable(edges, h), tail)
@@ -277,7 +271,6 @@ object PartialObservability {
   def getMinimalObservationSets(tn: TemporalNetwork) : List[Set[Node]] = {
     assert(tn.invisibles.isEmpty)
 
-    val ctgs = tn.constraints.filter(_.isInstanceOf[Upper]).map(_.asInstanceOf[Upper].lbl).toSet
     val solutions = MSet[Set[Node]]()
     val expanded = MSet[Set[Node]]() // to avoid duplicates
     var queue = MSet[Set[Node]]()
@@ -286,23 +279,16 @@ object PartialObservability {
     // track the number of iterations to detect a timeout
     numIterations = 0
 
-    while(queue.nonEmpty) {
+    while(queue.nonEmpty && numIterations < 5000) {
       val candidate = queue.head
       queue -= candidate
       expanded += candidate
-
 
       val alreadyKnowSimplerSolution =
         solutions.exists(sol => sol.forall(elem => candidate.contains(elem)))
 
       if (!alreadyKnowSimplerSolution) {
         numIterations += 1
-        if (numIterations > 5000)
-          return Nil // took to long lets say we have no solution
-
-        val tn1 = tn.makeVisible(candidate)
-        val tn2 = tn1.supposeNonObservable
-        val tn3 = tn2.normalForm
 
         val stnu = tn
           .makeVisible(candidate)
@@ -317,8 +303,6 @@ object PartialObservability {
             if (!allSolutions)
               return solutions.toList
           case (false, Some(possiblyObservable)) =>
-            //          if(debug)
-            //            println("  Lets keep searching")
             val nextToConsider =
               if (useLabelsForFocus) possiblyObservable
               else tn.possiblyObservables -- candidate
@@ -338,8 +322,23 @@ object PartialObservability {
     minSols
   }
 
-  def get[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
-    val tnWithInvis = TemporalNetwork.build(constraints, observed, observable)
+  private def filterRedundantRequirements[ID](constraints: Seq[TemporalConstraint]) : Seq[TemporalConstraint] = {
+    val stn = new StnWithStructurals[ID]()
+    val contingents = constraints.collect{ case c: ContingentConstraint => c }
+    for(c <- contingents) {
+      stn.addMinDelay(c.src, c.dst, c.min.get)
+      stn.addMaxDelay(c.src, c.dst, c.max.get)
+    }
+    val knownTimepoints = contingents.flatMap(c => c.src :: c.dst :: Nil).toSet
+    constraints.filter(_ match {
+      case _:ContingentConstraint => true
+      case c:MinDelayConstraint if !knownTimepoints.contains(c.src) || !knownTimepoints.contains(c.dst) => true
+      case c:MinDelayConstraint => c.minDelay.get > stn.getMinDelay(c.src, c.dst)
+    })
+  }
+
+  def getResolvingObservationSets[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
+    val tnWithInvis = TemporalNetwork.build(filterRedundantRequirements(constraints), observed, observable)
     val tn = tnWithInvis.withoutInvisible
 
     // build a map to find timepoint from their IDs
@@ -351,7 +350,7 @@ object PartialObservability {
   }
 
   def getResolvers(constraints: ju.List[TemporalConstraint], observed: ju.Set[TPRef], observable: ju.Set[TPRef]) : Optional[NeededObservations] = {
-    val ret = get(constraints.asScala, observed.asScala.toSet, observable.asScala.toSet)
+    val ret = getResolvingObservationSets(constraints.asScala, observed.asScala.toSet, observable.asScala.toSet)
     ret match {
       case x :: Nil if x.isEmpty => Optional.empty()
       case resolvers => Optional.of(NeededObservations(resolvers.map(s => s.asJava).asJavaCollection))
