@@ -1,7 +1,7 @@
 package fr.laas.fape.constraints.stnu
 
 import Controllability._
-import fr.laas.fape.anml.model.concrete.TPRef
+import fr.laas.fape.anml.model.concrete.{TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stn.CoreSTN
 import planstack.structures.Converters._
 import planstack.structures.IList
@@ -182,7 +182,7 @@ abstract class GenSTNUManager[ID]
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  final def constraints : IList[Const] = new IList[Const](rawConstraints)
+  override def constraints : IList[TemporalConstraint] = ???
 }
 
 

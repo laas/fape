@@ -350,10 +350,6 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def getMaxDelay(u: TPRef, v: TPRef): Int = maxDelay(u, v)
 
-  /** Returns a list of all constraints that were added to the STNU.
-    * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  override def constraints: IList[Constraint[ID]] = ???
-
   override def checksPseudoControllability: Boolean = true
 
   override def checksDynamicControllability: Boolean = false
@@ -375,4 +371,72 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   override def start: Option[TPRef] = optStart
 
   override def end: Option[TPRef] = optEnd
+
+  override def constraints : IList[TemporalConstraint] = {
+    /** Builds the neighborhood of a groupd of structural timepoints */
+    def structuralNeighborhood(neighborhood: Set[TPRef], nextNeighbors: Set[TPRef]): Set[TPRef] = {
+      assert(neighborhood.intersect(nextNeighbors).isEmpty)
+      assert(nextNeighbors.forall(_.genre.isStructural))
+      assert(neighborhood.forall(_.genre.isStructural))
+
+      if(nextNeighbors.isEmpty)
+        return neighborhood // no new nodes to process, return the current neightborhood
+      val tp = nextNeighbors.head
+
+      if(rigidRelations.isAnchored(tp) && !rigidRelations.anchorOf(tp).genre.isStructural) {
+        // node is rigid, do not consider its own neighbors
+        return structuralNeighborhood(neighborhood + tp, nextNeighbors.tail)
+      }
+      // in other cases, the neighborhood is expanded with this node and the neighborhood of all its neighbors
+      val directNeighbors = originalEdges // should include neighborhood of other (non-rigid?) structurals
+        .filter(e => e.from == tp || e.to == tp)
+        .flatMap(e => e.from :: e.to :: Nil)
+        .filter(_.genre.isStructural)
+        .toSet
+      return structuralNeighborhood(neighborhood+tp, nextNeighbors ++ (directNeighbors--neighborhood) -tp)
+    }
+    /** Returns the anchor of 'tp' if tp is anchored and 'tp' otherwise*/
+    def anchorOrSelf(tp: TPRef) =
+      if(rigidRelations.isAnchor(tp)) tp else rigidRelations.anchorOf(tp)
+
+    /** Returns all non-structural nodes taht touch the structural neighborhood **/
+    def connections(tp: TPRef) = {
+      assert(tp.genre.isStructural)
+      assert(rigidRelations.isAnchor(tp))
+      val structuralNeighbors = structuralNeighborhood(Set(), Set(tp))
+      val nonStructuralNeighbours = originalEdges
+        .filter(e => structuralNeighbors.contains(e.from) || structuralNeighbors.contains(e.to))
+        .flatMap(e => e.from :: e.to :: Nil)
+        .filter(!_.genre.isStructural)
+        .toSet ++
+        structuralNeighbors
+          .filter(x => rigidRelations.isAnchored(x) && !rigidRelations._anchorOf(x).genre.isStructural)
+          .map(x => rigidRelations.anchorOf(x))
+      nonStructuralNeighbours
+    }
+
+    val pairs = mutable.Set[(TPRef,TPRef)]()
+    // consider all edges, with start/end timepoints projected on their anchors
+    for(c <- originalEdges) {
+      pairs += ((anchorOrSelf(c.from), anchorOrSelf(c.to)))
+    }
+    pairs.retain(p => !p._1.genre.isStructural && !p._2.genre.isStructural)
+    for(tp <- timepoints.asScala if tp.genre.isStructural && rigidRelations.isAnchor(tp)) {
+      val neighborhood = connections(tp)
+      for(tp1 <- neighborhood ; tp2 <- neighborhood) {
+        pairs += ((tp1,tp2))
+        pairs += ((tp2,tp1))
+      }
+    }
+    pairs.retain(p => p._1 != p._2)
+
+    // constraints between non structurals that are anchored
+    for(tp <- timepoints.asScala if !tp.genre.isStructural && rigidRelations.isAnchored(tp) && !rigidRelations.anchorOf(tp).genre.isStructural) {
+      pairs += ((tp, rigidRelations.anchorOf(tp)))
+      pairs += ((rigidRelations.anchorOf(tp), tp))
+    }
+
+    return new IList(contingentLinks.toList ++
+      pairs.map(p => new MinDelayConstraint(p._2, p._1, IntExpression.lit(minDelay(p._2, p._1)))))
+  }
 }

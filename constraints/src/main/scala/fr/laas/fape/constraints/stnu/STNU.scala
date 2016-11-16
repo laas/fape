@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.stnu
 
-import fr.laas.fape.anml.model.concrete.TPRef
+import fr.laas.fape.anml.model.concrete.{TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stn.STN
 import planstack.structures.IList
 
@@ -63,5 +63,5 @@ trait STNU[ID] extends STN[TPRef,ID] {
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  @Deprecated def constraints : IList[Constraint[ID]]
+  def constraints : IList[TemporalConstraint]
 }
