@@ -139,6 +139,8 @@ class DCMorris {
               edgesForDispatchability += Upper(cur, source, dist, lbl, projs)
             case Right(reqs) =>
               edgesForDispatchability += Req(cur, source, dist, projs)
+            case _ =>
+              throw new RuntimeException("Malformed input of current edges.")
     }
           if(isNegative(cur)) {
             if(source == cur) {  // negative loop
