@@ -38,6 +38,8 @@ object StnWithStructurals {
           stn.addConstraint(constraint)
         }
       }
+      case x =>
+        throw new RuntimeException("Malformed STNU textual input:\n"+x)
     }
     stn
   }
@@ -57,6 +59,9 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
                             )
   extends STNU[ID] with DistanceMatrixListener {
 
+  /** If true, the STNU will check that the network is Pseudo Controllable when incoking isConsistent */
+  var shouldCheckPseudoControllability = true
+
   def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true)
 
   override def clone() : StnWithStructurals[ID] = new StnWithStructurals[ID](
@@ -64,11 +69,19 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     optStart, optEnd, originalEdges, consistent
   )
 
-  dist.listeners += this
+  /** Callbacks to be invoked whenever the earliest start time of a timepoint changes */
+  val earliestExecutionUpdatesListener = mutable.ArrayBuffer[TPRef => Unit]()
+
+  /** Record a callback to be invoked whenever a the earliest start time of a timepoint is updated */
+  def addEarliestExecutionUpdateListener(callback: TPRef => Unit) { earliestExecutionUpdatesListener += callback }
+
+  // make sure we are notified of any change is the distance matrix
+  dist.addListener(this)
 
   def timepoints = new IList[TPRef]((nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList)
 
   private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
+  def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
 
   private def isKnown(tp: TPRef) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
 
@@ -111,7 +124,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       if(rigidRelations.isAnchored(b))
         (rigidRelations._anchorOf(b), rigidRelations.distToAnchor(b))
       else (b, 0)
-    dist.enforceDist(toIndex(aRef), toIndex(bRef), aToRef + t + refToB)
+    dist.enforceDist(toIndex(aRef), toIndex(bRef), DistanceMatrix.plus(DistanceMatrix.plus(aToRef, t), refToB))
   }
 
   def addConstraint(c: TemporalConstraint): Unit = {
@@ -167,6 +180,23 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     if (a == b)
       return
 
+    // All timepoints whose earliest execution time is modified by this update.
+    // This is only computed if their are listener to those changes and computed
+    // before modifying the network to facilitate reasoning on anchored timepoints.
+    val timepointsWithUpdatedStart =
+      if(earliestExecutionUpdatesListener.nonEmpty && start.nonEmpty) {
+        val stIndex =
+          if (rigidRelations.isAnchored(start.get))
+            toIndex(rigidRelations.anchorOf(start.get))
+          else
+            toIndex(start.get)
+        if (b == stIndex) // b the start timepoint (or its anchor)
+          timepointFromIndex(a) :: rigidRelations.getTimepointsAnchoredTo(timepointFromIndex(a))
+        else
+          Nil
+      } else
+        Nil
+
     // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
     // the distance matrix
     if(dist.getDistance(a,b) == -dist.getDistance(b,a)) {
@@ -190,6 +220,10 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       nonRigidIndexes.remove(anchored)
       assert(originalDist == rigidAwareDist(tpA, tpB))
     }
+
+    // notify listeners of updated start times
+    for(listener <- earliestExecutionUpdatesListener ; tp <- timepointsWithUpdatedStart)
+      listener.apply(tp)
   }
 
   /** Makes an independent clone of this STN. */
@@ -239,7 +273,9 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
     if(debugging) {
       checkCoherenceWrtBellmanFord
     }
-    consistent && contingentLinks.forall(l => isDelayPossible(l.src, l.dst, l.min.lb) && isConstraintPossible(l.src, l.dst, l.max.ub))
+    consistent &&
+      (!shouldCheckPseudoControllability ||
+        contingentLinks.forall(l => isDelayPossible(l.src, l.dst, l.min.lb) && isConstraintPossible(l.src, l.dst, l.max.ub)))
   }
 
   /** Removes all constraints that were recorded with this id */

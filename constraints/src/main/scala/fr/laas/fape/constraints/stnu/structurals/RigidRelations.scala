@@ -23,6 +23,7 @@ class RigidRelations(val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
   def anchorOf(tp: TPRef) = _anchorOf(tp)
   def distFromAnchor(tp: TPRef) = anchored(_anchorOf(tp))(tp)
   def distToAnchor(tp: TPRef) = -distFromAnchor(tp)
+  def getTimepointsAnchoredTo(tp: TPRef) : List[TPRef] = anchored(tp).keys.toList
 
   def addAnchor(tp: TPRef): Unit = {
     anchored(tp) = mutable.Map[TPRef, Int]()

@@ -8,19 +8,22 @@ import fr.laas.fape.constraints.stnu.InconsistentTemporalNetwork
 import scala.collection.mutable
 
 object DistanceMatrix {
+  /** number of spot to create when needing to grow the network */
   val growthIncrement = 5
+
+  /** Infinity value that does not overflow when added to itself */
   val INF :Int = Integer.MAX_VALUE /2 -1
 
   /** Addition that will never overflow given that both parameters are in [-INF,INF] */
   final def plus(a:Int, b: Int) = {
     assert(a <= INF && a > -INF)
     assert(b <= INF && b > -INF)
-    if(a == INF || b == INF)
+    if(a + b >= INF)
       INF
-    else {
-      assert(a+b < INF)
+    else if(a == INF || b == INF)
+      INF
+    else
       a + b
-    }
   }
 }
 
@@ -45,7 +48,10 @@ class DistanceMatrix(
     new DistanceMatrix(newDists, newEmptySpots)
   }
 
-  val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
+  private val listeners = mutable.ArrayBuffer[DistanceMatrixListener]()
+  def addListener(listener: DistanceMatrixListener): Unit = {
+    listeners += listener
+  }
 
   private final def isActive(tp: Int) = {
     assert(tp < dists.size)
