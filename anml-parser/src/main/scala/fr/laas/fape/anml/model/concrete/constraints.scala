@@ -22,7 +22,7 @@ case class ContingentConstraint(src :TPRef, dst :TPRef, min :IntExpression, max 
 
 abstract class BindingConstraint extends Constraint
 
-case class AssignmentConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
+class AssignmentConstraint(val sv : ParameterizedStateVariable, val variable : VarRef) extends BindingConstraint
 
 class IntegerAssignmentConstraint(val sv : ParameterizedStateVariable, val value : Int) extends BindingConstraint
 
