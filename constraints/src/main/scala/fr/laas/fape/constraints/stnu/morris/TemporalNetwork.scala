@@ -4,6 +4,7 @@ import java.io.{File, PrintWriter}
 
 import DCMorris._
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
 import fr.laas.fape.constraints.stnu.{Constraint, ElemStatus}
 
 class TemporalNetwork(
@@ -120,8 +121,24 @@ class TemporalNetwork(
 
 object TemporalNetwork {
 
-  def build[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : TemporalNetwork = {
-    implicit def toInt(tp: TPRef): Node = tp.id
+  private def filterRedundantRequirements[ID](constraints: Seq[TemporalConstraint]) : Seq[TemporalConstraint] = {
+    val stn = new StnWithStructurals[ID]()
+    val contingents = constraints.collect{ case c: ContingentConstraint => c }
+    for(c <- contingents) {
+      stn.addMinDelay(c.src, c.dst, c.min.get)
+      stn.addMaxDelay(c.src, c.dst, c.max.get)
+    }
+    val knownTimepoints = contingents.flatMap(c => c.src :: c.dst :: Nil).toSet
+    constraints.filter(_ match {
+      case _:ContingentConstraint => true
+      case c:MinDelayConstraint if !knownTimepoints.contains(c.src) || !knownTimepoints.contains(c.dst) => true
+      case c:MinDelayConstraint => c.minDelay.get > stn.getMinDelay(c.src, c.dst)
+    })
+  }
+
+  def build[ID](originalConstraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : TemporalNetwork = {
+    val constraints = filterRedundantRequirements(originalConstraints)
+    implicit def idOfTimepoint(tp: TPRef): Node = tp.id
     val tps = constraints.flatMap(c => List(c.src, c.dst)).toSet
     val tpsFromInt = tps.map(tp => (tp.id, tp)).toMap
 

@@ -40,9 +40,13 @@ class DCMorris {
   import DCMorris._
   val infty = 999999999
 
+  /** All edges needed for DC checking (omiting edges needed for dispatchability only) */
   val edges = Buff[Edge]()
   val inEdges = MMap[Node, Buff[Edge]]()
   val outEdges = MMap[Node, Buff[Edge]]()
+
+  /** all infered edges that are needed for dispatching but not for DC checking */
+  val edgesForDispatchability = mutable.ArrayBuffer[Edge]()
 
   private def ensureSpaceForNode(n: Node): Unit = {
     if(!inEdges.contains(n))
@@ -109,9 +113,14 @@ class DCMorris {
       return ;
     val queue = Queue[QueueElem]()(Ordering.by(- _.dist))
 
+    // edges to propagate from
     val toProp = curEdges match {
-      case Left(up) => List(up)
-      case Right(reqs) => reqs
+      case Left(up) =>
+        assert(source == up.to)
+        List(up)
+      case Right(reqs) =>
+        assert(reqs.forall(source == _.to))
+        reqs
     }
     for(e <- toProp)
       queue += QueueElem(e.from, e.d, e.proj)
@@ -124,6 +133,13 @@ class DCMorris {
         if(dist >= 0) {
           addEdge(new Req(cur, source, dist, projs))
         } else {
+          // record infered edges that are needed for dispatchability but not for DC checking
+          curEdges match {
+            case Left(Upper(from, `source`, d, lbl, _)) =>
+              edgesForDispatchability += Upper(cur, source, dist, lbl, projs)
+            case Right(reqs) =>
+              edgesForDispatchability += Req(cur, source, dist, projs)
+    }
           if(isNegative(cur)) {
             if(source == cur) {  // negative loop
               throw new NotDC(projs)
@@ -322,23 +338,8 @@ object PartialObservability {
     minSols
   }
 
-  private def filterRedundantRequirements[ID](constraints: Seq[TemporalConstraint]) : Seq[TemporalConstraint] = {
-    val stn = new StnWithStructurals[ID]()
-    val contingents = constraints.collect{ case c: ContingentConstraint => c }
-    for(c <- contingents) {
-      stn.addMinDelay(c.src, c.dst, c.min.get)
-      stn.addMaxDelay(c.src, c.dst, c.max.get)
-    }
-    val knownTimepoints = contingents.flatMap(c => c.src :: c.dst :: Nil).toSet
-    constraints.filter(_ match {
-      case _:ContingentConstraint => true
-      case c:MinDelayConstraint if !knownTimepoints.contains(c.src) || !knownTimepoints.contains(c.dst) => true
-      case c:MinDelayConstraint => c.minDelay.get > stn.getMinDelay(c.src, c.dst)
-    })
-  }
-
   def getResolvingObservationSets[ID](constraints: Seq[TemporalConstraint], observed: Set[TPRef], observable: Set[TPRef]) : Iterable[Set[TPRef]] = {
-    val tnWithInvis = TemporalNetwork.build(filterRedundantRequirements(constraints), observed, observable)
+    val tnWithInvis = TemporalNetwork.build(constraints, observed, observable)
     val tn = tnWithInvis.withoutInvisible
 
     // build a map to find timepoint from their IDs
