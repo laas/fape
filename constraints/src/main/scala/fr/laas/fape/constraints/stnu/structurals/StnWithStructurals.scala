@@ -78,7 +78,8 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  def timepoints = new IList[TPRef]((nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList)
+  private var _timepoints = (nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList
+  def timepoints = new IList[TPRef](_timepoints)
 
   private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
   def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
@@ -87,6 +88,7 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!isKnown(tp))
+    _timepoints = tp :: _timepoints
     val id = dist.createNewNode()
     nonRigidIndexes.put(tp, id)
     rigidRelations.addAnchor(tp)
