@@ -1,9 +1,12 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 
+import fr.laas.fape.anml.model.concrete.Chronicle;
+import fr.laas.fape.anml.model.concrete.MinDelayConstraint;
 import fr.laas.fape.anml.model.concrete.TPRef;
-import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
 
 import java.util.List;
 
@@ -23,11 +26,15 @@ public class TemporalConstraint implements Resolver {
     }
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        for(TPRef first : firsts)
-            for(TPRef second : seconds)
-                st.enforceConstraint(first, second, min, max);
-        return true;
+    public StateModification asStateModification(State state) {
+        Chronicle chronicle = new Chronicle();
+        for(TPRef first : firsts) {
+            for (TPRef second : seconds) {
+                chronicle.addConstraint(new MinDelayConstraint(first, second, min));
+                chronicle.addConstraint(new MinDelayConstraint(second, first, -max));
+            }
+        }
+        return new ChronicleInsertion(chronicle);
     }
 
     @Override

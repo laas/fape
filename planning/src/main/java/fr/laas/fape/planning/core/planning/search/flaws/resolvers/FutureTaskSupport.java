@@ -1,7 +1,8 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.SupportRestriction;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import lombok.Value;
 import fr.laas.fape.anml.model.concrete.Task;
@@ -13,9 +14,8 @@ public class FutureTaskSupport implements Resolver {
     private final Task task;
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        st.getHierarchicalConstraints().setSupportConstraint(consumer, task);
-        return true;
+    public StateModification asStateModification(State state) {
+        return new SupportRestriction(consumer.getFirst().getFirst(), task);
     }
 
     @Override

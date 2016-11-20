@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
   *  - `actions`: actions to be inserted in the plan. Note that actions are StateModifiers themselves.
   *
   */
-class Chronicle(val interval: TemporalInterval) {
+class Chronicle() {
 
   var container : Option[ChronicleContainer] = None
 
@@ -68,6 +68,17 @@ class Chronicle(val interval: TemporalInterval) {
   val annotations : util.List[ChronicleAnnotation] = new util.LinkedList[ChronicleAnnotation]()
 
   def isEmpty = statements.isEmpty && tasks.isEmpty && bindingConstraints.isEmpty && vars.isEmpty && instances.isEmpty && annotations.isEmpty
+
+  def addStatement(statement: Statement): Unit = {
+    statements += statement
+  }
+
+  def addConstraint(constraint: Constraint): Unit = {
+    constraint match {
+      case c: BindingConstraint => bindingConstraints += c
+      case c: TemporalConstraint => temporalConstraints += c
+    }
+  }
 
   def addAllStatements(absStatements : Seq[AbstractStatement], context:Context, pb:AnmlProblem, refCounter: RefCounter): Unit = {
     for(absStatement <- absStatements) {

@@ -3,8 +3,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
-import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.TaskRefinement;
 
 /**
  * Mark an action (already in the plan) as supporting an action condition.
@@ -23,21 +24,8 @@ public class ExistingTaskSupporter implements Resolver {
     }
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        assert task.args().size() == act.args().size();
-        assert task.name().equals(act.taskName());
-
-        // add equality constraint between all args
-        for (int i = 0; i < task.args().size(); i++) {
-            st.addUnificationConstraint(act.args().get(i), task.args().get(i));
-        }
-        //enforce equality of time points and add support to task network
-        st.addSupport(task, act);
-
-        if(!isFastForwarding)
-            st.setLastDecompositionNumber(act.abs().decID());
-
-        return true;
+    public StateModification asStateModification(State state) {
+        return new TaskRefinement(task, act);
     }
 
     @Override

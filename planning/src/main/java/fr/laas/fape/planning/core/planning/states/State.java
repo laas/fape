@@ -16,6 +16,8 @@ import fr.laas.fape.planning.core.planning.search.Handler;
 import fr.laas.fape.planning.core.planning.search.flaws.finders.FlawFinder;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
+import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
 import fr.laas.fape.planning.core.planning.tasknetworks.TaskNetworkManager;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
@@ -106,6 +108,9 @@ public class State implements Reporter {
     /** Extensions of a state that will be inherited by its children */
     private final List<StateExtension> extensions;
 
+    /** All modifications (i.e. resolvers) that have been applied to build this state */
+    private final List<StateModification> modifications;
+
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
@@ -121,6 +126,7 @@ public class State implements Reporter {
         this.depth = 0;
         this.controllability = controllability;
         this.refCounter = new RefCounter(pb.refCounter());
+        this.modifications = new ArrayList<>();
         tdb = new TimelinesManager(this);
         csp = fr.laas.fape.constraints.Factory.getMetaWithGivenControllability(controllability);
         taskNet = new TaskNetworkManager();
@@ -152,6 +158,7 @@ public class State implements Reporter {
         pb = st.pb;
         pl = st.pl;
         this.controllability = st.controllability;
+        this.modifications = new ArrayList<>(st.modifications);
         this.refCounter = new RefCounter(st.refCounter);
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
@@ -415,6 +422,12 @@ public class State implements Reporter {
         csp.isConsistent();
     }
 
+    public boolean apply(StateModification mod, boolean isFastForwarding) {
+        modifications.add(mod);
+        mod.apply(this, isFastForwarding);
+        return isConsistent();
+    }
+
     /**
      * Applies all pending modifications of the problem. A problem comes with a
      * sequence of StateModifiers that depict the current status of the problem.
@@ -429,7 +442,8 @@ public class State implements Reporter {
             csp.stn().enforceBefore(pb.start(), pb.earliestExecution());
         }
         for (int i = problemRevision + 1; i < pb.chronicles().size(); i++) {
-            apply(pb.chronicles().get(i));
+            StateModification mod = new ChronicleInsertion(pb.chronicles().get(i));
+            apply(mod, false);
             problemRevision = i;
         }
     }

@@ -61,7 +61,6 @@ public class MotivatedSupport implements Resolver {
             return "existing: "+act+":"+actRef;
     }
 
-    @Override
     public boolean apply(State st, Planner planner, boolean isFastForwarding) {
         assert toSupport.mustBeMotivated();
 

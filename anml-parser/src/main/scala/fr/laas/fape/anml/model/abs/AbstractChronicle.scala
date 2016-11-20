@@ -130,7 +130,7 @@ class AbstractChronicle(
   }
 
   def getInstance(context: Context, temporalContext: TemporalInterval, pb: AnmlProblem, refCounter: RefCounter, optimizeTimepoints: Boolean = true) : Chronicle = {
-    val chronicle = new Chronicle(temporalContext)
+    val chronicle = new Chronicle()
 
     for((local,global) <- constantDeclarations) {
       if(context.contains(local) && context.hasGlobalVar(local)) {

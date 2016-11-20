@@ -422,7 +422,7 @@ public class Planner {
      *         False otherwise.
      */
     private boolean applyResolver(State st, Resolver resolver, boolean isFastForwarding) {
-        boolean result = resolver.apply(st, this, isFastForwarding) && st.csp.propagateMixedConstraints() && st.checkConsistency();
+        boolean result = st.apply(resolver.asStateModification(st), isFastForwarding) && st.csp.propagateMixedConstraints() && st.checkConsistency();
         return result;
     }
 

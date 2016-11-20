@@ -12,6 +12,7 @@ abstract class TemporalConstraint extends Constraint {
 }
 
 case class MinDelayConstraint(src:TPRef, dst:TPRef, minDelay:IntExpression) extends TemporalConstraint {
+  def this(src: TPRef, dst: TPRef, minDelay: Int) = this(src, dst, IntExpression.lit(minDelay))
   override def toString = s"$src + $minDelay <= $dst"
 }
 

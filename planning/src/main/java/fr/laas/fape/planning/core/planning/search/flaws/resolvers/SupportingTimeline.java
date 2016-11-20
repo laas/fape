@@ -1,8 +1,8 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.State;
-import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
+import fr.laas.fape.planning.core.planning.states.modification.CausalLinkInsertion;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 
 public class SupportingTimeline implements Resolver {
@@ -26,24 +26,10 @@ public class SupportingTimeline implements Resolver {
     }
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        final Timeline supporter = st.getTimeline(supporterID);
-        final Timeline consumer = st.getTimeline(consumerID);
-        assert supporter != null;
-        assert consumer != null;
-        assert supporter != consumer : "Error: a resolver was generated that supports a timeline with itself.";
-
-        ChainComponent precedingComponent = supporter.getChangeNumber(supportingComponent);
-
-        // now perform the merging of the two timelines
-        // we concatenate the two timelines
-
-        assert precedingComponent != null && precedingComponent.change;
-
-        // database concatenation
-        st.insertTimelineAfter(supporter, consumer, precedingComponent);
-
-        return true;
+    public StateModification asStateModification(State state) {
+        return new CausalLinkInsertion(
+                state.getTimeline(supporterID).getEvent(supportingComponent),
+                state.getTimeline(consumerID).getFirst().getFirst());
     }
 
     @Override

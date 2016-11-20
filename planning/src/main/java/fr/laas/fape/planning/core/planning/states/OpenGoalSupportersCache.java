@@ -47,7 +47,7 @@ class OpenGoalSupportersCache implements StateExtension {
         if(strategy == PlanningOptions.ActionInsertionStrategy.DOWNWARD_ONLY)
             return getDownwardResolversForOpenGoal(og);
         else if(strategy == PlanningOptions.ActionInsertionStrategy.UP_OR_DOWN)
-            return getTopDownResolversForOpenGoal(og);
+            return getBottomUpResolversForOpenGoal(og);
         else
             throw new FAPEException("Unrecognized action insertion strategy: "+strategy);
     }
@@ -58,7 +58,7 @@ class OpenGoalSupportersCache implements StateExtension {
      * As a side effects, this method also cleans up the resolvers stored in this state to remove double entries
      * and supporters that are not valid anymore.
      */
-    private List<Resolver> getTopDownResolversForOpenGoal(Timeline og) {
+    private List<Resolver> getBottomUpResolversForOpenGoal(Timeline og) {
         assert og.isConsumer();
         assert container.tdb.getConsumers().contains(og) : "This timeline is not an open goal.";
 

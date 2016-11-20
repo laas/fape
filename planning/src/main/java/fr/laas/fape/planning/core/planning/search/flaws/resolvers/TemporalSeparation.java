@@ -1,7 +1,11 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.planner.Planner;
+import fr.laas.fape.anml.model.concrete.Chronicle;
+import fr.laas.fape.anml.model.concrete.MinDelayConstraint;
+import fr.laas.fape.anml.model.concrete.TPRef;
 import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 
 public class TemporalSeparation implements Resolver {
@@ -15,21 +19,19 @@ public class TemporalSeparation implements Resolver {
     }
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        final Timeline firstDB = st.getTimeline(firstDbID);
-        final Timeline secondDB = st.getTimeline(secondDbID);
+    public StateModification asStateModification(State state) {
+        final Timeline firstDB = state.getTimeline(firstDbID);
+        final Timeline secondDB = state.getTimeline(secondDbID);
         assert firstDB != null && secondDB != null;
         assert !firstDB.hasSinglePersistence() && !secondDB.hasSinglePersistence();
 
-        st.enforceBefore(
-                firstDB.getSupportTimePoint(),
-                secondDB.getFirstTimePoints()
-        );
-        st.enforceBefore(
-                firstDB.getLastTimePoints(),
-                secondDB.getFirstChange().start()
-        );
-        return st.checkConsistency();
+        Chronicle chronicle = new Chronicle();
+        for(TPRef secondFirst : secondDB.getFirstTimePoints())
+            chronicle.addConstraint(new MinDelayConstraint(firstDB.getSupportTimePoint(), secondFirst, 0));
+        for(TPRef firstLast : firstDB.getLastTimePoints())
+            chronicle.addConstraint(new MinDelayConstraint(firstLast, secondDB.getFirstChange().start(), 0));
+
+        return new ChronicleInsertion(chronicle);
     }
 
     @Override

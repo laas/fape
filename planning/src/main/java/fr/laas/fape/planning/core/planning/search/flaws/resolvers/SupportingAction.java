@@ -16,6 +16,7 @@ import fr.laas.fape.planning.util.TinyLogger;
  * Optionally, a decomposition ID might be provided (decID != -1). If this is the case,
  * the supporting statement will be taken from the statements of the decomposition.
  */
+@Deprecated
 public class SupportingAction implements Resolver {
 
     public final AbstractAction act;
@@ -34,31 +35,29 @@ public class SupportingAction implements Resolver {
         return "Supporting action: "+act;
     }
 
-    @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        final Timeline consumer = st.getTimeline(consumerID);
-
-        assert consumer != null : "Consumer was not found.";
-
-        Action action = Factory.getStandaloneAction(st.pb, act, st.refCounter);
-        st.insert(action);
-
-        // statement that should be supporting our consumer
-        Statement supporter = action.context().getStatement(statementRef);
-        assert supporter != null && supporter instanceof LogStatement;
-
-        if(st.canBeEnabler((LogStatement) supporter, consumer)) {
-            final Timeline supportingDatabase = st.getDBContaining((LogStatement) supporter);
-            // add the causal link
-            Resolver opt = new SupportingTimeline(supportingDatabase.mID, supportingDatabase.numChanges()-1, consumer);
-            TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
-            return opt.apply(st, planner, isFastForwarding);
-        } else {
-            // turns out this statement cannot support our database.
-            return false;
-        }
-
-    }
+//    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
+//        final Timeline consumer = st.getTimeline(consumerID);
+//
+//        assert consumer != null : "Consumer was not found.";
+//
+//        Action action = Factory.getStandaloneAction(st.pb, act, st.refCounter);
+//        st.insert(action);
+//
+//        // statement that should be supporting our consumer
+//        Statement supporter = action.context().getStatement(statementRef);
+//        assert supporter != null && supporter instanceof LogStatement;
+//
+//        if(st.canBeEnabler((LogStatement) supporter, consumer)) {
+//            final Timeline supportingDatabase = st.getDBContaining((LogStatement) supporter);
+//            // add the causal link
+//            Resolver opt = new SupportingTimeline(supportingDatabase.mID, supportingDatabase.numChanges()-1, consumer);
+//            TinyLogger.LogInfo(st, "     [%s] Adding %s", st.mID, opt);
+//            return opt.apply(st, planner, isFastForwarding);
+//        } else {
+//            // turns out this statement cannot support our database.
+//            return false;
+//        }
+//    }
 
     @Override
     public int compareWithSameClass(Resolver e) {

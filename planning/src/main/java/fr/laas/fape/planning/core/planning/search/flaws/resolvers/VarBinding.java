@@ -1,12 +1,12 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 
+import fr.laas.fape.anml.model.concrete.Chronicle;
+import fr.laas.fape.anml.model.concrete.VarEqualityConstraint;
 import fr.laas.fape.anml.model.concrete.VarRef;
-import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.State;
-
-import java.util.LinkedList;
-import java.util.List;
+import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
+import fr.laas.fape.planning.core.planning.states.modification.StateModification;
 
 /**
  * Binds a variable to the given value.
@@ -22,12 +22,10 @@ public class VarBinding implements Resolver {
     }
 
     @Override
-    public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-        List<String> values = new LinkedList<>();
-        values.add(value);
-        st.restrictDomain(var, values);
-
-        return true;
+    public StateModification asStateModification(State state) {
+        Chronicle chronicle = new Chronicle();
+        chronicle.addConstraint(new VarEqualityConstraint(var, state.pb.instance(value)));
+        return new ChronicleInsertion(chronicle);
     }
 
     @Override

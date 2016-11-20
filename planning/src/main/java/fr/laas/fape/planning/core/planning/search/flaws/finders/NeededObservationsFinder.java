@@ -90,17 +90,6 @@ public class NeededObservationsFinder implements FlawFinder {
             public final Set<TPRef> toObserve;
 
             @Override
-            public boolean apply(State st, Planner planner, boolean isFastForwarding) {
-                PartialObservabilityExt obs = st.getExtension(PartialObservabilityExt.class);
-                toObserve.stream().forEach(tp -> {
-                    st.apply(obs.getObservationConditions().get(tp));
-                    obs.observed.add(tp);
-                });
-
-                return true;
-            }
-
-            @Override
             public int compareWithSameClass(Resolver e) {
                 throw new UnsupportedOperationException("Not supported yet.");
             }

@@ -203,7 +203,7 @@ public class Timeline {
     /**
      * Returns the index of the chain component containing s.
      */
-    int indexOfContainer(LogStatement s) {
+    public int indexOfContainer(LogStatement s) {
         for(int ct = 0; ct < chain.length; ct++) {
             if (chain[ct].contains(s)) {
                 return ct;
