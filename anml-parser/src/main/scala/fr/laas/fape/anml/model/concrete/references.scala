@@ -58,12 +58,14 @@ case class Label(context:String, localLabel: String) {
   override def toString = context+"."+(if(localLabel.isEmpty) "??" else localLabel)
 }
 
+class Variable(id: Int) extends GlobalRef(id)
+
 /** Reference to a concrete variable (those typically appear as parameters of state variables and in
   * binding constraints).
   *
   * @param id Unique id of the reference.
   */
-class VarRef(id:Int, val typ :Type, val label:Label) extends GlobalRef(id) {
+class VarRef(id:Int, val typ :Type, val label:Label) extends Variable(id) {
   def this(typ :Type, refCounter: RefCounter, label: Label) = this(refCounter.nextVar(), typ, label)
 
   def getType = typ
@@ -90,7 +92,7 @@ class EmptyVarRef(typ :Type) extends VarRef(NullID, typ, Label("??","EMPTY_VAR_R
  *
   * @param id Unique id of the reference.
   */
-class TPRef(id:Int) extends GlobalRef(id) {
+class TPRef(id:Int) extends Variable(id) {
   /** Creates a new reference with a unique (not given yet) ID) */
   def this(refCounter: RefCounter) = this(refCounter.nextTP())
 

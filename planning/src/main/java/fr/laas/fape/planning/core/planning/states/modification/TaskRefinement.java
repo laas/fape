@@ -5,6 +5,7 @@ import fr.laas.fape.anml.model.concrete.Task;
 import fr.laas.fape.planning.core.planning.states.State;
 import lombok.Value;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 @Value
@@ -24,6 +25,6 @@ public class TaskRefinement implements StateModification {
 
     @Override
     public Collection<Object> involvedObjects() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return Arrays.asList(task, refiningAction);
     }
 }

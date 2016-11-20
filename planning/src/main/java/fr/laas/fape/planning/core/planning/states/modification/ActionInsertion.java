@@ -8,6 +8,8 @@ import lombok.Value;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 
 @Value
 public class ActionInsertion implements StateModification {
@@ -21,7 +23,9 @@ public class ActionInsertion implements StateModification {
 
     @Override
     public Collection<Object> involvedObjects() {
-        // TODO add objects in the action's chronicle
-        return Collections.singletonList(action);
+        Collection<Object> objs = new ChronicleInsertion(action.chronicle()).involvedObjects();
+        objs.addAll(action.jUsedVariables());
+        objs.add(action);
+        return objs;
     }
 }

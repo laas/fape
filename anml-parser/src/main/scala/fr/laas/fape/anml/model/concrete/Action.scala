@@ -31,7 +31,7 @@ class Action(
     val chronicle: Chronicle,
     val parentAction:Option[Action],
     refCounter: RefCounter)
-  extends TemporalInterval with ChronicleContainer {
+  extends TemporalInterval with ChronicleContainer with VariableUser {
 
   chronicle.container = Some(this)
 
@@ -107,6 +107,8 @@ class Action(
   lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
 
   override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") + ")"
+
+  override def usedVariables = chronicle.usedVariables ++ args + start + end + instantiationVar
 }
 
 

@@ -32,7 +32,7 @@ abstract class Statement(val sv:ParameterizedStateVariable, val container: Chron
   * See [[fr.laas.fape.anml.model.concrete.statements.Statement]] for more details on statements in general.
   * @param sv State variable on which the statement applies.
   */
-abstract class LogStatement(sv:ParameterizedStateVariable, container:Chronicle) extends Statement(sv, container) {
+abstract class LogStatement(sv:ParameterizedStateVariable, container:Chronicle) extends Statement(sv, container) with VariableUser {
   require(sv.func.isInstanceOf[SymFunction], "Error: this Logical statement is not applied to a " +
     "symbolic function: "+this)
 
@@ -70,6 +70,8 @@ class Assignment(sv:ParameterizedStateVariable, val value:VarRef, container:Chro
 
   /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
   override def isChange: Boolean = true
+
+  override def usedVariables: Set[Variable] = sv.usedVariables + value
 }
 
 /** Statement of the form `stateVariable(arg1, arg2, ...) == x :-> y;` referring to the change of the state variable from
@@ -92,6 +94,8 @@ class Transition(sv:ParameterizedStateVariable, val from:VarRef, val to:VarRef, 
 
   /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
   override def isChange: Boolean = true
+
+  override def usedVariables: Set[Variable] = sv.usedVariables + from + to
 }
 
 /** Statement of the form `stateVariable(arg1, arg2, ...) == x;` refering to a persistence of the state variable at value x
@@ -113,4 +117,6 @@ class Persistence(sv:ParameterizedStateVariable, val value:VarRef, container:Chr
 
   /** Returns true if the statements will change the value of the state variable (i.e. transition or assignment) */
   override def isChange: Boolean = false
+
+  override def usedVariables: Set[Variable] = sv.usedVariables + value
 }

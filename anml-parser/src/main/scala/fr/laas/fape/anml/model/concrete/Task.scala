@@ -12,7 +12,7 @@ import scala.collection.JavaConversions._
   * It can be fulfilled/supported by an action with the same whose parameters and
   * time points are equal to those of the action condition.
   */
-class Task(val name: String, val args :java.util.List[VarRef], val parent:Option[Action], refCounter: RefCounter) extends TemporalInterval {
+class Task(val name: String, val args :java.util.List[VarRef], val parent:Option[Action], refCounter: RefCounter) extends TemporalInterval with VariableUser {
 
   def getLabel: String = System.identityHashCode(this).toString
 
@@ -23,6 +23,8 @@ class Task(val name: String, val args :java.util.List[VarRef], val parent:Option
   val methodSupportersVar = new VarRef(TMethods, refCounter, Label(getLabel,"method-supporters"))
 
   override def toString = name+args.toString
+
+  override def usedVariables: Set[Variable] = Set(start, end) ++ args + groundSupportersVar + methodSupportersVar
 }
 
 

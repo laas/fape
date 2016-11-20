@@ -26,7 +26,8 @@ public class ChronicleInsertion implements StateModification {
         involved.addAll(chronicle.temporalConstraints());
         involved.addAll(chronicle.tasks());
         involved.addAll(chronicle.statements());
-        // Todo missing some stuff here
+        involved.addAll(chronicle.jUsedVariables());
+        involved.add(chronicle);
         return involved;
     }
 }

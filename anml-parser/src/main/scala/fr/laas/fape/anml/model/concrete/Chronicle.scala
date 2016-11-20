@@ -11,6 +11,8 @@ import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.anml.{ANMLException, FullSTN}
 import planstack.structures.IList
 
+import scala.collection.JavaConverters._
+
 import scala.collection.JavaConversions._
 
 /** A chronicle describes modifications to be made to plan.
@@ -26,7 +28,7 @@ import scala.collection.JavaConversions._
   *  - `actions`: actions to be inserted in the plan. Note that actions are StateModifiers themselves.
   *
   */
-class Chronicle() {
+class Chronicle extends VariableUser {
 
   var container : Option[ChronicleContainer] = None
 
@@ -119,5 +121,13 @@ class Chronicle() {
       }
     }
   }
+
+  override def usedVariables =
+    (tasks.asScala.map(_.asInstanceOf[VariableUser])
+      ++ temporalConstraints.asScala.map(_.asInstanceOf[VariableUser])
+      ++ bindingConstraints.asScala.map(_.asInstanceOf[VariableUser])
+      ++ statements.asScala.map(_.asInstanceOf[VariableUser])
+      ).flatMap(_.usedVariables)
+      .toSet ++ vars
 }
 

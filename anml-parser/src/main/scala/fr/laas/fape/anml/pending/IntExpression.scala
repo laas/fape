@@ -1,11 +1,11 @@
 package fr.laas.fape.anml.pending
 
-import fr.laas.fape.anml.model.concrete.VarRef
+import fr.laas.fape.anml.model.concrete.{VarRef, VariableUser}
 import fr.laas.fape.anml.model.{AbstractParameterizedStateVariable, IntFunction, LVarRef, ParameterizedStateVariable}
 
 import scala.collection.mutable
 
-abstract class IntExpression extends Comparable[IntExpression] {
+abstract class IntExpression extends Comparable[IntExpression] with VariableUser {
   def trans(transformation: IntExpression => IntExpression) : IntExpression
   def jTrans(t: java.util.function.Function[IntExpression,IntExpression]) : IntExpression = trans((expr:IntExpression) => t.apply(expr))
   def bind(f: LVarRef => VarRef) : IntExpression
@@ -34,6 +34,8 @@ abstract class IntExpression extends Comparable[IntExpression] {
       lb.compareTo(t.ub)
     else
       0
+
+  override def usedVariables = allVariables.map(_.asInstanceOf[fr.laas.fape.anml.model.concrete.Variable])
 }
 
 abstract class UnaryIntExpression extends IntExpression

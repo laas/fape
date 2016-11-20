@@ -4,7 +4,7 @@ import java.util
 
 import fr.laas.fape.anml.ANMLException
 import fr.laas.fape.anml.model.abs.DefaultMod
-import fr.laas.fape.anml.model.concrete.VarRef
+import fr.laas.fape.anml.model.concrete.{VarRef, VariableUser}
 import fr.laas.fape.anml.model.ir.IRFunction
 import fr.laas.fape.anml.parser.Expr
 
@@ -38,7 +38,7 @@ class AbstractParameterizedStateVariable(val func:Function, val args:List[LVarRe
   * @param func Function on which this state variables applies.
   * @param args A list of variables that are the parameters of the state variable.
   */
-class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
+class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) extends VariableUser {
   assert(args.length == func.argTypes.length,
     "There is "+args.length+" arguments instead of "+func.argTypes.length+" for the state varaible: "+func)
 
@@ -51,6 +51,8 @@ class ParameterizedStateVariable(val func:Function, val args:Array[VarRef]) {
       func == sv.func && args.indices.forall(i => args(i) == sv.args(i))
     case _ => false
   }
+
+  override def usedVariables = args.toSet
 }
 
 object AbstractParameterizedStateVariable {

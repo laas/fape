@@ -6,7 +6,7 @@ import java.util.Collection;
 
 public interface StateModification {
 
-    public void apply(State st, boolean isFastForwarding);
+    void apply(State st, boolean isFastForwarding);
 
-    public Collection<Object> involvedObjects();
+    Collection<Object> involvedObjects();
 }
