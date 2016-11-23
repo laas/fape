@@ -15,6 +15,8 @@ public class PlanningOptions {
         this.flawSelStrategies = flawSelStrategies;
     }
 
+    public PlanningOptions() {}
+
     /**
      * Those are used to extract all flaws from a state.
      * The getFlaws method will typically use all of those
@@ -33,20 +35,20 @@ public class PlanningOptions {
     );
 
     /**
-     * Used to build comparators for flaws. Default to a least commiting first.
+     * Used to build comparators for flaws.
      */
-    public List<String> flawSelStrategies;
+    public List<String> flawSelStrategies = Arrays.asList("hier","ogf","abs","lcf","eogf");
 
     /**
      * Used to build comparators for partial plans.
      */
-    public List<String> planSelStrategies;
+    public List<String> planSelStrategies = Collections.singletonList("soca");
 
     /**
      * If true, the planner will solve trivial flaws (with one resolver) before adding the plan
      * to the queue
      */
-    public boolean useFastForward = false;
+    public boolean useFastForward = true;
 
     public ActionInsertionStrategy actionInsertionStrategy = ActionInsertionStrategy.DOWNWARD_ONLY;
 
@@ -67,14 +69,14 @@ public class PlanningOptions {
     /**
      * If true, the planner will use A-Epsilon for search
      */
-    public boolean useAEpsilon = false;
+    public boolean useAEpsilon = true;
     public final float epsilon = GlobalOptions.getFloatOption("search-epsilon");
 
     /** Which type of dependency graph to build */
-    public String depGraphStyle = "base";
+    public String depGraphStyle = "full";
     public int depGraphMaxIters = Integer.MAX_VALUE;
 
-    public boolean displaySearch = true;
+    public boolean displaySearch = false;
 
     /** the weight of weighted A*:  f = g + w * h */
     public float heuristicWeight = GlobalOptions.getFloatOption("heur-h-weight");
