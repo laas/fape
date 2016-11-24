@@ -24,6 +24,11 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val fapeActing = Project("acting", file("acting"))
+     .aggregate(fapePlanning, graphs, constraints, anml, svgPlot, structures)
+     .dependsOn(fapePlanning, graphs, constraints, anml, svgPlot, structures)
+     .settings(commonSettings: _*)
+
 lazy val fapePlanning = Project("planning", file("planning"))
      .aggregate(graphs, constraints, anml, svgPlot, structures)
      .dependsOn(graphs, constraints, anml, svgPlot, structures)
