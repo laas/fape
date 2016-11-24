@@ -30,14 +30,14 @@ public class TNNode {
         return act != null;
     }
 
-    public boolean isActionCondition() {
+    public boolean isTask() {
         return actCond != null;
     }
 
     @Override
     public String toString() {
         if(isAction()) return asAction().toString();
-        else if(isActionCondition()) return asActionCondition().toString();
+        else if(isTask()) return asActionCondition().toString();
         else throw new FAPEException("Uncomplete switch");
     }
 
@@ -47,7 +47,7 @@ public class TNNode {
     }
 
     public Task asActionCondition() {
-        assert isActionCondition() : "This node is not an action condition.";
+        assert isTask() : "This node is not an action condition.";
         return actCond;
     }
 
@@ -66,7 +66,7 @@ public class TNNode {
         } else if(o instanceof Action) {
             return isAction() && act == o;
         } else if(o instanceof Task) {
-            return isActionCondition() && actCond == o;
+            return isTask() && actCond == o;
         } else {
             return false;
         }

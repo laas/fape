@@ -69,7 +69,7 @@ public class HierarchicalConstraints implements StateExtension {
     public boolean isWaitingForADecomposition(Timeline consumer) {
         if(isConstrained(consumer)) {
             TNNode n = timelineSupportConstraints.get(consumer.mID);
-            if(n.isActionCondition())
+            if(n.isTask())
                 return !st.taskNet.isSupported(n.asActionCondition());
             else
                 return false;

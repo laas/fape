@@ -125,7 +125,7 @@ public class State implements Reporter {
         this.pb = pb;
         this.depth = 0;
         this.controllability = controllability;
-        this.refCounter = new RefCounter(pb.refCounter());
+        this.refCounter = pb.refCounter().clone();
         this.modifications = new ArrayList<>();
         tdb = new TimelinesManager(this);
         csp = fr.laas.fape.constraints.Factory.getMetaWithGivenControllability(controllability);
@@ -159,7 +159,7 @@ public class State implements Reporter {
         pl = st.pl;
         this.controllability = st.controllability;
         this.modifications = new ArrayList<>(st.modifications);
-        this.refCounter = new RefCounter(st.refCounter);
+        this.refCounter = st.refCounter.clone();
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -422,7 +422,7 @@ public class State implements Reporter {
         csp.isConsistent();
     }
 
-    public boolean apply(StateModification mod, boolean isFastForwarding) {
+    public boolean apply(StateModification mod, boolean isFastForwarding) { //TODO, simply this fast forwarding knowledge
         modifications.add(mod);
         mod.apply(this, isFastForwarding);
         return isConsistent();
@@ -590,8 +590,7 @@ public class State implements Reporter {
             csp.stn().enforceBefore(t.start(), t.end());
             enforceBefore(pb.start(), t.start());
 
-            assert chronicle.container().nonEmpty() : "A chronicle is not attached";
-            if(chronicle.container().get() instanceof Action)
+            if(chronicle.container().nonEmpty() && chronicle.container().get() instanceof Action)
                 taskNet.insert(t, (Action) chronicle.container().get());
             else
                 taskNet.insert(t);

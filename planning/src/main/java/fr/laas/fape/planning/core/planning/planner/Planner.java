@@ -19,6 +19,7 @@ import fr.laas.fape.planning.core.planning.states.SearchNode;
 import fr.laas.fape.planning.core.planning.states.State;
 import fr.laas.fape.planning.exceptions.FlawOrderingAnomaly;
 import fr.laas.fape.planning.exceptions.FlawWithNoResolver;
+import fr.laas.fape.planning.exceptions.PlanningInterruptedException;
 import fr.laas.fape.planning.exceptions.ResolverResultedInInconsistency;
 import fr.laas.fape.planning.gui.SearchView;
 import fr.laas.fape.constraints.stnu.Controllability;
@@ -36,6 +37,8 @@ import java.util.*;
  * default behaviour.
  */
 public class Planner {
+
+    public boolean stopPlanning = false;
 
     public Planner(State initialState, PlanningOptions options) {
         this.options = options;
@@ -188,6 +191,9 @@ public class Planner {
      */
     private State depthBoundedAStar(final long deadLine, final int maxDepth) {
         while (true) {
+            if(stopPlanning)
+                throw new PlanningInterruptedException();
+
             if (System.currentTimeMillis() > deadLine) {
                 TinyLogger.LogInfo("Timeout.");
                 this.planState = EPlanState.TIMEOUT;
@@ -444,6 +450,9 @@ public class Planner {
             int numStatesExploredInDepth = 0;
             int numStatesToExploreInBest = 0;
             while (true) {
+                if(stopPlanning)
+                    throw new PlanningInterruptedException();
+
                 if (System.currentTimeMillis() > deadLine) {
                     TinyLogger.LogInfo("Timeout.");
                     this.planState = EPlanState.TIMEOUT;

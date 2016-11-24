@@ -120,6 +120,25 @@ public class TaskNetworkManager implements Reporter {
         return false;
     }
 
+    private TNNode getParent(TNNode node) {
+        if(network.inDegree(node) == 0)
+            return null;
+        else
+            return network.jParents(node).stream().findFirst().get();
+    }
+
+    public Action getContainingAction(Action a) {
+        TNNode father = getParent(new TNNode(a));
+        if(father == null)
+            return null;
+        assert father.isTask();
+        TNNode grandFather = getParent(father);
+        if(grandFather == null)
+            return null;
+        assert grandFather.isAction();
+        return grandFather.asAction();
+    }
+
     /**
      * O(n)
      * @return All action condition that are not supported yet.
@@ -128,7 +147,7 @@ public class TaskNetworkManager implements Reporter {
         if(openTasks == null) {
             List<Task> l = new ArrayList<>();
             for (TNNode n : network.jVertices()) {
-                if (n.isActionCondition()) {
+                if (n.isTask()) {
                     Task ac = n.asActionCondition();
                     if (!isSupported(ac)) {
                         l.add(ac);
@@ -144,7 +163,7 @@ public class TaskNetworkManager implements Reporter {
     public Collection<Task> getAllTasks() {
         List<Task> l = new LinkedList<>();
         for (TNNode n : network.jVertices()) {
-            if(n.isActionCondition()) {
+            if(n.isTask()) {
                 Task ac = n.asActionCondition();
                 l.add(ac);
             }
