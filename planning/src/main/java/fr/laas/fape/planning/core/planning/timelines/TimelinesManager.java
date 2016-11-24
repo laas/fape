@@ -378,6 +378,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
     public Iterable<Timeline> getTimelines() { return this; }
     public Stream<Timeline> getTimelinesStream() { return StreamSupport.stream(getTimelines().spliterator(), false); }
+    public List<Timeline> getTimelinesList() { return getTimelinesStream().collect(Collectors.toList()); }
 
     public Stream<LogStatement> allStatements() {
         return StreamSupport.stream(getTimelines().spliterator(), false).flatMap(Timeline::allStatements);

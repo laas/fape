@@ -14,7 +14,7 @@ import java.util.Set;
 @Value
 public class ActionInsertion implements StateModification {
 
-    final Action action;
+    public final Action action;
 
     @Override
     public void apply(State st, boolean isFastForwarding) {

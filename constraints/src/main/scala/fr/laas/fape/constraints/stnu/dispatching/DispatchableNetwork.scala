@@ -49,7 +49,7 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
 
   /** Adds a new minDelay constraint to ensure the given wait constraint is respected for the current earliest times */
   private def enforceWait(wait: WaitConstraint): Unit = {
-    val est = Math.min(plus(stn.getEarliestStartTime(wait.src), wait.dist), stn.getEarliestStartTime(wait.label))
+    val est = Math.min(plus(stn.getEarliestTime(wait.src), wait.dist), stn.getEarliestTime(wait.label))
     stn.addMinDelay(stn.getStartTimePoint.get, wait.dst, est)
   }
 
@@ -71,10 +71,10 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
       if(tp.genre.isDispatchable) {
         stn.addMinDelay(stn.start.get, tp, time)
       } else if(tp.genre.isContingent) {
-        if (stn.getLatestStartTime(tp) <= time)
+        if (stn.getLatestTime(tp) <= time)
           stn.addMinDelay(stn.start.get, tp, time)
         else
-          setExecuted(tp, stn.getLatestStartTime(tp))
+          setExecuted(tp, stn.getLatestTime(tp))
       }
     }
   }
@@ -85,7 +85,7 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
     // executables are all dispatchable that can be executed at the current time
     val executables = stn.timepoints.asScala
       .filter(_.genre.isDispatchable)
-      .filter(stn.getEarliestStartTime(_) == currentTime)
+      .filter(stn.getEarliestTime(_) == currentTime)
 
     // timepoints that are not executed yet
     val unexecutedPredecessors =
@@ -129,7 +129,7 @@ object DispatchableNetwork {
     import IntExpression.lit
 
     // build the dispatchable network by extending the source STNU with all constraints infered by DC-Morris
-    val dispatchableNetwork = new DispatchableNetwork(stn.asInstanceOf[StnWithStructurals[ID]].clone())
+    val dispatchableNetwork = new DispatchableNetwork(stn.asInstanceOf[StnWithStructurals[ID]])
     for(e <- morris.edges ++ morris.edgesForDispatchability if timepointsFromIDs.contains(e.from) && timepointsFromIDs.contains(e.to)) {
       e match {
         case Req(src, dst, d, _) =>

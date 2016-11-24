@@ -108,13 +108,20 @@ public class State implements Reporter {
     /** Extensions of a state that will be inherited by its children */
     private final List<StateExtension> extensions;
 
+
     /** All modifications (i.e. resolvers) that have been applied to build this state */
     private final List<StateModification> modifications;
+    public List<StateModification> getStateModifications() { return modifications; }
 
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
      */
     private int problemRevision;
+
+    private int earliestExecution = 0;
+    public int getEarliestExecution() { return earliestExecution; }
+    public void setEarliestExecution(int earliestExecution) { this.earliestExecution = earliestExecution; }
+
 
     /**
      * this constructor is only for the initial state!! other states are
@@ -160,6 +167,7 @@ public class State implements Reporter {
         this.controllability = st.controllability;
         this.modifications = new ArrayList<>(st.modifications);
         this.refCounter = st.refCounter.clone();
+        this.earliestExecution = st.earliestExecution;
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
         csp = new MetaCSP<>(st.csp);
@@ -291,8 +299,9 @@ public class State implements Reporter {
      * was found.
      */
     public Optional<Action> getActionContaining(LogStatement s) {
-        assert s.container().container().nonEmpty() : "The chronicle containing the statement \""+s+"\" is not attached";
-        if(s.container().container().get() instanceof Action) {
+        if(s.container().container().isEmpty()) {
+            return Optional.empty();
+        } else if(s.container().container().get() instanceof Action) {
             Action a = (Action) s.container().container().get();
             assert a.contains(s);
             assert getAllActions().contains(a);
@@ -412,9 +421,7 @@ public class State implements Reporter {
         apply(act.chronicle());
 
         // make sure that this action is executed after earliest execution.
-        // this constraint is flagged with the start of the action time point which can be used for removal
-        // (when an action is executed)
-        csp.stn().enforceMinDelayWithID(pb.earliestExecution(), act.start(), 0, act.start());
+        csp.stn().enforceMinDelay(pb.start(), act.start(), getEarliestExecution());
 
         for(Handler h : getHandlers())
             h.actionInserted(act, this, pl);
@@ -843,9 +850,9 @@ public class State implements Reporter {
 
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
-    public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestStartTime(a); }
+    public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestTime(a); }
     public int getMaxEarliestStartTime(List<TPRef> as) { return as.stream().mapToInt(a -> getEarliestStartTime(a)).max().orElse(0); }
-    public int getLatestStartTime(TPRef a) { return csp.stn().getLatestStartTime(a); }
+    public int getLatestStartTime(TPRef a) { return csp.stn().getLatestTime(a); }
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
 
@@ -1042,82 +1049,5 @@ public class State implements Reporter {
 
     public void insertTimelineAfter(Timeline supporter, Timeline consumer, ChainComponent precedingComponent) {
         tdb.insertTimelineAfter(this, supporter, consumer, precedingComponent);
-    }
-
-    public Timeline getDBContaining(LogStatement s) { return tdb.getTimelineContaining(s); }
-
-
-    /***************** Execution related methods **************************/
-
-    /**
-     * Marks an action as being executed. It forces it start time to the one given in parameter.
-     */
-    public void setActionExecuting(ActRef actRef, int startTime) {
-        Action a = taskNet.getAction(actRef);
-        csp.stn().removeConstraintsWithID(a.start());
-        enforceConstraint(pb.start(), a.start(), startTime, startTime);
-        a.setStatus(ActionStatus.EXECUTING);
-    }
-
-    /**
-     * Marks an action as successfully executed. It forces its end time to the one given.
-     */
-    public void setActionSuccess(ActRef actRef, int endTime) {
-        Action a = taskNet.getAction(actRef);
-        // remove the duration constraints of the action
-        removeActionDurationOf(a.id());
-        // insert new constraint specifying the end time of the action
-        enforceConstraint(pb.start(), a.end(), endTime, endTime);
-        a.setStatus(ActionStatus.EXECUTED);
-    }
-
-
-    /**
-     * Marks an action as failed. All statement of the action are removed from
-     * this state.
-     *
-     * @param actRef Reference of the action to update.
-     */
-    public void setActionFailed(ActRef actRef, int failureTime) {
-        Action toRemove = taskNet.getAction(actRef);
-        // remove the duration constraints of the action
-        removeActionDurationOf(toRemove.id());
-        // insert new constraint specifying the end time of the action
-        enforceConstraint(pb.start(), toRemove.end(), failureTime, failureTime);
-
-        toRemove.setStatus(ActionStatus.FAILED);
-
-        for (LogStatement s : toRemove.logStatements()) {
-            // ignore statements on constant functions that are handled through constraints
-            if(!s.sv().func().isConstant())
-                removeStatement(s);
-        }
-    }
-
-    /**
-     * Pushes the earliest execution time point forward in time. This causes all pending actions
-     * to be pushed after it.
-     * @param currentTime Absolute value for the earliest execution time point.
-     */
-    public void setCurrentTime(int currentTime) {
-        // push earliest execution (and thus all pending actions)
-        enforceDelay(pb.start(), pb.earliestExecution(), currentTime);
-
-        // Update bounds of all executing actions
-        for(Action a : getAllActions()) {
-            if(a.status() == ActionStatus.EXECUTING) {
-                int startTime = getEarliestStartTime(a.start());
-                int minDur = getEarliestStartTime(a.end()) -startTime;
-                int maxDur = getLatestStartTime(a.end()) -startTime;
-
-                if(startTime+minDur < currentTime) {
-                    // we can narrow the uncertain duration
-                    int realMin = currentTime - startTime;
-                    int realMax = currentTime < startTime +maxDur ? maxDur : currentTime -startTime +1;
-                    removeActionDurationOf(a.id());
-                    csp.stn().enforceContingentWithID(a.start(), a.end(), realMin, realMax, a.id());
-                }
-            }
-        }
     }
 }

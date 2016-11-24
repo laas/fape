@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 @Value
 public class SequenceOfStateModifications implements StateModification {
 
-    final List<StateModification> modifications;
+    public final List<StateModification> modifications;
 
     @Override
     public void apply(State st, boolean isFastForwarding) {

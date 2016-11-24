@@ -305,19 +305,18 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
 
 
   /** Returns the minimal time from the start of the STN to u */
-  override def getEarliestStartTime(u: TPRef): Int =
+  override def getEarliestTime(u: TPRef): Int =
     optStart match {
       case Some(st) => minDelay(st, u)
       case None => sys.error("This STN has no start timepoint")
     }
 
   /** Returns the maximal time from the start of the STN to u */
-  override def getLatestStartTime(u: TPRef): Int =
+  override def getLatestTime(u: TPRef): Int =
     optStart match {
       case Some(st) => maxDelay(st, u)
       case None => sys.error("This STN has no start timepoint")
     }
-
 
   override protected def addConstraintWithID(u: TPRef, v: TPRef, w: Int, id: ID): Unit =
     addConstraint(u, v, w)

@@ -162,12 +162,12 @@ abstract class GenSTNUManager[ID]
   final def timepoints : IList[TPRef] = tps.filter(_ != null).toList
 
   /** Returns the maximal time from the start of the STN to u */
-  override final def getEarliestStartTime(u:TPRef) : Int = {
+  override final def getEarliestTime(u:TPRef) : Int = {
     earliestStart(id(u.id))
   }
 
   /** Returns the maximal time from the start of the STN to u */
-  override final def getLatestStartTime(u:TPRef) : Int = {
+  override final def getLatestTime(u:TPRef) : Int = {
     latestStart(id(u.id))
   }
 

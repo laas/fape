@@ -67,10 +67,10 @@ trait STN[TPRef,ID] {
   protected def isConstraintPossible(u:TPRef, v:TPRef, w:Int) : Boolean
 
   /** Returns the minimal time from the start of the STN to u */
-  def getEarliestStartTime(u:TPRef) : Int
+  def getEarliestTime(u:TPRef) : Int
 
   /** Returns the maximal time from the start of the STN to u */
-  def getLatestStartTime(u:TPRef) : Int
+  def getLatestTime(u:TPRef) : Int
 
   /** Returns true if the STN is consistent (might trigger a propagation */
   def isConsistent() : Boolean
