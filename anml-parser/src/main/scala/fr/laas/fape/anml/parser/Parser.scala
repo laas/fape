@@ -189,6 +189,7 @@ case class Instance(tipe:PSimpleType, name:String) extends AnmlBlock
 
 trait Annotation extends AnmlBlock with ActionContent
 case class ObservationConditionsAnnotation(tp:Timepoint, conditions:List[DecompositionContent]) extends Annotation
+case class TimepointTypeAnnotation(typ: String, tp:Timepoint) extends Annotation
 
 object AnmlParser extends JavaTokenParsers {
 
@@ -356,7 +357,9 @@ object AnmlParser extends JavaTokenParsers {
     )
 
   lazy val annotation : Parser[Annotation] =
-    "::("~>observationConditions<~")"
+    "::("~>observationConditions<~")" |
+  "::("~>word~"("~rawTimepoint<~")"~")" ^^ {
+    case typ~"("~tp => TimepointTypeAnnotation(typ, tp) }
 
   lazy val observationConditions : Parser[ObservationConditionsAnnotation] =
     "observation_conditions"~"("~>rawTimepoint~")"~"{"~rep(decompositionContent)<~"}" ^^ {

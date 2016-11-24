@@ -46,10 +46,14 @@ abstract class AbstractContext(val pb:AnmlProblem) {
   }
   protected val standaloneTimepoints = mutable.Map[String, TPRef]()
 
+  /** Look up a timepoint by its name and creates it if it does not exist */
   def getTimepoint(id: String, refCounter: RefCounter) = {
     assert(id != "start" && id != "end")
     standaloneTimepoints.getOrElseUpdate(id, { new TPRef(refCounter) })
   }
+
+  def getTimepoint(name: String) =
+    standaloneTimepoints(name)
 
   def getNewUndefinedVar(typ: Type, refCounter: RefCounter) : IRSimpleVar = { //TODO: should be useless
     var i = 0

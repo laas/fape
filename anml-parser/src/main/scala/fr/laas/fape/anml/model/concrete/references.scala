@@ -3,13 +3,30 @@ package fr.laas.fape.anml.model.concrete
 import fr.laas.fape.anml.model.Type
 
 class RefCounter(protected var nextTPRef:Int, protected var nextActRef:Int, protected var nextVarRef:Int) {
-
-  def this() = this(0,0,0)
-  def this(refCounter: RefCounter) = this(refCounter.nextTPRef, refCounter.nextActRef, refCounter.nextVarRef)
+  private def this() = this(0,0,0)
+  private def this(refCounter: RefCounter) = this(refCounter.nextTPRef, refCounter.nextActRef, refCounter.nextVarRef)
 
   def nextTP() : Int = { nextTPRef += 1 ; nextTPRef -1 }
   def nextAct() : Int = { nextActRef += 1 ; nextActRef -1 }
   final def nextVar() : Int = { nextVarRef += 1  ; nextVarRef -1 }
+
+  override def clone() : RefCounter =
+    if(RefCounter.useGlobalCounter)
+      RefCounter.getGlobalCounter
+    else
+      new RefCounter(this)
+}
+
+object RefCounter {
+  var useGlobalCounter = true
+  private val counter : RefCounter = new RefCounter()
+  def getGlobalCounter = counter
+  def getNewCounter = {
+    if(useGlobalCounter)
+      counter
+    else
+      new RefCounter()
+  }
 }
 
 object GlobalRef {

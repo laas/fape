@@ -47,7 +47,7 @@ import scala.collection.mutable.ArrayBuffer
 class AnmlProblem extends TemporalInterval with ChronicleContainer {
 
   def label = "Problem"
-  val refCounter = new RefCounter()
+  val refCounter = RefCounter.getNewCounter
 
   /**
    * A time-point representing the earliest possible execution of an action.

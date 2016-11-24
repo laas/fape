@@ -4,6 +4,7 @@ import fr.laas.fape.anml.model.{AnmlProblem, Context, TInteger, TMethods}
 import fr.laas.fape.anml.model.abs.AbstractTask
 
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /** A task states that some action with the same name, parameters and time points must
   * be present in the plan.
@@ -13,6 +14,8 @@ import scala.collection.JavaConversions._
   * time points are equal to those of the action condition.
   */
 class Task(val name: String, val args :java.util.List[VarRef], val parent:Option[Action], refCounter: RefCounter) extends TemporalInterval with VariableUser {
+  def this(name: String, args: List[VarRef], parent: Option[Action], refCounter: RefCounter) =
+    this(name, args.asJava, parent, refCounter)
 
   def getLabel: String = System.identityHashCode(this).toString
 

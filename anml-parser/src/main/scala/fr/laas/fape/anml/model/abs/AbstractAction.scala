@@ -233,6 +233,14 @@ object AbstractAction {
               case x => throw new ANMLException(s"The use of '$x' is not supported inside an ObservationConditions annotation")
             }
             actChronicle += new AbstractObservationConditionsAnnotation(tp, conditions)
+          case parser.TimepointTypeAnnotation(typ, parserTP) =>
+            val tp = AbsTP(parserTP)
+            val constraint = typ match {
+              case "dispatchable" => AbstractTimepointType(tp, TimepointTypeEnum.DISPATCHABLE)
+              case "structural" => AbstractTimepointType(tp, TimepointTypeEnum.STRUCTURAL)
+              case x => throw new ANMLException(s"Unsupported type for a timepoint: $x. Supported type are 'structural' and 'dispatchable'")
+            }
+            actChronicle = actChronicle.withConstraints(constraint)
           case x =>
             throw new ANMLException("Unsupported block in action: "+x)
         }

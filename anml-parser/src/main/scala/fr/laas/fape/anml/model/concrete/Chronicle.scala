@@ -75,6 +75,8 @@ class Chronicle extends VariableUser {
     statements += statement
   }
 
+  def addTask(task: Task) { tasks.add(task) }
+
   def addConstraint(constraint: Constraint): Unit = {
     constraint match {
       case c: BindingConstraint => bindingConstraints += c
