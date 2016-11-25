@@ -47,26 +47,27 @@ object StnWithStructurals {
 
 import StnWithStructurals._
 
-class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
-                             val timepointByIndex: mutable.ArrayBuffer[TPRef],
+class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
+                             var timepointByIndex: mutable.ArrayBuffer[TPRef],
                              var dist: DistanceMatrix,
-                             val rigidRelations: RigidRelations,
-                             val contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
+                             var rigidRelations: RigidRelations,
+                             var contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
                              var optStart: Option[TPRef],
                              var optEnd: Option[TPRef],
                              var originalEdges: List[DistanceGraphEdge],
-                             var consistent: Boolean
+                             var consistent: Boolean,
+                             var executed: mutable.Set[TPRef]
                             )
   extends STNU[ID] with DistanceMatrixListener {
 
-  /** If true, the STNU will check that the network is Pseudo Controllable when incoking isConsistent */
+  /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
-  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true)
+  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
 
   override def clone() : StnWithStructurals[ID] = new StnWithStructurals[ID](
     nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
-    optStart, optEnd, originalEdges, consistent
+    optStart, optEnd, originalEdges, consistent, executed.clone()
   )
 
   /** Callbacks to be invoked whenever the earliest start time of a timepoint changes */
@@ -102,6 +103,56 @@ class StnWithStructurals[ID](val nonRigidIndexes: mutable.Map[TPRef,Int],
       case None =>
     }
     id
+  }
+
+  def forceExecutionTime(tp: TPRef, time: Int): Unit = {
+    def neighborhood(tp: TPRef) =
+      if(rigidRelations.isAnchor(tp))
+        rigidRelations.getTimepointsAnchoredTo(tp).toSet
+      else
+        rigidRelations.getTimepointsAnchoredTo(rigidRelations.anchorOf(tp)).toSet + rigidRelations.anchorOf(tp) -tp
+
+    try {
+      this.clone().setTime(tp, time)
+      // no inconsistent network exception, simply propagate those constraints (much cheaper)
+      setTime(tp, time)
+      executed += tp
+    } catch {
+      case e:InconsistentTemporalNetwork =>
+        // we have conflicting constraint, remove any constraint to previously executed timepoints (directly or through anchored relations)
+        val directAttached = neighborhood(tp) + tp
+        val allGrounded = executed.flatMap(neighborhood(_)) ++ executed
+
+        val newEdges = originalEdges.filter(e => {
+          if(allGrounded.intersect(directAttached).nonEmpty) {
+            // drop all edges to tp
+            e.from != tp && e.to != tp
+
+          } else {
+            // drop all edges related the executed set and our neighborhood (which include ourselves)
+            if(allGrounded.contains(e.from) && directAttached.contains(e.to)) false
+            else if(directAttached.contains(e.from) && allGrounded.contains(e.to)) false
+            else true
+          }})
+        // if tp is contingent, its incoming contingent link
+        val newContingents = contingentLinks.filter(c => !(c.dst == tp))
+
+        // remove everything
+        nonRigidIndexes = mutable.Map()
+        timepointByIndex = mutable.ArrayBuffer()
+        dist = new DistanceMatrix()
+        rigidRelations = new RigidRelations()
+        contingentLinks = mutable.ArrayBuffer()
+        originalEdges = List()
+
+        // rebuild from scratch
+        setTime(tp, time)
+        executed += tp
+        for (e <- newEdges)
+          addMaxDelay(e.from, e.to, e.value)
+        for (ctg <- newContingents)
+          addConstraint(ctg)
+    }
   }
 
   def addMinDelay(from:TPRef, to:TPRef, minDelay:Int) =

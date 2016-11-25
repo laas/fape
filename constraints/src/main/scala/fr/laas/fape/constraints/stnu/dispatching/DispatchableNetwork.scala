@@ -62,19 +62,22 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
   /** Mark the timepoint as executed at hte given time */
   def setExecuted(tp: TPRef, time: Int): Unit = {
     executions += ((tp, time))
-    stn.setTime(tp, time)
+    stn.forceExecutionTime(tp, time)
   }
 
   /** Pushes back all non-executed timepoints to be after the given time */
   def setCurrentTime(time: Int): Unit = {
     for(tp <- stn.timepoints.asScala if !executions.contains(tp)) {
       if(tp.genre.isDispatchable) {
-        stn.addMinDelay(stn.start.get, tp, time)
-      } else if(tp.genre.isContingent) {
-        if (stn.getLatestTime(tp) <= time)
+        if(stn.getMinDelay(stn.start.get, tp) < time)
           stn.addMinDelay(stn.start.get, tp, time)
-        else
-          setExecuted(tp, stn.getLatestTime(tp))
+      } else if (tp.genre.isContingent && stn.getEarliestTime(tp) < time) {
+        // propagate this timepoint to all others
+        for(o <- stn.timepoints.asScala if !executions.contains(o) && o.genre.isDispatchable) {
+          val md = time + stn.getMinDelay(tp, o)
+          if(stn.getMinDelay(stn.start.get, o) < md)
+            stn.addMinDelay(stn.start.get, o, md)
+        }
       }
     }
   }
