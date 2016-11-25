@@ -11,7 +11,7 @@ import java.util.Set;
 @Value
 public class ChronicleInsertion implements StateModification {
 
-    final Chronicle chronicle;
+    public final Chronicle chronicle;
 
     @Override
     public void apply(State st, boolean isFastForwarding) {

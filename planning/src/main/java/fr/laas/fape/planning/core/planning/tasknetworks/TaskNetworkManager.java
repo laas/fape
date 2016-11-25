@@ -139,6 +139,14 @@ public class TaskNetworkManager implements Reporter {
         return grandFather.asAction();
     }
 
+    public Task getRefinedTask(Action a) {
+        TNNode father = getParent(new TNNode(a));
+        if(father == null)
+            return null;
+        assert father.isTask();
+        return father.asTask();
+    }
+
     /**
      * O(n)
      * @return All action condition that are not supported yet.
@@ -148,7 +156,7 @@ public class TaskNetworkManager implements Reporter {
             List<Task> l = new ArrayList<>();
             for (TNNode n : network.jVertices()) {
                 if (n.isTask()) {
-                    Task ac = n.asActionCondition();
+                    Task ac = n.asTask();
                     if (!isSupported(ac)) {
                         l.add(ac);
                     }
@@ -164,7 +172,7 @@ public class TaskNetworkManager implements Reporter {
         List<Task> l = new LinkedList<>();
         for (TNNode n : network.jVertices()) {
             if(n.isTask()) {
-                Task ac = n.asActionCondition();
+                Task ac = n.asTask();
                 l.add(ac);
             }
         }
@@ -228,7 +236,6 @@ public class TaskNetworkManager implements Reporter {
     public void insert(Action a) {
         network.addVertex(new TNNode(a));
         actions.add(a);
-        assert actions.get(a.id().id()) == a : "ID of actions are regular.";
 
         if(a.hasParent()) {
             network.addEdge(new TNNode(a.parent()), new TNNode(a));
@@ -250,6 +257,11 @@ public class TaskNetworkManager implements Reporter {
         network.addVertex(new TNNode(ac));
         network.addEdge(new TNNode(parent), new TNNode(ac));
         numOpenTasks++;
+        clearCache();
+    }
+
+    public void setSubtaskOf(Task t, Action parent) {
+        network.addEdge(new TNNode(parent), new TNNode(t));
         clearCache();
     }
 
@@ -368,18 +380,6 @@ public class TaskNetworkManager implements Reporter {
      */
     public List<Action> getAllActions() {
         return actions;
-    }
-
-    /**
-     * O(1)
-     *
-     * @param id Id of the action
-     * @return the action with the given id
-     */
-    public Action getAction(ActRef id) {
-        Action a = actions.get(id.id());
-        assert a.id().equals(id);
-        return a;
     }
 
     /**

@@ -388,6 +388,7 @@ public class HierarchicalEffects {
         DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
         Map<LVarRef, VarRef> bindings = new HashMap<>();
         for(int i=0 ; i<t.args().size() ; i++) {
+            assert st.pb.actionsByTask().keySet().contains(t.name()) : "Task '"+t.name()+"'is not recorded.\n Recorded tasks: "+st.pb.actionsByTask().keySet();
             LVarRef localVar = st.pb.actionsByTask().get(t.name()).get(0).args().get(i);
             bindings.put(localVar, t.args().get(i));
         }

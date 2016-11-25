@@ -70,7 +70,7 @@ public class HierarchicalConstraints implements StateExtension {
         if(isConstrained(consumer)) {
             TNNode n = timelineSupportConstraints.get(consumer.mID);
             if(n.isTask())
-                return !st.taskNet.isSupported(n.asActionCondition());
+                return !st.taskNet.isSupported(n.asTask());
             else
                 return false;
         } else
