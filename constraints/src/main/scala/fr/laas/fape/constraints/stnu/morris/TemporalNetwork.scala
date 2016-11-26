@@ -149,7 +149,12 @@ object TemporalNetwork {
         Req(c.dst, c.src, -c.minDelay.get, Set()) :: Nil
     }).toList
 
-    val nonObservable = tps.filter(tp => tp.genre.isContingent && !observable.contains(tp) && !observed.contains(tp))
+
+    val nonObservable = originalConstraints
+      .filter(_.isInstanceOf[ContingentConstraint])
+      .map(_.dst)
+      .filter(tp => !observable.contains(tp) && !observed.contains(tp))
+      .toSet
 
     val controllables = tps.filter(tp => tp.genre.isDispatchable || tp.genre.isStructural)
 

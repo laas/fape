@@ -264,9 +264,11 @@ object PartialObservability {
 
   def makeNonObservable(edges: List[Edge], node: Node) : List[Edge] = {
     // extract contingent edges on "node"
-    val upper = edges.find(e => e.isInstanceOf[Upper] && e.asInstanceOf[Upper].lbl == node).get
-    val lower = edges.find(e => e.isInstanceOf[Lower] && e.asInstanceOf[Lower].lbl == node).get
-
+    val upperOpt = edges.find(e => e.isInstanceOf[Upper] && e.asInstanceOf[Upper].lbl == node)
+    val lowerOpt = edges.find(e => e.isInstanceOf[Lower] && e.asInstanceOf[Lower].lbl == node)
+    assert(upperOpt.nonEmpty && lowerOpt.nonEmpty, "Contingent point with no incoming links")
+    val lower = lowerOpt.get
+    val upper = upperOpt.get
     val l = lower.d
     val u = upper.d
     val src = lower.from

@@ -27,7 +27,9 @@ public class NeededObservationsFinder implements FlawFinder {
 
     @Override
     public List<Flaw> getFlaws(State st, Planner planner) {
-        Stream<TPRef> contingents = st.csp.stn().timepoints().stream().filter(tp -> tp.genre().isContingent());
+        // contingent timepoints are all those with an incoming contingent link
+        // when executing, some contingents might have been executed (and their incoming links removed)
+        Stream<TPRef> contingents = st.csp.stn().getContingentConstraints().stream().map(ctg -> ctg.dst());
 
         if(!st.hasExtension(PartialObservabilityExt.class))
             st.addExtension(new PartialObservabilityExt(new HashSet<>(), new HashMap<>()));
