@@ -116,6 +116,9 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
       this.clone().setTime(tp, time)
       // no inconsistent network exception, simply propagate those constraints (much cheaper)
       setTime(tp, time)
+      // if tp is contingent, remove its incoming contingent link
+      if(tp.genre.isContingent)
+        contingentLinks = contingentLinks.filter(c => !(c.dst == tp))
       executed += tp
     } catch {
       case e:InconsistentTemporalNetwork =>
@@ -527,4 +530,6 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
     return new IList(contingentLinks.toList ++
       pairs.map(p => new MinDelayConstraint(p._2, p._1, IntExpression.lit(minDelay(p._2, p._1)))))
   }
+
+  override def getContingentConstraints: IList[ContingentConstraint] = new IList[ContingentConstraint](contingentLinks.toList)
 }
