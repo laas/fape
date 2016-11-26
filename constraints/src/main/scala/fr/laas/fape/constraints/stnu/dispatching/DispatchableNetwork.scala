@@ -67,23 +67,27 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
 
   /** Pushes back all non-executed timepoints to be after the given time */
   def setCurrentTime(time: Int): Unit = {
+    val start = stn.start.get
     for(tp <- stn.timepoints.asScala if !executions.contains(tp)) {
       if(tp.genre.isDispatchable) {
-        if(stn.getMinDelay(stn.start.get, tp) < time)
-          stn.addMinDelay(stn.start.get, tp, time)
+        if(stn.getMinDelay(start, tp) < time)
+          stn.addMinDelay(start, tp, time)
       } else if (tp.genre.isContingent && stn.getEarliestTime(tp) < time) {
         // propagate this timepoint to all others
         for(o <- stn.timepoints.asScala if !executions.contains(o) && o.genre.isDispatchable) {
-          val md = time + stn.getMinDelay(tp, o)
-          if(stn.getMinDelay(stn.start.get, o) < md)
-            stn.addMinDelay(stn.start.get, o, md)
+          if(stn.getMinDelay(tp, o) >= 0 && stn.getEarliestTime(o) <= time)
+            stn.addMinDelay(start, o, time+1)
+        }
+        for(wait <- waitsByLabel.getOrElse(tp, Nil) ++ waitsBySource.getOrElse(tp, Nil)) {
+          val est = Math.min(plus(stn.getEarliestTime(wait.src), wait.dist), time+1)
+          stn.addMinDelay(start, wait.dst, est)
         }
       }
     }
   }
 
   /** Returns all timepoints that are executable for the given current time. */
-  def getExecutables(currentTime: Int): IList[TPRef] = {
+  def getExecutables(currentTime: Int): ISet[TPRef] = {
     setCurrentTime(currentTime)
     // executables are all dispatchable that can be executed at the current time
     val executables = stn.timepoints.asScala
@@ -102,7 +106,7 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
         else
           true
       ))
-    new IList[TPRef](executablesWithNoExecutablePredecessors)
+    new ISet[TPRef](executablesWithNoExecutablePredecessors.toSet)
   }
 }
 
