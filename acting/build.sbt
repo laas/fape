@@ -3,10 +3,10 @@ name := "acting"
 organization := "fr.laas.fape"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" % "akka-actor_2.11" % "latest.integration",
+  "com.typesafe.akka" %% "akka-actor" % "latest.integration",
 
   // akka to use slf4j, config in resources/application.conf
-  "com.typesafe.akka" % "akka-slf4j_2.11" % "2.3.9",
+  "com.typesafe.akka" %% "akka-slf4j" % "latest.integration",
 
   // Logger implementation for slf4j. Configuration in resources/logback.xml
   "ch.qos.logback" % "logback-classic" % "1.1.2"

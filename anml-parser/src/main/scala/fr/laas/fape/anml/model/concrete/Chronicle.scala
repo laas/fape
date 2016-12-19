@@ -10,8 +10,6 @@ import fr.laas.fape.anml.{ANMLException}
 
 import scala.collection.JavaConverters._
 
-import scala.collection.JavaConversions._
-
 /** A chronicle describes modifications to be made to plan.
   *
   * Notable classes containing it are [[concrete.Action]] and [[AnmlProblem]]
@@ -41,10 +39,10 @@ class Chronicle extends VariableUser {
   val bindingConstraints = new util.LinkedList[BindingConstraint]()
 
   /** Returns all logical statements */
-  def logStatements : java.util.List[LogStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[LogStatement]).map(_.asInstanceOf[LogStatement]))
+  def logStatements : java.util.List[LogStatement] = statements.asScala.collect{ case x: LogStatement => x }.asJava
 
   /** Returns all logical statements */
-  def resourceStatements : java.util.List[ResourceStatement] = seqAsJavaList(statements.filter(_.isInstanceOf[ResourceStatement]).map(_.asInstanceOf[ResourceStatement]))
+  def resourceStatements : java.util.List[ResourceStatement] = statements.asScala.collect{ case x: ResourceStatement => x }.asJava
 
   /** Actions conditions that must be fulfilled by the plan.
     *
@@ -69,15 +67,15 @@ class Chronicle extends VariableUser {
   def isEmpty = statements.isEmpty && tasks.isEmpty && bindingConstraints.isEmpty && vars.isEmpty && instances.isEmpty && annotations.isEmpty
 
   def addStatement(statement: Statement): Unit = {
-    statements += statement
+    statements.add(statement)
   }
 
   def addTask(task: Task) { tasks.add(task) }
 
   def addConstraint(constraint: Constraint): Unit = {
     constraint match {
-      case c: BindingConstraint => bindingConstraints += c
-      case c: TemporalConstraint => temporalConstraints += c
+      case c: BindingConstraint => bindingConstraints.add(c)
+      case c: TemporalConstraint => temporalConstraints.add(c)
     }
   }
 
@@ -86,12 +84,12 @@ class Chronicle extends VariableUser {
       absStatement match {
         case s: AbstractLogStatement =>
           val binded = s.bind(context, pb, this, refCounter)
-          statements += binded
+          statements.add(binded)
           context.addStatement(s.id, binded)
 
         case s: AbstractResourceStatement =>
           val binded = s.bind(context, pb, this, refCounter)
-          statements += binded
+          statements.add(binded)
           context.addStatement(s.id, binded)
 
         case s:AbstractTask =>
@@ -100,7 +98,7 @@ class Chronicle extends VariableUser {
               case Some(x: Action) => Some(x)
               case _ => None
             }
-          tasks += Task(pb, s, context, parent, refCounter)
+          tasks.add(Task(pb, s, context, parent, refCounter))
 
         case _ => throw new ANMLException("unsupported yet:" + absStatement)
       }
@@ -111,10 +109,10 @@ class Chronicle extends VariableUser {
     for(absConstraint <- absConstraints) {
       absConstraint match {
         case s:AbstractTemporalConstraint =>
-          temporalConstraints ++= s.bind(context, pb, refCounter)
+          temporalConstraints.addAll(s.bind(context, pb, refCounter).asJava)
 
         case s:AbstractBindingConstraint =>
-          bindingConstraints ++= s.bind(context, pb, refCounter)
+          bindingConstraints.addAll(s.bind(context, pb, refCounter).asJava)
 
         case _ => throw new ANMLException("unsupported yet:" + absConstraint)
       }
@@ -127,6 +125,6 @@ class Chronicle extends VariableUser {
       ++ bindingConstraints.asScala.map(_.asInstanceOf[VariableUser])
       ++ statements.asScala.map(_.asInstanceOf[VariableUser])
       ).flatMap(_.usedVariables)
-      .toSet ++ vars
+      .toSet ++ vars.asScala
 }
 

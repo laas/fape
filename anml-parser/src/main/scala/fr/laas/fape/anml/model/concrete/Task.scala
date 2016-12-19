@@ -34,7 +34,7 @@ class Task(val name: String, val args :java.util.List[VarRef], val parent:Option
 object Task {
 
   def apply(pb :AnmlProblem, ref :AbstractTask, context :Context, parentActionOpt :Option[Action], refCounter: RefCounter) : Task = {
-    val args = seqAsJavaList(ref.args.map(context.getGlobalVar(_)))
+    val args = ref.args.map(context.getGlobalVar(_)).asJava
     val ac = new Task(ref.name, args, parentActionOpt, refCounter)
     context.addActionCondition(ref.localId, ac)
     ac

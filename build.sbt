@@ -1,5 +1,16 @@
 name := "fape"
 
+// global settings 
+val _organization = "fr.laas.fape"
+val _version = "1.0.0"
+val _scalaVersion = "2.12.1"
+
+
+version := _version
+scalaVersion := _scalaVersion
+organization := _organization
+crossPaths := false
+
 initialize := {
   val _ = initialize.value
   if (sys.props("java.specification.version") != "1.8")
@@ -7,21 +18,21 @@ initialize := {
 }
 
 lazy val commonSettings = Seq(
-  organization := "fr.laas.fape",
-  version := "12",
-  crossPaths := true,
+  organization := _organization,
+  version := _version,
+  crossPaths := false,
   exportJars := true, // insert other project dependencies in oneJar
-  scalaVersion := "2.11.6",
+  scalaVersion := _scalaVersion,
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-  resolvers += "FAPE Nightly Maven Repo" at "http://www.laas.fr/~abitmonn/maven/",
   test in assembly := {},
   assemblyMergeStrategy in assembly := {
     case PathList("org", "w3c", xs @ _*)         => MergeStrategy.first
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
-  }
+  },
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"	
 )
 
 lazy val fapeActing = Project("acting", file("acting"))
@@ -47,7 +58,7 @@ lazy val anml = Project("anml-parser", file("anml-parser"))
 
 lazy val svgPlot = Project("svg-plot", file("svg-plot"))
      .settings(commonSettings: _*)
-     .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.3")
+     .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6")
 
 lazy val structures = Project("structures", file("structures"))
      .settings(commonSettings: _*)
