@@ -53,9 +53,11 @@ trait STNU extends STN {
   def getMinDelay(u:TPRef, v:TPRef) : Int
   def getMaxDelay(u: TPRef, v:TPRef) : Int
 
-  /** Returns a list of all constraints that were added to the STNU.
-    * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  def getMinimizedConstraints : IList[TemporalConstraint]
+  /** Returns a list of constraints that do not involve any structural timepoints.
+    * Constraints between structural timepoints must have been compiled as constraints
+    * between non-structural timepoints. */
+  def getConstraintsWithoutStructurals : IList[TemporalConstraint]
 
+  /** Returns the list of all constraints that were added to the STNU. */
   def getOriginalConstraints : IList[TemporalConstraint]
 }

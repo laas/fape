@@ -455,8 +455,8 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def end: Option[TPRef] = optEnd
 
-  override def getMinimizedConstraints : IList[TemporalConstraint] = {
-    /** Builds the neighborhood of a groupd of structural timepoints */
+  override def getConstraintsWithoutStructurals : IList[TemporalConstraint] = {
+    /** Builds the neighborhood of a group of structural timepoints */
     def structuralNeighborhood(neighborhood: Set[TPRef], nextNeighbors: Set[TPRef]): Set[TPRef] = {
       assert(neighborhood.intersect(nextNeighbors).isEmpty)
       assert(nextNeighbors.forall(_.genre.isStructural))

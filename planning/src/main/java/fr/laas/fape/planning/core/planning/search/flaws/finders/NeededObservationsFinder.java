@@ -38,7 +38,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 .filter(tp -> !obs.observed.contains(tp) && obs.observationConditions.containsKey(tp))
                 .collect(Collectors.toSet());
 
-        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().getMinimizedConstraints().stream().collect
+        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().getConstraintsWithoutStructurals().stream().collect
                 (Collectors.toList()), obs.observed, observable);
 
         if(opt.isPresent())

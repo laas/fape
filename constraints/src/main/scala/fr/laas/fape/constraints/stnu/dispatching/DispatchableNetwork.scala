@@ -117,7 +117,7 @@ object DispatchableNetwork {
 
   def getDispatchableNetwork[ID](stn: STNU, necessarilyObservableTimepoints: Set[TPRef]) : DispatchableNetwork = {
     // build network for DC checking
-    val tn = TemporalNetwork.build(stn.getMinimizedConstraints.asScala, necessarilyObservableTimepoints, Set())
+    val tn = TemporalNetwork.build(stn.getConstraintsWithoutStructurals.asScala, necessarilyObservableTimepoints, Set())
       .withoutInvisible
       .normalForm
 
