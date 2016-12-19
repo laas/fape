@@ -3,7 +3,6 @@ package fr.laas.fape.planning.core.planning.preprocessing;
 import fr.laas.fape.anml.model.Function;
 import fr.laas.fape.anml.model.concrete.InstanceRef;
 import fr.laas.fape.anml.model.concrete.VarRef;
-import fr.laas.fape.planning.core.inference.HLeveledReasoner;
 import fr.laas.fape.planning.core.planning.grounding.*;
 import fr.laas.fape.planning.core.planning.heuristics.DefaultIntRepresentation;
 import fr.laas.fape.planning.core.planning.heuristics.IntRepresentation;
@@ -39,7 +38,6 @@ public class Preprocessor {
     private Map<GStateVariable, DTG> dtgs;
     private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
-    private HLeveledReasoner<GAction, Fluent> baseCausalReasoner;
     private Map<GStateVariable, Set<GAction>> actionUsingStateVariable;
     private HierarchicalEffects hierarchicalEffects;
 
@@ -212,49 +210,6 @@ public class Preprocessor {
             }
         }
         return isHierarchical;
-    }
-
-    public HLeveledReasoner<GAction, Fluent> getRestrictedCausalReasoner(EffSet<GAction> allowedActions) {
-        if(baseCausalReasoner == null) {
-            baseCausalReasoner = new HLeveledReasoner<>(this.groundActionIntRepresentation(), this.fluentIntRepresentation());
-            for(GAction ga : getAllActions()) {
-                baseCausalReasoner.addClause(ga.pre, ga.add, ga);
-            }
-        }
-        return baseCausalReasoner.cloneWithRestriction(allowedActions);
-    }
-
-    HLeveledReasoner<GAction, GTask> baseDecomposabilityReasoner = null;
-    /** initial "facts" are actions with no subtasks */
-    public HLeveledReasoner<GAction, GTask> getRestrictedDecomposabilityReasoner(EffSet<GAction> allowedActions) {
-        if(baseDecomposabilityReasoner == null) {
-            baseDecomposabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
-            for (GAction ga : this.getAllActions()) {
-                GTask[] effect = new GTask[1];
-                effect[0] = ga.task;
-                baseDecomposabilityReasoner.addClause(ga.subTasks.toArray(new GTask[ga.subTasks.size()]), effect, ga);
-            }
-        }
-        return baseDecomposabilityReasoner.cloneWithRestriction(allowedActions);
-    }
-
-    HLeveledReasoner<GAction, GTask> baseDerivabilityReasoner = null;
-
-    /** initial facts opened tasks and initial clauses are non-motivated actions*/
-    public HLeveledReasoner<GAction, GTask> getRestrictedDerivabilityReasoner(EffSet<GAction> allowedActions) {
-        if(baseDerivabilityReasoner == null) {
-            baseDerivabilityReasoner = new HLeveledReasoner<>(planner.preprocessor.groundActionIntRepresentation(), new DefaultIntRepresentation<>());
-            for (GAction ga : getAllActions()) {
-                if (ga.abs.isTaskDependent()) {
-                    GTask[] condition = new GTask[1];
-                    condition[0] = ga.task;
-                    baseDerivabilityReasoner.addClause(condition, ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);
-                } else {
-                    baseDerivabilityReasoner.addClause(new GTask[0], ga.subTasks.toArray(new GTask[ga.subTasks.size()]), ga);
-                }
-            }
-        }
-        return baseDerivabilityReasoner.cloneWithRestriction(allowedActions);
     }
 
     public Fluent getFluent(GStateVariable sv, InstanceRef value) {

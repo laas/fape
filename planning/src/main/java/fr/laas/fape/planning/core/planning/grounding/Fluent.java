@@ -1,14 +1,13 @@
 package fr.laas.fape.planning.core.planning.grounding;
 
 import fr.laas.fape.anml.model.concrete.InstanceRef;
-import fr.laas.fape.planning.core.inference.Term;
 import fr.laas.fape.structures.AbsIdentifiable;
 import fr.laas.fape.structures.Ident;
 import fr.laas.fape.structures.ValueConstructor;
 
 
 @Ident(Fluent.class)
-public final class Fluent extends AbsIdentifiable implements Term {
+public final class Fluent extends AbsIdentifiable {
     final public GStateVariable sv;
     final public InstanceRef value;
 

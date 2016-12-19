@@ -9,9 +9,6 @@ import fr.laas.fape.anml.model.concrete.VarRef;
 import fr.laas.fape.anml.model.ir.IRConstantExpression;
 import fr.laas.fape.anml.pending.IntExpression;
 import fr.laas.fape.anml.pending.LStateVariable;
-import fr.laas.fape.planning.core.inference.HReasoner;
-import fr.laas.fape.planning.core.inference.Predicate;
-import fr.laas.fape.planning.core.inference.Term;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.planning.exceptions.NotValidGroundAction;
@@ -584,44 +581,5 @@ public class GAction implements Identifiable {
         }
 
         return ret;
-    }
-
-    public void addClauses(HReasoner<Term> r) {
-        Predicate sup = new Predicate(Predicate.PredicateName.SUPPORTED, this);
-        Term[] preTerms = new Term[pre.size()+1];
-        preTerms[0] = new Predicate(Predicate.PredicateName.ACCEPTABLE, this);
-        for(int i=0 ; i<pre.size() ; i++)
-            preTerms[i+1] = pre.get(i);
-        // supported(a) :- acceptable(a), precond1, precond2, ...
-        r.addHornClause(sup, preTerms);
-        for(Fluent f : add)
-            // effect_i :- supported(a)
-            r.addHornClause(f, sup);
-
-        // feasible(task_a) :- supported(a)
-        r.addHornClause(new Predicate(Predicate.PredicateName.FEASIBLE, task), sup);
-
-        // decomposable(a) :- supported(a), feasible(subtask1), feasible(subtask2), ...
-        Predicate decomposable = new Predicate(Predicate.PredicateName.DECOMPOSABLE, this);
-        Term[] subtasks = new Term[getSubtasks().size()+1];
-        subtasks[0] = sup;
-        for(int i=1 ; i<subtasks.length ; i++) {
-            subtasks[i] = new Predicate(Predicate.PredicateName.FEASIBLE, getSubtasks().get(i-1));
-        }
-        r.addHornClause(decomposable, subtasks);
-
-        if(!abs.isTaskDependent())
-            // not motivated: derivable(a) :- decomposable(a)
-            r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE, this), decomposable);
-
-        // derivable_task(sub_task_i) :- derivable(a)
-        for(GTask subTask : subTasks) {
-            r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE_TASK, subTask), new Predicate(Predicate.PredicateName.DERIVABLE, this));
-        }
-        // derivable(a) :- derivable_task(task(a))
-        r.addHornClause(new Predicate(Predicate.PredicateName.DERIVABLE, this), new Predicate(Predicate.PredicateName.DERIVABLE_TASK, task), decomposable);
-
-        r.addHornClause(new Predicate(Predicate.PredicateName.POSSIBLE_IN_PLAN, this), new Predicate(Predicate.PredicateName.DERIVABLE, this));
-        r.addHornClause(new Predicate(Predicate.PredicateName.POSSIBLE_IN_PLAN, this), new Predicate(Predicate.PredicateName.IN_PLAN, this), new Predicate(Predicate.PredicateName.DECOMPOSABLE, this));
     }
 }
