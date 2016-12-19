@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
 
 import fr.laas.fape.anml.model.concrete.VarRef;
@@ -22,16 +22,16 @@ import fr.laas.fape.structures.IntRep;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DGHandler extends Handler {
+public class ReachabilityHandler extends Handler {
     private final boolean USE_DECOMPOSITION_VARIABLES = GlobalOptions.getBooleanOption("use-decomposition-variables");
 
     @Override
     public void stateBindedToPlanner(State st, Planner pl) {
-        assert !st.hasExtension(DepGraphCore.StateExt.class);
+        assert !st.hasExtension(CoreReachabilityGraph.StateExt.class);
 
         // init the core of the dependency graph
-        DepGraphCore core = new DepGraphCore(pl.preprocessor.getRelaxedActions(), false, pl.preprocessor.store);
-        st.addExtension(new DepGraphCore.StateExt(core));
+        CoreReachabilityGraph core = new CoreReachabilityGraph(pl.preprocessor.getRelaxedActions(), false, pl.preprocessor.store);
+        st.addExtension(new CoreReachabilityGraph.StateExt(core));
 
         // Record ground action ids as possible values for variables in the CSP
         for (GAction ga : pl.preprocessor.getAllActions()) {
@@ -135,7 +135,7 @@ public class DGHandler extends Handler {
     private void propagateNetwork(State st, Planner pl) {
         final IntRep<GAction> gactsRep = pl.preprocessor.store.getIntRep(GAction.class);
 
-        DepGraphCore.StateExt ext = st.getExtension(DepGraphCore.StateExt.class);
+        CoreReachabilityGraph.StateExt ext = st.getExtension(CoreReachabilityGraph.StateExt.class);
 
         final Preprocessor pp = st.pl.preprocessor;
         final GroundProblem gpb = pp.getGroundProblem();
@@ -171,7 +171,7 @@ public class DGHandler extends Handler {
         allFacts.addAll(tasks);
 
         // create new graph from the core graph (actions) and the facts
-        StateDepGraph graph = new StateDepGraph(ext.getCoreGraph(), allFacts, pl);
+        PartialPlanReachabilityGraph graph = new PartialPlanReachabilityGraph(ext.getCoreGraph(), allFacts, pl);
         ext.currentGraph = graph;
         graph.propagate(ext.prevGraph);
 

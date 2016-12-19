@@ -1,5 +1,6 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
+import fr.laas.fape.planning.core.planning.preprocessing.GroundObjectsStore;
 import fr.laas.fape.planning.core.planning.states.State;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.structures.IR2IntMap;
@@ -7,12 +8,12 @@ import fr.laas.fape.structures.IRSet;
 
 import java.util.*;
 
-public class DepGraphCore implements DependencyGraph {
+public class CoreReachabilityGraph implements ReachabilityGraph {
 
     /** True if this graph has already been reduced to reachable actions only */
     public final boolean wasReduced;
 
-    protected GStore store;
+    protected GroundObjectsStore store;
 
     // graph structure
     Map<ActionNode, List<MinEdge>> actOut = new HashMap<>();
@@ -28,11 +29,11 @@ public class DepGraphCore implements DependencyGraph {
      *  If they are ignored the graph will not contain any negative cycle. //TODO: double check that */
     private List<MaxEdge> toIgnoreInDijkstra;
 
-    public DepGraphCore(Collection<RAct> actions, boolean isReduced, GStore store) { // List<TempFluent> facts, State st) {
+    public CoreReachabilityGraph(Collection<ElementaryAction> actions, boolean isReduced, GroundObjectsStore store) { // List<TempFluent> facts, State st) {
         this.store = store;
         this.wasReduced = isReduced;
 
-        for(RAct act : actions) {
+        for(ElementaryAction act : actions) {
             addAction(act);
         }
     }
@@ -46,12 +47,12 @@ public class DepGraphCore implements DependencyGraph {
         return eas;
     }
 
-    public void addAction(RAct act) {
+    public void addAction(ElementaryAction act) {
         actOut.put(act, new ArrayList<>());
         actIn.put(act, new ArrayList<>());
         for (TempFluent tf : act.getEffects()) {
             TempFluent.DGFluent f = tf.fluent;
-            assert !DependencyGraph.isInfty(tf.getTime()) : "Effect with infinite delay.";
+            assert !ReachabilityGraph.isInfty(tf.getTime()) : "Effect with infinite delay.";
             actOut.get(act).add(new MinEdge(act, f, tf.getTime()));
             fluentIn.putIfAbsent(f, new ArrayList<>());
             fluentOut.putIfAbsent(f, new ArrayList<>());
@@ -117,22 +118,22 @@ public class DepGraphCore implements DependencyGraph {
      */
     public static class StateExt implements StateExtension {
 
-        private final DepGraphCore core;
-        public final Optional<StateDepGraph> prevGraph;
+        private final CoreReachabilityGraph core;
+        public final Optional<PartialPlanReachabilityGraph> prevGraph;
 
-        public StateDepGraph currentGraph = null;
+        public PartialPlanReachabilityGraph currentGraph = null;
 
-        public StateExt(DepGraphCore core) {
+        public StateExt(CoreReachabilityGraph core) {
             this.core = core;
             prevGraph = Optional.empty();
         }
 
-        private StateExt(StateDepGraph prevGraph) {
+        private StateExt(PartialPlanReachabilityGraph prevGraph) {
             this.core = prevGraph.core;
             this.prevGraph = Optional.of(prevGraph);
         }
 
-        public DepGraphCore getCoreGraph() {
+        public CoreReachabilityGraph getCoreGraph() {
             if(currentGraph != null)
                 return currentGraph.core; // this version might be more recent
             else

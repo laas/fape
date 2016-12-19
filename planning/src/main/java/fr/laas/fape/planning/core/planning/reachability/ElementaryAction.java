@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
 import fr.laas.fape.anml.model.abs.time.AbsTP;
 import fr.laas.fape.planning.core.planning.grounding.GAction;
@@ -10,8 +10,8 @@ import lombok.Getter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Ident(DepGraphCore.Node.class) @Getter
-public class RAct extends DepGraphCore.ActionNode {
+@Ident(CoreReachabilityGraph.Node.class) @Getter
+public class ElementaryAction extends CoreReachabilityGraph.ActionNode {
 
     public final GAction act;
     public final AbsTP tp;
@@ -19,7 +19,7 @@ public class RAct extends DepGraphCore.ActionNode {
     public final List<TempFluent> effects;
 
     @Deprecated @ValueConstructor
-    public RAct(GAction act, AbsTP tp, List<TempFluent> conditions, List<TempFluent> effects) {
+    public ElementaryAction(GAction act, AbsTP tp, List<TempFluent> conditions, List<TempFluent> effects) {
         this.act = act;
         this.tp = tp;
         this.conditions = conditions;
@@ -27,8 +27,7 @@ public class RAct extends DepGraphCore.ActionNode {
     }
 
     @Override public String toString() {
-        String s = "("+getID()+") "+act+"--"+tp.toString();
-        return s;
+        return "("+getID()+") "+act+"--"+tp.toString();
     }
 
     public String toStringDetailed() {
@@ -42,10 +41,7 @@ public class RAct extends DepGraphCore.ActionNode {
         return s;
     }
 
-
-
-
-    public static RAct from(DeleteFreeActionsFactory.RActTemplate template, GAction base, Planner pl) {
+    public static ElementaryAction from(DeleteFreeActionsFactory.RActTemplate template, GAction base, Planner pl) {
         assert template.abs == base.abs;
 
         List<TempFluent> conditions = template.conditions.stream()

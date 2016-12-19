@@ -2,7 +2,7 @@ package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
 import fr.laas.fape.planning.core.planning.states.State;
 
-class MakespanComp extends PartialPlanComparator {
+public class MakespanComp extends PartialPlanComparator {
     @Override
     public String shortName() {
         return "makespan";

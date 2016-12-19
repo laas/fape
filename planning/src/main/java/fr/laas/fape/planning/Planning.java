@@ -2,7 +2,7 @@ package fr.laas.fape.planning;
 
 import com.martiansoftware.jsap.*;
 import fr.laas.fape.anml.model.AnmlProblem;
-import fr.laas.fape.planning.core.planning.heuristics.temporal.DGHandler;
+import fr.laas.fape.planning.core.planning.reachability.ReachabilityHandler;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
@@ -334,7 +334,7 @@ public class Planning {
                 }
 
                 if(config.getBoolean("reachability-graph") && !config.getString("reachability-graph").equals("none")) {
-                    options.handlers.add(new DGHandler());
+                    options.handlers.add(new ReachabilityHandler());
                     String degGraphOption = config.getString("reachability-graph");
                     switch (degGraphOption) {
                         case "full":

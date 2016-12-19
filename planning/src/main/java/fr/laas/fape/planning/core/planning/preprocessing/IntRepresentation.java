@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics;
+package fr.laas.fape.planning.core.planning.preprocessing;
 
 public interface IntRepresentation<T> {
 

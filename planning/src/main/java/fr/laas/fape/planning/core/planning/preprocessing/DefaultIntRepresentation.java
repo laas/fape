@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics;
+package fr.laas.fape.planning.core.planning.preprocessing;
 
 import java.util.ArrayList;
 import java.util.HashMap;

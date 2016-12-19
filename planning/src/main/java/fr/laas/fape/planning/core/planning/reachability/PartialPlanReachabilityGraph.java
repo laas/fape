@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
 import fr.laas.fape.planning.Planning;
 import fr.laas.fape.planning.core.planning.grounding.Fluent;
@@ -14,13 +14,13 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StateDepGraph implements DependencyGraph {
+public class PartialPlanReachabilityGraph implements ReachabilityGraph {
 
     static int dbgLvl = 0;
     static int dbgLvlDij = 0;
 
-    /** Edges and nodes common to all graphs **/
-    public DepGraphCore core;
+    /** Edges and nodes common to all graphs of the problem **/
+    public CoreReachabilityGraph core;
 
     /** Planner by which this graph is used */
     public final Planner planner;
@@ -49,7 +49,7 @@ public class StateDepGraph implements DependencyGraph {
      * It is currently only used and set by the dijkstra propagator. **/
     private IR2IntMap<Node> predecessors = null;
 
-    public StateDepGraph(DepGraphCore core, List<TempFluent> initFacts, Planner planner) {
+    public PartialPlanReachabilityGraph(CoreReachabilityGraph core, List<TempFluent> initFacts, Planner planner) {
         this.core = core;
         this.planner = planner;
 
@@ -71,9 +71,9 @@ public class StateDepGraph implements DependencyGraph {
         System.out.println("\nactions: " +
                 earliestAppearances.entrySet().stream()
                         .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-                        .filter(n -> n.getKey() instanceof RAct)
-                        .filter(n -> ((RAct) n.getKey()).tp.toString().equals("ContainerStart"))
-                        .map(a -> "\n  [" + a.getValue() + "] " + ((RAct) a.getKey()).act)
+                        .filter(n -> n.getKey() instanceof ElementaryAction)
+                        .filter(n -> ((ElementaryAction) n.getKey()).tp.toString().equals("ContainerStart"))
+                        .map(a -> "\n  [" + a.getValue() + "] " + ((ElementaryAction) a.getKey()).act)
                         .collect(Collectors.toList()));
     }
 
@@ -108,7 +108,7 @@ public class StateDepGraph implements DependencyGraph {
     }
 
 
-    IR2IntMap<Node> propagate(Optional<StateDepGraph> ancestorGraph) {
+    IR2IntMap<Node> propagate(Optional<PartialPlanReachabilityGraph> ancestorGraph) {
 
         if(dbgLvlDij > 3) {
             // used when debugging to make sure bellman ford and dijkstra yield the same results
@@ -164,12 +164,12 @@ public class StateDepGraph implements DependencyGraph {
 
         // if this was the first propagation, we recreate a core graph containing only possible nodes
         if(!core.wasReduced) {
-            List<RAct> feasibles = earliestAppearances.keySet().stream()
-                    .filter(n -> n instanceof RAct)
-                    .map(n -> (RAct) n)
+            List<ElementaryAction> feasibles = earliestAppearances.keySet().stream()
+                    .filter(n -> n instanceof ElementaryAction)
+                    .map(n -> (ElementaryAction) n)
                     .collect(Collectors.toList());
-            DepGraphCore prevCore = core;
-            core = new DepGraphCore(feasibles, true, core.store);
+            CoreReachabilityGraph prevCore = core;
+            core = new CoreReachabilityGraph(feasibles, true, core.store);
             if(dbgLvl >= 1) System.out.println("Shrank core graph to: "+core.getDefaultEarliestApprearances().size()
                     +" nodes. (Initially: "+prevCore.getDefaultEarliestApprearances().size()+")");
             if(Planner.debugging) {
@@ -270,7 +270,7 @@ public class StateDepGraph implements DependencyGraph {
         private void setImpossible(int nid) { possible.remove(nid); eas.remove(nid); }
         private void setImpossible(Node n) { setImpossible(n.getID()); }
 
-        public BellmanFord(Optional<StateDepGraph> ancestorGraph) {
+        public BellmanFord(Optional<PartialPlanReachabilityGraph> ancestorGraph) {
             if(ancestorGraph.isPresent()) {
                 eas = ancestorGraph.get().earliestAppearances.clone();
                 eas.remove(ancestorGraph.get().facts);
@@ -432,7 +432,7 @@ public class StateDepGraph implements DependencyGraph {
             }
         }
 
-        private Dijkstra(Optional<StateDepGraph> ancestorGraph) {
+        private Dijkstra(Optional<PartialPlanReachabilityGraph> ancestorGraph) {
             if(dbgLvlDij >= 2) System.out.println("\n------------------------------------\n");
 
             if(ancestorGraph.isPresent()) {

@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.util;
 
 
-import fr.laas.fape.planning.core.planning.heuristics.IntRepresentation;
+import fr.laas.fape.planning.core.planning.preprocessing.IntRepresentation;
 
 import java.util.*;
 

@@ -4,11 +4,8 @@ import fr.laas.fape.anml.model.Function;
 import fr.laas.fape.anml.model.concrete.InstanceRef;
 import fr.laas.fape.anml.model.concrete.VarRef;
 import fr.laas.fape.planning.core.planning.grounding.*;
-import fr.laas.fape.planning.core.planning.heuristics.DefaultIntRepresentation;
-import fr.laas.fape.planning.core.planning.heuristics.IntRepresentation;
-import fr.laas.fape.planning.core.planning.heuristics.temporal.DeleteFreeActionsFactory;
-import fr.laas.fape.planning.core.planning.heuristics.temporal.GStore;
-import fr.laas.fape.planning.core.planning.heuristics.temporal.RAct;
+import fr.laas.fape.planning.core.planning.reachability.DeleteFreeActionsFactory;
+import fr.laas.fape.planning.core.planning.reachability.ElementaryAction;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.tsp.DTG;
@@ -28,13 +25,13 @@ public class Preprocessor {
 
     public int nextGActionID = 0;
 
-    public final GStore store = new GStore();
+    public final GroundObjectsStore store = new GroundObjectsStore();
 
     private GroundProblem gPb;
     private EffSet<GAction> allActions;
     private IRSet<Fluent> allFluents;
     private IRSet<GStateVariable> allStateVariables;
-    private Collection<RAct> relaxedActions;
+    private Collection<ElementaryAction> relaxedActions;
     private Map<GStateVariable, DTG> dtgs;
     private Map<GStateVariable, TemporalDTG> temporalDTGs = new HashMap<>();
     private GAction[] groundActions = new GAction[1000];
@@ -117,7 +114,7 @@ public class Preprocessor {
         return groundActions[groundActionID];
     }
 
-    public Collection<RAct> getRelaxedActions() {
+    public Collection<ElementaryAction> getRelaxedActions() {
         if(relaxedActions == null) {
             relaxedActions = new ArrayList<>();
             for(AbstractAction aa : planner.pb.abstractActions()) {

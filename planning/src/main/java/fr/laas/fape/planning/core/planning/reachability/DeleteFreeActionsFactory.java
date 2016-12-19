@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
 import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.abs.AbstractTask;
@@ -148,7 +148,7 @@ public class DeleteFreeActionsFactory {
         throw new FAPEException("Unable to find the timepoint: "+tp);
     }
 
-    public Collection<RAct> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, Planner pl) {
+    public Collection<ElementaryAction> getDeleteFrees(AbstractAction abs, Collection<GAction> grounds, Planner pl) {
         Map<AbsTP, RActTemplate> templates = new HashMap<>();
         for(AbsTP tp : abs.flexibleTimepoints()) {
             templates.put(tp, new RActTemplate(abs, tp));
@@ -262,7 +262,7 @@ public class DeleteFreeActionsFactory {
             }
         }
 
-        List<RAct> relaxedGround = new LinkedList<>();
+        List<ElementaryAction> relaxedGround = new LinkedList<>();
 
         for(GAction ground : grounds) {
             for(RActTemplate template : rActTemplates) {
@@ -276,8 +276,8 @@ public class DeleteFreeActionsFactory {
         default List<RActTemplate> postProcess(Collection<RActTemplate> templates) {
             return new ArrayList<>(templates);
         }
-        default List<RAct> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
-            return Collections.singletonList(RAct.from(template, groundAct, pl));
+        default List<ElementaryAction> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
+            return Collections.singletonList(ElementaryAction.from(template, groundAct, pl));
         }
     }
     class BasePostProcessor implements PostProcessor {}
@@ -332,12 +332,12 @@ public class DeleteFreeActionsFactory {
         }
 
         @Override
-        public List<RAct> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
+        public List<ElementaryAction> instantiations(RActTemplate template, GAction groundAct, Planner pl) {
             if(!hasParametrizedTemporalConstraint) {
                 // work was already done by postProcess(.)
                 return PostProcessor.super.instantiations(template, groundAct, pl);
             } else {
-                List<RAct> res = new LinkedList<>();
+                List<ElementaryAction> res = new LinkedList<>();
 
                 List<TempFluent> conditions = template.conditions.stream()
                         .map(c -> TempFluent.from(c, groundAct, pl.preprocessor.getGroundProblem(), pl.preprocessor.store))

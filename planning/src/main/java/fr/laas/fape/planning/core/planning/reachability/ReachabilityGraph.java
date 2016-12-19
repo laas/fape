@@ -1,4 +1,4 @@
-package fr.laas.fape.planning.core.planning.heuristics.temporal;
+package fr.laas.fape.planning.core.planning.reachability;
 
 import fr.laas.fape.structures.AbsIdentifiable;
 import fr.laas.fape.structures.Ident;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public interface DependencyGraph {
+public interface ReachabilityGraph {
 
     static boolean isInfty(int num) { return num > 9999999; }
 
