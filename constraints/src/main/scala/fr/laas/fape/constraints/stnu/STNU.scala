@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.stnu
 
 import fr.laas.fape.anml.model.concrete.{TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stn.STN
-import planstack.structures.IList
+import fr.laas.fape.structures.IList
 
 trait STNU extends STN {
 

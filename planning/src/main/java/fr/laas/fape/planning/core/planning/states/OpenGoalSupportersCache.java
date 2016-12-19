@@ -8,7 +8,7 @@ import fr.laas.fape.planning.core.planning.search.flaws.resolvers.*;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
-import planstack.structures.IList;
+import fr.laas.fape.structures.IList;
 
 import java.util.*;
 import java.util.stream.Collectors;

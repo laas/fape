@@ -1,5 +1,6 @@
 package fr.laas.fape.anml.model.concrete
 
+import fr.laas.fape.UniquelyIdentified
 import fr.laas.fape.anml.model.Type
 
 class RefCounter(protected var nextTPRef:Int, protected var nextActRef:Int, protected var nextVarRef:Int) {
@@ -40,7 +41,7 @@ import GlobalRef.NullID
   *
   * @param id Unique id of the reference.
   */
-class GlobalRef(val id:Int) extends planstack.UniquelyIdentified {
+class GlobalRef(val id:Int) extends UniquelyIdentified {
   private var placeHolderID = -1
   final def selfDefinedID = { assert(placeHolderID != -1) ; placeHolderID }
   final def setSelfDefinedID(n: Int) { require(n != -1) ; assert(placeHolderID == -1) ; placeHolderID = n }

@@ -9,7 +9,7 @@ import fr.laas.fape.anml.model.concrete._
 import fr.laas.fape.anml.model.ir.{IRConstantExpression, IRSimpleVar}
 import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.anml.{ANMLException, FullSTN}
-import planstack.structures.IList
+import fr.laas.fape.structures.IList
 
 import scala.collection.JavaConverters._
 

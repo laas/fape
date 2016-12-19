@@ -8,7 +8,7 @@ import fr.laas.fape.constraints.stnu.morris.DCMorris.{Lower, Req, Upper}
 import fr.laas.fape.constraints.stnu.{InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.morris.{DCMorris, TemporalNetwork}
 import fr.laas.fape.constraints.stnu.structurals.{DistanceMatrix, StnWithStructurals}
-import planstack.structures.{IList, ISet}
+import fr.laas.fape.structures.{ISet, IList}
 
 class WaitConstraint(val src: TPRef, val dst: TPRef, val dist: Int, val label: TPRef) extends TemporalConstraint {
   override def usedVariables: Set[Variable] = Set(src, dst, label)

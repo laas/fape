@@ -1,13 +1,11 @@
 package fr.laas.fape.acting;
 
 import fr.laas.fape.anml.model.concrete.Action;
-import fr.laas.fape.anml.model.concrete.GlobalRef;
 import fr.laas.fape.anml.model.concrete.TPRef;
 import fr.laas.fape.constraints.stnu.dispatching.DispatchableNetwork;
 import fr.laas.fape.planning.core.planning.states.Printer;
 import fr.laas.fape.planning.core.planning.states.State;
-import planstack.structures.IList;
-import planstack.structures.ISet;
+import fr.laas.fape.structures.ISet;
 
 import java.util.Map;
 import java.util.Set;

@@ -6,10 +6,7 @@ import fr.laas.fape.anml.model.{AnmlProblem, ChronicleContainer, Context, concre
 import fr.laas.fape.anml.model.abs.statements.{AbstractLogStatement, AbstractResourceStatement, AbstractStatement}
 import fr.laas.fape.anml.model.abs._
 import fr.laas.fape.anml.model.concrete.statements._
-import fr.laas.fape.anml.model.concrete.time.TimepointRef
-import fr.laas.fape.anml.pending.IntExpression
-import fr.laas.fape.anml.{ANMLException, FullSTN}
-import planstack.structures.IList
+import fr.laas.fape.anml.{ANMLException}
 
 import scala.collection.JavaConverters._
 
@@ -17,9 +14,9 @@ import scala.collection.JavaConversions._
 
 /** A chronicle describes modifications to be made to plan.
   *
-  * Notable classes containing it are [[concrete.Action]] and [[planstack.anml.model.AnmlProblem]]
+  * Notable classes containing it are [[concrete.Action]] and [[AnmlProblem]]
   * Updates to a problem (such as the happening of exogeneous events) are also encoded as Chronicle
-  * in [[planstack.anml.model.AnmlProblem]].
+  * in [[AnmlProblem]].
   *
   * Components:
   *  - `vars`: global variables that need to be declared for applying the chronicle.

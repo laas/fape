@@ -5,8 +5,8 @@ import fr.laas.fape.anml.model.concrete.VarRef;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
-import planstack.structures.IList;
-import planstack.structures.Pair;
+import fr.laas.fape.structures.IList;
+import fr.laas.fape.structures.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;

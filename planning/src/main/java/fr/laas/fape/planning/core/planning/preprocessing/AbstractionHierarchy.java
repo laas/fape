@@ -4,9 +4,9 @@ import fr.laas.fape.anml.model.AnmlProblem;
 import fr.laas.fape.anml.model.Function;
 import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.abs.statements.AbstractLogStatement;
-import planstack.graph.GraphFactory;
-import planstack.graph.algorithms.StronglyConnectedComponent;
-import planstack.graph.core.UnlabeledDigraph;
+import fr.laas.fape.graph.GraphFactory;
+import fr.laas.fape.graph.algorithms.StronglyConnectedComponent;
+import fr.laas.fape.graph.core.UnlabeledDigraph;
 
 import java.util.*;
 

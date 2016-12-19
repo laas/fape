@@ -5,9 +5,9 @@ import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
 import fr.laas.fape.constraints.stnu.{Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.parser.STNUParser
-import planstack.graph.core.LabeledEdge
-import planstack.graph.printers.NodeEdgePrinter
-import planstack.structures.IList
+import fr.laas.fape.graph.core.LabeledEdge
+import fr.laas.fape.graph.printers.NodeEdgePrinter
+import fr.laas.fape.structures.IList
 
 import scala.collection.mutable
 
@@ -339,8 +339,6 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override protected def isConstraintPossible(u: TPRef, v: TPRef, w: Int): Boolean =
     w + rigidAwareDist(v, u) >= 0
-
-  override def exportToDotFile(filename: String, printer: NodeEdgePrinter[Object, Object, LabeledEdge[Object, Object]]): Unit = ???
 
   /** Remove a timepoint and all associated constraints from the STN */
   override def removeTimePoint(tp: TPRef): Unit = ???

@@ -25,26 +25,23 @@ lazy val commonSettings = Seq(
 )
 
 lazy val fapeActing = Project("acting", file("acting"))
-     .aggregate(fapePlanning, graphs, constraints, anml, svgPlot, structures)
-     .dependsOn(fapePlanning, graphs, constraints, anml, svgPlot, structures)
+     .aggregate(fapePlanning, constraints, anml, svgPlot, structures)
+     .dependsOn(fapePlanning, constraints, anml, svgPlot, structures)
      .settings(commonSettings: _*)
 
 lazy val fapePlanning = Project("planning", file("planning"))
-     .aggregate(graphs, constraints, anml, svgPlot, structures)
-     .dependsOn(graphs, constraints, anml, svgPlot, structures)
-     .settings(commonSettings: _*)
-
-lazy val graphs = Project("graphs", file("graphs"))
+     .aggregate(constraints, anml, svgPlot, structures)
+     .dependsOn(constraints, anml, svgPlot, structures)
      .settings(commonSettings: _*)
 
 lazy val constraints = Project("constraints", file("constraints"))
-     .aggregate(graphs, anml, structures)
-     .dependsOn(graphs, anml, structures)
+     .aggregate(anml, structures)
+     .dependsOn(anml, structures)
      .settings(commonSettings: _*)
 
 lazy val anml = Project("anml-parser", file("anml-parser"))
-     .aggregate(graphs)
-     .dependsOn(graphs)
+     .aggregate(structures)
+     .dependsOn(structures)
      .settings(commonSettings: _*)
      .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
 

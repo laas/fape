@@ -7,10 +7,10 @@ import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.exceptions.InconsistencyException;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.core.planning.timelines.TimelinesManager;
+import fr.laas.fape.structures.ISet;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
-import planstack.structures.ISet;
 
 import java.util.*;
 import java.util.function.Predicate;

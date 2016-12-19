@@ -1,8 +1,8 @@
 package fr.laas.fape.constraints.stn
 
-import planstack.graph.core.LabeledEdge
-import planstack.graph.printers.NodeEdgePrinter
 import fr.laas.fape.anml.model.concrete.TPRef
+import fr.laas.fape.graph.core.LabeledEdge
+import fr.laas.fape.graph.printers.NodeEdgePrinter
 
 trait STN {
 
@@ -67,8 +67,6 @@ trait STN {
 
   /** Makes an independent clone of this STN. */
   def deepCopy() : STN
-
-  def exportToDotFile(filename : String, printer:NodeEdgePrinter[Object,Object,LabeledEdge[Object,Object]])
 
   def toStringRepresentation : String = ???
 }

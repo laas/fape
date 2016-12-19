@@ -2,18 +2,19 @@ package fr.laas.fape.planning.core.planning.tasknetworks;
 
 import fr.laas.fape.anml.model.concrete.ActRef;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
+import fr.laas.fape.graph.GraphFactory;
+import fr.laas.fape.graph.core.Edge;
+import fr.laas.fape.graph.core.SimpleUnlabeledDigraph;
+import fr.laas.fape.graph.core.UnlabeledDigraph;
+import fr.laas.fape.graph.printers.NodeEdgePrinter;
 import fr.laas.fape.planning.core.planning.states.Printer;
 import fr.laas.fape.planning.core.planning.states.State;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
 import fr.laas.fape.planning.util.Reporter;
-import planstack.graph.GraphFactory;
-import planstack.graph.core.Edge;
-import planstack.graph.core.SimpleUnlabeledDigraph;
-import planstack.graph.core.UnlabeledDigraph;
-import planstack.graph.printers.NodeEdgePrinter;
-import planstack.structures.Pair;
+import fr.laas.fape.structures.Pair;
+
 
 import java.util.ArrayList;
 import java.util.Collection;
