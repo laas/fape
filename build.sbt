@@ -2,7 +2,7 @@ name := "fape"
 
 // global settings 
 val _organization = "fr.laas.fape"
-val _version = "1.0.0"
+val _version = "1.1-SNAPSHOT"
 val _scalaVersion = "2.12.1"
 
 

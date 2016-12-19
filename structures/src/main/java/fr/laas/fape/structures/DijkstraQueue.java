@@ -15,6 +15,7 @@ public class DijkstraQueue<E> {
     /**
      * Construct the binary heap.
      */
+    @SuppressWarnings("unchecked")
     public DijkstraQueue() {
         this.currentSize = 0;
         this.array = (E[]) new Object[50];
@@ -223,7 +224,6 @@ public class DijkstraQueue<E> {
      * Prints the elements of the heap according to their respective order.
      */
     public void printSorted() {
-
         DijkstraQueue<E> copy = new DijkstraQueue<>(this);
 
         System.out.println();

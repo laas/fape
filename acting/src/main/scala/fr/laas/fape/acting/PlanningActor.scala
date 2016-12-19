@@ -74,13 +74,4 @@ class PlanningActor extends FSM[MState, Option[Planner]] with MessageLogger {
       }
     }
   }
-
-
-  private def planner(initialState: fr.laas.fape.planning.core.planning.states.State) : Planner =
-//    PlannerFactory.getPlannerFromInitialState(
-//      "taskcond",
-//      initialState,
-//      PlannerFactory.defaultPlanSelStrategies,
-//      PlannerFactory.defaultFlawSelStrategies)
-    null
 }
