@@ -4,20 +4,12 @@ import fr.laas.fape.anml.model.concrete.{TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stn.STN
 import planstack.structures.IList
 
-trait STNU[ID] extends STN[TPRef,ID] {
+trait STNU extends STN {
 
   def start : Option[TPRef]
   def end : Option[TPRef]
 
-  final def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int): Unit = {
-    enforceContingent(u, v, min, max, None)
-  }
-
-  def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int, optID:Option[ID])
-
-  final def enforceContingentWithID(u:TPRef, v:TPRef, min:Int, max:Int, constID:ID) = {
-    enforceContingent(u, v, min, max, Some(constID))
-  }
+  def enforceContingent(u:TPRef, v:TPRef, min:Int, max:Int)
 
   def recordTimePoint(tp: TPRef): Int
 
@@ -48,7 +40,7 @@ trait STNU[ID] extends STN[TPRef,ID] {
   def controllability : Controllability
 
   /** Makes an independent clone of this STNU. */
-  override def deepCopy(): STNU[ID]
+  override def deepCopy(): STNU
 
   /** Returns a list of all timepoints in this STNU, associated with a flag giving its status
     * (contingent or controllable. */
@@ -63,5 +55,7 @@ trait STNU[ID] extends STN[TPRef,ID] {
 
   /** Returns a list of all constraints that were added to the STNU.
     * Each constraint is associated with flaw to distinguish between contingent and controllable ones. */
-  def constraints : IList[TemporalConstraint]
+  def getMinimizedConstraints : IList[TemporalConstraint]
+
+  def getOriginalConstraints : IList[TemporalConstraint]
 }

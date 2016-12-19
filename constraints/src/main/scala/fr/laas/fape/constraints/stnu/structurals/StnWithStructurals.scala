@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.stnu.structurals
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.anml.pending.IntExpression
 import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
-import fr.laas.fape.constraints.stnu.{Constraint, Controllability, InconsistentTemporalNetwork, STNU}
+import fr.laas.fape.constraints.stnu.{Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.parser.STNUParser
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
@@ -18,8 +18,8 @@ object StnWithStructurals {
   val INF: Int = Int.MaxValue /2 -1 // set to avoid overflow on addition of int values
   val NIL: Int = 0
 
-  def buildFromString(str: String) : StnWithStructurals[String] = {
-    val stn = new StnWithStructurals[String]()
+  def buildFromString(str: String) : StnWithStructurals = {
+    val stn = new StnWithStructurals()
     val parser = new STNUParser
     parser.parseAll(parser.problem, str) match {
       case parser.Success((tps,constraints, optStart, optEnd),_) => {
@@ -47,7 +47,7 @@ object StnWithStructurals {
 
 import StnWithStructurals._
 
-class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
+class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
                              var timepointByIndex: mutable.ArrayBuffer[TPRef],
                              var dist: DistanceMatrix,
                              var rigidRelations: RigidRelations,
@@ -58,14 +58,14 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
                              var consistent: Boolean,
                              var executed: mutable.Set[TPRef]
                             )
-  extends STNU[ID] with DistanceMatrixListener {
+  extends STNU with DistanceMatrixListener {
 
   /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
   def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
 
-  override def clone() : StnWithStructurals[ID] = new StnWithStructurals[ID](
+  override def clone() : StnWithStructurals = new StnWithStructurals(
     nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
     optStart, optEnd, originalEdges, consistent, executed.clone()
   )
@@ -283,7 +283,7 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   /** Makes an independent clone of this STN. */
-  override def deepCopy(): StnWithStructurals[ID] = clone()
+  override def deepCopy(): StnWithStructurals = clone()
 
   /** Record this time point as the global start of the STN */
   override def recordTimePointAsStart(tp: TPRef): Int = {
@@ -334,9 +334,6 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
         contingentLinks.forall(l => isDelayPossible(l.src, l.dst, l.min.lb) && isConstraintPossible(l.src, l.dst, l.max.ub)))
   }
 
-  /** Removes all constraints that were recorded with this id */
-  override def removeConstraintsWithID(id: ID): Boolean = ???
-
   override protected def addConstraint(u: TPRef, v: TPRef, w: Int): Unit =
     addMaxDelay(u, v, w)
 
@@ -371,9 +368,6 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
       case Some(st) => maxDelay(st, u)
       case None => sys.error("This STN has no start timepoint")
     }
-
-  override protected def addConstraintWithID(u: TPRef, v: TPRef, w: Int, id: ID): Unit =
-    addConstraint(u, v, w)
 
   /**
     * Computes the max delay from a given timepoint to all others using Bellman-Ford on the original edges.
@@ -433,7 +427,7 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
     }
   }
 
-  override def enforceContingent(u: TPRef, v: TPRef, min: Int, max: Int, optID: Option[ID]): Unit = {
+  override def enforceContingent(u: TPRef, v: TPRef, min: Int, max: Int): Unit = {
     addMinDelay(u, v, min)
     addMaxDelay(u, v, max)
     contingentLinks.append(new ContingentConstraint(u, v, IntExpression.lit(min), IntExpression.lit(max)))
@@ -463,7 +457,7 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
 
   override def end: Option[TPRef] = optEnd
 
-  override def constraints : IList[TemporalConstraint] = {
+  override def getMinimizedConstraints : IList[TemporalConstraint] = {
     /** Builds the neighborhood of a groupd of structural timepoints */
     def structuralNeighborhood(neighborhood: Set[TPRef], nextNeighbors: Set[TPRef]): Set[TPRef] = {
       assert(neighborhood.intersect(nextNeighbors).isEmpty)
@@ -490,7 +484,7 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
     def anchorOrSelf(tp: TPRef) =
       if(rigidRelations.isAnchor(tp)) tp else rigidRelations.anchorOf(tp)
 
-    /** Returns all non-structural nodes taht touch the structural neighborhood **/
+    /** Returns all non-structural nodes that touch the structural neighborhood **/
     def connections(tp: TPRef) = {
       assert(tp.genre.isStructural)
       assert(rigidRelations.isAnchor(tp))
@@ -531,5 +525,7 @@ class StnWithStructurals[ID](var nonRigidIndexes: mutable.Map[TPRef,Int],
       pairs.map(p => new MinDelayConstraint(p._2, p._1, IntExpression.lit(minDelay(p._2, p._1)))))
   }
 
-  override def getContingentConstraints: IList[ContingentConstraint] = new IList[ContingentConstraint](contingentLinks.toList)
+  def getOriginalConstraints : IList[TemporalConstraint] = {
+    new IList(originalEdges.map(e => new MinDelayConstraint(e.to, e.from, IntExpression.lit(-e.value))).toList ++ contingentLinks)
+  }
 }

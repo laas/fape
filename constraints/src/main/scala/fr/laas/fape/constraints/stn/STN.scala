@@ -2,8 +2,9 @@ package fr.laas.fape.constraints.stn
 
 import planstack.graph.core.LabeledEdge
 import planstack.graph.printers.NodeEdgePrinter
+import fr.laas.fape.anml.model.concrete.TPRef
 
-trait STN[TPRef,ID] {
+trait STN {
 
   /** Records a new time point in the STN. Returns its ID (which might change) */
   def recordTimePoint(tp:TPRef) : Int
@@ -38,23 +39,12 @@ trait STN[TPRef,ID] {
 
   protected def addConstraint(u:TPRef, v:TPRef, w:Int)
 
-  protected def addConstraintWithID(u:TPRef, v:TPRef, w:Int, id:ID)
-
-  /** Enforces u + d <= v. The constraint is given the ID id that can be used for removal. */
-  final def enforceMinDelayWithID(u:TPRef, v:TPRef, d:Int, id:ID) { addConstraintWithID(v, u, -d, id) }
-
-  /** Enforces u + d >= v. The constraint is given the ID id that can be used for removal. */
-  final def enforceMaxDelayWithID(u:TPRef, v:TPRef, d:Int, id:ID) { addConstraintWithID(u, v, d, id) }
-
   /** Enforce v in [u+min, u+max] */
   final def enforceConstraint(u:TPRef, v:TPRef, min:Int, max:Int) : Boolean = {
     enforceMinDelay(u, v, min)
     enforceMaxDelay(u, v, max)
     isConsistent()
   }
-
-  /** Removes all constraints that were recorded with this id */
-  @Deprecated def removeConstraintsWithID(id:ID) : Boolean
 
   /** Returns True if u can be at the same time or before v */
   final def canBeBefore(u:TPRef, v:TPRef) : Boolean = isConstraintPossible(v, u, 0)
@@ -76,7 +66,7 @@ trait STN[TPRef,ID] {
   def isConsistent() : Boolean
 
   /** Makes an independent clone of this STN. */
-  def deepCopy() : STN[TPRef,ID]
+  def deepCopy() : STN
 
   def exportToDotFile(filename : String, printer:NodeEdgePrinter[Object,Object,LabeledEdge[Object,Object]])
 

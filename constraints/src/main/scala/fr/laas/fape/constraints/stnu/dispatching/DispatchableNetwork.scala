@@ -14,7 +14,7 @@ class WaitConstraint(val src: TPRef, val dst: TPRef, val dist: Int, val label: T
   override def usedVariables: Set[Variable] = Set(src, dst, label)
 }
 
-class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
+class DispatchableNetwork(val stn: StnWithStructurals) {
   import DistanceMatrix.plus
 
   // disable pseudo controllability checking as execution will provide updated information on the occurrence of
@@ -112,12 +112,12 @@ class DispatchableNetwork[ID](val stn: StnWithStructurals[ID]) {
 
 object DispatchableNetwork {
 
-  def getDispatchableNetwork[ID](stn: STNU[ID], necessarilyObservableTimepoints: java.util.Set[TPRef]) : DispatchableNetwork[ID] =
+  def getDispatchableNetwork[ID](stn: STNU, necessarilyObservableTimepoints: java.util.Set[TPRef]) : DispatchableNetwork =
     getDispatchableNetwork(stn, necessarilyObservableTimepoints.asScala.toSet)
 
-  def getDispatchableNetwork[ID](stn: STNU[ID], necessarilyObservableTimepoints: Set[TPRef]) : DispatchableNetwork[ID] = {
+  def getDispatchableNetwork[ID](stn: STNU, necessarilyObservableTimepoints: Set[TPRef]) : DispatchableNetwork = {
     // build network for DC checking
-    val tn = TemporalNetwork.build(stn.constraints.asScala, necessarilyObservableTimepoints, Set())
+    val tn = TemporalNetwork.build(stn.getMinimizedConstraints.asScala, necessarilyObservableTimepoints, Set())
       .withoutInvisible
       .normalForm
 
@@ -136,7 +136,7 @@ object DispatchableNetwork {
     import IntExpression.lit
 
     // build the dispatchable network by extending the source STNU with all constraints infered by DC-Morris
-    val dispatchableNetwork = new DispatchableNetwork(stn.asInstanceOf[StnWithStructurals[ID]])
+    val dispatchableNetwork = new DispatchableNetwork(stn.asInstanceOf[StnWithStructurals])
     for(e <- morris.edges ++ morris.edgesForDispatchability if timepointsFromIDs.contains(e.from) && timepointsFromIDs.contains(e.to)) {
       e match {
         case Req(src, dst, d, _) =>

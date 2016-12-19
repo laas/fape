@@ -63,7 +63,7 @@ public class State implements Reporter {
      *
      */
     public final TimelinesManager tdb;
-    public final MetaCSP<GlobalRef> csp;
+    public final MetaCSP csp;
 
     public final TaskNetworkManager taskNet;
 
@@ -170,7 +170,7 @@ public class State implements Reporter {
         this.earliestExecution = st.earliestExecution;
         isDeadEnd = st.isDeadEnd;
         problemRevision = st.problemRevision;
-        csp = new MetaCSP<>(st.csp);
+        csp = new MetaCSP(st.csp);
         tdb = new TimelinesManager(st.tdb, this); //st.tdb.deepCopy();
         taskNet = st.taskNet.deepCopy();
         supportConstraints = new LinkedList<>(st.supportConstraints);
@@ -566,8 +566,7 @@ public class State implements Reporter {
             csp.addContingentConstraint(
                     cc.src(), cc.dst(),
                     translateToCSPVariable(cc.min()),
-                    translateToCSPVariable(cc.max()),
-                    Option.empty());
+                    translateToCSPVariable(cc.max()));
         } else {
             throw new UnsupportedOperationException("Temporal contrainst: "+tc+" is not supported yet.");
         }
@@ -843,10 +842,6 @@ public class State implements Reporter {
     public boolean canBeStrictlyBefore(TPRef a, TPRef b) { return csp.stn().canBeStrictlyBefore(a, b); }
 
     public boolean enforceConstraint(TPRef a, TPRef b, int min, int max) { return csp.stn().enforceConstraint(a, b, min, max); }
-
-    public boolean removeActionDurationOf(ActRef id) {
-        return csp.removeConstraintsWithID(id);
-    }
 
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 

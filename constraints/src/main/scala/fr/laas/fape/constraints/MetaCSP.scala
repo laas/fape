@@ -6,28 +6,22 @@ import fr.laas.fape.anml.model.ParameterizedStateVariable
 import fr.laas.fape.anml.model.concrete.{RefCounter, TPRef, VarRef}
 import fr.laas.fape.anml.pending.{IntExpression, LStateVariable, StateVariable, Variable}
 import fr.laas.fape.constraints.bindings.{BindingConstraintNetwork, IntBindingListener}
-import fr.laas.fape.constraints.stnu.pseudo.MinimalSTNUManager
-import fr.laas.fape.constraints.stnu.{GenSTNUManager, STNU}
+import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
+import fr.laas.fape.constraints.stnu.STNU
 
 import scala.collection.JavaConverters._
 
-abstract class PendingConstraint[VarRef, TPRef, ID](val from:TPRef, val to:TPRef, val optID:Option[ID]) {
-  def hasID(id:ID) = optID match {
-    case Some(myID) => id == myID
-    case None => false
-  }
-}
+abstract class PendingConstraint[VarRef, TPRef](val from:TPRef, val to:TPRef)
 
-class PendingContingency[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID],
+class PendingContingency[VarRef, TPRef](from:TPRef, to:TPRef,
                                             val min:IntExpression, val max:IntExpression)
-  extends PendingConstraint[VarRef, TPRef, ID](from, to, optID)
+  extends PendingConstraint[VarRef, TPRef](from, to)
 {
-  override def toString = s"$from $to [$min, $max] $optID"
+  override def toString = s"$from $to [$min, $max]"
 }
 
-class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[ID], val value: IntExpression)
-  extends PendingConstraint[VarRef, TPRef, ID](from, to, optID) {
-
+class PendingRequirement[VarRef, TPRef](from:TPRef, to:TPRef, val value: IntExpression)
+  extends PendingConstraint[VarRef, TPRef](from, to) {
 }
 
 
@@ -36,21 +30,20 @@ class PendingRequirement[VarRef, TPRef, ID](from:TPRef, to:TPRef, optID:Option[I
  * @param bindings A binding constraints network.
  * @param stn A simple temporal network.
  * @param varsToConstraints Mixed bindings/STN constraints that have not been propagated yet.
- * @tparam ID Type of identifiers for constraints in the STN.
  */
-class MetaCSP[ID](
+class MetaCSP(
                    val bindings: BindingConstraintNetwork,
-                   val stn: STNU[ID],
-                   protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef,ID]]]
+                   val stn: STNU,
+                   protected[constraints] var varsToConstraints: Map[VarRef, List[PendingConstraint[VarRef,TPRef]]]
                  )
   extends IntBindingListener[VarRef]
 {
 
   bindings.setListener(this)
 
-  def this() = this(new BindingConstraintNetwork(), new MinimalSTNUManager[ID](), Map())
+  def this() = this(new BindingConstraintNetwork(), new StnWithStructurals(), Map())
 
-  def this(toCopy : MetaCSP[ID]) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
+  def this(toCopy : MetaCSP) = this(toCopy.bindings.DeepCopy(), toCopy.stn.deepCopy(), toCopy.varsToConstraints)
 
   def addRequirement(u :TPRef, v:TPRef, value: IntExpression): Unit = {
     if(value.isKnown) {
@@ -58,7 +51,7 @@ class MetaCSP[ID](
     } else {
       // declared and bind necessary variables
       assert(!value.isParameterized)
-      val pending = new PendingRequirement[VarRef, TPRef, ID](u, v, None, value)
+      val pending = new PendingRequirement[VarRef, TPRef](u, v, value)
       for (d <- value.allVariables) {
         varsToConstraints =
           if (varsToConstraints.contains(d))
@@ -76,23 +69,14 @@ class MetaCSP[ID](
     addRequirement(v, u, IntExpression.minus(d))
   }
 
-  def removeConstraintsWithID(id:ID) = {
-    // remove all pending constraints with this ID
-    for((k,v) <- varsToConstraints) {
-      varsToConstraints = varsToConstraints.updated(k, v.filter(constraint => !constraint.hasID(id)))
-    }
-    stn.removeConstraintsWithID(id)
-  }
-
-  def addContingentConstraint(from:TPRef, to:TPRef, min:IntExpression, max:IntExpression,
-                                    optionID:Option[ID]): Unit = {
+  def addContingentConstraint(from:TPRef, to:TPRef, min:IntExpression, max:IntExpression): Unit = {
     require(!min.isParameterized, "This IntExpression should have been cleaned of parameterized state variables first.")
     require(!max.isParameterized, "This IntExpression should have been cleaned of parameterized state variables first.")
 
     if(min.isKnown && max.isKnown) {
-      stn.enforceContingent(from, to, min.get, max.get, optionID)
+      stn.enforceContingent(from, to, min.get, max.get)
     } else {
-      val pending = new PendingContingency[VarRef, TPRef, ID](from, to, optionID, min, max)
+      val pending = new PendingContingency[VarRef, TPRef](from, to, min, max)
       for (v <- List(min.allVariables, max.allVariables).flatten) {
         varsToConstraints += ((v, pending :: varsToConstraints.getOrElse(v, List())))
 
@@ -119,35 +103,24 @@ class MetaCSP[ID](
     }
     if(varsToConstraints contains variable) {
       for (c <- varsToConstraints(variable)) c match {
-        case cont:PendingContingency[VarRef,TPRef,ID] => {
+        case cont:PendingContingency[VarRef,TPRef] => {
           // contingent constraint, add the contingent one if both variable are binded
           val (minLB, minUB) = cont.min.asFunction.apply(bounds)
           val (maxLB, maxUB) = cont.max.asFunction.apply(bounds)
           val bothBinded = minLB == minUB && maxLB == maxUB
           if(bothBinded) {
             // both variables are binded, we add the contingent variable
-            stn.enforceContingent(cont.from, cont.to, minLB, maxLB, cont.optID)
+            stn.enforceContingent(cont.from, cont.to, minLB, maxLB)
           } else {
             // only one variable is binded, simply add a requirement
-            cont.optID match {
-              case Some(id) =>
-                stn.enforceMaxDelayWithID(cont.from, cont.to, maxUB, id)
-                stn.enforceMinDelayWithID(cont.from, cont.to, minLB, id)
-              case None =>
-                stn.enforceMaxDelay(cont.from, cont.to, maxUB)
-                stn.enforceMinDelay(cont.from, cont.to, minLB)
-            }
+            stn.enforceMaxDelay(cont.from, cont.to, maxUB)
+            stn.enforceMinDelay(cont.from, cont.to, minLB)
           }
         }
-        case req:PendingRequirement[VarRef,TPRef,ID] =>
+        case req:PendingRequirement[VarRef,TPRef] =>
           val (minVal, maxVal) = req.value.asFunction.apply(bounds)
-          req.optID match {
           // requirement (only one variable), propagate it
-          case Some(id) =>
-            stn.enforceMaxDelayWithID(req.from, req.to, maxVal, id)
-          case None =>
-            stn.enforceMaxDelay(req.from, req.to, maxVal)
-        }
+          stn.enforceMaxDelay(req.from, req.to, maxVal)
       }
       // remove the entries of this variable from the table
       varsToConstraints = varsToConstraints - variable
@@ -157,7 +130,7 @@ class MetaCSP[ID](
   def propagateMixedConstraints(): Boolean = {
     try {
       for (pendings <- varsToConstraints.values; pending <- pendings) pending match {
-        case req: PendingRequirement[VarRef, TPRef, ID] =>
+        case req: PendingRequirement[VarRef, TPRef] =>
           assert(req.value.allVariables.size == 1)
           // returns the value to appear on the constraint if the variable was to take this value
           def valueWithBinding(varBinding: Int) =
@@ -177,7 +150,7 @@ class MetaCSP[ID](
           val newMax = newDom.map(x => valueWithBinding(x)).max
           stn.enforceMaxDelay(req.from, req.to, newMax)
 
-        case cont: PendingContingency[VarRef, TPRef, ID] =>
+        case cont: PendingContingency[VarRef, TPRef] =>
 //          val minDuration = stn.getMinDelay(cont.from, cont.to)
 //          val maxDuration = stn.getMaxDelay(cont.from, cont.to)
 //          bindings.keepValuesBelowOrEqualTo(cont.min, maxDuration)

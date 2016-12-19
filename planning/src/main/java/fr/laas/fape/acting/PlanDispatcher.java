@@ -7,6 +7,7 @@ import fr.laas.fape.constraints.stnu.dispatching.DispatchableNetwork;
 import fr.laas.fape.planning.core.planning.states.Printer;
 import fr.laas.fape.planning.core.planning.states.State;
 import planstack.structures.IList;
+import planstack.structures.ISet;
 
 import java.util.Map;
 import java.util.Set;
@@ -24,12 +25,12 @@ public class PlanDispatcher {
                 .collect(Collectors.toMap(Action::end, Function.identity()));
 
         Set<TPRef> observable = plan.csp.stn().timepoints().stream().collect(Collectors.toSet());
-        DispatchableNetwork<GlobalRef> dispatchableNetwork = DispatchableNetwork.getDispatchableNetwork(plan.csp.stn(), observable);
+        DispatchableNetwork dispatchableNetwork = DispatchableNetwork.getDispatchableNetwork(plan.csp.stn(), observable);
 
         int currentTime = 0;
         dispatchableNetwork.setExecuted(plan.csp.stn().getStartTimePoint().get(), currentTime);
         while (!dispatchableNetwork.isExecuted(plan.csp.stn().getEndTimePoint().get())) {
-            IList<TPRef> executables = dispatchableNetwork.getExecutables(currentTime);
+            ISet<TPRef> executables = dispatchableNetwork.getExecutables(currentTime);
             for(TPRef tp : executables) {
                 if(actionStarts.containsKey(tp)) {
                     System.out.printf("[%d] Starting: %s\n", currentTime, Printer.action(plan, actionStarts.get(tp)));

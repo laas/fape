@@ -1,9 +1,6 @@
 package fr.laas.fape.planning.core.planning.search.flaws.finders;
 
-import fr.laas.fape.anml.model.concrete.Chronicle;
-import fr.laas.fape.anml.model.concrete.ChronicleAnnotation;
-import fr.laas.fape.anml.model.concrete.ObservationConditionsAnnotation;
-import fr.laas.fape.anml.model.concrete.TPRef;
+import fr.laas.fape.anml.model.concrete.*;
 import fr.laas.fape.constraints.stnu.morris.PartialObservability;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
@@ -29,7 +26,9 @@ public class NeededObservationsFinder implements FlawFinder {
     public List<Flaw> getFlaws(State st, Planner planner) {
         // contingent timepoints are all those with an incoming contingent link
         // when executing, some contingents might have been executed (and their incoming links removed)
-        Stream<TPRef> contingents = st.csp.stn().getContingentConstraints().stream().map(ctg -> ctg.dst());
+        Stream<TPRef> contingents = st.csp.stn().getOriginalConstraints().stream()
+                .filter(c -> c instanceof ContingentConstraint)
+                .map(ctg -> ctg.dst());
 
         if(!st.hasExtension(PartialObservabilityExt.class))
             st.addExtension(new PartialObservabilityExt(new HashSet<>(), new HashMap<>()));
@@ -39,7 +38,7 @@ public class NeededObservationsFinder implements FlawFinder {
                 .filter(tp -> !obs.observed.contains(tp) && obs.observationConditions.containsKey(tp))
                 .collect(Collectors.toSet());
 
-        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().constraints().stream().collect
+        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().getMinimizedConstraints().stream().collect
                 (Collectors.toList()), obs.observed, observable);
 
         if(opt.isPresent())

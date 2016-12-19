@@ -5,7 +5,6 @@ import java.io.{File, PrintWriter}
 import DCMorris._
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.constraints.stnu.structurals.StnWithStructurals
-import fr.laas.fape.constraints.stnu.{Constraint, ElemStatus}
 
 class TemporalNetwork(
                       /** Controllable timepoints */
@@ -122,7 +121,7 @@ class TemporalNetwork(
 object TemporalNetwork {
 
   private def filterRedundantRequirements[ID](constraints: Seq[TemporalConstraint]) : Seq[TemporalConstraint] = {
-    val stn = new StnWithStructurals[ID]()
+    val stn = new StnWithStructurals()
     val contingents = constraints.collect{ case c: ContingentConstraint => c }
     for(c <- contingents) {
       stn.addMinDelay(c.src, c.dst, c.min.get)
