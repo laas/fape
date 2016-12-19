@@ -145,46 +145,6 @@ class ActivityManager extends FSM[MState, MData] with MessageLogger {
     pplan
   }
 
-  def repair(additionalUpdate: Option[String] = None): Unit = {
-//    val MPendingGoals(state, baseUpdates) = this.stateData
-//    val updates = additionalUpdate match {
-//      case Some(update) => update :: baseUpdates
-//      case None => baseUpdates
-//    }
-//    val baseState = stateWithUpdates(state, updates)
-//
-//    log.debug("TRYING REPAIR ON:")
-//    log.debug("=== Temporal databases === \n" + Printer.temporalDatabaseManager(baseState))
-//    log.debug("\n=== Actions ===\n"+Printer.actionsInState(baseState))
-//
-//    currentPlanReq += 1
-//    planningActor ! Kill
-//    planningActor ! TryRepair(baseState, 1.seconds, currentPlanReq)
-  }
-
-  def replan(): Unit = {
-//    val MPendingGoals(state, updates) = this.stateData
-//    val baseState = stateWithUpdates(state.getCleanState, updates)
-//
-//    log.debug("TRYING REPLAN ON:")
-//    log.debug("=== Temporal databases === \n" + Printer.timelines(baseState))
-//    log.debug("\n=== Actions ===\n"+Printer.actionsInState(baseState))
-//
-//    planningActor ! Kill
-//    currentPlanReq += 1
-//    planningActor ! TryReplan(baseState, 10.seconds, currentPlanReq)
-  }
-
-  def stateWithUpdates(baseState: State, updates: Seq[String]) = {
-//    val s = baseState.cc()
-//
-//    for(update <- updates) {
-//      val chronicle = baseState.pb.getChronicleFromAnmlText(update)
-//      s.applyChronicle(chronicle)
-//    }
-//    s
-    null
-  }
 
   private def newProblem = new AnmlProblem()
 }
