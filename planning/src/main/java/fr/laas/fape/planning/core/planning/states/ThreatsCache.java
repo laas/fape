@@ -9,16 +9,16 @@ import java.util.*;
 class ThreatsCache implements StateExtension {
 
     private final HashSet<PotentialThreat> threats;
-    private final State st;
+    private final PartialPlan st;
 
-    ThreatsCache(State initialState) {
-        this.st = initialState;
+    ThreatsCache(PartialPlan initialPartialPlan) {
+        this.st = initialPartialPlan;
         this.threats = new HashSet<>();
 
         st.tdb.getTimelinesStream().forEach(tl -> timelineAdded(tl));
     }
 
-    private ThreatsCache(ThreatsCache toCopy, State st) {
+    private ThreatsCache(ThreatsCache toCopy, PartialPlan st) {
         this.st = st;
         this.threats = new HashSet<>(toCopy.threats);
     }
@@ -42,7 +42,7 @@ class ThreatsCache implements StateExtension {
     }
 
     @Override
-    public StateExtension clone(State st) {
+    public StateExtension clone(PartialPlan st) {
         return new ThreatsCache(this, st);
     }
 
@@ -100,7 +100,7 @@ class ThreatsCache implements StateExtension {
         return verifiedThreats;
     }
 
-    public static boolean isThreatening(State st, Timeline tl1, Timeline tl2) {
+    public static boolean isThreatening(PartialPlan st, Timeline tl1, Timeline tl2) {
         if(tl1 == tl2)
             return false;
 

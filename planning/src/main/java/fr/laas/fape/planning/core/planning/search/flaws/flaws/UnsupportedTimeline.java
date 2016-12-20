@@ -6,7 +6,7 @@ import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.SupportingAction;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.SupportingTimeline;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.exceptions.FAPEException;
@@ -29,14 +29,14 @@ public class UnsupportedTimeline extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, Planner planner) {
+    public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
         if(this.resolvers == null)
-            this.resolvers = st.getResolversForOpenGoal(consumer, actionInsertionStrategy);
+            this.resolvers = plan.getResolversForOpenGoal(consumer, actionInsertionStrategy);
         return this.resolvers;
     }
 
 
-    public static boolean isValidResolver(Resolver res, Timeline consumer, State st) {
+    public static boolean isValidResolver(Resolver res, Timeline consumer, PartialPlan st) {
         if(res instanceof SupportingAction) {
             return isValid((SupportingAction) res, consumer, st);
         } else if(res instanceof SupportingTimeline) {
@@ -51,7 +51,7 @@ public class UnsupportedTimeline extends Flaw {
     }
 
     /** Returns true if the nth change in potentialSupporter (n = changeNumber) can support the consumer timeline */
-    private static boolean isSupporting(Timeline potentialSupporter, int changeNumber, Timeline consumer, State st) {
+    private static boolean isSupporting(Timeline potentialSupporter, int changeNumber, Timeline consumer, PartialPlan st) {
         if(consumer == potentialSupporter)
             return false;
 
@@ -79,7 +79,7 @@ public class UnsupportedTimeline extends Flaw {
         return true;
     }
 
-    private static boolean isValid(SupportingAction supportingAction, Timeline consumer, State st) {
+    private static boolean isValid(SupportingAction supportingAction, Timeline consumer, PartialPlan st) {
         assert consumer.mID == supportingAction.consumerID;
 
         if(!st.isAddable(supportingAction.act))

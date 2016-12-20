@@ -1,12 +1,12 @@
 package fr.laas.fape.planning.util;
 
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 public class TinyLogger {
     public static boolean logging = false;
 
-    public static void LogInfo(State st, String toFormat, Object... objects) {
+    public static void LogInfo(PartialPlan st, String toFormat, Object... objects) {
         if(!logging)
             return;
 

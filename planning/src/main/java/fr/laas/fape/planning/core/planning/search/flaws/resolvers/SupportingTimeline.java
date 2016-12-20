@@ -1,8 +1,8 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.CausalLinkInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 
 public class SupportingTimeline implements Resolver {
@@ -26,10 +26,10 @@ public class SupportingTimeline implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         return new CausalLinkInsertion(
-                state.getTimeline(supporterID).getEvent(supportingComponent),
-                state.getTimeline(consumerID).getFirst().getFirst());
+                partialPlan.getTimeline(supporterID).getEvent(supportingComponent),
+                partialPlan.getTimeline(consumerID).getFirst().getFirst());
     }
 
     @Override

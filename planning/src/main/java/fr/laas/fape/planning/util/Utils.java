@@ -3,7 +3,7 @@ package fr.laas.fape.planning.util;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.exceptions.FAPEException;
 
 import java.io.BufferedReader;
@@ -41,7 +41,7 @@ public class Utils {
      * @param st State In which the problem arise
      * @param planner Planner in which the problem occured
      */
-    public static void showExampleProblemWithFlawComparator(List<Flaw> flaws, Comparator<Flaw> comp, State st, Planner planner) {
+    public static void showExampleProblemWithFlawComparator(List<Flaw> flaws, Comparator<Flaw> comp, PartialPlan st, Planner planner) {
         for(int i=0 ; i< flaws.size() ; i++) {
             Flaw a = flaws.get(i);
             for(int j=i+1 ; j<flaws.size() ; j++) {

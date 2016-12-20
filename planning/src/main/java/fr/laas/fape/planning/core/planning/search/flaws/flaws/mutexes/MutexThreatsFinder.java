@@ -12,7 +12,7 @@ import fr.laas.fape.planning.core.planning.states.Printer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.FluentHolding;
 import lombok.Value;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
@@ -29,26 +29,26 @@ public class MutexThreatsFinder implements FlawFinder {
     }
 
     @Override
-    public List<Flaw> getFlaws(State st, Planner planner) {
+    public List<Flaw> getFlaws(PartialPlan plan, Planner planner) {
         List<Flaw> threats = new LinkedList<>();
 
-        MutexesHandler.Ext ext = st.getExtension(MutexesHandler.Ext.class);
+        MutexesHandler.Ext ext = plan.getExtension(MutexesHandler.Ext.class);
 
         if(!ext.hasUsefulMutexes())
             return threats; // we could only have identified regular threats
 
-        Collection<FluentHolding> cls = st.tdb.getAllCausalLinks();
+        Collection<FluentHolding> cls = plan.tdb.getAllCausalLinks();
 
         Map<FluentHolding, LiftedFluent> lfs = new HashMap<>();
         Map<LiftedFluent, Set<Fluent>> instantiations = new HashMap<>();
         Map<LiftedFluent, Set<Fluent>> mutexes = new HashMap<>();
 
         for(FluentHolding cl : cls) {
-            LiftedFluent lf = getLiftedFluent(cl.getSv(), cl.getValue(), st);
+            LiftedFluent lf = getLiftedFluent(cl.getSv(), cl.getValue(), plan);
             lfs.put(cl, lf);
 
             if(!instantiations.containsKey(lf)) {
-                instantiations.put(lf, DisjunctiveFluent.fluentsOf(cl.getSv(), cl.getValue(), st, st.pl));
+                instantiations.put(lf, DisjunctiveFluent.fluentsOf(cl.getSv(), cl.getValue(), plan, plan.pl));
             }
             if(!mutexes.containsKey(lf)) {
                 for(Fluent instantiation : instantiations.get(lf)) {
@@ -70,8 +70,8 @@ public class MutexThreatsFinder implements FlawFinder {
                 if(!mutexes.get(lf1).containsAll(instantiations.get(lf2)))
                     continue; // not mutex
 
-                boolean firstNecessarilyAfterSecond = !st.canAnyBeStrictlyBefore(cl2.getStart(), cl1.getEnd());
-                boolean secondNecessarilyAfterFirst = !st.canAnyBeStrictlyBefore(cl1.getStart(), cl2.getEnd());
+                boolean firstNecessarilyAfterSecond = !plan.canAnyBeStrictlyBefore(cl2.getStart(), cl1.getEnd());
+                boolean secondNecessarilyAfterFirst = !plan.canAnyBeStrictlyBefore(cl1.getStart(), cl2.getEnd());
 
                 if(firstNecessarilyAfterSecond || secondNecessarilyAfterFirst)
                     continue; // they are not temporally overlapping;
@@ -81,9 +81,9 @@ public class MutexThreatsFinder implements FlawFinder {
         }
 
         if(debug) {
-            System.out.println("State id: "+st.mID);
+            System.out.println("State id: "+ plan.mID);
             for(FluentHolding cl : cls) {
-                System.out.println("  "+Printer.p(st, cl));
+                System.out.println("  "+Printer.p(plan, cl));
             }
         }
 
@@ -92,7 +92,7 @@ public class MutexThreatsFinder implements FlawFinder {
     }
 
 
-    public LiftedFluent getLiftedFluent(ParameterizedStateVariable sv, VarRef value, State st) {
+    public LiftedFluent getLiftedFluent(ParameterizedStateVariable sv, VarRef value, PartialPlan st) {
         return new LiftedFluent(
                 sv.func(),
                 Arrays.stream(sv.args()).map(v -> st.csp.bindings().domID(v)).collect(Collectors.toList()),

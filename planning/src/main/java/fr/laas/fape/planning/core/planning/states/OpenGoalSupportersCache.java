@@ -16,25 +16,25 @@ import java.util.stream.Stream;
 
 class OpenGoalSupportersCache implements StateExtension {
 
-    private final State container;
+    private final PartialPlan container;
     private final Map<ParameterizedStateVariable, TPRef> locked;
 
     private final HashMap<Integer, IList<Resolver>> potentialActionSupporters;
 
-    OpenGoalSupportersCache(State container) {
+    OpenGoalSupportersCache(PartialPlan container) {
         this.container = container;
         potentialActionSupporters = new HashMap<>();
         locked = new HashMap<>();
     }
 
-    private OpenGoalSupportersCache(OpenGoalSupportersCache toCopy, State container) {
+    private OpenGoalSupportersCache(OpenGoalSupportersCache toCopy, PartialPlan container) {
         this.container = container;
         potentialActionSupporters = new HashMap<>(toCopy.potentialActionSupporters);
         locked = new HashMap<>(toCopy.locked);
     }
 
     @Override
-    public StateExtension clone(State st) {
+    public StateExtension clone(PartialPlan st) {
         return new OpenGoalSupportersCache(this, st);
     }
 

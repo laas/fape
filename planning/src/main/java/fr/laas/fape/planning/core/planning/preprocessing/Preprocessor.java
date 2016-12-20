@@ -9,7 +9,7 @@ import fr.laas.fape.planning.core.planning.reachability.ElementaryAction;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.tsp.DTG;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.util.EffSet;
 import fr.laas.fape.planning.util.Pair;
 import fr.laas.fape.structures.IRSet;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class Preprocessor {
 
     private final Planner planner;
-    private final State initialState;
+    private final PartialPlan initialPartialPlan;
 
     public int nextGActionID = 0;
 
@@ -42,11 +42,9 @@ public class Preprocessor {
 
     public int nextTemporalDTGNodeID = 0;
 
-    public Map<Pair<Fluent, Set<GStateVariable>>, Set<AbstractAction>> authorizedSupportersCache = new HashMap<>();
-
-    public Preprocessor(Planner container, State initialState) {
+    public Preprocessor(Planner container, PartialPlan initialPartialPlan) {
         this.planner = container;
-        this.initialState = initialState;
+        this.initialPartialPlan = initialPartialPlan;
     }
 
     public TaskDecompositionsReasoner getTaskDecompositionsReasoner() {
@@ -55,7 +53,7 @@ public class Preprocessor {
 
     public GroundProblem getGroundProblem() {
         if(gPb == null) {
-            gPb = new GroundProblem(initialState.pb, planner);
+            gPb = new GroundProblem(initialPartialPlan.pb, planner);
             for(GAction ga : gPb.allActions()) {
                 if(ga.id >= groundActions.length)
                     groundActions = Arrays.copyOf(groundActions, Math.max(ga.id+1, groundActions.length*2));
@@ -216,8 +214,6 @@ public class Preprocessor {
     public Fluent getFluent(int fluentID) {
         return store.getFluentByID(fluentID);
     }
-
-    public int getApproximateNumFluents() { return store.getHigherID(Fluent.class); }
 
     public IntRepresentation<Fluent> fluentIntRepresentation() {
         return new IntRepresentation<Fluent>() {

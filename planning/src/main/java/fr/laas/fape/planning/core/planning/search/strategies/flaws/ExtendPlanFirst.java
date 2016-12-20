@@ -3,14 +3,14 @@ package fr.laas.fape.planning.core.planning.search.strategies.flaws;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.*;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 public class ExtendPlanFirst implements FlawComparator {
 
-    public final State st;
+    public final PartialPlan st;
     public final Planner planner;
 
-    public ExtendPlanFirst(State st, Planner planner) {
+    public ExtendPlanFirst(PartialPlan st, Planner planner) {
         this.st = st;
         this.planner = planner;
     }

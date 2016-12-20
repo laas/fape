@@ -27,45 +27,45 @@ import java.util.stream.Stream;
  */
 public class Printer {
 
-    public static String p(State st, Object o) { return stateDependentPrint(st, o); }
+    public static String p(PartialPlan plan, Object o) { return stateDependentPrint(plan, o); }
 
-    public static String stateDependentPrint(State st, Object o) {
+    public static String stateDependentPrint(PartialPlan plan, Object o) {
         if(o instanceof Action)
-            return action(st, (Action) o);
+            return action(plan, (Action) o);
         else if(o instanceof VarRef)
-            return variable(st, (VarRef) o);
+            return variable(plan, (VarRef) o);
         else if(o instanceof LogStatement)
-            return statement(st, (LogStatement) o);
+            return statement(plan, (LogStatement) o);
         else if(o instanceof ParameterizedStateVariable)
-            return stateVariable(st, (ParameterizedStateVariable) o);
+            return stateVariable(plan, (ParameterizedStateVariable) o);
         else if(o instanceof Timeline)
-            return timeline(st, (Timeline) o);
+            return timeline(plan, (Timeline) o);
         else if(o instanceof Reporter)
             return ((Reporter) o).report();
         else if(o instanceof FluentHolding)
-            return fluent(st, ((FluentHolding) o).getSv(), ((FluentHolding) o).getValue());
+            return fluent(plan, ((FluentHolding) o).getSv(), ((FluentHolding) o).getValue());
 
         // Flaws
         else if(o instanceof Threat)
-            return "Threat: "+ inlineTimeline(st, ((Threat) o).db1)+" && "+ inlineTimeline(st, ((Threat) o).db2);
+            return "Threat: "+ inlineTimeline(plan, ((Threat) o).db1)+" && "+ inlineTimeline(plan, ((Threat) o).db2);
         else if(o instanceof UnboundVariable)
-            return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(st, ((UnboundVariable) o).var);
+            return "Unbound: "+((UnboundVariable) o).var.id()+":"+variable(plan, ((UnboundVariable) o).var);
         else if(o instanceof UnrefinedTask)
-            return "UnsupportedTaskCondition: "+taskCondition(st, ((UnrefinedTask) o).task);
+            return "UnsupportedTaskCondition: "+taskCondition(plan, ((UnrefinedTask) o).task);
         else if(o instanceof UnsupportedTimeline)
-            return "Unsupported: "+ inlineTimeline(st, ((UnsupportedTimeline) o).consumer);
+            return "Unsupported: "+ inlineTimeline(plan, ((UnsupportedTimeline) o).consumer);
         else if(o instanceof UnmotivatedAction)
-            return "Unmotivated: "+action(st, ((UnmotivatedAction) o).act);
+            return "Unmotivated: "+action(plan, ((UnmotivatedAction) o).act);
         else if(o instanceof MutexThreat)
-            return "MutexThreat: "+fluent(st, ((MutexThreat) o).getCl1().getSv(), ((MutexThreat) o).getCl1().getValue())+" <-> "+
-                    fluent(st, ((MutexThreat) o).getCl2().getSv(), ((MutexThreat) o).getCl2().getValue());
+            return "MutexThreat: "+fluent(plan, ((MutexThreat) o).getCl1().getSv(), ((MutexThreat) o).getCl1().getValue())+" <-> "+
+                    fluent(plan, ((MutexThreat) o).getCl2().getSv(), ((MutexThreat) o).getCl2().getValue());
 
         // Resolvers
         else if(o instanceof TemporalSeparation)
-            return "TemporalSeparation: "+ inlineTimeline(st, ((TemporalSeparation) o).firstDbID)+" && "
-                    + inlineTimeline(st, ((TemporalSeparation) o).secondDbID);
+            return "TemporalSeparation: "+ inlineTimeline(plan, ((TemporalSeparation) o).firstDbID)+" && "
+                    + inlineTimeline(plan, ((TemporalSeparation) o).secondDbID);
         else if(o instanceof SupportingTimeline)
-            return "SupportingDatabase: "+ inlineTimeline(st, st.tdb.getTimeline(((SupportingTimeline) o).supporterID));
+            return "SupportingDatabase: "+ inlineTimeline(plan, plan.tdb.getTimeline(((SupportingTimeline) o).supporterID));
         else if(o instanceof VarBinding)
             return "VarBinding: "+((VarBinding) o).var.id()+"="+((VarBinding) o).value;
         else if(o instanceof BindingSeparation)
@@ -73,31 +73,31 @@ public class Printer {
         else if(o instanceof NewTaskSupporter)
             return "NewTaskSupporter: "+((NewTaskSupporter) o).abs.name();
         else if(o instanceof ExistingTaskSupporter)
-            return "ExistingTaskSupporter: "+action(st, ((ExistingTaskSupporter) o).act);
+            return "ExistingTaskSupporter: "+action(plan, ((ExistingTaskSupporter) o).act);
         else if(o instanceof FutureTaskSupport) {
-            return "FutureTaskSupport: "+taskCondition(st, ((FutureTaskSupport) o).getTask());
+            return "FutureTaskSupport: "+taskCondition(plan, ((FutureTaskSupport) o).getTask());
         }
         else
             return o.toString();
     }
 
-    public static String taskNetwork(State st, TaskNetworkManager tn) {
+    public static String taskNetwork(PartialPlan plan, TaskNetworkManager tn) {
         StringBuilder sb = new StringBuilder();
         sb.append("Tasks: ");
         for(Action a : tn.getAllActions()) {
-            sb.append(action(st, a));
+            sb.append(action(plan, a));
             sb.append("  ");
         }
         sb.append("\n");
         return sb.toString();
     }
 
-    public static String action(State st, Action act) {
+    public static String action(PartialPlan plan, Action act) {
         if(act == null)
             return "null";
 
         String ret = act.name()+"(";
-        ret += String.join(", ", act.args().stream().map(v -> variable(st, v)).collect(Collectors.toList()));
+        ret += String.join(", ", act.args().stream().map(v -> variable(plan, v)).collect(Collectors.toList()));
 
         ret += ") (id:"+act.id()+")";
         return ret;
@@ -127,34 +127,34 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String actionsInState(final State st) {
-        List<Action> acts = new LinkedList<>(st.getAllActions());
+    public static String actionsInPlan(final PartialPlan plan) {
+        List<Action> acts = new LinkedList<>(plan.getAllActions());
         Collections.sort(acts, (Action a1, Action a2) ->
-                st.getEarliestStartTime(a1.start()) - st.getEarliestStartTime(a2.start()));
+                plan.getEarliestStartTime(a1.start()) - plan.getEarliestStartTime(a2.start()));
 
         List<List<String>> table = new LinkedList<>();
 
         for(Action a : acts) {
-            int start = st.getEarliestStartTime(a.start());
-            int earliestEnd = st.getEarliestStartTime(a.end());
-            String name = Printer.action(st, a);
+            int start = plan.getEarliestStartTime(a.start());
+            int earliestEnd = plan.getEarliestStartTime(a.end());
+            String name = Printer.action(plan, a);
             switch (a.status()) {
                 case EXECUTED:
                     table.add(Arrays.asList(start+":", name, "started: "+start, "ended: "+earliestEnd+" [EXECUTED]"));
                     break;
                 case EXECUTING:
-                    if(st.getDurationBounds(a).nonEmpty()) {
-                        int min = st.getDurationBounds(a).get()._1();
-                        int max = st.getDurationBounds(a).get()._2();
+                    if(plan.getDurationBounds(a).nonEmpty()) {
+                        int min = plan.getDurationBounds(a).get()._1();
+                        int max = plan.getDurationBounds(a).get()._2();
                         table.add(Arrays.asList(start+":", name, "started: "+start, "duration in ["+min+","+max+"] [EXECUTING]"));
                     } else {
                         table.add(Arrays.asList(start+":", name, "started: "+start, "min-duration: "+(earliestEnd-start)+" [EXECUTING]"));
                     }
                     break;
                 case PENDING:
-                    if(st.getDurationBounds(a).nonEmpty()) {
-                        int min = st.getDurationBounds(a).get()._1();
-                        int max = st.getDurationBounds(a).get()._2();
+                    if(plan.getDurationBounds(a).nonEmpty()) {
+                        int min = plan.getDurationBounds(a).get()._1();
+                        int max = plan.getDurationBounds(a).get()._2();
                         table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "duration in ["+min+","+max+"]"));
                     } else {
                         table.add(Arrays.asList(start+":", name, "earliest-start: "+start, "min-duration: "+(earliestEnd-start)));
@@ -166,71 +166,71 @@ public class Printer {
         return tableAsString(table, 3);
     }
 
-    public static String taskCondition(State st, Task task) {
+    public static String taskCondition(PartialPlan plan, Task task) {
         if(task == null)
             return "null";
 
         String ret = task.name()+"(";
         for(VarRef arg : task.args()) {
-            ret += variable(st, arg);
+            ret += variable(plan, arg);
         }
         return ret + ")";
     }
 
-    public static String variable(State st, VarRef var) {
-        if(st.domainSizeOf(var) == 1)
-            return st.domainOf(var).get(0);
+    public static String variable(PartialPlan plan, VarRef var) {
+        if(plan.domainSizeOf(var) == 1)
+            return plan.domainOf(var).get(0);
         else
-            return st.csp.bindings().domainAsString(var);
+            return plan.csp.bindings().domainAsString(var);
     }
 
-    public static String bindedVariable(State st, VarRef var) {
-        assert st.domainSizeOf(var) == 1;
-        return st.domainOf(var).get(0);
+    public static String boundVariable(PartialPlan plan, VarRef var) {
+        assert plan.domainSizeOf(var) == 1;
+        return plan.domainOf(var).get(0);
     }
 
-    public static String statement(State st, LogStatement s) {
-        String ret = stateVariable(st, s.sv());
+    public static String statement(PartialPlan plan, LogStatement s) {
+        String ret = stateVariable(plan, s.sv());
         if(s instanceof Persistence) {
-            ret += " == " + variable(st, s.endValue());
+            ret += " == " + variable(plan, s.endValue());
         } else if(s instanceof Assignment) {
-            ret += " := " + variable(st, s.endValue());
+            ret += " := " + variable(plan, s.endValue());
         } else if(s instanceof Transition) {
-            ret += " == " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue());
+            ret += " == " + variable(plan, s.startValue()) +" :-> " +variable(plan, s.endValue());
         }
 
         return ret;
     }
 
-    public static String stateVariable(State st, ParameterizedStateVariable sv) {
+    public static String stateVariable(PartialPlan plan, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
-        ret += String.join(", ", Stream.of(sv.args()).map(v -> variable(st, v)).collect(Collectors.toSet()));
+        ret += String.join(", ", Stream.of(sv.args()).map(v -> variable(plan, v)).collect(Collectors.toSet()));
         return ret + ")";
     }
 
-    public static String fluent(State st, ParameterizedStateVariable sv, VarRef value) {
-        return stateVariable(st, sv)+"="+variable(st, value);
+    public static String fluent(PartialPlan plan, ParameterizedStateVariable sv, VarRef value) {
+        return stateVariable(plan, sv)+"="+variable(plan, value);
     }
 
-    public static String groundStateVariable(State st, ParameterizedStateVariable sv) {
+    public static String groundStateVariable(PartialPlan plan, ParameterizedStateVariable sv) {
         String ret = sv.func().name() + "(";
         for(VarRef arg : sv.args()) {
-            ret += bindedVariable(st, arg);
+            ret += boundVariable(plan, arg);
         }
         return ret + ")";
     }
 
-    public static String timelines(final State st) {
+    public static String timelines(final PartialPlan plan) {
         HashMap<String, List<Timeline>> groupedDBs = new HashMap<>();
-        for(Timeline tdb : st.getTimelines()) {
-            if(!groupedDBs.containsKey(stateVariable(st, tdb.stateVariable))) {
-                groupedDBs.put(stateVariable(st, tdb.stateVariable), new LinkedList<Timeline>());
+        for(Timeline tdb : plan.getTimelines()) {
+            if(!groupedDBs.containsKey(stateVariable(plan, tdb.stateVariable))) {
+                groupedDBs.put(stateVariable(plan, tdb.stateVariable), new LinkedList<Timeline>());
             }
-            groupedDBs.get(stateVariable(st, tdb.stateVariable)).add(tdb);
+            groupedDBs.get(stateVariable(plan, tdb.stateVariable)).add(tdb);
         }
         for(List<Timeline> dbs : groupedDBs.values()) {
             Collections.sort(dbs, (Timeline db1, Timeline db2) ->
-                    st.getEarliestStartTime(db1.getConsumeTimePoint()) - st.getEarliestStartTime(db2.getConsumeTimePoint()));
+                    plan.getEarliestStartTime(db1.getConsumeTimePoint()) - plan.getEarliestStartTime(db2.getConsumeTimePoint()));
         }
         List<List<String>> table = new LinkedList<>();
 
@@ -249,17 +249,17 @@ public class Printer {
                         if(newDb) line.add("|");
                         else line.add("");
                         newDb = false;
-                        line.add("["+st.getEarliestStartTime(s.start())+","+st.getEarliestStartTime(s.end())+"]");
+                        line.add("["+plan.getEarliestStartTime(s.start())+","+plan.getEarliestStartTime(s.end())+"]");
                         if(s instanceof Persistence) {
-                            line.add("== " + variable(st, s.endValue()));
+                            line.add("== " + variable(plan, s.endValue()));
                         } else if(s instanceof Assignment) {
-                            line.add(":= " + variable(st, s.endValue()));
+                            line.add(":= " + variable(plan, s.endValue()));
                         } else if(s instanceof Transition) {
-                            line.add("== " + variable(st, s.startValue()) +" :-> " +variable(st, s.endValue()));
+                            line.add("== " + variable(plan, s.startValue()) +" :-> " +variable(plan, s.endValue()));
                         }
-                        Optional<Action> act = st.getActionContaining(s);
+                        Optional<Action> act = plan.getActionContaining(s);
                         if(act.isPresent())
-                            line.add("  From: "+action(st, act.get()));
+                            line.add("  From: "+action(plan, act.get()));
                         else
                             line.add("  From: problem definition");
 
@@ -273,7 +273,7 @@ public class Printer {
         return tableAsString(table,1);
     }
 
-    public static String timeline(State st, Timeline db) {
+    public static String timeline(PartialPlan st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append("  id:"+db.mID+"\n");
@@ -298,11 +298,11 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String inlineTimeline(State st, int dbID) {
+    public static String inlineTimeline(PartialPlan st, int dbID) {
         return inlineTimeline(st, st.getTimeline(dbID));
     }
 
-    public static String inlineTimeline(State st, Timeline db) {
+    public static String inlineTimeline(PartialPlan st, Timeline db) {
         StringBuilder sb = new StringBuilder();
         sb.append(stateVariable(st, db.stateVariable));
         sb.append(":"+db.mID+"  ");
@@ -322,7 +322,7 @@ public class Printer {
         return sb.toString();
     }
 
-    public static String timepoint(State st, TPRef tp) {
+    public static String timepoint(PartialPlan st, TPRef tp) {
         if(tp == st.pb.start())
             return "Start";
         else if(tp == st.pb.end())
@@ -350,7 +350,7 @@ public class Printer {
             throw new FAPEException("Error: time point does not belong to this interval.");
     }
 
-    public static TPRef correspondingTimePoint(State st, int stnId) {
+    public static TPRef correspondingTimePoint(PartialPlan st, int stnId) {
         // TODO
         throw new FAPEException("Find a new way map timepoint with IDs.");/*
         for(Map.Entry<TPRef,Integer> entry : st.csp.stn().ids.entrySet()) {
@@ -360,7 +360,7 @@ public class Printer {
         return null;*/
     }
 
-    public static TemporalInterval containingInterval(State st, TPRef tp) {
+    public static TemporalInterval containingInterval(PartialPlan st, TPRef tp) {
         for(Action act : st.taskNet.getAllActions()) {
             if(intervalContains(tp, act))
                 return act;
@@ -379,7 +379,7 @@ public class Printer {
 
 
 
-    public static String stnId(State st, int stnID) {
+    public static String stnId(PartialPlan st, int stnID) {
         TPRef tp = correspondingTimePoint(st, stnID);
         if(tp == null)
             return "unknown";
@@ -400,7 +400,7 @@ public class Printer {
 
     }
 
-    public static String constraints(State st) {
+    public static String constraints(PartialPlan st) {
         return st.csp.bindings().report();
     }
 }

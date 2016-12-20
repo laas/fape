@@ -6,7 +6,7 @@ import fr.laas.fape.planning.core.planning.grounding.GStateVariable;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG.*;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.structures.IDijkstraQueue;
 
 
@@ -21,7 +21,7 @@ public class TemporalDTGRoutePlanner implements TSPRoutePlanner {
 
 
     @Override
-    public Result getPlan(Collection<Fluent> targets, PartialState ps, State st) {
+    public Result getPlan(Collection<Fluent> targets, PartialState ps, PartialPlan st) {
         Preprocessor pp = st.pl.preprocessor;
 
         IDijkstraQueue<TemporalDTG.Node> q = new IDijkstraQueue<>(pp.store.getIntRep(TemporalDTG.Node.class));

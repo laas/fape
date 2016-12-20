@@ -13,7 +13,7 @@ import fr.laas.fape.planning.core.planning.timelines.Timeline;
 public interface StateExtension {
 
     /** Builds a clone of this extension that will attached to the state given in parameter */
-    StateExtension clone(State st);
+    StateExtension clone(PartialPlan st);
 
     default void timelineAdded(Timeline tl) {}
     default void timelineRemoved(Timeline tl) {}

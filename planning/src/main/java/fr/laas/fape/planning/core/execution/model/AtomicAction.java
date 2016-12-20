@@ -3,7 +3,7 @@ package fr.laas.fape.planning.core.execution.model;
 import fr.laas.fape.anml.model.concrete.ActRef;
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.VarRef;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -23,7 +23,7 @@ public class AtomicAction {
      * @param maxDuration THe maximal expected duration
      * @param st State in which the action appears. It is used to translate global variables to actual problem instances.
      */
-    public AtomicAction(Action action, int startTime, int minDuration, int maxDuration, State st) {
+    public AtomicAction(Action action, int startTime, int minDuration, int maxDuration, PartialPlan st) {
         id = action.id();
         name = action.name();
         mStartTime = startTime;

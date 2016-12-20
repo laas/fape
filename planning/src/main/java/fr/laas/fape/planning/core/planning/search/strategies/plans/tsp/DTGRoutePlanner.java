@@ -5,7 +5,7 @@ import fr.laas.fape.planning.core.planning.grounding.Fluent;
 import fr.laas.fape.planning.core.planning.grounding.GAction.*;
 import fr.laas.fape.planning.core.planning.grounding.GStateVariable;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.structures.IDijkstraQueue;
 
 import java.util.*;
@@ -16,7 +16,7 @@ public class DTGRoutePlanner implements TSPRoutePlanner {
 
 
     @Override
-    public Result getPlan(Collection<Fluent> targets, PartialState ps, State st) {
+    public Result getPlan(Collection<Fluent> targets, PartialState ps, PartialPlan st) {
         Preprocessor pp = st.pl.preprocessor;
 
         IDijkstraQueue<Fluent> q = new IDijkstraQueue<>(pp.store.getIntRep(Fluent.class));

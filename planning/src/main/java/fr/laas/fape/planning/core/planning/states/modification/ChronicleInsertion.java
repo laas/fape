@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.states.modification;
 
 import fr.laas.fape.anml.model.concrete.Chronicle;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import lombok.Value;
 
 import java.util.Collection;
@@ -9,13 +9,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Value
-public class ChronicleInsertion implements StateModification {
+public class ChronicleInsertion implements PartialPlanModification {
 
     public final Chronicle chronicle;
 
     @Override
-    public void apply(State st, boolean isFastForwarding) {
-        st.apply(chronicle);
+    public void apply(PartialPlan plan, boolean isFastForwarding) {
+        plan.apply(chronicle);
     }
 
     @Override

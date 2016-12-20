@@ -6,7 +6,7 @@ import fr.laas.fape.planning.core.planning.grounding.GAction;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
 import fr.laas.fape.planning.core.planning.search.Handler;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.planning.util.Pair;
 import fr.laas.fape.structures.IRSet;
@@ -35,7 +35,7 @@ public class MutexesHandler extends Handler {
         }
 
         @Override
-        public StateExtension clone(State st) {
+        public StateExtension clone(PartialPlan st) {
             return this;
         }
     }
@@ -44,7 +44,7 @@ public class MutexesHandler extends Handler {
     HashMap<GAction, Set<Fluent>> eDeletesLists = new HashMap<>();
     boolean hasUsefulMutexes = false;
 
-    public void stateBindedToPlanner(State st, Planner pl) {
+    public void stateBindedToPlanner(PartialPlan st, Planner pl) {
         pl.options.flawFinders.add(new MutexThreatsFinder());
     }
 
@@ -82,7 +82,7 @@ public class MutexesHandler extends Handler {
     /**
      * Flow based mutexes identification.
      */
-    public void getMutexes(State st) {
+    public void getMutexes(PartialPlan st) {
         Preprocessor pp = st.pl.preprocessor;
         IntRep<Fluent> fluentRep = pp.store.getIntRep(Fluent.class);
 
@@ -205,7 +205,7 @@ public class MutexesHandler extends Handler {
     }
 
     @Override
-    protected void apply(State st, StateLifeTime time, Planner planner) {
+    protected void apply(PartialPlan st, StateLifeTime time, Planner planner) {
         this.planner = planner;
         if (time == StateLifeTime.SELECTION) {
             if (!st.hasExtension(Ext.class)) {
@@ -218,7 +218,7 @@ public class MutexesHandler extends Handler {
     }
 
     @Override
-    public void actionInserted(Action act, State st, Planner pl) {
+    public void actionInserted(Action act, PartialPlan st, Planner pl) {
 
     }
 }

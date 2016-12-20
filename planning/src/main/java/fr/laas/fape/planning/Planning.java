@@ -9,7 +9,7 @@ import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
 import fr.laas.fape.planning.core.planning.search.flaws.finders.NeededObservationsFinder;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.mutexes.MutexesHandler;
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.exceptions.InconsistencyException;
 import fr.laas.fape.constraints.stnu.Controllability;
@@ -355,11 +355,11 @@ public class Planning {
                 if(config.getBoolean("mutex")) {
                     options.handlers.add(new MutexesHandler());
                 }
-                State iniState = null;
+                PartialPlan iniPartialPlan = null;
                 Planner planner = null;
                 try {
-                    iniState = new State(pb, Controllability.PSEUDO_CONTROLLABILITY);
-                    planner = new Planner(iniState, options);
+                    iniPartialPlan = new PartialPlan(pb, Controllability.PSEUDO_CONTROLLABILITY);
+                    planner = new Planner(iniPartialPlan, options);
                 } catch (InconsistencyException e) {
                     System.out.println("Inconsistency in the problem definition");
                     e.printStackTrace();
@@ -367,7 +367,7 @@ public class Planning {
                     System.exit(1);
                 }
                 boolean failure;
-                State sol;
+                PartialPlan sol;
                 try {
                     planningStart = System.currentTimeMillis();
                     sol = planner.search(planningStart + 1000 * maxtime, maxDepth, incrementalDeepening);
@@ -396,14 +396,14 @@ public class Planning {
                 }
 
                 if (!failure && !config.getBoolean("quiet")) {
-                    System.out.println("Expanded states: "+planner.numExpandedStates);
-                    System.out.println("Generated states: "+planner.numGeneratedStates);
-                    System.out.println("Fast-Forwarded states: "+planner.numFastForwardedStates);
+                    System.out.println("Expanded states: "+planner.numExpandedPartialPlans);
+                    System.out.println("Generated states: "+planner.numGeneratedPartialPlans);
+                    System.out.println("Fast-Forwarded states: "+planner.numFastForwardedPartialPlans);
                     System.out.println("Makespan: "+sol.getMakespan());
                     System.out.println("Num actions: "+sol.getAllActions().size());
                     System.out.println();
                     System.out.println("=== Timelines === \n" + Printer.timelines(sol));
-                    System.out.println("\n=== Actions ===\n"+Printer.actionsInState(sol));
+                    System.out.println("\n=== Actions ===\n"+Printer.actionsInPlan(sol));
                 }
 
                 final String reachStr = config.getString("reachability-graph");
@@ -415,9 +415,9 @@ public class Planning {
                                 + time + ", "
                                 + planningTime + ", "
                                 + anmlFile + ", "
-                                + planner.numExpandedStates + ", "
-                                + planner.numGeneratedStates + ", "
-                                + planner.numFastForwardedStates + ", "
+                                + planner.numExpandedPartialPlans + ", "
+                                + planner.numGeneratedPartialPlans + ", "
+                                + planner.numFastForwardedPartialPlans + ", "
                                 + (failure ? "-" : sol.getDepth()) + ", "
                                 + Utils.print(planner.options.flawSelStrategies, ":") + ", "
                                 + Utils.print(planner.options.planSelStrategies, ":") + ", "

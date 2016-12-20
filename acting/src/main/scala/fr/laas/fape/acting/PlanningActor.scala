@@ -6,7 +6,7 @@ import fr.laas.fape.acting.actors.patterns.MessageLogger
 import fr.laas.fape.planning.Planning
 import fr.laas.fape.planning.core.planning.planner.Planner.EPlanState
 import fr.laas.fape.planning.core.planning.planner.{Planner, PlanningOptions}
-import fr.laas.fape.planning.core.planning.states.State
+import fr.laas.fape.planning.core.planning.states.PartialPlan
 import fr.laas.fape.planning.exceptions.PlanningInterruptedException
 import fr.laas.fape.planning.util.TinyLogger
 
@@ -25,12 +25,12 @@ object PlanningActor {
 
   sealed trait PlannerMessage
   object GetPlan extends PlannerMessage
-  case class GetPlan(state: State, forHowLong: FiniteDuration, reqID: Int)
-  case class TryRepair(state: State, forHowLong: FiniteDuration, numPlanReq: Int) extends PlannerMessage
-  case class TryReplan(state: State, forHowLong: FiniteDuration, numPlanReq: Int) extends PlannerMessage
+  case class GetPlan(state: PartialPlan, forHowLong: FiniteDuration, reqID: Int)
+  case class TryRepair(state: PartialPlan, forHowLong: FiniteDuration, numPlanReq: Int) extends PlannerMessage
+  case class TryReplan(state: PartialPlan, forHowLong: FiniteDuration, numPlanReq: Int) extends PlannerMessage
   case object RepairFailed extends PlannerMessage
   case object ReplanFailed extends PlannerMessage
-  case class PlanFound(state: State, numPlanReq: Int) extends PlannerMessage
+  case class PlanFound(state: PartialPlan, numPlanReq: Int) extends PlannerMessage
   case class NoPlanExists(reqID: Int) extends PlannerMessage
   case class PlanningTimedOut(reqID: Int) extends PlannerMessage
 }

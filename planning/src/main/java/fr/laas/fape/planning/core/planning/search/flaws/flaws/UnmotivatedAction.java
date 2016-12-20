@@ -9,7 +9,7 @@ import fr.laas.fape.planning.core.planning.preprocessing.TaskDecompositionsReaso
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.MotivatedSupport;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.util.Pair;
 
 import java.util.LinkedList;
@@ -40,25 +40,25 @@ public class UnmotivatedAction extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, Planner planner) {
+    public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
         if(resolvers != null)
             return resolvers;
 
         resolvers = new LinkedList<>();
-        assert(st.taskNet.getNumOpenTasks() == st.getOpenTasks().size());
+        assert(plan.taskNet.getNumOpenTasks() == plan.getOpenTasks().size());
 
         // any task condition unifiable with act
-        for(Task task : st.getOpenTasks()) {
-            if(st.canSupport(act, task))
+        for(Task task : plan.getOpenTasks()) {
+            if(plan.canSupport(act, task))
                 resolvers.add(new ExistingTaskSupporter(task, act));
         }
 
-        TaskDecompositionsReasoner preproc = st.pl.preprocessor.getTaskDecompositionsReasoner();
+        TaskDecompositionsReasoner preproc = plan.pl.preprocessor.getTaskDecompositionsReasoner();
 
         // resolvers: any action we add to the plan and that might provide (through decomposition)
         // a task condition
         for(Pair<AbstractAction, LActRef> insertion : preproc.supportersForMotivatedAction(act)) {
-            if(st.isAddable(insertion.value1))
+            if(plan.isAddable(insertion.value1))
                 resolvers.add(new MotivatedSupport(act, insertion.value1, insertion.value2));
         }
 

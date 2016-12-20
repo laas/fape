@@ -3,7 +3,7 @@ package fr.laas.fape.planning.core.planning.search.flaws.flaws;
 
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.List;
 
@@ -25,15 +25,15 @@ public abstract class Flaw {
      * Returns the number of resolvers for this flaws.
      * This method is advised when the number of resolver is needed since it does not
      * necessarily generate all resolvers (thus reducing the stress on the garbage collection).
-     * @param st State used to look for resolvers.
+     * @param plan State used to look for resolvers.
      * @param planner The planner instance from which this method is called.
      *                It can be used to look for options as well as general knowledge
      *                on the problem (typically coming from preprocessing)
      * @return Number of resolvers for this flaw.
      */
-    public int getNumResolvers(State st, Planner planner) {
+    public int getNumResolvers(PartialPlan plan, Planner planner) {
         if(resolvers == null)
-            resolvers = getResolvers(st, planner);
+            resolvers = getResolvers(plan, planner);
         return resolvers.size();
     }
 
@@ -42,13 +42,13 @@ public abstract class Flaw {
      * Best effort is done to make sure all resolvers are applicable in the state which might
      * result in expensive checks. Also some resolvers might not be applicable.
      *
-     * @param st State used to look for resolvers.
+     * @param plan State used to look for resolvers.
      * @param planner The planner instance from which this method is called.
      *                It can be used to look for options as well as general knowledge
      *                on the problem (typically coming from preprocessing)
      * @return A list of resolvers.
      */
-    public abstract List<Resolver> getResolvers(State st, Planner planner);
+    public abstract List<Resolver> getResolvers(PartialPlan plan, Planner planner);
 
     public abstract int compareTo(Flaw o);
 }

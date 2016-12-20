@@ -1,6 +1,5 @@
 package fr.laas.fape.planning.core.planning.tasknetworks;
 
-import fr.laas.fape.anml.model.concrete.ActRef;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
 import fr.laas.fape.graph.GraphFactory;
 import fr.laas.fape.graph.core.Edge;
@@ -8,7 +7,7 @@ import fr.laas.fape.graph.core.SimpleUnlabeledDigraph;
 import fr.laas.fape.graph.core.UnlabeledDigraph;
 import fr.laas.fape.graph.printers.NodeEdgePrinter;
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
@@ -406,7 +405,7 @@ public class TaskNetworkManager implements Reporter {
 
 
 
-    public void exportToDot(final State st, String filename) {
+    public void exportToDot(final PartialPlan st, String filename) {
         class TNPrinter extends NodeEdgePrinter<TNNode, Object, Edge<TNNode>> {
             @Override
             public String printNode(TNNode n) {

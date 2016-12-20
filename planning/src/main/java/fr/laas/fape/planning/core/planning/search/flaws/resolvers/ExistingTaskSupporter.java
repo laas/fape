@@ -3,8 +3,8 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
-import fr.laas.fape.planning.core.planning.states.State;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.states.modification.TaskRefinement;
 
 /**
@@ -24,7 +24,7 @@ public class ExistingTaskSupporter implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         return new TaskRefinement(task, act);
     }
 

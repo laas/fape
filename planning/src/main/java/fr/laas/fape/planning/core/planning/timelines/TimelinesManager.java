@@ -6,7 +6,7 @@ import fr.laas.fape.anml.model.concrete.statements.LogStatement;
 import fr.laas.fape.anml.model.concrete.statements.Persistence;
 import fr.laas.fape.anml.model.concrete.statements.Transition;
 import fr.laas.fape.planning.core.planning.planner.Planner;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.planning.util.Reporter;
 
@@ -20,14 +20,14 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
 
     /** All timelines, indexed by their ID */
     private Timeline[] timelines;
-    private final State listener;
+    private final PartialPlan listener;
 
     private final List<Timeline> consumers;
 
     private int nextTimelineID;
 
-    public TimelinesManager(TimelinesManager toCopy, State containingState) {
-        listener = containingState;
+    public TimelinesManager(TimelinesManager toCopy, PartialPlan containingPartialPlan) {
+        listener = containingPartialPlan;
         this.consumers = new LinkedList<>(toCopy.consumers);
         this.timelines = Arrays.copyOf(toCopy.timelines, toCopy.timelines.length);
         this.nextTimelineID = toCopy.nextTimelineID;
@@ -38,9 +38,9 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         }
     }
 
-    public TimelinesManager(State containingState) {
+    public TimelinesManager(PartialPlan containingPartialPlan) {
         timelines = new Timeline[100];
-        listener = containingState;
+        listener = containingPartialPlan;
         consumers = new LinkedList<>();
     }
 
@@ -172,7 +172,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
      * @param included timeline that will disappear, all of its components being included in tdb
      * @param after a chain component of tdb after which the chain of included will be added
      */
-    public void insertTimelineAfter(State st, Timeline tdb, Timeline included, ChainComponent after) {
+    public void insertTimelineAfter(PartialPlan st, Timeline tdb, Timeline included, ChainComponent after) {
         if(included.mID == 16)
             assert tdb.size() != 0;
         assert tdb.contains(after);
@@ -231,7 +231,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
      * Given a timeline tdb, enforces the unification and temporal constraints between
      * the elements of indexes chainCompIndex and chainCompIndex+1
      */
-    public void enforceChainConstraints(State st, Timeline tdb, int chainCompIndex) {
+    public void enforceChainConstraints(PartialPlan st, Timeline tdb, int chainCompIndex) {
         assert chainCompIndex < tdb.size();
 
         if(chainCompIndex < tdb.size()-1 && chainCompIndex >= 0) {
@@ -253,7 +253,7 @@ public class TimelinesManager implements Reporter, Iterable<Timeline> {
         }
     }
 
-    public void enforceAllConstraints(State st, Timeline tdb) {
+    public void enforceAllConstraints(PartialPlan st, Timeline tdb) {
         for(int i=0 ; i<tdb.size()-1 ; i++) {
             //enforceChainConstraints(st, tdb, i);
             int j = i+1;

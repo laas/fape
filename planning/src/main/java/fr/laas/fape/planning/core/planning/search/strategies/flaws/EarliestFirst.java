@@ -4,13 +4,13 @@ import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Threat;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnrefinedTask;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnsupportedTimeline;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import lombok.Value;
 
 @Value
 public class EarliestFirst implements FlawComparator {
 
-    private final State st;
+    private final PartialPlan st;
 
     @Override
     public String shortName() {

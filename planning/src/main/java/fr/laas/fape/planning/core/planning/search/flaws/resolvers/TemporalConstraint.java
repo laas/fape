@@ -4,9 +4,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 import fr.laas.fape.anml.model.concrete.Chronicle;
 import fr.laas.fape.anml.model.concrete.MinDelayConstraint;
 import fr.laas.fape.anml.model.concrete.TPRef;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class TemporalConstraint implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         Chronicle chronicle = new Chronicle();
         for(TPRef first : firsts) {
             for (TPRef second : seconds) {

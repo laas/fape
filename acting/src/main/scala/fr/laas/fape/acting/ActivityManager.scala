@@ -11,8 +11,8 @@ import fr.laas.fape.anml.model.concrete.{Action, TPRef}
 import fr.laas.fape.constraints.stnu.Controllability
 import fr.laas.fape.constraints.stnu.dispatching.DispatchableNetwork
 import fr.laas.fape.planning.core.planning.planner.Planner
-import fr.laas.fape.planning.core.planning.states.modification.StateModification
-import fr.laas.fape.planning.core.planning.states.{Printer, State => PPlan}
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification
+import fr.laas.fape.planning.core.planning.states.{Printer, PartialPlan => PPlan}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
@@ -66,7 +66,7 @@ class ActivityManager extends FSM[MState, MData] with MessageLogger {
   val actionDispatcher = context.actorSelection("../actor")
   val observer = context.actorSelection("../observer")
 
-  val goals = new ArrayBuffer[StateModification]()
+  val goals = new ArrayBuffer[PartialPlanModification]()
   val executed = mutable.Map[TPRef, Int]()
   val notifiedActive = mutable.Set[TPRef]()
 
@@ -76,7 +76,7 @@ class ActivityManager extends FSM[MState, MData] with MessageLogger {
   startWith(MIdle, MNothing)
 
   when(MIdle) {
-    case Event(goal:StateModification, _) =>
+    case Event(goal:PartialPlanModification, _) =>
       goals += goal
       val pplan = getInitialPartialPlan
       planner ! PlanningActor.GetPlan(pplan, FiniteDuration(10, TimeUnit.SECONDS), getReqID())
@@ -86,7 +86,7 @@ class ActivityManager extends FSM[MState, MData] with MessageLogger {
   }
 
   when(MWaitingForPlan) {
-    case Event(goal:StateModification, _) =>
+    case Event(goal:PartialPlanModification, _) =>
       log.info("Canceling current planning request to integrate new goal")
       goals += goal
       val pplan = getInitialPartialPlan

@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.reachability;
 
 import fr.laas.fape.planning.core.planning.preprocessing.GroundObjectsStore;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.structures.IR2IntMap;
 import fr.laas.fape.structures.IRSet;
@@ -141,7 +141,7 @@ public class CoreReachabilityGraph implements ReachabilityGraph {
         }
 
         @Override
-        public StateExt clone(State st) {
+        public StateExt clone(PartialPlan st) {
             if(currentGraph != null)
                 return new StateExt(currentGraph);
             else

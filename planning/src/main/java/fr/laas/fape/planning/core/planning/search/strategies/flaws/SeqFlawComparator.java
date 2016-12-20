@@ -2,7 +2,7 @@ package fr.laas.fape.planning.core.planning.search.strategies.flaws;
 
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.exceptions.FAPEException;
 
 import java.util.LinkedList;
@@ -19,9 +19,9 @@ public class SeqFlawComparator implements FlawComparator {
 
     final List<FlawComparator> comparators;
     final Planner planner;
-    final State st;
+    final PartialPlan st;
 
-    public SeqFlawComparator(State st, Planner planner, List<FlawComparator> comparators) {
+    public SeqFlawComparator(PartialPlan st, Planner planner, List<FlawComparator> comparators) {
         this.comparators = new LinkedList<>(comparators);
         this.comparators.add(new TieBreaker());
         this.st = st;

@@ -5,7 +5,7 @@ import fr.laas.fape.constraints.stnu.morris.PartialObservability;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import lombok.AllArgsConstructor;
@@ -23,26 +23,26 @@ public class NeededObservationsFinder implements FlawFinder {
 
 
     @Override
-    public List<Flaw> getFlaws(State st, Planner planner) {
+    public List<Flaw> getFlaws(PartialPlan plan, Planner planner) {
         // contingent timepoints are all those with an incoming contingent link
         // when executing, some contingents might have been executed (and their incoming links removed)
-        Stream<TPRef> contingents = st.csp.stn().getOriginalConstraints().stream()
+        Stream<TPRef> contingents = plan.csp.stn().getOriginalConstraints().stream()
                 .filter(c -> c instanceof ContingentConstraint)
                 .map(ctg -> ctg.dst());
 
-        if(!st.hasExtension(PartialObservabilityExt.class))
-            st.addExtension(new PartialObservabilityExt(new HashSet<>(), new HashMap<>()));
+        if(!plan.hasExtension(PartialObservabilityExt.class))
+            plan.addExtension(new PartialObservabilityExt(new HashSet<>(), new HashMap<>()));
 
-        PartialObservabilityExt obs = st.getExtension(PartialObservabilityExt.class);
+        PartialObservabilityExt obs = plan.getExtension(PartialObservabilityExt.class);
         Set<TPRef> observable = contingents
                 .filter(tp -> !obs.observed.contains(tp) && obs.observationConditions.containsKey(tp))
                 .collect(Collectors.toSet());
 
-        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(st.csp.stn().getConstraintsWithoutStructurals().stream().collect
+        Optional<PartialObservability.NeededObservations> opt = PartialObservability.getResolvers(plan.csp.stn().getConstraintsWithoutStructurals().stream().collect
                 (Collectors.toList()), obs.observed, observable);
 
         if(opt.isPresent())
-            return Collections.singletonList(new NeededObservationFlaw(opt.get(), st));
+            return Collections.singletonList(new NeededObservationFlaw(opt.get(), plan));
         else
             return Collections.emptyList();
     }
@@ -53,7 +53,7 @@ public class NeededObservationsFinder implements FlawFinder {
         public final Map<TPRef,Chronicle> observationConditions;
 
         @Override
-        public StateExtension clone(State st) {
+        public StateExtension clone(PartialPlan st) {
             return new PartialObservabilityExt(new HashSet<>(observed), new HashMap<>(observationConditions));
         }
 
@@ -73,12 +73,12 @@ public class NeededObservationsFinder implements FlawFinder {
     public static final class NeededObservationFlaw extends Flaw {
         final Collection<Set<TPRef>> possibleObservationsSets;
 
-        public NeededObservationFlaw(PartialObservability.NeededObservations no, State st) {
+        public NeededObservationFlaw(PartialObservability.NeededObservations no, PartialPlan st) {
             possibleObservationsSets = no.resolvingObs();
         }
 
         @Override
-        public List<Resolver> getResolvers(State st, Planner planner) {
+        public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
             return possibleObservationsSets.stream().map(NeededObsResolver::new).collect(Collectors.toList());
         }
 

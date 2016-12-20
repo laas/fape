@@ -4,7 +4,7 @@ import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Threat;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnsupportedTimeline;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.tsp.MinSpanTreeExtFull;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import lombok.Value;
 
@@ -13,7 +13,7 @@ import java.util.Collections;
 @Value
 public class MinSpanFailFirst implements FlawComparator {
 
-    private final State st;
+    private final PartialPlan st;
 
     @Override
     public String shortName() {

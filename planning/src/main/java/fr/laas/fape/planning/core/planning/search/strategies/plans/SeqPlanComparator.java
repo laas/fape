@@ -1,6 +1,6 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,36 +30,36 @@ public class SeqPlanComparator extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
+    public String reportOnState(PartialPlan plan) {
         StringBuilder sb = new StringBuilder();
         for (PartialPlanComparator ppc : comparators) {
-            sb.append(ppc.reportOnState(st));
+            sb.append(ppc.reportOnState(plan));
             sb.append("\n");
         }
         return sb.toString();
     }
 
     @Override
-    public double g(State st) {
+    public double g(PartialPlan plan) {
         double v = 0;
         for(PartialPlanComparator pc : comparators)
-            v = 1000000 * v + pc.g(st);
+            v = 1000000 * v + pc.g(plan);
         return v;
     }
 
     @Override
-    public double h(State st) {
+    public double h(PartialPlan plan) {
         double v = 0;
         for(PartialPlanComparator pc : comparators)
-            v = 1000000 * v + pc.h(st);
+            v = 1000000 * v + pc.h(plan);
         return v;
     }
 
     @Override
-    public double hc(State st) {
+    public double hc(PartialPlan plan) {
         double v = 0;
         for(PartialPlanComparator pc : comparators)
-            v = 1000000 * v + pc.hc(st);
+            v = 1000000 * v + pc.hc(plan);
         return v;
     }
 }

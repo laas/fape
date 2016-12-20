@@ -8,7 +8,7 @@ import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.PartialPlanComparator;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.exceptions.FAPEException;
 import fr.laas.fape.planning.util.Pair;
@@ -48,15 +48,15 @@ public class Htsp extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
-        return "g: "+g(st)+"hc: "+hc(st)+"  makespan: "+makespans.get(st.mID);
+    public String reportOnState(PartialPlan plan) {
+        return "g: "+g(plan)+"hc: "+hc(plan)+"  makespan: "+makespans.get(plan.mID);
     }
 
     @Override
-    public double g(State st) { hc(st); return existingCosts.get(st.mID); }
+    public double g(PartialPlan plan) { hc(plan); return existingCosts.get(plan.mID); }
 
     @Override
-    public double h(State st) { return hc(st); }
+    public double h(PartialPlan plan) { return hc(plan); }
 
     private Pair<GLogStatement, GoalNetwork.DisjunctiveGoal> best(Collection<Pair<GLogStatement, GoalNetwork.DisjunctiveGoal>> candidates) {
         if (candidates.stream().anyMatch(x -> x.value1 instanceof GPersistence))
@@ -71,7 +71,7 @@ public class Htsp extends PartialPlanComparator {
     private boolean firstTime = true;
 
 //    @Override
-    public double hc(State st) {
+    public double hc(PartialPlan st) {
 
 //        if(firstTime) {
 //            for (GStateVariable sv : st.pl.preprocessor.getAllStateVariables()) {
@@ -169,7 +169,7 @@ public class Htsp extends PartialPlanComparator {
         return maxDist;
     }
 
-    public float newhc(State st) {
+    public float newhc(PartialPlan st) {
         if(additionalCosts.containsKey(st.mID))
             return additionalCosts.get(st.mID);
 
@@ -259,7 +259,7 @@ public class Htsp extends PartialPlanComparator {
         return additionalCost;
     }
 
-    public static GoalNetwork goalNetwork(State st) {
+    public static GoalNetwork goalNetwork(PartialPlan st) {
         GoalNetwork gn = new GoalNetwork();
 
         for (Timeline tl : st.getTimelines()) {

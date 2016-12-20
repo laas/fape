@@ -1,10 +1,10 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 import fr.laas.fape.anml.model.concrete.Factory;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ActionInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.SequenceOfStateModifications;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.SequenceOfPartialPlanModifications;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.states.modification.SupportRestriction;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import lombok.Value;
@@ -20,9 +20,9 @@ public class FutureActionSupport implements Resolver {
     private final AbstractAction act;
 
     @Override
-    public StateModification asStateModification(State state) {
-        Action action = Factory.getStandaloneAction(state.pb, act, state.refCounter);
-        return new SequenceOfStateModifications(Arrays.asList(
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
+        Action action = Factory.getStandaloneAction(partialPlan.pb, act, partialPlan.refCounter);
+        return new SequenceOfPartialPlanModifications(Arrays.asList(
                 new ActionInsertion(action),
                 new SupportRestriction(consumer.getFirst().getFirst(), action)));
     }

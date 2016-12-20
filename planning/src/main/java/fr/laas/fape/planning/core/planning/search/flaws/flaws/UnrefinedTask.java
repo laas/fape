@@ -7,7 +7,7 @@ import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.ExistingTaskSupporter;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.NewTaskSupporter;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -26,20 +26,20 @@ public class UnrefinedTask extends Flaw {
     public UnrefinedTask(Task ac) { task = ac; }
 
     @Override
-    public List<Resolver> getResolvers(State st, Planner planner) {
+    public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
         if (resolvers != null)
             return resolvers;
 
         resolvers = new LinkedList<>();
 
         // inserting a new action is always a resolver.
-        for(AbstractAction abs : st.getHierarchicalConstraints().getPossibleRefinements(task))
-            if(st.isAddable(abs))
+        for(AbstractAction abs : plan.getHierarchicalConstraints().getPossibleRefinements(task))
+            if(plan.isAddable(abs))
                 resolvers.add(new NewTaskSupporter(task, abs));
 
-        for (Action act : st.getAllActions()) {
-            if ((planner.options.actionsSupportMultipleTasks || !st.taskNet.isSupporting(act))
-                    && st.canSupport(act, task))
+        for (Action act : plan.getAllActions()) {
+            if ((planner.options.actionsSupportMultipleTasks || !plan.taskNet.isSupporting(act))
+                    && plan.canSupport(act, task))
                 resolvers.add(new ExistingTaskSupporter(task, act));
         }
 

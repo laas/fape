@@ -4,9 +4,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 import fr.laas.fape.anml.model.concrete.Chronicle;
 import fr.laas.fape.anml.model.concrete.VarEqualityConstraint;
 import fr.laas.fape.anml.model.concrete.VarRef;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 
 /**
  * Binds a variable to the given value.
@@ -22,9 +22,9 @@ public class VarBinding implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         Chronicle chronicle = new Chronicle();
-        chronicle.addConstraint(new VarEqualityConstraint(var, state.pb.instance(value)));
+        chronicle.addConstraint(new VarEqualityConstraint(var, partialPlan.pb.instance(value)));
         return new ChronicleInsertion(chronicle);
     }
 

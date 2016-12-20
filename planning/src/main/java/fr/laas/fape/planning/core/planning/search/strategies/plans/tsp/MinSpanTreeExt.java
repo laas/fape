@@ -10,7 +10,7 @@ import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.search.Handler;
 import fr.laas.fape.planning.core.planning.states.CausalNetworkExt;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.exceptions.NoSolutionException;
@@ -28,13 +28,13 @@ public class MinSpanTreeExt implements StateExtension {
 
     private int dbgLvl = 0;
 
-    final State st;
+    final PartialPlan st;
     final boolean useNumChangesInAction;
 
     private final HashMap<LogStatement, HashSet<GLogStatement>> groundStatements = new HashMap<>();
 
     @Override
-    public StateExtension clone(State st) {
+    public StateExtension clone(PartialPlan st) {
         return new MinSpanTreeExt(st, useNumChangesInAction);
     }
 

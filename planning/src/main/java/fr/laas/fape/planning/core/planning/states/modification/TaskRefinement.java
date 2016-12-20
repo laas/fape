@@ -2,12 +2,12 @@ package fr.laas.fape.planning.core.planning.states.modification;
 
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.Arrays;
 import java.util.Collection;
 
-public class TaskRefinement implements StateModification {
+public class TaskRefinement implements PartialPlanModification {
 
     public final Task task;
     public final Action refiningAction;
@@ -18,12 +18,12 @@ public class TaskRefinement implements StateModification {
     }
 
     @Override
-    public void apply(State st, boolean isFastForwarding) {
-        st.addSupport(task, refiningAction);
+    public void apply(PartialPlan plan, boolean isFastForwarding) {
+        plan.addSupport(task, refiningAction);
 
         // if we had a choice between different resolvers, record which decomposition number we chose
         if(!isFastForwarding)
-            st.setLastDecompositionNumber(refiningAction.abs().decID());
+            plan.setLastDecompositionNumber(refiningAction.abs().decID());
     }
 
     @Override

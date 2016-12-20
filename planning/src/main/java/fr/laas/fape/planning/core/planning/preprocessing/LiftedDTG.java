@@ -6,7 +6,7 @@ import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.abs.statements.AbstractAssignment;
 import fr.laas.fape.anml.model.abs.statements.AbstractLogStatement;
 import fr.laas.fape.anml.model.abs.statements.AbstractTransition;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.util.Utils;
 
@@ -43,7 +43,7 @@ public class LiftedDTG implements ActionSupporterFinder{
         }
     }
 
-    public Collection<SupportingAction> getActionsSupporting(State st, Timeline db) {
+    public Collection<SupportingAction> getActionsSupporting(PartialPlan st, Timeline db) {
         assert db.isConsumer() : "Error: this database doesn't need support: "+db;
 
         String predicate = db.stateVariable.func().name();

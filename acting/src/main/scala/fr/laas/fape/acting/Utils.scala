@@ -4,7 +4,7 @@ import com.sun.org.apache.xpath.internal.operations.VariableSafeAbsRef
 import fr.laas.fape.anml.model.AnmlProblem
 import fr.laas.fape.anml.model.concrete._
 import fr.laas.fape.anml.model.concrete.statements.Persistence
-import fr.laas.fape.planning.core.planning.states.State
+import fr.laas.fape.planning.core.planning.states.PartialPlan
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion
 
 /**
@@ -50,7 +50,7 @@ object Utils {
     new ChronicleInsertion(goal)
   }
 
-  def asString(variable: VarRef, plan: State) = {
+  def asString(variable: VarRef, plan: PartialPlan) = {
     plan.domainOf(variable).get(0)
   }
 }

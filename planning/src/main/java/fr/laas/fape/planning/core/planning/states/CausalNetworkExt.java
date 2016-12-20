@@ -36,7 +36,7 @@ public class CausalNetworkExt implements StateExtension {
     private Timeline timelineOf(Event e) { return container.getTimeline(e.getSupporterID()); }
     private ChainComponent componentOf(Event e) { return timelineOf(e).getChangeNumber(e.getChangeNumber()); }
 
-    private final State container;
+    private final PartialPlan container;
 
     // maps a timeline (by its ID) to a set of possibly indirectly supporting events
     private final HashMap<Integer, ISet<Event>> potentialSupporters;
@@ -50,7 +50,7 @@ public class CausalNetworkExt implements StateExtension {
     private final Map<Event, ISet<Integer>> possiblyInterferingTimelines;
     private final Map<Event, ISet<Integer>> intermediateSteps;
 
-    CausalNetworkExt(State container) {
+    CausalNetworkExt(PartialPlan container) {
         this.container = container;
         potentialSupporters = new HashMap<>();
         lastProcessedChange = new HashMap<>();
@@ -61,7 +61,7 @@ public class CausalNetworkExt implements StateExtension {
         intermediateSteps = new HashMap<>();
     }
 
-    private CausalNetworkExt(CausalNetworkExt toCopy, State container) {
+    private CausalNetworkExt(CausalNetworkExt toCopy, PartialPlan container) {
         this.container = container;
         potentialSupporters = new HashMap<>(toCopy.potentialSupporters);
         lastProcessedChange = new HashMap<>(toCopy.lastProcessedChange);
@@ -73,7 +73,7 @@ public class CausalNetworkExt implements StateExtension {
     }
 
     @Override
-    public StateExtension clone(State st) {
+    public StateExtension clone(PartialPlan st) {
         return new CausalNetworkExt(this, st);
     }
 

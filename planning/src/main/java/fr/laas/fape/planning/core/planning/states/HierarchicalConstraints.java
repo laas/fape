@@ -11,16 +11,16 @@ import java.util.stream.Collectors;
 
 public class HierarchicalConstraints implements StateExtension {
     private final Map<Integer, TNNode> timelineSupportConstraints;
-    private final State st;
+    private final PartialPlan st;
     private final Map<Task, Set<AbstractAction>> possibleRefinements;
 
-    public HierarchicalConstraints(State st) {
+    public HierarchicalConstraints(PartialPlan st) {
         this.st = st;
         timelineSupportConstraints = new HashMap<>();
         possibleRefinements = new HashMap<>();
     }
 
-    public HierarchicalConstraints(HierarchicalConstraints toCopy, State st) {
+    public HierarchicalConstraints(HierarchicalConstraints toCopy, PartialPlan st) {
         this.st = st;
         timelineSupportConstraints = new HashMap<>(toCopy.timelineSupportConstraints);
         possibleRefinements = new HashMap<>(toCopy.possibleRefinements);
@@ -82,7 +82,7 @@ public class HierarchicalConstraints implements StateExtension {
     }
 
     @Override
-    public StateExtension clone(State containingState) {
-        return new HierarchicalConstraints(this, containingState);
+    public StateExtension clone(PartialPlan containingPartialPlan) {
+        return new HierarchicalConstraints(this, containingPartialPlan);
     }
 }

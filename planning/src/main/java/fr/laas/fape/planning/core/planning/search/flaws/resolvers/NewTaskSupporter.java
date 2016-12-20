@@ -4,10 +4,10 @@ import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Factory;
 import fr.laas.fape.anml.model.concrete.Task;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ActionInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.SequenceOfStateModifications;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.SequenceOfPartialPlanModifications;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.states.modification.TaskRefinement;
 
 import java.util.Arrays;
@@ -29,9 +29,9 @@ public class NewTaskSupporter implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
-        Action action = Factory.getStandaloneAction(state.pb, abs, state.refCounter);
-        return new SequenceOfStateModifications(Arrays.asList(
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
+        Action action = Factory.getStandaloneAction(partialPlan.pb, abs, partialPlan.refCounter);
+        return new SequenceOfPartialPlanModifications(Arrays.asList(
                 new ActionInsertion(action),
                 new TaskRefinement(unrefined, action)));
     }

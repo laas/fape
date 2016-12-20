@@ -1,6 +1,6 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.HashMap;
 
@@ -8,7 +8,7 @@ public class OpenGoals extends PartialPlanComparator {
 
     private HashMap<Integer, Integer> numOpenGoals = new HashMap<>();
 
-    private int numOpenGoals(State st) {
+    private int numOpenGoals(PartialPlan st) {
         if(!numOpenGoals.containsKey(st.mID))
             numOpenGoals.put(st.mID, st.tdb.getConsumers().size());
         return numOpenGoals.get(st.mID);
@@ -20,22 +20,22 @@ public class OpenGoals extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
-        return "OpenGoals:\tnum-open-goals: "+st.tdb.getConsumers().size();
+    public String reportOnState(PartialPlan plan) {
+        return "OpenGoals:\tnum-open-goals: "+ plan.tdb.getConsumers().size();
     }
 
     @Override
-    public double g(State st) {
+    public double g(PartialPlan plan) {
         return 0;
     }
 
     @Override
-    public double h(State st) {
-        return numOpenGoals(st);
+    public double h(PartialPlan plan) {
+        return numOpenGoals(plan);
     }
 
     @Override
-    public double hc(State st) {
-        return numOpenGoals(st);
+    public double hc(PartialPlan plan) {
+        return numOpenGoals(plan);
     }
 }

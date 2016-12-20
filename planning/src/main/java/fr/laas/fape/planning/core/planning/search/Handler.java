@@ -4,7 +4,7 @@ import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.Task;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.states.SearchNode;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 /**
  * A handler is a computation unit that implements specific (and usually optional) aspects of the
@@ -30,13 +30,13 @@ public abstract class Handler {
      * might need to process. All actions later added to this state or its descendants will be
      * notified incrementally through the `actionInserted` method.
      */
-    public void stateBindedToPlanner(State st, Planner pl) {}
+    public void stateBindedToPlanner(PartialPlan st, Planner pl) {}
 
     /**
      * Informs the handler that the given state has reached a given point in its life.
      * The handler can start any computation he wants to do at that point.
      */
-    protected void apply(State st, StateLifeTime time, Planner planner) {}
+    protected void apply(PartialPlan st, StateLifeTime time, Planner planner) {}
 
     public final void addOperation(SearchNode n, StateLifeTime time, Planner planner) {
         n.addOperation(s -> {
@@ -45,9 +45,9 @@ public abstract class Handler {
         });
     }
 
-    public void actionInserted(Action a, State st, Planner planner) {}
-    public void taskInserted(Task a, State st, Planner planner) {}
+    public void actionInserted(Action a, PartialPlan st, Planner planner) {}
+    public void taskInserted(Task a, PartialPlan st, Planner planner) {}
 
     /** Notifies the handler that in this action was set to support this task in the given state */
-    public void supportLinkAdded(Action a, Task t, State st) {}
+    public void supportLinkAdded(Action a, Task t, PartialPlan st) {}
 }

@@ -27,13 +27,13 @@ public class SearchNode {
     public SearchNode(SearchNode parent) {
         this.parent = parent;
         state = null;
-        this.mID = State.idCounter++;
+        this.mID = PartialPlan.idCounter++;
         this.depth = parent.depth +1;
     }
-    public SearchNode(State initialState) {
+    public SearchNode(PartialPlan initialPartialPlan) {
         this.parent = null;
-        state = new StrongReference<>(initialState);
-        this.mID = initialState.mID;
+        state = new StrongReference<>(initialPartialPlan);
+        this.mID = initialPartialPlan.mID;
         this.depth = 0;
     }
 
@@ -44,13 +44,13 @@ public class SearchNode {
     final int depth;
 
     /** A soft, strong or weak reference to a state. */
-    private Reference<State> state = null;
+    private Reference<PartialPlan> state = null;
 
     /** Predecessor in hte search tree */
     private final SearchNode parent;
 
     /** Operations to apply to the parent's state to get a complete state. */
-    private List<Consumer<State>> operations = new ArrayList<>();
+    private List<Consumer<PartialPlan>> operations = new ArrayList<>();
 
     /**
      * Index of the the next operation to apply to state (all operations below this
@@ -59,7 +59,7 @@ public class SearchNode {
     private int nextOperation = 0;
 
     public void setExpanded() {
-        State s = state.get();
+        PartialPlan s = state.get();
         if(s != null && depth != 0) {
             // switch to a weak reference
             state = new WeakReference<>(s);
@@ -86,13 +86,13 @@ public class SearchNode {
     /**
      * Returns the base state from which the complete state can be built.
      */
-    private State getBaseState(boolean isForChild) {
+    private PartialPlan getBaseState(boolean isForChild) {
         if(state != null && state.get() != null) {
             return state.get();
         } else {
             assert depth != 0;
             assert parent != null;
-            State st = parent.getState(true).cc(mID);
+            PartialPlan st = parent.getState(true).cc(mID);
             st.depth = depth;
             nextOperation = 0;
             if(!isForChild) // directly request, save the reference
@@ -105,12 +105,12 @@ public class SearchNode {
 
     public SearchNode getParent() { return parent; }
 
-    public State getState() {
+    public PartialPlan getState() {
         return getState(false);
     }
 
-    private State getState(boolean isForChild) {
-        State s = getBaseState(isForChild);
+    private PartialPlan getState(boolean isForChild) {
+        PartialPlan s = getBaseState(isForChild);
         s.depth = depth;
         while(nextOperation < operations.size()) {
             operations.get(nextOperation++).accept(s);
@@ -123,7 +123,7 @@ public class SearchNode {
     /**
      * Appends a new operation necessary to build the complete state.
      */
-    public void addOperation(Consumer<State> operation) {
+    public void addOperation(Consumer<PartialPlan> operation) {
         operations.add(operation);
     }
 

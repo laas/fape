@@ -4,9 +4,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 import fr.laas.fape.anml.model.concrete.Chronicle;
 import fr.laas.fape.anml.model.concrete.VarInequalityConstraint;
 import fr.laas.fape.anml.model.concrete.VarRef;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 
 /**
  * Simply adds a difference constraint between the two variables.
@@ -21,7 +21,7 @@ public class BindingSeparation implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         Chronicle chronicle = new Chronicle();
         chronicle.addConstraint(new VarInequalityConstraint(a, b));
         return new ChronicleInsertion(chronicle);

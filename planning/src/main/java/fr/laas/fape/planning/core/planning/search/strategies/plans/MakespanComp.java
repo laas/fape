@@ -1,6 +1,6 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 public class MakespanComp extends PartialPlanComparator {
     @Override
@@ -9,17 +9,17 @@ public class MakespanComp extends PartialPlanComparator {
     }
 
     @Override
-    public double g(State st) {
-        return st.getMakespan();
+    public double g(PartialPlan plan) {
+        return plan.getMakespan();
     }
 
     @Override
-    public double h(State st) {
+    public double h(PartialPlan plan) {
         return 0;
     }
 
     @Override
-    public double hc(State st) {
+    public double hc(PartialPlan plan) {
         return 0;
     }
 }

@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 public class OrderedDecompositions extends PartialPlanComparator {
     @Override
@@ -10,22 +10,22 @@ public class OrderedDecompositions extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
-        return "last decomposition id: "+st.getLastDecompositionNumber();
+    public String reportOnState(PartialPlan plan) {
+        return "last decomposition id: "+ plan.getLastDecompositionNumber();
     }
 
     @Override
-    public double g(State st) {
-        return st.getLastDecompositionNumber();
+    public double g(PartialPlan plan) {
+        return plan.getLastDecompositionNumber();
     }
 
     @Override
-    public double h(State st) {
+    public double h(PartialPlan plan) {
         return 0;
     }
 
     @Override
-    public double hc(State st) {
+    public double hc(PartialPlan plan) {
         return 0;
     }
 }

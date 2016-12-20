@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.states.State;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.states.modification.SupportRestriction;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import lombok.Value;
@@ -14,7 +14,7 @@ public class FutureTaskSupport implements Resolver {
     private final Task task;
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         return new SupportRestriction(consumer.getFirst().getFirst(), task);
     }
 

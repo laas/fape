@@ -4,16 +4,16 @@ import fr.laas.fape.anml.model.concrete.Task;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnrefinedTask;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.WeakHashMap;
 
 public class HierFIFO implements FlawComparator {
 
-    public final State st;
+    public final PartialPlan st;
     public final Planner planner;
 
-    public HierFIFO(State st, Planner planner) {
+    public HierFIFO(PartialPlan st, Planner planner) {
         this.st = st;
         this.planner = planner;
     }

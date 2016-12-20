@@ -2,7 +2,7 @@ package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
 import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
 import fr.laas.fape.planning.core.planning.states.SearchNode;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.Comparator;
 
@@ -11,8 +11,8 @@ public abstract class PartialPlanComparator implements Heuristic {
     public abstract String shortName();
 
     /** Gives a human readable string of the metrics used to evaluate a state, and their values. */
-    public String reportOnState(State st) {
-        return shortName()+" g:"+g(st)+" h:"+h(st)+" hc:"+hc(st);
+    public String reportOnState(PartialPlan plan) {
+        return shortName()+" g:"+g(plan)+" h:"+h(plan)+" hc:"+hc(plan);
     }
 
     public final double h(SearchNode sw) {

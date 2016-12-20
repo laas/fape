@@ -14,9 +14,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
 import fr.laas.fape.anml.model.concrete.Chronicle;
 import fr.laas.fape.anml.model.concrete.VarEqualityConstraint;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 
 /**
  * Unifies both state variables. This is done in unifying all their parameters.
@@ -33,7 +33,7 @@ public class StateVariableBinding implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
         Chronicle chronicle = new Chronicle();
         for(int i=0 ; i<a.args().length ; i++)
             chronicle.addConstraint(new VarEqualityConstraint(a.arg(i), b.arg(i)));

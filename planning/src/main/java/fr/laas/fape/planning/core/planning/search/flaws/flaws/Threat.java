@@ -4,7 +4,7 @@ import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.BindingSeparation;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.TemporalSeparation;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 
 import java.util.LinkedList;
@@ -21,23 +21,23 @@ public class Threat extends Flaw {
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, Planner planner) {
+    public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
         if(resolvers != null)
             return resolvers;
 
         resolvers = new LinkedList<>();
 
         // db1 before db2
-        if(st.canBeBefore(db1.getLastTimePoints().getFirst(), db2.getFirstTimePoints().getFirst()))
+        if(plan.canBeBefore(db1.getLastTimePoints().getFirst(), db2.getFirstTimePoints().getFirst()))
             resolvers.add(new TemporalSeparation(db1, db2));
 
         // db2 before db1
-        if(st.canBeBefore(db2.getLastTimePoints().getFirst(), db1.getFirstTimePoints().getFirst()))
+        if(plan.canBeBefore(db2.getLastTimePoints().getFirst(), db1.getFirstTimePoints().getFirst()))
             resolvers.add(new TemporalSeparation(db2, db1));
 
         // make any argument of the state variables different
         for (int i = 0; i < db1.stateVariable.args().length; i++) {
-            if(st.separable(db1.stateVariable.arg(i), db2.stateVariable.arg(i)))
+            if(plan.separable(db1.stateVariable.arg(i), db2.stateVariable.arg(i)))
                 resolvers.add(new BindingSeparation(
                         db1.stateVariable.arg(i),
                         db2.stateVariable.arg(i)));

@@ -3,9 +3,9 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 import fr.laas.fape.anml.model.concrete.Chronicle;
 import fr.laas.fape.anml.model.concrete.MinDelayConstraint;
 import fr.laas.fape.anml.model.concrete.TPRef;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 
 public class TemporalSeparation implements Resolver {
@@ -19,9 +19,9 @@ public class TemporalSeparation implements Resolver {
     }
 
     @Override
-    public StateModification asStateModification(State state) {
-        final Timeline firstDB = state.getTimeline(firstDbID);
-        final Timeline secondDB = state.getTimeline(secondDbID);
+    public PartialPlanModification asStateModification(PartialPlan partialPlan) {
+        final Timeline firstDB = partialPlan.getTimeline(firstDbID);
+        final Timeline secondDB = partialPlan.getTimeline(secondDbID);
         assert firstDB != null && secondDB != null;
         assert !firstDB.hasSinglePersistence() && !secondDB.hasSinglePersistence();
 

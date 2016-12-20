@@ -1,8 +1,7 @@
 package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
-import fr.laas.fape.planning.core.planning.planner.Planner;
-import fr.laas.fape.planning.core.planning.states.State;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
@@ -11,7 +10,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  */
 public interface Resolver extends Comparable<Resolver> {
 
-    default StateModification asStateModification(State state) { throw new NotImplementedException(); }
+    default PartialPlanModification asStateModification(PartialPlan partialPlan) { throw new NotImplementedException(); }
 
     /**
      * Should provide a comparison with another resolver of the same class.

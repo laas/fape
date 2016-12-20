@@ -9,7 +9,7 @@ import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
 import fr.laas.fape.planning.core.planning.search.Handler;
 import fr.laas.fape.planning.core.planning.states.CausalNetworkExt;
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.StateExtension;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
@@ -30,7 +30,7 @@ public class MinSpanTreeExtFull implements StateExtension {
     private final boolean USE_SUM = GlobalOptions.getBooleanOption("heur-additive-pending-cost");
     private int dbgLvl = 0;
 
-    final State st;
+    final PartialPlan st;
     private final Map<Timeline,TimelineDTG> timelineDTGs = new HashMap<>();
     private final Map<Timeline, Integer> minPreviousCost = new HashMap<>();
 
@@ -38,18 +38,18 @@ public class MinSpanTreeExtFull implements StateExtension {
 
     public final Map<Timeline,List<Integer>> allCosts;
 
-    public MinSpanTreeExtFull(State st) {
+    public MinSpanTreeExtFull(PartialPlan st) {
         this.st = st;
         allCosts = new HashMap<>();
     }
 
-    public MinSpanTreeExtFull(State st, MinSpanTreeExtFull toCopy) {
+    public MinSpanTreeExtFull(PartialPlan st, MinSpanTreeExtFull toCopy) {
         this.st = st;
         this.allCosts = new HashMap<>(toCopy.allCosts);
     }
 
     @Override
-    public StateExtension clone(State st) {
+    public StateExtension clone(PartialPlan st) {
         return new MinSpanTreeExtFull(st, this);
     }
 

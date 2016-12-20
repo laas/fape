@@ -5,7 +5,7 @@ import fr.laas.fape.anml.model.concrete.VarRef;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.VarBinding;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -26,20 +26,20 @@ public class UnboundVariable extends Flaw {
      * Hence we lazily return that without creating the resolvers themselves.
      */
     @Override
-    public int getNumResolvers(State st, Planner planner) {
+    public int getNumResolvers(PartialPlan plan, Planner planner) {
         if(resolvers != null)
             return resolvers.size();
         else
-            return st.domainSizeOf(var);
+            return plan.domainSizeOf(var);
     }
 
     @Override
-    public List<Resolver> getResolvers(State st, Planner planner) {
+    public List<Resolver> getResolvers(PartialPlan plan, Planner planner) {
         if(resolvers != null)
             return resolvers;
 
         resolvers = new LinkedList<>();
-         for (String value : st.domainOf(var)) {
+         for (String value : plan.domainOf(var)) {
             resolvers.add(new VarBinding(var, value));
         }
 

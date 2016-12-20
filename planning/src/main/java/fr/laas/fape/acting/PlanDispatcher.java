@@ -4,7 +4,7 @@ import fr.laas.fape.anml.model.concrete.Action;
 import fr.laas.fape.anml.model.concrete.TPRef;
 import fr.laas.fape.constraints.stnu.dispatching.DispatchableNetwork;
 import fr.laas.fape.planning.core.planning.states.Printer;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.structures.ISet;
 
 import java.util.Map;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class PlanDispatcher {
 
-    public static void simulateExecution(State plan) {
+    public static void simulateExecution(PartialPlan plan) {
         Map<TPRef, Action> actionStarts = plan.getAllActions().stream()
                 .filter(a -> a.start().genre().isDispatchable())
                 .collect(Collectors.toMap(Action::start, Function.identity()));

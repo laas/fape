@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans.tsp;
 
 import fr.laas.fape.planning.core.planning.grounding.Fluent;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import lombok.Value;
 
 import java.util.Collection;
@@ -19,5 +19,5 @@ public interface TSPRoutePlanner {
         final Consumer<PartialState> transformation;
     }
 
-    Result getPlan(Collection<Fluent> targets, PartialState ps, State st);
+    Result getPlan(Collection<Fluent> targets, PartialState ps, PartialPlan st);
 }

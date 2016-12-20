@@ -6,7 +6,7 @@ import fr.laas.fape.anml.model.concrete.InstanceRef;
 import fr.laas.fape.anml.model.concrete.VarRef;
 import fr.laas.fape.constraints.bindings.Domain;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.util.Utils;
 import lombok.Value;
@@ -339,9 +339,9 @@ public class HierarchicalEffects {
             return true;
         }
 
-        private static Domain asDomain(VarRef v, State st) { return st.csp.bindings().rawDomain(v); }
-        private static Domain asDomain(Type t, State st) { return st.csp.bindings().defaultDomain(t); }
-        private static Domain asDomain(VarPlaceHolder v, Map<LVarRef,VarRef> bindings, State st) {
+        private static Domain asDomain(VarRef v, PartialPlan st) { return st.csp.bindings().rawDomain(v); }
+        private static Domain asDomain(Type t, PartialPlan st) { return st.csp.bindings().defaultDomain(t); }
+        private static Domain asDomain(VarPlaceHolder v, Map<LVarRef,VarRef> bindings, PartialPlan st) {
             if(v.isVar()) {
                 assert bindings.containsKey(v.asVar());
                 return asDomain(bindings.get(v.asVar()), st);
@@ -351,27 +351,27 @@ public class HierarchicalEffects {
                 return asDomain(v.asType(), st);
             }
         }
-        private static Domain asDomainFromLocalVars(VarPlaceHolder v, State st) {
+        private static Domain asDomainFromLocalVars(VarPlaceHolder v, PartialPlan st) {
             if(v.isInstance()) {
                 return asDomain(v.asInstance(), st);
             } else {
                 return asDomain(v.asType(), st);
             }
         }
-        private static DomainList from(ParameterizedStateVariable sv, VarRef value, State st) {
+        private static DomainList from(ParameterizedStateVariable sv, VarRef value, PartialPlan st) {
             return new DomainList(Stream.concat(
                     Stream.of(sv.args()).map(v -> asDomain(v, st)),
                     Stream.of(asDomain(value, st)))
                     .collect(Collectors.toList()));
         }
-        private static DomainList from(TemporalFluent.Fluent f, Map<LVarRef,VarRef> bindings, State st) {
+        private static DomainList from(TemporalFluent.Fluent f, Map<LVarRef,VarRef> bindings, PartialPlan st) {
             return new DomainList(
                     Stream.concat(
                             f.getArgs().stream().map(v -> asDomain(v, bindings, st)),
                             Stream.of(asDomain(f.getValue(), bindings, st)))
                             .collect(Collectors.toList()));
         }
-        private static DomainList from(TemporalFluent.Fluent f, State st) {
+        private static DomainList from(TemporalFluent.Fluent f, PartialPlan st) {
             return new DomainList(
                     Stream.concat(
                             f.getArgs().stream().map(v -> asDomainFromLocalVars(v, st)),
@@ -384,7 +384,7 @@ public class HierarchicalEffects {
      * A task can indirectly support an open goal if it can be decomposed in an action
      * producing a statement (i) that can support the open goal (ii) that can be early enough to support it
      */
-    public boolean canIndirectlySupport(Timeline og, Task t, State st) {
+    public boolean canIndirectlySupport(Timeline og, Task t, PartialPlan st) {
         DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
         Map<LVarRef, VarRef> bindings = new HashMap<>();
         for(int i=0 ; i<t.args().size() ; i++) {
@@ -403,7 +403,7 @@ public class HierarchicalEffects {
      * A task can indirectly support an open goal if it can be decomposed in an action
      * producing a statement (i) that can support the open goal (ii) that can be early enough to support it
      */
-    public boolean canSupport(Timeline og, AbstractAction aa, State st) {
+    public boolean canSupport(Timeline og, AbstractAction aa, PartialPlan st) {
         DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
 
         return effectsOf(aa).stream()

@@ -2,17 +2,17 @@ package fr.laas.fape.planning.core.planning.search.strategies.flaws;
 
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 /**
  * This strategies orders flaws by increasing number of resolvers.
  */
 public class LeastCommitingFirst implements FlawComparator {
 
-    public final State st;
+    public final PartialPlan st;
     public final Planner planner;
 
-    public LeastCommitingFirst(State st, Planner planner) {
+    public LeastCommitingFirst(PartialPlan st, Planner planner) {
         this.st = st;
         this.planner = planner;
     }

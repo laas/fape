@@ -8,7 +8,7 @@ import fr.laas.fape.planning.core.planning.grounding.*;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.util.EffSet;
 import fr.laas.fape.planning.core.planning.search.Handler;
@@ -26,7 +26,7 @@ public class ReachabilityHandler extends Handler {
     private final boolean USE_DECOMPOSITION_VARIABLES = GlobalOptions.getBooleanOption("use-decomposition-variables");
 
     @Override
-    public void stateBindedToPlanner(State st, Planner pl) {
+    public void stateBindedToPlanner(PartialPlan st, Planner pl) {
         assert !st.hasExtension(CoreReachabilityGraph.StateExt.class);
 
         // init the core of the dependency graph
@@ -79,14 +79,14 @@ public class ReachabilityHandler extends Handler {
     }
 
     @Override
-    protected void apply(State st, StateLifeTime time, Planner planner) {
+    protected void apply(PartialPlan st, StateLifeTime time, Planner planner) {
         if (time == StateLifeTime.SELECTION) {
             propagateNetwork(st, planner);
         }
     }
 
     @Override
-    public void actionInserted(Action act, State st, Planner pl) {
+    public void actionInserted(Action act, PartialPlan st, Planner pl) {
         if(st.csp.bindings().isRecorded(act.instantiationVar()))
             return;
         assert !st.csp.bindings().isRecorded(act.instantiationVar()) : "The action already has a variable for its ground versions.";
@@ -107,7 +107,7 @@ public class ReachabilityHandler extends Handler {
     }
 
     @Override
-    public void taskInserted(Task task, State st, Planner planner) {
+    public void taskInserted(Task task, PartialPlan st, Planner planner) {
         if(st.csp.bindings().isRecorded(task.methodSupportersVar()))
             return;
 
@@ -128,11 +128,11 @@ public class ReachabilityHandler extends Handler {
     }
 
     @Override
-    public void supportLinkAdded(Action act, Task task, State st) {
+    public void supportLinkAdded(Action act, Task task, PartialPlan st) {
         st.addUnificationConstraint(task.groundSupportersVar(), act.instantiationVar());
     }
 
-    private void propagateNetwork(State st, Planner pl) {
+    private void propagateNetwork(PartialPlan st, Planner pl) {
         final IntRep<GAction> gactsRep = pl.preprocessor.store.getIntRep(GAction.class);
 
         CoreReachabilityGraph.StateExt ext = st.getExtension(CoreReachabilityGraph.StateExt.class);

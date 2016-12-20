@@ -1,7 +1,7 @@
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 /**
  * Selects the plans with the least number of flaws with respect to the number of action.
@@ -15,26 +15,26 @@ public class LeastFlawRatio extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
-        return "LFR:\tflaw-ratio (%): "+eval(st);
+    public String reportOnState(PartialPlan plan) {
+        return "LFR:\tflaw-ratio (%): "+eval(plan);
     }
 
-    float eval(State st) {
+    float eval(PartialPlan st) {
         return ((float) st.tdb.getConsumers().size()) / ((float) st.getNumActions())*100;
     }
 
     @Override
-    public double g(State st) {
+    public double g(PartialPlan plan) {
         return 0;
     }
 
     @Override
-    public double h(State st) {
-        return eval(st);
+    public double h(PartialPlan plan) {
+        return eval(plan);
     }
 
     @Override
-    public double hc(State st) {
-        return eval(st);
+    public double hc(PartialPlan plan) {
+        return eval(plan);
     }
 }

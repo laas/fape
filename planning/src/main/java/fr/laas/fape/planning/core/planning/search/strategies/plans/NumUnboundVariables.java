@@ -11,7 +11,7 @@
 
 package fr.laas.fape.planning.core.planning.search.strategies.plans;
 
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 /**
  * Gives priority to state with the least number of unbound variables
@@ -24,11 +24,11 @@ public class NumUnboundVariables extends PartialPlanComparator {
     }
 
     @Override
-    public String reportOnState(State st) {
-        return "Unbound: num-unbound: "+ st.getUnboundVariables().size();
+    public String reportOnState(PartialPlan plan) {
+        return "Unbound: num-unbound: "+ plan.getUnboundVariables().size();
     }
 
-    @Override public double g(State st) { return 0; }
-    @Override public double h(State st) { return st.getUnboundVariables().size(); }
-    @Override public double hc(State st) { return h(st); }
+    @Override public double g(PartialPlan plan) { return 0; }
+    @Override public double h(PartialPlan plan) { return plan.getUnboundVariables().size(); }
+    @Override public double hc(PartialPlan plan) { return h(plan); }
 }

@@ -8,7 +8,7 @@ import fr.laas.fape.anml.model.concrete.statements.LogStatement;
 import fr.laas.fape.anml.model.concrete.statements.Persistence;
 import fr.laas.fape.anml.model.concrete.statements.Transition;
 import fr.laas.fape.planning.core.planning.planner.Planner;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.util.EffSet;
@@ -70,7 +70,7 @@ public class GroundProblem {
 
     /** Return all fluents achieved by a statement together with the timepoint at
      * which they are achieved. */
-    public List<TempFluents> tempsFluents(State st) {
+    public List<TempFluents> tempsFluents(PartialPlan st) {
         if(st.fluents == null) {
             st.fluents = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
@@ -88,7 +88,7 @@ public class GroundProblem {
     }
 
     /** Returns all fluents that are achieved (result of a transition or assignment) and not involved in any causal link). */
-    public List<TempFluents> tempsFluentsThatCanSupportATransition(State st) {
+    public List<TempFluents> tempsFluentsThatCanSupportATransition(PartialPlan st) {
         if(st.fluentsWithChange == null) {
             st.fluentsWithChange = new LinkedList<>();
             for(Timeline db : st.getTimelines()) {
@@ -102,7 +102,7 @@ public class GroundProblem {
         return st.fluentsWithChange;
     }
 
-    public Set<Fluent> fluentsBefore(State st, Collection<TPRef> tps) {
+    public Set<Fluent> fluentsBefore(PartialPlan st, Collection<TPRef> tps) {
         Set<Fluent> fluents = new HashSet<>();
         for(TempFluents tf : tempsFluents(st)) {
             if(st.canAllBeBefore(tf.timepoints, tps))
@@ -111,7 +111,7 @@ public class GroundProblem {
         return fluents;
     }
 
-    public EffSet<Fluent> allFluents(State st) {
+    public EffSet<Fluent> allFluents(PartialPlan st) {
         EffSet<Fluent> fluents = new EffSet<Fluent>(planner.preprocessor.fluentIntRepresentation());
         for(TempFluents tf : tempsFluents(st))
             fluents.addAll(tf.fluents);

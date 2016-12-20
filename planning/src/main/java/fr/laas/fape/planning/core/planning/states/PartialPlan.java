@@ -17,7 +17,7 @@ import fr.laas.fape.planning.core.planning.search.flaws.finders.FlawFinder;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
 import fr.laas.fape.planning.core.planning.states.modification.ChronicleInsertion;
-import fr.laas.fape.planning.core.planning.states.modification.StateModification;
+import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
 import fr.laas.fape.planning.core.planning.tasknetworks.TaskNetworkManager;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
@@ -48,7 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class State implements Reporter {
+public class PartialPlan implements Reporter {
 
     static int idCounter = 0;
     public final int mID;
@@ -110,8 +110,8 @@ public class State implements Reporter {
 
 
     /** All modifications (i.e. resolvers) that have been applied to build this state */
-    private final List<StateModification> modifications;
-    public List<StateModification> getStateModifications() { return modifications; }
+    private final List<PartialPlanModification> modifications;
+    public List<PartialPlanModification> getStateModifications() { return modifications; }
 
     /**
      * Index of the latest applied StateModifier in pb.jModifiers()
@@ -127,7 +127,7 @@ public class State implements Reporter {
      * this constructor is only for the initial state!! other states are
      * constructed from from the existing states
      */
-    public State(AnmlProblem pb, Controllability controllability) {
+    public PartialPlan(AnmlProblem pb, Controllability controllability) {
         this.mID = idCounter++;
         this.pb = pb;
         this.depth = 0;
@@ -159,7 +159,7 @@ public class State implements Reporter {
      *
      * @param st State to copy
      */
-    public State(State st, int id) {
+    public PartialPlan(PartialPlan st, int id) {
         this.mID = id;
         this.depth = st.depth +1;
         pb = st.pb;
@@ -193,8 +193,8 @@ public class State implements Reporter {
 
     public void setDeadEnd() { isDeadEnd = true; }
 
-    public State cc(int newID) {
-        return new State(this, newID);
+    public PartialPlan cc(int newID) {
+        return new PartialPlan(this, newID);
     }
 
     private List<Handler> getHandlers() {
@@ -429,7 +429,7 @@ public class State implements Reporter {
         csp.isConsistent();
     }
 
-    public boolean apply(StateModification mod, boolean isFastForwarding) { //TODO, simply this fast forwarding knowledge
+    public boolean apply(PartialPlanModification mod, boolean isFastForwarding) { //TODO, simply this fast forwarding knowledge
         modifications.add(mod);
         mod.apply(this, isFastForwarding);
         return isConsistent();
@@ -449,7 +449,7 @@ public class State implements Reporter {
             csp.stn().enforceBefore(pb.start(), pb.earliestExecution());
         }
         for (int i = problemRevision + 1; i < pb.chronicles().size(); i++) {
-            StateModification mod = new ChronicleInsertion(pb.chronicles().get(i));
+            PartialPlanModification mod = new ChronicleInsertion(pb.chronicles().get(i));
             apply(mod, false);
             problemRevision = i;
         }

@@ -3,7 +3,7 @@ package fr.laas.fape.planning.core.planning.search.strategies.plans.tsp;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Threat;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.PartialPlanComparator;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 import java.util.stream.Stream;
 
@@ -19,23 +19,23 @@ public class MinSpanTreeComp extends PartialPlanComparator {
         return "minspan";
     }
 
-    private MinSpanTreeExtFull getExt(State st) {
+    private MinSpanTreeExtFull getExt(PartialPlan st) {
         if(!st.hasExtension(MinSpanTreeExtFull.class))
             st.addExtension(new MinSpanTreeExtFull(st));
         return st.getExtension(MinSpanTreeExtFull.class);
     }
 
     @Override
-    public double g(State st) {
-        return existingStatementsWeight * getExt(st).getCurrentCost();
+    public double g(PartialPlan plan) {
+        return existingStatementsWeight * getExt(plan).getCurrentCost();
     }
 
     @Override
-    public double h(State st) {
-        return hc(st);
+    public double h(PartialPlan plan) {
+        return hc(plan);
     }
 
-    private int threatsCost(State st) {
+    private int threatsCost(PartialPlan st) {
         if(USE_ALL_THREATS) {
             return st.getAllThreats().size();
         } else {
@@ -46,16 +46,16 @@ public class MinSpanTreeComp extends PartialPlanComparator {
     }
 
     @Override
-    public double hc(State st) {
-        return pendingStatementsWeight * getExt(st).getCostToGo()
-                + st.tdb.getConsumers().size()
-                + threatsWeight * threatsCost(st)
-                + unrefinedTasksWeight * st.taskNet.getNumOpenTasks()
-                + unbindedVarsWeight * st.getUnboundVariables().size();
+    public double hc(PartialPlan plan) {
+        return pendingStatementsWeight * getExt(plan).getCostToGo()
+                + plan.tdb.getConsumers().size()
+                + threatsWeight * threatsCost(plan)
+                + unrefinedTasksWeight * plan.taskNet.getNumOpenTasks()
+                + unbindedVarsWeight * plan.getUnboundVariables().size();
     }
 
     @Override
-    public String reportOnState(State st) {
-        return shortName()+"f: "+(g(st)+h(st))+" g:"+g(st)+" h:"+h(st)+" hc: "+hc(st)+" = "+getExt(st).getCostToGo()+" + "+ st.tdb.getConsumers().size()+" + "+threatsCost(st);
+    public String reportOnState(PartialPlan plan) {
+        return shortName()+"f: "+(g(plan)+h(plan))+" g:"+g(plan)+" h:"+h(plan)+" hc: "+hc(plan)+" = "+getExt(plan).getCostToGo()+" + "+ plan.tdb.getConsumers().size()+" + "+threatsCost(plan);
     }
 }

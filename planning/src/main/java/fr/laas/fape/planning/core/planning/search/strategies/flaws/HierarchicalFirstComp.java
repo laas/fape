@@ -5,15 +5,15 @@ import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Threat;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnmotivatedAction;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.UnrefinedTask;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 
 public class HierarchicalFirstComp implements FlawComparator {
 
-    public final State st;
+    public final PartialPlan st;
     public final Planner planner;
     public final boolean threatsFirst;
 
-    public HierarchicalFirstComp(State st, Planner planner) {
+    public HierarchicalFirstComp(PartialPlan st, Planner planner) {
         this.st = st;
         this.planner = planner;
         threatsFirst = st.pb.allActionsAreMotivated();

@@ -1,24 +1,19 @@
 package fr.laas.fape.planning.core.planning.states.modification;
 
-import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.concrete.Action;
-import fr.laas.fape.anml.model.concrete.Factory;
-import fr.laas.fape.planning.core.planning.states.State;
+import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import lombok.Value;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
 
 @Value
-public class ActionInsertion implements StateModification {
+public class ActionInsertion implements PartialPlanModification {
 
     public final Action action;
 
     @Override
-    public void apply(State st, boolean isFastForwarding) {
-        st.insert(action);
+    public void apply(PartialPlan plan, boolean isFastForwarding) {
+        plan.insert(action);
     }
 
     @Override
