@@ -13,7 +13,7 @@ import fr.laas.fape.structures.IList
 
 import scala.collection.JavaConverters._
 
-class AbstractChronicle(
+case class AbstractChronicle(
                          private val statements: List[AbstractStatement],
                          private val constraints: List[AbstractConstraint],
                          private val variableDeclarations: List[IRSimpleVar],
@@ -56,13 +56,13 @@ class AbstractChronicle(
     new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations ++ instances, annotations, None)
   }
 
-  def +(annotation: AbstractChronicleAnnotation) =
-    new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, annotation :: annotations, None)
+  def +(annotation: AbstractChronicleAnnotation) = copy(annotations = annotation :: annotations)
+  def +(statement: AbstractStatement) = copy(statements = statement :: statements)
+  def +(constraint: AbstractConstraint) = copy(constraints = constraint :: constraints)
+  def +(absChron: AbstractChronicle) = union(absChron)
 
   private def withSTNU(stnu: AbstractSTNU) =
     new AbstractChronicle(statements, constraints, variableDeclarations, constantDeclarations, annotations, Some(stnu))
-
-  def +(absChron: AbstractChronicle) = union(absChron)
 
   def union(o: AbstractChronicle) : AbstractChronicle = {
     assert(optSTNU.isEmpty && o.optSTNU.isEmpty)
@@ -88,7 +88,7 @@ class AbstractChronicle(
   }
 
   /** Transform this chronicle into an equivalent one where temporal constraints are minimzed */
-  def withMinialSTN(dispatchablePoints: List[AbsTP]) : AbstractChronicle = {
+  def withMinimalSTN(dispatchablePoints: List[AbsTP]) : AbstractChronicle = {
     if(optSTNU.nonEmpty)
       return this
 

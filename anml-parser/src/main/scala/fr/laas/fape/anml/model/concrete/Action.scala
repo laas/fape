@@ -5,7 +5,7 @@ import fr.laas.fape.anml.model.abs.AbstractAction
 import fr.laas.fape.anml.model.{Context, _}
 import fr.laas.fape.anml.model.concrete.statements.Statement
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 
 /** Represents a concrete action that is to be inserted into a plan. All parameters of the action refer to one global
@@ -104,11 +104,11 @@ class Action(
   }
 
   /** Arguments (as global variables) of the action */
-  lazy val args = seqAsJavaList(abs.args.map(context.getGlobalVar(_)))
+  lazy val args = abs.args.asScala.map(context.getGlobalVar).asJava
 
-  override def toString = name +"("+ abs.args.map(context.getGlobalVar(_)).mkString(", ") + ")"
+  override def toString = name +"("+ abs.args.asScala.map(context.getGlobalVar).mkString(", ") + ")"
 
-  override def usedVariables = chronicle.usedVariables ++ args + start + end + instantiationVar
+  override def usedVariables = chronicle.usedVariables ++ args.asScala + start + end + instantiationVar
 }
 
 
@@ -165,7 +165,7 @@ object Action {
     */
   def getNewStandaloneAction(pb:AnmlProblem, actionName:String, refCounter: RefCounter) : Action = {
     val abs =
-      pb.abstractActions.find(_.name == actionName) match {
+      pb.abstractActions.asScala.find(_.name == actionName) match {
         case Some(act) => act
         case None => throw new ANMLException("Unable to find action "+actionName)
       }

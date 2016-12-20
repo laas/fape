@@ -139,159 +139,180 @@ class AnmlProblem extends TemporalInterval with ChronicleContainer {
     * @param filename File in which the anml text can be found.
    */
   def extendWithAnmlFile(filename: String) : Unit = {
-    if(filename.endsWith(".pb.anml")) {
-      val f = new File(filename)
-      f.getName.split("\\.").toList match {
-        case base :: num :: "pb" :: "anml" :: Nil =>
-          val domainFile = new File(f.getParentFile, base+".dom.anml")
-          addAnml(ANMLFactory.parseAnmlFromFiles(List(domainFile.getAbsolutePath, filename)))
-        case _ =>
-          throw new ANMLException("Error: file name does not follow the convention: "+filename+"."+
-           "It should be in the form domainName.xxx.pb.anml and have an associated domainName.dom.anml file.")
-      }
-    } else {
-      addAnml(ANMLFactory.parseAnmlFromFile(filename))
-    }
-  }
-
-  /**
-   * Extends this problem with the ANML found in the string.
-   * If any updates need to be made to a search state as a consequence,
-   * those are encoded as a Chronicle and added to `chronicles`
-    *
-    * @param anml An anml string.
-   */
-  def extendWithAnmlText(anml: String) : Unit = {
-    addAnml(ANMLFactory.parseAnmlString(anml))
-  }
-
-  /**
-   * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
-   * those are encoded as a Chronicle and added to `chronicles`
-    *
-    * @param anml Output of the ANML parser for the ANML block.
-   */
-  private def addAnml(anml:ParseResult) = addAnmlBlocks(anml.blocks)
-
-  /**
-   * Integrates new ANML blocks into the problem. If any updates need to be made to a search state as a consequence,
-   * those are encoded as a Chronicle and added to `chronicles`
-    *
-    * @param blocks A sequence of ANML blocks.
-   */
-  private def addAnmlBlocks(blocks:Seq[AnmlBlock]) {
-
-    // chronicle that containing all alterations to be made to a plan as a consequence of this ANML block
-    var chron : AbstractChronicle = EmptyAbstractChronicle
-
-    // add all type declarations to the instance manager.
-    blocks.collect({ case x:TypeDecl => x }).foreach {
-      case TypeDecl(PSimpleType(name), None, _) => instances.addType(name, "")
-      case TypeDecl(PSimpleType(name), Some(PSimpleType(parent)), _) => instances.addType(name, parent)
-    }
-
-    // add all instance declaration to the instance manager and to the chronicle
-    blocks collect {
-      case parser.Instance(PSimpleType(typeName), name) =>
-
-        instances.addInstance(name, typeName, refCounter)
-        // all instances are added to the context
-        val inst = instance(name)
-        val locVar = IRSimpleVar(name, inst.getType)
-        context.addVar(locVar,inst)
-        chron = chron.withConstantDeclarations((locVar, inst) :: Nil)
-    }
-
-    // add all functions to the function manager
-    blocks collect { case funcDecl:parser.Function =>
-      assert(!funcDecl.name.contains("."), "Declaring function "+funcDecl+" is not supported. If you wanted to " +
-        "declared a function linked to type, you should do so in the type itself.") // TODO: should be easy to support
-
-      if(funcDecl.args.isEmpty && funcDecl.isConstant) {
-        // declare as a variable since it as no argument and is constant.
-        val locVar = IRSimpleVar(funcDecl.name, instances.asType(funcDecl.tipe))
-        context.addUndefinedVar(locVar)
-        chron = chron.withVariableDeclarations(locVar :: Nil)
+    val files =
+      if(filename.endsWith(".pb.anml")) {
+        val f = new File(filename)
+        f.getName.split("\\.").toList match {
+          case base :: num :: "pb" :: "anml" :: Nil =>
+            val domainFile = new File(f.getParentFile, base+".dom.anml")
+            List(domainFile.getAbsolutePath, filename)
+          case _ =>
+            throw new ANMLException("Error: file name does not follow the convention: "+filename+"."+
+              "It should be in the form domainName.xxx.pb.anml and have an associated domainName.dom.anml file.")
+        }
       } else {
-        // either non-constant or with arguments
-        functions.addFunction(funcDecl)
+        List(filename)
       }
-    }
-
-    // find all methods declared inside a type and them to functions and to the type.
-    blocks collect { case typeDecl: TypeDecl =>
-      typeDecl.content.filter(_.isInstanceOf[anml.parser.Function]).map(_.asInstanceOf[anml.parser.Function]).foreach(scopedFunction => {
-        functions.addScopedFunction(instances.asType(typeDecl.name), scopedFunction)
-        instances.asType(typeDecl.name).addMethod(scopedFunction.name)
-      })
-    }
-
-    // record all tasks (needed when processing statements)
-    blocks collect { case parser.Action(name, args, _) =>
-      assert(!tasks.contains(name), s"Action \'$name\' is already defined.")
-      tasks.put(name, args)
-    }
-
-    blocks collect { case actionDecl: anml.parser.Action =>
-      val abs = AbstractAction(actionDecl, this, refCounter)
-      assert(abs.nonEmpty)
-      val task = abs.head.taskName
-      assert(!actionsByTask.contains(task), "Task \""+task+"\" is already registered. Maybe the corresponding action was declared twice.")
-      abstractActions ++= abs
-      actionsByTask += ((task, abs.asJava))
-    }
-
-    blocks collect { case tempStatement: TemporalStatement =>
-      chron += StatementsFactory(tempStatement, this.context, refCounter, DefaultMod)
-    }
-
-    blocks collect { case constraint: anml.parser.TemporalConstraint =>
-      chron = chron.withConstraintsSeq(AbstractTemporalConstraint(constraint))
-    }
-
-    blocks collect { case parser.ForAll(args, content) =>
-      // need an all combinations
-      val domains = args.map(a => instances.asType(a.tipe).instances.map(i => (a.name, i.instance)).toList)
-      def combinations[E](ll: List[List[E]]) : List[List[E]] =
-        ll match {
-          case Nil => Nil
-          case l::Nil => l.map(x => List(x))
-          case h::t => for(i <- h ; rest <- combinations(t)) yield i::rest
-        }
-      val combis = combinations(domains)
-      for(binding <- combis) {
-        val transformationMap : Map[String,String] = binding.toMap
-        content collect {
-          case ts: TemporalStatement =>
-            chron += StatementsFactory(ts, this.context, refCounter, new Mod {
-              def varNameMod(name:String) = transformationMap.getOrElse(name, name)
-              def idModifier(s:String) = DefaultMod.idModifier(s)
-            })
-        }
-      }
-    }
-
-    blocks collect { case parser.ObservationConditionsAnnotation(tpName, content) =>
-      var conditions : AbstractChronicle = EmptyAbstractChronicle
-      val tp = AbsTP(tpName)
-      content collect {
-        case ts: TemporalStatement =>
-          val ac = StatementsFactory(ts, this.context, refCounter)
-          conditions += ac
-        case x => throw new ANMLException(s"The use of '$x' is not supported inside an ObservationConditions annotation")
-      }
-      chron += new AbstractObservationConditionsAnnotation(tp, conditions)
-    }
-//
-//    for((function,variable) <- context.bindings if !function.func.valueType.isNumeric) {
-//      val sv = new AbstractParameterizedStateVariable(function.func, function.args)
-//      absConstraints += new AbstractEqualityConstraint(sv, variable, LStatementRef(""))
-//    }
-
-    val c = chron.getInstance(context, this, this, refCounter)
-    c.container = Some(this)
-    chronicles += c
+    val anmlText = files.foldLeft("")((acc, filePath) => {
+      val reader = scala.io.Source.fromFile(filePath)
+      val fileContent = reader.mkString
+      reader.close()
+      acc+"\n"+fileContent
+    })
+    extendWith(anmlText)
   }
+
+  /**
+    * Extends this problem definition with the given anml string.
+ *
+    * @param anmlString ANML code to incorporate
+    */
+  def extendWith(anmlString: String): Unit = {
+    val parseResult = ANMLFactory.parseAnmlString(anmlString)
+    val chronicle = anmlBlocksAsChronicle(parseResult.blocks, allowProblemUpdate = true)
+    chronicles += chronicle
+    chronicle.container = Some(this)
+  }
+
+  /**
+    * Builds a new chronicle based on an ANML string, using the context of this problem.
+    * The problem is not updated.
+ *
+    * @param anmlString ANML code to transform
+    * @return A new chronicle, co
+    * @throws ANMLException if the ANML string requires the problem to be modified (e.g. declares a new type,...)
+    */
+  def asChronicle(anmlString: String): Chronicle = {
+    val parseResult = ANMLFactory.parseAnmlString(anmlString)
+    anmlBlocksAsChronicle(parseResult.blocks, allowProblemUpdate = false)
+  }
+
+  /**
+    * Builds a new chronicle based on the given anml blocks.
+ *
+    * @param blocks A sequence of ANML block to appear in the chronicle
+    * @param allowProblemUpdate If true, allows the current problem to be updated (e.g. to include a new type declaration found in the blocks)
+    * @return A chronicle containing all statements in the blocks
+    * @throws ANMLException if the problem requires an update and those are not allowed
+    */
+  private def anmlBlocksAsChronicle(blocks:Seq[AnmlBlock], allowProblemUpdate: Boolean): Chronicle = {
+    // sort blocks to make sure they are processed in the right order (types, instances and functions first)
+    val sorted = blocks.sortBy {
+      case _: TypeDeclaration => 0
+      case _: parser.Instance => 1
+      case _: parser.Function => 2
+      case _ => 3
+    }
+    var chronicle : AbstractChronicle = EmptyAbstractChronicle
+    for(block <- sorted)
+      chronicle = extendChronicleWithBlock(block, chronicle, allowProblemUpdate)
+
+    chronicle.getInstance(context, this, this, refCounter)
+  }
+
+  /**
+    * Incorporates an ANML block into a chronicle.
+ *
+    * @param block Block to integrate
+    * @param baseChronicle Base chronicle to extend with the given block
+    * @param allowProblemUpdate If true, allows the current problem to be updated (e.g. to include a new type declaration found in the block)
+    * @return The extended chronicle
+    * @throws ANMLException if the problem requires an update and those are not allowed
+    */
+   private def extendChronicleWithBlock(block:AnmlBlock, baseChronicle: AbstractChronicle, allowProblemUpdate: Boolean) : AbstractChronicle = {
+     var chron = baseChronicle
+
+     block match {
+       case tempStatement: TemporalStatement =>
+         chron += StatementsFactory(tempStatement, this.context, refCounter, DefaultMod)
+
+       case constraint: anml.parser.TemporalConstraint =>
+         chron = chron.withConstraintsSeq(AbstractTemporalConstraint(constraint))
+
+       case parser.ForAll(args, content) =>
+         // need an all combinations
+         val domains = args.map(a => instances.asType(a.tipe).instances.map(i => (a.name, i.instance)).toList)
+         def combinations[E](ll: List[List[E]]) : List[List[E]] =
+           ll match {
+             case Nil => Nil
+             case l::Nil => l.map(x => List(x))
+             case h::t => for(i <- h ; rest <- combinations(t)) yield i::rest
+           }
+         val combis = combinations(domains)
+         for(binding <- combis) {
+           val transformationMap : Map[String,String] = binding.toMap
+           content collect {
+             case ts: TemporalStatement =>
+               chron += StatementsFactory(ts, this.context, refCounter, new Mod {
+                 def varNameMod(name:String) = transformationMap.getOrElse(name, name)
+                 def idModifier(s:String) = DefaultMod.idModifier(s)
+               })
+           }
+         }
+
+       case parser.ObservationConditionsAnnotation(tpName, content) =>
+         var conditions : AbstractChronicle = EmptyAbstractChronicle
+         val tp = AbsTP(tpName)
+         content collect {
+           case ts: TemporalStatement =>
+             val ac = StatementsFactory(ts, this.context, refCounter)
+             conditions += ac
+           case x => throw new ANMLException(s"The use of '$x' is not supported inside an ObservationConditions annotation")
+         }
+         chron += new AbstractObservationConditionsAnnotation(tp, conditions)
+
+       // all following block require to modify the ANML problem, check that we have the right to do so
+       case x if !allowProblemUpdate =>
+         throw new ANMLException(s"The ANML block $x is either not supported or would require extending the domain definition")
+
+       // add all type declarations to the instance manager.
+       case TypeDeclaration(PSimpleType(name), None) =>
+         instances.addType(name, "")
+       case TypeDeclaration(PSimpleType(name), Some(PSimpleType(parent))) =>
+         instances.addType(name, parent)
+
+       // add all instance declaration to the instance manager and to the chronicle
+       case parser.Instance(PSimpleType(typeName), name) =>
+         instances.addInstance(name, typeName, refCounter)
+         // all instances are added to the context
+         val inst = instance(name)
+         val locVar = IRSimpleVar(name, inst.getType)
+         context.addVar(locVar,inst)
+         chron = chron.withConstantDeclarations((locVar, inst) :: Nil)
+
+       // add all functions to the function manager
+       case funcDecl:parser.Function =>
+         funcDecl.name.split("\\.").toList match {
+           case containingType :: funcName :: Nil => // this is funciton declared in a type
+             functions.addFunction(funcDecl)
+             instances.asType(containingType).addMethod(funcName)
+           case funcName :: Nil => // function independant of any type
+             if(funcDecl.args.isEmpty && funcDecl.isConstant) {
+               // declare as a variable since it as no argument and is constant.
+               val locVar = IRSimpleVar(funcDecl.name, instances.asType(funcDecl.tipe))
+               context.addUndefinedVar(locVar)
+               chron = chron.withVariableDeclarations(locVar :: Nil)
+             } else {
+               // either non-constant or with arguments
+               functions.addFunction(funcDecl)
+             }
+           case xs => throw new ANMLException(s"Error: function with multiple levels of nesting: $funcDecl")
+         }
+
+       // record all tasks (needed when processing statements)
+       case action: parser.Action =>
+         assert(!tasks.contains(action.name), s"Action \'${action.name}\' is already defined.")
+         tasks.put(action.name, action.args)
+         val abs = AbstractAction(action, this, refCounter)
+         assert(abs.nonEmpty)
+         val task = abs.head.taskName
+         assert(!actionsByTask.contains(task), "Task \""+task+"\" is already registered. Maybe the corresponding action was declared twice.")
+         abstractActions ++= abs
+         actionsByTask += ((task, abs.asJava))
+     }
+
+     chron // return extended chronicle
+   }
 
   /**
    * Creates a chronicle from the ANML found in the file.

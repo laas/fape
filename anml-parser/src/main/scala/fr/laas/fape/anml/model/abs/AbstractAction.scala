@@ -269,7 +269,7 @@ object AbstractAction {
 //          allConstraints += new AbstractEqualityConstraint(sv, action.context.getLocalVar(variable.name), LStatementRef(""))
 //        }
 
-        actChronicle = actChronicle.withMinialSTN(Nil)
+        actChronicle = actChronicle.withMinimalSTN(Nil)
 
         val action = new AbstractAction(baseName, taskName, decID, args, isTaskDependent, actContext, actChronicle)
         action

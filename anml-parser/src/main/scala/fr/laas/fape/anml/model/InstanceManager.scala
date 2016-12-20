@@ -4,7 +4,7 @@ import fr.laas.fape.anml.ANMLException
 import fr.laas.fape.anml.model.concrete.{InstanceRef, RefCounter}
 import fr.laas.fape.anml.parser.{PDisjunctiveType, PSimpleType, PType}
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 
@@ -151,7 +151,7 @@ class InstanceManager(val refCounter: RefCounter) {
     subTypes(typ).contains(value.getType) || value.id == "unknown"
 
   /** Returns all instances of the given type */
-  def jInstancesOfType(tipe:String) = seqAsJavaList(instancesOfType(tipe))
+  def jInstancesOfType(tipe:String) = instancesOfType(tipe)
 
   /** Return a fully qualified function definition in the form
     * [Robot, location].

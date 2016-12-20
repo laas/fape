@@ -36,13 +36,11 @@ case class Operator(op:String)
 
 sealed abstract class Statement(id:String)
 
-case class SingleTermStatement(val term : Expr, val id:String) extends Statement(id)
+case class SingleTermStatement(term: Expr, id: String) extends Statement(id)
 case class TwoTermsStatement(left:Expr, op:Operator, right:Expr, id:String) extends Statement(id)
 case class ThreeTermsStatement(left:Expr, op1:Operator, middle:Expr, op2:Operator, right:Expr, id:String) extends Statement(id)
 case class OrderedStatements(statements: List[Statement], id: String) extends Statement(id)
 case class UnorderedStatements(statements: List[Statement], id: String) extends Statement(id)
-
-
 
 case class Action(name:String, args:List[Argument], content:List[ActionContent]) extends AnmlBlock
 
@@ -119,7 +117,9 @@ case class ReqTemporalConstraint(tp1:TimepointRef, operator:String, tp2:Timepoin
 }
 case class ContingentConstraint(src:TimepointRef, dst:TimepointRef, min:Int, max:Int) extends TemporalConstraint
 
-class Function(val name:String, val args:List[Argument], val tipe:PType, val isConstant:Boolean) extends AnmlBlock with TypeContent
+abstract class Function(val name:String, val args:List[Argument], val tipe:PType, val isConstant:Boolean) extends AnmlBlock with TypeContent {
+  def unscoped(containingType: String) : Function
+}
 
 case class SymFunction(
     override val name:String,
@@ -129,9 +129,12 @@ case class SymFunction(
   extends Function(name, args, tipe, isConstant)
 {
   assert(tipe.toString != "integer" && tipe.toString != "float", "Symbolic function with a numeric type: "+this)
+
+  override def unscoped(containingType: String): Function =
+    SymFunction(containingType+"."+name, Argument(PSimpleType(containingType), "container") :: args, tipe, isConstant)
 }
 
-class NumFunction(
+abstract class NumFunction(
     override val name:String,
     override val args:List[Argument],
     override val tipe:PType,
@@ -160,6 +163,9 @@ case class IntFunction(
     case _ => false
   }, "The type of this int function is not an integer: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in integer function: "+this)
+
+  override def unscoped(containingType: String): Function =
+    IntFunction(containingType+"."+name, Argument(PSimpleType(containingType), "container") :: args, tipe, isConstant, minValue, maxValue, resourceType)
 }
 
 case class FloatFunction(
@@ -177,12 +183,21 @@ case class FloatFunction(
     case _ => false
   }, "The type of this float function is not a float: "+this)
   assert(minValue <= maxValue, "Error: min value greater than max value in float function: "+this)
+
+  override def unscoped(containingType: String): Function =
+    FloatFunction(containingType+"."+name, Argument(PSimpleType(containingType), "container") :: args, tipe, isConstant, minValue, maxValue, resourceType)
 }
 
 class Constant(override val name :String, override val tipe:PType)
-  extends Function(name, Nil, tipe, true) with DecompositionContent with ActionContent
+  extends Function(name, Nil, tipe, true) with DecompositionContent with ActionContent {
 
-case class TypeDecl(name:PSimpleType, parent:Option[PSimpleType], content:List[TypeContent]) extends AnmlBlock
+  override def unscoped(containingType: String): Function =
+    SymFunction(containingType+"."+name, Argument(PSimpleType(containingType), "container") :: args, tipe, isConstant = true)
+}
+
+case class ComplexTypeDeclaration(name:PSimpleType, parent:Option[PSimpleType], content:List[TypeContent])
+
+case class TypeDeclaration(name:PSimpleType, parent:Option[PSimpleType]) extends AnmlBlock
 
 case class Instance(tipe:PSimpleType, name:String) extends AnmlBlock
 
@@ -345,16 +360,21 @@ object AnmlParser extends JavaTokenParsers {
     "{"~>rep(statementSemi)<~"}"<~";"
       | statementSemi ^^ (x => List(x)))
 
-  lazy val block : Parser[List[AnmlBlock]] = (
-    action ^^ (a => List(a))
-      | temporalStatements
-      | tempConstraint ^^ (x => List(x))
-      | functionDecl ^^ (func => List(func))
-      | typeDecl ^^ (t => List(t))
-      | instanceDecl
-      | forallBlock ^^ (t => List(t))
-      | annotation ^^ (t => List(t))
-    )
+  lazy val block : Parser[List[AnmlBlock]] =
+    action ^^ (a => List(a)) |
+      temporalStatements |
+      tempConstraint ^^ (x => List(x)) |
+      functionDecl ^^ (func => List(func)) |
+      typeDecl ^^ { case t =>
+        val simpleTypeDeclaration = TypeDeclaration(t.name, t.parent)
+        val additionalBlocks = t.content.map {
+          case f: Function => f.unscoped(t.name.name)
+        }
+        simpleTypeDeclaration :: additionalBlocks
+      } |
+      instanceDecl |
+      forallBlock ^^ (t => List(t)) |
+      annotation ^^ (t => List(t))
 
   lazy val annotation : Parser[Annotation] =
     "::("~>observationConditions<~")" |
@@ -455,11 +475,11 @@ object AnmlParser extends JavaTokenParsers {
     "("~>rep1sep(simpleType, "or")<~")" ^^ { case l => PDisjunctiveType(l.toSet) } |
     simpleType
 
-  lazy val typeDecl : Parser[TypeDecl] = (
-    "type"~>simpleType~"<"~simpleType~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => TypeDecl(name, Some(parent), content)}
-      | "type"~>simpleType~"with"~typeBody<~";" ^^ {case name~"with"~content => TypeDecl(name, None, content)}
-      | "type"~>simpleType~"<"~simpleType<~";" ^^ {case name~"<"~parent => TypeDecl(name, Some(parent), List())}
-      | "type"~>simpleType<~";" ^^ (name => TypeDecl(name, None, List()))
+  lazy val typeDecl : Parser[ComplexTypeDeclaration] = (
+    "type"~>simpleType~"<"~simpleType~"with"~typeBody<~";" ^^ {case name~"<"~parent~"with"~content => ComplexTypeDeclaration(name, Some(parent), content)}
+      | "type"~>simpleType~"with"~typeBody<~";" ^^ {case name~"with"~content => ComplexTypeDeclaration(name, None, content)}
+      | "type"~>simpleType~"<"~simpleType<~";" ^^ {case name~"<"~parent => ComplexTypeDeclaration(name, Some(parent), List())}
+      | "type"~>simpleType<~";" ^^ (name => ComplexTypeDeclaration(name, None, List()))
       | failure("Not a valid type declaration")
     )
 
