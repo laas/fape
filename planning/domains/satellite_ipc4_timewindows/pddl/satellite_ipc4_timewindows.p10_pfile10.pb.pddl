@@ -1,19 +1,19 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	instrument1 - instrument
-	satellite1 - satellite
+;	satellite1 - satellite
 	instrument2 - instrument
 	instrument3 - instrument
-	satellite2 - satellite
+;	satellite2 - satellite
 	instrument4 - instrument
 	instrument5 - instrument
-	satellite3 - satellite
+;	satellite3 - satellite
 	instrument6 - instrument
 	instrument7 - instrument
-	satellite4 - satellite
+;	satellite4 - satellite
 	instrument8 - instrument
 	instrument9 - instrument
 	instrument10 - instrument
@@ -39,8 +39,8 @@
 	Phenomenon14 - direction
 	Star15 - direction
 	Star16 - direction
-        antenna0 - antenna
-        antenna1 - antenna
+;        antenna0 - antenna
+;        antenna1 - antenna
 )
 (:init
 	(supports instrument0 image4)

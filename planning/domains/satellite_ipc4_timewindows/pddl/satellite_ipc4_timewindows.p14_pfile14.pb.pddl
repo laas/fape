@@ -1,23 +1,23 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	instrument1 - instrument
 	instrument2 - instrument
-	satellite1 - satellite
+;	satellite1 - satellite
 	instrument3 - instrument
-	satellite2 - satellite
+;	satellite2 - satellite
 	instrument4 - instrument
 	instrument5 - instrument
 	instrument6 - instrument
-	satellite3 - satellite
+;	satellite3 - satellite
 	instrument7 - instrument
 	instrument8 - instrument
-	satellite4 - satellite
+;	satellite4 - satellite
 	instrument9 - instrument
 	instrument10 - instrument
-	satellite5 - satellite
+;	satellite5 - satellite
 	instrument11 - instrument
 	thermograph4 - mode
 	image1 - mode
@@ -49,9 +49,9 @@
 	Star22 - direction
 	Planet23 - direction
 	Star24 - direction
-        antenna0 - antenna
-        antenna1 - antenna
-        antenna2 - antenna
+;        antenna0 - antenna
+;        antenna1 - antenna
+;        antenna2 - antenna
 )
 (:init
 	(supports instrument0 thermograph0)

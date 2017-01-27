@@ -1,31 +1,31 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	instrument1 - instrument
-	satellite1 - satellite
+;	satellite1 - satellite
 	instrument2 - instrument
 	instrument3 - instrument
-	satellite2 - satellite
+;	satellite2 - satellite
 	instrument4 - instrument
 	instrument5 - instrument
 	instrument6 - instrument
-	satellite3 - satellite
+;	satellite3 - satellite
 	instrument7 - instrument
 	instrument8 - instrument
 	instrument9 - instrument
-	satellite4 - satellite
+;	satellite4 - satellite
 	instrument10 - instrument
 	instrument11 - instrument
 	instrument12 - instrument
-	satellite5 - satellite
+;	satellite5 - satellite
 	instrument13 - instrument
-	satellite6 - satellite
+;	satellite6 - satellite
 	instrument14 - instrument
 	instrument15 - instrument
 	instrument16 - instrument
-	satellite7 - satellite
+;	satellite7 - satellite
 	instrument17 - instrument
 	instrument18 - instrument
 	instrument19 - instrument
@@ -107,21 +107,21 @@
 	Phenomenon71 - direction
 	Planet72 - direction
 	Phenomenon73 - direction
-        antenna0 - antenna
-        antenna1 - antenna
-        antenna2 - antenna
-        antenna3 - antenna
-        antenna4 - antenna
-        antenna5 - antenna
-        antenna6 - antenna
-        antenna7 - antenna
-        antenna8 - antenna
-        antenna9 - antenna
-        antenna10 - antenna
-        antenna11 - antenna
-        antenna12 - antenna
-        antenna13 - antenna
-        antenna14 - antenna
+;        antenna0 - antenna
+;        antenna1 - antenna
+;        antenna2 - antenna
+;        antenna3 - antenna
+;        antenna4 - antenna
+;        antenna5 - antenna
+;        antenna6 - antenna
+;        antenna7 - antenna
+;        antenna8 - antenna
+;        antenna9 - antenna
+;        antenna10 - antenna
+;        antenna11 - antenna
+;        antenna12 - antenna
+;        antenna13 - antenna
+;        antenna14 - antenna
 )
 (:init
 	(supports instrument0 infrared1)

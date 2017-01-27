@@ -1,7 +1,7 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	image1 - mode
 	spectrograph2 - mode
@@ -13,7 +13,7 @@
 	Phenomenon4 - direction
 	Star5 - direction
 	Phenomenon6 - direction
-        antenna0 - antenna
+;        antenna0 - antenna
 )
 (:init
 	(supports instrument0 thermograph0)
