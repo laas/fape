@@ -1,36 +1,36 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	instrument1 - instrument
 	instrument2 - instrument
-	satellite1 - satellite
+;	satellite1 - satellite
 	instrument3 - instrument
 	instrument4 - instrument
-	satellite2 - satellite
+;	satellite2 - satellite
 	instrument5 - instrument
 	instrument6 - instrument
-	satellite3 - satellite
+;	satellite3 - satellite
 	instrument7 - instrument
-	satellite4 - satellite
+;	satellite4 - satellite
 	instrument8 - instrument
 	instrument9 - instrument
 	instrument10 - instrument
-	satellite5 - satellite
+;	satellite5 - satellite
 	instrument11 - instrument
-	satellite6 - satellite
+;	satellite6 - satellite
 	instrument12 - instrument
 	instrument13 - instrument
-	satellite7 - satellite
+;	satellite7 - satellite
 	instrument14 - instrument
 	instrument15 - instrument
 	instrument16 - instrument
-	satellite8 - satellite
+;	satellite8 - satellite
 	instrument17 - instrument
 	instrument18 - instrument
 	instrument19 - instrument
-	satellite9 - satellite
+;	satellite9 - satellite
 	instrument20 - instrument
 	instrument21 - instrument
 	instrument22 - instrument
@@ -244,33 +244,33 @@
 	Planet202 - direction
 	Phenomenon203 - direction
 	Star204 - direction
-        antenna0 - antenna
-        antenna1 - antenna
-        antenna2 - antenna
-        antenna3 - antenna
-        antenna4 - antenna
-        antenna5 - antenna
-        antenna6 - antenna
-        antenna7 - antenna
-        antenna8 - antenna
-        antenna9 - antenna
-        antenna10 - antenna
-        antenna11 - antenna
-        antenna12 - antenna
-        antenna13 - antenna
-        antenna14 - antenna
-        antenna15 - antenna
-        antenna16 - antenna
-        antenna17 - antenna
-        antenna18 - antenna
-        antenna19 - antenna
-        antenna20 - antenna
-        antenna21 - antenna
-        antenna22 - antenna
-        antenna23 - antenna
-        antenna24 - antenna
-        antenna25 - antenna
-        antenna26 - antenna
+        ; antenna0 - antenna
+        ; antenna1 - antenna
+        ; antenna2 - antenna
+        ; antenna3 - antenna
+        ; antenna4 - antenna
+        ; antenna5 - antenna
+        ; antenna6 - antenna
+        ; antenna7 - antenna
+        ; antenna8 - antenna
+        ; antenna9 - antenna
+        ; antenna10 - antenna
+        ; antenna11 - antenna
+        ; antenna12 - antenna
+        ; antenna13 - antenna
+        ; antenna14 - antenna
+        ; antenna15 - antenna
+        ; antenna16 - antenna
+        ; antenna17 - antenna
+        ; antenna18 - antenna
+        ; antenna19 - antenna
+        ; antenna20 - antenna
+        ; antenna21 - antenna
+        ; antenna22 - antenna
+        ; antenna23 - antenna
+        ; antenna24 - antenna
+        ; antenna25 - antenna
+        ; antenna26 - antenna
 )
 (:init
 	(supports instrument0 image0)

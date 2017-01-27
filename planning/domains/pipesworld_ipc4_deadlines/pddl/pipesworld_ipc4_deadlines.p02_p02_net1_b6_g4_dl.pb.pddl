@@ -3,7 +3,8 @@
   (:domain pipesworld_strips)
   (:objects
 
-    	B0 B3 B1 B4 B2 B5 - batch-atom
+;    	B0 B3 B1 B4 B2 B5 - batch-atom
+    	B3 B1 - batch-atom
 	A1 A2 A3 - area
 	S12 S13 - pipe
 	

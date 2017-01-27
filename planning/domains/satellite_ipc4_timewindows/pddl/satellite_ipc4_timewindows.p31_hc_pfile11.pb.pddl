@@ -1,50 +1,50 @@
 (define (problem strips-sat-x-1)
 (:domain satellite)
 (:objects
-	satellite0 - satellite
+;	satellite0 - satellite
 	instrument0 - instrument
 	instrument1 - instrument
 	instrument2 - instrument
-	satellite1 - satellite
+;	satellite1 - satellite
 	instrument3 - instrument
 	instrument4 - instrument
-	satellite2 - satellite
+;	satellite2 - satellite
 	instrument5 - instrument
 	instrument6 - instrument
-	satellite3 - satellite
+;	satellite3 - satellite
 	instrument7 - instrument
 	instrument8 - instrument
 	instrument9 - instrument
-	satellite4 - satellite
+;	satellite4 - satellite
 	instrument10 - instrument
 	instrument11 - instrument
-	satellite5 - satellite
+;	satellite5 - satellite
 	instrument12 - instrument
 	instrument13 - instrument
-	satellite6 - satellite
+;	satellite6 - satellite
 	instrument14 - instrument
 	instrument15 - instrument
-	satellite7 - satellite
+;	satellite7 - satellite
 	instrument16 - instrument
 	instrument17 - instrument
 	instrument18 - instrument
-	satellite8 - satellite
+;	satellite8 - satellite
 	instrument19 - instrument
-	satellite9 - satellite
+;	satellite9 - satellite
 	instrument20 - instrument
 	instrument21 - instrument
 	instrument22 - instrument
-	satellite10 - satellite
+;	satellite10 - satellite
 	instrument23 - instrument
 	instrument24 - instrument
-	satellite11 - satellite
+;	satellite11 - satellite
 	instrument25 - instrument
-	satellite12 - satellite
+;	satellite12 - satellite
 	instrument26 - instrument
 	instrument27 - instrument
-	satellite13 - satellite
+;	satellite13 - satellite
 	instrument28 - instrument
-	satellite14 - satellite
+;	satellite14 - satellite
 	instrument29 - instrument
 	infrared1 - mode
 	spectrograph4 - mode
@@ -206,36 +206,36 @@
 	Phenomenon152 - direction
 	Phenomenon153 - direction
 	Planet154 - direction
-        antenna0 - antenna
-        antenna1 - antenna
-        antenna2 - antenna
-        antenna3 - antenna
-        antenna4 - antenna
-        antenna5 - antenna
-        antenna6 - antenna
-        antenna7 - antenna
-        antenna8 - antenna
-        antenna9 - antenna
-        antenna10 - antenna
-        antenna11 - antenna
-        antenna12 - antenna
-        antenna13 - antenna
-        antenna14 - antenna
-        antenna15 - antenna
-        antenna16 - antenna
-        antenna17 - antenna
-        antenna18 - antenna
-        antenna19 - antenna
-        antenna20 - antenna
-        antenna21 - antenna
-        antenna22 - antenna
-        antenna23 - antenna
-        antenna24 - antenna
-        antenna25 - antenna
-        antenna26 - antenna
-        antenna27 - antenna
-        antenna28 - antenna
-        antenna29 - antenna
+        ; antenna0 - antenna
+        ; antenna1 - antenna
+        ; antenna2 - antenna
+        ; antenna3 - antenna
+        ; antenna4 - antenna
+        ; antenna5 - antenna
+        ; antenna6 - antenna
+        ; antenna7 - antenna
+        ; antenna8 - antenna
+        ; antenna9 - antenna
+        ; antenna10 - antenna
+        ; antenna11 - antenna
+        ; antenna12 - antenna
+        ; antenna13 - antenna
+        ; antenna14 - antenna
+        ; antenna15 - antenna
+        ; antenna16 - antenna
+        ; antenna17 - antenna
+        ; antenna18 - antenna
+        ; antenna19 - antenna
+        ; antenna20 - antenna
+        ; antenna21 - antenna
+        ; antenna22 - antenna
+        ; antenna23 - antenna
+        ; antenna24 - antenna
+        ; antenna25 - antenna
+        ; antenna26 - antenna
+        ; antenna27 - antenna
+        ; antenna28 - antenna
+        ; antenna29 - antenna
 )
 (:init
 	(supports instrument0 infrared0)

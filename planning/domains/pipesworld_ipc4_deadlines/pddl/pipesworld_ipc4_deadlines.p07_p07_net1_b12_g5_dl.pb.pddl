@@ -2,8 +2,8 @@
 (define (problem p07-net1-b12-g5_dt0_instance)
   (:domain pipesworld_strips)
   (:objects
-
-    	B10 B0 B1 B4 B6 B7 B9 B3 B8 B2 B11 B5 - batch-atom
+;       B10 B0 B1 B4 B6 B7 B9 B3 B8 B2 B11 B5 - batch-atom
+    	B10 B0  B6  B3 B8 B2 B5 - batch-atom
 	A1 A2 A3 - area
 	S12 S13 - pipe
 	
