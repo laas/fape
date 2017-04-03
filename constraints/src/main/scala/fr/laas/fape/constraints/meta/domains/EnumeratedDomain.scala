@@ -1,32 +1,10 @@
 package fr.laas.fape.constraints.meta.domains
 
-import java.util
-
 import fr.laas.fape.constraints.bindings.IBitSet
 
-import scala.collection.JavaConverters._
+class EnumeratedDomain(val vals: IBitSet) extends Domain {
 
-
-object EnumeratedDomain {
-  //  val BITSET_MAX_SIZE =   // TODO: could be interesting to switch to TreeSet when reaching big sizes and low densities
-  def convert(values: util.Collection[Integer]) : Set[Int] = {
-    var max = -10
-    for(v <- values.asScala)
-      max = if(v > max) v else max
-    var set : Set[Int] =
-    //      if(max > BITSET_MAX_SIZE)
-    //        Set[Int]()
-    //      else
-      new IBitSet()
-    set ++= values.asInstanceOf[util.Collection[Int]].asScala
-    set
-  }
-}
-
-class EnumeratedDomain(val vals: scala.collection.Set[Int]) extends Domain {
-
-  def this(values: util.Collection[Integer]) = this(EnumeratedDomain.convert(values))
-  def this(values: Iterable[Int]) = this(values.map(_.asInstanceOf[Integer]).asJavaCollection)
+  def this(values: Iterable[Int]) = this(new IBitSet() ++ values)
   def this(values: java.util.BitSet) = this(new IBitSet(values.toLongArray))
 
   def toBitSet : java.util.BitSet = vals match {
@@ -37,13 +15,13 @@ class EnumeratedDomain(val vals: scala.collection.Set[Int]) extends Domain {
   lazy private val _isEmpty = vals.isEmpty
   lazy private val _size = vals.size
 
-  def values() : util.Set[Integer] = vals.asJava.asInstanceOf[java.util.Set[Integer]]
+  override def values : Set[Int] = vals
 
-  def size : Integer = _size
+  def size : Int = _size
 
-  def head() : Integer = vals.head
+  def head() : Int = vals.head
 
-  override def intersect(other: Domain) : EnumeratedDomain = {
+  override def intersection(other: Domain) : EnumeratedDomain = {
     other match {
       case other: EnumeratedDomain =>
         val intersection = (vals, other.vals) match {
@@ -65,13 +43,12 @@ class EnumeratedDomain(val vals: scala.collection.Set[Int]) extends Domain {
     }
   }
 
-  override def nonEmptyIntersection(other: Domain) : Boolean = {
+  override def emptyIntersection(other: Domain) : Boolean = {
     other match {
       case other: EnumeratedDomain =>
-        (vals, other.vals) match {
-          case (v1: IBitSet, v2: IBitSet) => v1.sharesOneElement(v2) // optimized method
-          case (v1, v2) => (v1 & v2).nonEmpty
-        }
+        !vals.sharesOneElement(other.vals) // optimized method
+      case _ =>
+        super.emptyIntersection(other)
     }
   }
 
@@ -82,27 +59,21 @@ class EnumeratedDomain(val vals: scala.collection.Set[Int]) extends Domain {
 
   override def nonEmpty = !isEmpty
 
-  override def remove(toRm: Domain) : EnumeratedDomain = {
+  override def remove(toRm: Domain) : Domain = {
     toRm match {
       case toRm: EnumeratedDomain =>
         new EnumeratedDomain (vals -- toRm.vals)
+      case _ =>
+        super.remove(toRm)
     }
   }
 
-  def remove(toRm: Int) : EnumeratedDomain =
+  override def remove(toRm: Int) : EnumeratedDomain =
     new EnumeratedDomain(vals - toRm)
 
-  def add(value: Int) : EnumeratedDomain = {
-    //    if (vals.isInstanceOf[BitSet] && value > ValuesHolder.BITSET_MAX_SIZE)
-    ////     it has grown too big, switch to too normal Set
-    //      new ValuesHolder(Set[Int]() ++ vals + value)
-    //    else
+  override def add(value: Int) : EnumeratedDomain = {
     new EnumeratedDomain(vals + value)
   }
 
-  override def equals(o: Any) : Boolean = {
-    o match {
-      case o: EnumeratedDomain => o.vals == this.vals
-    }
-  }
+  override def toString : String = s"{${values.map(_.toString).mkString(", ")}}"
 }

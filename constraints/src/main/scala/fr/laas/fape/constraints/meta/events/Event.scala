@@ -1,8 +1,8 @@
 package fr.laas.fape.constraints.meta.events
 
-import fr.laas.fape.anml.model.concrete.Variable
 import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.domains.Domain
+import fr.laas.fape.constraints.meta.variables.{IVar, Variable}
 
 trait Event {
 
@@ -10,11 +10,11 @@ trait Event {
 
 case class NewConstraintEvent(c: Constraint) extends Event
 
-case class NewVariableEvent(v: Variable) extends Event
+case class NewVariableEvent(v: IVar) extends Event
 
-trait DomainEvent extends Event
+abstract class DomainChange(val variable: Variable) extends Event
 
-case class DomainReduced(variable: Variable, removedValues: Domain) extends DomainEvent
+case class DomainReduced(override val variable: Variable, removedValues: Domain) extends DomainChange(variable)
 
-case class DomainExtended(variable: Variable, addedValues: Domain) extends DomainEvent
+case class DomainExtended(override val variable: Variable, addedValues: Domain) extends DomainChange(variable)
 

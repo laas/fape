@@ -38,6 +38,10 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
       new IBitSet(updateArray(elems, elem >> 6, w))
     }
 
+  def ++(toAdd: Iterable[Int]) : IBitSet = {
+    toAdd.foldLeft(this)((bs, value) => bs + value)
+  }
+
   override def -(elem: Int): IBitSet =
     if(!contains(elem))
       this
@@ -45,6 +49,7 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
       val w = words(elem >> 6) & ~(1L << elem)
       new IBitSet(updateArray(elems, elem >> 6, w))
     }
+
 
   private def nextSetBit(from: Int): Int = {
     require(from >= 0)

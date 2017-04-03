@@ -1,19 +1,24 @@
 package fr.laas.fape.constraints.meta.constraints
 
-import fr.laas.fape.anml.model.concrete.Variable
+
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.Event
+import fr.laas.fape.constraints.meta.variables.{IVar, Variable}
 
 abstract class Constraint {
 
   type Satisfaction = ConstraintSatisfaction.ConstraintSatisfaction
 
-  def variables: Set[Variable]
+  def variables(implicit csp: CSP): Set[IVar]
 
   def propagate(event: Event)(implicit csp: CSP)
 
   def satisfied(implicit csp: CSP) : Satisfaction
 
+}
+
+trait InversibleConstraint {
+  def invert() : Constraint
 }
 
 object ConstraintSatisfaction extends Enumeration {
