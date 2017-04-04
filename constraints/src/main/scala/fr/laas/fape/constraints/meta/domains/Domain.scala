@@ -50,7 +50,7 @@ trait Domain {
     case _ => false
   }
 
-  override def toString() : String =
+  override def toString : String =
     if(size <= 6)
       s"{${values.mkString(", ")}}"
     else

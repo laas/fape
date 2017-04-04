@@ -26,7 +26,7 @@ abstract class IVar(val id: Int) {
 
   override def equals(o:Any) =
     o match {
-      case v: Variable => this.id == v.id
+      case v: IVar => this.id == v.id
       case _ => false
     }
 }

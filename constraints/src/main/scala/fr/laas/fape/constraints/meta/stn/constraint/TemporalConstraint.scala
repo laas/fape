@@ -7,10 +7,7 @@ import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.variables.IVar
 
 abstract class TemporalConstraint extends Constraint {
-  def src : Timepoint
-  def dst : Timepoint
 
- override def variables(implicit csp: CSP): Set[IVar] = Set(src, dst)
 
  override def _propagate(event: Event)(implicit csp: CSP): Unit = event match {
    case NewConstraintEvent(c) =>
@@ -22,9 +19,10 @@ abstract class TemporalConstraint extends Constraint {
  }
 }
 
-
 case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int) extends TemporalConstraint {
   override def toString = s"$src + $minDelay <= $dst"
+
+  override def variables(implicit csp: CSP): Set[IVar] = Set(src, dst)
 
   override def satisfied(implicit csp: CSP): Satisfaction =
     if(csp.stn.getMinDelay(src, dst) >= minDelay)
@@ -36,6 +34,9 @@ case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int) exten
 }
 
 case class ContingentConstraint(src :Timepoint, dst :Timepoint, min :Int, max :Int) extends TemporalConstraint {
+
+  override def variables(implicit csp: CSP): Set[IVar] = Set(src, dst)
+
   override def toString = s"$src == [$min, $max] ==> $dst"
 
   override def satisfied(implicit csp: CSP): Satisfaction = ConstraintSatisfaction.UNDEFINED

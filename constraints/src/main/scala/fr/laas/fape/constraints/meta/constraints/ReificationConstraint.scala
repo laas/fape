@@ -36,9 +36,9 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
   }
 
   private def checkConstraint(implicit csp: CSP): Unit = {
-    if(csp.isEnforced(constraint) || constraint.satisfied == SATISFIED)
+    if(constraint.satisfied == SATISFIED)
       csp.updateDomain(booleanVar, new BooleanDomain(Set(true)))
-    else if(csp.isInvertEnforced(constraint) || constraint.satisfied == UNSATISFIED)
+    else if(constraint.satisfied == UNSATISFIED)
       csp.updateDomain(booleanVar, new BooleanDomain(Set(false)))
   }
 

@@ -69,7 +69,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     assert(timepointByIndex(id) == null)
     timepointByIndex(id) = tp
     optEnd match {
-      case Some(end)  => enforceMinDelay(tp, end, 0)
+      case Some(end) => enforceMinDelay(tp, end, 0)
       case None =>
     }
     id
@@ -161,6 +161,12 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
         addMinDelay(cont.src, cont.dst, cont.min)
         addMaxDelay(cont.src, cont.dst, cont.max)
         contingentLinks.append(cont)
+      case abs: AbsoluteBeforeConstraint =>
+        assert(start.nonEmpty, "Absolute constraints require a start timepoint")
+        addMaxDelay(start.get, abs.tp, abs.deadline)
+      case abs: AbsoluteAfterConstraint =>
+        assert(start.nonEmpty, "Absolute constraints require a start timepoint")
+        addMinDelay(start.get, abs.tp, abs.deadline)
       case _ =>
         throw new RuntimeException("Constraint: "+c+" is not properly supported")
     }
@@ -227,7 +233,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
       return
 
     // All timepoints whose earliest execution time is modified by this update.
-    // This is only computed if their are listener to those changes and computed
+    // This is only computed if there are listener to those changes and computed
     // before modifying the network to facilitate reasoning on anchored timepoints.
     val timepointsWithUpdatedStart =
       if(earliestExecutionUpdatesListener.nonEmpty && start.nonEmpty) {
