@@ -4,6 +4,7 @@ import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfac
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
+import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals
 import fr.laas.fape.constraints.meta.variables.{BooleanVariable, Variable, VariableStore}
 
 import scala.collection.mutable
@@ -19,6 +20,8 @@ class CSP {
   val constraints = mutable.ArrayBuffer[Constraint]()
 
   val varStore = new VariableStore
+
+  val stn = new StnWithStructurals
 
   final val log : ILogger = new ILogger
 
