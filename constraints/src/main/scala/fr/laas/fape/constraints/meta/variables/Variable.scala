@@ -2,6 +2,7 @@ package fr.laas.fape.constraints.meta.variables
 
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints._
+import fr.laas.fape.constraints.meta.domains.Domain
 
 abstract class IVar(val id: Int) {
 
@@ -31,7 +32,11 @@ abstract class IVar(val id: Int) {
     }
 }
 
-class Variable(id: Int, ref: Option[Any]) extends IVar(id) {
+trait WithDomain {
+  def domain(implicit csp: CSP) : Domain
+}
+
+class Variable(id: Int, ref: Option[Any]) extends IVar(id) with WithDomain {
 
   def this(id: Int) = this(id, None)
 

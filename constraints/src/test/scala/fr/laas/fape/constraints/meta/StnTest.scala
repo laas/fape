@@ -11,18 +11,22 @@ class StnTest extends FunSuite with BeforeAndAfter {
   }
 
 
-  test("Timepoint creation") {
+  test("Simple STN with reification") {
 
     val tp1 = csp.varStore.getTimepoint("first")
     val tp2 = csp.varStore.getTimepoint("second")
+    val tp3 = csp.varStore.getTimepoint("third")
 
+    val rei = csp.reified(tp3 < 2)
+    val rei2 = csp.reified(tp1 < tp3)
+    csp.propagate()
     csp.post(tp1 < tp2)
+    csp.post(tp2 < tp3)
     csp.post(csp.temporalHorizon <= 100)
+
     csp.propagate()
 
-    println(csp.temporalOrigin.dom)
-    println(tp1.dom)
-    println(tp2.dom)
-    println(csp.varStore.getDelayVariable(tp1, tp2).dom)
+    assert(rei.isFalse)
+    assert(rei2.isTrue)
   }
 }

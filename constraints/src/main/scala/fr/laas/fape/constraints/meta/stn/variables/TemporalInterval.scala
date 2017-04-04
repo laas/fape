@@ -8,7 +8,7 @@ class TemporalInterval(val start: Timepoint, val end: Timepoint) {
   override def toString = s"[$start, $end]"
 
   def duration(implicit csp: CSP) : IntervalDomain =
-    csp.varStore.getDelayVariable(start, end).dom
+    csp.varStore.getDelayVariable(start, end).domain
 
   def <(o: TemporalInterval) = this.end < o.start
   def <=(o: TemporalInterval) = this.end <= o.start

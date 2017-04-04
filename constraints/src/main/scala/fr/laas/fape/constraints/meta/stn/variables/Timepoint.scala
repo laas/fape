@@ -3,9 +3,11 @@ package fr.laas.fape.constraints.meta.stn.variables
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.IntervalDomain
 import fr.laas.fape.constraints.meta.stn.constraint.{AbsoluteAfterConstraint, AbsoluteBeforeConstraint, MinDelayConstraint}
-import fr.laas.fape.constraints.meta.variables.IVar
+import fr.laas.fape.constraints.meta.variables.{IVar, WithDomain}
 
-class Timepoint(id: Int, ref: Option[Any]) extends IVar(id) {
+class Timepoint(id: Int, ref: Option[Any]) extends IVar(id) with WithDomain {
+
+  override def domain(implicit csp: CSP) : IntervalDomain = csp.dom(this)
 
   def isStructural : Boolean = false
   def isContingent : Boolean = false

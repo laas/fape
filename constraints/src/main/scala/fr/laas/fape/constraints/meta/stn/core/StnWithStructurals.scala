@@ -40,12 +40,6 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     optStart, optEnd, originalEdges, consistent, executed.clone()
   )
 
-  /** Callbacks to be invoked whenever the earliest start time of a timepoint changes */
-  val earliestExecutionUpdatesListener = mutable.ArrayBuffer[Timepoint => Unit]()
-
-  /** Record a callback to be invoked whenever a the earliest start time of a timepoint is updated */
-  def addEarliestExecutionUpdateListener(callback: Timepoint => Unit) { earliestExecutionUpdatesListener += callback }
-
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
@@ -54,6 +48,11 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
 
   private def toIndex(tp:Timepoint) : Int = nonRigidIndexes(tp)
   def timepointFromIndex(index: Int) : Timepoint = timepointByIndex(index)
+
+  /** Returns the index of the timepoint if it is anchor or the index of its anchor otherwise */
+  private def indexOfAnchor(tp: Timepoint) : Int =
+    if(rigidRelations.isAnchored(tp)) toIndex(rigidRelations.anchorOf(tp))
+    else toIndex(tp)
 
   private def isKnown(tp: Timepoint) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
 
@@ -232,22 +231,10 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     if (a == b)
       return
 
-    // All timepoints whose earliest execution time is modified by this update.
-    // This is only computed if there are listener to those changes and computed
-    // before modifying the network to facilitate reasoning on anchored timepoints.
-    val timepointsWithUpdatedStart =
-      if(earliestExecutionUpdatesListener.nonEmpty && start.nonEmpty) {
-        val stIndex =
-          if (rigidRelations.isAnchored(start.get))
-            toIndex(rigidRelations.anchorOf(start.get))
-          else
-            toIndex(start.get)
-        if (b == stIndex) // b the start timepoint (or its anchor)
-          timepointFromIndex(a) :: rigidRelations.getTimepointsAnchoredTo(timepointFromIndex(a))
-        else
-          Nil
-      } else
-        Nil
+
+    val watchesToNotify : Set[(Timepoint, Timepoint, IDistanceChangeListener)] = // extract watches while making a defensive copy
+      if(a <= b) watchedVarsByIndex.getOrElse((a, b), Nil).toSet
+      else watchedVarsByIndex.getOrElse((b, a), Nil).toSet
 
     // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
     // the distance matrix
@@ -266,16 +253,48 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
         else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
         else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
 
+      val keysToRemove =
+        watchedVarsByIndex.keys.filter(p => p._1 == toIndex(anchored) || p._2 == toIndex(anchored))
+      val watchesToReAdd =
+        keysToRemove.flatMap(k => watchedVarsByIndex(k))
+
       // remove the anchored timepoint from distance matrix
       dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
       timepointByIndex(toIndex(anchored)) = null
       nonRigidIndexes.remove(anchored)
       assert(originalDist == rigidAwareDist(tpA, tpB))
+
+      val prevNumWatches = watchedVarsByIndex.values.map(_.size).sum
+      watchedVarsByIndex --= keysToRemove
+      for(w <- watchesToReAdd)
+        addWatchedDistance(w._1, w._2, w._3)
+      assert(prevNumWatches == watchedVarsByIndex.values.map(_.size).sum)
     }
 
     // notify listeners of updated start times
-    for(listener <- earliestExecutionUpdatesListener ; tp <- timepointsWithUpdatedStart)
-      listener.apply(tp)
+    for((tp1, tp2, listener) <- watchesToNotify)
+      listener.distanceUpdated(tp1, tp2)
+  }
+
+  // TODO: support cloning the STNU
+  val watchedVarsByIndex = mutable.Map[(Int,Int), mutable.ArrayBuffer[(Timepoint,Timepoint, IDistanceChangeListener)]]()
+
+  def addWatchedDistance(tp1: Timepoint, tp2: Timepoint, listener: IDistanceChangeListener) {
+
+    var id1 = indexOfAnchor(tp1)
+    var id2 = indexOfAnchor(tp2)
+    if(id1 > id2) {
+      val tmp = id1
+      id1 = id2
+      id2 = tmp
+    }
+    assert(id1 <= id2)
+    if(!watchedVarsByIndex.contains((id1, id2)))
+      watchedVarsByIndex.put((id1, id2), mutable.ArrayBuffer())
+    watchedVarsByIndex((id1, id2)) += ((tp1, tp2, listener))
+
+    for((k, v) <- watchedVarsByIndex)
+      assert(v.forall(p => k._1 == indexOfAnchor(p._1) && k._2 == indexOfAnchor(p._2)))
   }
 
   /** Record this time point as the global start of the STN */

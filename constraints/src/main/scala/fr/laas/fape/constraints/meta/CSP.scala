@@ -30,8 +30,7 @@ class CSP {
   val temporalOrigin = varStore.getTimepoint(":start:")
   val temporalHorizon = varStore.getTimepoint(":end:")
 
-  final val log : ILogger = new ILogger
-
+  final val log : ILogger = new Logger
 
   def dom(variable: Variable) : Domain = domains(variable)
 
@@ -48,10 +47,10 @@ class CSP {
   def updateDomain(variable: Variable, newDomain: Domain) {
     log.domainUpdate(variable, newDomain)
     if(dom(variable).size > newDomain.size) {
-      events += DomainReduced(variable, dom(variable) - newDomain)
+      events += DomainReduced(variable)
       domains(variable) = newDomain
     } else if(dom(variable).size < newDomain.size) {
-      events += DomainExtended(variable, newDomain - dom(variable))
+      events += DomainExtended(variable)
       domains(variable) = newDomain
     }
   }
