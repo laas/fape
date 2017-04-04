@@ -1,18 +1,18 @@
 package fr.laas.fape.constraints.meta.stn.constraint
 
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, InversibleConstraint}
+import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReversibleConstraint}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.variables.IVar
 
 class AbsoluteAfterConstraint(val tp: Timepoint, val deadline: Int)
-  extends TemporalConstraint with InversibleConstraint {
+  extends TemporalConstraint with ReversibleConstraint {
 
-  override def satisfied(implicit csp: CSP): Satisfaction =
+  override def satisfaction(implicit csp: CSP): Satisfaction =
     if(tp.dom.lb >= deadline)
       ConstraintSatisfaction.SATISFIED
     else if(tp.dom.ub < deadline)
-      ConstraintSatisfaction.UNSATISFIED
+      ConstraintSatisfaction.VIOLATED
     else
       ConstraintSatisfaction.UNDEFINED
 
@@ -21,5 +21,5 @@ class AbsoluteAfterConstraint(val tp: Timepoint, val deadline: Int)
 
   override def toString = s"$tp >= $deadline"
 
-  override def invert(): AbsoluteBeforeConstraint = tp < deadline
+  override def reverse: AbsoluteBeforeConstraint = tp < deadline
 }

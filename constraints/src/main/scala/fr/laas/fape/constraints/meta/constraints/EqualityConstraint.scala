@@ -6,7 +6,7 @@ import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.{Event, NewConstraintEvent}
 import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VariableSeq}
 
-abstract class EqualityConstraint(val v1: IVar, val v2: IVar) extends Constraint with InversibleConstraint {
+abstract class EqualityConstraint(val v1: IVar, val v2: IVar) extends Constraint with ReversibleConstraint {
 
   override def toString = s"$v1 === $v2"
 }
@@ -32,19 +32,19 @@ class VariableEqualityConstraint(override val v1: Variable, override val v2: Var
     }
   }
 
-  override def satisfied(implicit csp: CSP): Satisfaction = {
+  override def satisfaction(implicit csp: CSP): Satisfaction = {
     val d1 = csp.dom(v1)
     val d2 = csp.dom(v2)
 
     if(d1.emptyIntersection(d2))
-      ConstraintSatisfaction.UNSATISFIED
+      ConstraintSatisfaction.VIOLATED
     else if(d1.isSingleton && d2.isSingleton && d1.values.head == d2.values.head)
       ConstraintSatisfaction.SATISFIED
     else
       ConstraintSatisfaction.UNDEFINED
   }
 
-  override def invert(): Constraint = ???
+  override def reverse: VariableInequalityConstraint = new VariableInequalityConstraint(v1, v2)
 }
 
 
@@ -66,10 +66,10 @@ class VariableSeqEqualityConstraint(override val v1: VariableSeq, override val v
     }
   }
 
-  override def satisfied(implicit csp: CSP): Satisfaction = {
-    val satisfactions = subConstraints.map(c => c.satisfied)
-    if(satisfactions.contains(ConstraintSatisfaction.UNSATISFIED))
-      ConstraintSatisfaction.UNSATISFIED
+  override def satisfaction(implicit csp: CSP): Satisfaction = {
+    val satisfactions = subConstraints.map(c => c.satisfaction)
+    if(satisfactions.contains(ConstraintSatisfaction.VIOLATED))
+      ConstraintSatisfaction.VIOLATED
     else if(satisfactions.contains(ConstraintSatisfaction.UNDEFINED))
       ConstraintSatisfaction.UNDEFINED
     else {
@@ -78,7 +78,7 @@ class VariableSeqEqualityConstraint(override val v1: VariableSeq, override val v
     }
   }
 
-  override def invert(): Constraint = ???
+  override def reverse: VariableSeqInequalityConstraint = new VariableSeqInequalityConstraint(v1, v2)
 }
 
 

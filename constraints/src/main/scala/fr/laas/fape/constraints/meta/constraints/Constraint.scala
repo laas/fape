@@ -17,17 +17,22 @@ abstract class Constraint {
     csp.log.endConstraintPropagation(this)
   }
 
-  def _propagate(event: Event)(implicit csp: CSP)
+  protected def _propagate(event: Event)(implicit csp: CSP)
 
-  def satisfied(implicit csp: CSP) : Satisfaction
+  def satisfaction(implicit csp: CSP) : Satisfaction
 
+  def isSatisfied(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.SATISFIED
+
+  def isViolated(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.VIOLATED
 }
 
-trait InversibleConstraint {
-  def invert() : Constraint
+trait ReversibleConstraint {
+
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  def reverse : Constraint
 }
 
 object ConstraintSatisfaction extends Enumeration {
   type ConstraintSatisfaction = Value
-  val SATISFIED, UNSATISFIED, UNDEFINED = Value
+  val SATISFIED, VIOLATED, UNDEFINED = Value
 }

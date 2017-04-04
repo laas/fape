@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, InversibleConstraint, ReificationConstraint}
+import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReversibleConstraint, ReificationConstraint}
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain, IntervalDomain}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
@@ -88,7 +88,7 @@ class CSP {
     events += NewConstraintEvent(constraint)
   }
 
-  def reified(constraint: Constraint with InversibleConstraint) : BooleanVariable = {
+  def reified(constraint: Constraint with ReversibleConstraint) : BooleanVariable = {
     if(!varStore.hasVariableForRef(constraint)) {
       val variable = varStore.getBooleanVariable(Some(constraint))
       varStore.setVariableForRef(constraint, variable)
@@ -99,7 +99,7 @@ class CSP {
   }
 
   def setSatisfied(constraint: Constraint): Unit = {
-    assert(constraint.satisfied == SATISFIED)
+    assert(constraint.satisfaction == SATISFIED)
   }
 
   def addVariable(variable: Any, domainValues: Set[Int]) : Variable = {
@@ -144,7 +144,7 @@ class CSP {
       str.append(s"$v = $d\n")
     }
     for(c <- constraints.sortBy(_.toString))
-      str.append(s"$c  ${c.satisfied}\n")
+      str.append(s"$c  ${c.satisfaction}\n")
     str.toString
   }
 }

@@ -6,7 +6,7 @@ import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VariableSeq}
 
 
-abstract class InequalityConstraint(val v1: IVar, val v2: IVar) extends Constraint with InversibleConstraint {
+abstract class InequalityConstraint(val v1: IVar, val v2: IVar) extends Constraint with ReversibleConstraint {
 
   override def toString = s"$v1 =!= $v2"
 }
@@ -33,19 +33,19 @@ class VariableInequalityConstraint(override val v1: Variable, override val v2: V
       csp.updateDomain(v1, d1 - d2)
   }
 
-  override def satisfied(implicit csp: CSP): Satisfaction = {
+  override def satisfaction(implicit csp: CSP): Satisfaction = {
     val d1 = csp.dom(v1)
     val d2 = csp.dom(v2)
 
     if(d1.emptyIntersection(d2))
       ConstraintSatisfaction.SATISFIED
     else if(d1.isSingleton && d2.isSingleton && d1 == d2)
-      ConstraintSatisfaction.UNSATISFIED
+      ConstraintSatisfaction.VIOLATED
     else
       ConstraintSatisfaction.UNDEFINED
   }
 
-  override def invert(): Constraint = new VariableEqualityConstraint(v1, v2)
+  override def reverse: Constraint = new VariableEqualityConstraint(v1, v2)
 }
 
 class VariableSeqInequalityConstraint(override val v1: VariableSeq, override val v2: VariableSeq)
@@ -73,15 +73,15 @@ class VariableSeqInequalityConstraint(override val v1: VariableSeq, override val
     }
   }
 
-  override def satisfied(implicit csp: CSP): Satisfaction = {
+  override def satisfaction(implicit csp: CSP): Satisfaction = {
     val vars = reificationVariables
     if(vars.exists(v => v.isTrue))
       ConstraintSatisfaction.SATISFIED
     else if(vars.forall(v => v.isFalse))
-      ConstraintSatisfaction.UNSATISFIED
+      ConstraintSatisfaction.VIOLATED
     else
       ConstraintSatisfaction.UNDEFINED
   }
 
-  override def invert(): Constraint = new VariableSeqEqualityConstraint(v1, v2)
+  override def reverse: Constraint = new VariableSeqEqualityConstraint(v1, v2)
 }
