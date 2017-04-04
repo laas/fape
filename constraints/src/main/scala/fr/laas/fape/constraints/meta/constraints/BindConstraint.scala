@@ -29,4 +29,6 @@ class BindConstraint(val variable: Variable, val value: Int) extends Constraint 
 
   /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
   override def reverse: NegBindConstraint = new NegBindConstraint(variable, value)
+
+  override def toString = s"$variable === $value"
 }
