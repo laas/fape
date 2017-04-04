@@ -5,13 +5,21 @@ import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 
 import scala.collection.mutable
 
-class VariableStore(implicit csp: CSP) {
+class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   private var nextID : Int = 0
 
   val varsByRef = mutable.Map[Any, Variable]()
   val timepointsByRef = mutable.Map[Any, Timepoint]()
   val distanceVariables = mutable.Map[(Timepoint, Timepoint), TemporalDelay]()
+
+  toClone match {
+    case Some(base) =>
+      varsByRef ++= base.varsByRef
+      timepointsByRef ++= base.timepointsByRef
+      distanceVariables ++= base.distanceVariables
+    case None =>
+  }
 
   def getNextVariableId() : Int = { nextID += 1; nextID-1 }
 
@@ -51,4 +59,5 @@ class VariableStore(implicit csp: CSP) {
     varsByRef.put(ref, variable)
   }
 
+  def clone(newCSP: CSP) : VariableStore = new VariableStore(newCSP, Some(this))
 }

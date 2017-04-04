@@ -11,24 +11,49 @@ import fr.laas.fape.constraints.meta.variables.{BooleanVariable, IVar, Variable,
 
 import scala.collection.mutable
 
-class CSP {
+class CSP(toClone: Option[CSP] = None) {
   import ConstraintSatisfaction._
   implicit private val csp = this
 
-  val domains = mutable.Map[Variable, Domain]()
+  val domains : mutable.Map[Variable, Domain] = toClone match {
+    case Some(base) => base.domains.clone()
+    case None => mutable.Map()
+  }
 
-  val events = mutable.Queue[Event]()
+  val events: mutable.Queue[Event] = toClone match {
+    case None => mutable.Queue()
+    case Some(base) => base.events.clone()
+  }
 
-  val eventHandlers = mutable.ArrayBuffer[IEventHandler]()
+  val eventHandlers: mutable.ArrayBuffer[CSPEventHandler] = toClone match {
+    case None => mutable.ArrayBuffer()
+    case Some(base) => base.eventHandlers.map(handler => handler.clone(this))
+  }
 
-  val constraints = mutable.ArrayBuffer[Constraint]()
+  val constraints: mutable.ArrayBuffer[Constraint] = toClone match {
+    case None => mutable.ArrayBuffer[Constraint]()
+    case Some(base) => base.constraints.clone()
+  }
 
-  val varStore = new VariableStore
+  val varStore: VariableStore = toClone match {
+    case None => new VariableStore(this)
+    case Some(base) => base.varStore.clone(this)
+  }
 
-  val stn = new StnWithStructurals
-  eventHandlers += new STNEventHandler(stn, this)
+  val stn: StnWithStructurals = toClone match {
+    case None =>
+      eventHandlers += new STNEventHandler
+      new StnWithStructurals()
+    case Some(base) =>
+      base.stn.clone()
+  }
+  // set the STN listener to the one already in the event handlers to get notified of temporal variable updates
+  stn.setDistanceChangeListener(eventHandlers.find(_.isInstanceOf[STNEventHandler]).get.asInstanceOf[STNEventHandler])
+
   val temporalOrigin = varStore.getTimepoint(":start:")
   val temporalHorizon = varStore.getTimepoint(":end:")
+
+  override def clone : CSP = new CSP(Some(this))
 
   final val log : ILogger = new Logger
 

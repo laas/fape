@@ -18,26 +18,34 @@ object StnWithStructurals {
 import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals._
 
 class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
-                             var timepointByIndex: mutable.ArrayBuffer[Timepoint],
-                             var dist: DistanceMatrix,
-                             var rigidRelations: RigidRelations,
-                             var contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
-                             var optStart: Option[Timepoint],
-                             var optEnd: Option[Timepoint],
-                             var originalEdges: List[DistanceGraphEdge],
-                             var consistent: Boolean,
-                             var executed: mutable.Set[Timepoint]
-                            )
+                         var timepointByIndex: mutable.ArrayBuffer[Timepoint],
+                         var dist: DistanceMatrix,
+                         var rigidRelations: RigidRelations,
+                         var contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
+                         var optStart: Option[Timepoint],
+                         var optEnd: Option[Timepoint],
+                         var originalEdges: List[DistanceGraphEdge],
+                         var consistent: Boolean,
+                         val executed: mutable.Set[Timepoint],
+                         val watchedVarsByIndex: mutable.Map[(Int,Int), mutable.ArrayBuffer[(Timepoint,Timepoint)]]
+                        )
   extends DistanceMatrixListener {
 
   /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
-  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
+  private var distanceChangeListener: Option[IDistanceChangeListener] = None
+  def setDistanceChangeListener(listener: IDistanceChangeListener) {
+    assert(distanceChangeListener.isEmpty)
+    distanceChangeListener = Some(listener)
+  }
+
+  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(),
+    mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set(), mutable.Map())
 
   override def clone() : StnWithStructurals = new StnWithStructurals(
     nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
-    optStart, optEnd, originalEdges, consistent, executed.clone()
+    optStart, optEnd, originalEdges, consistent, executed.clone(), watchedVarsByIndex.map(kv => (kv._1, kv._2.clone()))
   )
 
   // make sure we are notified of any change is the distance matrix
@@ -232,7 +240,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
       return
 
 
-    val watchesToNotify : Set[(Timepoint, Timepoint, IDistanceChangeListener)] = // extract watches while making a defensive copy
+    val watchesToNotify : Set[(Timepoint, Timepoint)] = // extract watches while making a defensive copy
       if(a <= b) watchedVarsByIndex.getOrElse((a, b), Nil).toSet
       else watchedVarsByIndex.getOrElse((b, a), Nil).toSet
 
@@ -267,19 +275,17 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
       val prevNumWatches = watchedVarsByIndex.values.map(_.size).sum
       watchedVarsByIndex --= keysToRemove
       for(w <- watchesToReAdd)
-        addWatchedDistance(w._1, w._2, w._3)
+        addWatchedDistance(w._1, w._2)
       assert(prevNumWatches == watchedVarsByIndex.values.map(_.size).sum)
     }
 
     // notify listeners of updated start times
-    for((tp1, tp2, listener) <- watchesToNotify)
-      listener.distanceUpdated(tp1, tp2)
+    assert(watchesToNotify.isEmpty || distanceChangeListener.nonEmpty, "Changes to notify but no recorded listener")
+    for((tp1, tp2) <- watchesToNotify)
+      distanceChangeListener.get.distanceUpdated(tp1, tp2)
   }
 
-  // TODO: support cloning the STNU
-  val watchedVarsByIndex = mutable.Map[(Int,Int), mutable.ArrayBuffer[(Timepoint,Timepoint, IDistanceChangeListener)]]()
-
-  def addWatchedDistance(tp1: Timepoint, tp2: Timepoint, listener: IDistanceChangeListener) {
+  def addWatchedDistance(tp1: Timepoint, tp2: Timepoint) {
 
     var id1 = indexOfAnchor(tp1)
     var id2 = indexOfAnchor(tp2)
@@ -291,7 +297,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     assert(id1 <= id2)
     if(!watchedVarsByIndex.contains((id1, id2)))
       watchedVarsByIndex.put((id1, id2), mutable.ArrayBuffer())
-    watchedVarsByIndex((id1, id2)) += ((tp1, tp2, listener))
+    watchedVarsByIndex((id1, id2)) += ((tp1, tp2))
 
     for((k, v) <- watchedVarsByIndex)
       assert(v.forall(p => k._1 == indexOfAnchor(p._1) && k._2 == indexOfAnchor(p._2)))

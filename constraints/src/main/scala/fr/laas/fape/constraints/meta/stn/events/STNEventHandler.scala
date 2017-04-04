@@ -6,9 +6,10 @@ import fr.laas.fape.constraints.meta.stn.constraint.TemporalConstraint
 import fr.laas.fape.constraints.meta.stn.core.{IDistanceChangeListener, StnWithStructurals}
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 
-class STNEventHandler(val stn: StnWithStructurals, implicit val csp: CSP)
-  extends IEventHandler with IDistanceChangeListener {
-  require(csp.stn == stn)
+class STNEventHandler(implicit val csp: CSP)
+  extends CSPEventHandler with IDistanceChangeListener {
+
+  def stn = csp.stn
 
   override def handleEvent(event: Event): Unit = event match {
     case NewVariableEvent(tp: Timepoint) =>
@@ -28,9 +29,9 @@ class STNEventHandler(val stn: StnWithStructurals, implicit val csp: CSP)
       for(v <- c.variables) {
         v match {
           case tp: Timepoint =>
-            stn.addWatchedDistance(csp.temporalOrigin, tp, this)
+            stn.addWatchedDistance(csp.temporalOrigin, tp)
           case d: TemporalDelay =>
-            stn.addWatchedDistance(d.from, d.to, this)
+            stn.addWatchedDistance(d.from, d.to)
           case _ => // ignore constraint
         }
       }
@@ -43,4 +44,6 @@ class STNEventHandler(val stn: StnWithStructurals, implicit val csp: CSP)
     if(tp1 == csp.temporalOrigin)
       csp.addEvent(DomainReduced(tp2))
   }
+
+  override def clone(newCSP: CSP): STNEventHandler = new STNEventHandler()(newCSP)
 }
