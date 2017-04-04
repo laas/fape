@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta
 import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, InversibleConstraint, ReificationConstraint}
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain}
 import fr.laas.fape.constraints.meta.events._
-import fr.laas.fape.constraints.meta.logger.Logger
+import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
 import fr.laas.fape.constraints.meta.variables.{BooleanVariable, Variable, VariableStore}
 
 import scala.collection.mutable
@@ -20,7 +20,7 @@ class CSP {
 
   val varStore = new VariableStore
 
-  val log = new Logger
+  final val log : ILogger = new ILogger
 
 
   def dom(variable: Variable) : Domain = domains(variable)
@@ -48,31 +48,21 @@ class CSP {
   }
 
   def handleEvent(event: Event) {
-    log.eventDequeued(event)
-    log.stepIn()
+    log.startEventHandling(event)
     event match {
       case NewConstraintEvent(constraint) =>
-        log.constraintPropagation(constraint)
-        log.stepIn()
         constraint.propagate(event)
-        log.stepOut()
       case e: DomainReduced =>
         for(c <- constraints if c.variables.contains(e.variable)) {
-          log.constraintPropagation(c)
-          log.stepIn()
           c.propagate(e)
-          log.stepOut()
         }
       case e: DomainExtended =>
         for(c <- constraints if c.variables.contains(e.variable)) {
-          log.constraintPropagation(c)
-          log.stepIn()
           c.propagate(e)
-          log.stepOut()
         }
       case e: NewVariableEvent =>
     }
-    log.stepOut()
+    log.endEventHandling(event)
   }
 
   def post(constraint: Constraint) {

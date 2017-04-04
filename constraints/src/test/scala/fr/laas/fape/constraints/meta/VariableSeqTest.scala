@@ -48,7 +48,6 @@ class VariableSeqTest extends FunSuite with BeforeAndAfter {
     csp.bind(w2, 2)
     csp.bind(w3, 3)
     csp.propagate()
-    println(csp.report)
     assert(v3.value == 1)
   }
 

@@ -7,12 +7,11 @@ import fr.laas.fape.constraints.meta.variables.Variable
 
 class ILogger {
 
-  def stepIn() {}
-  def stepOut() {}
+  def startEventHandling(event: Event) {}
+  def endEventHandling(event: Event) {}
 
-  def eventDequeued(event: Event) {}
-
-  def constraintPropagation(constraint: Constraint) {}
+  def startConstraintPropagation(constraint: Constraint) {}
+  def endConstraintPropagation(constraint: Constraint) {}
 
   def domainUpdate(variable: Variable, domain: Domain) {}
 
@@ -23,19 +22,27 @@ class Logger extends ILogger {
 
   var offset = 0
 
-  override def stepIn() { offset += 2 }
-  override def stepOut() { offset -= 2 }
-
+  private def stepIn() { offset += 2 }
+  private def stepOut() { offset -= 2 }
   private def printOffset() { print(" "*offset) }
 
-  override def eventDequeued(event: Event): Unit = {
+
+  override def startEventHandling(event: Event): Unit = {
     printOffset()
     println(s"Event: $event")
+    stepIn()
+  }
+  override def endEventHandling(event: Event): Unit = {
+    stepOut()
   }
 
-  override def constraintPropagation(constraint: Constraint): Unit = {
+  override def startConstraintPropagation(constraint: Constraint) {
     printOffset()
     println(s"propagation: $constraint")
+    stepIn()
+  }
+  override def endConstraintPropagation(constraint: Constraint): Unit = {
+    stepOut()
   }
 
   override def domainUpdate(variable: Variable, domain: Domain): Unit = {

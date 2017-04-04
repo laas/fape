@@ -11,7 +11,13 @@ abstract class Constraint {
 
   def variables(implicit csp: CSP): Set[IVar]
 
-  def propagate(event: Event)(implicit csp: CSP)
+  final def propagate(event: Event)(implicit csp: CSP): Unit = {
+    csp.log.startConstraintPropagation(this)
+    _propagate(event)
+    csp.log.endConstraintPropagation(this)
+  }
+
+  def _propagate(event: Event)(implicit csp: CSP)
 
   def satisfied(implicit csp: CSP) : Satisfaction
 

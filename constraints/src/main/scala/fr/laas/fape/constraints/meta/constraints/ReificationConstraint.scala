@@ -11,7 +11,7 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
 
   override def variables(implicit csp: CSP): Set[IVar] = constraint.variables + booleanVar
 
-  override def propagate(event: Event)(implicit csp: CSP): Unit = {
+  override def _propagate(event: Event)(implicit csp: CSP): Unit = {
     event match {
       case NewConstraintEvent(c) if c == this =>
         checkVariable

@@ -16,7 +16,7 @@ class VariableInequalityConstraint(override val v1: Variable, override val v2: V
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(v1, v2)
 
-  override def propagate(event: Event)(implicit csp: CSP) : Unit = {
+  override def _propagate(event: Event)(implicit csp: CSP) : Unit = {
     val d1 = csp.dom(v1)
     val d2 = csp.dom(v2)
 
@@ -58,7 +58,7 @@ class VariableSeqInequalityConstraint(override val v1: VariableSeq, override val
 
   override def variables(implicit csp: CSP): Set[IVar] = reificationVariables.toSet
 
-  override def propagate(event: Event)(implicit csp: CSP): Unit = {
+  override def _propagate(event: Event)(implicit csp: CSP): Unit = {
     if(reificationVariables.exists(_.isTrue)) {
       // constraint is satisfied
     } else {
