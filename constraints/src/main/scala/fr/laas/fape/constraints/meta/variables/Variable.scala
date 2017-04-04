@@ -32,6 +32,7 @@ abstract class IVar(val id: Int) {
     }
 }
 
+/** Denotes a variable whose domain can be retrieved and represented explicitly */
 trait WithDomain {
   def domain(implicit csp: CSP) : Domain
 }
@@ -48,6 +49,10 @@ class Variable(id: Int, ref: Option[Any]) extends IVar(id) with WithDomain {
     require(domain.isSingleton, "Can only request the value of a bound variable")
     domain.values.head
   }
+
+  def ===(value: Int) : BindConstraint = new BindConstraint(this, value)
+
+  def =!=(value: Int) : NegBindConstraint = new NegBindConstraint(this, value)
 
   override def toString = ref match {
     case Some(x) => s"$x"

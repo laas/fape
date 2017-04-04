@@ -1,6 +1,7 @@
 package fr.laas.fape.constraints.meta.variables
 
 import fr.laas.fape.constraints.meta.CSP
+import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 
 import scala.collection.mutable
@@ -25,8 +26,21 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   def getVariable(ref: Option[Any] = None) : Variable = new Variable(getNextVariableId(), ref)
 
-  def getBooleanVariable(ref: Option[Any] = None) : BooleanVariable =
-    new BooleanVariable(getNextVariableId(), ref)
+  def getBooleanVariable(ref: Option[Any] = None) : BooleanVariable = ref match {
+    case None => new BooleanVariable(getNextVariableId(), None)
+    case Some(x) =>
+      if(!varsByRef.contains(x))
+        varsByRef.put(x, new BooleanVariable(getNextVariableId(), ref))
+      varsByRef(x).asInstanceOf[BooleanVariable]
+  }
+
+  def getReificationVariable(constraint: Constraint) : ReificationVariable = {
+    if(!varsByRef.contains(constraint)) {
+      val v = new ReificationVariable(getNextVariableId(), constraint)
+      varsByRef.put(constraint, v)
+    }
+    varsByRef(constraint).asInstanceOf[ReificationVariable]
+  }
 
   def getTimepoint(ref: Any) : Timepoint = {
     if(!timepointsByRef.contains(ref)) {

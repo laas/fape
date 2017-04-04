@@ -21,14 +21,22 @@ class EnumeratedDomain(val vals: IBitSet) extends Domain {
 
   def head() : Int = vals.head
 
-  override def intersection(other: Domain) : EnumeratedDomain = {
+  override def intersection(other: Domain) : Domain = {
     other match {
+      case other: EmptyDomain =>
+        other
       case other: EnumeratedDomain =>
         val intersection = (vals, other.vals) match {
           case (v1: IBitSet, v2: IBitSet) => v1 & v2 // should be significantly faster as it is just and 'and' on two bitset
           case (v1, v2) => v1 & v2
         }
         new EnumeratedDomain(intersection)
+      case other: SingletonDomain if contains(other.value) =>
+        other
+      case other: SingletonDomain if !contains(other.value) =>
+        new EmptyDomain
+      case _ =>
+        super.intersection(other)
     }
   }
 

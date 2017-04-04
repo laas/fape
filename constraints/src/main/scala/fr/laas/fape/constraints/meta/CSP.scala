@@ -1,13 +1,13 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReversibleConstraint, ReificationConstraint}
+import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReificationConstraint, ReversibleConstraint}
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain, IntervalDomain}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
 import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals
 import fr.laas.fape.constraints.meta.stn.events.STNEventHandler
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
-import fr.laas.fape.constraints.meta.variables.{BooleanVariable, IVar, Variable, VariableStore}
+import fr.laas.fape.constraints.meta.variables._
 
 import scala.collection.mutable
 
@@ -66,7 +66,7 @@ class CSP(toClone: Option[CSP] = None) {
     new IntervalDomain(stn.getMinDelay(d.from, d.to), stn.getMaxDelay(d.from, d.to))
 
   def bind(variable: Variable, value: Int) {
-    updateDomain(variable, new EnumeratedDomain(Set(value)))
+    post(variable === value)
   }
 
   def updateDomain(variable: Variable, newDomain: Domain) {
@@ -113,14 +113,13 @@ class CSP(toClone: Option[CSP] = None) {
     events += NewConstraintEvent(constraint)
   }
 
-  def reified(constraint: Constraint with ReversibleConstraint) : BooleanVariable = {
+  def reified(constraint: Constraint with ReversibleConstraint) : ReificationVariable = {
     if(!varStore.hasVariableForRef(constraint)) {
-      val variable = varStore.getBooleanVariable(Some(constraint))
-      varStore.setVariableForRef(constraint, variable)
+      val variable = varStore.getReificationVariable(constraint)
       domains.put(variable, new BooleanDomain(Set(false, true)))
       post(new ReificationConstraint(variable, constraint))
     }
-    varStore.getVariableForRef(constraint).asInstanceOf[BooleanVariable]
+    varStore.getReificationVariable(constraint)
   }
 
   def setSatisfied(constraint: Constraint): Unit = {
