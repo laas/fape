@@ -37,4 +37,9 @@ class DisjunctiveConstraint(val constraints: Seq[Constraint with ReversibleConst
         csp.bind(undecided.head, 1)
     }
   }
+
+  override def toString = constraints.mkString(" || ")
+
+  override def ||(c: Constraint with ReversibleConstraint) =
+    new DisjunctiveConstraint(c :: constraints.toList)
 }

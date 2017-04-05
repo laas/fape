@@ -24,12 +24,23 @@ trait Constraint {
   def isSatisfied(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.SATISFIED
 
   def isViolated(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.VIOLATED
+
+  def &&(constraint: Constraint) : ConjunctionConstraint = constraint match {
+    case c: ConjunctionConstraint => new ConjunctionConstraint(constraint :: c.constraints.toList)
+    case c => new ConjunctionConstraint(List(this, c))
+  }
+
+  def ||(constraint: Constraint with ReversibleConstraint) = constraint match {
+    case c: DisjunctiveConstraint => new DisjunctiveConstraint(constraint :: c.constraints.toList)
+    case c => new DisjunctiveConstraint(List(this.asInstanceOf[Constraint with ReversibleConstraint], c))
+  }
 }
 
 trait ReversibleConstraint {
 
   /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
   def reverse : Constraint
+
 }
 
 object ConstraintSatisfaction extends Enumeration {

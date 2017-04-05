@@ -25,7 +25,7 @@ class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Con
     }
   }
 
-  private def checkVariable(implicit csp: CSP): Unit = {
+  private def checkVariable(implicit csp: CSP) {
     val dom = csp.dom(reiVar)
     if(dom.isSingleton && dom.contains(1)) {
       csp.post(constraint)
@@ -36,7 +36,7 @@ class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Con
     }
   }
 
-  private def checkConstraint(implicit csp: CSP): Unit = {
+  private def checkConstraint(implicit csp: CSP) {
     if(constraint.isSatisfied)
       csp.updateDomain(reiVar, new BooleanDomain(Set(true)))
     else if(constraint.isViolated)

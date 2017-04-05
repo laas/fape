@@ -23,4 +23,6 @@ class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint
       case _ =>
     }
   }
+
+  override def toString = constraints.mkString(" && ")
 }

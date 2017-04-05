@@ -12,8 +12,6 @@ class Timepoint(id: Int, ref: Option[Any]) extends IVar(id) with WithDomain {
   def isStructural : Boolean = false
   def isContingent : Boolean = false
 
-  def dom(implicit csp: CSP) : IntervalDomain = csp.dom(this)
-
   def <(tp: Timepoint) : MinDelayConstraint =
     new MinDelayConstraint(this, tp, 1)
 

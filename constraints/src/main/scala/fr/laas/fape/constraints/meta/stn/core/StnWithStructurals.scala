@@ -264,7 +264,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
       val keysToRemove =
         watchedVarsByIndex.keys.filter(p => p._1 == toIndex(anchored) || p._2 == toIndex(anchored))
       val watchesToReAdd =
-        keysToRemove.flatMap(k => watchedVarsByIndex(k))
+        keysToRemove.toList.flatMap(k => watchedVarsByIndex(k))
 
       // remove the anchored timepoint from distance matrix
       dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))

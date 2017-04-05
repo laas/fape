@@ -42,6 +42,12 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
     varsByRef(constraint).asInstanceOf[ReificationVariable]
   }
 
+  def getTimepoint() : Timepoint = {
+    val tp = new Timepoint(getNextVariableId(), None)
+    csp.variableAdded(tp)
+    tp
+  }
+
   def getTimepoint(ref: Any) : Timepoint = {
     if(!timepointsByRef.contains(ref)) {
       val tp = new Timepoint(getNextVariableId(), Some(ref))

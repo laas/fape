@@ -9,9 +9,9 @@ class AbsoluteAfterConstraint(val tp: Timepoint, val deadline: Int)
   extends TemporalConstraint with ReversibleConstraint {
 
   override def satisfaction(implicit csp: CSP): Satisfaction =
-    if(tp.dom.lb >= deadline)
+    if(tp.domain.lb >= deadline)
       ConstraintSatisfaction.SATISFIED
-    else if(tp.dom.ub < deadline)
+    else if(tp.domain.ub < deadline)
       ConstraintSatisfaction.VIOLATED
     else
       ConstraintSatisfaction.UNDEFINED

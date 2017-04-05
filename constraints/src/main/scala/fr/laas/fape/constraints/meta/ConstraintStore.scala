@@ -38,7 +38,7 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
   /** Removes a constraint from the active list and removes it from the variable index */
   private def onSatisfaction(constraint: Constraint) {
     if(active.contains(constraint)) {
-      assert(!satisfied.contains(constraint), s"Constraint $constraint already recorded as satisfied")
+//      assert(!satisfied.contains(constraint), s"Constraint $constraint already recorded as satisfied")
       active -= constraint
       satisfied += constraint
       for(v <- constraint.variables) {
