@@ -12,7 +12,6 @@ import fr.laas.fape.constraints.meta.variables._
 import scala.collection.mutable
 
 class CSP(toClone: Option[CSP] = None) {
-  import ConstraintSatisfaction._
   implicit private val csp = this
 
   val domains : mutable.Map[Variable, Domain] = toClone match {
@@ -30,25 +29,26 @@ class CSP(toClone: Option[CSP] = None) {
     case Some(base) => base.eventHandlers.map(handler => handler.clone(this))
   }
 
-  val constraints: mutable.ArrayBuffer[Constraint] = toClone match {
-    case None => mutable.ArrayBuffer[Constraint]()
-    case Some(base) => base.constraints.clone()
-  }
-
   val varStore: VariableStore = toClone match {
     case None => new VariableStore(this)
     case Some(base) => base.varStore.clone(this)
   }
 
+  val constraints: ConstraintStore = toClone match {
+    case Some(base) => base.constraints.clone(this)
+    case None => new ConstraintStore(this)
+  }
+
   val stn: StnWithStructurals = toClone match {
-    case None =>
-      eventHandlers += new STNEventHandler
-      new StnWithStructurals()
-    case Some(base) =>
-      base.stn.clone()
+    case None => new StnWithStructurals()
+    case Some(base) => base.stn.clone()
+  }
+  val stnBridge: STNEventHandler = toClone match {
+    case None => new STNEventHandler()(this)
+    case Some(base) => base.stnBridge.clone(this)
   }
   // set the STN listener to the one already in the event handlers to get notified of temporal variable updates
-  stn.setDistanceChangeListener(eventHandlers.find(_.isInstanceOf[STNEventHandler]).get.asInstanceOf[STNEventHandler])
+  stn.setDistanceChangeListener(stnBridge)
 
   val temporalOrigin = varStore.getTimepoint(":start:")
   val temporalHorizon = varStore.getTimepoint(":end:")
@@ -89,19 +89,29 @@ class CSP(toClone: Option[CSP] = None) {
 
   def handleEvent(event: Event) {
     log.startEventHandling(event)
+    constraints.handleEvent(event)
     event match {
-      case NewConstraintEvent(constraint) =>
-        constraint.propagate(event)
-      case e: DomainReduced =>
-        for(c <- constraints if c.variables.contains(e.variable)) {
+      case NewConstraintEvent(c) =>
+        c.propagate(event)
+        if(c.isSatisfied)
+            setSatisfied(c)
+      case e@ DomainReduced(variable) =>
+        for(c <- constraints.watching(variable)) {
           c.propagate(e)
+          if(c.isSatisfied)
+            setSatisfied(c)
         }
-      case e: DomainExtended =>
-        for(c <- constraints if c.variables.contains(e.variable)) {
+      case e@ DomainExtended(variable) =>
+        for(c <- constraints.watching(variable)) {
           c.propagate(e)
+          if(c.isSatisfied)
+            setSatisfied(c)
         }
       case e: NewVariableEvent =>
+
+      case x: Satisfied => // handled by constraint store
     }
+    stnBridge.handleEvent(event)
     for(h <- eventHandlers)
       h.handleEvent(event)
     log.endEventHandling(event)
@@ -109,8 +119,7 @@ class CSP(toClone: Option[CSP] = None) {
 
   def post(constraint: Constraint) {
     log.constraintPosted(constraint)
-    constraints += constraint
-    events += NewConstraintEvent(constraint)
+    addEvent(NewConstraintEvent(constraint))
   }
 
   def reified(constraint: Constraint with ReversibleConstraint) : ReificationVariable = {
@@ -122,8 +131,9 @@ class CSP(toClone: Option[CSP] = None) {
     varStore.getReificationVariable(constraint)
   }
 
-  def setSatisfied(constraint: Constraint): Unit = {
-    assert(constraint.satisfaction == SATISFIED)
+  def setSatisfied(constraint: Constraint)  {
+    assert(constraint.isSatisfied)
+    addEvent(Satisfied(constraint))
   }
 
   def addVariable(variable: Any, domainValues: Set[Int]) : Variable = {
@@ -167,7 +177,12 @@ class CSP(toClone: Option[CSP] = None) {
     for((v, d) <- domains.toSeq.sortBy(_._1.toString)) {
       str.append(s"$v = $d\n")
     }
-    for(c <- constraints.sortBy(_.toString))
+    str.append("%% ACTIVE CONSTRAINTS\n")
+    for(c <- constraints.active.toSeq.sortBy(_.toString))
+      str.append(s"$c  ${c.satisfaction}\n")
+
+    str.append("%% SATISFIED CONSTRAINTS\n")
+    for(c <- constraints.satisfied.toSeq.sortBy(_.toString))
       str.append(s"$c  ${c.satisfaction}\n")
     str.toString
   }

@@ -16,7 +16,7 @@ object BinarySearch {
     }
 
     // variables by increasing domain size
-    val variables = csp.constraints
+    val variables = csp.constraints.active
       .flatMap(_.variables)
       .collect{case v: Variable => v}.toSet.toSeq
       .filter(_.domain.size > 1)

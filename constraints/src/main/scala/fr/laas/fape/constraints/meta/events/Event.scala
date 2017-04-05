@@ -18,3 +18,4 @@ case class DomainReduced(override val variable: IVar with WithDomain) extends Do
 
 case class DomainExtended(override val variable: IVar with WithDomain) extends DomainChange(variable)
 
+case class Satisfied(constraint: Constraint) extends Event

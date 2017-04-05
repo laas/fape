@@ -5,7 +5,7 @@ import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.variables.{IVar, Variable}
 
-abstract class Constraint {
+trait Constraint {
 
   type Satisfaction = ConstraintSatisfaction.ConstraintSatisfaction
 

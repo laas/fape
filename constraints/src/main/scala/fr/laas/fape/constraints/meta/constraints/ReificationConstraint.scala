@@ -3,13 +3,14 @@ package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.BooleanDomain
 import fr.laas.fape.constraints.meta.events.{DomainChange, Event, NewConstraintEvent}
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable}
-
+import fr.laas.fape.constraints.meta.variables.{IVar, ReificationVariable, Variable}
 import ConstraintSatisfaction._
 
-class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint with ReversibleConstraint) extends Constraint {
+class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Constraint with ReversibleConstraint)
+  extends Constraint {
+  require(reiVar.constraint == constraint)
 
-  override def variables(implicit csp: CSP): Set[IVar] = constraint.variables + booleanVar
+  override def variables(implicit csp: CSP): Set[IVar] = constraint.variables + reiVar
 
   override def _propagate(event: Event)(implicit csp: CSP): Unit = {
     event match {
@@ -17,7 +18,7 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
         checkVariable
         checkConstraint
       case event: DomainChange =>
-        if(event.variable == booleanVar)
+        if(event.variable == reiVar)
           checkVariable
         else
           checkConstraint
@@ -25,7 +26,7 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
   }
 
   private def checkVariable(implicit csp: CSP): Unit = {
-    val dom = csp.dom(booleanVar)
+    val dom = csp.dom(reiVar)
     if(dom.isSingleton && dom.contains(1)) {
       csp.post(constraint)
     } else if(dom.isSingleton && dom.contains(0)) {
@@ -37,13 +38,13 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
 
   private def checkConstraint(implicit csp: CSP): Unit = {
     if(constraint.isSatisfied)
-      csp.updateDomain(booleanVar, new BooleanDomain(Set(true)))
+      csp.updateDomain(reiVar, new BooleanDomain(Set(true)))
     else if(constraint.isViolated)
-      csp.updateDomain(booleanVar, new BooleanDomain(Set(false)))
+      csp.updateDomain(reiVar, new BooleanDomain(Set(false)))
   }
 
   override def satisfaction(implicit csp: CSP): Satisfaction = {
-    val dom = csp.dom(booleanVar)
+    val dom = csp.dom(reiVar)
     val cSat = constraint.satisfaction
     if (dom.isSingleton && dom.contains(1)) {
       if (cSat == SATISFIED) SATISFIED
@@ -59,5 +60,5 @@ class ReificationConstraint(val booleanVar: Variable, val constraint: Constraint
     }
   }
 
-  override def toString = s"[${booleanVar.id}] <=> $constraint"
+  override def toString = s"[${reiVar.id}] <=> $constraint"
 }

@@ -35,6 +35,4 @@ class SearchTest extends FunSuite with BeforeAndAfter {
     val ret = BinarySearch.search(csp)
     assert(ret == null)
   }
-
-
 }
