@@ -2,6 +2,7 @@ package fr.laas.fape.constraints.meta.stn.core
 
 import java.util
 
+import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.stnu.InconsistentTemporalNetwork
 
 import scala.collection.mutable
@@ -104,7 +105,7 @@ class DistanceMatrix(
     */
   def enforceDist(a: Int, b: Int, d: Int): Unit = {
     if(plus(d, dists(b)(a)) < 0)
-      throw new InconsistentTemporalNetwork
+      throw new InconsistentBindingConstraintNetwork()
     if(d >= dists(a)(b))
       return // constraint is dominated
 

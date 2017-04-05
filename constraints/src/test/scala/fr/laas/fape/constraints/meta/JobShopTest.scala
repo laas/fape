@@ -5,23 +5,25 @@ import fr.laas.fape.constraints.meta.stn.variables.TemporalInterval
 import fr.laas.fape.constraints.meta.variables.Variable
 import org.scalatest.FunSuite
 
-import scala.collection.mutable
-
 class JobShopTest extends FunSuite {
 
-  val instance = new JobShopInstance(2, List(List(2, 4), List(5, 3)))
+  val instance = new JobShopInstance(2, List(List(2, 4, 2, 1), List(5, 3), List(3, 5, 7)))
 
   test("job shop search") {
     val (model, jobs) = jobShopModel(instance)
 
-    implicit val csp = BinarySearch.search(model)
+    BinarySearch.count = 0
+    implicit val csp = BinarySearch.search(model, optimizeMakespan = true)
     assert(csp != null)
-    println(csp.report)
+    //    println(csp.report)
     for((m, js) <- jobs.groupBy(_.machine.value).toList.sortBy(_._1)) {
       print(s"$m: ")
-      println(js.map(j => s"${j.interval.start.domain.lb}:(${j.jobNumber}, ${j.numInJob})").mkString("  --  "))
-      println("Makesplan: "+csp.temporalHorizon.domain.lb)
+      val localJobs = js.sortBy(_.interval.start.domain.lb)
+      println(localJobs.map(j => s"${j.interval.start.domain.lb}[${j.duration}]:(${j.jobNumber}, ${j.numInJob})").mkString("  --  "))
     }
+    println("Makespan: "+csp.temporalHorizon.domain.lb)
+    println("Num nodes: " + BinarySearch.count)
+    println("Num constraints: "+csp.constraints.satisfied.size)
   }
 
   def jobShopModel(instance: JobShopInstance) : (CSP, Seq[Job]) = {
@@ -38,13 +40,13 @@ class JobShopTest extends FunSuite {
     // set temporal constraints
     for(i <- jobs.indices) {
       val job = jobs(i)
-      csp.post(job.interval.duration == job.duration)
+      csp.post(job.interval.duration == job.duration -1)
       if(job.numInJob >= 1)
-        csp.post(jobs(i-1).interval <= job.interval)
+        csp.post(jobs(i-1).interval.end < job.interval.start)
     }
 
     for(j1 <- jobs ; j2 <- jobs ; if j1 != j2) {
-      csp.post(j1.machine =!= j2.machine || j1.interval < j2.interval || j1.interval >= j2.interval)
+      csp.post(j1.machine =!= j2.machine || j1.interval < j2.interval || j1.interval > j2.interval)
     }
     (csp, jobs)
   }

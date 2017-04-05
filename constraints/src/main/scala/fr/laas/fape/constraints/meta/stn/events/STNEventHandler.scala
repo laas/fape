@@ -35,6 +35,8 @@ class STNEventHandler(implicit val csp: CSP)
           case _ => // ignore constraint
         }
       }
+    case Satisfied(c) =>
+      // TODO unwatch if it was active
 
     case _ =>
   }

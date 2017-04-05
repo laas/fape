@@ -286,7 +286,6 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   }
 
   def addWatchedDistance(tp1: Timepoint, tp2: Timepoint) {
-
     var id1 = indexOfAnchor(tp1)
     var id2 = indexOfAnchor(tp2)
     if(id1 > id2) {
@@ -300,7 +299,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     watchedVarsByIndex((id1, id2)) += ((tp1, tp2))
 
     for((k, v) <- watchedVarsByIndex)
-      assert(v.forall(p => k._1 == indexOfAnchor(p._1) && k._2 == indexOfAnchor(p._2)))
+      assert(v.forall(p => k == (indexOfAnchor(p._1), indexOfAnchor(p._2)) || k == (indexOfAnchor(p._2), indexOfAnchor(p._1))))
   }
 
   /** Record this time point as the global start of the STN */

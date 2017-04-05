@@ -23,7 +23,8 @@ case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int)
   extends TemporalConstraint with ReversibleConstraint {
   override def toString = s"$src + $minDelay <= $dst"
 
-  override def variables(implicit csp: CSP): Set[IVar] = Set(src, dst)
+  override def variables(implicit csp: CSP): Set[IVar] =
+    Set(csp.varStore.getDelayVariable(src, dst))
 
   override def satisfaction(implicit csp: CSP): Satisfaction =
     if(csp.stn.getMinDelay(src, dst) >= minDelay)
