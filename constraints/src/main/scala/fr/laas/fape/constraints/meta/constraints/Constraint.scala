@@ -11,9 +11,23 @@ trait Constraint {
 
   def variables(implicit csp: CSP): Set[IVar]
 
+  def subconstraints(implicit csp: CSP) : Iterable[Constraint] = Nil
+
+  def onPost(implicit csp: CSP) {
+    for(c <- subconstraints)
+      csp.watchSubConstraint(c, this)
+  }
+
+  def onWatch(implicit csp: CSP) {
+    for(c <- subconstraints)
+      csp.watchSubConstraint(c, this)
+  }
+
   final def propagate(event: Event)(implicit csp: CSP): Unit = {
     csp.log.startConstraintPropagation(this)
     _propagate(event)
+    if(isSatisfied)
+      csp.setSatisfied(this)
     csp.log.endConstraintPropagation(this)
   }
 
@@ -21,9 +35,12 @@ trait Constraint {
 
   def satisfaction(implicit csp: CSP) : Satisfaction
 
-  def isSatisfied(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.SATISFIED
+  final def isSatisfied(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.SATISFIED
 
-  def isViolated(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.VIOLATED
+  final def isViolated(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.VIOLATED
+
+  final def active(implicit csp: CSP) : Boolean = csp.constraints.isActive(this)
+  final def watched(implicit csp: CSP) : Boolean = csp.constraints.isWatched(this)
 
   def &&(constraint: Constraint) : ConjunctionConstraint = constraint match {
     case c: ConjunctionConstraint => new ConjunctionConstraint(constraint :: c.constraints.toList)

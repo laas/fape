@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.constraints
 
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.events.{Event, NewConstraintEvent}
+import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
 import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VariableSeq}
 
 trait EqualityConstraint extends Constraint with ReversibleConstraint {

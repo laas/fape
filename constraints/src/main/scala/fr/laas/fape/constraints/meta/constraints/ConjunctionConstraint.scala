@@ -1,11 +1,20 @@
 package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.events.{Event, NewConstraintEvent}
+import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
 import fr.laas.fape.constraints.meta.variables.IVar
 
 class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint {
 
+  override def onPost(implicit csp: CSP) {
+    for(c <- constraints) {
+      csp.postSubConstraint(c, this)
+    }
+    super.onPost
+  }
+
   override def variables(implicit csp: CSP): Set[IVar] = Set()
+
+  override def subconstraints(implicit csp: CSP) = constraints
 
   override def satisfaction(implicit csp: CSP): Satisfaction =
     if(constraints.forall(_.isSatisfied))
@@ -16,12 +25,6 @@ class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint
       ConstraintSatisfaction.UNDEFINED
 
   override protected def _propagate(event: Event)(implicit csp: CSP) {
-    event match {
-      case NewConstraintEvent(c) => assert(this == c)
-        for(c <- constraints)
-          csp.post(c)
-      case _ =>
-    }
   }
 
   override def toString = constraints.mkString(" && ")

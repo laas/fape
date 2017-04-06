@@ -7,7 +7,8 @@ import org.scalatest.FunSuite
 
 class JobShopTest extends FunSuite {
 
-  val instance = new JobShopInstance(2, List(List(2, 4, 2, 1), List(5, 3), List(3, 5, 7)))
+    val instance = new JobShopInstance(4, List(List(2, 4, 2, 1), List(5, 3, 2), List(3, 5, 7)), Some(14))
+//  val instance = new JobShopInstance(2, List(List(2, 4))) // very simple instance to avoid taking time in unit tests
 
   test("job shop search") {
     val (model, jobs) = jobShopModel(instance)
@@ -15,7 +16,9 @@ class JobShopTest extends FunSuite {
     BinarySearch.count = 0
     implicit val csp = BinarySearch.search(model, optimizeMakespan = true)
     assert(csp != null)
-    //    println(csp.report)
+    assert(csp.isSolution)
+    assert(instance.optimalMakespan.isEmpty || csp.makespan == instance.optimalMakespan.get)
+    println(csp.report)
     for((m, js) <- jobs.groupBy(_.machine.value).toList.sortBy(_._1)) {
       print(s"$m: ")
       val localJobs = js.sortBy(_.interval.start.domain.lb)
@@ -54,7 +57,7 @@ class JobShopTest extends FunSuite {
 
 case class Job(jobNumber: Int, numInJob: Int, duration: Int, interval: TemporalInterval, machine: Variable)
 
-class JobShopInstance(val numMachines: Int, val jobs: Seq[Seq[Int]]) {
+class JobShopInstance(val numMachines: Int, val jobs: Seq[Seq[Int]], val optimalMakespan: Option[Int]) {
 
   def numJobs = jobs.size
 }

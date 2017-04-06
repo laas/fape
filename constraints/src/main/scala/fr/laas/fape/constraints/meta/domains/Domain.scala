@@ -51,7 +51,9 @@ trait Domain {
   }
 
   override def toString : String =
-    if(size <= 6)
+    if(isSingleton)
+      values.head.toString
+    else if(size <= 6)
       s"{${values.mkString(", ")}}"
     else
       s"{${values.take(3).mkString(", ")}, ..., ${values.takeRight(3)}}"

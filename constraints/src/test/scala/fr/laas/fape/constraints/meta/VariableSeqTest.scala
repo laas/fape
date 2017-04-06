@@ -20,8 +20,8 @@ class VariableSeqTest extends FunSuite with BeforeAndAfter {
   }
 
   test("VariableSeq equality") {
-    val vs1 = new VariableSeq(List(v1, v2, v3), csp.nextVarId())
-    val ws2 = new VariableSeq(List(w1, w2, w3), csp.nextVarId())
+    val vs1 = new VariableSeq(List(v1, v2, v3))
+    val ws2 = new VariableSeq(List(w1, w2, w3))
 
     csp.post(vs1 === ws2)
     csp.propagate()
@@ -34,8 +34,8 @@ class VariableSeqTest extends FunSuite with BeforeAndAfter {
   }
 
   test("VariableSeq inequality") {
-    val vs1 = new VariableSeq(List(v1, v2, v3), csp.nextVarId())
-    val ws2 = new VariableSeq(List(w1, w2, w3), csp.nextVarId())
+    val vs1 = new VariableSeq(List(v1, v2, v3))
+    val ws2 = new VariableSeq(List(w1, w2, w3))
 
     csp.post(vs1 =!= ws2)
     csp.propagate()

@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta.constraints
 
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.BooleanDomain
-import fr.laas.fape.constraints.meta.events.{DomainChange, Event, NewConstraintEvent}
+import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.variables.{IVar, ReificationVariable, Variable}
 import ConstraintSatisfaction._
 
@@ -10,18 +10,24 @@ class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Con
   extends Constraint {
   require(reiVar.constraint == constraint)
 
-  override def variables(implicit csp: CSP): Set[IVar] = constraint.variables + reiVar
+  override def variables(implicit csp: CSP): Set[IVar] = Set(reiVar)
+
+  override def subconstraints(implicit csp: CSP) = Set(constraint)
 
   override def _propagate(event: Event)(implicit csp: CSP): Unit = {
     event match {
-      case NewConstraintEvent(c) if c == this =>
+      case NewConstraint(c) if c == this =>
         checkVariable
         checkConstraint
       case event: DomainChange =>
-        if(event.variable == reiVar)
-          checkVariable
-        else
-          checkConstraint
+        assert(event.variable == reiVar)
+        checkVariable
+      case WatchedSatisfied(c) =>
+        assert(c == constraint)
+        csp.updateDomain(reiVar, reiVar.domain - 0)
+      case WatchedViolated(c) =>
+        assert(c == constraint)
+        csp.updateDomain(reiVar, reiVar.domain - 1)
     }
   }
 

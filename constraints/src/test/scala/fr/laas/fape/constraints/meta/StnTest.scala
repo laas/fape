@@ -26,7 +26,22 @@ class StnTest extends FunSuite with BeforeAndAfter {
 
     csp.propagate()
 
+    assert(rei.constraint.isViolated)
+    assert(rei2.constraint.isSatisfied)
     assert(rei.isFalse)
     assert(rei2.isTrue)
+  }
+
+  test("Very Simple STN with reification") {
+
+//    val tp1 = csp.varStore.getTimepoint("first")
+
+    val rei = csp.reified(csp.temporalHorizon < 2)
+    csp.propagate()
+    csp.post(csp.temporalHorizon < 2)
+    csp.propagate()
+
+    assert(rei.constraint.isSatisfied)
+    assert(rei.isTrue)
   }
 }

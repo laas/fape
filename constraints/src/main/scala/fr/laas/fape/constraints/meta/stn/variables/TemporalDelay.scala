@@ -1,11 +1,13 @@
 package fr.laas.fape.constraints.meta.stn.variables
 
+import java.util.Objects
+
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.IntervalDomain
 import fr.laas.fape.constraints.meta.stn.constraint.MinDelayConstraint
-import fr.laas.fape.constraints.meta.variables.{IVar, WithDomain}
+import fr.laas.fape.constraints.meta.variables.{IVar, VarWithDomain}
 
-class TemporalDelay(val from: Timepoint, val to: Timepoint, id: Int) extends IVar(id) with WithDomain {
+class TemporalDelay(val from: Timepoint, val to: Timepoint) extends IVar with VarWithDomain {
 
   override def domain(implicit csp: CSP) : IntervalDomain = csp.dom(this)
 
@@ -18,4 +20,11 @@ class TemporalDelay(val from: Timepoint, val to: Timepoint, id: Int) extends IVa
   def ==(value: Int) = this <= value && this >= value
 
   override def toString = s"delay($from, $to)"
+
+
+  override final val hashCode : Int = Objects.hash(from, to)
+  override def equals(o:Any) = o match {
+    case o: TemporalDelay => from == o.from && to == o.to
+    case _ => false
+  }
 }

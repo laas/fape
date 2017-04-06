@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta.search
 
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.variables.Variable
+import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VarWithDomain}
 
 object BinarySearch {
   var count = 0
@@ -20,7 +20,7 @@ object BinarySearch {
     // variables by increasing domain size
     val variables = csp.constraints.active
       .flatMap(_.variables)
-      .collect{case v: Variable => v}.toSet.toSeq
+      .collect{case v: VarWithDomain => v}.toSet.toSeq
       .filter(_.domain.size > 1)
       .sortBy(_.domain.size)
 

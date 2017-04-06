@@ -2,20 +2,19 @@ package fr.laas.fape.constraints.meta.stn.constraint
 
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReversibleConstraint}
-import fr.laas.fape.constraints.meta.events.{Event, NewConstraintEvent}
+import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.variables.IVar
 
 abstract class TemporalConstraint extends Constraint {
 
+  override def onPost(implicit csp: CSP) {
+    csp.stn.addConstraint(this)
+    super.onPost
+  }
 
- override def _propagate(event: Event)(implicit csp: CSP): Unit = event match {
-   case NewConstraintEvent(c) =>
-     assert(this == c)
-     assert(csp.stn != null)
-     csp.stn.addConstraint(this)
-   case _ =>
-     // nothing, should be handled by underlying STN
+ override def _propagate(event: Event)(implicit csp: CSP) {
+   // handled by the STN
  }
 }
 

@@ -1,7 +1,7 @@
 package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.meta.constraints.{EqualityConstraint, InequalityConstraint}
-import fr.laas.fape.constraints.meta.events.NewConstraintEvent
+import fr.laas.fape.constraints.meta.events.NewConstraint
 import fr.laas.fape.constraints.meta.variables.Variable
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
@@ -31,7 +31,7 @@ class ConstraintTest extends FunSuite with BeforeAndAfter {
 
   test("Constraint propagation difference") {
     val c = v1 =!= v2
-    c.propagate(NewConstraintEvent(c))
+    c.propagate(NewConstraint(c))
 
     assert(v1.domain.size == 2)
     assert(!v1.domain.contains(2))
@@ -47,7 +47,7 @@ class ConstraintTest extends FunSuite with BeforeAndAfter {
 
   test("Constraint propagation equality") {
     val c = v1 === v2
-    c.propagate(NewConstraintEvent(c))
+    c.propagate(NewConstraint(c))
 
     assert(v1.domain.size == 1)
     assert(v1.domain.contains(2))

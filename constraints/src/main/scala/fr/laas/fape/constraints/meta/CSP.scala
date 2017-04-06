@@ -1,6 +1,7 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReificationConstraint, ReversibleConstraint}
+import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
+import fr.laas.fape.constraints.meta.constraints._
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain, IntervalDomain}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
@@ -14,7 +15,7 @@ import scala.collection.mutable
 class CSP(toClone: Option[CSP] = None) {
   implicit private val csp = this
 
-  val domains : mutable.Map[Variable, Domain] = toClone match {
+  val domains : mutable.Map[IVar with VarWithDomain, Domain] = toClone match {
     case Some(base) => base.domains.clone()
     case None => mutable.Map()
   }
@@ -55,7 +56,7 @@ class CSP(toClone: Option[CSP] = None) {
 
   override def clone : CSP = new CSP(Some(this))
 
-  final val log : ILogger = new ILogger
+  final val log : ILogger = new Logger
 
   def dom(variable: Variable) : Domain = domains(variable)
 
@@ -65,16 +66,25 @@ class CSP(toClone: Option[CSP] = None) {
   def dom(d: TemporalDelay) : IntervalDomain =
     new IntervalDomain(stn.getMinDelay(d.from, d.to), stn.getMaxDelay(d.from, d.to))
 
+  def dom(v: VarWithInitialDomain) : Domain =
+    if(domains.contains(v))
+      domains(v)
+    else
+      v.initialDomain
+
   def bind(variable: Variable, value: Int) {
     post(variable === value)
   }
 
-  def updateDomain(variable: Variable, newDomain: Domain) {
+  def updateDomain(variable: IVar with VarWithDomain, newDomain: Domain) {
     log.domainUpdate(variable, newDomain)
-    if(dom(variable).size > newDomain.size) {
+    assert(domains.contains(variable) || variable.isInstanceOf[VarWithInitialDomain])
+    if(newDomain.isEmpty) {
+      throw new InconsistentBindingConstraintNetwork()
+    } else if(variable.domain.size > newDomain.size) {
       events += DomainReduced(variable)
       domains(variable) = newDomain
-    } else if(dom(variable).size < newDomain.size) {
+    } else if(variable.domain.size < newDomain.size) {
       events += DomainExtended(variable)
       domains(variable) = newDomain
     }
@@ -85,31 +95,65 @@ class CSP(toClone: Option[CSP] = None) {
       val e = events.dequeue()
       handleEvent(e)
     }
+//    assert(sanityCheck())
+  }
+
+  def sanityCheck() : Boolean = {
+    assert(events.isEmpty, "Can't sanity check: CSP has pending events")
+    for(c <- constraints.active) {
+      if(c.satisfaction != ConstraintSatisfaction.UNDEFINED) {
+        println(report)
+      }
+      assert(c.satisfaction == ConstraintSatisfaction.UNDEFINED,
+        s"Satisfaction of active constraint $c is not UNDEFINED but ${c.satisfaction}")
+    }
+    for(c <- constraints.satisfied)
+      assert(c.isSatisfied, s"Constraint $c is not satisfied while in the satisfied list")
+    true
   }
 
   def handleEvent(event: Event) {
     log.startEventHandling(event)
     constraints.handleEvent(event)
     event match {
-      case NewConstraintEvent(c) =>
+      case NewConstraint(c) =>
+        c.onPost
         c.propagate(event)
-        if(c.isSatisfied)
-            setSatisfied(c)
-      case e@ DomainReduced(variable) =>
-        for(c <- constraints.watching(variable)) {
-          c.propagate(e)
+        if(c.watched) {
           if(c.isSatisfied)
-            setSatisfied(c)
+            addEvent(WatchedSatisfied(c))
+          else if(c.isViolated)
+            addEvent(WatchedViolated(c))
         }
-      case e@ DomainExtended(variable) =>
-        for(c <- constraints.watching(variable)) {
+      case e: DomainChange =>
+        for(c <- constraints.activeWatching(e.variable)) {
           c.propagate(e)
+        }
+        for(c <- constraints.monitoredWatching(e.variable)) {
           if(c.isSatisfied)
-            setSatisfied(c)
+            addEvent(WatchedSatisfied(c))
+          else if(c.isViolated)
+            addEvent(WatchedViolated(c))
+        }
+      case event: WatchedSatisfactionUpdate =>
+        for(c <- constraints.monitoring(event.constraint)) {
+          if(c.active) {
+            c.propagate(event)
+          }
+          if(c.watched) {
+            if(c.isSatisfied)
+              addEvent(WatchedSatisfied(c))
+            else if(c.isViolated)
+              addEvent(WatchedViolated(c))
+          }
         }
       case e: NewVariableEvent =>
 
-      case x: Satisfied => // handled by constraint store
+      case Satisfied(c) =>
+        if(c.watched)
+          addEvent(WatchedSatisfied(c))
+        // handled by constraint store
+      case _: NewWatchedConstraint =>
     }
     stnBridge.handleEvent(event)
     for(h <- eventHandlers)
@@ -119,7 +163,15 @@ class CSP(toClone: Option[CSP] = None) {
 
   def post(constraint: Constraint) {
     log.constraintPosted(constraint)
-    addEvent(NewConstraintEvent(constraint))
+    addEvent(NewConstraint(constraint))
+  }
+
+  def postSubConstraint(constraint: Constraint, parent: Constraint) {
+    post(constraint) // TODO, record relationship
+  }
+
+  def watchSubConstraint(subConstraint: Constraint, parent: Constraint) {
+    constraints.addWatcher(subConstraint, parent)
   }
 
   def reified(constraint: Constraint with ReversibleConstraint) : ReificationVariable = {
@@ -177,6 +229,10 @@ class CSP(toClone: Option[CSP] = None) {
     for((v, d) <- domains.toSeq.sortBy(_._1.toString)) {
       str.append(s"$v = $d\n")
     }
+    val vars = constraints.all.flatMap(c => c.variables(csp)).collect{ case v: IVar with VarWithDomain => v }
+    for(v <- vars) {
+      str.append(s"$v = ${v.domain}\n")
+    }
     str.append("%% ACTIVE CONSTRAINTS\n")
     for(c <- constraints.active.toSeq.sortBy(_.toString))
       str.append(s"$c  ${c.satisfaction}\n")
@@ -188,4 +244,10 @@ class CSP(toClone: Option[CSP] = None) {
   }
 
   def makespan: Int = dom(temporalHorizon).lb
+
+  def isSolution : Boolean = {
+    assert(events.isEmpty, "There are pending events in this CSP, can't check if it is a solution")
+    assert(sanityCheck())
+    constraints.active.isEmpty
+  }
 }

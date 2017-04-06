@@ -59,7 +59,7 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   def getDelayVariable(from: Timepoint, to: Timepoint) : TemporalDelay = {
     if(!distanceVariables.contains((from, to))) {
-      val d = new TemporalDelay(from, to, getNextVariableId())
+      val d = new TemporalDelay(from, to)
       distanceVariables.put((from, to), d)
     }
     distanceVariables((from, to))
