@@ -22,6 +22,9 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
   import IBitSet._
   val nwords = elems.length
 
+  def min: Int = nextSetBit(0)
+  def max: Int = lastSetBit
+
   private def words(i: Int) : Long =
     if(i < elems.length) elems(i)
     else 0L
@@ -50,6 +53,23 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
       new IBitSet(updateArray(elems, elem >> 6, w))
     }
 
+  import java.lang.Long.{lowestOneBit, numberOfTrailingZeros}
+  private def lastSetBit: Int = {
+    var u = nwords -1
+    var word = words(u)
+    while(true) {
+      if(word != 0) {
+        val ret = (u * BITS_PER_WORD) + numberOfTrailingZeros(lowestOneBit(word))
+        assert(contains(ret) && nextSetBit(ret) == -1)
+        return ret
+      }
+      u -= 1
+      if(u == -1)
+        return -1
+      word = words(u)
+    }
+    throw new RuntimeException("Should be unreachable")
+  }
 
   private def nextSetBit(from: Int): Int = {
     require(from >= 0)
@@ -59,7 +79,7 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
     var word = words(u) & (WORD_MASK << from)
     while(true) {
       if(word != 0) {
-        val ret = (u * BITS_PER_WORD) + java.lang.Long.numberOfTrailingZeros(word)
+        val ret = (u * BITS_PER_WORD) + numberOfTrailingZeros(word)
         assert(contains(ret))
         return ret
       }

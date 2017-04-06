@@ -2,11 +2,19 @@ package fr.laas.fape.constraints.meta.domains
 
 trait Domain {
 
+  /** Number of values in the domain */
   def size : Int
 
   def contains(value: Int) : Boolean
 
+  /** All values in the domain */
   def values : Iterable[Int]
+
+  /** Lowest value in the domain */
+  def lb: Int
+
+  /** Highest value in the domain */
+  def ub: Int
 
   def intersection(other: Domain) : Domain = {
     val intersection = this.values.toSet.filter(other.contains)

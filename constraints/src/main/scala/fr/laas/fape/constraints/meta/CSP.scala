@@ -56,7 +56,7 @@ class CSP(toClone: Option[CSP] = None) {
 
   override def clone : CSP = new CSP(Some(this))
 
-  final val log : ILogger = new Logger
+  final val log : ILogger = new ILogger
 
   def dom(variable: Variable) : Domain = domains(variable)
 

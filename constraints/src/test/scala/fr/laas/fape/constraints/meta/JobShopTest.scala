@@ -7,8 +7,8 @@ import org.scalatest.FunSuite
 
 class JobShopTest extends FunSuite {
 
-    val instance = new JobShopInstance(4, List(List(2, 4, 2, 1), List(5, 3, 2), List(3, 5, 7)), Some(14))
-//  val instance = new JobShopInstance(2, List(List(2, 4))) // very simple instance to avoid taking time in unit tests
+  val instance = new JobShopInstance(4, List(List(2, 4, 2, 1), List(5, 3, 2), List(3, 5, 7)), Some(14))
+  // val instance = new JobShopInstance(2, List(List(2, 4))) // very simple instance to avoid taking time in unit tests
 
   test("job shop search") {
     val (model, jobs) = jobShopModel(instance)
@@ -18,8 +18,9 @@ class JobShopTest extends FunSuite {
     assert(csp != null)
     assert(csp.isSolution)
     assert(instance.optimalMakespan.isEmpty || csp.makespan == instance.optimalMakespan.get)
-    println(csp.report)
-    for((m, js) <- jobs.groupBy(_.machine.value).toList.sortBy(_._1)) {
+
+    // println(csp.report)
+    for((m, js) <- jobs.groupBy(_.machine.domain.lb).toList.sortBy(_._1)) {
       print(s"$m: ")
       val localJobs = js.sortBy(_.interval.start.domain.lb)
       println(localJobs.map(j => s"${j.interval.start.domain.lb}[${j.duration}]:(${j.jobNumber}, ${j.numInJob})").mkString("  --  "))

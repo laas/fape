@@ -11,6 +11,10 @@ class BooleanDomain(vals: Array[Int]) extends Domain {
 
   override def values: Iterable[Int] = vals
 
+  override def lb: Int = vals.min
+
+  override def ub: Int = vals.max
+
   override def remove(toRm: Int): Domain =
     if(vals.contains(toRm))
       new BooleanDomain((vals.toSet - toRm).toArray)

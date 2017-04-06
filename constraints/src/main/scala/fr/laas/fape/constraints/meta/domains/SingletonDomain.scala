@@ -17,4 +17,10 @@ class SingletonDomain(val value: Int) extends Domain {
       this
     else
       new EmptyDomain
+
+  /** Lowest value in the domain */
+  override def lb: Int = value
+
+  /** Highest value in the domain */
+  override def ub: Int = value
 }

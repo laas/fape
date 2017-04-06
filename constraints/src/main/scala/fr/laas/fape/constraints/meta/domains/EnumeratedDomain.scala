@@ -12,12 +12,12 @@ class EnumeratedDomain(val vals: IBitSet) extends Domain {
     case _ => throw new RuntimeException("Unsupported conversion from non-IBitSet collection.")
   }
 
-  lazy private val _isEmpty = vals.isEmpty
-  lazy private val _size = vals.size
-
   override def values : Set[Int] = vals
 
-  def size : Int = _size
+  override def lb: Int = vals.min
+  override def ub: Int = vals.max
+
+  def size : Int = vals.size
 
   def head() : Int = vals.head
 
@@ -63,7 +63,7 @@ class EnumeratedDomain(val vals: IBitSet) extends Domain {
   def contains(v: Int) : Boolean =
     vals.contains(v)
 
-  override def isEmpty : Boolean = _isEmpty
+  override def isEmpty : Boolean = vals.isEmpty
 
   override def nonEmpty = !isEmpty
 

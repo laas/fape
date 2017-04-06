@@ -21,4 +21,10 @@ class EmptyDomain extends Domain {
   override def add(value: Int): Domain = new EnumeratedDomain(List(value))
 
   override def union(other: Domain): Domain = other
+
+  /** Lowest value in the domain */
+  override def lb: Int = ???
+
+  /** Highest value in the domain */
+  override def ub: Int = ???
 }
