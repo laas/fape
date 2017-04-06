@@ -28,4 +28,8 @@ class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint
   }
 
   override def toString = constraints.mkString(" && ")
+
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  override def reverse: Constraint =
+    new DisjunctiveConstraint(constraints.map(_.reverse))
 }

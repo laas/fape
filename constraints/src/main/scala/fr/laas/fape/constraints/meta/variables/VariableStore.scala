@@ -2,6 +2,7 @@ package fr.laas.fape.constraints.meta.variables
 
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints.Constraint
+import fr.laas.fape.constraints.meta.domains.BooleanDomain
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 
 import scala.collection.mutable
@@ -10,7 +11,7 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   private var nextID : Int = 0
 
-  val varsByRef = mutable.Map[Any, Variable]()
+  val varsByRef = mutable.Map[Any, IntVariable]()
   val timepointsByRef = mutable.Map[Any, Timepoint]()
   val distanceVariables = mutable.Map[(Timepoint, Timepoint), TemporalDelay]()
 
@@ -24,19 +25,14 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   def getNextVariableId() : Int = { nextID += 1; nextID-1 }
 
-  def getVariable(ref: Option[Any] = None) : Variable = new Variable(getNextVariableId(), ref)
-
-  def getBooleanVariable(ref: Option[Any] = None) : BooleanVariable = ref match {
-    case None => new BooleanVariable(getNextVariableId(), None)
-    case Some(x) =>
-      if(!varsByRef.contains(x))
-        varsByRef.put(x, new BooleanVariable(getNextVariableId(), ref))
-      varsByRef(x).asInstanceOf[BooleanVariable]
+  def getBooleanVariable(ref: Any) : BooleanVariable = {
+    assert(!varsByRef.contains(ref))
+    varsByRef(ref).asInstanceOf[BooleanVariable]
   }
 
   def getReificationVariable(constraint: Constraint) : ReificationVariable = {
     if(!varsByRef.contains(constraint)) {
-      val v = new ReificationVariable(getNextVariableId(), constraint)
+      val v = new ReificationVariable(new BooleanDomain(Set(true, false)), constraint)
       varsByRef.put(constraint, v)
     }
     varsByRef(constraint).asInstanceOf[ReificationVariable]
@@ -65,16 +61,14 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
     distanceVariables((from, to))
   }
 
-  def getVariableForRef(ref: Any) = {
-    if(varsByRef.contains(ref))
-      varsByRef(ref)
-    else
-      varsByRef.getOrElseUpdate(ref, new Variable(getNextVariableId(), Some(ref)))
+  def getVariable(ref: Any) : IntVariable = {
+    assert(varsByRef.contains(ref))
+    varsByRef(ref)
   }
 
   def hasVariableForRef(ref: Any) = varsByRef.contains(ref)
 
-  def setVariableForRef(ref: Any, variable: Variable): Unit = {
+  def setVariableForRef(ref: Any, variable: IntVariable): Unit = {
     assert(!hasVariableForRef(ref))
     varsByRef.put(ref, variable)
   }

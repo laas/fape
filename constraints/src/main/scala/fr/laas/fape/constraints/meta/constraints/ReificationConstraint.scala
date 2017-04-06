@@ -3,10 +3,10 @@ package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.BooleanDomain
 import fr.laas.fape.constraints.meta.events._
-import fr.laas.fape.constraints.meta.variables.{IVar, ReificationVariable, Variable}
+import fr.laas.fape.constraints.meta.variables.{IVar, ReificationVariable, IntVariable}
 import ConstraintSatisfaction._
 
-class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Constraint with ReversibleConstraint)
+class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Constraint)
   extends Constraint {
   require(reiVar.constraint == constraint)
 
@@ -67,4 +67,7 @@ class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Con
   }
 
   override def toString = s"[${reiVar.id}] <=> $constraint"
+
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  override def reverse: Constraint = ???
 }

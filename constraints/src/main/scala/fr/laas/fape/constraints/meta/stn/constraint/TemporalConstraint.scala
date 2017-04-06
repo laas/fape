@@ -1,7 +1,7 @@
 package fr.laas.fape.constraints.meta.stn.constraint
 
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction, ReversibleConstraint}
+import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintSatisfaction}
 import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.variables.IVar
@@ -19,7 +19,7 @@ abstract class TemporalConstraint extends Constraint {
 }
 
 case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int)
-  extends TemporalConstraint with ReversibleConstraint {
+  extends TemporalConstraint {
   override def toString = s"$src + $minDelay <= $dst"
 
   override def variables(implicit csp: CSP): Set[IVar] =
@@ -44,4 +44,7 @@ case class ContingentConstraint(src :Timepoint, dst :Timepoint, min :Int, max :I
   override def toString = s"$src == [$min, $max] ==> $dst"
 
   override def satisfaction(implicit csp: CSP): Satisfaction = ConstraintSatisfaction.UNDEFINED
+
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  override def reverse: Constraint = ???
 }

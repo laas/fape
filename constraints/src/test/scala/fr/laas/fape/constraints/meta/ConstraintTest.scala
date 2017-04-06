@@ -2,18 +2,18 @@ package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.meta.constraints.{EqualityConstraint, InequalityConstraint}
 import fr.laas.fape.constraints.meta.events.NewConstraint
-import fr.laas.fape.constraints.meta.variables.Variable
+import fr.laas.fape.constraints.meta.variables.IntVariable
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class ConstraintTest extends FunSuite with BeforeAndAfter {
 
   implicit var csp: CSP = null
-  var v1, v2: Variable = null
+  var v1, v2: IntVariable = null
 
   before {
     csp = new CSP
-    v1 = csp.addVariable("v1", Set(1,2,3))
-    v2 = csp.addVariable("v2", Set(2))
+    v1 = csp.variable("v1", Set(1,2,3))
+    v2 = csp.variable("v2", Set(2))
   }
 
   test("Constraint creation") {

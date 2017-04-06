@@ -2,21 +2,18 @@ package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events._
-import fr.laas.fape.constraints.meta.variables.{IVar, ReificationVariable, Variable, VarWithDomain}
+import fr.laas.fape.constraints.meta.variables._
 import ConstraintSatisfaction._
 import fr.laas.fape.constraints.meta.domains.{Domain, EnumeratedDomain, SingletonDomain}
 
-class VarWithInitialDomain(val initialDomain: Domain) extends IVar with VarWithDomain {
-  override def domain(implicit csp: CSP): Domain =
-    csp.dom(this)
-}
 
-class DisjunctiveConstraint(val constraints: Seq[Constraint with ReversibleConstraint]) extends Constraint {
+
+class DisjunctiveConstraint(val constraints: Seq[Constraint]) extends Constraint {
 
   /** This class is simply to provide a unique reference to the decistion variable */
   private class DisjunctionDecisionVariableRef(c: DisjunctiveConstraint)
 
-  val decisionVar = new VarWithInitialDomain(new EnumeratedDomain(constraints.indices))
+  val decisionVar = new IntVariable(new EnumeratedDomain(constraints.indices))
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(decisionVar)
 
@@ -56,6 +53,10 @@ class DisjunctiveConstraint(val constraints: Seq[Constraint with ReversibleConst
 
   override def toString = constraints.mkString(" || ")
 
-  override def ||(c: Constraint with ReversibleConstraint) =
+  override def ||(c: Constraint) =
     new DisjunctiveConstraint(c :: constraints.toList)
+
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  override def reverse: Constraint =
+    new ConjunctionConstraint(constraints.map(_.reverse))
 }

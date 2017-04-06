@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.logger
 import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.domains.Domain
 import fr.laas.fape.constraints.meta.events.Event
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VarWithDomain}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VarWithDomain}
 
 class ILogger {
 
@@ -13,7 +13,7 @@ class ILogger {
   def startConstraintPropagation(constraint: Constraint) {}
   def endConstraintPropagation(constraint: Constraint) {}
 
-  def domainUpdate(variable: IVar with VarWithDomain, domain: Domain) {}
+  def domainUpdate(variable: VarWithDomain, domain: Domain) {}
 
   def constraintPosted(constraint: Constraint) {}
 }
@@ -45,7 +45,7 @@ class Logger extends ILogger {
     stepOut()
   }
 
-  override def domainUpdate(variable: IVar with VarWithDomain, domain: Domain): Unit = {
+  override def domainUpdate(variable: VarWithDomain, domain: Domain): Unit = {
     printOffset()
     println(s"dom-update: $variable <- $domain")
   }

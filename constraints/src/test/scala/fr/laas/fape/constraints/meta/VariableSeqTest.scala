@@ -1,22 +1,22 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.variables.{Variable, VariableSeq}
+import fr.laas.fape.constraints.meta.variables.{IntVariable, VariableSeq}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class VariableSeqTest extends FunSuite with BeforeAndAfter {
 
   implicit var csp: CSP = _
-  implicit var v1, v2, v3, w1, w2, w3: Variable = _
+  implicit var v1, v2, v3, w1, w2, w3: IntVariable = _
 
   before {
     csp = new CSP
-    v1 = csp.addVariable("v1", Set(1,2,3))
-    v2 = csp.addVariable("v2", Set(2))
-    v3 = csp.addVariable("v3", Set(1, 3))
+    v1 = csp.variable("v1", Set(1,2,3))
+    v2 = csp.variable("v2", Set(2))
+    v3 = csp.variable("v3", Set(1, 3))
 
-    w1 = csp.addVariable("w1", Set(1))
-    w2 = csp.addVariable("w2", Set(2, 3))
-    w3 = csp.addVariable("w3", Set(2, 3))
+    w1 = csp.variable("w1", Set(1))
+    w2 = csp.variable("w2", Set(2, 3))
+    w3 = csp.variable("w3", Set(2, 3))
   }
 
   test("VariableSeq equality") {

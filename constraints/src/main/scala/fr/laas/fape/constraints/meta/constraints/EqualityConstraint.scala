@@ -4,9 +4,9 @@ package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VariableSeq}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VariableSeq}
 
-trait EqualityConstraint extends Constraint with ReversibleConstraint {
+trait EqualityConstraint extends Constraint {
 
   def v1: IVar
   def v2: IVar
@@ -14,7 +14,7 @@ trait EqualityConstraint extends Constraint with ReversibleConstraint {
   override def toString = s"$v1 === $v2"
 }
 
-class VariableEqualityConstraint(override val v1: Variable, override val v2: Variable) extends EqualityConstraint {
+class VariableEqualityConstraint(override val v1: IntVariable, override val v2: IntVariable) extends EqualityConstraint {
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(v1, v2)
 

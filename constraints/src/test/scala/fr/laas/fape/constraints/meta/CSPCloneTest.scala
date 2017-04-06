@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.variables.Variable
+import fr.laas.fape.constraints.meta.variables.IntVariable
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 /**
@@ -9,13 +9,13 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 class CSPCloneTest extends FunSuite with BeforeAndAfter {
 
   implicit var csp: CSP = null
-  implicit var v1, v2, v3: Variable = _
+  implicit var v1, v2, v3: IntVariable = _
 
   before {
     csp = new CSP
-    v1 = csp.addVariable("v1", Set(1,2,3))
-    v2 = csp.addVariable("v2", Set(1))
-    v3 = csp.addVariable("v3", Set(1, 2))
+    v1 = csp.variable("v1", Set(1,2,3))
+    v2 = csp.variable("v2", Set(1))
+    v3 = csp.variable("v3", Set(1, 2))
   }
 
   test("Reification valid on equality [cloning]") {

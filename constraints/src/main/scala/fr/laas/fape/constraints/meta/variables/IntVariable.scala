@@ -4,18 +4,23 @@ import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints._
 import fr.laas.fape.constraints.meta.domains.Domain
 
+object IntVariable {
+  var intVariableCounter = 0
+  def next() = { intVariableCounter += 1; intVariableCounter -1}
+}
+
 trait IVar {
 
   // constraints shorthand
   def ===(other: IVar) : EqualityConstraint = (this, other) match {
-    case (v1: Variable, v2: Variable) => new VariableEqualityConstraint(v1, v2)
+    case (v1: IntVariable, v2: IntVariable) => new VariableEqualityConstraint(v1, v2)
     case (v1: VariableSeq, v2: VariableSeq) => new VariableSeqEqualityConstraint(v1, v2)
     case _ => throw new RuntimeException(s"Unknown instantiation of equality constraints for variables: $this and $other")
   }
 
 
   def =!=(other: IVar) : InequalityConstraint = (this, other) match {
-    case (v1: Variable, v2: Variable) => new VariableInequalityConstraint(v1, v2)
+    case (v1: IntVariable, v2: IntVariable) => new VariableInequalityConstraint(v1, v2)
     case (v1: VariableSeq, v2: VariableSeq) => new VariableSeqInequalityConstraint(v1, v2)
     case _ => throw new RuntimeException(s"Unknown instantiation of equality constraints for variables: $this and $other")
   }
@@ -32,37 +37,31 @@ trait VarWithDomain extends IVar {
     domain.values.head
   }
 
-  def ===(value: Int) : BindConstraint = new BindConstraint(this, value)
+  def ===(value: Int) : Constraint
 
-  def =!=(value: Int) : NegBindConstraint = new NegBindConstraint(this, value)
-
+  def =!=(value: Int) : Constraint
 }
 
-class Variable(val id: Int, ref: Option[Any]) extends VarWithDomain {
+class IntVariable(val initialDomain: Domain, val ref: Option[Any]) extends VarWithDomain {
+  val id = IntVariable.next()
 
-  def this(id: Int) = this(id, None)
+  def this(initialDomain: Domain) = this(initialDomain, None)
 
   def domain(implicit csp: CSP) = csp.dom(this)
+
+  override def ===(value: Int) : BindConstraint = new BindConstraint(this, value)
+
+  override def =!=(value: Int) : NegBindConstraint = new NegBindConstraint(this, value)
 
   override def toString = ref match {
     case Some(x) => s"$x"
     case None => s"v$id"
   }
-
-
-  // equals and hash code
-  override final val hashCode = id
-
-  override def equals(o:Any) =
-    o match {
-      case v: Variable => this.id == v.id
-      case _ => false
-    }
 }
 
-class BooleanVariable(id: Int, ref: Option[Any]) extends Variable(id, ref) {
+class BooleanVariable(initialDomain: Domain, ref: Option[Any]) extends IntVariable(initialDomain, ref) {
 
-  def this(id: Int) = this(id, None)
+  def this(initialDomain: Domain) = this(initialDomain, None)
 
   def isTrue(implicit csp: CSP): Boolean =
     domain.isSingleton && domain.contains(1)

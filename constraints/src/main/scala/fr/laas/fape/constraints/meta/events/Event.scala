@@ -1,7 +1,7 @@
 package fr.laas.fape.constraints.meta.events
 
 import fr.laas.fape.constraints.meta.constraints.Constraint
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VarWithDomain}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VarWithDomain}
 
 trait Event {
 
@@ -13,11 +13,11 @@ case class NewWatchedConstraint(c: Constraint) extends Event
 
 case class NewVariableEvent(v: IVar) extends Event
 
-abstract class DomainChange(val variable: IVar with VarWithDomain) extends Event
+abstract class DomainChange(val variable: VarWithDomain) extends Event
 
-case class DomainReduced(override val variable: IVar with VarWithDomain) extends DomainChange(variable)
+case class DomainReduced(override val variable: VarWithDomain) extends DomainChange(variable)
 
-case class DomainExtended(override val variable: IVar with VarWithDomain) extends DomainChange(variable)
+case class DomainExtended(override val variable: VarWithDomain) extends DomainChange(variable)
 
 
 case class Satisfied(constraint: Constraint) extends Event

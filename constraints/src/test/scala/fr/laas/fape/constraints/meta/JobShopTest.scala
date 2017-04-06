@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.meta.search.BinarySearch
 import fr.laas.fape.constraints.meta.stn.variables.TemporalInterval
-import fr.laas.fape.constraints.meta.variables.Variable
+import fr.laas.fape.constraints.meta.variables.IntVariable
 import org.scalatest.FunSuite
 
 class JobShopTest extends FunSuite {
@@ -35,8 +35,7 @@ class JobShopTest extends FunSuite {
     val jobs =
       for(i <- instance.jobs.indices ; j <- instance.jobs(i).indices) yield {
         val int = new TemporalInterval(csp.varStore.getTimepoint(), csp.varStore.getTimepoint())
-        val machine = csp.varStore.getVariable(Some(s"machine($i,$j)"))
-        csp.addVariable(machine, (1 to instance.numMachines).toSet)
+        val machine = csp.variable(s"machine($i,$j)", (1 to instance.numMachines).toSet)
 
         new Job(i, j, instance.jobs(i)(j), int, machine)
       }
@@ -44,7 +43,7 @@ class JobShopTest extends FunSuite {
     // set temporal constraints
     for(i <- jobs.indices) {
       val job = jobs(i)
-      csp.post(job.interval.duration == job.duration -1)
+      csp.post(job.interval.duration === job.duration -1)
       if(job.numInJob >= 1)
         csp.post(jobs(i-1).interval.end < job.interval.start)
     }
@@ -56,7 +55,7 @@ class JobShopTest extends FunSuite {
   }
 }
 
-case class Job(jobNumber: Int, numInJob: Int, duration: Int, interval: TemporalInterval, machine: Variable)
+case class Job(jobNumber: Int, numInJob: Int, duration: Int, interval: TemporalInterval, machine: IntVariable)
 
 class JobShopInstance(val numMachines: Int, val jobs: Seq[Seq[Int]], val optimalMakespan: Option[Int]) {
 

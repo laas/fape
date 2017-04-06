@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta.search
 
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VarWithDomain}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VarWithDomain}
 
 object BinarySearch {
   var count = 0

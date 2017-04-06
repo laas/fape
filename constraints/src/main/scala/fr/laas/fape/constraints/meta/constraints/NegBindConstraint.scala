@@ -4,9 +4,9 @@ import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.SingletonDomain
 import fr.laas.fape.constraints.meta.events.Event
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VarWithDomain}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VarWithDomain}
 
-class NegBindConstraint(val variable: IVar with VarWithDomain, val value: Int) extends Constraint with ReversibleConstraint {
+class NegBindConstraint(val variable: IntVariable, val value: Int) extends Constraint {
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(variable)
 

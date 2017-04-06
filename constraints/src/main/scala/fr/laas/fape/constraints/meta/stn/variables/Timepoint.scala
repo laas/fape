@@ -1,11 +1,12 @@
 package fr.laas.fape.constraints.meta.stn.variables
 
 import fr.laas.fape.constraints.meta.CSP
+import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.domains.IntervalDomain
 import fr.laas.fape.constraints.meta.stn.constraint.{AbsoluteAfterConstraint, AbsoluteBeforeConstraint, MinDelayConstraint}
 import fr.laas.fape.constraints.meta.variables.{IVar, VarWithDomain}
 
-class Timepoint(val id: Int, ref: Option[Any]) extends IVar with VarWithDomain {
+class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
 
   override def domain(implicit csp: CSP) : IntervalDomain = csp.dom(this)
 
@@ -34,6 +35,10 @@ class Timepoint(val id: Int, ref: Option[Any]) extends IVar with VarWithDomain {
     new AbsoluteAfterConstraint(this, deadline+1)
   }
 
+  override def ===(value: Int) = this <= value && this >= value
+
+  override def =!=(value: Int): Constraint = this < value || this > value
+
   override def toString = ref match {
     case Some(x) => s"$x($id)"
     case None => s"tp$id"
@@ -44,4 +49,5 @@ class Timepoint(val id: Int, ref: Option[Any]) extends IVar with VarWithDomain {
     case o: Timepoint => id == o.id
     case _ => false
   }
+
 }

@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.constraints
 
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.Event
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable}
 
 trait Constraint {
 
@@ -35,6 +35,9 @@ trait Constraint {
 
   def satisfaction(implicit csp: CSP) : Satisfaction
 
+  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
+  def reverse: Constraint
+
   final def isSatisfied(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.SATISFIED
 
   final def isViolated(implicit csp: CSP) = satisfaction == ConstraintSatisfaction.VIOLATED
@@ -47,18 +50,12 @@ trait Constraint {
     case c => new ConjunctionConstraint(List(this, c))
   }
 
-  def ||(constraint: Constraint with ReversibleConstraint) = constraint match {
+  def ||(constraint: Constraint) = constraint match {
     case c: DisjunctiveConstraint => new DisjunctiveConstraint(constraint :: c.constraints.toList)
-    case c => new DisjunctiveConstraint(List(this.asInstanceOf[Constraint with ReversibleConstraint], c))
+    case c => new DisjunctiveConstraint(List(this, c))
   }
 }
 
-trait ReversibleConstraint {
-
-  /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
-  def reverse : Constraint
-
-}
 
 object ConstraintSatisfaction extends Enumeration {
   type ConstraintSatisfaction = Value

@@ -3,10 +3,10 @@ package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.{Event, NewConstraint, Satisfied}
-import fr.laas.fape.constraints.meta.variables.{IVar, Variable, VariableSeq}
+import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VariableSeq}
 
 
-trait InequalityConstraint extends Constraint with ReversibleConstraint {
+trait InequalityConstraint extends Constraint {
 
   def v1: IVar
   def v2: IVar
@@ -14,7 +14,7 @@ trait InequalityConstraint extends Constraint with ReversibleConstraint {
   override def toString = s"$v1 =!= $v2"
 }
 
-class VariableInequalityConstraint(override val v1: Variable, override val v2: Variable)
+class VariableInequalityConstraint(override val v1: IntVariable, override val v2: IntVariable)
   extends InequalityConstraint {
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(v1, v2)

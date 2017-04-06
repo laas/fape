@@ -15,7 +15,7 @@ import scala.collection.mutable
 class CSP(toClone: Option[CSP] = None) {
   implicit private val csp = this
 
-  val domains : mutable.Map[IVar with VarWithDomain, Domain] = toClone match {
+  val domains : mutable.Map[VarWithDomain, Domain] = toClone match {
     case Some(base) => base.domains.clone()
     case None => mutable.Map()
   }
@@ -58,27 +58,24 @@ class CSP(toClone: Option[CSP] = None) {
 
   final val log : ILogger = new ILogger
 
-  def dom(variable: Variable) : Domain = domains(variable)
-
   def dom(tp: Timepoint) : IntervalDomain =
     new IntervalDomain(stn.getEarliestTime(tp), stn.getLatestTime(tp))
 
   def dom(d: TemporalDelay) : IntervalDomain =
     new IntervalDomain(stn.getMinDelay(d.from, d.to), stn.getMaxDelay(d.from, d.to))
 
-  def dom(v: VarWithInitialDomain) : Domain =
+  def dom(v: IntVariable) : Domain =
     if(domains.contains(v))
       domains(v)
     else
       v.initialDomain
 
-  def bind(variable: Variable, value: Int) {
+  def bind(variable: IntVariable, value: Int) {
     post(variable === value)
   }
 
-  def updateDomain(variable: IVar with VarWithDomain, newDomain: Domain) {
+  def updateDomain(variable: IntVariable, newDomain: Domain) {
     log.domainUpdate(variable, newDomain)
-    assert(domains.contains(variable) || variable.isInstanceOf[VarWithInitialDomain])
     if(newDomain.isEmpty) {
       throw new InconsistentBindingConstraintNetwork()
     } else if(variable.domain.size > newDomain.size) {
@@ -117,6 +114,10 @@ class CSP(toClone: Option[CSP] = None) {
     constraints.handleEvent(event)
     event match {
       case NewConstraint(c) =>
+        for(v <- c.variables) v match {
+          case v: IntVariable if !domains.contains(v) => addVariable(v)
+          case _ =>
+        }
         c.onPost
         c.propagate(event)
         if(c.watched) {
@@ -174,7 +175,7 @@ class CSP(toClone: Option[CSP] = None) {
     constraints.addWatcher(subConstraint, parent)
   }
 
-  def reified(constraint: Constraint with ReversibleConstraint) : ReificationVariable = {
+  def reified(constraint: Constraint) : ReificationVariable = {
     if(!varStore.hasVariableForRef(constraint)) {
       val variable = varStore.getReificationVariable(constraint)
       domains.put(variable, new BooleanDomain(Set(false, true)))
@@ -188,48 +189,47 @@ class CSP(toClone: Option[CSP] = None) {
     addEvent(Satisfied(constraint))
   }
 
-  def addVariable(variable: Any, domainValues: Set[Int]) : Variable = {
-    val v = variable match {
-      case v: Variable => v
-      case v: IVar => throw new RuntimeException("Only Variables can be given a domain")
-      case ref => varStore.getVariableForRef(ref)
-    }
-    assert(!hasVariable(v))
-    val domain = new EnumeratedDomain(domainValues)
-    addVariable(v, domain)
+  def variable(ref: Any, dom: Set[Int]) : IntVariable = {
+    val v = new IntVariable(new EnumeratedDomain(dom), Some(ref))
+    addVariable(v)
     v
   }
 
-  def addVariable(variable: Variable, domain: Domain): Unit = {
+  def variable(ref: Any, lb: Int, ub: Int) : IntVariable = {
+    val v = new IntVariable(new IntervalDomain(lb, ub), Some(ref))
+    addVariable(v)
+    v
+  }
+
+  def addVariable(variable: IntVariable)  {
     assert(!hasVariable(variable))
-    domains.put(variable, domain)
+    domains.put(variable, variable.initialDomain)
+    if(variable.ref.nonEmpty)
+      varStore.setVariableForRef(variable.ref.get, variable)
     variableAdded(variable)
   }
 
   /** Records an event notifying of the variable addition + some sanity checks */
-  def variableAdded(variable: IVar): Unit = {
+  def variableAdded(variable: IVar) {
     variable match {
-      case v: Variable => assert(domains.contains(v), "Variable has no domain")
+      case v: IntVariable => assert(domains.contains(v), "Variable has no domain")
       case _ =>
     }
     addEvent(NewVariableEvent(variable))
   }
 
-  def addEvent(event: Event): Unit = {
+  def addEvent(event: Event) {
     events += event
   }
 
-  def hasVariable(variable: Variable) : Boolean = domains.contains(variable)
+  def hasVariable(variable: IntVariable) : Boolean = domains.contains(variable)
 
   def nextVarId() = varStore.getNextVariableId()
 
 
   def report : String = {
     val str = new StringBuilder
-    for((v, d) <- domains.toSeq.sortBy(_._1.toString)) {
-      str.append(s"$v = $d\n")
-    }
-    val vars = constraints.all.flatMap(c => c.variables(csp)).collect{ case v: IVar with VarWithDomain => v }
+    val vars = constraints.all.flatMap(c => c.variables(csp)).collect{ case v: VarWithDomain => v }
     for(v <- vars) {
       str.append(s"$v = ${v.domain}\n")
     }
