@@ -10,15 +10,24 @@ class ILogger {
   def startEventHandling(event: Event) {}
   def endEventHandling(event: Event) {}
 
+  def newEventPosted(event: Event) {}
+
   def startConstraintPropagation(constraint: Constraint) {}
   def endConstraintPropagation(constraint: Constraint) {}
 
   def domainUpdate(variable: VarWithDomain, domain: Domain) {}
 
   def constraintPosted(constraint: Constraint) {}
+
+  def history: StringBuilder = new StringBuilder
+
+  override def clone: ILogger = this
 }
 
-class Logger extends ILogger {
+class Logger(previous: Option[Logger] = None) extends ILogger {
+
+  val toSTDIO = false
+  val recordHistory = true
 
   var offset = 0
 
@@ -26,6 +35,26 @@ class Logger extends ILogger {
   private def stepOut() { offset -= 2 }
   private def printOffset() { print(" "*offset) }
 
+  override val history: StringBuilder = previous match {
+    case Some(base) => base.history.clone()
+    case None => new StringBuilder
+  }
+
+  def print(msg: String) {
+    if(recordHistory)
+      history.append(msg)
+    if(toSTDIO)
+      Predef.print(msg)
+  }
+
+  def println(msg: String) {
+    if(recordHistory) {
+      history.append(msg)
+      history.append("\n")
+    }
+    if(toSTDIO)
+      Predef.println(msg)
+  }
 
   override def startEventHandling(event: Event): Unit = {
     printOffset()
@@ -34,6 +63,11 @@ class Logger extends ILogger {
   }
   override def endEventHandling(event: Event): Unit = {
     stepOut()
+  }
+
+  override def newEventPosted(event: Event) {
+    printOffset()
+    println("new-event: "+event)
   }
 
   override def startConstraintPropagation(constraint: Constraint) {
@@ -54,4 +88,6 @@ class Logger extends ILogger {
     printOffset()
     println(s"new-constraint: $constraint")
   }
+
+  override def clone: Logger = new Logger(Some(this))
 }
