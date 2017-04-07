@@ -12,32 +12,32 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
 
   def this(_csp: CSP) = this(_csp, None)
 
-  val active: mutable.Set[Constraint] = toClone match {
-    case None => mutable.Set[Constraint]()
+  val active: mutable.ArrayBuffer[Constraint] = toClone match {
+    case None => mutable.ArrayBuffer[Constraint]()
     case Some(base) => base.active.clone()
   }
 
-  val satisfied: mutable.Set[Constraint] = toClone match {
-    case None => mutable.Set[Constraint]()
+  val satisfied: mutable.ArrayBuffer[Constraint] = toClone match {
+    case None => mutable.ArrayBuffer[Constraint]()
     case Some(base) => base.satisfied.clone()
   }
 
-  private val activeConstraintsForVar: mutable.Map[IVar, mutable.Set[Constraint]] = toClone match {
+  private val activeConstraintsForVar: mutable.Map[IVar, mutable.ArrayBuffer[Constraint]] = toClone match {
     case None => mutable.Map()
     case Some(base) => base.activeConstraintsForVar.map(kv => (kv._1, kv._2.clone()))
   }
 
-  private val watchedConstraintsForVar: mutable.Map[IVar, mutable.Set[Constraint]] = toClone match {
+  private val watchedConstraintsForVar: mutable.Map[IVar, mutable.ArrayBuffer[Constraint]] = toClone match {
     case None => mutable.Map()
     case Some(base) => base.watchedConstraintsForVar.map(kv => (kv._1, kv._2.clone()))
   }
 
-  private val watchers: mutable.Map[Constraint, mutable.Set[Constraint]] = toClone match {
+  private val watchers: mutable.Map[Constraint, mutable.ArrayBuffer[Constraint]] = toClone match {
     case None => mutable.Map()
     case Some(base) => base.watchers.map(kv => (kv._1, kv._2.clone()))
   }
 
-  private val watches: mutable.Map[Constraint, mutable.Set[Constraint]] = toClone match {
+  private val watches: mutable.Map[Constraint, mutable.ArrayBuffer[Constraint]] = toClone match {
     case None => mutable.Map()
     case Some(base) => base.watches.map(kv => (kv._1, kv._2.clone()))
   }
@@ -46,7 +46,7 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
   private def record(constraint: Constraint) {
     active += constraint
     for(v <- constraint.variables) {
-      activeConstraintsForVar.getOrElseUpdate(v, mutable.Set()) += constraint
+      activeConstraintsForVar.getOrElseUpdate(v, mutable.ArrayBuffer()) += constraint
     }
   }
 
@@ -66,13 +66,13 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
   def addWatcher(constraint: Constraint, watcher: Constraint) {
     if(!watchers.contains(constraint)) {
       // constraint is not watched yet, record its variable
-      watchers.put(constraint, mutable.Set())
+      watchers.put(constraint, mutable.ArrayBuffer())
       for(v <- constraint.variables)
-        watchedConstraintsForVar.getOrElseUpdate(v, mutable.Set()) += constraint
+        watchedConstraintsForVar.getOrElseUpdate(v, mutable.ArrayBuffer()) += constraint
       csp.addEvent(NewWatchedConstraint(constraint))
     }
     watchers(constraint) += watcher
-    watches.getOrElseUpdate(watcher, mutable.Set()) += constraint
+    watches.getOrElseUpdate(watcher, mutable.ArrayBuffer()) += constraint
   }
 
   private def removeWatcher(constraint: Constraint, watcher: Constraint) {
@@ -103,6 +103,9 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
   def isWatched(constraint: Constraint) = watchers.contains(constraint)
 
   def all = active ++ satisfied
+
+  /** All constraints that are currently being monitored */
+  def watched = watchers.keys
 
   override def handleEvent(event: Event) {
     event match {

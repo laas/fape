@@ -2,13 +2,13 @@ package fr.laas.fape.constraints.meta.stn.core
 
 import fr.laas.fape.constraints.meta.stn.constraint._
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.stnu.{Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.structures.IList
 
 import scala.collection.mutable
 
 object StnWithStructurals {
-
   var debugging = false
 
   val INF: Int = Int.MaxValue /2 -1 // set to avoid overflow on addition of int values
@@ -36,7 +36,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
 
   private var distanceChangeListener: Option[IDistanceChangeListener] = None
   def setDistanceChangeListener(listener: IDistanceChangeListener) {
-    assert(distanceChangeListener.isEmpty)
+    assert1(distanceChangeListener.isEmpty)
     distanceChangeListener = Some(listener)
   }
 
@@ -65,7 +65,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   private def isKnown(tp: Timepoint) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
 
   def recordTimePoint(tp: Timepoint): Int = {
-    assert(!isKnown(tp))
+    assert1(!isKnown(tp))
     _timepoints = tp :: _timepoints
     val id = dist.createNewNode()
     nonRigidIndexes.put(tp, id)
@@ -73,7 +73,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     while(timepointByIndex.size <= id) {
       timepointByIndex.append(null)
     }
-    assert(timepointByIndex(id) == null)
+    assert1(timepointByIndex(id) == null)
     timepointByIndex(id) = tp
     optEnd match {
       case Some(end) => enforceMinDelay(tp, end, 0)
@@ -169,10 +169,10 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
         addMaxDelay(cont.src, cont.dst, cont.max)
         contingentLinks.append(cont)
       case abs: AbsoluteBeforeConstraint =>
-        assert(start.nonEmpty, "Absolute constraints require a start timepoint")
+        assert1(start.nonEmpty, "Absolute constraints require a start timepoint")
         addMaxDelay(start.get, abs.tp, abs.deadline)
       case abs: AbsoluteAfterConstraint =>
-        assert(start.nonEmpty, "Absolute constraints require a start timepoint")
+        assert1(start.nonEmpty, "Absolute constraints require a start timepoint")
         addMinDelay(start.get, abs.tp, abs.deadline)
       case _ =>
         throw new RuntimeException("Constraint: "+c+" is not properly supported")
@@ -227,79 +227,109 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   private def between(tp: Timepoint, min:Timepoint, max:Timepoint) = beforeOrConcurrent(min, tp) && beforeOrConcurrent(tp, max)
   private def strictlyBetween(tp: Timepoint, min:Timepoint, max:Timepoint) = strictlyBefore(min, tp) && strictlyBefore(tp, max)
 
-  override def distanceUpdated(a: Int, b: Int): Unit = {
-    // check if the network is now inconsistent
-    if (dist.getDistance(a, b) + dist.getDistance(b, a) < 0) {
-      if(debugging)
-        assert(!consistencyWithBellmanFord(), "Problem with the consistency of the STN")
-      consistent = false
-      throw new InconsistentTemporalNetwork
-    }
+  /** Handler that checks STN consistency and optimizes the network upon changes in the distance matrix.
+    * It also responsible for notifying the listener of the changes on watched edges. */
+  override def distancesUpdated(edges: Seq[(Int, Int)]): Unit = {
+    // extract watched edges whose distance was updated
+    val watchesToNotify: Set[(Timepoint, Timepoint)] = // extract watches while making a defensive copy
+      edges.flatMap{ case (a: Int, b:Int) => watchedVarsByIndex.getOrElse(asWatchKey(a, b), Nil) }.toSet
 
-    if (a == b)
+    // check if the network became inconsistent
+    for((a, b) <- edges) {
+      if(dist.getDistance(a, b) + dist.getDistance(b, a) < 0) {
+        assert4(!consistentWithBellmanFord(), "BellmanFord and APSP gave different results regarding consistency")
+        consistent = false
+        throw new InconsistentTemporalNetwork
+      }
+    }
+    assert4(consistentWithBellmanFord(), "BellmanFord and APSP gave different results regarding consistency")
+
+    for((a, b) <- edges)
+      checkAndProcessRigidRelation(a, b)
+
+    // notify listeners of updated distances
+    assert3(watchesToNotify.forall(p => isWatched(p._1, p._2)), "An edge became unwatched when processing the rigid relations")
+    assert1(watchesToNotify.isEmpty || distanceChangeListener.nonEmpty, "Changes to notify but no recorded listener")
+    for((tp1, tp2) <- watchesToNotify)
+      distanceChangeListener.get.distanceUpdated(tp1, tp2)
+  }
+
+  /** Checks if the is a rigid relation between the two anchor index and merges them together if there is. */
+  private def checkAndProcessRigidRelation(indexA: Int, indexB: Int) {
+    // only proceed if a and b have not been compiled away yet
+    if(!dist.isActive(indexA) || !dist.isActive(indexB))
       return
 
+    // check if the network is now inconsistent
+    assert2(dist.getDistance(indexA, indexB) + dist.getDistance(indexB, indexA) >= 0,
+      "Inconsistent network should have been caught earlier")
 
-    val watchesToNotify : Set[(Timepoint, Timepoint)] = // extract watches while making a defensive copy
-      if(a <= b) watchedVarsByIndex.getOrElse((a, b), Nil).toSet
-      else watchedVarsByIndex.getOrElse((b, a), Nil).toSet
+    // nothing to do
+    if(indexA == indexB)
+      return
 
     // if there is a structural timepoint rigidly fixed to another, record this relation and simplify
     // the distance matrix
-    if(dist.getDistance(a,b) == -dist.getDistance(b,a)) {
-      val originalDist = dist.getDistance(a, b)
-      val tpA = timepointByIndex(a)
-      val tpB = timepointByIndex(b)
-      assert(!rigidRelations.isAnchored(tpA))
-      assert(!rigidRelations.isAnchored(tpB))
+    if(dist.getDistance(indexA,indexB) == -dist.getDistance(indexB,indexA)) {
+      val originalDist = dist.getDistance(indexA, indexB)
+      val tpA = timepointByIndex(indexA)
+      val tpB = timepointByIndex(indexB)
+      assert1(!rigidRelations.isAnchored(tpA))
+      assert1(!rigidRelations.isAnchored(tpB))
 
       // record rigid relation
-      rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(a, b))
+      rigidRelations.addRigidRelation(tpA, tpB, dist.getDistance(indexA, indexB))
 
       val (anchored, anchor) =
         if(rigidRelations.isAnchored(tpA)) (tpA, tpB)
         else if(rigidRelations.isAnchored(tpB)) (tpB,tpA)
         else throw new RuntimeException("No timepoint is considered as anchored after recording a new rigid relation")
 
-      val keysToRemove =
-        watchedVarsByIndex.keys.filter(p => p._1 == toIndex(anchored) || p._2 == toIndex(anchored))
-      val watchesToReAdd =
-        keysToRemove.toList.flatMap(k => watchedVarsByIndex(k))
+      // compute updates that need to be made to the watch list
+      // keys to be removed because, they are referring to the anchored timepoint
+      val keysToRemove = watchedVarsByIndex.keys.filter(p => p._1 == toIndex(anchored) || p._2 == toIndex(anchored))
+      // backup the watches stored under the keys to remove
+      val watchesToReAdd = keysToRemove.toList.flatMap(k => watchedVarsByIndex(k))
 
       // remove the anchored timepoint from distance matrix
       dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
       timepointByIndex(toIndex(anchored)) = null
       nonRigidIndexes.remove(anchored)
-      assert(originalDist == rigidAwareDist(tpA, tpB))
+      assert1(originalDist == rigidAwareDist(tpA, tpB))
 
-      val prevNumWatches = watchedVarsByIndex.values.map(_.size).sum
+      // remove outdated keys, and reinsert the corresponding keys
       watchedVarsByIndex --= keysToRemove
       for(w <- watchesToReAdd)
         addWatchedDistance(w._1, w._2)
-      assert(prevNumWatches == watchedVarsByIndex.values.map(_.size).sum)
     }
+  }
 
-    // notify listeners of updated start times
-    assert(watchesToNotify.isEmpty || distanceChangeListener.nonEmpty, "Changes to notify but no recorded listener")
-    for((tp1, tp2) <- watchesToNotify)
-      distanceChangeListener.get.distanceUpdated(tp1, tp2)
+  /** Transforms two distance-matrix IDs into the key used to refer to their watches */
+  private def asWatchKey(id1: Int, id2: Int) : (Int, Int) = (math.min(id1, id2), math.max(id1, id2))
+
+  /** Computes the key for the location of the watches on this edge. */
+  private def watchKey(tp1: Timepoint, tp2: Timepoint) : (Int, Int) =
+    asWatchKey(indexOfAnchor(tp1), indexOfAnchor(tp2))
+
+  /** Returns true if updates of the given edge will be notified to the distance change listener. */
+  def isWatched(tp1: Timepoint, tp2: Timepoint) : Boolean = {
+    val k = watchKey(tp1, tp2)
+    watchedVarsByIndex.getOrElse(k, Nil).contains((tp1, tp2))
   }
 
   def addWatchedDistance(tp1: Timepoint, tp2: Timepoint) {
-    var id1 = indexOfAnchor(tp1)
-    var id2 = indexOfAnchor(tp2)
-    if(id1 > id2) {
-      val tmp = id1
-      id1 = id2
-      id2 = tmp
-    }
-    assert(id1 <= id2)
-    if(!watchedVarsByIndex.contains((id1, id2)))
-      watchedVarsByIndex.put((id1, id2), mutable.ArrayBuffer())
-    watchedVarsByIndex((id1, id2)) += ((tp1, tp2))
+    val key = watchKey(tp1, tp2)
+    watchedVarsByIndex.getOrElseUpdate(key, mutable.ArrayBuffer()) += ((tp1, tp2))
 
-    for((k, v) <- watchedVarsByIndex)
-      assert(v.forall(p => k == (indexOfAnchor(p._1), indexOfAnchor(p._2)) || k == (indexOfAnchor(p._2), indexOfAnchor(p._1))))
+    assert1(distanceChangeListener.nonEmpty, "Added a watch but no distance change listener plugged in.")
+    assert2(isWatched(tp1, tp2))
+    assert3(watchedVarsByIndex.toSeq.forall{case (k,v) => v.forall(p => k == watchKey(p._1, p._2))})
+  }
+
+  def removeWatchedDistance(tp1: Timepoint, tp2: Timepoint) {
+    val k = watchKey(tp1, tp2)
+    assert2(watchedVarsByIndex.contains(k), "Distance is not watched")
+    watchedVarsByIndex(k) -= ((tp1, tp2))
   }
 
   /** Record this time point as the global start of the STN */
@@ -311,8 +341,8 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   }
 
   def setStart(start: Timepoint): Unit = {
-    assert(isKnown(start))
-    assert(optStart.isEmpty || optStart.get == start)
+    assert1(isKnown(start))
+    assert1(optStart.isEmpty || optStart.get == start)
     optStart = Some(start)
     optEnd match {
       case Some(end) => enforceMinDelay(start, end, 0)
@@ -329,8 +359,8 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   }
 
   def setEnd(end: Timepoint): Unit = {
-    assert(isKnown(end))
-    assert(optEnd.isEmpty || optEnd.get == end)
+    assert1(isKnown(end))
+    assert1(optEnd.isEmpty || optEnd.get == end)
     optEnd = Some(end)
     for(tp <- timepoints.asScala) {
       enforceBefore(tp, end)
@@ -342,10 +372,8 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   }
 
   /** Returns true if the STN is consistent (might trigger a propagation */
-  def isConsistent(): Boolean = {
-    if(debugging) {
-      checkCoherenceWrtBellmanFord
-    }
+  def isConsistent: Boolean = {
+    assert4(coherentWrtBellmanFord)
     consistent &&
       (!shouldCheckPseudoControllability ||
         contingentLinks.forall(l => isDelayPossible(l.src, l.dst, l.min) && isConstraintPossible(l.src, l.dst, l.max)))
@@ -415,7 +443,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     * Determine whether the STN is consistent using Bellman-Ford on the original edges.
     * This is expensive (O(V*E)) but is useful for providing a reference to compare to when debugging.
     */
-  private def consistencyWithBellmanFord(): Boolean = {
+  private def consistentWithBellmanFord(): Boolean = {
     // when possible, use "end" as the source as it normally linked with all other timepoints
     val from = optEnd match {
       case Some(end) => end
@@ -431,13 +459,17 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     true
   }
 
-  private def checkCoherenceWrtBellmanFord: Unit = {
+  /** Expensive method that computes a new APSP with one BellmanFord run for each vertex.
+    * Returns false if at least one distance is different to the one in the incremental FloydWarshall */
+  private def coherentWrtBellmanFord: Boolean = {
     for(tp <- timepoints.asScala) {
       val d = distancesFromWithBellmanFord(tp)
       for(to <- timepoints.asScala) {
-        assert(maxDelay(tp, to) == d(to.id))
+        if(maxDelay(tp, to) != d(to.id))
+          return false
       }
     }
+    true
   }
 
   def enforceContingent(u: Timepoint, v: Timepoint, min: Int, max: Int): Unit = {
@@ -473,12 +505,12 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   def getConstraintsWithoutStructurals : IList[TemporalConstraint] = {
     /** Builds the neighborhood of a group of structural timepoints */
     def structuralNeighborhood(neighborhood: Set[Timepoint], nextNeighbors: Set[Timepoint]): Set[Timepoint] = {
-      assert(neighborhood.intersect(nextNeighbors).isEmpty)
-      assert(nextNeighbors.forall(_.isStructural))
-      assert(neighborhood.forall(_.isStructural))
+      assert2(neighborhood.intersect(nextNeighbors).isEmpty)
+      assert2(nextNeighbors.forall(_.isStructural))
+      assert2(neighborhood.forall(_.isStructural))
 
       if(nextNeighbors.isEmpty)
-        return neighborhood // no new nodes to process, return the current neightborhood
+        return neighborhood // no new nodes to process, return the current neighborhood
       val tp = nextNeighbors.head
 
       if(rigidRelations.isAnchored(tp) && !rigidRelations.anchorOf(tp).isStructural) {
@@ -499,8 +531,8 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
 
     /** Returns all non-structural nodes that touch the structural neighborhood **/
     def connections(tp: Timepoint) = {
-      assert(tp.isStructural)
-      assert(rigidRelations.isAnchor(tp))
+      assert1(tp.isStructural)
+      assert1(rigidRelations.isAnchor(tp))
       val structuralNeighbors = structuralNeighborhood(Set(), Set(tp))
       val nonStructuralNeighbours = originalEdges
         .filter(e => structuralNeighbors.contains(e.from) || structuralNeighbors.contains(e.to))

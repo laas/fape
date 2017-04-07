@@ -8,6 +8,7 @@ import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
 import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals
 import fr.laas.fape.constraints.meta.stn.events.STNEventHandler
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables._
 
 import scala.collection.mutable
@@ -92,21 +93,18 @@ class CSP(toClone: Option[CSP] = None) {
       val e = events.dequeue()
       handleEvent(e)
     }
-//    assert(sanityCheck())
+    sanityCheck()
   }
 
-  def sanityCheck() : Boolean = {
-    assert(events.isEmpty, "Can't sanity check: CSP has pending events")
-    for(c <- constraints.active) {
-      if(c.satisfaction != ConstraintSatisfaction.UNDEFINED) {
-        println(report)
-      }
-      assert(c.satisfaction == ConstraintSatisfaction.UNDEFINED,
-        s"Satisfaction of active constraint $c is not UNDEFINED but ${c.satisfaction}")
-    }
-    for(c <- constraints.satisfied)
-      assert(c.isSatisfied, s"Constraint $c is not satisfied while in the satisfied list")
-    true
+  def sanityCheck() {
+    assert1(events.isEmpty, "Can't sanity check: CSP has pending events")
+    assert2(constraints.active.forall(c => c.satisfaction == ConstraintSatisfaction.UNDEFINED),
+      "Satisfaction of an active constraint is not UNDEFINED")
+    assert2(constraints.satisfied.forall(_.isSatisfied),
+      "A constraint is not satisfied while in the satisfied list")
+
+    //    if(isSolution)
+    //      assert(stn.watchedVarsByIndex.values.map(_.size).sum == 0)
   }
 
   def handleEvent(event: Event) {
@@ -154,7 +152,11 @@ class CSP(toClone: Option[CSP] = None) {
         if(c.watched)
           addEvent(WatchedSatisfied(c))
         // handled by constraint store
-      case _: NewWatchedConstraint =>
+      case NewWatchedConstraint(c) =>
+        if(c.isSatisfied)
+          addEvent(WatchedSatisfied(c))
+        else if(c.isViolated)
+          addEvent(WatchedViolated(c))
     }
     stnBridge.handleEvent(event)
     for(h <- eventHandlers)
@@ -247,7 +249,6 @@ class CSP(toClone: Option[CSP] = None) {
 
   def isSolution : Boolean = {
     assert(events.isEmpty, "There are pending events in this CSP, can't check if it is a solution")
-    assert(sanityCheck())
     constraints.active.isEmpty
   }
 }

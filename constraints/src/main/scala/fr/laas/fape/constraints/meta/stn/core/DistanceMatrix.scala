@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.stn.core
 import java.util
 
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
-import fr.laas.fape.constraints.stnu.InconsistentTemporalNetwork
+import fr.laas.fape.constraints.meta.util.Assertion._
 
 import scala.collection.mutable
 
@@ -28,7 +28,8 @@ object DistanceMatrix {
 }
 
 trait DistanceMatrixListener {
-  def distanceUpdated(a: Int, b: Int)
+  /** Notifies that the distances between all given pairs of timepoints have been updated */
+  def distancesUpdated(dists: Seq[(Int, Int)])
 }
 
 import fr.laas.fape.constraints.meta.stn.core.DistanceMatrix._
@@ -53,8 +54,9 @@ class DistanceMatrix(
     listeners += listener
   }
 
-  private final def isActive(tp: Int) = {
-    assert(tp < dists.size)
+  /** Returns true if tp is a timepoint in the distance matrix */
+  final def isActive(tp: Int) = {
+    assert1(tp < dists.size)
     !emptySpots.contains(tp)
   }
 
@@ -134,8 +136,9 @@ class DistanceMatrix(
         updatedEdges += ((i,j))
       }
     }
-    for((u,v) <- updatedEdges)
-      updated(u, v)
+    assert2(updatedEdges.forall{ case (i, j) => isActive(i) && isActive(j) && getDistance(a, b) < INF })
+    for(l <- listeners)
+      l.distancesUpdated(updatedEdges)
   }
 
   /**
@@ -161,13 +164,5 @@ class DistanceMatrix(
   def getDistance(a: Int, b: Int): Int = {
     assert(isActive(a) && isActive(b))
     dists(a)(b)
-  }
-
-  private final def updated(a: Int, b: Int): Unit = {
-    if(isActive(a) && isActive(b)) {
-      assert(dists(a)(b) < INF)
-      for (list <- listeners)
-        list.distanceUpdated(a, b)
-    }
   }
 }

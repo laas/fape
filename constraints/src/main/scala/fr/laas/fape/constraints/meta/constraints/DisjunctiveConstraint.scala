@@ -10,9 +10,6 @@ import fr.laas.fape.constraints.meta.domains.{Domain, EnumeratedDomain, Singleto
 
 class DisjunctiveConstraint(val constraints: Seq[Constraint]) extends Constraint {
 
-  /** This class is simply to provide a unique reference to the decistion variable */
-  private class DisjunctionDecisionVariableRef(c: DisjunctiveConstraint)
-
   val decisionVar = new IntVariable(new EnumeratedDomain(constraints.indices))
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(decisionVar)

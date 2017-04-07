@@ -19,7 +19,7 @@ class IList[T](protected[structures] val l : List[T]) extends java.lang.Iterable
 
   def asScala = l
 
-  def size(): Int = l.size
+  def size: Int = l.size
 
   def withoutAll(p1: util.Collection[_]): IList[T] =
     if(p1.isEmpty)

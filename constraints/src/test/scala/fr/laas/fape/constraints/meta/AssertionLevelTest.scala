@@ -10,6 +10,7 @@ class AssertionLevelTest extends FunSuite {
     assert1({print(" 1"); true}, "")
     assert2({print(" 2"); true}, "")
     assert3({print(" 3"); true}, "")
+    assert4({print(" 4"); true}, "")
     println()
   }
 
@@ -19,7 +20,7 @@ class AssertionLevelTest extends FunSuite {
     assert1({assertionLevel = 1; true}, "")
     assert2({assertionLevel = 2; true}, "")
     assert3({assertionLevel = 3; true}, "")
-
+    assert4({assertionLevel = 4; true}, "")
     assert(assertionLevel == DEBUG_LEVEL)
   }
 
