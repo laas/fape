@@ -18,7 +18,7 @@ abstract class TemporalConstraint extends Constraint {
  }
 }
 
-case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int)
+class MinDelayConstraint(val src:Timepoint, val dst:Timepoint, val minDelay: Int)
   extends TemporalConstraint {
   override def toString = s"$src + $minDelay <= $dst"
 
@@ -37,7 +37,7 @@ case class MinDelayConstraint(src:Timepoint, dst:Timepoint, minDelay: Int)
     new MinDelayConstraint(dst, src, -minDelay +1)
 }
 
-case class ContingentConstraint(src :Timepoint, dst :Timepoint, min :Int, max :Int) extends TemporalConstraint {
+class ContingentConstraint(val src :Timepoint, val dst :Timepoint, val min :Int, val max :Int) extends TemporalConstraint {
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(src, dst)
 

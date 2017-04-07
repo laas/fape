@@ -9,7 +9,9 @@ trait Event {
 
 case class NewConstraint(c: Constraint) extends Event
 
-case class NewWatchedConstraint(c: Constraint) extends Event
+case class WatchConstraint(c: Constraint) extends Event
+
+case class UnwatchConstraint(c: Constraint) extends Event
 
 case class NewVariableEvent(v: IVar) extends Event
 

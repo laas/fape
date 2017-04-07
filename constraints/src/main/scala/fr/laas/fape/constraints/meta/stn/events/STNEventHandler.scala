@@ -32,29 +32,17 @@ class STNEventHandler(implicit val csp: CSP)
         // not a pure temporal constraint, check if there is any temporal variables to watch in it
         for((tp1, tp2) <- watches(c))
           stn.addWatchedDistance(tp1, tp2)
-      case NewWatchedConstraint(c) =>
-        // not a pure temporal constraint, check if there is any temporal variables to watch in it
+      case WatchConstraint(c) =>
         for((tp1, tp2) <- watches(c))
           stn.addWatchedDistance(tp1, tp2)
       case Satisfied(c: TemporalConstraint) => // no watches were recorded by this constraint
       case Satisfied(c) =>
-      // not a pure temporal constraint, check if there is any temporal variables to watch in it
-      //      for(v <- c.variables) v match {
-      //        case tp: Timepoint =>
-      //          stn.removeWatchedDistance(csp.temporalOrigin, tp)
-      //        case d: TemporalDelay =>
-      //          stn.removeWatchedDistance(d.from, d.to)
-      //        case _ => // ignore variable
-      //      }
-      case e: WatchedSatisfactionUpdate =>
-      //       not a pure temporal constraint, check if there is any temporal variables to watch in it
-      //      for(v <- e.constraint.variables) v match {
-      //        case tp: Timepoint =>
-      //          stn.removeWatchedDistance(csp.temporalOrigin, tp)
-      //        case d: TemporalDelay =>
-      //          stn.removeWatchedDistance(d.from, d.to)
-      //        case _ => // ignore variable
-      //      }
+        // not a pure temporal constraint, check if there is any temporal variables to watch in it
+        for((tp1, tp2) <- watches(c))
+          stn.removeWatchedDistance(tp1, tp2)
+      case UnwatchConstraint(c) =>
+        for((tp1, tp2) <- watches(c))
+          stn.removeWatchedDistance(tp1, tp2)
       case _ =>
     }
     watchesSanityChecks()

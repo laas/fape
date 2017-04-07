@@ -2,11 +2,12 @@ package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.meta.constraints.{Constraint, ReificationConstraint}
 import fr.laas.fape.constraints.meta.events._
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables.IVar
 
 import scala.collection.mutable
 
-class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEventHandler {
+class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
   implicit val csp = _csp
 
 
@@ -59,34 +60,44 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
       for(v <- constraint.variables) {
         assert(activeConstraintsForVar.contains(v) && activeConstraintsForVar(v).contains(constraint))
         activeConstraintsForVar(v) -= constraint
+        if(activeConstraintsForVar(v).isEmpty)
+          activeConstraintsForVar -= v
       }
     }
+    for(watched <- monitoredBy(constraint).toList)
+      removeWatcher(watched, constraint)
   }
 
   def addWatcher(constraint: Constraint, watcher: Constraint) {
     if(!watchers.contains(constraint)) {
-      // constraint is not watched yet, record its variable
+      // constraint is not watched yet, record its variable and notify other components
       watchers.put(constraint, mutable.ArrayBuffer())
       for(v <- constraint.variables)
         watchedConstraintsForVar.getOrElseUpdate(v, mutable.ArrayBuffer()) += constraint
-      csp.addEvent(NewWatchedConstraint(constraint))
+      csp.addEvent(WatchConstraint(constraint))
     }
     watchers(constraint) += watcher
     watches.getOrElseUpdate(watcher, mutable.ArrayBuffer()) += constraint
   }
 
   private def removeWatcher(constraint: Constraint, watcher: Constraint) {
-    assert(watchers.contains(constraint))
-    assert(watches.contains(watcher))
-    assert(watches(watcher).contains(constraint))
+    assert1(watchers.contains(constraint))
+    assert1(watches.contains(watcher))
+    assert1(watches(watcher).contains(constraint))
     watches(watcher) -= constraint
     watchers(constraint) -= watcher
     if(watchers(constraint).isEmpty) {
-      for(v <- constraint.variables)
+      // nobody is watching it anymore, remove variable watches and notify other components
+      for(v <- constraint.variables) {
         watchedConstraintsForVar(v) -= constraint
+        if(watchedConstraintsForVar(v).isEmpty)
+          watchedConstraintsForVar -= v
+      }
+      watchers -= constraint
+      csp.addEvent(UnwatchConstraint(constraint))
     }
     if(watches(watcher).isEmpty)
-      watches(watcher) -= watcher
+      watches -= watcher
   }
 
   def activeWatching(variable: IVar) : Iterable[Constraint] =
@@ -95,19 +106,27 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
   def monitoredWatching(variable: IVar) : Iterable[Constraint] =
     watchedConstraintsForVar.getOrElse(variable, Nil)
 
+  /** All constraints monitoring "constraint" */
   def monitoring(constraint: Constraint) : Iterable[Constraint] =
     watchers.getOrElse(constraint, Nil)
+
+  /** All constraints monitored by "constraint" */
+  def monitoredBy(constraint: Constraint) : Iterable[Constraint] =
+    watches.getOrElse(constraint, Nil)
 
   def isActive(constraint: Constraint) = active.contains(constraint)
 
   def isWatched(constraint: Constraint) = watchers.contains(constraint)
 
+  /** All constraints that have been posted (not including the ones that are watched) */
   def all = active ++ satisfied
 
   /** All constraints that are currently being monitored */
   def watched = watchers.keys
 
-  override def handleEvent(event: Event) {
+  /** Handle events that should be handled before all other components,
+    * mainly to record new constraints. */
+  def handleEventFirst(event: Event) {
     event match {
       case Satisfied(constraint) =>
         onSatisfaction(constraint)
@@ -117,5 +136,18 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) extends CSPEv
     }
   }
 
-  override def clone(newCSP: CSP): ConstraintStore = new ConstraintStore(newCSP, Some(this))
+  /** Handle events that should be handled after all other components,
+    * mainly to clean up on satisfaction of watch constraints. */
+  def handleEventLast(event: Event) {
+    event match {
+      case e: WatchedSatisfactionUpdate =>
+        if(e.constraint.watched)
+          for(watcher <- monitoring(e.constraint).toList) // defensive copy as the list will be modified
+            removeWatcher(e.constraint, watcher)
+        assert1(!e.constraint.watched)
+      case _ =>
+    }
+  }
+
+  def clone(newCSP: CSP): ConstraintStore = new ConstraintStore(newCSP, Some(this))
 }

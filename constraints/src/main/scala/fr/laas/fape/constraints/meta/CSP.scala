@@ -16,6 +16,11 @@ import scala.collection.mutable
 class CSP(toClone: Option[CSP] = None) {
   implicit private val csp = this
 
+  final val log : ILogger = toClone match {
+    case None => new Logger()
+    case Some(base) => base.log.clone
+  }
+
   val domains : mutable.Map[VarWithDomain, Domain] = toClone match {
     case Some(base) => base.domains.clone()
     case None => mutable.Map()
@@ -56,8 +61,6 @@ class CSP(toClone: Option[CSP] = None) {
   val temporalHorizon = varStore.getTimepoint(":end:")
 
   override def clone : CSP = new CSP(Some(this))
-
-  final val log : ILogger = new ILogger
 
   def dom(tp: Timepoint) : IntervalDomain =
     new IntervalDomain(stn.getEarliestTime(tp), stn.getLatestTime(tp))
@@ -103,15 +106,19 @@ class CSP(toClone: Option[CSP] = None) {
     assert2(constraints.satisfied.forall(_.isSatisfied),
       "A constraint is not satisfied while in the satisfied list")
 
-    //    if(isSolution)
-    //      assert(stn.watchedVarsByIndex.values.map(_.size).sum == 0)
+    if(isSolution) {
+      assert1(constraints.active.isEmpty)
+      assert2(constraints.watched.isEmpty)
+      assert3(stn.watchedVarsByIndex.values.map(_.size).sum == 0, log.history + "\n\n" + stn.watchedVarsByIndex.values.flatten)
+    }
   }
 
   def handleEvent(event: Event) {
     log.startEventHandling(event)
-    constraints.handleEvent(event)
+    constraints.handleEventFirst(event)
     event match {
       case NewConstraint(c) =>
+        assert1(c.active)
         for(v <- c.variables) v match {
           case v: IntVariable if !domains.contains(v) => addVariable(v)
           case _ =>
@@ -126,9 +133,11 @@ class CSP(toClone: Option[CSP] = None) {
         }
       case e: DomainChange =>
         for(c <- constraints.activeWatching(e.variable)) {
+          assert2(c.active)
           c.propagate(e)
         }
         for(c <- constraints.monitoredWatching(e.variable)) {
+          assert2(c.watched)
           if(c.isSatisfied)
             addEvent(WatchedSatisfied(c))
           else if(c.isViolated)
@@ -152,15 +161,18 @@ class CSP(toClone: Option[CSP] = None) {
         if(c.watched)
           addEvent(WatchedSatisfied(c))
         // handled by constraint store
-      case NewWatchedConstraint(c) =>
+      case WatchConstraint(c) =>
+        assert1(c.watched)
         if(c.isSatisfied)
           addEvent(WatchedSatisfied(c))
         else if(c.isViolated)
           addEvent(WatchedViolated(c))
+      case UnwatchConstraint(_) =>
     }
     stnBridge.handleEvent(event)
     for(h <- eventHandlers)
       h.handleEvent(event)
+    constraints.handleEventLast(event)
     log.endEventHandling(event)
   }
 
@@ -187,7 +199,7 @@ class CSP(toClone: Option[CSP] = None) {
   }
 
   def setSatisfied(constraint: Constraint)  {
-    assert(constraint.isSatisfied)
+    assert1(constraint.isSatisfied)
     addEvent(Satisfied(constraint))
   }
 
@@ -221,6 +233,7 @@ class CSP(toClone: Option[CSP] = None) {
   }
 
   def addEvent(event: Event) {
+    log.newEventPosted(event)
     events += event
   }
 

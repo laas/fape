@@ -329,7 +329,10 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   def removeWatchedDistance(tp1: Timepoint, tp2: Timepoint) {
     val k = watchKey(tp1, tp2)
     assert2(watchedVarsByIndex.contains(k), "Distance is not watched")
+    assert2(watchedVarsByIndex(k).contains((tp1, tp2)))
     watchedVarsByIndex(k) -= ((tp1, tp2))
+    if(watchedVarsByIndex(k).isEmpty)
+      watchedVarsByIndex -= k
   }
 
   /** Record this time point as the global start of the STN */
