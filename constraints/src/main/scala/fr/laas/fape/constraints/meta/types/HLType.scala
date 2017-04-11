@@ -4,8 +4,6 @@ import fr.laas.fape.constraints.meta.util.Assertion._
 
 trait HLType[+T] extends Type[T] {
 
-
-
   def ownInstances: Seq[T]
 
   def ownInstanceToInt[ST >: T](value: ST) : Int

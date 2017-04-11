@@ -114,6 +114,8 @@ class InstanceManager(val refCounter: RefCounter) {
   /** Return a collection containing all instances. */
   def allInstances : java.util.Collection[String] =  asJavaCollection(instancesDef.keys)
 
+  def allSimpleTypes : Iterable[SimpleType] = simpleTypes.values
+
   /** Retrieves the variable reference linked to this instance
     *
     * @param name Name of the instance to lookup

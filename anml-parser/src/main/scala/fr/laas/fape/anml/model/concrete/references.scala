@@ -87,6 +87,8 @@ class VarRef(id:Int, val typ :Type, val label:Label) extends Variable(id) {
   def this(typ :Type, refCounter: RefCounter, label: Label) = this(refCounter.nextVar(), typ, label)
 
   def getType = typ
+
+  override def toString = label.toString
 }
 
 /** Reference to a problem instance that takes the form of a variable.

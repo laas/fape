@@ -19,6 +19,10 @@ class ILogger {
 
   def constraintPosted(constraint: Constraint) {}
 
+  def info(str: => String) { println(str) }
+  def warning(str: => String) { println(str) }
+  def error(str: => String) { println(str) }
+
   def history: StringBuilder = new StringBuilder
 
   override def clone: ILogger = this
@@ -55,6 +59,10 @@ class Logger(previous: Option[Logger] = None) extends ILogger {
     if(toSTDIO)
       Predef.println(msg)
   }
+
+  override def info(str: => String) { printOffset(); println("INFO: "+str) }
+  override def warning(str: => String) { printOffset(); println("WARNING: "+str) }
+  override def error(str: => String) { printOffset(); println("ERROR: "+str) }
 
   override def startEventHandling(event: Event): Unit = {
     printOffset()

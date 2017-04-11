@@ -8,6 +8,7 @@ import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
 import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals
 import fr.laas.fape.constraints.meta.stn.events.STNEventHandler
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
+import fr.laas.fape.constraints.meta.types.{Type, TypedVariable}
 import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables._
 
@@ -61,6 +62,10 @@ class CSP(toClone: Option[CSP] = None) {
   val temporalHorizon = varStore.getTimepoint(":end:")
 
   override def clone : CSP = new CSP(Some(this))
+
+  def addHandler(handler: CSPEventHandler) {
+    eventHandlers += handler
+  }
 
   def dom(tp: Timepoint) : IntervalDomain =
     new IntervalDomain(stn.getEarliestTime(tp), stn.getLatestTime(tp))
@@ -168,6 +173,9 @@ class CSP(toClone: Option[CSP] = None) {
         else if(c.isViolated)
           addEvent(WatchedViolated(c))
       case UnwatchConstraint(_) =>
+
+      case e: CSPEvent => throw new MatchError(s"CSPEvent $e was not properly handled")
+      case _ => // not an internal CSP event, ignore
     }
     stnBridge.handleEvent(event)
     for(h <- eventHandlers)
@@ -215,6 +223,19 @@ class CSP(toClone: Option[CSP] = None) {
     v
   }
 
+  def variable[T](ref: Any, typ: Type[T]): TypedVariable[T] = {
+    if(varStore.hasVariableForRef(ref))
+      varStore.getVariable(ref) match {
+        case v: TypedVariable[_] if v.typ == typ => v.asInstanceOf[TypedVariable[T]]
+        case v => throw new RuntimeException(s"Already a vraible for $ref with wrong type: $v")
+      }
+    else {
+      val v = new TypedVariable[T](typ, Some(ref))
+      addVariable(v)
+      v
+    }
+  }
+
   def addVariable(variable: IntVariable)  {
     assert(!hasVariable(variable))
     domains.put(variable, variable.initialDomain)
@@ -245,8 +266,9 @@ class CSP(toClone: Option[CSP] = None) {
   def report : String = {
     val str = new StringBuilder
     val vars = constraints.all.flatMap(c => c.variables(csp)).collect{ case v: VarWithDomain => v }
-    for(v <- vars) {
-      str.append(s"$v = ${v.domain}\n")
+    for(v <- vars) v match {
+      case v: TypedVariable[_] => str.append(s"$v = ${v.dom}\n")
+      case v => str.append(s"$v = ${v.domain}\n")
     }
     str.append("%% ACTIVE CONSTRAINTS\n")
     for(c <- constraints.active.toSeq.sortBy(_.toString))

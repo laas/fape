@@ -153,6 +153,8 @@ class FunctionManager(val pb:AnmlProblem) {
   /** Returns all functions stored in this function manager */
   def getAll : java.util.List[Function] = seqAsJavaList(functions.values.toList)
 
+  def all : Iterable[Function] = functions.values
+
   /** Finds the definition of the function with the given name.
     *
     * @param functionName Name of the function to look up.
