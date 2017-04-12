@@ -66,3 +66,12 @@ trait Domain {
     else
       s"{${values.take(3).mkString(", ")}, ..., ${values.takeRight(3)}}"
 }
+
+object Domain {
+
+  /** Factory for Domain, using the most adapted representation for the given values */
+  def apply(values: Set[Int]) : Domain =
+    if(values.isEmpty) new EmptyDomain
+    else if(values.size == 1) new SingletonDomain(values.head)
+    else new EnumeratedDomain(values)
+}

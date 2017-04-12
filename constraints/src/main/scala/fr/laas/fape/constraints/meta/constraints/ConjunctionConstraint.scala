@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.meta.constraints
 import fr.laas.fape.constraints.meta.CSP
-import fr.laas.fape.constraints.meta.events.{Event, NewConstraint}
+import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.variables.IVar
 
 class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint {
@@ -24,10 +24,9 @@ class ConjunctionConstraint(val constraints: Seq[Constraint]) extends Constraint
     else
       ConstraintSatisfaction.UNDEFINED
 
-  override protected def _propagate(event: Event)(implicit csp: CSP) {
-  }
+  override protected def _propagate(event: Event)(implicit csp: CSP) {}
 
-  override def toString = constraints.mkString(" && ")
+  override def toString = "("+constraints.mkString(" && ")+")"
 
   /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
   override def reverse: Constraint =

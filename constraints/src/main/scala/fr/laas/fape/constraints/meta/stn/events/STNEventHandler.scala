@@ -9,7 +9,7 @@ import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 import fr.laas.fape.constraints.meta.util.Assertion._
 
 class STNEventHandler(implicit val csp: CSP)
-  extends CSPEventHandler with IDistanceChangeListener {
+  extends InternalCSPEventHandler with IDistanceChangeListener {
 
   def stn = csp.stn
 
@@ -23,7 +23,8 @@ class STNEventHandler(implicit val csp: CSP)
           stn.recordTimePointAsEnd(tp)
         } else {
           stn.recordTimePoint(tp)
-          stn.enforceBefore(csp.temporalOrigin, tp)
+          if(csp.conf.enforceTpAfterStart)
+            stn.enforceBefore(csp.temporalOrigin, tp)
           stn.enforceBefore(tp, csp.temporalHorizon)
         }
       case NewConstraint(c: TemporalConstraint) =>

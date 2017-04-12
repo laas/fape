@@ -14,46 +14,51 @@ import fr.laas.fape.constraints.meta.variables._
 
 import scala.collection.mutable
 
-class CSP(toClone: Option[CSP] = None) {
+class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
   implicit private val csp = this
 
+  val conf: Configuration = toClone match {
+    case Left(configuration) => configuration
+    case Right(base) => base.conf
+  }
+
   final val log : ILogger = toClone match {
-    case None => new Logger()
-    case Some(base) => base.log.clone
+    case Right(base) => base.log.clone
+    case _ => new Logger()
   }
 
   val domains : mutable.Map[VarWithDomain, Domain] = toClone match {
-    case Some(base) => base.domains.clone()
-    case None => mutable.Map()
+    case Right(base) => base.domains.clone()
+    case _ => mutable.Map()
   }
 
   val events: mutable.Queue[Event] = toClone match {
-    case None => mutable.Queue()
-    case Some(base) => base.events.clone()
+    case Right(base) => base.events.clone()
+    case _ => mutable.Queue()
   }
 
-  val eventHandlers: mutable.ArrayBuffer[CSPEventHandler] = toClone match {
-    case None => mutable.ArrayBuffer()
-    case Some(base) => base.eventHandlers.map(handler => handler.clone(this))
+  val eventHandlers: mutable.ArrayBuffer[InternalCSPEventHandler] = toClone match {
+    case Right(base) => base.eventHandlers.map(handler => handler.clone(this))
+    case _ => mutable.ArrayBuffer()
   }
 
   val varStore: VariableStore = toClone match {
-    case None => new VariableStore(this)
-    case Some(base) => base.varStore.clone(this)
+    case Right(base) => base.varStore.clone(this)
+    case _ => new VariableStore(this)
   }
 
   val constraints: ConstraintStore = toClone match {
-    case Some(base) => base.constraints.clone(this)
-    case None => new ConstraintStore(this)
+    case Right(base) => base.constraints.clone(this)
+    case _ => new ConstraintStore(this)
   }
 
   val stn: StnWithStructurals = toClone match {
-    case None => new StnWithStructurals()
-    case Some(base) => base.stn.clone()
+    case Right(base) => base.stn.clone()
+    case _ => new StnWithStructurals()
   }
   val stnBridge: STNEventHandler = toClone match {
-    case None => new STNEventHandler()(this)
-    case Some(base) => base.stnBridge.clone(this)
+    case Right(base) => base.stnBridge.clone(this)
+    case _ => new STNEventHandler()(this)
   }
   // set the STN listener to the one already in the event handlers to get notified of temporal variable updates
   stn.setDistanceChangeListener(stnBridge)
@@ -61,11 +66,17 @@ class CSP(toClone: Option[CSP] = None) {
   val temporalOrigin = varStore.getTimepoint(":start:")
   val temporalHorizon = varStore.getTimepoint(":end:")
 
-  override def clone : CSP = new CSP(Some(this))
+  override def clone : CSP = new CSP(Right(this))
 
-  def addHandler(handler: CSPEventHandler) {
+  def addHandler(handler: InternalCSPEventHandler) {
     eventHandlers += handler
   }
+
+  def getHandler[T] : T = { eventHandlers.collect{ case h: T => h}.toList match {
+    case Nil => throw new IllegalArgumentException("No handler of such type")
+    case h :: Nil => h
+    case list => throw new IllegalArgumentException("Multiple handlers of such type")
+  }}
 
   def dom(tp: Timepoint) : IntervalDomain =
     new IntervalDomain(stn.getEarliestTime(tp), stn.getLatestTime(tp))
@@ -96,7 +107,7 @@ class CSP(toClone: Option[CSP] = None) {
     }
   }
 
-  def propagate(): Unit = {
+  def propagate() {
     while(events.nonEmpty) {
       val e = events.dequeue()
       handleEvent(e)
@@ -221,19 +232,6 @@ class CSP(toClone: Option[CSP] = None) {
     val v = new IntVariable(new IntervalDomain(lb, ub), Some(ref))
     addVariable(v)
     v
-  }
-
-  def variable[T](ref: Any, typ: Type[T]): TypedVariable[T] = {
-    if(varStore.hasVariableForRef(ref))
-      varStore.getVariable(ref) match {
-        case v: TypedVariable[_] if v.typ == typ => v.asInstanceOf[TypedVariable[T]]
-        case v => throw new RuntimeException(s"Already a vraible for $ref with wrong type: $v")
-      }
-    else {
-      val v = new TypedVariable[T](typ, Some(ref))
-      addVariable(v)
-      v
-    }
   }
 
   def addVariable(variable: IntVariable)  {

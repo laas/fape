@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.stn.variables
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.domains.IntervalDomain
-import fr.laas.fape.constraints.meta.stn.constraint.{AbsoluteAfterConstraint, AbsoluteBeforeConstraint, MinDelayConstraint}
+import fr.laas.fape.constraints.meta.stn.constraint.{AbsoluteAfterConstraint, AbsoluteBeforeConstraint, MinDelay}
 import fr.laas.fape.constraints.meta.variables.{IVar, VarWithDomain}
 
 class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
@@ -13,11 +13,11 @@ class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
   def isStructural : Boolean = false
   def isContingent : Boolean = false
 
-  def <(tp: Timepoint) : MinDelayConstraint =
-    new MinDelayConstraint(this, tp, 1)
+  def <(tp: Timepoint) : MinDelay =
+    new MinDelay(this, tp, 1)
 
-  def <=(tp: Timepoint) : MinDelayConstraint =
-    new MinDelayConstraint(this, tp, 0)
+  def <=(tp: Timepoint) : MinDelay =
+    new MinDelay(this, tp, 0)
 
   def <=(deadline: Int) : AbsoluteBeforeConstraint = {
     new AbsoluteBeforeConstraint(this, deadline)

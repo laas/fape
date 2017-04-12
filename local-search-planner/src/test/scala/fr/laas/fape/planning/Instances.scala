@@ -14,6 +14,30 @@ object Instances {
       |v1 != v2;
       |v2 != v3;
       |v3 != v1;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[10,20] sv == x1 :-> x2;
+      |[all] contains {
+      |  sv == x1;
+      |  sv == x2;
+      |};
+      |
+    """.stripMargin,
+    """
+      |end = start + 30;
+      |
     """.stripMargin
   )
 
@@ -40,6 +64,20 @@ object Instances {
       |v1 == v2;
       |v2 != x1;
       |v1 != x2;
+    """.stripMargin,
+    """
+      |end = start + 30;
+      |end > start + 40;
+      |
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[10,20] sv == x1 :-> x2;
+      |[19,30] sv == x2;
     """.stripMargin
   )
 

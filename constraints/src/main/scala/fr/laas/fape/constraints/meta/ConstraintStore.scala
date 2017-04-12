@@ -54,7 +54,6 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
   /** Removes a constraint from the active list and removes it from the variable index */
   private def onSatisfaction(constraint: Constraint) {
     if(active.contains(constraint)) {
-//      assert(!satisfied.contains(constraint), s"Constraint $constraint already recorded as satisfied")
       active -= constraint
       satisfied += constraint
       for(v <- constraint.variables) {
@@ -75,6 +74,7 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
       for(v <- constraint.variables)
         watchedConstraintsForVar.getOrElseUpdate(v, mutable.ArrayBuffer()) += constraint
       csp.addEvent(WatchConstraint(constraint))
+      constraint.onWatch
     }
     watchers(constraint) += watcher
     watches.getOrElseUpdate(watcher, mutable.ArrayBuffer()) += constraint
@@ -145,6 +145,10 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
           for(watcher <- monitoring(e.constraint).toList) // defensive copy as the list will be modified
             removeWatcher(e.constraint, watcher)
         assert1(!e.constraint.watched)
+      case UnwatchConstraint(c)  =>
+        // constraint is not watched anymore, remove all remove all subwatches of this constraint
+        for(watched <- monitoredBy(c))
+          removeWatcher(watched, c)
       case _ =>
     }
   }

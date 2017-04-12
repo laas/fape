@@ -48,7 +48,7 @@ class DisjunctiveConstraint(val constraints: Seq[Constraint]) extends Constraint
     }
   }
 
-  override def toString = constraints.mkString(" || ")
+  override def toString = "("+constraints.mkString(" || ")+")"
 
   override def ||(c: Constraint) =
     new DisjunctiveConstraint(c :: constraints.toList)

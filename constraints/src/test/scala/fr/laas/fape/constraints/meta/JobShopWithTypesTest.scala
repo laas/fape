@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.meta.constraints.DisjunctiveConstraint
 import fr.laas.fape.constraints.meta.search.BinarySearch
-import fr.laas.fape.constraints.meta.stn.constraint.MinDelayConstraint
+import fr.laas.fape.constraints.meta.stn.constraint.MinDelay
 import fr.laas.fape.constraints.meta.stn.variables.TemporalInterval
 import fr.laas.fape.constraints.meta.types.{BaseType, TypedVariable}
 import fr.laas.fape.constraints.meta.variables.IntVariable
@@ -15,7 +15,6 @@ class JobShopWithTypesTest extends FunSuite {
 
   test("job shop search with types") {
     val (model, jobs) = jobShopModel(instance)
-    ???
     BinarySearch.count = 0
     implicit var csp = BinarySearch.search(model, optimizeMakespan = true)
     assert(csp != null)
@@ -66,7 +65,7 @@ class JobShopWithTypesTest extends FunSuite {
     override def toString = s"threat($j1, $j2)"
   }
 
-  class Precedes(j1: JobWithType, j2: JobWithType) extends MinDelayConstraint(j1.interval.end, j2.interval.start, 1) {
+  class Precedes(j1: JobWithType, j2: JobWithType) extends MinDelay(j1.interval.end, j2.interval.start, 1) {
     require(j1 != j2)
     override def toString = s"precedes($j1, $j2)"
   }

@@ -5,17 +5,17 @@ import java.util.Objects
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints.Constraint
 import fr.laas.fape.constraints.meta.domains.IntervalDomain
-import fr.laas.fape.constraints.meta.stn.constraint.MinDelayConstraint
+import fr.laas.fape.constraints.meta.stn.constraint.MinDelay
 import fr.laas.fape.constraints.meta.variables.{IVar, VarWithDomain}
 
 class TemporalDelay(val from: Timepoint, val to: Timepoint) extends VarWithDomain {
 
   override def domain(implicit csp: CSP) : IntervalDomain = csp.dom(this)
 
-  def <=(value: Int) = new MinDelayConstraint(from, to, value)
+  def <=(value: Int) = new MinDelay(from, to, value)
   def <(value: Int) = this <= value+1
 
-  def >=(value: Int) = new MinDelayConstraint(to, from, -value)
+  def >=(value: Int) = new MinDelay(to, from, -value)
   def >(value: Int) = this >= value-1
 
   override def ===(value: Int) = this <= value && this >= value

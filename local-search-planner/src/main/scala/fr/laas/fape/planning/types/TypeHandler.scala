@@ -9,7 +9,7 @@ class TypeHandler(pb: AnmlProblem) {
 
   val functionType: FunctionVarType = new FunctionVarType(pb.functions.all.collect{ case f: SymFunction => f })
 
-  def get(t: model.Type) = t match {
+  def get(t: model.Type) : AnmlVarType = t match {
     case t: SimpleType => types(t)
     case _ => throw new NotImplementedError()
   }

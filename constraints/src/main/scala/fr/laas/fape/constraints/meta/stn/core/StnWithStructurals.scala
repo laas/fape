@@ -21,7 +21,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
                          var timepointByIndex: mutable.ArrayBuffer[Timepoint],
                          var dist: DistanceMatrix,
                          var rigidRelations: RigidRelations,
-                         var contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
+                         var contingentLinks: mutable.ArrayBuffer[Contingent],
                          var optStart: Option[Timepoint],
                          var optEnd: Option[Timepoint],
                          var originalEdges: List[DistanceGraphEdge],
@@ -162,9 +162,9 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
 
   def addConstraint(c: TemporalConstraint): Unit = {
     c match {
-      case req: MinDelayConstraint =>
+      case req: MinDelay =>
         addMinDelay(req.src, req.dst, req.minDelay)
-      case cont: ContingentConstraint =>
+      case cont: Contingent =>
         addMinDelay(cont.src, cont.dst, cont.min)
         addMaxDelay(cont.src, cont.dst, cont.max)
         contingentLinks.append(cont)
@@ -478,7 +478,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
   def enforceContingent(u: Timepoint, v: Timepoint, min: Int, max: Int): Unit = {
     addMinDelay(u, v, min)
     addMaxDelay(u, v, max)
-    contingentLinks.append(new ContingentConstraint(u, v, min, max))
+    contingentLinks.append(new Contingent(u, v, min, max))
   }
 
   def getMaxDelay(u: Timepoint, v: Timepoint): Int = maxDelay(u, v)
@@ -570,10 +570,10 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[Timepoint,Int],
     }
 
     return new IList(contingentLinks.toList ++
-      pairs.map(p => new MinDelayConstraint(p._2, p._1, minDelay(p._2, p._1))))
+      pairs.map(p => new MinDelay(p._2, p._1, minDelay(p._2, p._1))))
   }
 
   def getOriginalConstraints : IList[TemporalConstraint] = {
-    new IList(originalEdges.map(e => new MinDelayConstraint(e.to, e.from, -e.value)) ++ contingentLinks)
+    new IList(originalEdges.map(e => new MinDelay(e.to, e.from, -e.value)) ++ contingentLinks)
   }
 }
