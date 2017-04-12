@@ -42,7 +42,7 @@ class CausalHandler(context: PlanningHandler, base: Option[CausalHandler] = None
           csp.post(Threat(s, h))
         for(c <- changes)
           csp.post(Threat(c, s))
-        // TODO handle support
+        csp.post(new SupportConstraint(s))
         holds += s
       case PlanningStructureAdded(s: Change) =>
         csp.post(s.persists.start <= s.persists.end)

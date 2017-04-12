@@ -71,6 +71,12 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   def sv(psv: ParameterizedStateVariable): SVar =
     stateVariables.getOrElseUpdate(psv, new SVar(func(psv.func), psv.args.toList.map(variable(_)), psv))
 
+  def getHandler[T] : T = subhandlers.collect{ case sh: T => sh }.toList match {
+    case Nil => throw new IllegalArgumentException("No handler of such type")
+    case h :: Nil => h
+    case list => throw new IllegalArgumentException("Multiple handlers of such type")
+  }
+
   def tp(tpRef: TPRef): Timepoint =
     if(tpRef == pb.start)
       csp.temporalOrigin
@@ -103,11 +109,14 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
         }
         for(s <- chronicle.logStatements.asScala) s match {
           case s: Persistence =>
+            csp.post(tp(s.start) <= tp(s.end)) // todo: double check if thos are needed
             csp.addEvent(PlanningStructureAdded(Holds(s, this)))
           case s: Transition =>
+            csp.post(tp(s.start) < tp(s.end))
             csp.addEvent(PlanningStructureAdded(Change(s, this)))
             csp.addEvent(PlanningStructureAdded(Holds(s, this)))
           case s: Assignment =>
+            csp.post(tp(s.start) < tp(s.end))
             csp.addEvent(PlanningStructureAdded(Change(s, this)))
         }
       case e: PlanningStructureAdded =>

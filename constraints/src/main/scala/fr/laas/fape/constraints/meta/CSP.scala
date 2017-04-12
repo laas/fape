@@ -178,11 +178,11 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
           addEvent(WatchedSatisfied(c))
         // handled by constraint store
       case WatchConstraint(c) =>
-        assert1(c.watched)
-        if(c.isSatisfied)
-          addEvent(WatchedSatisfied(c))
-        else if(c.isViolated)
-          addEvent(WatchedViolated(c))
+        if(c.watched)
+          if(c.isSatisfied)
+            addEvent(WatchedSatisfied(c))
+          else if(c.isViolated)
+            addEvent(WatchedViolated(c))
       case UnwatchConstraint(_) =>
 
       case e: CSPEvent => throw new MatchError(s"CSPEvent $e was not properly handled")

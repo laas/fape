@@ -8,16 +8,16 @@ import fr.laas.fape.constraints.meta.domains.{Domain, EnumeratedDomain, Singleto
 
 
 
-class DisjunctiveConstraint(val constraints: Seq[Constraint]) extends Constraint {
+class DisjunctiveConstraint(val disjuncts: Seq[Constraint]) extends Constraint {
 
-  val decisionVar = new IntVariable(new EnumeratedDomain(constraints.indices))
+  val decisionVar = new IntVariable(new EnumeratedDomain(disjuncts.indices))
 
   override def variables(implicit csp: CSP): Set[IVar] = Set(decisionVar)
 
-  override def subconstraints(implicit csp: CSP) = constraints
+  override def subconstraints(implicit csp: CSP) = disjuncts
 
   override def satisfaction(implicit csp: CSP): Satisfaction = {
-    val satisfactions = constraints.map(_.satisfaction)
+    val satisfactions = disjuncts.map(_.satisfaction)
     if(satisfactions.contains(SATISFIED))
       SATISFIED
     else if(satisfactions.contains(UNDEFINED))
@@ -26,34 +26,33 @@ class DisjunctiveConstraint(val constraints: Seq[Constraint]) extends Constraint
       VIOLATED
   }
 
-
   override protected def _propagate(event: Event)(implicit csp: CSP) {
     event match {
       case WatchedSatisfied(c) =>
         assert(c.isSatisfied)
-        if(decisionVar.domain.contains(constraints.indexOf(c)))
-          csp.updateDomain(decisionVar, new SingletonDomain(constraints.indexOf(c)))
+        if(decisionVar.domain.contains(disjuncts.indexOf(c)))
+          csp.updateDomain(decisionVar, new SingletonDomain(disjuncts.indexOf(c)))
         else
           assert(decisionVar.domain.nonEmpty, "Decision variable has an empty domain even though one of the subconstraints is satisfired")
       case WatchedViolated(c) =>
         assert(c.isViolated)
-        if(decisionVar.domain.contains(constraints.indexOf(c)))
-          csp.updateDomain(decisionVar, decisionVar.domain - constraints.indexOf(c))
+        if(decisionVar.domain.contains(disjuncts.indexOf(c)))
+          csp.updateDomain(decisionVar, decisionVar.domain - disjuncts.indexOf(c))
       case DomainReduced(`decisionVar`) =>
         if(decisionVar.isBound) {
-          val selectedConstraint = constraints(decisionVar.value)
+          val selectedConstraint = disjuncts(decisionVar.value)
           csp.postSubConstraint(selectedConstraint, this)
         }
       case NewConstraint(c) =>
     }
   }
 
-  override def toString = "("+constraints.mkString(" || ")+")"
+  override def toString = "("+disjuncts.mkString(" || ")+")"
 
   override def ||(c: Constraint) =
-    new DisjunctiveConstraint(c :: constraints.toList)
+    new DisjunctiveConstraint(c :: disjuncts.toList)
 
   /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
   override def reverse: Constraint =
-    new ConjunctionConstraint(constraints.map(_.reverse))
+    new ConjunctionConstraint(disjuncts.map(_.reverse))
 }

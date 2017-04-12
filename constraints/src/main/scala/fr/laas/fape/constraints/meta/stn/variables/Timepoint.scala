@@ -19,6 +19,12 @@ class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
   def <=(tp: Timepoint) : MinDelay =
     new MinDelay(this, tp, 0)
 
+  def >(tp: Timepoint) : MinDelay =
+    tp < this
+
+  def >=(tp: Timepoint) : MinDelay =
+    tp <= this
+
   def <=(deadline: Int) : AbsoluteBeforeConstraint = {
     new AbsoluteBeforeConstraint(this, deadline)
   }
@@ -34,6 +40,10 @@ class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
   def >(deadline: Int) : AbsoluteAfterConstraint = {
     new AbsoluteAfterConstraint(this, deadline+1)
   }
+
+  def ===(other: Timepoint) = this <= other && this >= other
+
+  def =!=(other: Timepoint): Constraint = this < other || this > other
 
   override def ===(value: Int) = this <= value && this >= value
 

@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.meta
 
-import fr.laas.fape.constraints.meta.constraints.{Constraint, ReificationConstraint}
+import fr.laas.fape.constraints.meta.constraints.{Constraint, ConstraintData, ReificationConstraint, WithData}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables.IVar
@@ -41,6 +41,12 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
   private val watches: mutable.Map[Constraint, mutable.ArrayBuffer[Constraint]] = toClone match {
     case None => mutable.Map()
     case Some(base) => base.watches.map(kv => (kv._1, kv._2.clone()))
+  }
+
+  /** Storage to keep mutable data structures of constraints */
+  private val datas: mutable.Map[Constraint, ConstraintData] = toClone match {
+    case Some(base) => base.datas.map(p => (p._1, p._2.clone))
+    case None => mutable.Map()
   }
 
   /** Records a new active constraint and adds its variables to the index */
@@ -142,16 +148,28 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
     event match {
       case e: WatchedSatisfactionUpdate =>
         if(e.constraint.watched)
-          for(watcher <- monitoring(e.constraint).toList) // defensive copy as the list will be modified
-            removeWatcher(e.constraint, watcher)
+          while(monitoring(e.constraint).nonEmpty) // defensive copy as the list will be modified
+            removeWatcher(e.constraint, monitoring(e.constraint).head)
         assert1(!e.constraint.watched)
       case UnwatchConstraint(c)  =>
         // constraint is not watched anymore, remove all remove all subwatches of this constraint
-        for(watched <- monitoredBy(c))
-          removeWatcher(watched, c)
+        while(monitoredBy(c).nonEmpty)
+          removeWatcher(monitoredBy(c).head, c)
       case _ =>
     }
   }
+
+  /** Records the data field associated to this constraint */
+  def setDataOf[T <: ConstraintData](constraint: Constraint with WithData[T], value: T) {
+    datas.put(constraint, value)
+  }
+
+  /** Returns true iff a data field was previously recorded for this constraint */
+  def hasDataOf(constraint: Constraint with WithData[_]) : Boolean = datas.contains(constraint)
+
+  /** Returns the data previously recorded for this constraint. */
+  def dataOf[T <: ConstraintData](constraint: Constraint with WithData[T]) : T =
+    datas(constraint).asInstanceOf[T]
 
   def clone(newCSP: CSP): ConstraintStore = new ConstraintStore(newCSP, Some(this))
 }

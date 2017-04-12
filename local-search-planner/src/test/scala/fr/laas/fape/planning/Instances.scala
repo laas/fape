@@ -28,12 +28,42 @@ object Instances {
       |instance X x1, x2;
       |
       |[start] sv := x1;
-      |[10,20] sv == x1 :-> x2;
-      |[all] contains {
-      |  sv == x1;
-      |  sv == x2;
-      |};
+      |[10]  sv == x1;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
       |
+      |[start] sv := x1;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[10,20] sv == x1 :-> x2;
+      |[all] contains sv == x1;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[10,20] sv == x1 :-> x2;
+      |[all] contains sv == x2;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[10,20] sv == x1 :-> x2;
+      |[all] contains sv == x1;
+      |[all] contains sv == x2;
     """.stripMargin,
     """
       |end = start + 30;
@@ -78,6 +108,14 @@ object Instances {
       |[start] sv := x1;
       |[10,20] sv == x1 :-> x2;
       |[19,30] sv == x2;
+    """.stripMargin,
+    """
+      |type X;
+      |variable X sv;
+      |instance X x1, x2;
+      |
+      |[start] sv := x1;
+      |[all] contains sv == x2;
     """.stripMargin
   )
 

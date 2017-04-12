@@ -9,6 +9,7 @@ class Change(val sv: SVar, val value: Var, val changing: TemporalInterval, val p
   extends CausalStruct {
   assert(ref.isChange)
 
+  override def toString = s"$sv := $value"
 }
 
 object Change {

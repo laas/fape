@@ -11,6 +11,8 @@ import fr.laas.fape.planning.variables.{SVar, Var}
 class Holds(val sv: SVar, val value: Var, val persists: TemporalInterval, val precedingChange: Boolean, val ref: LogStatement)
   extends CausalStruct {
   assert(ref.needsSupport)
+
+  override def toString = s"$sv == $value"
 }
 
 object Holds {

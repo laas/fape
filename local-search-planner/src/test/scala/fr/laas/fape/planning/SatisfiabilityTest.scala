@@ -12,7 +12,7 @@ import org.scalatest.FunSuite
 class SatisfiabilityTest extends FunSuite {
 
   test("Single sat/unsat (for debugging)") {
-    testSat(3)
+    testSat(6)
   }
 
   for(i <- Instances.satisfiables.indices) {
@@ -42,6 +42,7 @@ class SatisfiabilityTest extends FunSuite {
       case v => println(s"$v = ${v.domain}")
     }
     println(s"end in ${csp.temporalHorizon.domain}")
+    println(csp.getHandler[PlanningHandler].report)
   }
 
   def testUnsat(i: Int) {

@@ -2,6 +2,7 @@ package fr.laas.fape.constraints.meta.domains
 
 class IntervalDomain(val lb: Int, val ub: Int) extends Domain {
   require(lb <= ub)
+  require(ub < Integer.MAX_VALUE, "To avoid overflow when computing size")
 
   override def size: Int = math.max(0, ub - lb + 1)
 

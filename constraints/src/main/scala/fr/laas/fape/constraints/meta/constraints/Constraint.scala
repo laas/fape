@@ -51,7 +51,7 @@ trait Constraint {
   }
 
   def ||(constraint: Constraint) = constraint match {
-    case c: DisjunctiveConstraint => new DisjunctiveConstraint(constraint :: c.constraints.toList)
+    case c: DisjunctiveConstraint => new DisjunctiveConstraint(constraint :: c.disjuncts.toList)
     case c => new DisjunctiveConstraint(List(this, c))
   }
 }
