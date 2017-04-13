@@ -18,10 +18,15 @@ trait Type[+T] {
   /** Retrieves the instance associated with tis type. */
   def intToInstance(value: Int) : T
 
+  /** Returns true if the given instance is part of this type. */
   def hasInstance[ST >: T](instance: ST) = instances.contains(instance)
-  def hasValue(value: Int) : Boolean = hasInstance(intToInstance(value))
+
+  /** Returns true if this type has instance with the given int representation. */
+  def hasValue(value: Int) : Boolean
 
   def asDomain: Domain = new EnumeratedDomain(instances.map(instanceToInt(_)))
+
+  def viewOf(dom: Domain) : DomainView[T] = new DomainView[T](dom, this)
 }
 
 

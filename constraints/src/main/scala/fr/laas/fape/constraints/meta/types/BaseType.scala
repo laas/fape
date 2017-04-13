@@ -22,6 +22,8 @@ class BaseType[T](val name: String, _instances: Seq[(T,Int)]) extends Type[T] {
 
   override def intToInstance(value: Int): T = _intToInstances(value)
 
+  override def hasValue(value: Int): Boolean = _intToInstances.contains(value)
+
   override def toString = name
 }
 

@@ -7,7 +7,7 @@ import fr.laas.fape.planning.structures.{CausalStruct, Change, Holds}
 
 import scala.collection.mutable
 
-class CausalHandler(context: PlanningHandler, base: Option[CausalHandler] = None) extends PlanningEventHandler {
+class CausalHandler(val context: PlanningHandler, base: Option[CausalHandler] = None) extends PlanningEventHandler {
 
   implicit val csp = context.csp
 
@@ -19,6 +19,11 @@ class CausalHandler(context: PlanningHandler, base: Option[CausalHandler] = None
   val holds:  mutable.ArrayBuffer[Holds] = base match {
     case Some(prev) => prev.holds.clone()
     case None => mutable.ArrayBuffer()
+  }
+
+  val potentialSupports : PotentialSupport= base match {
+    case Some(prev) => prev.potentialSupports.clone(this)
+    case None => new PotentialSupport(this)
   }
 
   def report : String = {

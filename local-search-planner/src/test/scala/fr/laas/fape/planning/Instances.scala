@@ -68,7 +68,32 @@ object Instances {
     """
       |end = start + 30;
       |
+    """.stripMargin,
+    """
+      |type X;
+      |type Y;
+      |fluent X sv(Y y);
+      |instance X x1, x2;
+      |instance Y y1, y2, y3;
+      |
+      |action A(X x, Y y) {
+      |  [start] sv(y) := x;
+      |};
+    """.stripMargin,
+    """
+      |type X;
+      |type Y;
+      |fluent X sv(Y y);
+      |fluent boolean sv2;
+      |instance X x1, x2;
+      |instance Y y1, y2, y3;
+      |
+      |action A(X x, Y y) {
+      |  [start] sv(y2) := x;
+      |  [end] sv2 := true;
+      |};
     """.stripMargin
+
   )
 
   val unsatisfiables = List(

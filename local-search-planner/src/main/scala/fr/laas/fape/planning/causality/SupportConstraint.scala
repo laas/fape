@@ -57,7 +57,7 @@ class SupportConstraint(val holds: Holds)
       case WatchedSatisfied(c) =>
         val d = data
         val i = d.indexOf(c)
-        assert1(supportVar.domain.contains(i), "A support is entailed by not in the support variable domain")
+        assert1(supportVar.domain.contains(i), "A support is entailed but not in the support variable domain")
         csp.updateDomain(supportVar, Domain(Set(i)))
       case WatchedViolated(c) =>
         val d = data

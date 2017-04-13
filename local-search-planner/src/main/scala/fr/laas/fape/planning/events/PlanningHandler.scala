@@ -31,16 +31,6 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
     case Right(prev) => prev.pb
   }
 
-  val subhandlers: mutable.ArrayBuffer[PlanningEventHandler] = base match {
-    case Left(_) => mutable.ArrayBuffer(new CausalHandler(this))
-    case Right(prev) => prev.subhandlers.map(_.clone(this))
-  }
-
-  val types: TypeHandler = base match {
-    case Left(pb) => new TypeHandler(pb)
-    case Right(prev) => prev.types
-  }
-
   val variables: mutable.Map[VarRef, Var] = base match {
     case Right(prev) => prev.variables.clone()
     case Left(_) => mutable.Map()
@@ -55,6 +45,18 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
     case Left(_) => mutable.Map()
     case Right(prev) => prev.functionVars.clone()
   }
+
+  val types: TypeHandler = base match {
+    case Left(pb) => new TypeHandler(pb)
+    case Right(prev) => prev.types
+  }
+
+  // last since causal handler typically need to access types and variables
+  val subhandlers: mutable.ArrayBuffer[PlanningEventHandler] = base match {
+    case Left(_) => mutable.ArrayBuffer(new CausalHandler(this))
+    case Right(prev) => prev.subhandlers.map(_.clone(this))
+  }
+
 
   def variable(v: VarRef): Var = v match {
     case v: InstanceRef =>
@@ -109,7 +111,7 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
         }
         for(s <- chronicle.logStatements.asScala) s match {
           case s: Persistence =>
-            csp.post(tp(s.start) <= tp(s.end)) // todo: double check if thos are needed
+            csp.post(tp(s.start) <= tp(s.end)) // todo: double check if those are needed
             csp.addEvent(PlanningStructureAdded(Holds(s, this)))
           case s: Transition =>
             csp.post(tp(s.start) < tp(s.end))
@@ -128,7 +130,8 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
       h.handleEvent(event)
   }
 
-  override def clone(newCSP: CSP): InternalCSPEventHandler = new PlanningHandler(newCSP, Right(this))
+  override def clone(newCSP: CSP): InternalCSPEventHandler =
+    new PlanningHandler(newCSP, Right(this))
 
   def report: String = {
     val sb = new StringBuilder
