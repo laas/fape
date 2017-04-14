@@ -2,7 +2,7 @@ package fr.laas.fape.constraints.meta.domains
 
 import java.util
 
-import fr.laas.fape.constraints.meta.types.Type
+import fr.laas.fape.constraints.meta.types.statics.Type
 import fr.laas.fape.constraints.meta.util.Assertion._
 
 class ExtensionDomain(val tupleSize: Int) {

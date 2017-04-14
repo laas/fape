@@ -1,4 +1,4 @@
-package fr.laas.fape.constraints.meta.types
+package fr.laas.fape.constraints.meta.types.statics
 
 import fr.laas.fape.constraints.meta.domains.Domain
 import fr.laas.fape.constraints.meta.util.Assertion._

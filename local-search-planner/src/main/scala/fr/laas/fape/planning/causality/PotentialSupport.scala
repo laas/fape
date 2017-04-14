@@ -3,11 +3,11 @@ package fr.laas.fape.planning.causality
 import fr.laas.fape.anml.model
 import fr.laas.fape.anml.model.abs.AbstractAction
 import fr.laas.fape.anml.model.LVarRef
-import fr.laas.fape.constraints.meta.types.Type
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import fr.laas.fape.constraints.meta.domains.{Domain, EmptyDomain}
+import fr.laas.fape.constraints.meta.types.statics.Type
 import fr.laas.fape.constraints.meta.util.Assertion._
 
 class PotentialSupport(context: CausalHandler) {
@@ -40,19 +40,16 @@ class ActionPotentialSupport(val act: AbstractAction, private var context: Causa
     val argDoms = s.sv.args.map(arg => domainOf(arg))
     val valueDom = domainOf(s.effectValue)
 
-    println(funcDom)
-    println(argDoms)
-    println(valueDom)
     val domains = (funcDom :: argDoms) :+ valueDom
     if(DEBUG_LEVEL >= 1) {
       for((dom, typ) <- domains.zip(typesOf(s.sv.func)))
-        assert1(dom.values.forall(typ.hasValue), s"In action $act, the assertion $s uses a variable of the wrong type.")
+        assert1(dom.values.forall(typ.hasValue),
+          s"In action $act, the assertion $s has at least one variable that does not match the function's types.")
     }
     add(s.sv.func, domains)
   }
 
-  def add(func: model.Function, doms: Seq[Domain]) {
-    println(doms)
+  private def add(func: model.Function, doms: Seq[Domain]) {
     val arr = byFunction.getOrElseUpdate(func, Array.fill(doms.size)(new EmptyDomain))
     for(i <- arr.indices)
       arr(i) = arr(i) + doms(i)

@@ -5,7 +5,7 @@ import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable, VarWithDomain
 
 trait Event
 
-sealed trait CSPEvent extends Event
+trait CSPEvent extends Event
 
 case class NewConstraint(c: Constraint) extends CSPEvent
 

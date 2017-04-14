@@ -4,7 +4,7 @@ import fr.laas.fape.anml.model.AnmlProblem
 import fr.laas.fape.anml.model.concrete.InstanceRef
 import fr.laas.fape.constraints.meta.{CSP, Configuration}
 import fr.laas.fape.constraints.meta.search.BinarySearch
-import fr.laas.fape.constraints.meta.types.TypedVariable
+import fr.laas.fape.constraints.meta.types.statics.TypedVariable
 import fr.laas.fape.constraints.meta.variables.IntVariable
 import fr.laas.fape.planning.events.{InitPlanner, PlanningHandler}
 import org.scalatest.FunSuite
@@ -12,7 +12,7 @@ import org.scalatest.FunSuite
 class SatisfiabilityTest extends FunSuite {
 
   test("Single sat/unsat (for debugging)") {
-    testSat(6)
+    testSat(10)
   }
 
   for(i <- Instances.satisfiables.indices) {

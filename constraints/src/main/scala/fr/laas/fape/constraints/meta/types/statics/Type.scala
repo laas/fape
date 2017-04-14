@@ -1,12 +1,21 @@
-package fr.laas.fape.constraints.meta.types
+package fr.laas.fape.constraints.meta.types.statics
 
+import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.{Domain, EnumeratedDomain}
+import fr.laas.fape.constraints.meta.types.dynamics.DynamicType
 
-/**
+/** A static type composed of a set of instances and a mapping from
+  * domain values to instances (and vice versa).
   *
   * @tparam T Type of the instances
   */
-trait Type[+T] {
+trait Type[+T] extends DynamicType[T] {
+
+  override def isStatic = true
+
+  override def static(implicit csp: CSP) = this
+
+  override def subTypes : Seq[Type[T]]
 
   /** All instances of this type */
   def instances: Seq[T]
@@ -24,10 +33,13 @@ trait Type[+T] {
   /** Returns true if this type has instance with the given int representation. */
   def hasValue(value: Int) : Boolean
 
-  def asDomain: Domain = new EnumeratedDomain(instances.map(instanceToInt(_)))
+  def asDomain: Domain = Domain(instances.map(instanceToInt(_)).toSet)
 
   def viewOf(dom: Domain) : DomainView[T] = new DomainView[T](dom, this)
+
+  /** Returns a new version of this type with an additional instance. */
+  def withInstance[ST >: T](instance: ST, value: Int) : Type[T]
+
+  /** Returns a new version of this type without the given instance. */
+  def withoutInstance[ST >: T](instance: ST) : Type[T]
 }
-
-
-

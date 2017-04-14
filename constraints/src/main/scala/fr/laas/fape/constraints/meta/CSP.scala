@@ -8,7 +8,9 @@ import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
 import fr.laas.fape.constraints.meta.stn.core.StnWithStructurals
 import fr.laas.fape.constraints.meta.stn.events.STNEventHandler
 import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
-import fr.laas.fape.constraints.meta.types.{Type, TypedVariable}
+import fr.laas.fape.constraints.meta.types.events.NewInstance
+import fr.laas.fape.constraints.meta.types.TypesStore
+import fr.laas.fape.constraints.meta.types.statics.TypedVariable
 import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables._
 
@@ -39,8 +41,10 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
 
   val eventHandlers: mutable.ArrayBuffer[InternalCSPEventHandler] = toClone match {
     case Right(base) => base.eventHandlers.map(handler => handler.clone(this))
-    case _ => mutable.ArrayBuffer()
+    case _ => mutable.ArrayBuffer(new TypesStore(this))
   }
+
+  val types: TypesStore = getHandler[TypesStore]
 
   val varStore: VariableStore = toClone match {
     case Right(base) => base.varStore.clone(this)
@@ -183,7 +187,9 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
             addEvent(WatchedSatisfied(c))
           else if(c.isViolated)
             addEvent(WatchedViolated(c))
+
       case UnwatchConstraint(_) =>
+      case _: NewInstance[_] =>
 
       case e: CSPEvent => throw new MatchError(s"CSPEvent $e was not properly handled")
       case _ => // not an internal CSP event, ignore

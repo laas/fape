@@ -4,7 +4,7 @@ import fr.laas.fape.anml.model
 import fr.laas.fape.anml.model.{ParameterizedStateVariable, SymFunction}
 import fr.laas.fape.anml.model.concrete.{InstanceRef, VarRef}
 import fr.laas.fape.constraints.meta.domains.Domain
-import fr.laas.fape.constraints.meta.types.{TypedVariable, TypedVariableWithInitialDomain}
+import fr.laas.fape.constraints.meta.types.statics.{TypedVariable, TypedVariableWithInitialDomain}
 import fr.laas.fape.constraints.meta.variables.VariableSeq
 import fr.laas.fape.planning.types.{AnmlVarType, FunctionVarType}
 

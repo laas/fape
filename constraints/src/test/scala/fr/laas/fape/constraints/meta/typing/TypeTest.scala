@@ -1,6 +1,7 @@
-package fr.laas.fape.constraints.meta
+package fr.laas.fape.constraints.meta.typing
 
-import fr.laas.fape.constraints.meta.types.{BaseType, SuperType, TypedVariable}
+import fr.laas.fape.constraints.meta.CSP
+import fr.laas.fape.constraints.meta.types.statics.{BaseType, ComposedType, TypedVariable}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class TypeTest extends FunSuite with BeforeAndAfter {
@@ -35,8 +36,11 @@ class TypeTest extends FunSuite with BeforeAndAfter {
 
     val AT = new BaseType[A]("A", List((a1, 0), (a2, 1)))
     val BT = new BaseType[B]("B", List((b1, 2)))
-    val ABT = new SuperType[AB](List(AT, BT))
+    val ABT = new ComposedType[AB](List(AT, BT))
 
     println(ABT.instances)
+    assert(ABT.hasInstance(a1))
+    assert(ABT.hasInstance(a2))
+    assert(ABT.hasInstance(b1))
   }
 }

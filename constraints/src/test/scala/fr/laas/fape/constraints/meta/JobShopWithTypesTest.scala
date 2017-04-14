@@ -4,7 +4,7 @@ import fr.laas.fape.constraints.meta.constraints.DisjunctiveConstraint
 import fr.laas.fape.constraints.meta.search.BinarySearch
 import fr.laas.fape.constraints.meta.stn.constraint.MinDelay
 import fr.laas.fape.constraints.meta.stn.variables.TemporalInterval
-import fr.laas.fape.constraints.meta.types.{BaseType, TypedVariable}
+import fr.laas.fape.constraints.meta.types.statics.{BaseType, TypedVariable}
 import fr.laas.fape.constraints.meta.variables.IntVariable
 import org.scalatest.FunSuite
 

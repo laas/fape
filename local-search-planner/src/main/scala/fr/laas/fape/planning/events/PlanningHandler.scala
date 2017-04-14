@@ -8,9 +8,7 @@ import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.{Event, InternalCSPEventHandler}
 import fr.laas.fape.constraints.meta.stn.constraint.{Contingent, MinDelay}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
-import fr.laas.fape.constraints.meta.types.{TypedVariable, TypedVariableWithInitialDomain}
 import fr.laas.fape.constraints.meta.util.Assertion._
-import fr.laas.fape.constraints.meta.variables.VariableSeq
 import fr.laas.fape.planning.causality.CausalHandler
 import fr.laas.fape.planning.structures.{Change, Holds}
 import fr.laas.fape.planning.types.{AnmlVarType, TypeHandler}

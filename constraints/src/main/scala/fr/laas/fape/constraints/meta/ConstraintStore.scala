@@ -138,6 +138,15 @@ class ConstraintStore(_csp: CSP, toClone: Option[ConstraintStore]) {
         onSatisfaction(constraint)
       case NewConstraint(constraint) =>
         record(constraint)
+      case DomainExtended(v) =>
+        // TODO: should index satisfied constraints by variable
+        for(c <- satisfied.clone()) {
+          if(c.variables.contains(v)) {
+            // repost constraint
+            satisfied -= c
+            csp.post(c)
+          }
+        }
       case _ =>
     }
   }
