@@ -14,12 +14,17 @@ class Var(v: VarRef, typ: AnmlVarType) extends TypedVariable[String](typ, Some(v
 /** Variable that represents a particular instance. Its domain is a singleton containing this particular instance. */
 class InstanceVar(v: InstanceRef, typ: AnmlVarType) extends Var(v, typ) {
   override val initialDomain : Domain = Domain(Set(typ.instanceToInt(v.instance)))
+  override val unaryConstraints = List(this === v.instance)
 }
 
 /** A variable representing a particular ANML function (e.g. the "position" of "position(x)".
   * Its domain is always a singleton, containing the SymFunction itself. */
 class FVar(val f: model.SymFunction, typ: FunctionVarType)
-  extends TypedVariableWithInitialDomain[SymFunction](typ, Set(f), Some(f))
+  extends TypedVariable[SymFunction](typ, Some(f))
+{
+  override val initialDomain : Domain = Domain(Set(typ.instanceToInt(f)))
+  override val unaryConstraints = List(this === f)
+}
 
 /** A state variable, defined as a sequence of an ANML function (FVar) and parameters of the state variable */
 class SVar(func: FVar, params: Seq[Var], ref: ParameterizedStateVariable)

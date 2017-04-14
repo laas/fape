@@ -66,7 +66,7 @@ class ReificationConstraint(val reiVar: ReificationVariable, val constraint: Con
     }
   }
 
-  override def toString = s"[${reiVar.id}] <=> $constraint"
+  override def toString = s"[$reiVar] <=> $constraint"
 
   /** Returns the invert of this constraint (e.g. === for an =!= constraint) */
   override def reverse: Constraint = ???

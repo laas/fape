@@ -42,7 +42,7 @@ class SatisfiabilityTest extends FunSuite {
       case v => println(s"$v = ${v.domain}")
     }
     println(s"end in ${csp.temporalHorizon.domain}")
-    println(csp.getHandler[PlanningHandler].report)
+    println(csp.getHandler(classOf[PlanningHandler]).report)
   }
 
   def testUnsat(i: Int) {
@@ -55,7 +55,7 @@ class SatisfiabilityTest extends FunSuite {
         println("\n -------- REPORT --------\n")
         println(csp.report)
 
-        println(csp.getHandler[PlanningHandler].report)
+        println(csp.getHandler(classOf[PlanningHandler]).report)
       }
       assert(csp == null)
   }

@@ -44,7 +44,7 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
     case _ => mutable.ArrayBuffer(new TypesStore(this))
   }
 
-  val types: TypesStore = getHandler[TypesStore]
+  val types: TypesStore = getHandler(classOf[TypesStore])
 
   val varStore: VariableStore = toClone match {
     case Right(base) => base.varStore.clone(this)
@@ -76,9 +76,9 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
     eventHandlers += handler
   }
 
-  def getHandler[T] : T = { eventHandlers.collect{ case h: T => h}.toList match {
+  def getHandler[T](clazz: Class[T]) : T = { eventHandlers.filter(_.getClass == clazz).toList match {
     case Nil => throw new IllegalArgumentException("No handler of such type")
-    case h :: Nil => h
+    case h :: Nil => h.asInstanceOf[T]
     case list => throw new IllegalArgumentException("Multiple handlers of such type")
   }}
 
@@ -175,8 +175,9 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
               addEvent(WatchedViolated(c))
           }
         }
-      case e: NewVariableEvent =>
-
+      case NewVariableEvent(v) =>
+        for(c <- v.unaryConstraints)
+          post(c)
       case Satisfied(c) =>
         if(c.watched)
           addEvent(WatchedSatisfied(c))

@@ -71,9 +71,9 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   def sv(psv: ParameterizedStateVariable): SVar =
     stateVariables.getOrElseUpdate(psv, new SVar(func(psv.func), psv.args.toList.map(variable(_)), psv))
 
-  def getHandler[T] : T = subhandlers.collect{ case sh: T => sh }.toList match {
+  def getHandler[T](clazz: Class[T]) : T = subhandlers.filter(_.getClass == clazz).toList match {
     case Nil => throw new IllegalArgumentException("No handler of such type")
-    case h :: Nil => h
+    case h :: Nil => h.asInstanceOf[T]
     case list => throw new IllegalArgumentException("Multiple handlers of such type")
   }
 

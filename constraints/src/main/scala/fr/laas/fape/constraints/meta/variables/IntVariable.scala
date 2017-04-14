@@ -11,6 +11,8 @@ object IntVariable {
 
 trait IVar {
 
+  def unaryConstraints : Seq[Constraint] = Nil
+
   // constraints shorthand
   def ===(other: IVar) : EqualityConstraint = (this, other) match {
     case (v1: IntVariable, v2: IntVariable) => new VariableEqualityConstraint(v1, v2)
@@ -43,7 +45,7 @@ trait VarWithDomain extends IVar {
 }
 
 class IntVariable(val initialDomain: Domain, val ref: Option[Any]) extends VarWithDomain {
-  val id = IntVariable.next()
+  private val id = IntVariable.next()
 
   def this(initialDomain: Domain) = this(initialDomain, None)
 

@@ -84,7 +84,7 @@ class SupportConstraint(val holds: Holds)
 
 class SupportConstraintData(_csp: CSP, base: Option[SupportConstraintData] = None) extends ConstraintData {
 
-  val context : CausalHandler = _csp.getHandler[PlanningHandler].getHandler[CausalHandler]
+  val context : CausalHandler = _csp.getHandler(classOf[PlanningHandler]).getHandler(classOf[CausalHandler])
 
   private val constraintsByChangeIndex: scala.collection.mutable.Map[Int, Constraint] = base match {
     case Some(prev) => prev.constraintsByChangeIndex.clone()
