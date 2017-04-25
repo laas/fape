@@ -44,10 +44,10 @@ trait VarWithDomain extends IVar {
   def =!=(value: Int) : Constraint
 }
 
-class IntVariable(val initialDomain: Domain, val ref: Option[Any]) extends VarWithDomain {
+abstract class IntVariable(val ref: Option[Any]) extends VarWithDomain {
   private val id = IntVariable.next()
 
-  def this(initialDomain: Domain) = this(initialDomain, None)
+  def initialDomain(implicit csp: CSP) : Domain
 
   def domain(implicit csp: CSP) = csp.dom(this)
 
@@ -61,7 +61,13 @@ class IntVariable(val initialDomain: Domain, val ref: Option[Any]) extends VarWi
   }
 }
 
-class BooleanVariable(initialDomain: Domain, ref: Option[Any]) extends IntVariable(initialDomain, ref) {
+class IntVar(_initialDomain: Domain, ref: Option[Any] = None) extends IntVariable(ref) {
+
+  def initialDomain(implicit csp: CSP) : Domain = _initialDomain
+
+}
+
+class BooleanVariable(initialDomain: Domain, ref: Option[Any]) extends IntVar(initialDomain, ref) {
 
   def this(initialDomain: Domain) = this(initialDomain, None)
 

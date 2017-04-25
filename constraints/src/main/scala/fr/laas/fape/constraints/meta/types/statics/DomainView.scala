@@ -9,6 +9,8 @@ class DomainView[+T](domain: Domain, typ: Type[T]) {
 
   def values: Iterable[T] = domain.values.map(typ.intToInstance)
 
+  def valuesWithIntRepresentation: Iterable[(T, Int)] = domain.values.map(i => (typ.intToInstance(i), i))
+
   def contains[ST >: T](instance: ST): Boolean = {
     assert1(typ.hasInstance(instance), s"Instance $instance is not par of type $typ")
     domain.contains(typ.instanceToInt(instance))

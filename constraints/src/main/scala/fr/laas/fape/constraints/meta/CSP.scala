@@ -230,13 +230,13 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
   }
 
   def variable(ref: Any, dom: Set[Int]) : IntVariable = {
-    val v = new IntVariable(new EnumeratedDomain(dom), Some(ref))
+    val v = new IntVar(Domain(dom), Some(ref))
     addVariable(v)
     v
   }
 
   def variable(ref: Any, lb: Int, ub: Int) : IntVariable = {
-    val v = new IntVariable(new IntervalDomain(lb, ub), Some(ref))
+    val v = new IntVar(new IntervalDomain(lb, ub), Some(ref))
     addVariable(v)
     v
   }

@@ -12,7 +12,7 @@ import org.scalatest.FunSuite
 class SatisfiabilityTest extends FunSuite {
 
   test("Single sat/unsat (for debugging)") {
-    testSat(10)
+    testSat(13)
   }
 
   for(i <- Instances.satisfiables.indices) {

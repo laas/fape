@@ -2,10 +2,21 @@ package fr.laas.fape.planning.causality
 
 import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
+import fr.laas.fape.constraints.meta.types.dynamics.{BaseDynamicType, ComposedDynamicType}
+import fr.laas.fape.constraints.meta.types.statics.{BaseType, Type}
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.planning.events.{PlanningEventHandler, PlanningHandler, PlanningStructureAdded}
 import fr.laas.fape.planning.structures.{CausalStruct, Change, Holds}
 
 import scala.collection.mutable
+
+sealed trait SupportOption
+case class SupportByExistingChange(c: Change) extends SupportOption
+case class SupportByActionInsertion(a: ActionPotentialSupport) extends SupportOption
+
+
+object DecisionPending extends SupportOption
+object DecisionType extends BaseType[SupportOption]("decision-type", List((DecisionPending, 0)))
 
 class CausalHandler(val context: PlanningHandler, base: Option[CausalHandler] = None) extends PlanningEventHandler {
 
@@ -24,6 +35,25 @@ class CausalHandler(val context: PlanningHandler, base: Option[CausalHandler] = 
   val potentialSupports : PotentialSupport= base match {
     case Some(prev) => prev.potentialSupports.clone(this)
     case None => new PotentialSupport(this)
+  }
+
+  val existingSupportType: BaseDynamicType[SupportByExistingChange] = base match {
+    case Some(prev) => prev.existingSupportType
+    case None =>
+      assert1(changes.isEmpty)
+      new BaseDynamicType("existing-change-support", Nil)
+  }
+  val actionInsertionSupportType: BaseType[SupportByActionInsertion] = base match {
+    case Some(prev) => prev.actionInsertionSupportType
+    case None => new BaseType("action-insertion-support",
+      potentialSupports.actionPotentialSupports.values
+        .map(SupportByActionInsertion(_))
+        .zipWithIndex.toList
+        .map(p => (p._1, p._2+1)))
+  }
+  val supportType: ComposedDynamicType[SupportOption] = base match {
+    case Some(prev) => prev.supportType
+    case None => new ComposedDynamicType[SupportOption](DecisionType :: actionInsertionSupportType :: existingSupportType :: Nil)
   }
 
   def report : String = {
@@ -47,9 +77,10 @@ class CausalHandler(val context: PlanningHandler, base: Option[CausalHandler] = 
           csp.post(Threat(s, h))
         for(c <- changes)
           csp.post(Threat(c, s))
-        csp.post(new SupportConstraint(s))
+        csp.post(new SupportConstraint(supportType, s))
         holds += s
       case PlanningStructureAdded(s: Change) =>
+        existingSupportType.addInstance(SupportByExistingChange(s), 1 + potentialSupports.actionPotentialSupports.size + changes.size)
         csp.post(s.persists.start <= s.persists.end)
         for(h <- holds)
           csp.post(Threat(s, h))

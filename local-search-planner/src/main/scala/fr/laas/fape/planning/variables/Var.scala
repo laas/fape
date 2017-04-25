@@ -3,6 +3,7 @@ package fr.laas.fape.planning.variables
 import fr.laas.fape.anml.model
 import fr.laas.fape.anml.model.{ParameterizedStateVariable, SymFunction}
 import fr.laas.fape.anml.model.concrete.{InstanceRef, VarRef}
+import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.domains.Domain
 import fr.laas.fape.constraints.meta.types.statics.{TypedVariable, TypedVariableWithInitialDomain}
 import fr.laas.fape.constraints.meta.variables.VariableSeq
@@ -13,7 +14,7 @@ class Var(v: VarRef, typ: AnmlVarType) extends TypedVariable[String](typ, Some(v
 
 /** Variable that represents a particular instance. Its domain is a singleton containing this particular instance. */
 class InstanceVar(v: InstanceRef, typ: AnmlVarType) extends Var(v, typ) {
-  override val initialDomain : Domain = Domain(Set(typ.instanceToInt(v.instance)))
+  override def initialDomain(implicit csp: CSP) : Domain = Domain(Set(typ.instanceToInt(v.instance)))
   override val unaryConstraints = List(this === v.instance)
 }
 
@@ -22,7 +23,7 @@ class InstanceVar(v: InstanceRef, typ: AnmlVarType) extends Var(v, typ) {
 class FVar(val f: model.SymFunction, typ: FunctionVarType)
   extends TypedVariable[SymFunction](typ, Some(f))
 {
-  override val initialDomain : Domain = Domain(Set(typ.instanceToInt(f)))
+  override def initialDomain(implicit csp: CSP) : Domain = Domain(Set(typ.instanceToInt(f)))
   override val unaryConstraints = List(this === f)
 }
 

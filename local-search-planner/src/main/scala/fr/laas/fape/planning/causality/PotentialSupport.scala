@@ -36,7 +36,7 @@ class ActionPotentialSupport(val act: AbstractAction, private var context: Causa
   private val pb = planner.pb
 
   for(s <- act.logStatements if s.hasEffectAtEnd) {
-    val funcDom = planner.func(s.sv.func).initialDomain
+    val funcDom = planner.func(s.sv.func).initialDomain(planner.csp)
     val argDoms = s.sv.args.map(arg => domainOf(arg))
     val valueDom = domainOf(s.effectValue)
 
@@ -57,7 +57,7 @@ class ActionPotentialSupport(val act: AbstractAction, private var context: Causa
 
   private def domainOf(localVar: LVarRef) : Domain = {
     if(act.context.hasGlobalVar(localVar))
-      planner.variable(act.context.getGlobalVar(localVar)).initialDomain
+      planner.variable(act.context.getGlobalVar(localVar)).initialDomain(planner.csp)
     else
       planner.types.get(localVar.getType).asDomain
   }

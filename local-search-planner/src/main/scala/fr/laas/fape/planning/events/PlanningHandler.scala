@@ -9,7 +9,8 @@ import fr.laas.fape.constraints.meta.events.{Event, InternalCSPEventHandler}
 import fr.laas.fape.constraints.meta.stn.constraint.{Contingent, MinDelay}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.util.Assertion._
-import fr.laas.fape.planning.causality.CausalHandler
+import fr.laas.fape.planning.causality.{CausalHandler, SupportByAction}
+import fr.laas.fape.planning.core.planning.states.modification.ActionInsertion
 import fr.laas.fape.planning.structures.{Change, Holds}
 import fr.laas.fape.planning.types.{AnmlVarType, TypeHandler}
 import fr.laas.fape.planning.variables.{FVar, InstanceVar, SVar, Var}
@@ -45,8 +46,13 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   }
 
   val types: TypeHandler = base match {
-    case Left(pb) => new TypeHandler(pb)
+    case Left(_) => new TypeHandler(pb)
     case Right(prev) => prev.types
+  }
+
+  val actions: mutable.ArrayBuffer[Action] = base match {
+    case Right(prev) => prev.actions.clone()
+    case Left(_) => mutable.ArrayBuffer()
   }
 
   // last since causal handler typically need to access types and variables
@@ -85,39 +91,51 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
     else
       csp.varStore.getTimepoint(tpRef)
 
+  def insertChronicle(chronicle: Chronicle) {
+    for(c <- chronicle.bindingConstraints.asScala)  c match {
+      case c: VarInequalityConstraint =>
+        csp.post(variable(c.leftVar) =!= variable(c.rightVar))
+      case c: VarEqualityConstraint =>
+        csp.post(variable(c.leftVar) === variable(c.rightVar))
+    }
+    for(c <- chronicle.temporalConstraints.asScala) c match {
+      case c: MinDelayConstraint =>
+        assert1(c.minDelay.isKnown, "Support for mixed constraint is not implemented yet.")
+        csp.post(new MinDelay(tp(c.src), tp(c.dst), c.minDelay.get))
+      case c: ContingentConstraint =>
+        assert1(c.min.isKnown && c.max.isKnown, "Support for mixed constraints is not implemented yet")
+        csp.post(new Contingent(tp(c.src), tp(c.dst), c.min.get, c.max.get))
+    }
+    for(s <- chronicle.logStatements.asScala) s match {
+      case s: Persistence =>
+        csp.post(tp(s.start) <= tp(s.end)) // todo: double check if those are needed
+        csp.addEvent(PlanningStructureAdded(Holds(s, this)))
+      case s: Transition =>
+        csp.post(tp(s.start) < tp(s.end))
+        csp.addEvent(PlanningStructureAdded(Change(s, this)))
+        csp.addEvent(PlanningStructureAdded(Holds(s, this)))
+      case s: Assignment =>
+        csp.post(tp(s.start) < tp(s.end))
+        csp.addEvent(PlanningStructureAdded(Change(s, this)))
+    }
+  }
+
   override def handleEvent(event: Event) {
     event match {
       case InitPlanner =>
-        for(instance <- pb.instances.allInstances.asScala.map(name => pb.instances.referenceOf(name)))
-          csp.post(variable(instance) === instance.instance)
         for(chronicle <- pb.chronicles.asScala)
           csp.addEvent(ChronicleAdded(chronicle))
       case ChronicleAdded(chronicle) =>
-        for(c <- chronicle.bindingConstraints.asScala)  c match {
-          case c: VarInequalityConstraint =>
-            csp.post(variable(c.leftVar) =!= variable(c.rightVar))
-          case c: VarEqualityConstraint =>
-            csp.post(variable(c.leftVar) === variable(c.rightVar))
-        }
-        for(c <- chronicle.temporalConstraints.asScala) c match {
-          case c: MinDelayConstraint =>
-            assert1(c.minDelay.isKnown, "Support for mixed constraint is not implemented yet.")
-            csp.post(new MinDelay(tp(c.src), tp(c.dst), c.minDelay.get))
-          case c: ContingentConstraint =>
-            assert1(c.min.isKnown && c.max.isKnown, "Support for mixed constraints is not implemented yet")
-            csp.post(new Contingent(tp(c.src), tp(c.dst), c.min.get, c.max.get))
-        }
-        for(s <- chronicle.logStatements.asScala) s match {
-          case s: Persistence =>
-            csp.post(tp(s.start) <= tp(s.end)) // todo: double check if those are needed
-            csp.addEvent(PlanningStructureAdded(Holds(s, this)))
-          case s: Transition =>
-            csp.post(tp(s.start) < tp(s.end))
-            csp.addEvent(PlanningStructureAdded(Change(s, this)))
-            csp.addEvent(PlanningStructureAdded(Holds(s, this)))
-          case s: Assignment =>
-            csp.post(tp(s.start) < tp(s.end))
-            csp.addEvent(PlanningStructureAdded(Change(s, this)))
+        insertChronicle(chronicle)
+      case ActionInsertion(actionTemplate, support) =>
+        val act = Factory.getStandaloneAction(pb, actionTemplate, RefCounter.getGlobalCounter)
+        println("Action insertion: "+act)
+        actions += act
+        insertChronicle(act.chronicle)
+        csp.post(csp.temporalOrigin <= tp(act.start))
+        support match {
+          case Some(supportVar) => csp.post(new SupportByAction(act, supportVar))
+          case None =>
         }
       case e: PlanningStructureAdded =>
       case event: PlanningEvent =>
@@ -134,8 +152,13 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   def report: String = {
     val sb = new StringBuilder
     for(h <- subhandlers) {
-      sb.append(s"\n--------- SubHandler report: $h -------")
+
+      sb.append(s"\n--------- SubHandler report: $h -------\n")
       sb.append(h.report)
+      sb.append("---------- Actions ---------\n")
+      for(a <- actions.sortBy(a => tp(a.start).domain.lb)) {
+        sb.append(s"[${tp(a.start).domain.lb}, ${tp(a.end).domain.lb}] $a")
+      }
     }
     sb.toString()
   }

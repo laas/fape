@@ -7,9 +7,13 @@ import fr.laas.fape.constraints.meta.stn.variables.{TemporalDelay, Timepoint}
 
 import scala.collection.mutable
 
+object VariableStore {
+  var nextID : Int = 0
+}
+
 class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
-  private var nextID : Int = 0
+  import VariableStore._
 
   val varsByRef = mutable.Map[Any, IntVariable]()
   val timepointsByRef = mutable.Map[Any, Timepoint]()

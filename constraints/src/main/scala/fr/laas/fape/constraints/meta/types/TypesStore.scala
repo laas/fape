@@ -30,7 +30,7 @@ class TypesStore(_csp: CSP, base: Option[TypesStore] = None) extends InternalCSP
     event match {
       case NewVariableEvent(v: DynTypedVariable[_]) =>
         if(!v.typ.isStatic) {
-          if(!dynamicToStatic.contains(v.typ))
+          if(!dynamicToStatic.contains(v.typ) && v.typ.subTypes.isEmpty)
             dynamicToStatic.put(v.typ, v.typ.defaultStatic)
           for(t <- v.typ :: v.typ.subTypes.toList if !t.isStatic && t.subTypes.isEmpty)
             varsByType.getOrElseUpdate(t, mutable.ArrayBuffer()) += v
@@ -41,12 +41,11 @@ class TypesStore(_csp: CSP, base: Option[TypesStore] = None) extends InternalCSP
         assert1(dynType.subTypes.isEmpty, s"Cannot add instances to a non primitive type")
         if(!dynamicToStatic.contains(dynType))
           dynamicToStatic.put(dynType, dynType.defaultStatic)
-        assert1(varsByType.contains(dynType), s"Type $dynType is recorded but has no associated variables.")
         assert2(dynamicToStatic(dynType) == dynType.static)
         assert1(!dynType.static.hasInstance(instance), s"Type $dynType already has an instance $instance")
         assert1(!dynType.static.hasValue(value), s"Type $dynType already has a value $value")
         dynamicToStatic(dynType) = dynamicToStatic(dynType).withInstance(instance, value)
-        for(v <- varsByType(dynType))
+        for(v <- varsByType.getOrElse(dynType, Nil))
           csp.updateDomain(v, v.domain + value)
 
       case _ =>
