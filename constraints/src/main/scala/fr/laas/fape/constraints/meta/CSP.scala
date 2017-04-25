@@ -2,6 +2,7 @@ package fr.laas.fape.constraints.meta
 
 import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.constraints._
+import fr.laas.fape.constraints.meta.decisions.DecisionsHandler
 import fr.laas.fape.constraints.meta.domains.{BooleanDomain, Domain, EnumeratedDomain, IntervalDomain}
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.logger.{ILogger, Logger}
@@ -41,10 +42,12 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
 
   val eventHandlers: mutable.ArrayBuffer[InternalCSPEventHandler] = toClone match {
     case Right(base) => base.eventHandlers.map(handler => handler.clone(this))
-    case _ => mutable.ArrayBuffer(new TypesStore(this))
+    case _ => mutable.ArrayBuffer(new TypesStore(this), new DecisionsHandler(this))
   }
 
   val types: TypesStore = getHandler(classOf[TypesStore])
+
+  val decisions: DecisionsHandler = getHandler(classOf[DecisionsHandler])
 
   val varStore: VariableStore = toClone match {
     case Right(base) => base.varStore.clone(this)

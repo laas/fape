@@ -31,4 +31,6 @@ class TemporalDelay(val from: Timepoint, val to: Timepoint) extends VarWithDomai
     case _ => false
   }
 
+  /** Not a decision variable by default */
+  override def isDecisionVar: Boolean = false
 }

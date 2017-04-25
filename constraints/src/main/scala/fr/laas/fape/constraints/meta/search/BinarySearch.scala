@@ -18,40 +18,32 @@ object BinarySearch {
     }
 
     // variables by increasing domain size
-    val variables = csp.constraints.active
-      .flatMap(_.variables)
-      .collect{case v: VarWithDomain => v}.toSet.toSeq
-      .filter(_.domain.size > 1)
-      .sortBy(_.domain.size)
+    val decisions = csp.decisions.pending
+      .filter(_.pending)
+      .sortBy(_.numOption)
 
     // no decision left, success!
-    if(variables.isEmpty) {
+    if(decisions.isEmpty) {
       println(s"Got solution of makespan: " + csp.makespan)
       return csp
     }
 
-    val variable = variables.head
-    val value = variable.domain.values.head
+    val decision = decisions.head
 
-    val decision = variable === value
+    val base: CSP = csp.clone
+    var res: CSP = null
 
-    val baseLeft = csp.clone
-    baseLeft.post(decision)
-    val retLeft = search(baseLeft, optimizeMakespan)
-    if(retLeft == null) {
-      val baseRight = csp.clone
-      baseRight.post(decision.reverse)
-      return search(baseRight, optimizeMakespan)
-    } else if(!optimizeMakespan) {
-      return retLeft
-    } else {
-      val baseRight = csp.clone
-      baseRight.post(baseRight.temporalHorizon < retLeft.makespan)
-      val retRight = search(baseRight, optimizeMakespan)
-      if(retRight != null)
-        return retRight
-      else
-        return retLeft
+    for(opt <- decision.options) {
+      val cloned = base.clone
+      opt.enforceIn(cloned)
+      val tmp = search(cloned, optimizeMakespan)
+      if(tmp != null && !optimizeMakespan) {
+        return tmp
+      } else if(tmp != null) {
+        res = tmp
+        base.post(base.temporalHorizon < res.makespan)
+      }
     }
+    return res
   }
 }

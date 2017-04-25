@@ -60,4 +60,6 @@ class Timepoint(val id: Int, ref: Option[Any]) extends VarWithDomain {
     case _ => false
   }
 
+  /** Not a decision variable by default */
+  override def isDecisionVar: Boolean = false
 }

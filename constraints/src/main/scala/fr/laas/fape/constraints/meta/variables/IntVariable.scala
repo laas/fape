@@ -39,6 +39,9 @@ trait VarWithDomain extends IVar {
     domain.values.head
   }
 
+  /** If true, a new decision will be generated when the variable is added to a CSP. */
+  def isDecisionVar : Boolean
+
   def ===(value: Int) : Constraint
 
   def =!=(value: Int) : Constraint
@@ -50,6 +53,9 @@ abstract class IntVariable(val ref: Option[Any]) extends VarWithDomain {
   def initialDomain(implicit csp: CSP) : Domain
 
   def domain(implicit csp: CSP) = csp.dom(this)
+
+  /** By default, any IntVar is a decision variable */
+  override def isDecisionVar: Boolean = true
 
   override def ===(value: Int) : BindConstraint = new BindConstraint(this, value)
 
