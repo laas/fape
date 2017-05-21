@@ -128,7 +128,6 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
         insertChronicle(chronicle)
       case ActionInsertion(actionTemplate, support) =>
         val act = Factory.getStandaloneAction(pb, actionTemplate, RefCounter.getGlobalCounter)
-        println("Action insertion: "+act)
         actions += act
         insertChronicle(act.chronicle)
         csp.post(csp.temporalOrigin <= tp(act.start))
@@ -156,7 +155,7 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
       sb.append(h.report)
       sb.append("---------- Actions ---------\n")
       for(a <- actions.sortBy(a => tp(a.start).domain.lb)) {
-        sb.append(s"[${tp(a.start).domain.lb}, ${tp(a.end).domain.lb}] $a")
+        sb.append(s"[${tp(a.start).domain.lb}, ${tp(a.end).domain.lb}] ${a.name}(${a.args.asScala.map(p => p.label+"="+variable(p).dom).mkString(", ")})\n")
       }
     }
     sb.toString()

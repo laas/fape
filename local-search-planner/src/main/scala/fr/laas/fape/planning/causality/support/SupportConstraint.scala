@@ -7,6 +7,7 @@ import fr.laas.fape.constraints.meta.domains.Domain
 import fr.laas.fape.constraints.meta.events._
 import fr.laas.fape.constraints.meta.types.dynamics.DynamicType
 import fr.laas.fape.constraints.meta.util.Assertion._
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.constraints.meta.variables.IVar
 import fr.laas.fape.planning.causality.{DecisionPending, SupportByActionInsertion, SupportByExistingChange, SupportOption}
 import fr.laas.fape.planning.structures.{Change, Holds}
@@ -33,7 +34,9 @@ class SupportConstraint(t: DynamicType[SupportOption], val holds: Holds)
     if(supportVar.domain.isSingleton) {
       supportVar.dom.values.head match {
         case SupportByExistingChange(c) if data.constraintOf(supportVar.domain.values.head).isSatisfied =>
-            ConstraintSatisfaction.SATISFIED
+          assert3(!(holds.sv === c.sv).isViolated)
+          assert3(!(holds.value === c.value).isViolated)
+          ConstraintSatisfaction.SATISFIED
         case _ => ConstraintSatisfaction.UNDEFINED
       }
     } else if(supportVar.domain.isEmpty)
