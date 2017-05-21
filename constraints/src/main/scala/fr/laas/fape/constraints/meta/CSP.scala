@@ -25,6 +25,11 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
     case Right(base) => base.conf
   }
 
+  val depth: Int = toClone match {
+    case Left(configuration) => configuration.initialDepth
+    case Right(base) => base.depth +1
+  }
+
   final val log : ILogger = toClone match {
     case Right(base) => base.log.clone
     case _ => new Logger()

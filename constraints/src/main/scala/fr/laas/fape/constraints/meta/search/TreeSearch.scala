@@ -74,7 +74,7 @@ class TreeSearch(nodes: Seq[TreeSearchNode]) {
 
         val children = decision.options.flatMap(opt => apply(csp.clone, opt))
         for(x <- cur.children(children))
-          if(x.depth <= maxDepth)
+          if(x.node.depth <= maxDepth)
             queue.enqueue(x)
           else
             maxDepthReached = true
@@ -94,7 +94,7 @@ class TreeSearch(nodes: Seq[TreeSearchNode]) {
 }
 
 
-abstract class TreeSearchNode(val node: CSP, val depth: Int) extends Ordered[TreeSearchNode] {
+abstract class TreeSearchNode(val node: CSP) extends Ordered[TreeSearchNode] {
 
   def priority: Double
 
@@ -104,15 +104,15 @@ abstract class TreeSearchNode(val node: CSP, val depth: Int) extends Ordered[Tre
 }
 
 
-class DFSNode(node: CSP, depth: Int, val orderPriority: Float) extends TreeSearchNode(node, depth) {
+class DFSNode(node: CSP, val orderPriority: Float) extends TreeSearchNode(node) {
 
-  def this(node: CSP) = this(node, 0, 0)
+  def this(node: CSP) = this(node, 0)
 
   assert(orderPriority >= 0 && orderPriority < 1)
 
-  override def priority: Double = depth - orderPriority
+  override def priority: Double = node.depth - orderPriority
 
   override def children(childrenCSPs: Seq[CSP]): Seq[TreeSearchNode] =
     for(i <- childrenCSPs.indices) yield
-      new DFSNode(childrenCSPs(i), depth +1, i.toFloat / childrenCSPs.size)
+      new DFSNode(childrenCSPs(i), i.toFloat / childrenCSPs.size)
 }
