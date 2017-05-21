@@ -4,6 +4,7 @@ import fr.laas.fape.anml.model.abs.AbstractAction
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.constraints.ConjunctionConstraint
 import fr.laas.fape.constraints.meta.decisions.{Decision, DecisionConstraint, DecisionOption}
+import fr.laas.fape.constraints.meta.util.Assertion._
 import fr.laas.fape.planning.causality.{CausalHandler, DecisionPending, SupportByActionInsertion, SupportByExistingChange}
 import fr.laas.fape.planning.events.{ActionInsertion, PlanningHandler}
 
@@ -12,7 +13,10 @@ class SupportDecision(supportVar: SupportVar) extends Decision {
   def context(implicit csp: CSP) : CausalHandler = csp.getHandler(classOf[PlanningHandler]).getHandler(classOf[CausalHandler])
 
   /** Returns true is this decision is still pending. */
-  override def pending(implicit csp: CSP): Boolean = supportVar.dom.contains(DecisionPending)
+  override def pending(implicit csp: CSP): Boolean = {
+    assert3(supportVar.dom.contains(DecisionPending) == supportVar.domain.contains(0))
+    supportVar.domain.contains(0)
+  }
 
   /** Estimate of the number of options available (typically used for variable ordering). */
   override def numOption(implicit csp: CSP): Int = {
