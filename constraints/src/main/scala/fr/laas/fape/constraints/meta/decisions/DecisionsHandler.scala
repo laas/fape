@@ -5,7 +5,7 @@ import fr.laas.fape.constraints.meta.events.{Event, InternalCSPEventHandler, New
 import fr.laas.fape.constraints.meta.variables.VarWithDomain
 import scala.collection.mutable
 
-class DecisionsHandler(_csp: CSP, base: Option[DecisionsHandler] = None) extends InternalCSPEventHandler {
+final class DecisionsHandler(_csp: CSP, base: Option[DecisionsHandler] = None) extends InternalCSPEventHandler {
 
   private val pendingDecisions: mutable.ArrayBuffer[Decision] = base match {
     case Some(prev) => prev.pendingDecisions.clone()

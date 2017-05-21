@@ -3,7 +3,7 @@ package fr.laas.fape.planning
 import fr.laas.fape.anml.model.AnmlProblem
 import fr.laas.fape.anml.model.concrete.InstanceRef
 import fr.laas.fape.constraints.meta.{CSP, Configuration}
-import fr.laas.fape.constraints.meta.search.{DFSNode, TreeSearch}
+import fr.laas.fape.constraints.meta.search.TreeSearch
 import fr.laas.fape.constraints.meta.types.statics.TypedVariable
 import fr.laas.fape.constraints.meta.variables.IntVariable
 import fr.laas.fape.planning.events.{InitPlanner, PlanningHandler}
@@ -68,7 +68,7 @@ class SatisfiabilityTest extends FunSuite {
     csp.addHandler(new PlanningHandler(csp, Left(pb)))
     csp.addEvent(InitPlanner)
 
-    val searcher = new TreeSearch(List(new DFSNode(csp)))
+    val searcher = new TreeSearch(List(csp))
     searcher.incrementalDeepeningSearch() match {
       case Left(solution) => solution
       case _ => null

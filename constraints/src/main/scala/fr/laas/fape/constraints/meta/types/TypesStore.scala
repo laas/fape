@@ -9,7 +9,7 @@ import fr.laas.fape.constraints.meta.util.Assertion._
 
 import scala.collection.mutable
 
-class TypesStore(_csp: CSP, base: Option[TypesStore] = None) extends InternalCSPEventHandler {
+final class TypesStore(_csp: CSP, base: Option[TypesStore] = None) extends InternalCSPEventHandler {
 
   implicit val csp = _csp
 

@@ -11,11 +11,11 @@ object NoSolution extends Enumeration {
   val NO_SOLUTION, NO_SOLUTION_BELOW_MAX_DEPTH = Value
 }
 
-class TreeSearch(nodes: Seq[TreeSearchNode]) {
+class TreeSearch(nodes: Seq[CSP]) {
 
   private var numExpansions = 0
 
-  private var queue = mutable.PriorityQueue[TreeSearchNode]()
+  private var queue = mutable.PriorityQueue[CSP]()
   nodes.foreach(n => queue.enqueue(n))
 
   def incrementalDeepeningSearch(maxDepth: Int = Integer.MAX_VALUE) : Either[CSP, NoSolution.Status] = {
@@ -42,8 +42,7 @@ class TreeSearch(nodes: Seq[TreeSearchNode]) {
     var maxDepthReached = false
     while(queue.nonEmpty) {
 
-      val cur = queue.dequeue()
-      implicit val csp = cur.node
+      implicit val csp = queue.dequeue()
 //      println(" "*cur.depth + "X" + " "*(maxDepth-cur.depth-1)+"|")
       numExpansions += 1
       try {
@@ -73,8 +72,8 @@ class TreeSearch(nodes: Seq[TreeSearchNode]) {
         }
 
         val children = decision.options.flatMap(opt => apply(csp.clone, opt))
-        for(x <- cur.children(children))
-          if(x.node.depth <= maxDepth)
+        for(x <- children)
+          if(x.depth <= maxDepth)
             queue.enqueue(x)
           else
             maxDepthReached = true
@@ -91,28 +90,4 @@ class TreeSearch(nodes: Seq[TreeSearchNode]) {
       Right(NoSolution.NO_SOLUTION)
   }
 
-}
-
-
-abstract class TreeSearchNode(val node: CSP) extends Ordered[TreeSearchNode] {
-
-  def priority: Double
-
-  def children(childrenCSPs: Seq[CSP]) : Seq[TreeSearchNode]
-
-  override def compare(that: TreeSearchNode): Int = math.signum(this.priority - that.priority).toInt
-}
-
-
-class DFSNode(node: CSP, val orderPriority: Float) extends TreeSearchNode(node) {
-
-  def this(node: CSP) = this(node, 0)
-
-  assert(orderPriority >= 0 && orderPriority < 1)
-
-  override def priority: Double = node.depth - orderPriority
-
-  override def children(childrenCSPs: Seq[CSP]): Seq[TreeSearchNode] =
-    for(i <- childrenCSPs.indices) yield
-      new DFSNode(childrenCSPs(i), i.toFloat / childrenCSPs.size)
 }
