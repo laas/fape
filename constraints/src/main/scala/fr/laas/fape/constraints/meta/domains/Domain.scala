@@ -74,4 +74,6 @@ object Domain {
     if(values.isEmpty) new EmptyDomain
     else if(values.size == 1) new SingletonDomain(values.head)
     else new EnumeratedDomain(values)
+
+  def apply(values: Int*): Domain = Domain(values.toSet)
 }

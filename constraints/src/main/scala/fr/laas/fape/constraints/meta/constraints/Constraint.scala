@@ -1,6 +1,7 @@
 package fr.laas.fape.constraints.meta.constraints
 
 
+import fr.laas.fape.constraints.bindings.InconsistentBindingConstraintNetwork
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.variables.{IVar, IntVariable}
@@ -28,6 +29,8 @@ trait Constraint {
     _propagate(event)
     if(isSatisfied)
       csp.setSatisfied(this)
+    if(isViolated)
+      throw new InconsistentBindingConstraintNetwork()
     csp.log.endConstraintPropagation(this)
   }
 

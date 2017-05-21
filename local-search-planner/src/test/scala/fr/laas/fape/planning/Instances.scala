@@ -126,6 +126,19 @@ object Instances {
       |};
       |[end] sv2(x1) == true;
     """.stripMargin
+//    """  // planning can result in an infinite loop
+//      |type X;
+//      |instance X x1, x2, x3;
+//      |fluent boolean sv2(X x);
+//      |
+//      |action A(X x) {
+//      |  [end] sv2(x) := true;
+//      |};
+//      |action B(X x) {
+//      |  [start, end] sv2(x) == true :-> false;
+//      |};
+//      |[end] sv2(x1) == false;
+//    """.stripMargin
   )
 
   val unsatisfiables = List(

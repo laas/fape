@@ -12,7 +12,7 @@ import org.scalatest.FunSuite
 class SatisfiabilityTest extends FunSuite {
 
   test("Single sat/unsat (for debugging)") {
-    testSat(13)
+    testUnsat(5)
   }
 
   for(i <- Instances.satisfiables.indices) {
@@ -32,6 +32,7 @@ class SatisfiabilityTest extends FunSuite {
     println(pb)
     implicit val csp = plan(pb)
     assert(csp != null)
+    assert(csp.isSolution, csp.report)
 
     // print important variables
     val vars = csp.constraints.all.flatMap(c => c.variables(csp))

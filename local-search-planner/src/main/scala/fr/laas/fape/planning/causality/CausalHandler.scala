@@ -3,8 +3,9 @@ package fr.laas.fape.planning.causality
 import fr.laas.fape.constraints.meta.events.Event
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.types.dynamics.{BaseDynamicType, ComposedDynamicType}
-import fr.laas.fape.constraints.meta.types.statics.{BaseType, Type}
+import fr.laas.fape.constraints.meta.types.statics.{BaseType}
 import fr.laas.fape.constraints.meta.util.Assertion._
+import fr.laas.fape.planning.causality.support.SupportConstraint
 import fr.laas.fape.planning.events.{PlanningEventHandler, PlanningHandler, PlanningStructureAdded}
 import fr.laas.fape.planning.structures.{CausalStruct, Change, Holds}
 

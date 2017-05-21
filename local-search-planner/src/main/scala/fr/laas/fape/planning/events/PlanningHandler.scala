@@ -9,8 +9,8 @@ import fr.laas.fape.constraints.meta.events.{Event, InternalCSPEventHandler}
 import fr.laas.fape.constraints.meta.stn.constraint.{Contingent, MinDelay}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
 import fr.laas.fape.constraints.meta.util.Assertion._
-import fr.laas.fape.planning.causality.{CausalHandler, SupportByAction}
-import fr.laas.fape.planning.core.planning.states.modification.ActionInsertion
+import fr.laas.fape.planning.causality.CausalHandler
+import fr.laas.fape.planning.causality.support.SupportByAction
 import fr.laas.fape.planning.structures.{Change, Holds}
 import fr.laas.fape.planning.types.{AnmlVarType, TypeHandler}
 import fr.laas.fape.planning.variables.{FVar, InstanceVar, SVar, Var}
@@ -60,7 +60,6 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
     case Left(_) => mutable.ArrayBuffer(new CausalHandler(this))
     case Right(prev) => prev.subhandlers.map(_.clone(this))
   }
-
 
   def variable(v: VarRef): Var = v match {
     case v: InstanceRef =>
