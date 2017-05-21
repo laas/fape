@@ -48,14 +48,26 @@ trait Constraint {
   final def active(implicit csp: CSP) : Boolean = csp.constraints.isActive(this)
   final def watched(implicit csp: CSP) : Boolean = csp.constraints.isWatched(this)
 
-  def &&(constraint: Constraint) : ConjunctionConstraint = constraint match {
-    case c: ConjunctionConstraint => new ConjunctionConstraint(constraint :: c.constraints.toList)
-    case c => new ConjunctionConstraint(List(this, c))
+  def &&(constraint: Constraint) : ConjunctionConstraint = (this, constraint) match {
+    case (c1: ConjunctionConstraint, c2: ConjunctionConstraint) =>
+      new ConjunctionConstraint(c1.constraints ++ c2.constraints)
+    case (c1: ConjunctionConstraint, c2) =>
+      new ConjunctionConstraint(c1.constraints :+ c2)
+    case (c1, c2:ConjunctionConstraint) =>
+      new ConjunctionConstraint(c1 :: c2.constraints.toList)
+    case (c1, c2) =>
+      new ConjunctionConstraint(List(c1, c2))
   }
 
-  def ||(constraint: Constraint) = constraint match {
-    case c: DisjunctiveConstraint => new DisjunctiveConstraint(constraint :: c.disjuncts.toList)
-    case c => new DisjunctiveConstraint(List(this, c))
+  def ||(constraint: Constraint) = (this, constraint) match {
+    case (c1: DisjunctiveConstraint, c2: DisjunctiveConstraint) =>
+      new DisjunctiveConstraint(c1.disjuncts ++ c2.disjuncts)
+    case (c1: DisjunctiveConstraint, c2) =>
+      new DisjunctiveConstraint(c1.disjuncts :+ c2)
+    case (c1, c2:DisjunctiveConstraint) =>
+      new DisjunctiveConstraint(c1 :: c2.disjuncts.toList)
+    case (c1, c2) =>
+      new DisjunctiveConstraint(List(c1, c2))
   }
 }
 
