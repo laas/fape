@@ -3,7 +3,7 @@ package fr.laas.fape.planning
 import fr.laas.fape.anml.model.AnmlProblem
 import fr.laas.fape.anml.model.concrete.InstanceRef
 import fr.laas.fape.constraints.meta.{CSP, Configuration}
-import fr.laas.fape.constraints.meta.search.BinarySearch
+import fr.laas.fape.constraints.meta.search.{DFSNode, TreeSearch}
 import fr.laas.fape.constraints.meta.types.statics.TypedVariable
 import fr.laas.fape.constraints.meta.variables.IntVariable
 import fr.laas.fape.planning.events.{InitPlanner, PlanningHandler}
@@ -40,7 +40,7 @@ class SatisfiabilityTest extends FunSuite {
       .toSet
     for(v <- vars) v match {
       case v: TypedVariable[_] => println(s"$v = ${v.dom}")
-      case v => println(s"$v = ${v.domain}")
+      case _ => println(s"$v = ${v.domain}")
     }
     println(s"end in ${csp.temporalHorizon.domain}")
     println(csp.getHandler(classOf[PlanningHandler]).report)
@@ -68,7 +68,11 @@ class SatisfiabilityTest extends FunSuite {
     csp.addHandler(new PlanningHandler(csp, Left(pb)))
     csp.addEvent(InitPlanner)
 
-    BinarySearch.search(csp)
+    val searcher = new TreeSearch(List(new DFSNode(csp)))
+    searcher.incrementalDeepeningSearch() match {
+      case Left(solution) => solution
+      case _ => null
+    }
   }
 
 }

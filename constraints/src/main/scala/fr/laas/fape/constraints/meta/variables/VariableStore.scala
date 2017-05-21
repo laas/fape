@@ -15,19 +15,21 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
 
   import VariableStore._
 
-  val varsByRef = mutable.Map[Any, IntVariable]()
-  val timepointsByRef = mutable.Map[Any, Timepoint]()
-  val distanceVariables = mutable.Map[(Timepoint, Timepoint), TemporalDelay]()
-
-  toClone match {
-    case Some(base) =>
-      varsByRef ++= base.varsByRef
-      timepointsByRef ++= base.timepointsByRef
-      distanceVariables ++= base.distanceVariables
-    case None =>
+  val varsByRef : mutable.Map[Any, IntVariable] = toClone match {
+    case Some(base) => base.varsByRef.clone()
+    case None => mutable.Map()
   }
 
-  def getNextVariableId() : Int = { nextID += 1; nextID-1 }
+  val timepointsByRef : mutable.Map[Any, Timepoint] = toClone match {
+    case Some(base) => base.timepointsByRef.clone()
+    case None => mutable.Map()
+  }
+  val distanceVariables : mutable.Map[(Timepoint, Timepoint), TemporalDelay] = toClone match {
+    case Some(base) => base.distanceVariables.clone()
+    case None => mutable.Map()
+  }
+
+  def nextVariableId() : Int = { nextID += 1; nextID-1 }
 
   def getBooleanVariable(ref: Any) : BooleanVariable = {
     assert(!varsByRef.contains(ref))
@@ -43,14 +45,14 @@ class VariableStore(csp: CSP, toClone: Option[VariableStore] = None) {
   }
 
   def getTimepoint() : Timepoint = {
-    val tp = new Timepoint(getNextVariableId(), None)
+    val tp = new Timepoint(nextVariableId(), None)
     csp.variableAdded(tp)
     tp
   }
 
   def getTimepoint(ref: Any) : Timepoint = {
     if(!timepointsByRef.contains(ref)) {
-      val tp = new Timepoint(getNextVariableId(), Some(ref))
+      val tp = new Timepoint(nextVariableId(), Some(ref))
       timepointsByRef.put(ref, tp)
       csp.variableAdded(tp)
     }

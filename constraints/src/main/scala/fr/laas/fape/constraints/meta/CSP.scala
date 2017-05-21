@@ -124,9 +124,9 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
 
   def sanityCheck() {
     assert1(events.isEmpty, "Can't sanity check: CSP has pending events")
-    assert2(constraints.active.forall(c => c.satisfaction == ConstraintSatisfaction.UNDEFINED),
+    assert3(constraints.active.forall(c => c.satisfaction == ConstraintSatisfaction.UNDEFINED),
       "Satisfaction of an active constraint is not UNDEFINED")
-    assert2(constraints.satisfied.forall(_.isSatisfied),
+    assert3(constraints.satisfied.forall(_.isSatisfied),
       "A constraint is not satisfied while in the satisfied list")
 
     if(isSolution) {
@@ -268,7 +268,7 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
 
   def hasVariable(variable: IntVariable) : Boolean = domains.contains(variable)
 
-  def nextVarId() = varStore.getNextVariableId()
+  def nextVarId() = varStore.nextVariableId()
 
 
   def report : String = {
@@ -276,14 +276,14 @@ class CSP(toClone: Either[Configuration, CSP] = Left(new Configuration)) {
     val vars = constraints.all.flatMap(c => c.variables(csp)).collect{ case v: VarWithDomain => v }
     for(v <- vars) v match {
       case v: TypedVariable[_] => str.append(s"$v = ${v.dom}\n")
-      case v => str.append(s"$v = ${v.domain}\n")
+      case _ => str.append(s"$v = ${v.domain}\n")
     }
     str.append("%% ACTIVE CONSTRAINTS\n")
-    for(c <- constraints.active.toSeq.sortBy(_.toString))
+    for(c <- constraints.active.sortBy(_.toString))
       str.append(s"$c  ${c.satisfaction}\n")
 
     str.append("%% SATISFIED CONSTRAINTS\n")
-    for(c <- constraints.satisfied.toSeq.sortBy(_.toString))
+    for(c <- constraints.satisfied.sortBy(_.toString))
       str.append(s"$c  ${c.satisfaction}\n")
     str.toString
   }

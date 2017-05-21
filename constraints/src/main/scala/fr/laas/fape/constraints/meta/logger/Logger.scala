@@ -31,7 +31,7 @@ class ILogger {
 class Logger(previous: Option[Logger] = None) extends ILogger {
 
   val toSTDIO = false
-  val recordHistory = true
+  val recordHistory = false
 
   var offset = 0
 
@@ -44,29 +44,29 @@ class Logger(previous: Option[Logger] = None) extends ILogger {
     case None => new StringBuilder
   }
 
-  def print(msg: String) {
+  def print(msg: => String, params: Any*) {
     if(recordHistory)
       history.append(msg)
     if(toSTDIO)
       Predef.print(msg)
   }
 
-  def println(msg: String) {
+  def println(msg: => String, params: Any*) {
     if(recordHistory) {
-      history.append(msg)
+      history.append(msg.format(params: _*))
       history.append("\n")
     }
     if(toSTDIO)
-      Predef.println(msg)
+      Predef.println(msg.format(params: _*))
   }
 
-  override def info(str: => String) { printOffset(); println("INFO: "+str) }
-  override def warning(str: => String) { printOffset(); println("WARNING: "+str) }
-  override def error(str: => String) { printOffset(); println("ERROR: "+str) }
+  override def info(str: => String) { printOffset(); println("INFO: %s", str) }
+  override def warning(str: => String) { printOffset(); println("WARNING: %s", str) }
+  override def error(str: => String) { printOffset(); println("ERROR: %s", str) }
 
   override def startEventHandling(event: Event): Unit = {
     printOffset()
-    println(s"Event: $event")
+    println("Event: %s", event)
     stepIn()
   }
   override def endEventHandling(event: Event): Unit = {
@@ -75,12 +75,12 @@ class Logger(previous: Option[Logger] = None) extends ILogger {
 
   override def newEventPosted(event: Event) {
     printOffset()
-    println("new-event: "+event)
+    println("new-event: %s", event)
   }
 
   override def startConstraintPropagation(constraint: Constraint) {
     printOffset()
-    println(s"propagation: $constraint")
+    println("propagation: %s", constraint)
     stepIn()
   }
   override def endConstraintPropagation(constraint: Constraint): Unit = {
@@ -89,12 +89,12 @@ class Logger(previous: Option[Logger] = None) extends ILogger {
 
   override def domainUpdate(variable: VarWithDomain, domain: Domain): Unit = {
     printOffset()
-    println(s"dom-update: $variable <- $domain")
+    println("dom-update: %s <- %s", variable, domain)
   }
 
   override def constraintPosted(constraint: Constraint): Unit = {
     printOffset()
-    println(s"new-constraint: $constraint")
+    println("new-constraint: %s", constraint)
   }
 
   override def clone: Logger = new Logger(Some(this))

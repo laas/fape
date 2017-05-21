@@ -139,7 +139,7 @@ object Instances {
       |};
       |[end] sv2(x1) == false;
       |[end] sv2(x2) == true;
-      |[end] sv2(x3) == false;
+      |//[end] sv2(x3) == false;
     """.stripMargin
   )
 
