@@ -78,7 +78,7 @@ class TreeSearch(nodes: Seq[CSP]) {
           return Left(csp)
         }
 
-         val decision = decisions.head
+        val decision = decisions.head
 
         def apply(csp: CSP, decision: DecisionOption) : Option[CSP] = {
           try {
