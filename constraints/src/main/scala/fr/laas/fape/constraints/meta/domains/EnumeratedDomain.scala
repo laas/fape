@@ -19,8 +19,6 @@ class EnumeratedDomain(val vals: IBitSet) extends Domain {
 
   def size : Int = vals.size
 
-  def head() : Int = vals.head
-
   override def intersection(other: Domain) : Domain = {
     other match {
       case other: EmptyDomain =>

@@ -1,5 +1,7 @@
 package fr.laas.fape.constraints.meta.domains
 
+import fr.laas.fape.constraints.meta.util.Assertion._
+
 trait Domain {
 
   /** Number of values in the domain */
@@ -33,6 +35,8 @@ trait Domain {
   def emptyIntersection(other: Domain) = (this & other).size == 0
 
   def isSingleton : Boolean = size == 1
+
+  def head : Int = { assert1(nonEmpty); values.head }
 
   def isEmpty : Boolean = size <= 0
 
