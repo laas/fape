@@ -5,6 +5,8 @@ import fr.laas.fape.anml.model.concrete._
 import fr.laas.fape.anml.model.concrete.statements.{Assignment, Persistence, Transition}
 import fr.laas.fape.anml.model.{AnmlProblem, ParameterizedStateVariable, SymFunction}
 import fr.laas.fape.constraints.meta.CSP
+import fr.laas.fape.constraints.meta.constraints.ExtensionConstraint
+import fr.laas.fape.constraints.meta.domains.ExtensionDomain
 import fr.laas.fape.constraints.meta.events.{Event, InternalCSPEventHandler}
 import fr.laas.fape.constraints.meta.stn.constraint.{Contingent, MinDelay}
 import fr.laas.fape.constraints.meta.stn.variables.Timepoint
@@ -26,7 +28,7 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   assert1(!csp.conf.enforceTpAfterStart, "Planner needs to be able some timepoints before the CSP's temporal origin.")
 
   val pb: AnmlProblem = base match {
-    case Left(pb) => pb
+    case Left(anmlProblem) => anmlProblem
     case Right(prev) => prev.pb
   }
 
@@ -53,6 +55,11 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
   val actions: mutable.ArrayBuffer[Action] = base match {
     case Right(prev) => prev.actions.clone()
     case Left(_) => mutable.ArrayBuffer()
+  }
+
+  val extensionDomains: mutable.Map[model.Function, ExtensionDomain] = base match {
+    case Right(prev) => prev.extensionDomains.clone()
+    case Left(_) => mutable.Map()
   }
 
   // last since causal handler typically need to access types and variables
@@ -96,6 +103,16 @@ class PlanningHandler(_csp: CSP, base: Either[AnmlProblem, PlanningHandler]) ext
         csp.post(variable(c.leftVar) =!= variable(c.rightVar))
       case c: VarEqualityConstraint =>
         csp.post(variable(c.leftVar) === variable(c.rightVar))
+      case c: AssignmentConstraint =>
+        val func = c.sv.func
+        assert1((c.sv.args.toList :+ c.variable).forall(variable(_).domain.isSingleton))
+        val values = (c.sv.args.toList :+ c.variable).map(variable(_).domain.head)
+        extensionDomains.getOrElseUpdate(func, new ExtensionDomain(values.size)).addTuple(values)
+      case c: EqualityConstraint =>
+        val variables = (c.sv.args.toList :+ c.variable).map(variable(_))
+        csp.post(new ExtensionConstraint(variables, extensionDomains.getOrElseUpdate(c.sv.func, new ExtensionDomain(variables.size))))
+      case x =>
+        throw new NotImplementedError(s"Support for constraint $x is not implemented.")
     }
     for(c <- chronicle.temporalConstraints.asScala) c match {
       case c: MinDelayConstraint =>
