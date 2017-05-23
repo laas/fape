@@ -4,6 +4,7 @@ import fr.laas.fape.anml.model
 import fr.laas.fape.anml.model.{ParameterizedStateVariable, SymFunction}
 import fr.laas.fape.anml.model.concrete.{InstanceRef, VarRef}
 import fr.laas.fape.constraints.meta.CSP
+import fr.laas.fape.constraints.meta.constraints.{Constraint, Contradiction, Tautology}
 import fr.laas.fape.constraints.meta.domains.Domain
 import fr.laas.fape.constraints.meta.types.statics.{TypedVariable, TypedVariableWithInitialDomain}
 import fr.laas.fape.constraints.meta.variables.VariableSeq
@@ -28,7 +29,19 @@ class FVar(val f: model.SymFunction, typ: FunctionVarType)
 }
 
 /** A state variable, defined as a sequence of an ANML function (FVar) and parameters of the state variable */
-class SVar(func: FVar, params: Seq[Var], ref: ParameterizedStateVariable)
+class SVar(val func: FVar, val params: Seq[Var], ref: ParameterizedStateVariable)
   extends VariableSeq(func :: params.toList, Some(ref)) {
   require(func.f.argTypes.size == params.size)
+
+  def =!=(svar: SVar) : Constraint =
+    if(func == svar.func)
+      super.=!=(svar)
+    else
+      new Tautology
+
+  def ===(svar: SVar) : Constraint =
+    if(func == svar.func)
+      super.===(svar)
+    else
+      new Contradiction
 }
