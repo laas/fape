@@ -44,6 +44,12 @@ class DisjunctiveConstraint(val disjuncts: Seq[Constraint]) extends Constraint {
           csp.postSubConstraint(selectedConstraint, this)
         }
       case NewConstraint(c) =>
+        for(c <- disjuncts) {
+          if(c.isSatisfied && decisionVar.domain.contains(disjuncts.indexOf(c)))
+            csp.updateDomain(decisionVar, Domain(disjuncts.indexOf(c)))
+          else if(c.isViolated && decisionVar.domain.contains(disjuncts.indexOf(c)))
+            csp.updateDomain(decisionVar, decisionVar.domain - disjuncts.indexOf(c))
+        }
     }
   }
 
