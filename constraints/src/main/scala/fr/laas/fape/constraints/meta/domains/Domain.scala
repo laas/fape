@@ -34,6 +34,8 @@ trait Domain {
 
   def emptyIntersection(other: Domain) = (this & other).size == 0
 
+  def containedBy(other: Domain) = (this & other).size == this.size
+
   def isSingleton : Boolean = size == 1
 
   def head : Int = { assert1(nonEmpty); values.head }
