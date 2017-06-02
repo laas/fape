@@ -102,7 +102,7 @@ class SupportConstraint(t: DynamicType[SupportOption], val holds: Holds)
           d.put(i, c)
           csp.watchSubConstraint(c, this)
         case SupportByActionInsertion(aps) =>
-          val c = new Tautology  // TODO: useful constraint
+          val c = aps.potentialSupportConstraint(holds)
           d.put(i, c)
           csp.watchSubConstraint(c, this)
       }
