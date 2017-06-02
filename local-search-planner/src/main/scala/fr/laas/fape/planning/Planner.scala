@@ -30,8 +30,10 @@ object Planner extends App {
   val csp = Utils.csp(pb)
   val searcher = new TreeSearch(List(csp))
   searcher.incrementalDeepeningSearch() match {
-    case Left(solution) => solution
-    case _ => null
+    case Left(solution) =>
+      println(solution.getHandler(classOf[PlanningHandler]).report)
+    case _ =>
+      println("No solution found.")
   }
 
 }
