@@ -18,7 +18,7 @@ class SupportConstraint(t: DynamicType[SupportOption], val holds: Holds)
 
   /** Variable denoting which supports are possible.
     *  Each value of the domain corresponds to a change in the CausalHandler */
-  val supportVar = new SupportVar(t)
+  val supportVar = new SupportVar(t, holds)
   private val decision = new SupportDecision(supportVar)
 
   override def onPost(implicit csp: CSP) {

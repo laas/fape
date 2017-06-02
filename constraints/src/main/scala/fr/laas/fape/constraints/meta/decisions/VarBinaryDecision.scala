@@ -3,7 +3,7 @@ package fr.laas.fape.constraints.meta.decisions
 import fr.laas.fape.constraints.meta.CSP
 import fr.laas.fape.constraints.meta.variables.{IntVar, IntVariable, VarWithDomain}
 
-class VarBinaryDecision(v: VarWithDomain) extends Decision {
+case class VarBinaryDecision(v: VarWithDomain) extends Decision {
 
   override def pending(implicit csp: CSP): Boolean = !v.domain.isSingleton
 

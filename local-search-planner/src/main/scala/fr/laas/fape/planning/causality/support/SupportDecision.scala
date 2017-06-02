@@ -43,6 +43,8 @@ class SupportDecision(supportVar: SupportVar) extends Decision {
         List(new DecisionConstraint(supportVar =!= i))
     }
   }
+
+  override def toString : String = s"support-decision@[${supportVar.target}"
 }
 
 class PendingSupportOption(action: AbstractAction, supportFor: SupportVar) extends DecisionOption {
@@ -66,4 +68,6 @@ class PendingSupportOption(action: AbstractAction, supportFor: SupportVar) exten
     }
     new DecisionConstraint(new ConjunctionConstraint(constraints))
   }
+
+  override def toString : String = s"pending-support: of '$supportFor by $action"
 }
