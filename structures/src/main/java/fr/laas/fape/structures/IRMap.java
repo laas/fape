@@ -123,7 +123,7 @@ public class IRMap<K, V> implements Map<K,V> {
     }
 
     @Override
-    public Set<Entry<K, V>> entrySet() {
+    public Set<Map.Entry<K, V>> entrySet() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 }

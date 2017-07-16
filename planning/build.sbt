@@ -1,5 +1,3 @@
-name := "planning"
-
 libraryDependencies ++= Seq(
   "com.martiansoftware" % "jsap" % "2.1",
   "de.sciss" % "prefuse-core" % "1.0.0",

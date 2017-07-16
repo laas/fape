@@ -213,7 +213,7 @@ public class IR2IntMap<K> implements Map<K, Integer> {
     }
 
     @Override
-    public Set<Entry<K, Integer>> entrySet() {
+    public Set<Map.Entry<K, Integer>> entrySet() {
         return keySet().stream().map(k -> new AbstractMap.SimpleEntry<K,Integer>(k, get(k))).collect(Collectors.toSet());
     }
 }

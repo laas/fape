@@ -1,6 +1,3 @@
-name := "acting"
-
-organization := "fr.laas.fape"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "latest.integration",
