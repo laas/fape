@@ -63,11 +63,6 @@ lazy val svgPlot = Project("svg-plot", file("svg-plot"))
 lazy val structures = Project("structures", file("structures"))
      .settings(commonSettings: _*)
 
-lazy val lsp = Project("local-search-planner", file("local-search-planner"))
-     .aggregate(fapePlanning, constraints, anml, svgPlot, structures)
-     .dependsOn(fapePlanning, constraints, anml, svgPlot, structures)
-     .settings(commonSettings: _*)
-
 packSettings
 
 packMain := Map(
