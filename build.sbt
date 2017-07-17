@@ -2,7 +2,7 @@ name := "fape-build"
 
 // global settings 
 val _organization = "com.github.arthur-bit-monnot"
-val _version = "1.0-SNAPSHOT"
+val _version = "1.0"
 val _scalaVersion = "2.12.2"
 
 
@@ -28,7 +28,16 @@ lazy val commonSettings = Seq(
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
   },
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"	
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  // To sync with Maven central, you need to supply the following information:
+  publishMavenStyle := true,
+
+  // POM settings for Sonatype
+  homepage := Some(url("https://github.com/arthur-bit-monnot/fape")),
+  scmInfo := Some(ScmInfo(url("https://github.com/arthur-bit-monnot/fape"), "git@github.com:arthur-bit-monnot/fape.git")),
+  developers += Developer("abitmonn", "Arthur Bit-Monnot", "arthur.bit-monnot@laas.fr", url("https://github.com/arthur-bit-monnot")),
+  licenses += ("BSD-2-Clause", url("https://opensource.org/licenses/BSD-2-Clause")),
+  pomIncludeRepository := (_ => false)
 )
 
 lazy val root = project.in(file(".")).
@@ -36,6 +45,7 @@ lazy val root = project.in(file(".")).
 
   settings(
     publish := {},
+
     publishLocal := {}
   )
 
@@ -78,4 +88,10 @@ packJvmOpts := Map(
   "fape" -> Seq("-ea")
 )
 
-
+// Add sonatype repository settings
+publishTo := Some(
+  if (isSnapshot.value)
+    Opts.resolver.sonatypeSnapshots
+  else
+    Opts.resolver.sonatypeStaging
+)
