@@ -48,15 +48,19 @@ Example ANML planning problems are available in `planning/domains`.
 
 
 
-## Precompiled version
+## Precompiled Versions
 
-You can find precompiled version of fape at:
-https://github.com/laas/fape/releases
+You can find precompiled version of FAPE at: https://github.com/arthur-bit-monnot/fape/releases
 
-Just download the `fape.jar` file associated to a release or pre-release.
-All dependencies are included in this jar and you can run it with:
+Precompiled binaries come in two flavors:
 
-    java -ea -jar fape.jar [options] path/to/problem.anml
+ - an executable script for Linux (e.g. `fape-1.0`) that is self contained with all dependencies 
+ - a single jar bundled with all dependencies (e.g. `fape-planning-assembly-1.0.jar`). This can be run with 
+    `java -ea -jar fape-planning-assembly-1.0.jar [options] path/to/problem.anml`
 
-Note that java 8 is required.
+In both case, your version of the Java Runtime Environment must be at least 1.8.
+
+Compiled jars for FAPE are also available on [Maven Central Repository](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.arthur-bit-monnot%22)
+
+
 
