@@ -1,3 +1,3 @@
 libraryDependencies ++= Seq(
-  "org.projectlombok" % "lombok" % "1.16.6"
+  "org.projectlombok" % "lombok" % "1.18.2"
 )

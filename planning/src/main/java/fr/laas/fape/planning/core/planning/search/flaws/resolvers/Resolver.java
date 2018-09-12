@@ -2,7 +2,7 @@ package fr.laas.fape.planning.core.planning.search.flaws.resolvers;
 
 import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.states.modification.PartialPlanModification;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 
 /**
  * A resolver is recipe to fix a Flaw.
@@ -10,7 +10,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  */
 public interface Resolver extends Comparable<Resolver> {
 
-    default PartialPlanModification asStateModification(PartialPlan partialPlan) { throw new NotImplementedException(); }
+    default PartialPlanModification asStateModification(PartialPlan partialPlan) { throw new UnsupportedOperationException(); }
 
     /**
      * Should provide a comparison with another resolver of the same class.

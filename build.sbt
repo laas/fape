@@ -3,14 +3,7 @@ name := "fape-build"
 // global settings 
 val _organization = "com.github.arthur-bit-monnot"
 val _version = "1.0"
-val _scalaVersion = "2.12.2"
-
-
-initialize := {
-  val _ = initialize.value
-  if (sys.props("java.specification.version") != "1.8")
-    sys.error("Java 8 is required for this project.")
-}
+val _scalaVersion = "2.12.6"
 
 lazy val commonSettings = Seq(
   organization := _organization,
@@ -19,8 +12,8 @@ lazy val commonSettings = Seq(
   exportJars := true, // insert other project dependencies in oneJar
   scalaVersion := _scalaVersion,
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
-  javacOptions in compile ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
-  javacOptions in doc ++= Seq("-source", "1.8", "-Xdoclint:none"),
+  javacOptions in compile ++= Seq("-Xlint"),
+  javacOptions in doc ++= Seq("-Xdoclint:none"),
   test in assembly := {},
   assemblyMergeStrategy in assembly := {
     case PathList("org", "w3c", xs @ _*)         => MergeStrategy.first
