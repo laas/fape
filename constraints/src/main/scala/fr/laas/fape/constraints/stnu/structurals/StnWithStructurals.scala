@@ -1,15 +1,17 @@
 package fr.laas.fape.constraints.stnu.structurals
 
+import java.util.{HashMap => JMap}
+
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.anml.pending.IntExpression
-import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
+import fr.laas.fape.constraints.stn.DistanceGraphEdge
 import fr.laas.fape.constraints.stnu.{Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.parser.STNUParser
-import fr.laas.fape.graph.core.LabeledEdge
-import fr.laas.fape.graph.printers.NodeEdgePrinter
 import fr.laas.fape.structures.IList
 
 import scala.collection.mutable
+import scala.collection.JavaConverters._
+
 
 object StnWithStructurals {
 
@@ -47,7 +49,7 @@ object StnWithStructurals {
 
 import StnWithStructurals._
 
-class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
+class StnWithStructurals(var nonRigidIndexes: JMap[TPRef,Int],
                              var timepointByIndex: mutable.ArrayBuffer[TPRef],
                              var dist: DistanceMatrix,
                              var rigidRelations: RigidRelations,
@@ -63,10 +65,10 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
-  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
+  def this() = this(new JMap(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
 
   override def clone() : StnWithStructurals = new StnWithStructurals(
-    nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
+    new JMap(nonRigidIndexes), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
     optStart, optEnd, originalEdges, consistent, executed.clone()
   )
 
@@ -79,13 +81,13 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  private var _timepoints = (nonRigidIndexes.keys ++ rigidRelations.anchoredTimepoints).toList
+  private var _timepoints = (nonRigidIndexes.keySet().asScala ++ rigidRelations.anchoredTimepoints).toList
   def timepoints = new IList[TPRef](_timepoints)
 
-  private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
+  private def toIndex(tp:TPRef) : Int = nonRigidIndexes.get(tp)
   def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
 
-  private def isKnown(tp: TPRef) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
+  private def isKnown(tp: TPRef) = nonRigidIndexes.containsKey(tp) || rigidRelations.isAnchored(tp)
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!isKnown(tp))
@@ -141,7 +143,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
         val newContingents = contingentLinks.filter(c => !(c.dst == tp))
 
         // remove everything
-        nonRigidIndexes = mutable.Map()
+        nonRigidIndexes = new JMap()
         timepointByIndex = mutable.ArrayBuffer()
         dist = new DistanceMatrix()
         rigidRelations = new RigidRelations()
@@ -294,7 +296,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setStart(tp)
-    nonRigidIndexes(tp)
+    nonRigidIndexes.get(tp)
   }
 
   def setStart(start: TPRef): Unit = {
@@ -312,7 +314,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setEnd(tp)
-    nonRigidIndexes(tp)
+    nonRigidIndexes.get(tp)
   }
 
   def setEnd(end: TPRef): Unit = {

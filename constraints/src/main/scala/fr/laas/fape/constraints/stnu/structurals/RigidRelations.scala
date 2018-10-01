@@ -2,35 +2,36 @@ package fr.laas.fape.constraints.stnu.structurals
 
 import fr.laas.fape.anml.model.concrete.TPRef
 
-import scala.collection.mutable
+import java.util.{HashMap => JMap}
+import scala.collection.JavaConverters._
+
 
 private[structurals] final class AnchorOf(val anchor: TPRef, val distFromAnchor: Int)
 
-final class RigidRelations(private val anchored: mutable.Map[TPRef, mutable.Map[TPRef,Int]],
-                           private val _anchorOf: mutable.Map[TPRef,AnchorOf]) {
+final class RigidRelations(private val anchored: JMap[TPRef, JMap[TPRef,Int]],
+                           private val _anchorOf: JMap[TPRef,AnchorOf]) {
 
 
-
-  def this() = this(mutable.Map(), mutable.Map())
+  def this() = this(new JMap(), new JMap())
 
   override def clone() : RigidRelations = {
-    val newAnchored = mutable.Map[TPRef, mutable.Map[TPRef,Int]]()
-    for((tp,map) <- anchored)
-      newAnchored.put(tp, map.clone())
-    val newAnchorOf = _anchorOf.clone()
+    val newAnchored = new JMap[TPRef, JMap[TPRef,Int]]()
+    for((tp,map) <- anchored.asScala)
+      newAnchored.put(tp, new JMap[TPRef,Int](map))
+    val newAnchorOf = new JMap[TPRef,AnchorOf](_anchorOf)
     new RigidRelations(newAnchored, newAnchorOf)
   }
 
-  def isAnchored(tp: TPRef) = _anchorOf.contains(tp)
-  def anchoredTimepoints: Iterator[TPRef] = _anchorOf.keysIterator
-  def isAnchor(tp: TPRef) = anchored.contains(tp)
-  def anchorOf(tp: TPRef) = _anchorOf(tp).anchor
-  def distFromAnchor(tp: TPRef) = _anchorOf(tp).distFromAnchor
+  def isAnchored(tp: TPRef) = _anchorOf.containsKey(tp)
+  def anchoredTimepoints: Iterator[TPRef] = _anchorOf.asScala.keysIterator
+  def isAnchor(tp: TPRef) = anchored.containsKey(tp)
+  def anchorOf(tp: TPRef) = _anchorOf.get(tp).anchor
+  def distFromAnchor(tp: TPRef) = _anchorOf.get(tp).distFromAnchor
   def distToAnchor(tp: TPRef) = -distFromAnchor(tp)
-  def getTimepointsAnchoredTo(tp: TPRef) : List[TPRef] = anchored(tp).keys.toList
+  def getTimepointsAnchoredTo(tp: TPRef) : List[TPRef] = anchored.get(tp).asScala.keys.toList
 
   def addAnchor(tp: TPRef): Unit = {
-    anchored(tp) = mutable.Map[TPRef, Int]()
+    anchored.put(tp, new JMap[TPRef, Int]())
   }
 
   /** record a new rigid relation between those two timepoints.
@@ -42,14 +43,14 @@ final class RigidRelations(private val anchored: mutable.Map[TPRef, mutable.Map[
     if(from.genre.isStructural && !to.genre.isStructural) {
       addRigidRelation(to, from, -d) // reverse to favor compiling structural timepoints
     } else {
-      for (tp <- anchored(to).keys) {
+      for (tp <- anchored.get(to).asScala.keys) {
         val distFromNewAnchor = d + distFromAnchor(tp)
-        anchored(from).put(tp, distFromNewAnchor)
-        _anchorOf(tp) = new AnchorOf(from, distFromNewAnchor)
+        anchored.get(from).put(tp, distFromNewAnchor)
+        _anchorOf.put(tp, new AnchorOf(from, distFromNewAnchor))
       }
       anchored.remove(to)
-      _anchorOf(to) = new AnchorOf(from, d)
-      anchored(from).put(to, d)
+      _anchorOf.put(to, new AnchorOf(from, d))
+      anchored.get(from).put(to, d)
     }
   }
 }
