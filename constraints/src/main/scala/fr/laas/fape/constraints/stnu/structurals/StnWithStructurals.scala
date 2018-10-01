@@ -197,15 +197,19 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   private def rigidAwareDist(a:TPRef, b:TPRef) : Int = {
-    val (aRef:TPRef, aToRef:Int) =
-      if(rigidRelations.isAnchored(a))
-        (rigidRelations._anchorOf(a), rigidRelations.distToAnchor(a))
-      else
-        (a, 0)
-    val (bRef:TPRef, refToB) =
-      if(rigidRelations.isAnchored(b))
-        (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
-      else (b, 0)
+    var aRef = a
+    var aToRef = 0
+    if(rigidRelations.isAnchored(a)) {
+      aRef = rigidRelations._anchorOf(a)
+      aToRef = rigidRelations.distToAnchor(a)
+    }
+
+    var bRef = b
+    var refToB = 0
+    if(rigidRelations.isAnchored(b)) {
+      bRef = rigidRelations._anchorOf(b)
+      refToB = rigidRelations.distFromAnchor(b)
+    }
 
     val refAToRefB = distanceBetweenNonRigid(aRef, bRef)
     DistanceMatrix.plus(aToRef, DistanceMatrix.plus(refAToRefB, refToB))
