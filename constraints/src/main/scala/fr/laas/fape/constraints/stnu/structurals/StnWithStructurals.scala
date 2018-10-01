@@ -79,7 +79,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  private var _timepoints = (nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList
+  private var _timepoints = (nonRigidIndexes.keys ++ rigidRelations.anchoredTimepoints).toList
   def timepoints = new IList[TPRef](_timepoints)
 
   private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
@@ -173,12 +173,12 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
 
     val (aRef:TPRef, aToRef:Int) =
       if(rigidRelations.isAnchored(a))
-        (rigidRelations._anchorOf(a), rigidRelations.distFromAnchor(a))
+        (rigidRelations.anchorOf(a), rigidRelations.distFromAnchor(a))
       else
         (a, 0)
     val (bRef:TPRef, refToB) =
       if(rigidRelations.isAnchored(b))
-        (rigidRelations._anchorOf(b), rigidRelations.distToAnchor(b))
+        (rigidRelations.anchorOf(b), rigidRelations.distToAnchor(b))
       else (b, 0)
     dist.enforceDist(toIndex(aRef), toIndex(bRef), DistanceMatrix.plus(DistanceMatrix.plus(aToRef, t), refToB))
   }
@@ -200,14 +200,14 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     var aRef = a
     var aToRef = 0
     if(rigidRelations.isAnchored(a)) {
-      aRef = rigidRelations._anchorOf(a)
+      aRef = rigidRelations.anchorOf(a)
       aToRef = rigidRelations.distToAnchor(a)
     }
 
     var bRef = b
     var refToB = 0
     if(rigidRelations.isAnchored(b)) {
-      bRef = rigidRelations._anchorOf(b)
+      bRef = rigidRelations.anchorOf(b)
       refToB = rigidRelations.distFromAnchor(b)
     }
 
@@ -497,7 +497,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
         .filter(!_.genre.isStructural)
         .toSet ++
         structuralNeighbors
-          .filter(x => rigidRelations.isAnchored(x) && !rigidRelations._anchorOf(x).genre.isStructural)
+          .filter(x => rigidRelations.isAnchored(x) && !rigidRelations.anchorOf(x).genre.isStructural)
           .map(x => rigidRelations.anchorOf(x))
       nonStructuralNeighbours
     }
