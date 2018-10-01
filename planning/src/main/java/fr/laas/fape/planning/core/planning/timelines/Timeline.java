@@ -224,25 +224,17 @@ public class Timeline {
     /**
      * @return All time points from the last component.
      */
-    public LinkedList<TPRef> getLastTimePoints() {
+    public List<TPRef> getLastTimePoints() { // TODO: this generates a LOT of garbage, cache it
         assert chain.length > 0 : "Database is empty.";
-        LinkedList<TPRef> tps = new LinkedList<>();
-        for(LogStatement s : chain[chain.length-1].statements) {
-            tps.add(s.end());
-        }
-        return tps;
+        return chain[chain.length-1].getEndTimepoints();
     }
 
     /**
      * @return All time points from the first component.
      */
-    public LinkedList<TPRef> getFirstTimePoints() {
+    public List<TPRef> getFirstTimePoints() { // TODO: this generates a LOT of garbage, cache it
         assert chain.length > 0 : "Database is empty";
-        LinkedList<TPRef> tps = new LinkedList<>();
-        for(LogStatement s : chain[0].statements) {
-            tps.add(s.start());
-        }
-        return tps;
+        return chain[0].getStartTimepoints();
     }
 
     /**

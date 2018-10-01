@@ -28,11 +28,11 @@ public class Threat extends Flaw {
         resolvers = new LinkedList<>();
 
         // db1 before db2
-        if(plan.canBeBefore(db1.getLastTimePoints().getFirst(), db2.getFirstTimePoints().getFirst()))
+        if(plan.canBeBefore(db1.getLastTimePoints().get(0), db2.getFirstTimePoints().get(0)))
             resolvers.add(new TemporalSeparation(db1, db2));
 
         // db2 before db1
-        if(plan.canBeBefore(db2.getLastTimePoints().getFirst(), db1.getFirstTimePoints().getFirst()))
+        if(plan.canBeBefore(db2.getLastTimePoints().get(0), db1.getFirstTimePoints().get(0)))
             resolvers.add(new TemporalSeparation(db2, db1));
 
         // make any argument of the state variables different
