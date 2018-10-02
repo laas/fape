@@ -2,12 +2,23 @@ name := "fape-build"
 
 // global settings 
 val _organization = "com.github.arthur-bit-monnot"
-val _version = "1.0"
 val _scalaVersion = "2.12.6"
 
+inThisBuild(List(
+    // These are normal sbt settings to configure for release, skip if already defined
+    licenses := Seq("BSD-2-Clause" -> url("https://opensource.org/licenses/BSD-2-Clause")),
+    homepage := Some(url("https://github.com/laas/fape")),
+    developers := List(Developer("arthur-bit-monnot", "Arthur Bit-Monnot", "arthur.bitmonnot@gmail.com", url("https://arthur-bit-monnot.github.io"))),
+    scmInfo := Some(ScmInfo(url("https://github.com/laas/fape"), "scm:git:git@github.com:laas/fape.git")),
+
+    // These are the sbt-release-early settings to configure
+    pgpPublicRing := file("./travis/local.pubring.asc"),
+    pgpSecretRing := file("./travis/local.secring.asc"),
+    releaseEarlyEnableLocalReleases := true,
+    releaseEarlyWith := SonatypePublisher
+))
+
 lazy val commonSettings = Seq(
-  organization := _organization,
-  version := _version,
   crossPaths := true,
   exportJars := true, // insert other project dependencies in oneJar
   scalaVersion := _scalaVersion,
@@ -71,20 +82,4 @@ lazy val svgPlot = Project("fape-svg-plot", file("svg-plot"))
 lazy val structures = Project("fape-structures", file("structures"))
      .settings(commonSettings: _*)
 
-packSettings
 
-packMain := Map(
-  "fape" -> "fr.laas.fape.planning.Planning"
-)
-
-packJvmOpts := Map(
-  "fape" -> Seq("-ea")
-)
-
-// Add sonatype repository settings
-publishTo := Some(
-  if (isSnapshot.value)
-    Opts.resolver.sonatypeSnapshots
-  else
-    Opts.resolver.sonatypeStaging
-)
