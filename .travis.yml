@@ -15,8 +15,7 @@ before_cache:
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test
 before_install:
-- if [ $TRAVIS_PULL_REQUEST = 'false' ]; then openssl aes-256-cbc -K $encrypted_474c3e42cec4_key
-  -iv $encrypted_474c3e42cec4_iv -in travis/secrets.tar.enc -out travis/secrets.tar
+- if [ $TRAVIS_PULL_REQUEST = 'false' ]; then openssl aes-256-cbc -K $encrypted_0a6446eb3ae3_key -iv $encrypted_0a6446eb3ae3_iv -in travis/secrets.tar.enc -out travis/secrets.tar
   -d; tar xv -C travis -f travis/secrets.tar; fi
 after_success:
 - if [ $TRAVIS_PULL_REQUEST = 'false' ]; then sbt ++$TRAVIS_SCALA_VERSION releaseEarly;
