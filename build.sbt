@@ -7,9 +7,9 @@ inThisBuild(List(
     // These are normal sbt settings to configure for release, skip if already defined
     organization := "com.github.arthur-bit-monnot",
     licenses := Seq("BSD-2-Clause" -> url("https://opensource.org/licenses/BSD-2-Clause")),
-    homepage := Some(url("https://github.com/laas/fape")),
+    homepage := Some(url("https://github.com/arthur-bit-monnot/fape")),
     developers := List(Developer("arthur-bit-monnot", "Arthur Bit-Monnot", "arthur.bitmonnot@gmail.com", url("https://arthur-bit-monnot.github.io"))),
-    scmInfo := Some(ScmInfo(url("https://github.com/laas/fape"), "scm:git:git@github.com:laas/fape.git")),
+    scmInfo := Some(ScmInfo(url("https://github.com/arthur-bit-monnot/fape"), "scm:git:git@github.com:arthur-bit-monnot/fape.git")),
 
     // These are the sbt-release-early settings to configure
     pgpPublicRing := file("./travis/local.pubring.asc"),
@@ -32,15 +32,6 @@ lazy val commonSettings = Seq(
       oldStrategy(x)
   },
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  // To sync with Maven central, you need to supply the following information:
-  publishMavenStyle := true,
-
-  // POM settings for Sonatype
-  homepage := Some(url("https://github.com/arthur-bit-monnot/fape")),
-  scmInfo := Some(ScmInfo(url("https://github.com/arthur-bit-monnot/fape"), "git@github.com:arthur-bit-monnot/fape.git")),
-  developers += Developer("abitmonn", "Arthur Bit-Monnot", "arthur.bit-monnot@laas.fr", url("https://github.com/arthur-bit-monnot")),
-  licenses += ("BSD-2-Clause", url("https://opensource.org/licenses/BSD-2-Clause")),
-  pomIncludeRepository := (_ => false)
 )
 
 lazy val root = project.in(file(".")).
