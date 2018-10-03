@@ -1,4 +1,4 @@
-name := "fape-build"
+name := "fape-meta"
 
 // global settings 
 
@@ -35,7 +35,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val root = project.in(file(".")).
-  aggregate(fapePlanning).
+  aggregate(fapePlanning, constraints, anml, svgPlot, structures).
 
   settings(
     publish := {},
@@ -44,23 +44,19 @@ lazy val root = project.in(file(".")).
   )
 
 lazy val fapeActing = Project("fape-acting", file("acting"))
-     .aggregate(fapePlanning, constraints, anml, svgPlot, structures)
      .dependsOn(fapePlanning, constraints, anml, svgPlot, structures)
      .settings(commonSettings: _*)
 
 lazy val fapePlanning = Project("fape-planning", file("planning"))
-     .aggregate(constraints, anml, svgPlot, structures)
      .dependsOn(constraints, anml, svgPlot, structures)
      .settings(commonSettings: _*)
      .settings(crossPaths := false)  // disable cross path as this is a pure java project
 
 lazy val constraints = Project("fape-constraints", file("constraints"))
-     .aggregate(anml, structures)
      .dependsOn(anml, structures)
      .settings(commonSettings: _*)
 
 lazy val anml = Project("fape-anml-parser", file("anml-parser"))
-     .aggregate(structures)
      .dependsOn(structures)
      .settings(commonSettings: _*)
      .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
