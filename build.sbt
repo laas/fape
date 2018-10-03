@@ -1,27 +1,25 @@
 name := "fape-build"
 
 // global settings 
-val _organization = "com.github.arthur-bit-monnot"
-val _scalaVersion = "2.12.6"
 
-inThisBuild(List(
-    // These are normal sbt settings to configure for release, skip if already defined
-    licenses := Seq("BSD-2-Clause" -> url("https://opensource.org/licenses/BSD-2-Clause")),
-    homepage := Some(url("https://github.com/laas/fape")),
-    developers := List(Developer("arthur-bit-monnot", "Arthur Bit-Monnot", "arthur.bitmonnot@gmail.com", url("https://arthur-bit-monnot.github.io"))),
-    scmInfo := Some(ScmInfo(url("https://github.com/laas/fape"), "scm:git:git@github.com:laas/fape.git")),
+ThisBuild / scalaVersion := "2.12.6"
 
-    // These are the sbt-release-early settings to configure
-    pgpPublicRing := file("./travis/local.pubring.asc"),
-    pgpSecretRing := file("./travis/local.secring.asc"),
-    releaseEarlyEnableLocalReleases := true,
-    releaseEarlyWith := SonatypePublisher
-))
+ThisBuild / organization := "com.github.arthur-bit-monnot"
+ThisBuild / licenses := Seq("BSD-2-Clause" -> url("https://opensource.org/licenses/BSD-2-Clause"))
+ThisBuild / homepage := Some(url("https://github.com/arthur-bit-monnot/fape"))
+ThisBuild / developers := List(Developer("arthur-bit-monnot", "Arthur Bit-Monnot", "arthur.bitmonnot@gmail.com", url("https://arthur-bit-monnot.github.io")))
+ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/laas/fape"), "scm:git:git@github.com:laas/fape.git"))
+
+// These are the sbt-release-early settings to configure
+ThisBuild / pgpPublicRing := file("./travis/local.pubring.asc")
+ThisBuild / pgpSecretRing := file("./travis/local.secring.asc")
+ThisBuild / releaseEarlyEnableLocalReleases := true
+ThisBuild / releaseEarlyWith := SonatypePublisher
+
 
 lazy val commonSettings = Seq(
   crossPaths := true,
   exportJars := true, // insert other project dependencies in oneJar
-  scalaVersion := _scalaVersion,
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
   javacOptions in compile ++= Seq("-Xlint"),
   javacOptions in doc ++= Seq("-Xdoclint:none"),
@@ -33,15 +31,6 @@ lazy val commonSettings = Seq(
       oldStrategy(x)
   },
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  // To sync with Maven central, you need to supply the following information:
-  publishMavenStyle := true,
-
-  // POM settings for Sonatype
-  homepage := Some(url("https://github.com/arthur-bit-monnot/fape")),
-  scmInfo := Some(ScmInfo(url("https://github.com/arthur-bit-monnot/fape"), "git@github.com:arthur-bit-monnot/fape.git")),
-  developers += Developer("abitmonn", "Arthur Bit-Monnot", "arthur.bit-monnot@laas.fr", url("https://github.com/arthur-bit-monnot")),
-  licenses += ("BSD-2-Clause", url("https://opensource.org/licenses/BSD-2-Clause")),
-  pomIncludeRepository := (_ => false)
 )
 
 lazy val root = project.in(file(".")).
