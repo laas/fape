@@ -86,12 +86,26 @@ class FullSTN[AbsTP](timepointList: Seq[AbsTP]) {
     rigidAwareDist(toIndex(a), toIndex(b))
 
   private def rigidAwareDist(a:Int, b:Int) : IntExpression = {
-    val (aRef:Int, aRefToA:Int) =
-      if(rigids.contains(a)) (rigids(a).reference, rigids(a).distFromRef(a))
-      else (a, 0)
-    val (bRef:Int, bRefToB) =
-      if(rigids.contains(b)) (rigids(b).reference, rigids(b).distFromRef(b))
-      else (b, 0)
+    var aRef:Int = 0
+    var aRefToA:Int = 0
+
+    if(rigids.contains(a)) {
+      aRef = rigids(a).reference
+      aRefToA = rigids(a).distFromRef(a)
+    } else {
+      aRef = a
+      aRefToA = 0
+    }
+
+    var bRef : Int = 0
+    var bRefToB : Int = 0
+    if(rigids.contains(b)) {
+      bRef = rigids(b).reference
+      bRefToB = rigids(b).distFromRef(b)
+    } else  {
+      bRef = b
+      bRefToB = 0
+    }
 
     return sum(lit(bRefToB - aRefToA), dist(aRef)(bRef))
   }
