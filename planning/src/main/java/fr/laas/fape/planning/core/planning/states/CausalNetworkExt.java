@@ -153,10 +153,27 @@ public class CausalNetworkExt implements StateExtension {
                             }
                         });
             }
+        }
+        filterUnfeasibleSupports();
+
+        addedTimelines.clear();
+        extendedTimelines.clear();
+        removedTimelines.clear();
+        lastProcessedChange.clear();
+        for(Timeline tl : tlMan.getTimelines()) {
+            lastProcessedChange.put(tl.mID, tl.numChanges()-1);
+        }
+    }
+
+    private void filterUnfeasibleSupports() {
+        TimelinesManager tlMan = container.tdb;
+
+        for(int tlID : potentialSupporters.keySet()) {
+            Timeline tl = tlMan.getTimeline(tlID);
 
             Set<Event> toRemove = new HashSet<>();
             for(Event pis : potentialSupporters.get(tlID)) {
-                if(!tlMan.containsTimelineWithID(pis.supporterID)) {
+                if(!tlMan.containsTimelineWithID(pis.supporterID)) { //TODO: do incrementally
                     toRemove.add(pis);
                     continue;
                 }
@@ -237,14 +254,6 @@ public class CausalNetworkExt implements StateExtension {
                     }
                 }
             }
-        }
-
-        addedTimelines.clear();
-        extendedTimelines.clear();
-        removedTimelines.clear();
-        lastProcessedChange.clear();
-        for(Timeline tl : tlMan.getTimelines()) {
-            lastProcessedChange.put(tl.mID, tl.numChanges()-1);
         }
     }
 
