@@ -48,7 +48,6 @@ public class CausalNetworkExt implements StateExtension {
     private final List<Integer> removedTimelines;
 
     private final Map<Event, ISet<Integer>> possiblyInterferingTimelines;
-    private final Map<Event, ISet<Integer>> intermediateSteps;
 
     CausalNetworkExt(PartialPlan container) {
         this.container = container;
@@ -58,7 +57,6 @@ public class CausalNetworkExt implements StateExtension {
         removedTimelines = new ArrayList<>();
         addedTimelines = new HashSet<>(container.tdb.getTimelinesStream().map(t -> t.mID).collect(Collectors.toList()));
         possiblyInterferingTimelines = new HashMap<>();
-        intermediateSteps = new HashMap<>();
     }
 
     private CausalNetworkExt(CausalNetworkExt toCopy, PartialPlan container) {
@@ -69,7 +67,6 @@ public class CausalNetworkExt implements StateExtension {
         addedTimelines = new HashSet<>(toCopy.addedTimelines);
         removedTimelines = new ArrayList<>(toCopy.removedTimelines);
         possiblyInterferingTimelines = new HashMap<>(toCopy.possiblyInterferingTimelines);
-        intermediateSteps = new HashMap<>(toCopy.intermediateSteps);
     }
 
     @Override
@@ -208,23 +205,11 @@ public class CausalNetworkExt implements StateExtension {
                             break;
                         }
                     }
-
-                    intermediateSteps.put(pis, new ISet<>());
-                    for (int threatID : updatedList) {
-                        Timeline inter = tlMan.getTimeline(threatID);
-                        if (necessarilyIntermediateStep(sup, tl, inter)) {
-                            intermediateSteps.put(pis, intermediateSteps.get(pis).with(inter.mID));
-//                            System.out.println("coucou"+container.domainOf(sup.getGlobalSupportValue())+
-//                            "   "+container.domainOf(inter.getGlobalConsumeValue())+
-//                            "   "+container.domainOf(tl.getGlobalConsumeValue()));
-                        }
-                    }
                 }
             }
 
             for(Event pis : toRemove) {
                 possiblyInterferingTimelines.remove(pis);
-                intermediateSteps.remove(pis);
             }
             potentialSupporters.put(tlID, potentialSupporters.get(tlID).withoutAll(toRemove));
 
@@ -393,7 +378,6 @@ public class CausalNetworkExt implements StateExtension {
         if(potentialSupporters.containsKey(tl.mID)) {
             for (Event e : potentialSupporters.get(tl.mID)) {
                 possiblyInterferingTimelines.remove(e);
-                intermediateSteps.remove(e);
             }
             potentialSupporters.remove(tl.mID);
         }
