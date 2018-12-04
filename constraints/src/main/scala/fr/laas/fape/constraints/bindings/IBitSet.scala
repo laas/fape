@@ -22,6 +22,18 @@ final class IBitSet(val elems: Array[Long]) extends Set[Int] {
   import IBitSet._
   val nwords = elems.length
 
+  override val size: Int = {
+    var s = 0
+    var i = nwords
+    while (i > 0) {
+      i -= 1
+      s += java.lang.Long.bitCount(words(i))
+    }
+    s
+  }
+
+  override def isEmpty: Boolean = size == 0
+
   def min: Int = {
     val a = nextSetBit(0)
     if(a < -1) throw new NoSuchElementException
@@ -125,33 +137,12 @@ final class IBitSet(val elems: Array[Long]) extends Set[Int] {
         return true
       i += 1
     }
-    return false
+    false
   }
 
   override def iterator: Iterator[Int] = new Iterator[Int] {
     private var current = nextSetBit(0)
     override def hasNext: Boolean = current != -1
     override def next(): Int = {  val ret = current ; current = nextSetBit(current+1) ; ret }
-  }
-
-  override final lazy val isEmpty : Boolean = {
-    var i = nwords
-    var empty = true
-    while(empty && i > 0) {
-      i -= 1
-      if(words(i) != 0)
-        empty = false
-    }
-    empty
-  }
-
-  override final lazy val size: Int = {
-    var s = 0
-    var i = nwords
-    while (i > 0) {
-      i -= 1
-      s += java.lang.Long.bitCount(words(i))
-    }
-    s
   }
 }

@@ -29,9 +29,7 @@ class Domain(val vals: IBitSet) {
     case bs: IBitSet => java.util.BitSet.valueOf(bs.elems)
     case _ => throw new RuntimeException("Unsupported conversion from non-IBitSet collection.")
   }
-
-  lazy private val _isEmpty = vals.isEmpty
-  lazy private val _size = vals.size
+  private val _size = vals.size
 
   def values() : util.Set[Integer] = JavaConversions.setAsJavaSet(vals).asInstanceOf[java.util.Set[Integer]]
 
@@ -65,7 +63,7 @@ class Domain(val vals: IBitSet) {
   def contains(v: Integer) : Boolean =
     vals.contains(v)
 
-  def isEmpty : Boolean = _isEmpty
+  def isEmpty : Boolean = _size == 0
 
   def nonEmpty = !isEmpty
 
@@ -75,11 +73,6 @@ class Domain(val vals: IBitSet) {
   def remove(toRm: Integer) : Domain =
     new Domain(vals - toRm)
 
-  def add(value: Integer) : Domain = {
-//    if (vals.isInstanceOf[BitSet] && value > ValuesHolder.BITSET_MAX_SIZE)
-////     it has grown too big, switch to too normal Set
-//      new ValuesHolder(Set[Int]() ++ vals + value)
-//    else
+  def add(value: Integer) : Domain =
       new Domain(vals + value)
-  }
 }
