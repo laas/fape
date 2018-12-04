@@ -61,8 +61,8 @@ public class SearchNode {
     public void setExpanded() {
         PartialPlan s = state.get();
         if(s != null && depth != 0) {
-            // switch to a weak reference
-            state = new WeakReference<>(s);
+            // allow early garbage collection.
+            state = null;
         }
     }
 
@@ -83,39 +83,43 @@ public class SearchNode {
     public boolean isRecordedHC() { return hc >= 0; }
     public void setHC(double value) { hc = value; }
 
-    /**
-     * Returns the base state from which the complete state can be built.
-     */
-    private PartialPlan getBaseState(boolean isForChild) {
-        if(state != null && state.get() != null) {
-            return state.get();
-        } else {
+    private PartialPlan getStateCopy() {
+        PartialPlan st = null;
+        if(state != null) {
+            PartialPlan base = state.get();
+            if(base != null)
+                st = base.cc(mID);
+        }
+        if(st == null){
             assert depth != 0;
             assert parent != null;
-            PartialPlan st = parent.getState(true).cc(mID);
-            st.depth = depth;
-            nextOperation = 0;
-            if(!isForChild) // directly request, save the reference
-                state = new SoftReference<>(st);
-            else if(depth %5 == 0) // save at regular depths
-                state = new SoftReference<>(st);
-            return st;
+            PartialPlan aliased = parent.getStateCopy();
+            aliased.depth = depth;
+            aliased.mID = mID;
+            operations.forEach(op -> op.accept(aliased));
+            st = aliased;
         }
+        return st;
     }
 
     public SearchNode getParent() { return parent; }
 
     public PartialPlan getState() {
-        return getState(false);
-    }
-
-    private PartialPlan getState(boolean isForChild) {
-        PartialPlan s = getBaseState(isForChild);
-        s.depth = depth;
-        while(nextOperation < operations.size()) {
-            operations.get(nextOperation++).accept(s);
+        PartialPlan st = null;
+        if(state != null) {
+            st = state.get();
+            while(nextOperation < operations.size()) {
+                operations.get(nextOperation).accept(st);
+                nextOperation++;
+            }
         }
-        return s;
+        if(st == null) {
+            st = getStateCopy();
+            state = new SoftReference<>(st);
+            nextOperation = operations.size();
+        }
+
+        return st;
     }
 
     public int getDepth() { return depth; }
