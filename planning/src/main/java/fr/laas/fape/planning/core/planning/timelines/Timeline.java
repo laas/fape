@@ -224,7 +224,7 @@ public class Timeline {
     /**
      * @return All time points from the last component.
      */
-    public List<TPRef> getLastTimePoints() { // TODO: this generates a LOT of garbage, cache it
+    public List<TPRef> getLastTimePoints() {
         assert chain.length > 0 : "Database is empty.";
         return chain[chain.length-1].getEndTimepoints();
     }
@@ -232,7 +232,7 @@ public class Timeline {
     /**
      * @return All time points from the first component.
      */
-    public List<TPRef> getFirstTimePoints() { // TODO: this generates a LOT of garbage, cache it
+    public List<TPRef> getFirstTimePoints() {
         assert chain.length > 0 : "Database is empty";
         return chain[0].getStartTimepoints();
     }
