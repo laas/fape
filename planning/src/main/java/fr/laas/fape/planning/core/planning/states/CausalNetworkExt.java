@@ -15,7 +15,6 @@ import fr.laas.fape.anml.model.ParameterizedStateVariable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CausalNetworkExt implements StateExtension {
     // for evaluation purposes, setting it two false will only keep the most basic evaluation modes
@@ -47,7 +46,7 @@ public class CausalNetworkExt implements StateExtension {
     private final Set<Integer> addedTimelines;
     private final List<Integer> removedTimelines;
 
-    private final Map<Event, ISet<Integer>> possiblyInterferingTimelines;
+    private final Map<Event, BitSet> possiblyInterferingTimelines;
 
     CausalNetworkExt(PartialPlan container) {
         this.container = container;
@@ -66,7 +65,10 @@ public class CausalNetworkExt implements StateExtension {
         extendedTimelines = new ArrayList<>(toCopy.extendedTimelines);
         addedTimelines = new HashSet<>(toCopy.addedTimelines);
         removedTimelines = new ArrayList<>(toCopy.removedTimelines);
-        possiblyInterferingTimelines = new HashMap<>(toCopy.possiblyInterferingTimelines);
+        possiblyInterferingTimelines = new HashMap<>();
+        for(HashMap.Entry<Event,BitSet> e : toCopy.possiblyInterferingTimelines.entrySet()) {
+            possiblyInterferingTimelines.put(e.getKey(), (BitSet) e.getValue().clone());
+        }
     }
 
     @Override
@@ -240,32 +242,43 @@ public class CausalNetworkExt implements StateExtension {
         Timeline sup = tlMan.getTimeline(pis.supporterID);
         Timeline tl = tlMan.getTimeline(pis.consumerID);
 
-        // update potential threats
-        ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
-                possiblyInterferingTimelines.get(pis) :
-                new ISet<>();
-        Stream<Integer> additionsToConsider = possiblyInterferingTimelines.containsKey(pis) ?
-                addedTimelines.stream() :
-                tlMan.getTimelinesStream().map(x -> x.mID);
+        // mutable reference to the list of possibly interfering timelines
+        BitSet list;
+        // get the initial list
+        if(!possiblyInterferingTimelines.containsKey(pis)) {
+            // no incremental result to use, compute from scratch
+            list = new BitSet();
+            possiblyInterferingTimelines.put(pis, list);
+            for(Timeline threat : tlMan.getTimelines()) {
+                list.set(threat.mID);
+            }
+        } else {
+            // process incrementally
+            list = possiblyInterferingTimelines.get(pis);
+            for(int i : addedTimelines) {
+                list.set(i);
+            }
+        }
 
-        List<Integer> toRemoveFromInitialList = initialList.stream()
-                .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                .collect(Collectors.toList());
-        List<Integer> toAddToInitialList = additionsToConsider
-                .filter(i -> tlMan.containsTimelineWithID(i) && possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                .collect(Collectors.toList());
+        // filter possible interference that are no longer threatening.
+        int cur = list.nextSetBit(0);
+        while(cur >= 0) {
+            int i = cur;
+            if(cur == pis.consumerID || cur == pis.supporterID)
+                list.clear(cur);
+            else if(!tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i))) {
+                list.clear(cur);
+            }
 
-        ISet<Integer> updatedList = initialList
-                .withoutAll(toRemoveFromInitialList)
-                .withAll(toAddToInitialList)
-                .filter((Predicate<Integer>) id -> id != pis.supporterID && id != pis.consumerID);
-        possiblyInterferingTimelines.put(pis, updatedList);
-
-        for (int threatID : updatedList) {
-            Timeline threat = tlMan.getTimeline(threatID);
-            if (necessarilyThreatening(sup, tl, threat)) {
+            cur = list.nextSetBit(cur+1);
+        }
+        // look for necessary threats
+        cur = list.nextSetBit(0);
+        while(cur >= 0) {
+            if (necessarilyThreatening(sup, tl, tlMan.getTimeline(cur))) {
                 return true;
             }
+            cur = list.nextSetBit(cur+1);
         }
         return false;
     }
