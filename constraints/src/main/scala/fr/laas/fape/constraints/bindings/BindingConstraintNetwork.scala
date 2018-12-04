@@ -368,8 +368,15 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
 
+  private val typeDomainCache = mutable.Map[Type,Domain]()
   def defaultDomain(t: Type) : Domain = {
-    stringValuesAsDomain(t.instances.map(i => i.instance).asJava)
+    if(!typeDomainCache.contains(t)) {
+      val dom = stringValuesAsDomain(t.instances.map(i => i.instance).asJava)
+      typeDomainCache(t) = dom
+      dom
+    } else {
+      typeDomainCache(t)
+    }
   }
 
   def addVariable(v: VarRef): Unit = {
