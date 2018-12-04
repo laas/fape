@@ -81,8 +81,7 @@ class StnWithStructurals(var nonRigidIndexes: JMap[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  private var _timepoints = (nonRigidIndexes.keySet().asScala ++ rigidRelations.anchoredTimepoints).toList
-  def timepoints = new IList[TPRef](_timepoints)
+  def timepoints: IList[TPRef] = new IList[TPRef]((nonRigidIndexes.keySet().asScala ++ rigidRelations.anchoredTimepoints).toList)
 
   private def toIndex(tp:TPRef) : Int = nonRigidIndexes.get(tp)
   def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
@@ -91,7 +90,6 @@ class StnWithStructurals(var nonRigidIndexes: JMap[TPRef,Int],
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!isKnown(tp))
-    _timepoints = tp :: _timepoints
     val id = dist.createNewNode()
     nonRigidIndexes.put(tp, id)
     rigidRelations.addAnchor(tp)
