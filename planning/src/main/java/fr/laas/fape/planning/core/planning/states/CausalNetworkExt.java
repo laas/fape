@@ -287,6 +287,10 @@ public class CausalNetworkExt implements StateExtension {
      * ro (ii) they can be on different fluents */
     private boolean canBeSeparated(Event e, Timeline og) {
         Timeline tl = container.getTimeline(e.supporterID);
+
+        if(!areNecessarilyIdentical(e.getStatement().sv(), tl.stateVariable))
+            return true;
+
         List<TPRef> endTimepoints;
         if(og.hasSinglePersistence()) {
             endTimepoints = Collections.singletonList(e.getStatement().end());
@@ -295,11 +299,13 @@ public class CausalNetworkExt implements StateExtension {
             endTimepoints = tl.timepointsPrecedingNextChange(eventComp);
         }
 
-        boolean temporallySeparable =
-                endTimepoints.stream().allMatch(tp ->
-                        container.csp.stn().isDelayPossible(tp, og.getConsumeTimePoint(), 1) ||
-                        container.csp.stn().isDelayPossible(og.getConsumeTimePoint(), tp, 1));
-        return temporallySeparable || !areNecessarilyIdentical(e.getStatement().sv(), tl.stateVariable);
+        for(TPRef tp : endTimepoints) {
+            boolean x = container.csp.stn().isDelayPossible(tp, og.getConsumeTimePoint(), 1);
+            boolean y = container.csp.stn().isDelayPossible(og.getConsumeTimePoint(), tp, 1);
+            if(!x && !y)
+                return false;
+        }
+        return true;
     }
 
     /**
