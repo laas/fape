@@ -18,6 +18,13 @@ class ISet[T](val s : Set[T]) extends java.lang.Iterable[T] {
     override def remove(): Unit = ???
   }
 
+  override def equals(o: Any): Boolean = o match {
+    case o: ISet[_] => s == o.s
+    case _ => false
+  }
+
+  override def hashCode(): Int = s.hashCode()
+
   def asScala = s
   def asJava = s.asJava
 
