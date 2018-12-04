@@ -383,40 +383,42 @@ public class Planner {
      * It does that at most "maxForwardState"
      */
     private boolean fastForward(PartialPlan plan, int maxForwardStates) {
-        if(maxForwardStates == 0)
-            return true;
+        while(maxForwardStates > 0) {
+            maxForwardStates--;
 
-        List<Flaw> flaws = plan.getFlaws(options.flawFinders, flawComparator(plan));
+            List<Flaw> flaws = plan.getFlaws(options.flawFinders, flawComparator(plan));
 
-        if (flaws.isEmpty()) {
-            return true;
-        }
-
-        //we just take the first flaw and its resolvers
-        Flaw flaw = flaws.get(0);
-        List<Resolver> resolvers = flaw.getResolvers(plan, this);
-
-        if (resolvers.isEmpty()) {
-            throw new FlawWithNoResolver(flaw);
-        }
-
-        if(resolvers.size() == 1) {
-            Resolver res = resolvers.get(0);
-            if(!applyResolver(plan, res, true))
-                throw new ResolverResultedInInconsistency(flaw, res);
-            else
-                plan.checkConsistency();
-            TinyLogger.LogInfo(plan, "     [%s] ff: Adding %s", plan.mID, res);
-            if(plan.isConsistent()) {
-                numFastForwardedPartialPlans++;
-                return fastForward(plan, maxForwardStates-1);
-            } else {
-                throw new ResolverResultedInInconsistency(flaw, res);
+            if (flaws.isEmpty()) {
+                return true;
             }
-        } else {
-            // nothing was done
-            return true;
+
+            //we just take the first flaw and its resolvers
+            Flaw flaw = flaws.get(0);
+            List<Resolver> resolvers = flaw.getResolvers(plan, this);
+
+            if (resolvers.isEmpty()) {
+                throw new FlawWithNoResolver(flaw);
+            }
+
+            if (resolvers.size() == 1) {
+                Resolver res = resolvers.get(0);
+                if (!applyResolver(plan, res, true))
+                    throw new ResolverResultedInInconsistency(flaw, res);
+                else
+                    plan.checkConsistency();
+                TinyLogger.LogInfo(plan, "     [%s] ff: Adding %s", plan.mID, res);
+                if (plan.isConsistent()) {
+                    numFastForwardedPartialPlans++;
+                    // proceed to next loop
+                } else {
+                    throw new ResolverResultedInInconsistency(flaw, res);
+                }
+            } else {
+                // nothing was done
+                return true;
+            }
         }
+        return true;
     }
 
     /**
