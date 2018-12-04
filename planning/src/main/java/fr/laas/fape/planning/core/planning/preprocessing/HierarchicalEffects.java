@@ -8,7 +8,6 @@ import fr.laas.fape.constraints.bindings.Domain;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.states.PartialPlan;
 import fr.laas.fape.planning.core.planning.timelines.Timeline;
-import fr.laas.fape.planning.util.Utils;
 import lombok.Value;
 import fr.laas.fape.anml.model.abs.AbstractAction;
 import fr.laas.fape.anml.model.abs.AbstractTask;
@@ -17,7 +16,6 @@ import fr.laas.fape.anml.model.concrete.Task;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class HierarchicalEffects {
     private final boolean CHECK_DELAY_FROM_TASK_TO_OG = GlobalOptions.getBooleanOption("check-delay-from-task-to-og");
@@ -226,24 +224,6 @@ public class HierarchicalEffects {
         return directActionConditions.get(a);
     }
 
-    private List<TemporalFluent> intersect(List<List<TemporalFluent>> fluentsSet) {
-        List<List<TemporalFluent>> combs = Utils.allCombinations(fluentsSet);
-        List<List<TemporalFluent>> validCombs = combs.stream().map(l -> l.stream())
-                .filter(fs -> fs.allMatch(f -> f.f.func == fs.findFirst().get().f.func))
-                .map(s -> s.collect(Collectors.toList()))
-                .collect(Collectors.toList());
-
-        return null;
-    }
-
-    public void conditionsOf(AbstractAction a) {
-
-    }
-
-    private List<TemporalFluent> directConditionsOf(String task) {
-        return null;
-    }
-
     /** Union of the direct effects of all methods for this task */
     private List<TemporalFluent> directEffectsOf(Subtask t) {
         return methodsOfTask(t.taskName).stream()
@@ -326,14 +306,24 @@ public class HierarchicalEffects {
         return actionEffects.get(a);
     }
 
-    @Value private static class DomainList {
-        List<Domain> l;
+    private static class DomainList {
+        Domain[] l = new Domain[8];
+        int size = 0;
+
+        void add(Domain d) {
+            assert size < 8;
+            l[size] = d;
+            size++;
+        }
+        void clear() {
+            size = 0;
+        }
 
         /** True if the two lists are compatible: all pairs of domains have a non empty intersection */
         boolean compatible(DomainList dl) {
-            assert l.size() == dl.l.size();
-            for(int i=0 ; i<l.size() ; i++) {
-                if(l.get(i).intersect(dl.l.get(i)).isEmpty())
+            assert size == dl.size;
+            for(int i=0 ; i < size ; i++) {
+                if(!l[i].hasOneCommonElement(dl.l[i]))
                     return false;
             }
             return true;
@@ -358,45 +348,55 @@ public class HierarchicalEffects {
                 return asDomain(v.asType(), st);
             }
         }
-        private static DomainList from(ParameterizedStateVariable sv, VarRef value, PartialPlan st) {
-            return new DomainList(Stream.concat(
-                    Stream.of(sv.args()).map(v -> asDomain(v, st)),
-                    Stream.of(asDomain(value, st)))
-                    .collect(Collectors.toList()));
+        private static void loadFrom(ParameterizedStateVariable sv, VarRef value, PartialPlan st, DomainList out) {
+            out.clear();
+            for(VarRef v : sv.args())
+                out.add(asDomain(v, st));
+            out.add(asDomain(value, st));
         }
-        private static DomainList from(TemporalFluent.Fluent f, Map<LVarRef,VarRef> bindings, PartialPlan st) {
-            return new DomainList(
-                    Stream.concat(
-                            f.getArgs().stream().map(v -> asDomain(v, bindings, st)),
-                            Stream.of(asDomain(f.getValue(), bindings, st)))
-                            .collect(Collectors.toList()));
+        private static void loadFrom(TemporalFluent.Fluent f, Map<LVarRef,VarRef> bindings, PartialPlan st, DomainList out) {
+            out.clear();
+            for(VarPlaceHolder v : f.args) {
+                out.add(asDomain(v, bindings, st));
+            }
+            out.add(asDomain(f.value, bindings, st));
         }
-        private static DomainList from(TemporalFluent.Fluent f, PartialPlan st) {
-            return new DomainList(
-                    Stream.concat(
-                            f.getArgs().stream().map(v -> asDomainFromLocalVars(v, st)),
-                            Stream.of(asDomainFromLocalVars(f.getValue(), st)))
-                            .collect(Collectors.toList()));
+        private static void loadFrom(TemporalFluent.Fluent f, PartialPlan st, DomainList out) {
+            out.clear();
+            for(VarPlaceHolder v : f.args) {
+                out.add(asDomainFromLocalVars(v, st));
+            }
+            out.add(asDomainFromLocalVars(f.value, st));
         }
     }
+    DomainList DL_WORKING = new DomainList();
+    DomainList DL2_WORKING = new DomainList();
+    Map<LVarRef, VarRef> MAP_WORKING = new HashMap<>();
 
     /**
      * A task can indirectly support an open goal if it can be decomposed in an action
      * producing a statement (i) that can support the open goal (ii) that can be early enough to support it
      */
     public boolean canIndirectlySupport(Timeline og, Task t, PartialPlan st) {
-        DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
-        Map<LVarRef, VarRef> bindings = new HashMap<>();
+        DomainList.loadFrom(og.stateVariable, og.getGlobalConsumeValue(), st, DL_WORKING);
+        Map<LVarRef, VarRef> bindings = MAP_WORKING;
+        bindings.clear();
         for(int i=0 ; i<t.args().size() ; i++) {
             assert st.pb.actionsByTask().keySet().contains(t.name()) : "Task '"+t.name()+"'is not recorded.\n Recorded tasks: "+st.pb.actionsByTask().keySet();
             LVarRef localVar = st.pb.actionsByTask().get(t.name()).get(0).args().get(i);
             bindings.put(localVar, t.args().get(i));
         }
-        return effectsOf(t.name()).stream()
-                .filter(effect -> effect.f.func == og.stateVariable.func())
-                .filter(effect -> st.csp.stn().isDelayPossible(t.start(), og.getConsumeTimePoint(), effect.delayFromStart) || !CHECK_DELAY_FROM_TASK_TO_OG)
-                .map(effect -> DomainList.from(effect.f, bindings, st))
-                .anyMatch(domainList -> domainList.compatible(dl));
+        for(TemporalFluent effect : effectsOf(t.name())) {
+            if(effect.f.func != og.stateVariable.func())
+                continue;
+            boolean temporallyPossible = st.csp.stn().isDelayPossible(t.start(), og.getConsumeTimePoint(), effect.delayFromStart) || !CHECK_DELAY_FROM_TASK_TO_OG;
+            if(!temporallyPossible)
+                continue;
+            DomainList.loadFrom(effect.f, bindings, st, DL2_WORKING);
+            if(DL_WORKING.compatible(DL2_WORKING))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -404,12 +404,16 @@ public class HierarchicalEffects {
      * producing a statement (i) that can support the open goal (ii) that can be early enough to support it
      */
     public boolean canSupport(Timeline og, AbstractAction aa, PartialPlan st) {
-        DomainList dl = DomainList.from(og.stateVariable, og.getGlobalConsumeValue(), st);
+        DomainList.loadFrom(og.stateVariable, og.getGlobalConsumeValue(), st, DL_WORKING);
 
-        return effectsOf(aa).stream()
-                .filter(effect -> effect.f.func == og.stateVariable.func())
-                .map(effect -> DomainList.from(effect.f, st))
-                .anyMatch(domainList -> domainList.compatible(dl));
+        for(TemporalFluent effect : effectsOf(aa)) {
+            if(effect.f.func != og.stateVariable.func())
+                continue;
+            DomainList.loadFrom(effect.f, st, DL2_WORKING);
+            if(DL2_WORKING.compatible(DL_WORKING))
+                return true;
+        }
+        return false;
     }
 
     private HashMap<Function,Boolean> _hasAssignmentInAction = new HashMap<>();
