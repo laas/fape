@@ -117,6 +117,7 @@ public class CausalNetworkExt implements StateExtension {
 
         for(int tlID : potentialSupporters.keySet()) {
             if(!container.tdb.containsTimelineWithID(tlID)) {
+                assert removedTimelines.contains(tlID);
                 // timeline was deleted, remove any reference we might have
                 potentialSupporters.remove(tlID);
                 continue;
@@ -152,6 +153,13 @@ public class CausalNetworkExt implements StateExtension {
                                 }
                             }
                         });
+                if(!removedTimelines.isEmpty()) {
+                    Set<Integer> supporters = potentialSupporters.get(tlID).stream().map(e -> e.supporterID).collect(Collectors.toSet());
+                    if(removedTimelines.stream().anyMatch(id -> supporters.contains(id))) {
+                        ISet<Event> updatedSups = potentialSupporters.get(tlID).filter((Predicate<Event>) e -> !removedTimelines.contains(e.supporterID));
+                        potentialSupporters.put(tlID, updatedSups);
+                    }
+                }
             }
         }
         filterUnfeasibleSupports();
@@ -173,11 +181,7 @@ public class CausalNetworkExt implements StateExtension {
 
             Set<Event> toRemove = new HashSet<>();
             for(Event pis : potentialSupporters.get(tlID)) {
-                if(!tlMan.containsTimelineWithID(pis.supporterID)) { //TODO: do incrementally
-                    toRemove.add(pis);
-                    continue;
-                }
-
+                assert tlID == pis.consumerID;
                 // if this event can not be separated (temporally or logically) from the open goal,
                 // then it is the only possible supporter
                 if(USE_CAUSAL_NETWORK) {
@@ -194,34 +198,8 @@ public class CausalNetworkExt implements StateExtension {
 
                 // when possible infer temporal constraints on the earliest appearance of the open goal
                 if(USE_CAUSAL_NETWORK && container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
-                    // update potential threats
-                    ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
-                            possiblyInterferingTimelines.get(pis) :
-                            new ISet<>();
-                    Stream<Integer> additionsToConsider = possiblyInterferingTimelines.containsKey(pis) ?
-                            addedTimelines.stream() :
-                            tlMan.getTimelinesStream().map(x -> x.mID);
-
-                    List<Integer> toRemoveFromInitialList = initialList.stream()
-                            .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                            .collect(Collectors.toList());
-                    List<Integer> toAddToInitialList = additionsToConsider
-                            .filter(i -> tlMan.containsTimelineWithID(i) && possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                            .collect(Collectors.toList());
-
-                    ISet<Integer> updatedList = initialList
-                            .withoutAll(toRemoveFromInitialList)
-                            .withAll(toAddToInitialList)
-                            .filter((Predicate<Integer>) id -> id != pis.supporterID && id != tlID);
-                    possiblyInterferingTimelines.put(pis, updatedList);
-
-                    for (int threatID : updatedList) {
-                        Timeline threat = tlMan.getTimeline(threatID);
-                        if (necessarilyThreatening(sup, tl, threat)) {
-                            toRemove.add(pis);
-                            break;
-                        }
-                    }
+                    if(isInfeasibleDueToInterferences(pis))
+                        toRemove.add(pis);
                 }
             }
 
@@ -255,6 +233,41 @@ public class CausalNetworkExt implements StateExtension {
                 }
             }
         }
+    }
+
+    private boolean isInfeasibleDueToInterferences(Event pis) {
+        TimelinesManager tlMan = container.tdb;
+        Timeline sup = tlMan.getTimeline(pis.supporterID);
+        Timeline tl = tlMan.getTimeline(pis.consumerID);
+
+        // update potential threats
+        ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
+                possiblyInterferingTimelines.get(pis) :
+                new ISet<>();
+        Stream<Integer> additionsToConsider = possiblyInterferingTimelines.containsKey(pis) ?
+                addedTimelines.stream() :
+                tlMan.getTimelinesStream().map(x -> x.mID);
+
+        List<Integer> toRemoveFromInitialList = initialList.stream()
+                .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
+                .collect(Collectors.toList());
+        List<Integer> toAddToInitialList = additionsToConsider
+                .filter(i -> tlMan.containsTimelineWithID(i) && possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
+                .collect(Collectors.toList());
+
+        ISet<Integer> updatedList = initialList
+                .withoutAll(toRemoveFromInitialList)
+                .withAll(toAddToInitialList)
+                .filter((Predicate<Integer>) id -> id != pis.supporterID && id != pis.consumerID);
+        possiblyInterferingTimelines.put(pis, updatedList);
+
+        for (int threatID : updatedList) {
+            Timeline threat = tlMan.getTimeline(threatID);
+            if (necessarilyThreatening(sup, tl, threat)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Returns true if either (i) there can be a temporal gap between the event and the timeline;
