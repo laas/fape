@@ -23,7 +23,7 @@ final class RigidRelations(private val anchored: JMap[TPRef, JMap[TPRef,Int]],
     new RigidRelations(newAnchored, _anchorOf.clone())
   }
 
-  def isAnchored(tp: TPRef) = _anchorOf.size > tp.id && _anchorOf(tp.id) != null
+  def isAnchored(tp: TPRef) = _anchorOf.length > tp.id && _anchorOf(tp.id) != null
   def anchoredTimepoints: Iterator[TPRef] = {
     _anchorOf.indices.iterator.filter(_anchorOf(_) != null).map(new TPRef(_))
   }
