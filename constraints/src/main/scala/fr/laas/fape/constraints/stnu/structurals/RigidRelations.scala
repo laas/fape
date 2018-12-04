@@ -1,18 +1,20 @@
 package fr.laas.fape.constraints.stnu.structurals
 
+import java.util
+
 import fr.laas.fape.anml.model.concrete.TPRef
 import java.util.{HashMap => JMap}
+
 import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
 
 
 private[structurals] final class AnchorOf(val anchor: TPRef, val distFromAnchor: Int)
 
 final class RigidRelations(private val anchored: JMap[TPRef, JMap[TPRef,Int]],
-                           private val _anchorOf: ArrayBuffer[AnchorOf]) {
+                           private var _anchorOf: Array[AnchorOf]) {
 
 
-  def this() = this(new JMap(), new ArrayBuffer[AnchorOf]())
+  def this() = this(new JMap(), new Array[AnchorOf](10))
 
   override def clone() : RigidRelations = {
     val newAnchored = new JMap[TPRef, JMap[TPRef,Int]]()
@@ -30,8 +32,8 @@ final class RigidRelations(private val anchored: JMap[TPRef, JMap[TPRef,Int]],
   def distFromAnchor(tp: TPRef) = _anchorOf(tp.id).distFromAnchor
   def distToAnchor(tp: TPRef) = -distFromAnchor(tp)
   def addAnchored(tp: TPRef, anchorOf: AnchorOf): Unit = {
-    while(_anchorOf.size <= tp.id) {
-      _anchorOf += null
+    if(_anchorOf.size <= tp.id) {
+      _anchorOf = util.Arrays.copyOf(_anchorOf, math.max(tp.id+1 * 2, _anchorOf.size * 2))
     }
     _anchorOf(tp.id) = anchorOf
   }
