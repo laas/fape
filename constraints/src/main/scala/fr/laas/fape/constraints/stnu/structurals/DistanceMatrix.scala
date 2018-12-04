@@ -33,7 +33,7 @@ trait DistanceMatrixListener {
 
 import DistanceMatrix._
 
-class DistanceMatrix(
+final class DistanceMatrix(
                       private var dists: Array[Array[Int]],
                       private val emptySpots: util.BitSet
                     ) {
@@ -54,7 +54,7 @@ class DistanceMatrix(
   }
 
   private final def isActive(tp: Int) = {
-    assert(tp < dists.size)
+    assert(tp < dists.length)
     !emptySpots.get(tp)
   }
 
