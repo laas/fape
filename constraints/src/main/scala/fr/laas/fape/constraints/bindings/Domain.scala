@@ -9,22 +9,17 @@ import scala.collection.JavaConverters._
 
 
 object Domain {
-//  val BITSET_MAX_SIZE =   // TODO: could be interesting to switch to TreeSet when reaching big sizes and low densities
-  def convert(values: util.Collection[Integer]) : Set[Int] = {
+  def convert(values: util.Collection[Integer]) : IBitSet = {
     var max = -10
     for(v <- values.asScala)
       max = if(v > max) v else max
-    var set : Set[Int] =
-//      if(max > BITSET_MAX_SIZE)
-//        Set[Int]()
-//      else
-        new IBitSet()
+    var set : IBitSet = new IBitSet()
     set ++= values.asInstanceOf[util.Collection[Int]].asScala
     set
   }
 }
 
-class Domain(val vals: scala.collection.Set[Int]) {
+class Domain(val vals: IBitSet) {
 
   def this(values: util.Collection[Integer]) = this(Domain.convert(values))
   def this(values: Iterable[Int]) = this(values.map(_.asInstanceOf[Integer]).asJavaCollection)
@@ -40,9 +35,9 @@ class Domain(val vals: scala.collection.Set[Int]) {
 
   def values() : util.Set[Integer] = JavaConversions.setAsJavaSet(vals).asInstanceOf[java.util.Set[Integer]]
 
-  def size() : Integer = _size
+  def size() : Int = _size
 
-  def head() : Integer = vals.head
+  def head() : Int = vals.min
 
   def intersect(other: Domain) : Domain = {
     val intersection = (vals, other.vals) match {

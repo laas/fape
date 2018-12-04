@@ -17,12 +17,16 @@ object IBitSet {
   }
 }
 
-class IBitSet(val elems: Array[Long]) extends Set[Int] {
+final class IBitSet(val elems: Array[Long]) extends Set[Int] {
   def this() = this(Array.fill(1)(0))
   import IBitSet._
   val nwords = elems.length
 
-  def min: Int = nextSetBit(0)
+  def min: Int = {
+    val a = nextSetBit(0)
+    if(a < -1) throw new NoSuchElementException
+    a
+  }
   def max: Int = lastSetBit
 
   private def words(i: Int) : Long =
