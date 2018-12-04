@@ -1,6 +1,6 @@
 package fr.laas.fape.constraints.stnu.structurals
 
-import java.util.{HashMap => JMap}
+import java.util
 
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.anml.pending.IntExpression
@@ -10,7 +10,6 @@ import fr.laas.fape.constraints.stnu.parser.STNUParser
 import fr.laas.fape.structures.IList
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 
 
 object StnWithStructurals {
@@ -49,7 +48,7 @@ object StnWithStructurals {
 
 import StnWithStructurals._
 
-final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
+final class StnWithStructurals(private var nonRigidIndexes: Array[Int], // map: tp.id => index
                              val timepointByIndex: mutable.ArrayBuffer[TPRef],
                              val dist: DistanceMatrix,
                              val rigidRelations: RigidRelations,
@@ -65,10 +64,10 @@ final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
   /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
-  def this() = this(new JMap(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
+  def this() = this(Array.fill(10)(-1), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
 
   override def clone() : StnWithStructurals = new StnWithStructurals(
-    new JMap(nonRigidIndexes), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
+    nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
     optStart, optEnd, originalEdges, consistent, executed.clone()
   )
 
@@ -81,17 +80,34 @@ final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  def timepoints: IList[TPRef] = new IList[TPRef]((nonRigidIndexes.keySet().asScala ++ rigidRelations.anchoredTimepoints).toList)
+  def timepoints: IList[TPRef] = {
+    val flexibles = nonRigidIndexes.indices.iterator.filter(nonRigidIndexes(_) != -1).map(new TPRef(_))
+    new IList[TPRef]((flexibles ++ rigidRelations.anchoredTimepoints).toList)
+  }
 
-  private def toIndex(tp:TPRef) : Int = nonRigidIndexes.get(tp)
+  private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp.id)
+  private def hasFlexIndex(tp: TPRef): Boolean = nonRigidIndexes.size > tp.id && nonRigidIndexes(tp.id) != -1
+  private def addFlexIndex(tp: TPRef, idx: Int): Unit = {
+    if(nonRigidIndexes.size <= tp.id) { // grow
+      val prevSize = nonRigidIndexes.length
+      nonRigidIndexes = util.Arrays.copyOf(nonRigidIndexes, math.max(prevSize * 2, tp.id+1))
+      var i = prevSize
+      while(i < nonRigidIndexes.length) {
+        nonRigidIndexes(i) = -1 // make sure we get an early failure when trying to access an inconsistent state
+        i += 1
+      }
+    }
+    nonRigidIndexes(tp.id) = idx
+  }
+  private def removeFlexIndex(tp: TPRef): Unit = nonRigidIndexes(tp.id) = -1
   def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
 
-  private def isKnown(tp: TPRef) = nonRigidIndexes.containsKey(tp) || rigidRelations.isAnchored(tp)
+  private def isKnown(tp: TPRef) = hasFlexIndex(tp) || rigidRelations.isAnchored(tp)
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!isKnown(tp))
     val id = dist.createNewNode()
-    nonRigidIndexes.put(tp, id)
+    addFlexIndex(tp, id)
     rigidRelations.addAnchor(tp)
     while(timepointByIndex.size <= id) {
       timepointByIndex.append(null)
@@ -280,7 +296,7 @@ final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
       // remove the anchored timepoint from distance matrix
       dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
       timepointByIndex(toIndex(anchored)) = null
-      nonRigidIndexes.remove(anchored)
+      removeFlexIndex(anchored)
       assert(originalDist == rigidAwareDist(tpA, tpB))
     }
 
@@ -297,7 +313,7 @@ final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setStart(tp)
-    nonRigidIndexes.get(tp)
+    toIndex(tp)
   }
 
   def setStart(start: TPRef): Unit = {
@@ -315,7 +331,7 @@ final class StnWithStructurals(val nonRigidIndexes: JMap[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setEnd(tp)
-    nonRigidIndexes.get(tp)
+    toIndex(tp)
   }
 
   def setEnd(end: TPRef): Unit = {
