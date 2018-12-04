@@ -99,6 +99,7 @@ public class SearchNode {
             operations.forEach(op -> op.accept(aliased));
             st = aliased;
         }
+        assert st != null;
         return st;
     }
 
@@ -108,9 +109,11 @@ public class SearchNode {
         PartialPlan st = null;
         if(state != null) {
             st = state.get();
-            while(nextOperation < operations.size()) {
-                operations.get(nextOperation).accept(st);
-                nextOperation++;
+            if(st != null) {
+                while (nextOperation < operations.size()) {
+                    operations.get(nextOperation).accept(st);
+                    nextOperation++;
+                }
             }
         }
         if(st == null) {
@@ -118,7 +121,7 @@ public class SearchNode {
             state = new SoftReference<>(st);
             nextOperation = operations.size();
         }
-
+        assert st != null;
         return st;
     }
 

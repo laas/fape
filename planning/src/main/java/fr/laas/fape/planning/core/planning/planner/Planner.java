@@ -345,6 +345,7 @@ public class Planner {
                         hrComment = "Non consistent resolver application or error while fast-forwarding.";
 
                     if (success) {
+                        assert next != null;
                         children.add(next);
                         numGeneratedPartialPlans++;
                     } else {
@@ -506,6 +507,7 @@ public class Planner {
                         List<SearchNode> children = expand(current);
                         AX.clear();
                         for (SearchNode child : children) {
+                            assert child != null;
                             queue.add(child);
                             // add admissible children to AX for next iteration
                             if (f(child) < fThreshold) {
