@@ -675,13 +675,41 @@ public class PartialPlan implements Reporter {
         for (FlawFinder fd : finders)
             flaws.addAll(fd.getFlaws(this, pl));
 
-        Collections.sort(flaws, comparator);
-        //TODO: do not do a full sort.
-
         if(flaws.isEmpty())
             return Optional.empty();
-        else
-            return Optional.of(flaws.get(0));
+
+        Flaw candidate = null;
+        int bestNumResolvers = Integer.MAX_VALUE;
+
+        for(Flaw f : flaws) {
+            int num = f.getNumResolvers(this, pl);
+            // no resolvers: a dead end exit early
+            if(num == 0)
+                return Optional.of(f);
+
+            if(num < bestNumResolvers) {
+                candidate = f;
+                bestNumResolvers = num;
+            }
+        }
+        assert bestNumResolvers > 0;
+        assert candidate != null;
+
+        // make candidate the best flaw according to comparator
+        for(Flaw f : flaws) {
+            if(f == candidate)
+                continue;
+            if(bestNumResolvers == 1) {
+                // we know that the best flaw will have a single resolver but we still want to
+                // use the comparator to eliminate non determinism
+                int numRes = f.getNumResolvers(this, pl);
+                if(numRes > 1)
+                    continue;
+            }
+            if(comparator.compare(f, candidate) < 0)
+                candidate = f;
+        }
+        return Optional.of(candidate);
     }
 
     public int getMakespan() {
