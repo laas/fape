@@ -140,6 +140,7 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
         }
 
+        // TODO: in practice this method only receives singletons
         IRSet<Fluent> leftMostsFrom(int level, IRSet<Fluent> sources) {
             workingCopy1.clear();
             workingCopy2.clear();
@@ -150,7 +151,6 @@ public class MinSpanTreeExtFull implements StateExtension {
             assert sources == workingCopy1 || sources == workingCopy2;
             IRSet<Fluent> output = sources == workingCopy1 ? workingCopy2 : workingCopy1;
             assert tl.isConsumer();
-//            Fluent[] ss = sources.toArray(new Fluent[0]);
             Level pre = precedingFluents.get(level);
             output.clear();
             sources.stream().forEach(i -> {
@@ -194,21 +194,6 @@ public class MinSpanTreeExtFull implements StateExtension {
 
                 for (Fluent f : startFluents(og.getFirst().getFirst())) {
                     startNodes.add(new Pair<>(new DijNode(f, og), 0));
-                }
-                for (CausalNetworkExt.Event e : st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(og)) {
-                    Timeline sup = st.getTimeline(e.supporterID);
-                    if (e.getChangeNumber() < sup.numChanges() - 1) {
-                        if (sup.isConsumer()) {
-                            // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
-                            IRSet<Fluent> supStartFluents = timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), startFluents(og.getFirst().getFirst()));
-                            for (Fluent f : supStartFluents) {
-                                startNodes.add(new Pair<>(new DijNode(f, sup), 1));
-                            }
-                        } else {
-                            // this is a terminal node, add it to the queue
-                            startNodes.add(new Pair<>(new DijNode(null, sup), 1));
-                        }
-                    }
                 }
                 if (dbgLvl >= 2)
                     System.out.println(Printer.inlineTimeline(st, og));
@@ -277,6 +262,7 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
         }
         for(CausalNetworkExt.Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
+            Timeline og = cur.tl;
             Timeline sup = st.getTimeline(e.supporterID);
             if(e.getChangeNumber() == sup.numChanges()-1 && timelineDTGs.get(sup).canSupportAtEnd(cur.f)) {
                 if(sup.isConsumer()) {
@@ -287,6 +273,19 @@ public class MinSpanTreeExtFull implements StateExtension {
                 } else {
                     DijNode to = new DijNode(null,sup);
                     out.add(new Edge(cur, to, 1));
+                }
+            }
+            if (og.hasSinglePersistence() && e.getChangeNumber() < sup.numChanges() - 1) {
+                if (sup.isConsumer()) {
+                    // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
+                    IRSet<Fluent> supStartFluents =
+                            timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), IRSet.ofSingleton(fluentRep, cur.f));
+                    for (Fluent f : supStartFluents) {
+                        out.add(new Edge(cur, new DijNode(f, sup), 1));
+                    }
+                } else {
+                    // this is a terminal node, add it to the queue
+                    out.add(new Edge(cur, new DijNode(null, sup), 1));
                 }
             }
         }
