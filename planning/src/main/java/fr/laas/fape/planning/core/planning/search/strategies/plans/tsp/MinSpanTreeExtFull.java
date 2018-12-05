@@ -17,11 +17,13 @@ import fr.laas.fape.planning.core.planning.timelines.Timeline;
 import fr.laas.fape.planning.exceptions.NoSolutionException;
 import fr.laas.fape.planning.util.Pair;
 import fr.laas.fape.structures.DijkstraQueue;
+import fr.laas.fape.structures.IDijkstraQueue;
 import fr.laas.fape.structures.IRSet;
 import fr.laas.fape.structures.IntRep;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import fr.laas.fape.anml.model.ParameterizedStateVariable;
+import scala.Int;
 
 import java.util.*;
 import java.util.function.Function;
@@ -188,22 +190,36 @@ public class MinSpanTreeExtFull implements StateExtension {
         this.additionalCost = 0;
         this.currentCost = 0;
 
+        Graph graph = new Graph();
+        for(Timeline og : st.tdb.getConsumers()) {
+            for (Fluent f : startFluents(og.getFirst().getFirst())) {
+                graph.addNode(new DijNode(f, og));
+            }
+        }
+        Graph.PropagationResult prop = graph.propagate();
+
         for(Timeline og : st.tdb.getConsumers()) {
             try {
-                Set<Pair<DijNode, Integer>> startNodes = new HashSet<>();
-
-                for (Fluent f : startFluents(og.getFirst().getFirst())) {
-                    startNodes.add(new Pair<>(new DijNode(f, og), 0));
-                }
                 if (dbgLvl >= 2)
                     System.out.println(Printer.inlineTimeline(st, og));
 
-                int ret = distToFinalNode(startNodes);
-                minPreviousCost.put(og, ret);
+                //  DijkstraResult alt = distToFinalNode(og); // alternative legacy implementation
+                DijkstraResult res = distToFinalNodeGraphBase(og, prop);
+                if(res == null)
+                    throw new NoSolutionException("");
+                else {
+                    final int cost = res.cost;
+                    List<DijNode> path = res.path;
+                    path.stream().map(n -> n.getTl()).distinct().forEach(
+                            tl -> allCosts.computeIfAbsent(tl, (x) -> new ArrayList<Integer>()).add(cost)
+                    );
+                    minPreviousCost.put(og, cost);
+                }
             } catch (NoSolutionException e) {
                 throw new UnachievableGoalException(og);
             }
         }
+
         currentCost = 0; // num statements in state
         for(Timeline tl : st.getTimelines()) {
             for (ChainComponent cc : tl.chain) {
@@ -293,13 +309,43 @@ public class MinSpanTreeExtFull implements StateExtension {
         return out;
     }
 
+    private static class DijkstraResult {
+        final int cost;
+        final List<DijNode> path;
+        DijkstraResult(int cost, List<DijNode> path) {
+            this.cost = cost;
+            this.path = path;
+        }
+    }
+
+    private DijkstraResult distToFinalNodeGraphBase(Timeline og, Graph.PropagationResult g) {
+        DijNode best = null;
+        int bestCost = Integer.MAX_VALUE;
+        for (Fluent f : startFluents(og.getFirst().getFirst())) {
+            DijNode n = new DijNode(f, og);
+            int cost = g.costOf(n);
+            if(cost < bestCost) {
+                best = n;
+                bestCost = cost;
+            }
+        }
+        if(best == null) {
+            return null;
+        } else {
+            List<DijNode> path = g.pathTo(best);
+            Collections.reverse(path);
+            return new DijkstraResult(bestCost, path);
+        }
+    }
+
     /** Estimate the minimal number of statements that must be added to the plan to support one of those nodes */
-    private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) throws NoSolutionException {
+    private DijkstraResult distToFinalNode(Timeline og) {
+
         Counters.inc("min-span / dist-to-final-node");
         int numIter = 0;
         DijkstraQueue<DijNode> q = new DijkstraQueue<>();
-        for(Pair<DijNode,Integer> p : startNodes) {
-            q.putIfBetter(p.getValue1(), p.getValue2(), 1, null);
+        for (Fluent f : startFluents(og.getFirst().getFirst())) {
+            q.putIfBetter(new DijNode(f, og), 0, 1, null);
         }
 
         DijNode sol = null;
@@ -322,22 +368,12 @@ public class MinSpanTreeExtFull implements StateExtension {
             System.out.println("Warning: More than 1000 iterations in computation of critical path heuristic");
 
         if(sol == null)
-            throw new NoSolutionException("");
+            return null;
         else {
-            if(dbgLvl >= 2) {
-                System.out.println(q.getPathTo(sol));
-                System.out.println("\nDist: " + q.getCost(sol) + "\n");
-            }
-            final int cost = q.getCost(sol);
-            q.getPathTo(sol).stream().map(n -> n.getTl()).distinct().forEach(
-                    tl -> allCosts.computeIfAbsent(tl, (x) -> new ArrayList<Integer>()).add(cost)
-            );
-
-            return q.getCost(sol);
+            return new DijkstraResult(q.getCost(sol), q.getPathTo(sol));
         }
-
     }
-
+    private HashMap<DijNode, Integer> costs = new HashMap<>();
     @Value private class DijNode {
         final Fluent f;
         final Timeline tl;
@@ -364,5 +400,134 @@ public class MinSpanTreeExtFull implements StateExtension {
         IRSet<Fluent> fs = new IRSet<>(st.pl.preprocessor.store.getIntRep(Fluent.class));
         getGrounded(s).stream().forEach(gs -> fs.add(startFluent(gs)));
         return fs;
+    }
+
+    private class Graph {
+        private  class Edges {
+            int size = 0;
+            int nodes[] = new int[0];
+            int costs[] = new int[0];
+            void addEdge(int node, int cost) {
+                if(size == nodes.length) {
+                    nodes = Arrays.copyOf(nodes, size * 2 +5);
+                    costs = Arrays.copyOf(costs, size * 2 +5);
+                }
+                nodes[size] = node;
+                costs[size] = cost;
+                size++;
+            }
+        }
+        HashMap<DijNode,Integer> nodeIds = new HashMap<>();
+        HashMap<Integer, DijNode> nodeFromId = new HashMap<>();
+        ArrayList<DijNode> roots = new ArrayList<>();
+        IntRep<DijNode> rep = new IntRep<DijNode>() {
+            @Override
+            public int asInt(DijNode dijNode) { return nodeIds.get(dijNode); }
+
+            @Override
+            public DijNode fromInt(int id) { return nodeFromId.get(id); }
+
+            @Override
+            public boolean hasRepresentation(DijNode dijNode) {
+                return true;
+            }
+        };
+
+        Edges[] graph = new Edges[10];
+
+        private int id(DijNode n) { return nodeIds.get(n); }
+        private DijNode node(int id) { return nodeFromId.get(id); }
+
+        void addNode(DijNode _n) {
+            List<DijNode> queue = new ArrayList<>();
+            List<Edge> edges = new ArrayList<>();
+            queue.add(_n);
+            while (!queue.isEmpty()) {
+                DijNode n = queue.remove(queue.size()-1);
+                if(!nodeIds.containsKey(n)) {
+                    int id = nodeIds.size();
+                    nodeIds.put(n, id);
+                    nodeFromId.put(id, n);
+                    if (id >= graph.length) {
+                        graph = Arrays.copyOf(graph, graph.length * 2);
+                    }
+                    graph[id] = new Edges();
+                    if (n.isTerminal()) {
+                        addRoot(n);
+                    } else {
+                        for(Edge e : outEdges(n)) {
+                            assert e.from == n;
+                            queue.add(e.to);
+                            edges.add(e);
+                        }
+                    }
+                }
+            }
+            while(!edges.isEmpty()) {
+                Edge e = edges.remove(edges.size()-1);
+                int from = id(e.to);
+                int to = id(e.from);
+                graph[from].addEdge(to, e.cost);
+            }
+        }
+        void addRoot(DijNode n) {
+            assert nodeIds.containsKey(n);
+            roots.add(n);
+        }
+
+        class PropagationResult {
+            final IDijkstraQueue<DijNode> queue;
+            final Map<DijNode,DijNode> predecessors;
+            PropagationResult(IDijkstraQueue<DijNode> queue, Map<DijNode,DijNode> predecessors) {
+                assert queue.isEmpty();
+                this.queue = queue;
+                this.predecessors = predecessors;
+            }
+            int costOf(DijNode n) {
+                if(queue.hasCost(n)) {
+                    return queue.getCost(n);
+                } else {
+                    return Int.MaxValue();
+                }
+            }
+            List<DijNode> pathTo(DijNode x) {
+                List<DijNode> l = predecessors.containsKey(x) ? pathTo(predecessors.get(x)) : new ArrayList<>();
+                l.add(x);
+                return l;
+            }
+        }
+
+        PropagationResult propagate() {
+            IDijkstraQueue<DijNode> queue = new IDijkstraQueue<>(rep);
+            HashMap<DijNode,DijNode> predecessors = new HashMap<>();
+            for(DijNode n : roots) {
+                queue.insert(n, 0);
+            }
+            while(!queue.isEmpty()) {
+                final int n = queue.pollId();
+                final int cost = queue.getCost(n);
+
+                Edges outEdges = graph[n];
+                for(int i =0; i<outEdges.size; i++) {
+                    final int edgeTarget = outEdges.nodes[i];
+                    final int edgeCost = outEdges.costs[i];
+                    assert edgeCost >= 0;
+                    final int targetCost = cost + edgeCost;
+                    if(queue.hasCost(edgeTarget)) {
+                        if(queue.getCost(edgeTarget) > targetCost) {
+                            assert queue.contains(edgeTarget);
+                            queue.update(edgeTarget, targetCost);
+                            predecessors.put(node(edgeTarget), node(n));
+                        }
+                    } else {
+                        assert !queue.contains(edgeTarget);
+                        queue.insert(edgeTarget, targetCost);
+                        predecessors.put(node(edgeTarget), node(n));
+                    }
+
+                }
+            }
+            return new PropagationResult(queue, predecessors);
+        }
     }
 }
