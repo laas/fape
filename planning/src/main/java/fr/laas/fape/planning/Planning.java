@@ -2,6 +2,7 @@ package fr.laas.fape.planning;
 
 import com.martiansoftware.jsap.*;
 import fr.laas.fape.anml.model.AnmlProblem;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.reachability.ReachabilityHandler;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.planner.Planner;
@@ -264,6 +265,7 @@ public class Planning {
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
+                Counters.reset();
 
                 final AnmlProblem pb = new AnmlProblem();
                 try {
@@ -443,6 +445,7 @@ public class Planning {
                                 + "\n");
                 writer.flush();
 
+                Counters.echo();
             }
         }
         if (!commandLineConfig.getString("output").equals("stdout"))

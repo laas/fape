@@ -32,7 +32,8 @@ public class GlobalOptions {
             new Option("use-causal-network", "boolean", "true", ""),
             new Option("use-decomposition-variables", "boolean", "true", ""),
             new Option("check-delay-from-task-to-og", "boolean", "true", ""),
-            new Option("reachability-instrumentation", "boolean", "true", "")
+            new Option("reachability-instrumentation", "boolean", "true", ""),
+            new Option("counters-on", "boolean", "false", "")
     ).stream().collect(Collectors.toMap(Option::getKey, Function.identity()));
 
     private static Map<String,String> overriddenValues = new HashMap<>();
