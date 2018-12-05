@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 
 trait Constraint {
+  def vars: Seq[VarRef]
   def involves(v:VarRef)  : Boolean
   def propagate(csp: BindingConstraintNetwork)
 }
@@ -36,7 +37,7 @@ class NAryConstraint(val vars:Seq[VarRef], val allowedTuple: ExtensionConstraint
 
 class InSetConstraint(val left:VarRef, val right:Set[VarRef]) extends Constraint {
   def this(left: VarRef, right: util.Collection[VarRef]) = this(left, right.asScala.toSet)
-
+  val vars: Seq[VarRef] = left :: right.toList
   override def propagate(csp: BindingConstraintNetwork): Unit = {
     val domains = right.map(v => csp.rawDomain(v))
     val union = domains.tail.foldLeft(domains.head)((acc, dom) => acc.union(dom))

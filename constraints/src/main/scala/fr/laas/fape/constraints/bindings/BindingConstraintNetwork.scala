@@ -41,6 +41,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   var extensionConstraints : Map[String, ExtensionConstraint] = null
 
   var constraints : mutable.Buffer[Constraint] = null
+  var watchers : mutable.Map[VarRef, ArrayBuffer[Constraint]] = null
 
   var pendingConstraints : mutable.Set[Constraint] = null
 
@@ -62,6 +63,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       defaultIntDomain = o.defaultIntDomain
       extensionConstraints = o.extensionConstraints
       constraints = o.constraints.clone()
+      watchers = mutable.Map(o.watchers.mapValues(_.clone()).toSeq: _*)
       unusedDomainIds = o.unusedDomainIds.clone()
       pendingConstraints = o.pendingConstraints.clone()
     case None =>
@@ -80,6 +82,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
       extensionConstraints = Map()
       constraints = ArrayBuffer()
+      watchers = mutable.Map()
 
       unusedDomainIds = mutable.Set()
       pendingConstraints = mutable.Set()
@@ -136,27 +139,25 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     if(domains(id).size == 1) {
       // check difference constraints
       val uniqueValue = domains(id).min
-      for (o <- vars.indices
-           if !unusedDomainIds.contains(o)
-           if different(id)(o)
-           if domains(o).contains(uniqueValue))
-      {
-        domains(o) = domains(o).remove(uniqueValue)
-
-        try {
-          domainChanged(o, None)
-        } catch {
-          case e:InconsistentBindingConstraintNetwork =>
-            vars(id).map(_.label)
-            throw new InconsistentConstraintPropagation(vars(id).map(_.label).mkString("==")+" != "+vars(o).map(_.label).mkString("=="), e)
+      val diff = different(id)
+      var o = vars.size -1
+      while(o >= 0) {
+        if(diff(o)) {
+          if(!unusedDomainIds.contains(o)) {
+            if(domains(o).contains(uniqueValue)) {
+              domains(o) = domains(o).remove(uniqueValue)
+              domainChanged(o, None)
+            }
+          }
         }
+        o -= 1
       }
     }
 
-    // add extended constraints to the queue
-    pendingConstraints ++= constraints
-      .filter(c => !causedByExtended.contains(c))
-      .filter(c => vars(id).exists(v => c.involves(v)))
+    for(v <- vars(id)) {
+      if(watchers.contains(v))
+        pendingConstraints ++= watchers(v)
+    }
 
     // if it is a integer varaible that got binded, notify the listener if any
     if(listener != null && domains(id).size == 1 && isIntegerVar(vars(id).head)) {
@@ -247,6 +248,11 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def addConstraint(c: Constraint): Unit = {
     constraints += c
+    for(v <- c.vars) {
+      if(!watchers.contains(v))
+        watchers(v) = new ArrayBuffer[Constraint]()
+      watchers(v) += c
+    }
     pendingConstraints += c
   }
 
