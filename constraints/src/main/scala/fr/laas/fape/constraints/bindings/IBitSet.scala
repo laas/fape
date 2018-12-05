@@ -18,7 +18,7 @@ object IBitSet {
 }
 
 final class IBitSet(val elems: Array[Long]) extends Set[Int] {
-  def this() = this(Array.fill(1)(0))
+  def this() = this(new Array[Long](0))
   import IBitSet._
   val nwords = elems.length
 
@@ -42,7 +42,7 @@ final class IBitSet(val elems: Array[Long]) extends Set[Int] {
   def max: Int = lastSetBit
 
   private def words(i: Int) : Long =
-    if(i < elems.length) elems(i)
+    if(i < nwords) elems(i)
     else 0L
   private def wordIndex(i: Int) = i >> 6
 

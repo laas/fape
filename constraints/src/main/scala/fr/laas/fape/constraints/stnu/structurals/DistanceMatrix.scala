@@ -9,10 +9,10 @@ import scala.collection.mutable
 
 object DistanceMatrix {
   /** number of spot to create when needing to grow the network */
-  val growthIncrement = 5
+  final val growthIncrement = 5
 
   /** Infinity value that does not overflow when added to itself */
-  val INF :Int = Integer.MAX_VALUE /2 -1
+  final val INF :Int = Integer.MAX_VALUE /2 -1
 
   /** Addition that will never overflow given that both parameters are in [-INF,INF] */
   final def plus(a:Int, b: Int) = {

@@ -200,6 +200,23 @@ public class CausalNetworkExt implements StateExtension {
 
                 // when possible infer temporal constraints on the earliest appearance of the open goal
                 if(USE_CAUSAL_NETWORK && container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
+
+                    // get the initial list
+                    if(!possiblyInterferingTimelines.containsKey(pis)) {
+                        // no incremental result to use, compute from scratch
+                        BitSet list = new BitSet();
+                        possiblyInterferingTimelines.put(pis, list);
+                        for(Timeline threat : tlMan.getTimelines()) {
+                            list.set(threat.mID);
+                        }
+                    } else {
+                        // process incrementally
+                        BitSet list  = possiblyInterferingTimelines.get(pis);
+                        for(int i : addedTimelines) {
+                            list.set(i);
+                        }
+                    }
+
                     if(isInfeasibleDueToInterferences(pis))
                         toRemove.add(pis);
                 }
@@ -245,28 +262,15 @@ public class CausalNetworkExt implements StateExtension {
         }
     }
 
+    /** Filters the set of possibly interfering timelines for this support */
     private boolean isInfeasibleDueToInterferences(Event pis) {
         TimelinesManager tlMan = container.tdb;
         Timeline sup = tlMan.getTimeline(pis.supporterID);
         Timeline tl = tlMan.getTimeline(pis.consumerID);
 
         // mutable reference to the list of possibly interfering timelines
-        BitSet list;
-        // get the initial list
-        if(!possiblyInterferingTimelines.containsKey(pis)) {
-            // no incremental result to use, compute from scratch
-            list = new BitSet();
-            possiblyInterferingTimelines.put(pis, list);
-            for(Timeline threat : tlMan.getTimelines()) {
-                list.set(threat.mID);
-            }
-        } else {
-            // process incrementally
-            list = possiblyInterferingTimelines.get(pis);
-            for(int i : addedTimelines) {
-                list.set(i);
-            }
-        }
+        BitSet list = possiblyInterferingTimelines.get(pis);
+        assert list != null;
 
         // filter possible interference that are no longer threatening.
         int cur = list.nextSetBit(0);

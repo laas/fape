@@ -128,14 +128,14 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   }
 
   private def domainChanged(id: DomID, causedByExtended: Option[Constraint]): Unit = {
-    if(domains(id).size() == 0) {
+    if(domains(id).size == 0) {
       hasEmptyDomains = true
       throw new VarWithEmptyDomain(vars(id).toList.asJava)
     }
 
-    if(domains(id).size() == 1) {
+    if(domains(id).size == 1) {
       // check difference constraints
-      val uniqueValue = domains(id).head()
+      val uniqueValue = domains(id).min
       for (o <- vars.indices
            if !unusedDomainIds.contains(o)
            if different(id)(o)
@@ -159,8 +159,8 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       .filter(c => vars(id).exists(v => c.involves(v)))
 
     // if it is a integer varaible that got binded, notify the listener if any
-    if(listener != null && domains(id).size() == 1 && isIntegerVar(vars(id).head)) {
-      val value = domains(id).head()
+    if(listener != null && domains(id).size == 1 && isIntegerVar(vars(id).head)) {
+      val value = domains(id).min
       for(v <- vars(id)) {
         assert(isIntegerVar(v))
         listener.onBinded(v, value)
@@ -190,7 +190,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     rawDomain(v).values().asScala.map(values(_)).toList.asJava
 
   def unified(a: VarRef, b: VarRef): Boolean =
-    domID(a) == domID(b) || domainSize(a) == 1 && domainSize(b) == 1 && rawDomain(a).head() == rawDomain(b).head()
+    domID(a) == domID(b) || domainSize(a) == 1 && domainSize(b) == 1 && rawDomain(a).min == rawDomain(b).min
 
   def recordEmptyNAryConstraint(setID: String, isLastValInteger: Boolean, numVariables: Int) = {
     assert(!extensionConstraints.contains(setID))
@@ -294,7 +294,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   private def merge(id1: DomID, id2: DomID) : Unit = {
     val newDom = domains(id1).intersect(domains(id2))
-    val domainUpdated = newDom.size() < domains(id1).size() || newDom.size() < domains(id2).size()
+    val domainUpdated = newDom.size < domains(id1).size || newDom.size < domains(id2).size
 
     domains(id1) = newDom
     vars(id1) = vars(id1) ++ vars(id2)
@@ -329,7 +329,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def restrictDomain(v: VarRef, domain: Domain, origin: Option[Constraint]): Boolean = {
     val newDom = rawDomain(v).intersect(domain)
-    val modified = newDom.size() < rawDomain(v).size()
+    val modified = newDom.size < rawDomain(v).size
     if(modified) {
       domains(domID(v)) = newDom
       domainChanged(domID(v), origin)
@@ -363,7 +363,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def getUnboundVariables: util.List[VarRef] = {
     val unboundDomains =
-      for (domId <- domains.indices ; if domains(domId) != null && domains(domId).size() != 1)
+      for (domId <- domains.indices ; if domains(domId) != null && domains(domId).size != 1)
         yield domId
     unboundDomains.map(vars(_).head).filter(!isIntegerVar(_)).toList.asJava
   }
@@ -425,7 +425,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   def DeepCopy(): BindingConstraintNetwork =
     new BindingConstraintNetwork(Some(this))
 
-  def domainSize(v: VarRef): Integer = rawDomain(v).size()
+  def domainSize(v: VarRef): Integer = rawDomain(v).size
 
   def addIntVariable(v: VarRef): Unit = {
     assert(v.typ.isNumeric)
