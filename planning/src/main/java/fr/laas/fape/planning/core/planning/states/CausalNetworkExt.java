@@ -2,6 +2,7 @@ package fr.laas.fape.planning.core.planning.states;
 
 import fr.laas.fape.anml.model.concrete.TPRef;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.exceptions.InconsistencyException;
@@ -90,9 +91,10 @@ public class CausalNetworkExt implements StateExtension {
     }
 
     private void processPending() {
+        Counters.inc("process-pending");
         if(extendedTimelines.isEmpty() && addedTimelines.isEmpty() && removedTimelines.isEmpty())
             return;
-
+        Counters.inc("process-pending-non-noop");
         // find all indirect supporters of newly added timelines
         for(int tlID : addedTimelines) {
             if(!container.tdb.containsTimelineWithID(tlID))
