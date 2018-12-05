@@ -3,7 +3,7 @@ name := "fape-meta"
 // global settings 
 
 inThisBuild(List(
-    scalaVersion := "2.12.6",
+    scalaVersion := "2.12.7",
     // These are normal sbt settings to configure for release, skip if already defined
     organization := "com.github.arthur-bit-monnot",
     licenses := Seq("BSD-2-Clause" -> url("https://opensource.org/licenses/BSD-2-Clause")),
@@ -23,6 +23,7 @@ lazy val commonSettings = Seq(
   exportJars := true, // insert other project dependencies in oneJar
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
   javacOptions in compile ++= Seq("-Xlint"),
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   javacOptions in doc ++= Seq("-Xdoclint:none"),
   scalacOptions ++= Seq(
     "-opt:l:method",
