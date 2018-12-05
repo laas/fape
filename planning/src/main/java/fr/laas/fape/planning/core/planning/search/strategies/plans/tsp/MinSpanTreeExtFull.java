@@ -3,6 +3,7 @@ package fr.laas.fape.planning.core.planning.search.strategies.plans.tsp;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
 import fr.laas.fape.planning.core.planning.grounding.Fluent;
 import fr.laas.fape.planning.core.planning.grounding.GAction;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.preprocessing.dtg.TemporalDTG;
@@ -179,6 +180,7 @@ public class MinSpanTreeExtFull implements StateExtension {
     }
 
     private void computeDistance() {
+        Counters.inc("min-span / compute-distance");
         if(dbgLvl >= 1) {
             System.out.println("\n=================================================\n");
             System.out.println("State: +" + st.mID);
@@ -252,8 +254,49 @@ public class MinSpanTreeExtFull implements StateExtension {
 //        allCosts.entrySet().stream().forEach(x -> System.out.println(x));
     }
 
-    /** Estimate the minimal number of statements that must be added to the plan to support on of those nodes */
+    private static class Edge {
+        DijNode from;
+        DijNode to;
+        int cost;
+        public Edge(DijNode from, DijNode to, int cost) {
+            this.from = from;
+            this.to = to;
+            this.cost = cost;
+        }
+    }
+    private List<Edge> outEdges(DijNode cur) {
+        List<Edge> out = new ArrayList<>();
+        TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
+        for(TemporalDTG.Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
+            if(c.isTransition()) {
+                DijNode to = new DijNode(c.getFrom().getFluent(), cur.tl);
+                out.add(new Edge(cur, to, c.getContainer().getNumStatements()));
+            } else {
+                DijNode to = new DijNode(null,cur.tl);
+                out.add(new Edge(cur, to, c.getContainer().getNumStatements()));
+            }
+        }
+        for(CausalNetworkExt.Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
+            Timeline sup = st.getTimeline(e.supporterID);
+            if(e.getChangeNumber() == sup.numChanges()-1 && timelineDTGs.get(sup).canSupportAtEnd(cur.f)) {
+                if(sup.isConsumer()) {
+                    for(Fluent left : timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), IRSet.ofSingleton(fluentRep, cur.f))) {
+                        DijNode to = new DijNode(left,  sup);
+                        out.add(new Edge(cur, to, 1));
+                    }
+                } else {
+                    DijNode to = new DijNode(null,sup);
+                    out.add(new Edge(cur, to, 1));
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /** Estimate the minimal number of statements that must be added to the plan to support one of those nodes */
     private int distToFinalNode(Set<Pair<DijNode,Integer>> startNodes) throws NoSolutionException {
+        Counters.inc("min-span / dist-to-final-node");
         int numIter = 0;
         DijkstraQueue<DijNode> q = new DijkstraQueue<>();
         for(Pair<DijNode,Integer> p : startNodes) {
@@ -262,6 +305,7 @@ public class MinSpanTreeExtFull implements StateExtension {
 
         DijNode sol = null;
         while(!q.isEmpty() && sol == null) {
+            Counters.inc("min-span / dijkstra-iter");
             numIter++;
             DijNode cur = q.poll();
             if(cur.isTerminal()) {
@@ -269,26 +313,10 @@ public class MinSpanTreeExtFull implements StateExtension {
                 break;
             }
             int curCost = q.getCost(cur);
-            TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
-            for(TemporalDTG.Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
-                if(c.isTransition()) {
-                    q.putIfBetter(new DijNode(c.getFrom().getFluent(), cur.tl), curCost+ c.getContainer().getNumStatements(), 1, cur);
-                } else {
-                    q.putIfBetter(new DijNode(null,cur.tl), curCost+ c.getContainer().getNumStatements(), 0, cur);
-                }
-            }
-            for(CausalNetworkExt.Event e: st.getExtension(CausalNetworkExt.class).getPotentialIndirectSupporters(cur.tl)) {
-                Timeline sup = st.getTimeline(e.supporterID);
-                if(e.getChangeNumber() == sup.numChanges()-1 && timelineDTGs.get(sup).canSupportAtEnd(cur.f)) {
-                    if(sup.isConsumer()) {
-                        for(Fluent left : timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), IRSet.ofSingleton(fluentRep, cur.f))) {
-                            q.putIfBetter(new DijNode(left,  sup), curCost+1, 1, cur);
-                        }
-                    } else {
-                        q.putIfBetter(new DijNode(null,sup), curCost+1, 0, cur);
-                    }
-                }
 
+            for(Edge e : outEdges(cur)) {
+                int costToGo = e.to.isTerminal() ? 0 : 1;
+                q.putIfBetter(e.to, curCost + e.cost, costToGo, cur);
             }
         }
         if(Planner.debugging && numIter >= 1000)
