@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 public class PartialPlan implements Reporter {
 
     static int idCounter = 0;
-    public int mID;
+    public final int mID;
     int depth;
 
     @Setter @Getter
