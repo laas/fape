@@ -222,15 +222,23 @@ public class CausalNetworkExt implements StateExtension {
                     container.enforceBefore(timepoints, tl.getConsumeTimePoint());
                 } else {
                     if(tl.hasSinglePersistence()) {
-                        int earliest = potentialSupporters.get(tlID).stream()
-                                .mapToInt(event -> container.getMaxEarliestStartTime(componentOf(event).getEndTimepoints()))
-                                .min().orElse(0);
-                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                        int earliest = Integer.MAX_VALUE;
+                        for(Event event : potentialSupporters.get(tlID)) {
+                            int a = container.getMaxEarliestStartTime(componentOf(event).getEndTimepoints());
+                            if(earliest > a)
+                                earliest = a;
+                        }
+                        if(earliest != Integer.MAX_VALUE)
+                            container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
                     } else {
-                        int earliest = potentialSupporters.get(tlID).stream()
-                                .mapToInt(event -> container.getMaxEarliestStartTime(timelineOf(event).timepointsPrecedingNextChange(componentOf(event))))
-                                .min().orElse(0);
-                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                        int earliest = Integer.MAX_VALUE;
+                        for(Event event : potentialSupporters.get(tlID)) {
+                            int a = container.getMaxEarliestStartTime(timelineOf(event).timepointsPrecedingNextChange(componentOf(event)));
+                            if(earliest > a)
+                                earliest = a;
+                        }
+                        if(earliest != Integer.MAX_VALUE)
+                            container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
                     }
                 }
             }

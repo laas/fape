@@ -846,7 +846,15 @@ public class PartialPlan implements Reporter {
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
     public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestTime(a); }
-    public int getMaxEarliestStartTime(List<TPRef> as) { return as.stream().mapToInt(a -> getEarliestStartTime(a)).max().orElse(0); }
+    public int getMaxEarliestStartTime(List<TPRef> as) {
+        int max = 0;
+        for(TPRef a : as) {
+            int x = getEarliestStartTime(a);
+            if(x > max)
+                max = x;
+        }
+        return max;
+    }
     public int getLatestStartTime(TPRef a) { return csp.stn().getLatestTime(a); }
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }
