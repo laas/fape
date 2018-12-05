@@ -665,17 +665,23 @@ public class PartialPlan implements Reporter {
     }
 
     /**
-     * Returns a sorted list of flaws in this state.
+     * Returns the best flaw in this state.
      * Flaws are identified using the provided finders and sorted with the provided comparator.
+     * An empty result indicates that the plan has no flaw.
      */
-    public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
+    public Optional<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
         List<Flaw> flaws = new ArrayList<>();
 
         for (FlawFinder fd : finders)
             flaws.addAll(fd.getFlaws(this, pl));
 
         Collections.sort(flaws, comparator);
-        return flaws;
+        //TODO: do not do a full sort.
+
+        if(flaws.isEmpty())
+            return Optional.empty();
+        else
+            return Optional.of(flaws.get(0));
     }
 
     public int getMakespan() {
