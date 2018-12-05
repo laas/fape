@@ -9,6 +9,7 @@ import fr.laas.fape.planning.core.planning.grounding.DisjunctiveFluent;
 import fr.laas.fape.planning.core.planning.grounding.Fluent;
 import fr.laas.fape.planning.core.planning.grounding.GAction;
 import fr.laas.fape.planning.core.planning.grounding.TempFluents;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
 import fr.laas.fape.anml.model.concrete.*;
@@ -194,6 +195,7 @@ public class PartialPlan implements Reporter {
     public void setDeadEnd() { isDeadEnd = true; }
 
     public PartialPlan cc(int newID) {
+        Counters.inc("plan-copy");
         return new PartialPlan(this, newID);
     }
 
