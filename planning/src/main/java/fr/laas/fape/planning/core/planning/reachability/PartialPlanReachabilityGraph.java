@@ -521,8 +521,9 @@ public class PartialPlanReachabilityGraph implements ReachabilityGraph {
 
                 // remove all late nides
                 // first determine the cut threshold (all nodes later than that will be deleted)
-                List<Integer> easOrdered = new ArrayList<>(q.getCosts().values());
-                Collections.sort(easOrdered);
+                int[] easOrdered = q.getCosts().valuesArray();
+                Arrays.sort(easOrdered);
+
                 int prevValue = 0; int cut_threshold = Integer.MAX_VALUE;
                 for(int val : easOrdered) {
                     if(val - prevValue > dmax) {

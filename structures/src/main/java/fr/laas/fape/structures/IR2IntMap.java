@@ -204,6 +204,19 @@ public class IR2IntMap<K> implements Map<K, Integer> {
         };
     }
 
+    public int[] valuesArray() {
+        int[] out = new int[numElem];
+        int i = 0;
+        for (int val : values)
+            if (val != NIL) {
+                out[i] = val;
+                i++;
+            }
+        assert i == numElem;
+        return out;
+    }
+
+    @Override
     public Collection<Integer> values() {
         List<Integer> vals = new ArrayList<>();
         for (int val : values)
