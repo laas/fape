@@ -1,5 +1,8 @@
 package fr.laas.fape.constraints.bindings
 
+import java.util
+import java.util.PrimitiveIterator
+
 object IBitSet {
   private final val WORD_MASK = 0xffffffffffffffffL
   private final val BITS_PER_WORD = 64
@@ -14,6 +17,12 @@ object IBitSet {
     if (idx < newlen) newelems(idx) = w
     else assert(w == 0L)
     newelems
+  }
+
+  def apply(values: Int*): IBitSet = {
+    val bs = new util.BitSet()
+    for(v <- values) bs.set(v)
+    new IBitSet(bs.toLongArray)
   }
 }
 
@@ -138,6 +147,12 @@ final class IBitSet(val elems: Array[Long]) extends Set[Int] {
       i += 1
     }
     false
+  }
+
+  def intIterator: PrimitiveIterator.OfInt = new PrimitiveIterator.OfInt {
+    private var current = nextSetBit(0)
+    override def hasNext: Boolean = current != -1
+    override def nextInt(): Int = {  val ret = current ; current = nextSetBit(current+1) ; ret }
   }
 
   override def iterator: Iterator[Int] = new Iterator[Int] {

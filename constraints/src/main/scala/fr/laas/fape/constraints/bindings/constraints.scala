@@ -18,17 +18,13 @@ class NAryConstraint(val vars:Seq[VarRef], val allowedTuple: ExtensionConstraint
   val varSet : collection.Set[Int] = mutable.Set[Int](vars.map(_.id): _*)
   override def involves(v: VarRef) = varSet.contains(v.id)
 
-
   override def propagate(csp: BindingConstraintNetwork) {
 
-    val domains = vars.map(v => csp.rawDomain(v))
+    val domains = vars.map(v => csp.rawDomain(v).vals).toArray
+    val restrictedDomains = allowedTuple.restrictedDomains(domains)
 
-    val initialDomains = domains.map(_.values()).toArray //domainsIDs.map(id => domains(id).values()).toArray
-    assert(initialDomains.nonEmpty, "Domain of constraint "+allowedTuple.name+" is empty")
-    val restrictedDomains = allowedTuple.restrictedDomains(initialDomains)
-
-    for(i <- initialDomains.indices) {
-      if(initialDomains(i).size() > restrictedDomains(i).size()) {
+    for(i <- domains.indices) {
+      if(domains(i).size > restrictedDomains(i).size) {
         csp.restrictDomain(vars(i), new Domain(restrictedDomains(i)))
       }
     }
