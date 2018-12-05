@@ -24,6 +24,10 @@ lazy val commonSettings = Seq(
   javaOptions in run ++= Seq("-Xmx3000m", "-ea"),
   javacOptions in compile ++= Seq("-Xlint"),
   javacOptions in doc ++= Seq("-Xdoclint:none"),
+  scalacOptions ++= Seq(
+    "-opt:l:method",
+    "-Xdisable-assertions"
+  ),
   test in assembly := {},
   assemblyMergeStrategy in assembly := {
     case PathList("org", "w3c", xs @ _*)         => MergeStrategy.first
