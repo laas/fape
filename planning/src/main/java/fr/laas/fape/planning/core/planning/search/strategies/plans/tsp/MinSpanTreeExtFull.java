@@ -143,10 +143,10 @@ public class MinSpanTreeExtFull implements StateExtension {
         }
 
         // TODO: in practice this method only receives singletons
-        IRSet<Fluent> leftMostsFrom(int level, IRSet<Fluent> sources) {
+        IRSet<Fluent> leftMostsFrom(int level, Fluent source) {
             workingCopy1.clear();
             workingCopy2.clear();
-            workingCopy1.addAll(sources);
+            workingCopy1.add(source);
             return leftMostsFromImpl(level, workingCopy1);
         }
         private IRSet<Fluent> leftMostsFromImpl(int level, IRSet<Fluent> sources) {
@@ -265,8 +265,9 @@ public class MinSpanTreeExtFull implements StateExtension {
             this.cost = cost;
         }
     }
-    private List<Edge> outEdges(DijNode cur) {
-        List<Edge> out = new ArrayList<>();
+    private ArrayList<Edge> out = new ArrayList<>();
+    private Iterable<Edge> outEdges(DijNode cur) {
+        out.clear();
         TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
         for(TemporalDTG.Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
             if(c.isTransition()) {
@@ -282,7 +283,7 @@ public class MinSpanTreeExtFull implements StateExtension {
             Timeline sup = st.getTimeline(e.supporterID);
             if(e.getChangeNumber() == sup.numChanges()-1 && timelineDTGs.get(sup).canSupportAtEnd(cur.f)) {
                 if(sup.isConsumer()) {
-                    for(Fluent left : timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), IRSet.ofSingleton(fluentRep, cur.f))) {
+                    for(Fluent left : timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), cur.f)) {
                         DijNode to = new DijNode(left,  sup);
                         out.add(new Edge(cur, to, 1));
                     }
@@ -295,7 +296,7 @@ public class MinSpanTreeExtFull implements StateExtension {
                 if (sup.isConsumer()) {
                     // traverse this timeline and add any fluent that can be used to support 'sup' to the queue
                     IRSet<Fluent> supStartFluents =
-                            timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), IRSet.ofSingleton(fluentRep, cur.f));
+                            timelineDTGs.get(sup).leftMostsFrom(e.getChangeNumber(), cur.f);
                     for (Fluent f : supStartFluents) {
                         out.add(new Edge(cur, new DijNode(f, sup), 1));
                     }
