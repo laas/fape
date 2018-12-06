@@ -31,7 +31,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
   var domains : Array[Domain] = null
 
   var vars : ArrayBuffer[ArrayBuffer[VarRef]] = null
-  var different : Array[Array[Boolean]] = null
+  var different : Array[util.BitSet] = null
   var values : ArrayBuffer[String] = null
   var valuesIds : Map[String, Int] = null
 
@@ -57,7 +57,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       domains = o.domains.clone()
       variables = o.variables.clone()
       vars = o.vars.map(x => x.clone())
-      different = o.different.map(x => x.clone())
+      different = o.different.map(x => x.clone().asInstanceOf[util.BitSet])
       values = o.values
       valuesIds = o.valuesIds
       defaultIntDomain = o.defaultIntDomain
@@ -72,9 +72,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       variables = Array.fill(10)(null)
       domains = Array.fill(10)(null) //mutable.Map[DomID, ValuesHolder]()
       vars = ArrayBuffer[ArrayBuffer[VarRef]]()
-      different = new Array[Array[Boolean]](increment)
-      for(i <- different.indices)
-        different(i) = Array.fill(increment)(false)
+      different = Array.fill(increment)(new util.BitSet())
 
       values = ArrayBuffer[String]()
       valuesIds = Map[String, Int]()
@@ -111,13 +109,11 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
     if(id == different.length) {
       // replace with bigger
-      val newConstraints = new Array[Array[Boolean]](different.length *2)
-      for(i <- newConstraints.indices)
-        newConstraints(i) = Array.fill(different.length *2)(false)
-
-      for(i <- different.indices)
-        Array.copy(different(i), 0, newConstraints(i), 0, different(i).length)
-      different = newConstraints
+      val prevSize = different.length
+      different = util.Arrays.copyOf(different, different.length*2)
+      assert(different(prevSize) == null && different(prevSize-1) != null)
+      for(i <- prevSize until different.length)
+        different(i) = new util.BitSet()
     }
 
     id
@@ -125,9 +121,9 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
 
   def rawDomain(v: VarRef) : Domain = domains(domID(v))
 
-  def isDiff(v1: VarRef, v2: VarRef) = {
-    assert(different(domID(v1))(domID(v2)) == different(domID(v2))(domID(v1)))
-    different(domID(v1))(domID(v2))
+  def isDiff(v1: VarRef, v2: VarRef): Boolean = {
+    assert(different(domID(v1)).get(domID(v2)) == different(domID(v2)).get(domID(v1)))
+    different(domID(v1)).get(domID(v2))
   }
 
   private def domainChanged(id: DomID, causedByExtended: Option[Constraint]): Unit = {
@@ -142,7 +138,7 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       val diff = different(id)
       var o = vars.size -1
       while(o >= 0) {
-        if(diff(o)) {
+        if(diff.get(o)) {
           if(!unusedDomainIds.contains(o)) {
             if(domains(o).contains(uniqueValue)) {
               domains(o) = domains(o).remove(uniqueValue)
@@ -265,8 +261,8 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
       throw new VarWithEmptyDomain(List(a, b).asJava)
     }
 
-    different(domID(a))(domID(b)) = true
-    different(domID(b))(domID(a)) = true
+    different(domID(a)).set(domID(b))
+    different(domID(b)).set(domID(a))
 
     if(domainSize(a) == 1)
       domainChanged(domID(a), None)
@@ -305,8 +301,10 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     domains(id1) = newDom
     vars(id1) = vars(id1) ++ vars(id2)
     for(i <- 0 until different(id1).size) {
-      different(id1)(i) = different(id1)(i) || different(id2)(i)
-      different(i)(id1) = different(i)(id1) || different(i)(id2)
+      if(different(id2).get(i)) {
+        different(id1).set(i)
+        different(i).set(id1)
+      }
     }
     for(v <- vars(id2))
       domIds(v.id) = id1
@@ -314,8 +312,8 @@ class BindingConstraintNetwork(toCopy: Option[BindingConstraintNetwork]) {
     unusedDomainIds += id2
     vars(id2) = new ArrayBuffer[VarRef]()
     for(i <- different.indices) {
-      different(i)(id2) = false
-      different(id2)(i) = false
+      different(i).clear(id2)
+      different(id2).clear(i)
     }
     domains(id2) = null // -= id2
 
