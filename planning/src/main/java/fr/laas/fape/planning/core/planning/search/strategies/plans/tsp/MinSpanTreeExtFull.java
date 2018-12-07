@@ -265,9 +265,8 @@ public class MinSpanTreeExtFull implements StateExtension {
             this.cost = cost;
         }
     }
-    private ArrayList<Edge> out = new ArrayList<>();
     private Iterable<Edge> outEdges(DijNode cur) {
-        out.clear();
+        List<Edge> out = new ArrayList<>();
         TemporalDTG dtg = st.pl.preprocessor.getTemporalDTG(cur.getF().sv);
         for(TemporalDTG.Change c : dtg.getBaseNode(cur.f.value).inChanges(st.addableActions)) {
             if(c.isTransition()) {
