@@ -33,7 +33,9 @@ public class GlobalOptions {
             new Option("use-decomposition-variables", "boolean", "true", ""),
             new Option("check-delay-from-task-to-og", "boolean", "true", ""),
             new Option("reachability-instrumentation", "boolean", "true", ""),
-            new Option("counters-on", "boolean", "false", "")
+            new Option("counters-on", "boolean", "false", ""),
+            new Option("recent-nodes-to-keep", "int", "5", "Number of node expanded node to keep in the search tree."),
+            new Option("best-nodes-to-keep", "int", "5", "Number of the best nodes allowed to hold their memory in cache.")
     ).stream().collect(Collectors.toMap(Option::getKey, Function.identity()));
 
     private static Map<String,String> overriddenValues = new HashMap<>();

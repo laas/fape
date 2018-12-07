@@ -9,7 +9,6 @@ import fr.laas.fape.planning.core.planning.preprocessing.LiftedDTG;
 import fr.laas.fape.planning.core.planning.preprocessing.Preprocessor;
 import fr.laas.fape.planning.core.planning.search.Handler;
 import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaw;
-import fr.laas.fape.planning.core.planning.search.flaws.flaws.Flaws;
 import fr.laas.fape.planning.core.planning.search.flaws.resolvers.Resolver;
 import fr.laas.fape.planning.core.planning.search.strategies.flaws.FlawCompFactory;
 import fr.laas.fape.planning.core.planning.search.strategies.plans.PlanCompFactory;
@@ -24,9 +23,9 @@ import fr.laas.fape.planning.exceptions.ResolverResultedInInconsistency;
 import fr.laas.fape.planning.gui.SearchView;
 import fr.laas.fape.constraints.stnu.Controllability;
 import fr.laas.fape.planning.util.TinyLogger;
-import fr.laas.fape.planning.util.Utils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Base for any planner in FAPE.
@@ -46,7 +45,7 @@ public class Planner {
         this.controllability = initialPartialPlan.controllability;
         this.dtg = new LiftedDTG(this.pb);
         queue = new PriorityQueue<>(100, this.heuristicComputer().comparator(options));
-        SearchNode root = new SearchNode(initialPartialPlan);
+        SearchNode root = new SearchNode(initialPartialPlan, this);
 
         root.addOperation(s -> {
             s.setPlanner(this);
@@ -80,6 +79,53 @@ public class Planner {
     }
 
     private final PriorityQueue<SearchNode> queue;
+
+    /** References to all SearchNodes currently allocated by the planner. (the values of the map are not used).
+     * THis is used to be able to release the memory retained by those nodes. */
+    private final WeakHashMap<SearchNode, Object> allStates = new WeakHashMap<>();
+
+    private final int _bestNodesToKeep = GlobalOptions.getIntOption("best-nodes-to-keep");
+    private final int _recentNodesToKeep = GlobalOptions.getIntOption("recent-nodes-to-keep");
+
+    public void recordSearchNode(SearchNode n) {
+        allStates.put(n, null);
+    }
+
+    /** Release memory from most SearchNodes.
+     *  This is done by transforming a Soft or Strong reference in nodes to weak references. */
+    private void cleanNodes(int mostRecentExpandedToKeep, int mostRecentPendingToKeep, int bestToKeep, Comparator<? super SearchNode> heuristic) {
+        Set<SearchNode> recentsExpanded =
+                allStates.keySet().stream()
+                        .filter(s -> s.status == SearchNode.Status.EXPANDED)
+                        .filter(SearchNode::holdsMemory)
+                        .sorted(Comparator.comparingLong(s -> s.lastRecord))
+                        .limit(mostRecentExpandedToKeep)
+                        .collect(Collectors.toSet());
+
+        Set<SearchNode> recentsPending =
+                allStates.keySet().stream()
+                        .filter(s -> s.status == SearchNode.Status.PENDING)
+                        .filter(SearchNode::holdsMemory)
+                        .sorted(Comparator.comparingLong(s -> s.lastRecord))
+                        .limit(mostRecentPendingToKeep)
+                        .collect(Collectors.toSet());
+
+        Set<SearchNode> bests =
+                allStates.keySet().stream()
+                        .filter(s -> s.status == SearchNode.Status.PENDING)
+                        .filter(SearchNode::holdsMemory)
+                        .sorted(heuristic)
+                        .limit(bestToKeep)
+                        .collect(Collectors.toSet());
+
+        allStates.keySet().stream()
+                .filter(s -> s.status != SearchNode.Status.STABLE)
+                .filter(SearchNode::holdsMemory)
+                .filter(s -> !recentsExpanded.contains(s))
+                .filter(s -> !recentsPending.contains(s))
+                .filter(s -> !bests.contains(s))
+                .forEach(SearchNode::releaseMemory);
+    }
 
     /**
      * All possible states of the planner.
@@ -205,38 +251,38 @@ public class Planner {
             }
 
             //get the best plan and continue the search
-            SearchNode plan = queue.remove();
+            SearchNode node = queue.remove();
+            PartialPlan plan = node.getState();
+            cleanNodes(_recentNodesToKeep, 0, _bestNodesToKeep, queue.comparator());
 
             try {
                 // let all handlers know that this plan was selected for expansion
                 for (Handler h : options.handlers)
-                    h.addOperation(plan, Handler.StateLifeTime.SELECTION, this);
+                    h.addOperation(node, Handler.StateLifeTime.SELECTION, this);
 
-                if (!plan.getState().isConsistent()) {
+                if (!plan.isConsistent()) {
                     if (options.displaySearch)
-                        searchView.setDeadEnd(plan);
+                        searchView.setDeadEnd(node);
                     continue;
                 }
 
-                Optional<Flaw> flaw = getFlaws(plan);
+                Optional<Flaw> flaw = getFlaws(node);
                 if (!flaw.isPresent()) {
                     // this is a solution plan
                     if (options.displaySearch)
-                        searchView.setSolution(plan);
+                        searchView.setSolution(node);
 
                     this.planState = EPlanState.CONSISTENT;
                     TinyLogger.LogInfo("Plan found:");
-                    TinyLogger.LogInfo(plan.getState());
-                    return plan.getState();
-                } else if (plan.getDepth() < maxDepth) {
-                    List<SearchNode> children = expand(plan, flaw.get());
-                    for (SearchNode child : children) {
-                        queue.add(child);
-                    }
+                    TinyLogger.LogInfo(plan);
+                    return plan;
+                } else if (node.getDepth() < maxDepth) {
+                    List<SearchNode> children = expand(node, flaw.get());
+                    queue.addAll(children);
                 }
             } catch (InconsistencyException e) {
                 if(options.displaySearch) {
-                    searchView.setDeadEnd(plan);
+                    searchView.setDeadEnd(node);
                 }
             }
         }
@@ -292,7 +338,7 @@ public class Planner {
 
             // compute all valid children
             for (int resolverID = 0; resolverID < resolvers.size(); resolverID++) {
-                SearchNode next = new SearchNode(plan);
+                SearchNode next = new SearchNode(plan, this);
                 final int currentResolver = resolverID;
                 try {
                     next.addOperation(s -> {
@@ -450,6 +496,7 @@ public class Planner {
                     TinyLogger.LogInfo("Empty queue.");
                     return null;
                 }
+                cleanNodes(_recentNodesToKeep, AX.size(), _bestNodesToKeep, queue.comparator());
 
                 SearchNode current;
                 if (AX.isEmpty() || numStatesToExploreInBest > 0) {
