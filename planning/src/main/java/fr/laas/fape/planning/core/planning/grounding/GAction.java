@@ -94,14 +94,14 @@ public class GAction implements Identifiable {
         @Override public Fluent getEndFluent() { return fluent; }
     }
 
-    public final List<Fluent> pre = new LinkedList<>();
-    public final List<Fluent> add = new LinkedList<>();
+    public final ArrayList<Fluent> pre = new ArrayList<>();
+    public final ArrayList<Fluent> add = new ArrayList<>();
     public final int[] preconditions;
     public final int[] additions;
     public final AbstractAction abs;
     public final GTask task;
 
-    public final List<Pair<LStatementRef, GLogStatement>> gStatements = new LinkedList<>();
+    public final ArrayList<Pair<LStatementRef, GLogStatement>> gStatements = new ArrayList<>();
 
     public final LVarRef[] variables;
     protected final InstanceRef[] values;

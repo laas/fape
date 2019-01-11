@@ -142,7 +142,6 @@ public class MinSpanTreeExtFull implements StateExtension {
             }
         }
 
-        // TODO: in practice this method only receives singletons
         IRSet<Fluent> leftMostsFrom(int level, Fluent source) {
             workingCopy1.clear();
             workingCopy2.clear();

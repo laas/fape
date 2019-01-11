@@ -110,8 +110,8 @@ public class TemporalDTG {
     }
 
     private Map<InstanceRef, Node> baseNodes = new HashMap<>();
-    private Map<Node, List<Change>> outTransitions = new HashMap<>();
-    private Map<Node, List<Change>> inTransitions = new HashMap<>();
+    private Map<Node, ArrayList<Change>> outTransitions = new HashMap<>();
+    private Map<Node, ArrayList<Change>> inTransitions = new HashMap<>();
     private List<Assignment> allAssignments = new ArrayList<>();
 
     /** Matrix containing the All Pairs Shortest Path for this DTG. */
