@@ -32,6 +32,8 @@ public class ChainComponent {
 
     /** All statements in this chain component. */
     public final LogStatement[] statements;
+    private final List<TPRef> startTPs;
+    private final List<TPRef> endTPs;
 
     /**
      * Creates a new ChainComponent containing a unique statement.
@@ -42,6 +44,8 @@ public class ChainComponent {
         statements = new LogStatement[1];
         statements[0] = s;
         change = !(s instanceof Persistence);
+        startTPs = Stream.of(statements).map(LogStatement::start).collect(Collectors.toList());
+        endTPs = Stream.of(statements).map(LogStatement::end).collect(Collectors.toList());
     }
 
     /** Creates a new chain component with the given statements and mID */
@@ -50,6 +54,8 @@ public class ChainComponent {
         assert statements.length > 0;
         this.statements = statements;
         change = !(this.statements[0] instanceof Persistence);
+        startTPs = Stream.of(statements).map(LogStatement::start).collect(Collectors.toList());
+        endTPs = Stream.of(statements).map(LogStatement::end).collect(Collectors.toList());
     }
 
     /** @return Number of statements in this ChainComponent. */
@@ -75,11 +81,11 @@ public class ChainComponent {
     }
 
     public List<TPRef> getStartTimepoints() {
-        return Stream.of(statements).map(s -> s.start()).collect(Collectors.toList());
+        return startTPs;
     }
 
     public List<TPRef> getEndTimepoints() {
-        return Stream.of(statements).map(s -> s.end()).collect(Collectors.toList());
+        return endTPs;
     }
 
     /**

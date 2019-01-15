@@ -1,5 +1,6 @@
 package fr.laas.fape.planning.core.planning.states;
 
+import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.util.StrongReference;
 
 import java.lang.ref.Reference;
@@ -24,17 +25,28 @@ import java.util.function.Consumer;
  */
 public class SearchNode {
 
-    public SearchNode(SearchNode parent) {
+    public enum Status {
+        STABLE, // DO not clean
+        PENDING, // not yet expanded
+        EXPANDED // was expanded
+    }
+
+    public SearchNode(SearchNode parent, Planner planner) {
         this.parent = parent;
         state = null;
         this.mID = PartialPlan.idCounter++;
         this.depth = parent.depth +1;
+        planner.recordSearchNode(this);
+        status = Status.PENDING;
     }
-    public SearchNode(PartialPlan initialPartialPlan) {
+    public SearchNode(PartialPlan initialPartialPlan, Planner planner) {
         this.parent = null;
         state = new StrongReference<>(initialPartialPlan);
         this.mID = initialPartialPlan.mID;
         this.depth = 0;
+        planner.recordSearchNode(this);
+        lastRecord = System.nanoTime();
+        status = Status.STABLE;
     }
 
     /** Identifier of the contained state. */
@@ -57,12 +69,30 @@ public class SearchNode {
      * index were already applied
      */
     private int nextOperation = 0;
+    public Status status;
+
+    /** Nano-time at which a PartialPlan (if any) was recorded in this node. */
+    public long lastRecord = 0;
+
+    public boolean holdsMemory() {
+        return state != null &&
+                (state instanceof SoftReference || state instanceof StrongReference) &&
+                state.get() != null;
+    }
 
     public void setExpanded() {
+        if(status == Status.PENDING)
+            status = Status.EXPANDED;
         PartialPlan s = state.get();
-        if(s != null && depth != 0) {
-            // switch to a weak reference
-            state = new WeakReference<>(s);
+        if(status != Status.STABLE)
+            releaseMemory();
+    }
+
+    public void releaseMemory() {
+        assert status != Status.STABLE;
+        if(state != null) {
+            state = new WeakReference<>(state.get());
+            lastRecord = 0;
         }
     }
 
@@ -95,10 +125,14 @@ public class SearchNode {
             PartialPlan st = parent.getState(true).cc(mID);
             st.depth = depth;
             nextOperation = 0;
-            if(!isForChild) // directly request, save the reference
+            if(!isForChild) {// directly request, save the reference
                 state = new SoftReference<>(st);
-            else if(depth %5 == 0) // save at regular depths
+                lastRecord = System.nanoTime();
+            } else if(depth %5 == 0) { // save at regular depths
                 state = new SoftReference<>(st);
+                lastRecord = System.nanoTime();
+            }
+
             return st;
         }
     }

@@ -75,13 +75,13 @@ public class ExtensionConstraint {
      * @return Domains restricted do values that can fulfill at least one complete binding.
      */
     @SuppressWarnings({"unchecked","rawtypes"})
-    public Set<Integer>[] restrictedDomains(Set<Integer>[] domains) {
+    public IBitSet[] restrictedDomains(IBitSet[] domains) {
         assert domains.length == numVars();
 
         if(numBindings == 0) { // no possible value in this constraint, all domains are empty
-            Set<Integer>[] emptyDoms = new Set[domains.length];
+            IBitSet[] emptyDoms = new IBitSet[domains.length];
             for(int i=0 ; i<emptyDoms.length ; i++)
-                emptyDoms[i] = new HashSet<>();
+                emptyDoms[i] = new IBitSet();
             return emptyDoms;
         }
 
@@ -94,7 +94,9 @@ public class ExtensionConstraint {
         for(int var=0 ; var<domains.length ; var++) {
             // for all variables
             BitSet local = new BitSet(numBindings);
-            for(int val : domains[var]) {
+            PrimitiveIterator.OfInt it = domains[var].intIterator();
+            while(it.hasNext()) {
+                int val = it.nextInt();
                 if(relevantConstraints.get(var).containsKey(val)) {
                     // add all values that are flagged are relevant for the (var, val) pair
                     local.or(relevantConstraints.get(var).get(val));
@@ -104,18 +106,21 @@ public class ExtensionConstraint {
             toConsider.and(local);
         }
 
-        Set<Integer>[] finalDomains = new Set[domains.length];
+        BitSet[] finalDomains = new BitSet[domains.length];
         for(int i=0 ; i<finalDomains.length ; i++)
-            finalDomains[i] = new HashSet<>();
+            finalDomains[i] = new BitSet();
 
         // get all the valid bindings and augment the domain with those
         for(int bindingId=0 ; bindingId<numBindings ; bindingId++) {
             if(toConsider.get(bindingId)) {
                 for(int var=0 ; var<numVars() ; var++)
-                    finalDomains[var].add(bindings[bindingId][var]);
+                    finalDomains[var].set(bindings[bindingId][var]);
             }
         }
 
-        return finalDomains;
+        IBitSet[] result = new IBitSet[domains.length];
+        for(int i=0 ; i<result.length ; i++)
+            result[i] = new IBitSet(finalDomains[i].toLongArray());
+        return result;
     }
 }

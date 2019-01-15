@@ -14,6 +14,11 @@ public class IRSet<T extends Identifiable> implements Set<T> {
         this.intRep = intRep;
         bitset = values;
     }
+    public static <T extends Identifiable> IRSet<T> ofSingleton(IntRep<T> intRep, T value) {
+        IRSet<T> x = new IRSet<>(intRep);
+        x.add(value);
+        return x;
+    }
     @Override
     public int size() {
         return bitset.cardinality();

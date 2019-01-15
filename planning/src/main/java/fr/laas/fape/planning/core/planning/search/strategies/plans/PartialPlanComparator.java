@@ -36,6 +36,8 @@ public abstract class PartialPlanComparator implements Heuristic {
             private double f(SearchNode sn) { return g(sn) + options.heuristicWeight * h(sn); }
             @Override
             public int compare(SearchNode st1, SearchNode st2) {
+                assert st1 != null;
+                assert st2 != null;
                 int ret = (int) Math.signum(f(st1) - f(st2));
                 if(ret != 0)
                     return ret;

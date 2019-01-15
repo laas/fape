@@ -1,5 +1,8 @@
 package fr.laas.fape.constraints.bindings
 
+import java.util
+import java.util.PrimitiveIterator
+
 object IBitSet {
   private final val WORD_MASK = 0xffffffffffffffffL
   private final val BITS_PER_WORD = 64
@@ -15,18 +18,40 @@ object IBitSet {
     else assert(w == 0L)
     newelems
   }
+
+  def apply(values: Int*): IBitSet = {
+    val bs = new util.BitSet()
+    for(v <- values) bs.set(v)
+    new IBitSet(bs.toLongArray)
+  }
 }
 
-class IBitSet(val elems: Array[Long]) extends Set[Int] {
-  def this() = this(Array.fill(1)(0))
+final class IBitSet(val elems: Array[Long]) extends Set[Int] {
+  def this() = this(new Array[Long](0))
   import IBitSet._
   val nwords = elems.length
 
-  def min: Int = nextSetBit(0)
+  override val size: Int = {
+    var s = 0
+    var i = nwords
+    while (i > 0) {
+      i -= 1
+      s += java.lang.Long.bitCount(words(i))
+    }
+    s
+  }
+
+  override def isEmpty: Boolean = size == 0
+
+  def min: Int = {
+    val a = nextSetBit(0)
+    if(a < -1) throw new NoSuchElementException
+    a
+  }
   def max: Int = lastSetBit
 
   private def words(i: Int) : Long =
-    if(i < elems.length) elems(i)
+    if(i < nwords) elems(i)
     else 0L
   private def wordIndex(i: Int) = i >> 6
 
@@ -121,33 +146,18 @@ class IBitSet(val elems: Array[Long]) extends Set[Int] {
         return true
       i += 1
     }
-    return false
+    false
+  }
+
+  def intIterator: PrimitiveIterator.OfInt = new PrimitiveIterator.OfInt {
+    private var current = nextSetBit(0)
+    override def hasNext: Boolean = current != -1
+    override def nextInt(): Int = {  val ret = current ; current = nextSetBit(current+1) ; ret }
   }
 
   override def iterator: Iterator[Int] = new Iterator[Int] {
     private var current = nextSetBit(0)
     override def hasNext: Boolean = current != -1
     override def next(): Int = {  val ret = current ; current = nextSetBit(current+1) ; ret }
-  }
-
-  override final lazy val isEmpty : Boolean = {
-    var i = nwords
-    var empty = true
-    while(empty && i > 0) {
-      i -= 1
-      if(words(i) != 0)
-        empty = false
-    }
-    empty
-  }
-
-  override final lazy val size: Int = {
-    var s = 0
-    var i = nwords
-    while (i > 0) {
-      i -= 1
-      s += java.lang.Long.bitCount(words(i))
-    }
-    s
   }
 }

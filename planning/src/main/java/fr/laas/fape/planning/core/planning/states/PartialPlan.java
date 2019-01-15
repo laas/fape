@@ -9,6 +9,7 @@ import fr.laas.fape.planning.core.planning.grounding.DisjunctiveFluent;
 import fr.laas.fape.planning.core.planning.grounding.Fluent;
 import fr.laas.fape.planning.core.planning.grounding.GAction;
 import fr.laas.fape.planning.core.planning.grounding.TempFluents;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.planner.Planner;
 import fr.laas.fape.planning.core.planning.planner.PlanningOptions;
 import fr.laas.fape.anml.model.concrete.*;
@@ -194,6 +195,7 @@ public class PartialPlan implements Reporter {
     public void setDeadEnd() { isDeadEnd = true; }
 
     public PartialPlan cc(int newID) {
+        Counters.inc("plan-copy");
         return new PartialPlan(this, newID);
     }
 
@@ -663,17 +665,51 @@ public class PartialPlan implements Reporter {
     }
 
     /**
-     * Returns a sorted list of flaws in this state.
+     * Returns the best flaw in this state.
      * Flaws are identified using the provided finders and sorted with the provided comparator.
+     * An empty result indicates that the plan has no flaw.
      */
-    public List<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
+    public Optional<Flaw> getFlaws(List<FlawFinder> finders, Comparator<Flaw> comparator) {
         List<Flaw> flaws = new ArrayList<>();
 
         for (FlawFinder fd : finders)
             flaws.addAll(fd.getFlaws(this, pl));
 
-        Collections.sort(flaws, comparator);
-        return flaws;
+        if(flaws.isEmpty())
+            return Optional.empty();
+
+        Flaw candidate = null;
+        int bestNumResolvers = Integer.MAX_VALUE;
+
+        for(Flaw f : flaws) {
+            int num = f.getNumResolvers(this, pl);
+            // no resolvers: a dead end exit early
+            if(num == 0)
+                return Optional.of(f);
+
+            if(num < bestNumResolvers) {
+                candidate = f;
+                bestNumResolvers = num;
+            }
+        }
+        assert bestNumResolvers > 0;
+        assert candidate != null;
+
+        // make candidate the best flaw according to comparator
+        for(Flaw f : flaws) {
+            if(f == candidate)
+                continue;
+            if(bestNumResolvers == 1) {
+                // we know that the best flaw will have a single resolver but we still want to
+                // use the comparator to eliminate non determinism
+                int numRes = f.getNumResolvers(this, pl);
+                if(numRes > 1)
+                    continue;
+            }
+            if(comparator.compare(f, candidate) < 0)
+                candidate = f;
+        }
+        return Optional.of(candidate);
     }
 
     public int getMakespan() {
@@ -846,7 +882,15 @@ public class PartialPlan implements Reporter {
     public void enforceDelay(TPRef a, TPRef b, int delay) { csp.stn().enforceMinDelay(a, b, delay); }
 
     public int getEarliestStartTime(TPRef a) { return csp.stn().getEarliestTime(a); }
-    public int getMaxEarliestStartTime(List<TPRef> as) { return as.stream().mapToInt(a -> getEarliestStartTime(a)).max().orElse(0); }
+    public int getMaxEarliestStartTime(List<TPRef> as) {
+        int max = 0;
+        for(TPRef a : as) {
+            int x = getEarliestStartTime(a);
+            if(x > max)
+                max = x;
+        }
+        return max;
+    }
     public int getLatestStartTime(TPRef a) { return csp.stn().getLatestTime(a); }
 
     public boolean checksDynamicControllability() { return csp.stn().checksDynamicControllability(); }

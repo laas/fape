@@ -1,15 +1,16 @@
 package fr.laas.fape.constraints.stnu.structurals
 
+import java.util
+
 import fr.laas.fape.anml.model.concrete.{ContingentConstraint, MinDelayConstraint, TPRef, TemporalConstraint}
 import fr.laas.fape.anml.pending.IntExpression
-import fr.laas.fape.constraints.stn.{DistanceGraphEdge, STN}
+import fr.laas.fape.constraints.stn.DistanceGraphEdge
 import fr.laas.fape.constraints.stnu.{Controllability, InconsistentTemporalNetwork, STNU}
 import fr.laas.fape.constraints.stnu.parser.STNUParser
-import fr.laas.fape.graph.core.LabeledEdge
-import fr.laas.fape.graph.printers.NodeEdgePrinter
 import fr.laas.fape.structures.IList
 
 import scala.collection.mutable
+
 
 object StnWithStructurals {
 
@@ -47,23 +48,23 @@ object StnWithStructurals {
 
 import StnWithStructurals._
 
-class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
-                             var timepointByIndex: mutable.ArrayBuffer[TPRef],
-                             var dist: DistanceMatrix,
-                             var rigidRelations: RigidRelations,
-                             var contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
+final class StnWithStructurals(private var nonRigidIndexes: Array[Int], // map: tp.id => index
+                             val timepointByIndex: mutable.ArrayBuffer[TPRef],
+                             val dist: DistanceMatrix,
+                             val rigidRelations: RigidRelations,
+                             val contingentLinks: mutable.ArrayBuffer[ContingentConstraint],
                              var optStart: Option[TPRef],
                              var optEnd: Option[TPRef],
                              var originalEdges: List[DistanceGraphEdge],
                              var consistent: Boolean,
-                             var executed: mutable.Set[TPRef]
+                             val executed: mutable.Set[TPRef]
                             )
   extends STNU with DistanceMatrixListener {
 
   /** If true, the STNU will check that the network is Pseudo Controllable when invoking isConsistent */
   var shouldCheckPseudoControllability = true
 
-  def this() = this(mutable.Map(), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
+  def this() = this(Array.fill(10)(-1), mutable.ArrayBuffer(), new DistanceMatrix(), new RigidRelations(), mutable.ArrayBuffer(), None, None, Nil, true, mutable.Set())
 
   override def clone() : StnWithStructurals = new StnWithStructurals(
     nonRigidIndexes.clone(), timepointByIndex.clone(), dist.clone(), rigidRelations.clone(), contingentLinks.clone(),
@@ -79,19 +80,34 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   // make sure we are notified of any change is the distance matrix
   dist.addListener(this)
 
-  private var _timepoints = (nonRigidIndexes.keySet ++ rigidRelations._anchorOf.keySet).toList
-  def timepoints = new IList[TPRef](_timepoints)
+  def timepoints: IList[TPRef] = {
+    val flexibles = nonRigidIndexes.indices.iterator.filter(nonRigidIndexes(_) != -1).map(new TPRef(_))
+    new IList[TPRef]((flexibles ++ rigidRelations.anchoredTimepoints).toList)
+  }
 
-  private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp)
+  private def toIndex(tp:TPRef) : Int = nonRigidIndexes(tp.id)
+  private def hasFlexIndex(tp: TPRef): Boolean = nonRigidIndexes.size > tp.id && nonRigidIndexes(tp.id) != -1
+  private def addFlexIndex(tp: TPRef, idx: Int): Unit = {
+    if(nonRigidIndexes.size <= tp.id) { // grow
+      val prevSize = nonRigidIndexes.length
+      nonRigidIndexes = util.Arrays.copyOf(nonRigidIndexes, math.max(prevSize * 2, tp.id+1))
+      var i = prevSize
+      while(i < nonRigidIndexes.length) {
+        nonRigidIndexes(i) = -1 // make sure we get an early failure when trying to access an inconsistent state
+        i += 1
+      }
+    }
+    nonRigidIndexes(tp.id) = idx
+  }
+  private def removeFlexIndex(tp: TPRef): Unit = nonRigidIndexes(tp.id) = -1
   def timepointFromIndex(index: Int) : TPRef = timepointByIndex(index)
 
-  private def isKnown(tp: TPRef) = nonRigidIndexes.contains(tp) || rigidRelations.isAnchored(tp)
+  private def isKnown(tp: TPRef) = hasFlexIndex(tp) || rigidRelations.isAnchored(tp)
 
   override def recordTimePoint(tp: TPRef): Int = {
     assert(!isKnown(tp))
-    _timepoints = tp :: _timepoints
     val id = dist.createNewNode()
-    nonRigidIndexes.put(tp, id)
+    addFlexIndex(tp, id)
     rigidRelations.addAnchor(tp)
     while(timepointByIndex.size <= id) {
       timepointByIndex.append(null)
@@ -105,58 +121,61 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     id
   }
 
-  def forceExecutionTime(tp: TPRef, time: Int): Unit = {
-    def neighborhood(tp: TPRef) =
-      if(rigidRelations.isAnchor(tp))
-        rigidRelations.getTimepointsAnchoredTo(tp).toSet
-      else
-        rigidRelations.getTimepointsAnchoredTo(rigidRelations.anchorOf(tp)).toSet + rigidRelations.anchorOf(tp) -tp
-
-    try {
-      this.clone().setTime(tp, time)
-      // no inconsistent network exception, simply propagate those constraints (much cheaper)
-      setTime(tp, time)
-      // if tp is contingent, remove its incoming contingent link
-      if(tp.genre.isContingent)
-        contingentLinks = contingentLinks.filter(c => !(c.dst == tp))
-      executed += tp
-    } catch {
-      case e:InconsistentTemporalNetwork =>
-        // we have conflicting constraint, remove any constraint to previously executed timepoints (directly or through anchored relations)
-        val directAttached = neighborhood(tp) + tp
-        val allGrounded = executed.flatMap(neighborhood(_)) ++ executed
-
-        val newEdges = originalEdges.filter(e => {
-          if(allGrounded.intersect(directAttached).nonEmpty) {
-            // drop all edges to tp
-            e.from != tp && e.to != tp
-
-          } else {
-            // drop all edges related the executed set and our neighborhood (which include ourselves)
-            if(allGrounded.contains(e.from) && directAttached.contains(e.to)) false
-            else if(directAttached.contains(e.from) && allGrounded.contains(e.to)) false
-            else true
-          }})
-        // if tp is contingent, its incoming contingent link
-        val newContingents = contingentLinks.filter(c => !(c.dst == tp))
-
-        // remove everything
-        nonRigidIndexes = mutable.Map()
-        timepointByIndex = mutable.ArrayBuffer()
-        dist = new DistanceMatrix()
-        rigidRelations = new RigidRelations()
-        contingentLinks = mutable.ArrayBuffer()
-        originalEdges = List()
-
-        // rebuild from scratch
-        setTime(tp, time)
-        executed += tp
-        for (e <- newEdges)
-          addMaxDelay(e.from, e.to, e.value)
-        for (ctg <- newContingents)
-          addConstraint(ctg)
-    }
-  }
+  // TODO: this method was removed as its implementation require non final fields that led to an important runtime cost.
+  def forceExecutionTime(tp: TPRef, time: Int): Unit =
+    throw new UnsupportedOperationException("This method is temporarily unsupported until a better implementation is found.")
+//  {
+//    def neighborhood(tp: TPRef) =
+//      if(rigidRelations.isAnchor(tp))
+//        rigidRelations.getTimepointsAnchoredTo(tp).toSet
+//      else
+//        rigidRelations.getTimepointsAnchoredTo(rigidRelations.anchorOf(tp)).toSet + rigidRelations.anchorOf(tp) -tp
+//
+//    try {
+//      this.clone().setTime(tp, time)
+//      // no inconsistent network exception, simply propagate those constraints (much cheaper)
+//      setTime(tp, time)
+//      // if tp is contingent, remove its incoming contingent link
+//      if(tp.genre.isContingent)
+//        contingentLinks = contingentLinks.filter(c => !(c.dst == tp))
+//      executed += tp
+//    } catch {
+//      case e:InconsistentTemporalNetwork =>
+//        // we have conflicting constraint, remove any constraint to previously executed timepoints (directly or through anchored relations)
+//        val directAttached = neighborhood(tp) + tp
+//        val allGrounded = executed.flatMap(neighborhood(_)) ++ executed
+//
+//        val newEdges = originalEdges.filter(e => {
+//          if(allGrounded.intersect(directAttached).nonEmpty) {
+//            // drop all edges to tp
+//            e.from != tp && e.to != tp
+//
+//          } else {
+//            // drop all edges related the executed set and our neighborhood (which include ourselves)
+//            if(allGrounded.contains(e.from) && directAttached.contains(e.to)) false
+//            else if(directAttached.contains(e.from) && allGrounded.contains(e.to)) false
+//            else true
+//          }})
+//        // if tp is contingent, its incoming contingent link
+//        val newContingents = contingentLinks.filter(c => !(c.dst == tp))
+//
+//        // remove everything
+//        nonRigidIndexes = new JMap()
+//        timepointByIndex = mutable.ArrayBuffer()
+//        dist = new DistanceMatrix()
+//        rigidRelations = new RigidRelations()
+//        contingentLinks = mutable.ArrayBuffer()
+//        originalEdges = List()
+//
+//        // rebuild from scratch
+//        setTime(tp, time)
+//        executed += tp
+//        for (e <- newEdges)
+//          addMaxDelay(e.from, e.to, e.value)
+//        for (ctg <- newContingents)
+//          addConstraint(ctg)
+//    }
+//  }
 
   def addMinDelay(from:TPRef, to:TPRef, minDelay:Int) =
     addEdge(to, from, -minDelay)
@@ -173,12 +192,12 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
 
     val (aRef:TPRef, aToRef:Int) =
       if(rigidRelations.isAnchored(a))
-        (rigidRelations._anchorOf(a), rigidRelations.distFromAnchor(a))
+        (rigidRelations.anchorOf(a), rigidRelations.distFromAnchor(a))
       else
         (a, 0)
     val (bRef:TPRef, refToB) =
       if(rigidRelations.isAnchored(b))
-        (rigidRelations._anchorOf(b), rigidRelations.distToAnchor(b))
+        (rigidRelations.anchorOf(b), rigidRelations.distToAnchor(b))
       else (b, 0)
     dist.enforceDist(toIndex(aRef), toIndex(bRef), DistanceMatrix.plus(DistanceMatrix.plus(aToRef, t), refToB))
   }
@@ -197,15 +216,19 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
   }
 
   private def rigidAwareDist(a:TPRef, b:TPRef) : Int = {
-    val (aRef:TPRef, aToRef:Int) =
-      if(rigidRelations.isAnchored(a))
-        (rigidRelations._anchorOf(a), rigidRelations.distToAnchor(a))
-      else
-        (a, 0)
-    val (bRef:TPRef, refToB) =
-      if(rigidRelations.isAnchored(b))
-        (rigidRelations._anchorOf(b), rigidRelations.distFromAnchor(b))
-      else (b, 0)
+    var aRef = a
+    var aToRef = 0
+    if(rigidRelations.isAnchored(a)) {
+      aRef = rigidRelations.anchorOf(a)
+      aToRef = rigidRelations.distToAnchor(a)
+    }
+
+    var bRef = b
+    var refToB = 0
+    if(rigidRelations.isAnchored(b)) {
+      bRef = rigidRelations.anchorOf(b)
+      refToB = rigidRelations.distFromAnchor(b)
+    }
 
     val refAToRefB = distanceBetweenNonRigid(aRef, bRef)
     DistanceMatrix.plus(aToRef, DistanceMatrix.plus(refAToRefB, refToB))
@@ -273,7 +296,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
       // remove the anchored timepoint from distance matrix
       dist.compileAwayRigid(toIndex(anchored), toIndex(anchor))
       timepointByIndex(toIndex(anchored)) = null
-      nonRigidIndexes.remove(anchored)
+      removeFlexIndex(anchored)
       assert(originalDist == rigidAwareDist(tpA, tpB))
     }
 
@@ -290,7 +313,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setStart(tp)
-    nonRigidIndexes(tp)
+    toIndex(tp)
   }
 
   def setStart(start: TPRef): Unit = {
@@ -308,7 +331,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
     if(!isKnown(tp))
       recordTimePoint(tp)
     setEnd(tp)
-    nonRigidIndexes(tp)
+    toIndex(tp)
   }
 
   def setEnd(end: TPRef): Unit = {
@@ -493,7 +516,7 @@ class StnWithStructurals(var nonRigidIndexes: mutable.Map[TPRef,Int],
         .filter(!_.genre.isStructural)
         .toSet ++
         structuralNeighbors
-          .filter(x => rigidRelations.isAnchored(x) && !rigidRelations._anchorOf(x).genre.isStructural)
+          .filter(x => rigidRelations.isAnchored(x) && !rigidRelations.anchorOf(x).genre.isStructural)
           .map(x => rigidRelations.anchorOf(x))
       nonStructuralNeighbours
     }

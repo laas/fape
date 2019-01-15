@@ -9,10 +9,10 @@ import scala.collection.mutable
 
 object DistanceMatrix {
   /** number of spot to create when needing to grow the network */
-  val growthIncrement = 5
+  final val growthIncrement = 5
 
   /** Infinity value that does not overflow when added to itself */
-  val INF :Int = Integer.MAX_VALUE /2 -1
+  final val INF :Int = Integer.MAX_VALUE /2 -1
 
   /** Addition that will never overflow given that both parameters are in [-INF,INF] */
   final def plus(a:Int, b: Int) = {
@@ -33,18 +33,18 @@ trait DistanceMatrixListener {
 
 import DistanceMatrix._
 
-class DistanceMatrix(
+final class DistanceMatrix(
                       private var dists: Array[Array[Int]],
-                      private val emptySpots: mutable.Set[Int]
+                      private val emptySpots: util.BitSet
                     ) {
 
-  def this() = this(new Array[Array[Int]](0), mutable.Set())
+  def this() = this(new Array[Array[Int]](0), new util.BitSet())
 
   override def clone() : DistanceMatrix = {
     val newDists = new Array[Array[Int]](dists.length)
     for(i <- dists.indices if dists(i) != null)
       newDists(i) = util.Arrays.copyOf(dists(i), dists(i).length)
-    val newEmptySpots = emptySpots.clone()
+    val newEmptySpots = emptySpots.clone().asInstanceOf[util.BitSet]
     new DistanceMatrix(newDists, newEmptySpots)
   }
 
@@ -54,8 +54,8 @@ class DistanceMatrix(
   }
 
   private final def isActive(tp: Int) = {
-    assert(tp < dists.size)
-    !emptySpots.contains(tp)
+    assert(tp < dists.length)
+    !emptySpots.get(tp)
   }
 
   /**
@@ -76,12 +76,12 @@ class DistanceMatrix(
       for(i <- prevLength until newLength) {
         newDists(i) = new Array[Int](newLength)
         util.Arrays.fill(newDists(i), INF)
-        emptySpots += i
+        emptySpots.set(i)
       }
       dists = newDists
     }
-    val newNode = emptySpots.head
-    emptySpots -= newNode
+    val newNode = emptySpots.nextSetBit(0)
+    emptySpots.clear(newNode)
     dists(newNode)(newNode) = 0
     newNode
   }
@@ -93,7 +93,7 @@ class DistanceMatrix(
     util.Arrays.fill(dists(n), INF)
     for(i <- dists.indices)
       dists(i)(n) = INF
-    emptySpots += n
+    emptySpots.set(n)
   }
 
   /**
@@ -111,7 +111,7 @@ class DistanceMatrix(
     dists(a)(b) = d
     val updatedEdges = mutable.ArrayBuffer[(Int,Int)]()
     updatedEdges += ((a,b))
-    val nodes = dists.indices.filterNot(emptySpots.contains)
+    val nodes = dists.indices.filterNot(emptySpots.get)
 
     val I = mutable.ArrayBuffer[Int]()
     val J = mutable.ArrayBuffer[Int]()

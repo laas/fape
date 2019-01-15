@@ -2,6 +2,7 @@ package fr.laas.fape.planning.core.planning.states;
 
 import fr.laas.fape.anml.model.concrete.TPRef;
 import fr.laas.fape.anml.model.concrete.statements.LogStatement;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.timelines.ChainComponent;
 import fr.laas.fape.exceptions.InconsistencyException;
@@ -15,7 +16,6 @@ import fr.laas.fape.anml.model.ParameterizedStateVariable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CausalNetworkExt implements StateExtension {
     // for evaluation purposes, setting it two false will only keep the most basic evaluation modes
@@ -47,8 +47,7 @@ public class CausalNetworkExt implements StateExtension {
     private final Set<Integer> addedTimelines;
     private final List<Integer> removedTimelines;
 
-    private final Map<Event, ISet<Integer>> possiblyInterferingTimelines;
-    private final Map<Event, ISet<Integer>> intermediateSteps;
+    private final Map<Event, BitSet> possiblyInterferingTimelines;
 
     CausalNetworkExt(PartialPlan container) {
         this.container = container;
@@ -58,7 +57,6 @@ public class CausalNetworkExt implements StateExtension {
         removedTimelines = new ArrayList<>();
         addedTimelines = new HashSet<>(container.tdb.getTimelinesStream().map(t -> t.mID).collect(Collectors.toList()));
         possiblyInterferingTimelines = new HashMap<>();
-        intermediateSteps = new HashMap<>();
     }
 
     private CausalNetworkExt(CausalNetworkExt toCopy, PartialPlan container) {
@@ -68,8 +66,10 @@ public class CausalNetworkExt implements StateExtension {
         extendedTimelines = new ArrayList<>(toCopy.extendedTimelines);
         addedTimelines = new HashSet<>(toCopy.addedTimelines);
         removedTimelines = new ArrayList<>(toCopy.removedTimelines);
-        possiblyInterferingTimelines = new HashMap<>(toCopy.possiblyInterferingTimelines);
-        intermediateSteps = new HashMap<>(toCopy.intermediateSteps);
+        possiblyInterferingTimelines = new HashMap<>();
+        for(HashMap.Entry<Event,BitSet> e : toCopy.possiblyInterferingTimelines.entrySet()) {
+            possiblyInterferingTimelines.put(e.getKey(), (BitSet) e.getValue().clone());
+        }
     }
 
     @Override
@@ -91,9 +91,10 @@ public class CausalNetworkExt implements StateExtension {
     }
 
     private void processPending() {
+        Counters.inc("process-pending");
         if(extendedTimelines.isEmpty() && addedTimelines.isEmpty() && removedTimelines.isEmpty())
             return;
-
+        Counters.inc("process-pending-non-noop");
         // find all indirect supporters of newly added timelines
         for(int tlID : addedTimelines) {
             if(!container.tdb.containsTimelineWithID(tlID))
@@ -120,6 +121,7 @@ public class CausalNetworkExt implements StateExtension {
 
         for(int tlID : potentialSupporters.keySet()) {
             if(!container.tdb.containsTimelineWithID(tlID)) {
+                assert removedTimelines.contains(tlID);
                 // timeline was deleted, remove any reference we might have
                 potentialSupporters.remove(tlID);
                 continue;
@@ -155,15 +157,35 @@ public class CausalNetworkExt implements StateExtension {
                                 }
                             }
                         });
+                if(!removedTimelines.isEmpty()) {
+                    Set<Integer> supporters = potentialSupporters.get(tlID).stream().map(e -> e.supporterID).collect(Collectors.toSet());
+                    if(removedTimelines.stream().anyMatch(id -> supporters.contains(id))) {
+                        ISet<Event> updatedSups = potentialSupporters.get(tlID).filter((Predicate<Event>) e -> !removedTimelines.contains(e.supporterID));
+                        potentialSupporters.put(tlID, updatedSups);
+                    }
+                }
             }
+        }
+        filterUnfeasibleSupports();
+
+        addedTimelines.clear();
+        extendedTimelines.clear();
+        removedTimelines.clear();
+        lastProcessedChange.clear();
+        for(Timeline tl : tlMan.getTimelines()) {
+            lastProcessedChange.put(tl.mID, tl.numChanges()-1);
+        }
+    }
+
+    private void filterUnfeasibleSupports() {
+        TimelinesManager tlMan = container.tdb;
+
+        for(int tlID : potentialSupporters.keySet()) {
+            Timeline tl = tlMan.getTimeline(tlID);
 
             Set<Event> toRemove = new HashSet<>();
             for(Event pis : potentialSupporters.get(tlID)) {
-                if(!tlMan.containsTimelineWithID(pis.supporterID)) {
-                    toRemove.add(pis);
-                    continue;
-                }
-
+                assert tlID == pis.consumerID;
                 // if this event can not be separated (temporally or logically) from the open goal,
                 // then it is the only possible supporter
                 if(USE_CAUSAL_NETWORK) {
@@ -180,51 +202,30 @@ public class CausalNetworkExt implements StateExtension {
 
                 // when possible infer temporal constraints on the earliest appearance of the open goal
                 if(USE_CAUSAL_NETWORK && container.pl.options.checkUnsolvableThreatsForOpenGoalsResolvers) {
-                    // update potential threats
-                    ISet<Integer> initialList = possiblyInterferingTimelines.containsKey(pis) ?
-                            possiblyInterferingTimelines.get(pis) :
-                            new ISet<>();
-                    Stream<Integer> additionsToConsider = possiblyInterferingTimelines.containsKey(pis) ?
-                            addedTimelines.stream() :
-                            tlMan.getTimelinesStream().map(x -> x.mID);
 
-                    List<Integer> toRemoveFromInitialList = initialList.stream()
-                            .filter(i -> !tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                            .collect(Collectors.toList());
-                    List<Integer> toAddToInitialList = additionsToConsider
-                            .filter(i -> tlMan.containsTimelineWithID(i) && possiblyInterfering(sup, tl, tlMan.getTimeline(i)))
-                            .collect(Collectors.toList());
-
-                    ISet<Integer> updatedList = initialList
-                            .withoutAll(toRemoveFromInitialList)
-                            .withAll(toAddToInitialList)
-                            .filter((Predicate<Integer>) id -> id != pis.supporterID && id != tlID);
-                    possiblyInterferingTimelines.put(pis, updatedList);
-
-                    for (int threatID : updatedList) {
-                        Timeline threat = tlMan.getTimeline(threatID);
-                        if (necessarilyThreatening(sup, tl, threat)) {
-                            toRemove.add(pis);
-                            break;
+                    // get the initial list
+                    if(!possiblyInterferingTimelines.containsKey(pis)) {
+                        // no incremental result to use, compute from scratch
+                        BitSet list = new BitSet();
+                        possiblyInterferingTimelines.put(pis, list);
+                        for(Timeline threat : tlMan.getTimelines()) {
+                            list.set(threat.mID);
+                        }
+                    } else {
+                        // process incrementally
+                        BitSet list  = possiblyInterferingTimelines.get(pis);
+                        for(int i : addedTimelines) {
+                            list.set(i);
                         }
                     }
 
-                    intermediateSteps.put(pis, new ISet<>());
-                    for (int threatID : updatedList) {
-                        Timeline inter = tlMan.getTimeline(threatID);
-                        if (necessarilyIntermediateStep(sup, tl, inter)) {
-                            intermediateSteps.put(pis, intermediateSteps.get(pis).with(inter.mID));
-//                            System.out.println("coucou"+container.domainOf(sup.getGlobalSupportValue())+
-//                            "   "+container.domainOf(inter.getGlobalConsumeValue())+
-//                            "   "+container.domainOf(tl.getGlobalConsumeValue()));
-                        }
-                    }
+                    if(isInfeasibleDueToInterferences(pis))
+                        toRemove.add(pis);
                 }
             }
 
             for(Event pis : toRemove) {
                 possiblyInterferingTimelines.remove(pis);
-                intermediateSteps.remove(pis);
             }
             potentialSupporters.put(tlID, potentialSupporters.get(tlID).withoutAll(toRemove));
 
@@ -240,33 +241,70 @@ public class CausalNetworkExt implements StateExtension {
                     container.enforceBefore(timepoints, tl.getConsumeTimePoint());
                 } else {
                     if(tl.hasSinglePersistence()) {
-                        int earliest = potentialSupporters.get(tlID).stream()
-                                .mapToInt(event -> container.getMaxEarliestStartTime(componentOf(event).getEndTimepoints()))
-                                .min().orElse(0);
-                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                        int earliest = Integer.MAX_VALUE;
+                        for(Event event : potentialSupporters.get(tlID)) {
+                            int a = container.getMaxEarliestStartTime(componentOf(event).getEndTimepoints());
+                            if(earliest > a)
+                                earliest = a;
+                        }
+                        if(earliest != Integer.MAX_VALUE)
+                            container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
                     } else {
-                        int earliest = potentialSupporters.get(tlID).stream()
-                                .mapToInt(event -> container.getMaxEarliestStartTime(timelineOf(event).timepointsPrecedingNextChange(componentOf(event))))
-                                .min().orElse(0);
-                        container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
+                        int earliest = Integer.MAX_VALUE;
+                        for(Event event : potentialSupporters.get(tlID)) {
+                            int a = container.getMaxEarliestStartTime(timelineOf(event).timepointsPrecedingNextChange(componentOf(event)));
+                            if(earliest > a)
+                                earliest = a;
+                        }
+                        if(earliest != Integer.MAX_VALUE)
+                            container.enforceDelay(container.pb.start(), tl.getConsumeTimePoint(), earliest);
                     }
                 }
             }
         }
+    }
 
-        addedTimelines.clear();
-        extendedTimelines.clear();
-        removedTimelines.clear();
-        lastProcessedChange.clear();
-        for(Timeline tl : tlMan.getTimelines()) {
-            lastProcessedChange.put(tl.mID, tl.numChanges()-1);
+    /** Filters the set of possibly interfering timelines for this support */
+    private boolean isInfeasibleDueToInterferences(Event pis) {
+        TimelinesManager tlMan = container.tdb;
+        Timeline sup = tlMan.getTimeline(pis.supporterID);
+        Timeline tl = tlMan.getTimeline(pis.consumerID);
+
+        // mutable reference to the list of possibly interfering timelines
+        BitSet list = possiblyInterferingTimelines.get(pis);
+        assert list != null;
+
+        // filter possible interference that are no longer threatening.
+        int cur = list.nextSetBit(0);
+        while(cur >= 0) {
+            int i = cur;
+            if(cur == pis.consumerID || cur == pis.supporterID)
+                list.clear(cur);
+            else if(!tlMan.containsTimelineWithID(i) || !possiblyInterfering(sup, tl, tlMan.getTimeline(i))) {
+                list.clear(cur);
+            }
+
+            cur = list.nextSetBit(cur+1);
         }
+        // look for necessary threats
+        cur = list.nextSetBit(0);
+        while(cur >= 0) {
+            if (necessarilyThreatening(sup, tl, tlMan.getTimeline(cur))) {
+                return true;
+            }
+            cur = list.nextSetBit(cur+1);
+        }
+        return false;
     }
 
     /** Returns true if either (i) there can be a temporal gap between the event and the timeline;
      * ro (ii) they can be on different fluents */
     private boolean canBeSeparated(Event e, Timeline og) {
         Timeline tl = container.getTimeline(e.supporterID);
+
+        if(!areNecessarilyIdentical(e.getStatement().sv(), tl.stateVariable))
+            return true;
+
         List<TPRef> endTimepoints;
         if(og.hasSinglePersistence()) {
             endTimepoints = Collections.singletonList(e.getStatement().end());
@@ -275,11 +313,13 @@ public class CausalNetworkExt implements StateExtension {
             endTimepoints = tl.timepointsPrecedingNextChange(eventComp);
         }
 
-        boolean temporallySeparable =
-                endTimepoints.stream().allMatch(tp ->
-                        container.csp.stn().isDelayPossible(tp, og.getConsumeTimePoint(), 1) ||
-                        container.csp.stn().isDelayPossible(og.getConsumeTimePoint(), tp, 1));
-        return temporallySeparable || !areNecessarilyIdentical(e.getStatement().sv(), tl.stateVariable);
+        for(TPRef tp : endTimepoints) {
+            boolean x = container.csp.stn().isDelayPossible(tp, og.getConsumeTimePoint(), 1);
+            boolean y = container.csp.stn().isDelayPossible(og.getConsumeTimePoint(), tp, 1);
+            if(!x && !y)
+                return false;
+        }
+        return true;
     }
 
     /**
@@ -393,7 +433,6 @@ public class CausalNetworkExt implements StateExtension {
         if(potentialSupporters.containsKey(tl.mID)) {
             for (Event e : potentialSupporters.get(tl.mID)) {
                 possiblyInterferingTimelines.remove(e);
-                intermediateSteps.remove(e);
             }
             potentialSupporters.remove(tl.mID);
         }

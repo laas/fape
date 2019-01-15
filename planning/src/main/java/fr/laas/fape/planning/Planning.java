@@ -2,6 +2,7 @@ package fr.laas.fape.planning;
 
 import com.martiansoftware.jsap.*;
 import fr.laas.fape.anml.model.AnmlProblem;
+import fr.laas.fape.planning.core.planning.planner.Counters;
 import fr.laas.fape.planning.core.planning.reachability.ReachabilityHandler;
 import fr.laas.fape.planning.core.planning.planner.GlobalOptions;
 import fr.laas.fape.planning.core.planning.planner.Planner;
@@ -169,6 +170,11 @@ public class Planning {
                                 .setLongFlag("output")
                                 .setDefault("stdout")
                                 .setHelp("File to which the CSV formatted output will be written."),
+                        new FlaggedOption("write-plan")
+                                .setStringParser(JSAP.STRING_PARSER)
+                                .setLongFlag("write-plan")
+                                .setDefault("")
+                                .setHelp("Write plan to the given file."),
                         new FlaggedOption("needed-observations")
                                 .setStringParser(JSAP.BOOLEAN_PARSER)
                                 .setShortFlag(JSAP.NO_SHORTFLAG)
@@ -259,6 +265,7 @@ public class Planning {
         for (int i = 0; i < repetitions; i++) {
 
             for (String anmlFile : anmlFiles) {
+                Counters.reset();
 
                 final AnmlProblem pb = new AnmlProblem();
                 try {
@@ -405,6 +412,17 @@ public class Planning {
                     System.out.println("=== Timelines === \n" + Printer.timelines(sol));
                     System.out.println("\n=== Actions ===\n"+Printer.actionsInPlan(sol));
                 }
+                final String planFile = config.getString("write-plan");
+                if(!failure && !planFile.equals("")) {
+                    try {
+                        BufferedWriter planWriter = new BufferedWriter(new FileWriter(planFile));
+                        planWriter.write(Printer.actionsInPlan(sol));
+                        planWriter.close();
+                    } catch (IOException e) {
+                        System.err.println("Error while trying to write plan to: " + config.getString("write"));
+                        System.err.println(e.getMessage());
+                    }
+                }
 
                 final String reachStr = config.getString("reachability-graph");
                 final String ffStr = config.getBoolean("fast-forward") ? "ff" : "no-ff";
@@ -427,6 +445,7 @@ public class Planning {
                                 + "\n");
                 writer.flush();
 
+                Counters.echo();
             }
         }
         if (!commandLineConfig.getString("output").equals("stdout"))

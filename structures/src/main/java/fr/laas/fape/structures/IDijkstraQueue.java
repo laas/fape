@@ -2,7 +2,7 @@ package fr.laas.fape.structures;
 
 import java.util.Arrays;
 
-public class IDijkstraQueue<E extends Identifiable> {
+public class IDijkstraQueue<E> {
 
     private final IntRep<E> rep;
     private int currentSize; // Number of elements in heap
@@ -67,24 +67,34 @@ public class IDijkstraQueue<E extends Identifiable> {
      * @param x the item to insert.
      */
     public final void insert(E x, int cost) {
-        assert !contains(x);
+        insert(rep.asInt(x), cost);
+    }
+    public final void insert(int id, int cost) {
+        assert !contains(id);
         int index = this.currentSize++;
-        this.costs.put(x.getID(), cost);
-        this.arraySet(index, x.getID());
+        this.costs.put(id, cost);
+        this.arraySet(index, id);
         this.percolateUp(index);
     }
 
     public final void update(E x, int cost) {
-        assert contains(x);
-        this.costs.put(x.getID(), cost);
-        int index = positions.get(x.getID());
+        update(rep.asInt(x), cost);
+    }
+
+    public final void update(int id, int cost) {
+        assert contains(id);
+        this.costs.put(id, cost);
+        int index = positions.get(id);
         percolateDown(index);
         percolateUp(index);
     }
 
-    public boolean contains(E x) { return positions.containsKey(x.getID()); }
-    public boolean hasCost(E x) { return costs.containsKey(x.getID()); }
-    public int getCost(E x) { return costs.get(x.getID()); }
+    public boolean contains(E x) { return contains(rep.asInt(x)); }
+    public boolean contains(int id) { return positions.containsKey(id); }
+    public boolean hasCost(E x) { return hasCost(rep.asInt(x)); }
+    public boolean hasCost(int id) { return costs.containsKey(id); }
+    public int getCost(E x) { return getCost(rep.asInt(x)); }
+    public int getCost(int id) { return costs.get(id); }
 
     /**
      * Internal method to percolate up in the heap.
@@ -153,21 +163,27 @@ public class IDijkstraQueue<E extends Identifiable> {
      * @throws Exception if empty.
      */
     public E poll() {
+        return rep.fromInt(pollId());
+    }
+    public int pollId() {
         assert !isEmpty() : "Heap is empty.";
         int minItem = findMin();
         int lastItem = array[--this.currentSize];
         arraySet(0, lastItem);
         percolateDown(0);
         positions.remove(minItem);
-        return rep.fromInt(minItem);
+        return minItem;
     }
 
 
     public void cleanup(E x) {
-        if(contains(x))
-            removeAllTraces(x.getID());
-        else if(hasCost(x))
-            costs.remove(x.getID());
+        cleanup(rep.asInt(x));
+    }
+    public void cleanup(int id) {
+        if(contains(id))
+            removeAllTraces(id);
+        else if(hasCost(id))
+            costs.remove(id);
     }
 
     private void removeAllTraces(int id) {

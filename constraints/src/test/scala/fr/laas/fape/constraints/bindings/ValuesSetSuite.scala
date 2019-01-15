@@ -5,7 +5,7 @@ import org.scalatest.FunSuite
 import scala.collection.JavaConversions._
 
 class ValuesSetSuite extends FunSuite {
-  def S(vals : Integer*) : java.util.Set[Integer] = setAsJavaSet(vals.toSet)
+  def S(vals : Int*) : IBitSet = IBitSet(vals: _*)
 
   val ext1 = new ExtensionConstraint("aaaa", false, 3)
 

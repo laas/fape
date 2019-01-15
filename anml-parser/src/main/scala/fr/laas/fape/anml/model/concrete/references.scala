@@ -19,7 +19,7 @@ class RefCounter(protected var nextTPRef:Int, protected var nextActRef:Int, prot
 }
 
 object RefCounter {
-  var useGlobalCounter = true
+  var useGlobalCounter = false
   private val counter : RefCounter = new RefCounter()
   def getGlobalCounter = counter
   def getNewCounter = {
