@@ -13,12 +13,14 @@ When you have SBT, simply run the following command in the project directory.
     # Build the project with SBT
     sbt compile
 
-    # Create executable script
-    sbt pack
+    # Create an executable fat jar
+    sbt assembly
 
-You can generate a script to run the FAPE planner with `sbt pack`.
-This will produce an executable at `target/pack/bin/fape`.
-To see options, run `fape --help`.
+This will produce an executable jar `fape-planning-assembly-XXXX.jar` in the directory `fape/planning/target/` (where XXXX is a version number). The executable jar can then be run with
+
+    java -jar fape/planning/target/fape-planning-assembly-XXXX.jar    --help
+
+
 
 
 ### IDE support
@@ -38,10 +40,11 @@ This should not interfere with sbt build but you  should enable it in IntelliJ:
 
 ## Run
 
-Once you have compiled FAPE (using sbt pack), you can run it with
+Once you have compiled FAPE (using sbt assembly), you can run it with
 
-    path/to/fape path/to/anml/problem/file
-    # e.g. target/pack/bin/fape planning/domains/logistics-hier/logistics.x04-1.pb.anml
+    alias fape="java -jar fape/planning/target/fape-planning-assembly-XXXX.jar"
+    fape path/to/anml/problem/file
+    # e.g. fape planning/domains/logistics-hier/logistics.x04-1.pb.anml
 
 For more options, run `fape --help`.
 Example ANML planning problems are available in `planning/domains`.
